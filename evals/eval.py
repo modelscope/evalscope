@@ -1,14 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from abc import ABC, abstractmethod
-
+from typing import Union
 from evals.model import ModelMeta
 
 
 class Eval(ABC):
 
-    def __init__(self, eval_name: str, model_meta: ModelMeta, predicted_samples: str, **kwargs):
+    def __init__(self, eval_name: str, model_meta: ModelMeta, predicted_samples: Union[list, str], **kwargs):
         self._eval_name = eval_name
         self._model_meta = model_meta
+        # todo: list or path
         self._predicted_samples = predicted_samples
         self.kwargs = kwargs
 
@@ -40,12 +41,8 @@ class Eval(ABC):
         # TODO: implement this method
         ...
 
-    def eval_single_sample(self):
-        # TODO: implement this method
-        pass
-
     @abstractmethod
-    def eval_all_samples(self):
+    def eval_samples(self):
         raise NotImplementedError()
 
     @abstractmethod

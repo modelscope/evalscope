@@ -12,10 +12,7 @@ class SimilarityEval(Eval):
     def get_metrics(self):
         pass
 
-    def eval_single_sample(self):
-        pass
-
-    def eval_all_samples(self):
+    def eval_samples(self):
         pass
 
     def run(self):

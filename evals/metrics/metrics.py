@@ -2,6 +2,7 @@
 
 from typing import Any, Callable, Dict, List, Optional, Union
 
+
 class Metrics:
     # TODO:
     #   1. add more metrics: accuracy, precision, recall, f1, auc, mae, mse, rmse, bleu, rouge, etc.
@@ -20,31 +21,37 @@ class Metrics:
 
     """
 
-    METRICS_NAME = ['bleu', 'rouge']
+    METRICS_NAME = ['accuracy', 'bleu', 'rouge']
 
-    def __init__(self):
-        self._inner_metric: Callable = None
+    def __init__(self, metric_name: str = 'accuracy'):
+        self._metric_name = metric_name
+        self._metric_fn: Callable = None
+
+        if self._metric_name == 'accuracy':
+            # todo
+            self._metric_fn = self._get_accuracy_fn()
+        elif self._metric_name == 'bleu':
+            self._metric_fn = self._get_bleu_fn()
+        elif self._metric_name == 'rouge':
+            self._metric_fn = self._get_rouge_fn()
+        else:
+            raise ValueError(f'Unknown metric name: {self._metric_name}')
+
+    def _get_accuracy_fn(self):
+
+        pass
+
+    def _get_bleu_fn(self):
+        pass
+
+    def _get_rouge_fn(self):
+        pass
 
     def compute(self, *kwargs):
         """
         Compute metric.
         """
-        return self._inner_metric(*kwargs)
-
-    @staticmethod
-    def get_metric(metric_name) -> 'Metrics':
-        """
-        Get metric object by name.
-        :param metric_name:
-        :return:
-        """
-        if metric_name == 'bleu':
-            pass
-            return None
-        elif metric_name == 'rouge':
-            return None
-        else:
-            raise ValueError(f'Unknown metric name: {metric_name}')
+        return self._metric_fn(*kwargs)
 
     @staticmethod
     def show_all_metrics() -> None:
@@ -53,6 +60,21 @@ class Metrics:
         :return: None
         """
         print(Metrics.METRICS_NAME)
+
+
+def get_metric(metric_name) -> Metrics:
+    """
+    Get metric object by name.
+    :param metric_name:
+    :return:
+    """
+    if metric_name == 'bleu':
+        pass
+        return Metrics
+    elif metric_name == 'rouge':
+        return None
+    else:
+        raise ValueError(f'Unknown metric name: {metric_name}')
 
 
 if __name__ == '__main__':
