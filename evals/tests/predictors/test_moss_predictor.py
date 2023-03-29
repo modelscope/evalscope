@@ -39,7 +39,7 @@ class TestMossPredictor(unittest.TestCase):
             top_k=15,
         )
 
-        result_dict = self.predictor.predict(**input_args)
+        result_dict = self.predictor(**input_args)
         self.assertTrue(result_dict['output'])
         self.assertTrue(result_dict['output']['text'])
         print(result_dict)
