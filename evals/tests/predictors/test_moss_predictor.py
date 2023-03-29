@@ -9,12 +9,16 @@ from evals.utils.utils import test_level_list
 TEST_LEVEL = 0
 
 
+def get_condition():
+    return TEST_LEVEL in test_level_list()
+
+
 class TestMossPredictor(unittest.TestCase):
 
     def setUp(self) -> None:
         self.predictor = MossPredictor(mode=PredictorMode.REMOTE)
 
-    @unittest.skipUnless(True, 'skip test in current test level')
+    @unittest.skipUnless(get_condition(), 'skip test in current test level')
     def test_predict(self):
         from dashscope import Models
 
