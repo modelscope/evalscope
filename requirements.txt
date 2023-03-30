@@ -1,3 +1,13 @@
 rouge
 bleu
 scikit-learn
+alibabacloud-tea==0.2.9
+alibabacloud-darabonba-array==0.1.0
+alibabacloud-openitag20220616==1.0.1
+alibabacloud-tea-openapi==0.3.6
+alibabacloud-darabonba-string==0.0.4
+alibabacloud-darabonba-number==0.0.4
+darabonba-rsa==0.0.7
+alibabacloud-tea-fileform==0.0.5
+requests==2.28.1
+requests-toolbelt==0.10.1
