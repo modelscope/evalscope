@@ -16,10 +16,11 @@ def get_condition():
 class TestMossPredictor(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.predictor = MossPredictor(mode=PredictorMode.REMOTE)
+        self.remote_predictor = MossPredictor(mode=PredictorMode.REMOTE)
+        self.local_predictor = MossPredictor(mode=PredictorMode.LOCAL)
 
     @unittest.skipUnless(get_condition(), 'skip test in current test level')
-    def test_predict(self):
+    def test_remote_predict(self):
         from dashscope import Models
 
         input_args = dict(
@@ -39,7 +40,15 @@ class TestMossPredictor(unittest.TestCase):
             top_k=15,
         )
 
-        result_dict = self.predictor(**input_args)
+        result_dict = self.remote_predictor(**input_args)
         self.assertTrue(result_dict['output'])
         self.assertTrue(result_dict['output']['text'])
+        print(result_dict)
+
+    @unittest.skipUnless(get_condition(), 'skip test in current test level')
+    def test_local_predict(self):
+        # todo
+        input_args = dict()
+
+        result_dict = self.local_predictor(**input_args)
         print(result_dict)

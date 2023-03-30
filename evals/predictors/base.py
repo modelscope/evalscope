@@ -6,10 +6,10 @@ from evals.constants import PredictorMode
 
 
 class Predictor(ABC):
-    # TODO: support loading model from disk and calling remote service
 
     def __init__(self, mode=PredictorMode.REMOTE, **kwargs):
         self.mode = mode
+        # TODO: 判断mode，支持local模型的加载和init
 
     def __call__(self, **kwargs):
         return self.predict(**kwargs)
