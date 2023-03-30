@@ -16,11 +16,18 @@ class Predictor(ABC):
 
     @abstractmethod
     def predict(self, **kwargs) -> dict:
-        raise NotImplementedError
+        if self.mode == PredictorMode.LOCAL:
+            return self._run_local_inference(**kwargs)
+        elif self.mode == PredictorMode.REMOTE:
+            return self._run_remote_inference(**kwargs)
+        else:
+            raise ValueError(f"Invalid predictor mode: {self.mode}")
 
-    def _load_model_from_disk(self, **kwargs):
+    @abstractmethod
+    def _run_local_inference(self, **kwargs) -> dict:
         ...
 
-    def _call_remote_service(self, **kwargs):
+    @abstractmethod
+    def _run_remote_inference(self, **kwargs) -> dict:
         ...
 
