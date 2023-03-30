@@ -10,9 +10,13 @@ from alpha_data_sdk import models as alphad_model
 class ItagManager(object):
 
     def __init__(self):
+        # self._init_itag_client()
         pass
 
     def _init_itag_client(self, tenant_id, token, employee_id):
+        """
+        Init iTag client.
+        """
 
         # init iTag sdk
         itag = ItagSdk(
@@ -32,3 +36,20 @@ class ItagManager(object):
 
         # todo: TBD ...
 
+    def create_dataset(self):
+        """
+        Create a dataset from local file.
+        """
+        pass
+
+    def create_tag_task(self):
+        """
+        Create a iTag task.
+        """
+        pass
+
+    def get_tag_task_result(self):
+        """
+        Fetch tag task result.
+        """
+        pass
