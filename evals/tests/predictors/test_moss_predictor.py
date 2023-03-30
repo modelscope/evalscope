@@ -2,24 +2,36 @@
 
 import unittest
 
-from evals.constants import PredictorMode
+from evals.constants import PredictorMode, PredictorKeys
 from evals.predictors.moss_predictor import MossPredictor
 from evals.utils.utils import test_level_list
 
-TEST_LEVEL = 0
+DEFAULT_TEST_LEVEL = 0
+ENABLE_LOCAL_PREDICTOR = True
 
 
-def get_condition():
-    return TEST_LEVEL in test_level_list()
+def condition(test_level=DEFAULT_TEST_LEVEL):
+    return test_level in test_level_list()
 
 
 class TestMossPredictor(unittest.TestCase):
 
     def setUp(self) -> None:
         self.remote_predictor = MossPredictor(mode=PredictorMode.REMOTE)
-        self.local_predictor = MossPredictor(mode=PredictorMode.LOCAL)
+        self.local_predictor = None
+        if ENABLE_LOCAL_PREDICTOR:
+            self.local_predictor = TestMossPredictor._init_local_predictor()
 
-    @unittest.skipUnless(get_condition(), 'skip test in current test level')
+    @staticmethod
+    def _init_local_predictor():
+        model_cfg = dict(
+            local_model={'model_path': ''},
+        )
+        predictor = MossPredictor(mode=PredictorMode.LOCAL, **model_cfg)
+
+        return predictor
+
+    @unittest.skipUnless(condition(test_level=0), 'skip test in current test level')
     def test_remote_predict(self):
         from dashscope import Models
 
@@ -45,10 +57,25 @@ class TestMossPredictor(unittest.TestCase):
         self.assertTrue(result_dict['output']['text'])
         print(result_dict)
 
-    @unittest.skipUnless(get_condition(), 'skip test in current test level')
+    @unittest.skipUnless(condition(test_level=1), 'skip test in current test level')
     def test_local_predict(self):
-        # todo
-        input_args = dict()
+
+        input_args = dict(
+            prompt='推荐一个附近的公园',
+            history=[
+                {
+                    "user": "今天天气好吗？",
+                    "bot": "今天天气不错，要出去玩玩嘛？"
+                },
+                {
+                    "user": "那你有什么地方推荐？",
+                    "bot": "我建议你去公园，春天来了，花朵开了，很美丽。"
+                }
+            ],
+            max_length=500,
+            top_k=15,
+        )
 
         result_dict = self.local_predictor(**input_args)
         print(result_dict)
+
