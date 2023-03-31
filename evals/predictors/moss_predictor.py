@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evals.constants import PredictorMode
+import os
+
+from evals.constants import PredictorMode, PredictorEnvs
 from evals.predictors.base import Predictor
 
 import dashscope
@@ -14,8 +16,8 @@ class MossPredictor(Predictor):
     #   1. class name to be confirmed
     #   2. tdb
 
-    def __init__(self, mode=PredictorMode.REMOTE, **kwargs):
-        super(MossPredictor, self).__init__(mode=mode, **kwargs)
+    def __init__(self, api_key: str, mode=PredictorMode.REMOTE, **kwargs):
+        super(MossPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)
 
     def predict(self, **kwargs) -> dict:
         if self.mode == PredictorMode.LOCAL:
@@ -32,6 +34,14 @@ class MossPredictor(Predictor):
 
     def _run_remote_inference(self, **kwargs) -> dict:
         try:
+            dashscope.api_key = self.api_key
+            is_debug = os.environ.get(PredictorEnvs.DEBUG_MODE)
+            if is_debug == 'true':
+                endpoint = os.environ.get(PredictorEnvs.DEBUG_DASHSCOPE_HTTP_BASE_URL)
+                if not endpoint:
+                    raise ValueError(f"Debug endpoint is not specified when DEBUG_MODE is set to true.")
+                dashscope.base_http_api_url = endpoint
+
             responses = Generation.call(**kwargs)
         except Exception as e:
             raise e

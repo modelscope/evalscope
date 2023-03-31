@@ -12,8 +12,9 @@ class Predictor(ABC):
     #   1. Multi-thread calling to be supported
     #   2. Async calling to be supported
 
-    def __init__(self, mode=PredictorMode.REMOTE, **kwargs):
+    def __init__(self, api_key: str, mode: str = PredictorMode.REMOTE, **kwargs):
         self.mode: str = mode
+        self.api_key = api_key
         self.model: Any = None
 
         if self.mode == PredictorMode.LOCAL:
@@ -43,6 +44,7 @@ class Predictor(ABC):
         ...
 
     def _init_local_model(self, **kwargs):
+        # TODO: to be added by other developers
         if not kwargs:
             raise ValueError(f"Local model config is empty")
 

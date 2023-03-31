@@ -10,9 +10,12 @@ class PredictorKeys:
     LOCAL_MODEL = 'local_model'
 
 
-DEFAULT_DASHSCOPE_HTTP_BASE_URL = 'https://int-dashscope.aliyun-inc.com/api/v1/services'
-
-
 class PredictorEnvs:
+    # The api key for DashScope, which can be obtained from the DashScope console.
     DASHSCOPE_API_KEY = 'DASHSCOPE_API_KEY'
-    DASHSCOPE_HTTP_BASE_URL = 'DASHSCOPE_HTTP_BASE_URL'
+
+    # The base url for DashScope, it's necessary when DEBUG_MODE is set to true.
+    DEBUG_DASHSCOPE_HTTP_BASE_URL = 'DEBUG_DASHSCOPE_HTTP_BASE_URL'
+
+    # Debug mode, set to 'true' to enable debug mode, otherwise ignore it.
+    DEBUG_MODE = 'DEBUG_MODE'

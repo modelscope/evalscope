@@ -2,7 +2,8 @@
 
 import unittest
 
-from evals.constants import PredictorMode, PredictorKeys
+import os
+from evals.constants import PredictorMode, PredictorKeys, PredictorEnvs
 from evals.predictors.moss_predictor import MossPredictor
 from evals.utils.utils import test_level_list
 
@@ -17,7 +18,8 @@ def condition(test_level=DEFAULT_TEST_LEVEL):
 class TestMossPredictor(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.remote_predictor = MossPredictor(mode=PredictorMode.REMOTE)
+        api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
+        self.remote_predictor = MossPredictor(api_key=api_key, mode=PredictorMode.REMOTE)
         self.local_predictor = None
         if ENABLE_LOCAL_PREDICTOR:
             self.local_predictor = TestMossPredictor._init_local_predictor()
@@ -27,7 +29,7 @@ class TestMossPredictor(unittest.TestCase):
         model_cfg = dict(
             local_model={'model_path': ''},
         )
-        predictor = MossPredictor(mode=PredictorMode.LOCAL, **model_cfg)
+        predictor = MossPredictor(api_key='', mode=PredictorMode.LOCAL, **model_cfg)
 
         return predictor
 
@@ -36,7 +38,7 @@ class TestMossPredictor(unittest.TestCase):
         from dashscope import Models
 
         input_args = dict(
-            model=Models.chatm6_v1,
+            model='moss_dev3',
             prompt='推荐一个附近的公园',
             history=[
                 {
@@ -53,9 +55,10 @@ class TestMossPredictor(unittest.TestCase):
         )
 
         result_dict = self.remote_predictor(**input_args)
+        print(result_dict)
+        self.assertTrue(result_dict)
         self.assertTrue(result_dict['output'])
         self.assertTrue(result_dict['output']['text'])
-        print(result_dict)
 
     @unittest.skipUnless(condition(test_level=1), 'skip test in current test level')
     def test_local_predict(self):
