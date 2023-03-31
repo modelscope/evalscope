@@ -22,12 +22,13 @@ class EvalTask(object):
 
         # 1. get samples
 
+
         # 2. get_model meta info
 
         # 3. get batches (or add_batches) --P1
 
         # 4. run inference
-        result_dict = self.run_inference(**input_args)
+        # result_dict = self.run_inference(**input_args)
 
         # 5. gen report
 
@@ -36,6 +37,7 @@ class EvalTask(object):
         ...
 
     def get_samples(self):
+        # TODO: raw_samples -> formatted_samples -> prompts
         ...
 
     def get_model(self):
@@ -53,3 +55,11 @@ class EvalTask(object):
 
     def dump_result(self):
         ...
+
+    def _get_formatted_samples(self):
+        ...
+
+    def _get_prompts(self):
+        ...
+
+

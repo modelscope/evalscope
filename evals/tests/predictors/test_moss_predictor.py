@@ -7,7 +7,7 @@ from evals.predictors.moss_predictor import MossPredictor
 from evals.utils.utils import test_level_list
 
 DEFAULT_TEST_LEVEL = 0
-ENABLE_LOCAL_PREDICTOR = True
+ENABLE_LOCAL_PREDICTOR = False
 
 
 def condition(test_level=DEFAULT_TEST_LEVEL):

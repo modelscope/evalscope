@@ -38,39 +38,3 @@ class MossPredictor(Predictor):
 
         # TODO: output format to be confirmed
         return responses.output
-
-
-
-# if __name__ == '__main__':
-
-#
-#     import dashscope
-#     from http import HTTPStatus
-#     from dashscope import Models
-#     from dashscope import Generation
-#
-#     dashscope.base_http_api_url = 'https://int-dashscope.aliyun-inc.com/api/v1/services'
-#     dashscope.api_key = 'ztPODdVunydIpfBKFASpHMTAHCzvlcu5124BE76AB9A511ED830AFA4166304A26'
-#
-#     responses = Generation.call(
-#         model='moss_dev3',
-#         prompt='推荐一个附近的公园',
-#         history=[
-#             {
-#                 "user": "今天天气好吗？",
-#                 "bot": "今天天气不错，要出去玩玩嘛？"
-#             },
-#             {
-#                 "user": "那你有什么地方推荐？",
-#                 "bot": "我建议你去公园，春天来了，花朵开了，很美丽。"
-#             }
-#         ],
-#         max_length=500,
-#         top_k=15)
-#
-#     if responses.code == HTTPStatus.OK:
-#         print('Result is: %s' % responses.output)
-#     else:
-#         print('Code: %s, status: %s, message: %s' % (responses.code,
-#                                                      responses.status,
-#                                                      responses.message))
