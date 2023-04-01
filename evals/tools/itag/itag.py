@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os.path
 import uuid
 import time
 from typing import Union
@@ -27,7 +27,7 @@ class ItagManager(object):
     Examples:
         >>> from evals.tools import ItagManager
         >>> itag_manager = ItagManager(tenant_id="your-tenant-id", token="your-token", employee_id="your-employee-id")
-        >>> itag_manager.process(dataset_path="your-dataset.csv", template_id="your-template-id", task_name="your-task-name")
+        >>> itag_manager.process(dataset_path="your-dataset.csv", dataset_name='your-dataset-name', template_id="your-template-id", task_name="your-task-name")
     """
 
     def __init__(self, tenant_id, token, employee_id):
@@ -66,12 +66,13 @@ class ItagManager(object):
         """
         pass
 
-    def create_dataset(self, dataset_file_path) -> str:
+    def create_dataset(self, dataset_file_path, dataset_name: str) -> str:
         """
         Create a dataset from local file.
 
         Args:
             dataset_file_path (str): Dataset file path. Should be a csv file which is aligned with template on fields.
+            dataset_name (str): Dataset name.
 
         Returns:
             Dataset id. (str)
@@ -81,14 +82,14 @@ class ItagManager(object):
         with open(dataset_file_path, 'rb') as f:
             create_dataset_response = self._alphad.create_dataset(self._tenant_id, alphad_model.CreateDatasetRequest(
                 data_source="LOCAL_FILE",
-                dataset_name="llm_evals_datasets_rank",
-                owner_name="banyang",
+                dataset_name=dataset_name,
+                owner_name="User_" + str(self._employee_id),
                 owner_employee_id=self._employee_id,
-                file_name="llm_evals_datasets_rank.csv",
+                file_name=os.path.basename(dataset_file_path),
                 file=f,
                 content_type="multipart/form-data",
                 secure_level=1,
-                remark="test dataset"
+                remark="AlphaD dataset"
             ))
         logger.info(f'>>create dataset resp: {create_dataset_response}')
 
@@ -177,7 +178,9 @@ class ItagManager(object):
         """
         Fetch tag task result.
         """
-        anno_response = self._itag.export_annotations(self._tenant_id, task_id, open_itag_models.ExportAnnotationsRequest())
+        anno_response = self._itag.export_annotations(self._tenant_id,
+                                                      task_id,
+                                                      open_itag_models.ExportAnnotationsRequest())
         job_id = anno_response.body.flow_job.job_id
         job_request = open_itag_models.GetJobRequest(
             job_type="DOWNLOWD_MARKRESULTFLOW"
@@ -186,12 +189,13 @@ class ItagManager(object):
 
         return job_response
 
-    def process(self, dataset_path: str, template_id: str, task_name: str) -> None:
+    def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> None:
         """
         Entry pipeline for creating the iTag task from local csv file.
 
         Args:
             dataset_path (str): Dataset file path. Should be a csv file which is aligned with template on fields.
+            dataset_name (str): Specify a dataset name.
             template_id (str): Template id.
             task_name (str): Specify a task name.
 
@@ -200,8 +204,8 @@ class ItagManager(object):
         """
 
         # Create dataset from local file
-        dataset_id = self.create_dataset(dataset_path)
+        dataset_id = self.create_dataset(dataset_path, dataset_name)
 
-        # Create itag task
+        # Create iTag task
         create_task_response = self.create_tag_task(task_name=task_name, dataset_id=dataset_id, template_id=template_id)
         logger.info(f'>>create task resp: {create_task_response}')
