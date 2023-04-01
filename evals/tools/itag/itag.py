@@ -26,10 +26,8 @@ class ItagManager(object):
 
     Examples:
         >>> from evals.tools import ItagManager
-        >>> itag_manager = ItagManager(tenant_id, token, employee_id)
-        >>> itag_manager.create_dataset(dataset_file_path)
-        >>> itag_manager.create_task(task_name, task_type, dataset_id, task_params)
-        >>> itag_manager.get_task_result(task_id)
+        >>> itag_manager = ItagManager(tenant_id="your-tenant-id", token="your-token", employee_id="your-employee-id")
+        >>> itag_manager.process(dataset_path="your-dataset.csv", template_id="your-template-id", task_name="your-task-name")
     """
 
     def __init__(self, tenant_id, token, employee_id):
