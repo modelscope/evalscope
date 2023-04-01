@@ -553,7 +553,7 @@ class AlphaDataSdk(OpenApiClient):
             action='getDataset',
             version='2023-02-21',
             protocol='HTTPS',
-            pathname=f'/adf/datamng/queryCollectionById/{OpenApiUtilClient.get_encode_param(dataset_id)}',
+            pathname=f'/adf/datamng/queryCollectionById/{OpenApiUtilClient.get_encode_param(str(dataset_id))}',
             method='POST',
             auth_type='AK',
             style='ROA',
