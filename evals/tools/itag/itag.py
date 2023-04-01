@@ -75,10 +75,10 @@ class ItagManager(object):
 
         # Create dataset from local file
         with open(dataset_file_path, 'rb') as f:
-            create_dataset_response = self._alphad.create_dataset(tenant_id, alphad_model.CreateDatasetRequest(
+            create_dataset_response = self._alphad.create_dataset(self._tenant_id, alphad_model.CreateDatasetRequest(
                 data_source="LOCAL_FILE",
                 dataset_name="llm_evals_datasets_rank",
-                owner_name="班扬",
+                owner_name="banyang",
                 owner_employee_id=self._employee_id,
                 file_name="llm_evals_datasets_rank.csv",
                 file=f,
@@ -94,7 +94,7 @@ class ItagManager(object):
 
         # To wait for dataset creation
         while True:
-            dataset_response = self._alphad.get_dataset(tenant_id, dataset_id)
+            dataset_response = self._alphad.get_dataset(self._tenant_id, dataset_id)
             status = dataset_response.body.result.status
             if not status:
                 raise ValueError("dataset status error")
@@ -163,46 +163,19 @@ class ItagManager(object):
                 ]
             )
         )
-        create_task_response = self._itag.create_task(tenant_id, create_task_request)
+        create_task_response = self._itag.create_task(self._tenant_id, create_task_request)
 
         return create_task_response
 
-    def get_tag_task_result(self):
+    def get_tag_task_info(self, task_id: str):
         """
         Fetch tag task result.
         """
-        pass
+        anno_response = self._itag.export_annotations(self._tenant_id, task_id, open_itag_models.ExportAnnotationsRequest())
+        job_id = anno_response.body.flow_job.job_id
+        job_request = open_itag_models.GetJobRequest(
+            job_type="DOWNLOWD_MARKRESULTFLOW"
+        )
+        job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
 
-
-if __name__ == "__main__":
-
-    tenant_id = '268ef75a'
-    employee_id = '147543'
-
-    token = """-----BEGIN RSA PRIVATE KEY-----
-xxxx
-xxx
-xxx
------END RSA PRIVATE KEY-----
-    """
-
-    itag_manager = ItagManager(tenant_id=tenant_id, token=token, employee_id=employee_id)
-
-    # dataset_path = os.path.join(os.path.dirname('__file__'), 'datasets/llm_evals_datasets_rank.csv')
-    # itag_manager.create_dataset(dataset_path)
-
-    # dataset_list = itag_manager.get_dataset_list()
-    # print(dataset_list)
-
-    dataset_info = itag_manager.get_dataset_info(dataset_id=329240)
-    print(dataset_info)
-
-    # template name: xc_response_rank_0329
-    # template_id = '1640901365857796096'
-    # task_name = 'task_test_llm_evals_rank'
-    # dataset_id = 329240
-    #
-    # create_task_response = itag_manager.create_tag_task(task_name=task_name,
-    #                                                     dataset_id=dataset_id,
-    #                                                     template_id=template_id)
-    # print('>>create_task_response: ', create_task_response)
+        return job_response
