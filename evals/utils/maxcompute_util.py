@@ -51,7 +51,6 @@ class MaxComputeUtil:
             Example: pt_condition = 'dt=20230331'
         :param output_path: output path
         :return: None
-
         """
         pd_df = self.read_data(table_name, pt_condition)
         pd_df.to_csv(output_path, index=False)

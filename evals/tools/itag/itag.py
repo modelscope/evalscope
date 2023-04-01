@@ -32,7 +32,7 @@ class ItagManager(object):
         >>> itag_manager.get_task_result(task_id)
     """
 
-    def __init__(self, tenant_id, token, employee_id, **kwargs):
+    def __init__(self, tenant_id, token, employee_id):
         self._tenant_id = tenant_id
         self._token = token
         self._employee_id = employee_id
@@ -68,9 +68,15 @@ class ItagManager(object):
         """
         pass
 
-    def create_dataset(self, dataset_file_path):
+    def create_dataset(self, dataset_file_path) -> str:
         """
         Create a dataset from local file.
+
+        Args:
+            dataset_file_path (str): Dataset file path. Should be a csv file which is aligned with template on fields.
+
+        Returns:
+            Dataset id. (str)
         """
 
         # Create dataset from local file
@@ -103,6 +109,8 @@ class ItagManager(object):
                 break
 
             time.sleep(5)
+
+        return str(dataset_id)
 
     def get_dataset_list(self):
         """
@@ -179,3 +187,23 @@ class ItagManager(object):
         job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
 
         return job_response
+
+    def process(self, dataset_path: str, template_id: str, task_name: str) -> None:
+        """
+        Entry pipeline for creating the iTag task from local csv file.
+
+        Args:
+            dataset_path (str): Dataset file path. Should be a csv file which is aligned with template on fields.
+            template_id (str): Template id.
+            task_name (str): Specify a task name.
+
+        Returns:
+            None
+        """
+
+        # Create dataset from local file
+        dataset_id = self.create_dataset(dataset_path)
+
+        # Create itag task
+        create_task_response = self.create_tag_task(task_name=task_name, dataset_id=dataset_id, template_id=template_id)
+        logger.info(f'>>create task resp: {create_task_response}')
