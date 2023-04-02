@@ -40,7 +40,11 @@ class EvalTask(object):
         # TODO: raw_samples -> formatted_samples -> prompts
         ...
 
-    def get_model(self):
+    def get_model_meta(self):
+        ...
+
+    def get_scoring_model(self):
+        # TODO: According to task config(yaml) to get scoring model object from registry.
         ...
 
     def get_batches(self):
