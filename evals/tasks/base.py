@@ -22,17 +22,18 @@ class EvalTask(object):
 
         # 1. get samples
 
-
-        # 2. get_model meta info
+        # 2. get model meta info
 
         # 3. get batches (or add_batches) --P1
 
         # 4. run inference
         # result_dict = self.run_inference(**input_args)
 
-        # 5. gen report
+        # 5. get scoring model and run eval
 
-        # 6. dump result
+        # 6. gen report
+
+        # 7. dump result
 
         ...
 
@@ -66,4 +67,9 @@ class EvalTask(object):
     def _get_prompts(self):
         ...
 
-
+    def get_model_info(self):
+        """
+        Get model info from predictor.
+        :return:
+        """
+        ...
