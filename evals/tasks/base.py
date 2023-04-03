@@ -2,13 +2,10 @@
 
 from typing import Union
 
-import evals.scoringmodels
 from evals import Eval
 from evals.constants import EvalTaskConfig
 from evals.predictors import Predictor
-from evals.utils.import_utils import LazyImportModule
 from evals.utils.utils import yaml_reader, get_obj_from_cfg
-from evals.registry import get_registered_obj
 from evals.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -99,7 +96,7 @@ class EvalTask(object):
         ...
 
     def run_inference(self, **input_args) -> dict:
-        result_dict = self._predictor(**input_args)
+        result_dict = self.predictor_obj(**input_args)
         return result_dict
 
     def gen_report(self):
