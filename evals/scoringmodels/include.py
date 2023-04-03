@@ -2,10 +2,7 @@
 # from evals import Eval, ModelMeta
 #
 #
-# EVAL_NAME = 'match_eval'
-#
-#
-# class MatchEval(Eval):
+# class IncludeEval(Eval):
 #     def __init__(self, eval_name: str, model_meta: ModelMeta, predicted_samples: str, **kwargs):
 #         super().__init__(eval_name, model_meta, predicted_samples, **kwargs)
 #

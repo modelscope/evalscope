@@ -19,3 +19,21 @@ class PredictorEnvs:
 
     # Debug mode, set to 'true' to enable debug mode, otherwise ignore it.
     DEBUG_MODE = 'DEBUG_MODE'
+
+
+class EvalTaskConfig:
+    TASK_NAME = 'task_name'
+    TASK_ID = 'id'
+    EVAL_CLASS = 'class'
+    PREDICTOR = 'predictor'
+    CLASS_REF = 'ref'
+    CLASS_ARGS = 'args'
+
+
+class ScoringModel:
+    GENERATION_EVAL = 'generation_eval'
+    CLASSIFICATION_EVAL = 'classification_eval'
+    MATCH_EVAL = 'match_eval'
+    INCLUDES_EVAL = 'includes_eval'
+    SIMILARITY_EVAL = 'similarity_eval'
+    UNIT_TEST_EVAL = 'unit_test_eval'

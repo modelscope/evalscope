@@ -1,7 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import functools
 import jsonlines as jsonl
+import yaml
+import importlib
+from typing import Any
+from evals.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 TEST_LEVEL_LIST = [0, 1]
 
@@ -43,3 +51,40 @@ def jsonl_to_reader(jsonl_file):
     """
     with jsonl.open(jsonl_file, mode='r') as reader:
         return reader
+
+
+def yaml_reader(yaml_file) -> dict:
+    """
+    Read yaml file to dict.
+    """
+    with open(yaml_file, 'r') as f:
+        try:
+            stream = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            logger.error(e)
+            raise e
+
+    return stream
+
+
+def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
+    module_name, spliter, cls_name = eval_class_ref.partition(':')
+
+    try:
+        obj_cls = importlib.import_module(module_name)
+    except ImportError as e:
+        logger.error(e)
+        raise e
+
+    if spliter:
+        for attr in cls_name.split('.'):
+            obj_cls = getattr(obj_cls, attr)
+
+    return functools.partial(obj_cls, *args, **kwargs)
+
+
+if __name__ == '__main__':
+    yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    stream = yaml_reader(yaml_path)
+    print(type(stream))
+    print(stream)

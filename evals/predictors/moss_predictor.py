@@ -19,6 +19,11 @@ class MossPredictor(Predictor):
     def __init__(self, api_key: str, mode=PredictorMode.REMOTE, **kwargs):
         super(MossPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)
 
+        if not self.api_key:
+            self.api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
+        if not self.api_key:
+            raise ValueError(f"API key is not specified. Please set it in the environment variable {PredictorEnvs.DASHSCOPE_API_KEY} or pass it to the constructor.")
+
     def predict(self, **kwargs) -> dict:
         if self.mode == PredictorMode.LOCAL:
             result = self._run_local_inference(**kwargs)
@@ -30,7 +35,8 @@ class MossPredictor(Predictor):
         return result
 
     def _run_local_inference(self, **kwargs):
-        pass
+        # TODO: to be implemented
+        return None
 
     def _run_remote_inference(self, **kwargs) -> dict:
         try:

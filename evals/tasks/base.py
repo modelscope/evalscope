@@ -1,22 +1,69 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from typing import Union
+
+import evals.scoringmodels
 from evals import Eval
+from evals.constants import EvalTaskConfig
 from evals.predictors import Predictor
+from evals.utils.import_utils import LazyImportModule
+from evals.utils.utils import yaml_reader, get_obj_from_cfg
+from evals.registry import get_registered_obj
+from evals.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class EvalTask(object):
 
-    def __init__(self, predictor: Predictor, eval_cls: Eval, **kwargs):
+    def __init__(self, task_cfg: Union[dict, str]):
         # TODO: task_name to be added in registry
+        # TODO: task calling in CLI to be added
+        # TODO: multi-threads to be added
 
-        self._predictor = predictor
-        self._eval_cls = eval_cls
+        # predictor: Predictor, eval_cls: Eval, **kwargs
 
-        if not isinstance(self._predictor, Predictor):
-            raise TypeError('predictor must be an instance of evals.predictors.Predictor')
+        if isinstance(task_cfg, str):
+            task_cfg = yaml_reader(task_cfg)
+        logger.info(f'task_cfg={task_cfg}')
 
-        if not isinstance(self._eval_cls, Eval):
-            raise TypeError('eval_cls must be an instance of evals.Eval')
+        self.task_name = task_cfg.get(EvalTaskConfig.TASK_NAME, None)
+        if not self.task_name:
+            raise ValueError('task_name must be provided in task config.')
+
+        self.task_spec = task_cfg.get(self.task_name)
+
+        if self.task_spec:
+            self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
+
+            eval_class_cfg = self.task_spec.get(EvalTaskConfig.EVAL_CLASS, {})
+            eval_class_ref = eval_class_cfg.get(EvalTaskConfig.CLASS_REF, None)
+            if not eval_class_ref:
+                raise ValueError(f'class.ref must be provided in task config for task_name={self.task_name}.')
+            eval_class_args = eval_class_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
+            eval_class = get_obj_from_cfg(eval_class_ref)
+            self.eval_obj = eval_class(**eval_class_args)
+
+            predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
+            predictor_ref = predictor_cfg.get(EvalTaskConfig.CLASS_REF, None)
+            if not predictor_ref:
+                raise ValueError(f'predictor.ref must be provided in task config for task_name={self.task_name}.')
+            predictor_args = predictor_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
+            predictor_args['api_key'] = ''
+            predictor_class = get_obj_from_cfg(predictor_ref)
+            self.predictor_obj = predictor_class(**predictor_args)
+
+            if not isinstance(self.eval_obj, Eval):
+                raise TypeError('eval_obj must be an instance of evals.Eval')
+
+            if not isinstance(self.predictor_obj, Predictor):
+                raise TypeError('predictor_obj must be an instance of evals.predictors.Predictor')
+
+        else:
+            logger.warning(f'The task specification must be provided in task config for task_name={self.task_name}.')
+            self.task_id = None
+            self.eval_obj = None
+            self.predictor_obj = None
 
     def run(self):
 
@@ -73,3 +120,11 @@ class EvalTask(object):
         :return:
         """
         ...
+
+
+if __name__ == '__main__':
+    import os
+    print(os.getcwd())
+    task_cfg_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    eval_task = EvalTask(task_cfg_file)
+    # eval_task.run()

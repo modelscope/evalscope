@@ -9,8 +9,8 @@ class GptPredictor(Predictor):
     OpenAI GPT models predictor, including GPT-3.5-Turbo, GPT-4, ...
     """
 
-    def __init__(self, mode=PredictorMode.REMOTE, **kwargs):
-        super(GptPredictor, self).__init__(mode=mode, **kwargs)
+    def __init__(self, api_key: str, mode=PredictorMode.REMOTE, **kwargs):
+        super(GptPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)
 
     def predict(self, **kwargs) -> dict:
         if self.mode == PredictorMode.REMOTE:

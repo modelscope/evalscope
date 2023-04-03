@@ -7,6 +7,7 @@ class Metrics:
     # TODO:
     #   1. add more metrics: accuracy, precision, recall, f1, auc, mae, mse, rmse, bleu, rouge, etc.
     #   2. lazyload tobe added
+    #   3. add registry
 
     """
     Metrics.
@@ -28,7 +29,7 @@ class Metrics:
         self._metric_fn: Callable = None
 
         if self._metric_name == 'accuracy':
-            # todo
+            # todo: to be changed to registry
             self._metric_fn = self._get_accuracy_fn()
         elif self._metric_name == 'bleu':
             self._metric_fn = self._get_bleu_fn()
@@ -49,7 +50,7 @@ class Metrics:
 
     def compute(self, *kwargs):
         """
-        Compute metric.
+        Common method to compute metric.
         """
         return self._metric_fn(*kwargs)
 
