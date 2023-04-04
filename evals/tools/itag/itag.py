@@ -3,6 +3,8 @@ import os.path
 import uuid
 import time
 from typing import Union
+import requests
+import pandas as pd
 
 from evals.utils.logger import get_logger
 
@@ -47,7 +49,8 @@ class ItagManager(object):
         # init iTag sdk
         self._itag = ItagSdk(
             config=open_api_models.Config(
-                tenant_id, token, endpoint="itag2.alibaba-inc.com"
+                # TODO: online endpoint to be changed
+                tenant_id, token, endpoint="pre-itag2.alibaba-inc.com"
             ),
             buc_no=employee_id
         )
@@ -174,7 +177,7 @@ class ItagManager(object):
 
         return create_task_response
 
-    def get_tag_task_result(self, task_id: str):
+    def get_tag_task_result(self, task_id: str) -> pd.DataFrame:
         """
         Fetch tag task result.
         """
@@ -187,17 +190,23 @@ class ItagManager(object):
         job_request = open_itag_models.GetJobRequest(
             job_type="DOWNLOWD_MARKRESULT_FLOW"
         )
+
         while True:
             job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
-            print('>job_response: ', job_response.body)
             status = job_response.body.job.status
-            print(status)  # ["init", "running", "succ"]
+
+            if status not in ["init", "running", "succ"]:
+                raise ValueError(job_response.body.message)
 
             if status == 'succ':
+                body_dict = job_response.body.to_map()
+                result_link = body_dict.get('Job', {}).get('JobResult', {}).get('ResultLink', '')
+                csv_result = pd.read_csv(result_link)
                 break
-            time.sleep(3)
 
-        return job_response
+            time.sleep(1)
+
+        return csv_result
 
     def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> None:
         """
