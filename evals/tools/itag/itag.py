@@ -174,7 +174,7 @@ class ItagManager(object):
 
         return create_task_response
 
-    def get_tag_task_info(self, task_id: str):
+    def get_tag_task_result(self, task_id: str):
         """
         Fetch tag task result.
         """
@@ -182,10 +182,20 @@ class ItagManager(object):
                                                       task_id,
                                                       open_itag_models.ExportAnnotationsRequest())
         job_id = anno_response.body.flow_job.job_id
+        logger.info(f'>job_id: {job_id}')
+
         job_request = open_itag_models.GetJobRequest(
-            job_type="DOWNLOWD_MARKRESULTFLOW"
+            job_type="DOWNLOWD_MARKRESULT_FLOW"
         )
-        job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
+        while True:
+            job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
+            print('>job_response: ', job_response.body)
+            status = job_response.body.job.status
+            print(status)  # ["init", "running", "succ"]
+
+            if status == 'succ':
+                break
+            time.sleep(3)
 
         return job_response
 

@@ -87,8 +87,11 @@ class EvalTask(object):
         for prompt_dict in prompts_list:
             result_dict = self.run_inference(**prompt_dict)
             results_list.append(result_dict)
+        print(results_list)
 
         # TODO: get scoring model and run eval
+
+        sys.exit(0)
 
         # upload to iTag
         itag_manager = ItagManager(tenant_id='', token='', employee_id='')
@@ -97,7 +100,7 @@ class EvalTask(object):
                              template_id='',
                              task_name='')
 
-        # download iTag data
+        # TODO: download iTag data -- 人工触发 :  实时接口（获取标注结果，api？）
         maxcomput_util = MaxComputeUtil(access_id='', access_key='', project_name='', endpoint='')
         maxcomput_util.fetch_data(table_name='', pt_condition='', output_path='')
 
