@@ -3,7 +3,6 @@ import os.path
 import uuid
 import time
 from typing import Union
-import requests
 import pandas as pd
 
 from evals.utils.logger import get_logger
@@ -30,6 +29,7 @@ class ItagManager(object):
         >>> from evals.tools import ItagManager
         >>> itag_manager = ItagManager(tenant_id="your-tenant-id", token="your-token", employee_id="your-employee-id")
         >>> itag_manager.process(dataset_path="your-dataset.csv", dataset_name='your-dataset-name', template_id="your-template-id", task_name="your-task-name")
+        >>> itag_manager.get_tag_task_result(task_id="your-task-id")
     """
 
     def __init__(self, tenant_id, token, employee_id):
@@ -180,6 +180,12 @@ class ItagManager(object):
     def get_tag_task_result(self, task_id: str) -> pd.DataFrame:
         """
         Fetch tag task result.
+
+        Args:
+            task_id (str): Task id.
+
+        Returns:
+            Task result. (pd.DataFrame)
         """
         anno_response = self._itag.export_annotations(self._tenant_id,
                                                       task_id,
@@ -191,7 +197,12 @@ class ItagManager(object):
             job_type="DOWNLOWD_MARKRESULT_FLOW"
         )
 
+        max_iter = 30
+        idx = 0
+        df_result = None
         while True:
+            if idx >= max_iter:
+                break
             job_response = self._itag.get_job(self._tenant_id, job_id, request=job_request)
             status = job_response.body.job.status
 
@@ -201,12 +212,16 @@ class ItagManager(object):
             if status == 'succ':
                 body_dict = job_response.body.to_map()
                 result_link = body_dict.get('Job', {}).get('JobResult', {}).get('ResultLink', '')
-                csv_result = pd.read_csv(result_link)
+                df_result = pd.read_csv(result_link)
                 break
 
             time.sleep(1)
+            idx += 1
 
-        return csv_result
+        if idx >= max_iter and not df_result:
+            logger.error("Timeout to get iTag task result")
+
+        return df_result
 
     def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> None:
         """
