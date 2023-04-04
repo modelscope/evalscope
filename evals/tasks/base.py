@@ -5,6 +5,7 @@ from typing import Union
 from evals import Eval
 from evals.constants import EvalTaskConfig
 from evals.predictors import Predictor
+from evals.samples import GenerateSamples
 from evals.utils.utils import yaml_reader, get_obj_from_cfg
 from evals.utils.logger import get_logger
 
@@ -33,38 +34,44 @@ class EvalTask(object):
         if self.task_spec:
             self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
 
-            eval_class_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
-            eval_class_ref = eval_class_cfg.get(EvalTaskConfig.CLASS_REF, None)
-            if not eval_class_ref:
-                raise ValueError(f'class.ref must be provided in task config for task_name={self.task_name}.')
-            eval_class_args = eval_class_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
-            eval_class = get_obj_from_cfg(eval_class_ref)
-            self.eval_obj = eval_class(**eval_class_args)
+            samples_cfg = self.task_spec.get(EvalTaskConfig.SAMPLES, {})
+            generate_samples_class, generate_samples_args = self._parse_obj_cfg(samples_cfg)
+            self.generate_samples_obj = generate_samples_class(**generate_samples_args)
+            if not isinstance(self.generate_samples_obj, GenerateSamples):
+                raise TypeError('generate_samples_obj must be an instance of evals.samples.GenerateSamples')
 
-            predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
-            predictor_ref = predictor_cfg.get(EvalTaskConfig.CLASS_REF, None)
-            if not predictor_ref:
-                raise ValueError(f'predictor.ref must be provided in task config for task_name={self.task_name}.')
-            predictor_args = predictor_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
-            predictor_args['api_key'] = ''
-            predictor_class = get_obj_from_cfg(predictor_ref)
-            self.predictor_obj = predictor_class(**predictor_args)
-
-            if not isinstance(self.eval_obj, Eval):
+            # Get eval class and args, and create eval object
+            scoring_model_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
+            scoring_model_class, scoring_model_args = self._parse_obj_cfg(scoring_model_cfg)
+            self.scoring_model_obj = scoring_model_class(**scoring_model_args)
+            if not isinstance(self.scoring_model_obj, Eval):
                 raise TypeError('eval_obj must be an instance of evals.Eval')
 
+            # Get predictor class and args, and create predictor object
+            predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
+            predictor_class, predictor_args = self._parse_obj_cfg(predictor_cfg)
+            predictor_args['api_key'] = ''
+            self.predictor_obj = predictor_class(**predictor_args)
             if not isinstance(self.predictor_obj, Predictor):
                 raise TypeError('predictor_obj must be an instance of evals.predictors.Predictor')
 
         else:
             logger.warning(f'The task specification must be provided in task config for task_name={self.task_name}.')
             self.task_id = None
-            self.eval_obj = None
+            self.generate_samples_obj = None
+            self.scoring_model_obj = None
             self.predictor_obj = None
 
     def _parse_obj_cfg(self, obj_cfg: dict):
-        # TODO: TBD ...
-        pass
+
+        cls_ref = obj_cfg.get(EvalTaskConfig.CLASS_REF, None)
+        if not cls_ref:
+            raise ValueError(f'class reference must be provided in task config for task_name={self.task_name}.')
+
+        cls_args = obj_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
+        cls = get_obj_from_cfg(cls_ref)
+
+        return cls, cls_args
 
     def run(self):
 
