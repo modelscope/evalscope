@@ -1,5 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
+from evals.utils.utils import jsonl_to_list
+
 
 class GenerateSamples:
     """
@@ -11,7 +14,12 @@ class GenerateSamples:
     """
 
     def __init__(self, prompts_jsonl):
-        self._prompts_jsonl = prompts_jsonl
+
+        self._prompts_jsonl = os.path.join(os.path.dirname(__file__), '..', prompts_jsonl)
 
     def run(self):
-        return self._prompts_jsonl
+        # TODO: the pipeline to be implemented
+
+        prompts_list = jsonl_to_list(self._prompts_jsonl)
+
+        return prompts_list

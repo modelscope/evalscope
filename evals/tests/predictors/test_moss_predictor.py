@@ -17,6 +17,8 @@ def condition(test_level=DEFAULT_TEST_LEVEL):
 
 class TestMossPredictor(unittest.TestCase):
 
+    # TODO: to be adapted with new predictor
+
     def setUp(self) -> None:
         api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
         self.remote_predictor = MossPredictor(api_key=api_key, mode=PredictorMode.REMOTE)

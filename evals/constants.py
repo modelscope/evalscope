@@ -29,6 +29,9 @@ class EvalTaskConfig:
     PREDICTOR = 'predictor'
     CLASS_REF = 'ref'
     CLASS_ARGS = 'args'
+    ARGS_MODEL = 'model'
+    ARGS_MAX_LEN = 'max_length'
+    ARGS_TOP_K = 'top_k'
 
 
 class ScoringModel:

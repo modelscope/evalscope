@@ -43,9 +43,9 @@ class MaxComputeUtil:
 
         return pd_df
 
-    def dump_data(self, table_name: str, pt_condition: str, output_path: str) -> None:
+    def fetch_data(self, table_name: str, pt_condition: str, output_path: str) -> None:
         """
-        Dump data from MaxCompute table to local file.
+        Fetch data from MaxCompute table to local file.
         :param table_name: table name
         :param pt_condition: partition condition,
             Example: pt_condition = 'dt=20230331'
@@ -54,4 +54,4 @@ class MaxComputeUtil:
         """
         pd_df = self.read_data(table_name, pt_condition)
         pd_df.to_csv(output_path, index=False)
-        print(f"Dump data to {output_path} successfully.")
+        print(f"Fetch data to {output_path} successfully.")
