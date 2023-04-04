@@ -33,7 +33,7 @@ class EvalTask(object):
         if self.task_spec:
             self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
 
-            eval_class_cfg = self.task_spec.get(EvalTaskConfig.EVAL_CLASS, {})
+            eval_class_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
             eval_class_ref = eval_class_cfg.get(EvalTaskConfig.CLASS_REF, None)
             if not eval_class_ref:
                 raise ValueError(f'class.ref must be provided in task config for task_name={self.task_name}.')
@@ -62,9 +62,14 @@ class EvalTask(object):
             self.eval_obj = None
             self.predictor_obj = None
 
+    def _parse_obj_cfg(self, obj_cfg: dict):
+        # TODO: TBD ...
+        pass
+
     def run(self):
 
-        # 1. get samples
+        # 1. get samples: task cfg (yaml) -> prompt_file_path(jsonl)
+
 
         # 2. get model meta info
 

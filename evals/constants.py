@@ -24,7 +24,7 @@ class PredictorEnvs:
 class EvalTaskConfig:
     TASK_NAME = 'task_name'
     TASK_ID = 'id'
-    EVAL_CLASS = 'class'
+    SCORING_MODEL = 'scoring_model'
     PREDICTOR = 'predictor'
     CLASS_REF = 'ref'
     CLASS_ARGS = 'args'

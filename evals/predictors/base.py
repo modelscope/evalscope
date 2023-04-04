@@ -11,6 +11,7 @@ class Predictor(ABC):
     # TODO:
     #   1. Multi-thread calling to be supported
     #   2. Async calling to be supported
+    #   3. Add huggingface model hub - to be confirmed ?
 
     def __init__(self, api_key: str, mode: str = PredictorMode.REMOTE, **kwargs):
         self.mode: str = mode
