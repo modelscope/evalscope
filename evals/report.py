@@ -10,7 +10,7 @@ class GenerateReport:
     def __init__(self, df=None):
         self._df = df
 
-    def gen_mock_report(self):
+    def gen_mock_chart(self):
         data = pd.DataFrame(np.random.randint(1, 5, size=(5, 3)), columns=list('ABC'))
         plt.figure()
         data.plot(kind='bar')
@@ -22,4 +22,4 @@ class GenerateReport:
 
 if __name__ == '__main__':
     report = GenerateReport()
-    report.gen_mock_report()
+    report.gen_mock_chart()

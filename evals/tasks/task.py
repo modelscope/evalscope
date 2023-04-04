@@ -11,7 +11,7 @@ from evals.utils.maxcompute_util import MaxComputeUtil
 from evals.utils.utils import yaml_reader, get_obj_from_cfg
 from evals.utils.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class EvalTask(object):

@@ -13,7 +13,7 @@ from evals.tools.itag.sdk.alpha_data_sdk.alpha_data_sdk import AlphaDataSdk
 from evals.tools.itag.sdk.alpha_data_sdk import models as alphad_model
 from evals.tools.itag.sdk.openitag_sdk.itag_sdk import ItagSdk
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class ItagManager(object):

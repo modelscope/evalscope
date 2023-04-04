@@ -6,7 +6,7 @@ import csv
 import pandas as pd
 
 from evals.utils.logger import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class GenItagDataset:

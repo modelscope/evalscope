@@ -8,7 +8,7 @@ import importlib
 from typing import Any
 from evals.utils.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 TEST_LEVEL_LIST = [0, 1]
