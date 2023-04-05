@@ -80,6 +80,9 @@ class EvalTask(object):
         prompts_list = self.generate_samples_obj.run()
         print(prompts_list)
 
+        sys.exit(0)
+
+
         # todo: get batches (or add_batches) --P1
 
         # run inference
@@ -91,7 +94,6 @@ class EvalTask(object):
 
         # TODO: get scoring model and run eval
 
-        sys.exit(0)
 
         # upload to iTag
         itag_manager = ItagManager(tenant_id='', token='', employee_id='')

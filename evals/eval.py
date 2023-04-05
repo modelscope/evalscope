@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from abc import ABC, abstractmethod
 from typing import Union
-from evals.model import ModelMeta
 
 
 class Eval(ABC):

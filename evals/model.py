@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Optional, Any, Dict
+from typing import Optional
 from dataclasses import dataclass
 
 
