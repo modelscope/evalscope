@@ -1,12 +1,7 @@
 task_name: task_moss_gen_poetry
 
 task_moss_gen_poetry:
-    id: task_moss_gen_poetry.dev.v0
-    samples:
-        ref: evals.samples.generate_samples:GenerateSamples
-        args:
-            # TODO: custom jsonl path to be supported
-            prompts_jsonl: registry/data/poetry_gen/samples.jsonl
+    id: task_moss_gen_poetry_dev_v0
     predictor:
         ref: evals.predictors.moss_predictor:MossPredictor
         args:

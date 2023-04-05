@@ -3,12 +3,10 @@ import sys
 from typing import Union
 
 from evals import Eval
-from evals.constants import EvalTaskConfig
+from evals.constants import EvalTaskConfig, DEFAULT_CACHE_DIR, TaskEnvs
 from evals.predictors import Predictor
 from evals.samples import GenerateSamples
-from evals.tools import ItagManager
-from evals.utils.maxcompute_util import MaxComputeUtil
-from evals.utils.utils import yaml_reader, get_obj_from_cfg
+from evals.utils.utils import yaml_to_dict, get_obj_from_cfg, jsonl_to_list
 from evals.utils.logger import get_logger
 
 logger = get_logger()
@@ -16,21 +14,25 @@ logger = get_logger()
 
 class EvalTask(object):
 
-    def __init__(self, task_cfg: Union[dict, str]):
+    def __init__(self, prompts: Union[list, str], task_cfg: Union[dict, str]):
         # TODO: task_name to be added in registry
         # TODO: task calling in CLI to be added
         # TODO: multi-threads to be added
 
         self.task_id = None
         self.task_name = None
-        self.generate_samples_obj = None
         self.scoring_model_obj = None
         self.predictor_obj = None
 
-        # predictor: Predictor, eval_cls: Eval, **kwargs
+        self.cache_root_dir = os.environ.get(TaskEnvs.CACHE_DIR, DEFAULT_CACHE_DIR)
+        os.makedirs(self.cache_root_dir, exist_ok=True)
+
+        if isinstance(prompts, str):
+            prompts = jsonl_to_list(prompts)
+        self.prompts = prompts
 
         if isinstance(task_cfg, str):
-            task_cfg = yaml_reader(task_cfg)
+            task_cfg = yaml_to_dict(task_cfg)
         logger.info(f'task_cfg={task_cfg}')
 
         self.task_name = task_cfg.get(EvalTaskConfig.TASK_NAME, None)
@@ -43,11 +45,7 @@ class EvalTask(object):
 
         self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
 
-        samples_cfg = self.task_spec.get(EvalTaskConfig.SAMPLES, {})
-        generate_samples_class, generate_samples_args = self._parse_obj_cfg(samples_cfg)
-        self.generate_samples_obj = generate_samples_class(**generate_samples_args)
-        if not isinstance(self.generate_samples_obj, GenerateSamples):
-            raise TypeError('generate_samples_obj must be an instance of evals.samples.GenerateSamples')
+        # todo: prompts jsonl
 
         # Get predictor class and args, and create predictor object
         predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
@@ -76,9 +74,22 @@ class EvalTask(object):
 
     def run(self):
 
-        # 1. get samples: task cfg (yaml) -> prompt_file_path(jsonl)
-        prompts_list = self.generate_samples_obj.run()
-        print(prompts_list)
+        # Note: run的流程从prompts开始, 结束于scoring model的输出结果
+
+        # TODO: task 流程编排
+        #   1. 获取raw samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/raw_samples)
+        #   2. formatting samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/formatted_samples)
+        #   3. 获取prompts (examples里，user自行操作， sdk指定template)  -- 输出到cache dir (默认是 /tmp/maas_evals/data/prompts)
+        #   4. 配置task的 yaml文件 -- 写到cache dir  (默认是 /tmp/maas_evals/tasks/config/task_name_dev_v0.yaml)
+        #   5. eval_task = EvalTask(task_cfg=task_cfg)
+        #   6. eval_task.run()  -- 输入是prompts jsonl文件， 输出是一一对应的jsonl结果文件
+        #   7. [可选] 上传到iTag
+        #   8. [可选] 下载iTag数据，并解析结果
+        #   9. [可选] 生成报告
+
+
+        # 1. get prompts
+        print(self.prompts)
 
         sys.exit(0)
 
@@ -86,37 +97,26 @@ class EvalTask(object):
         # todo: get batches (or add_batches) --P1
 
         # run inference
+        # todo: tqdm进度条
         results_list = []
-        for prompt_dict in prompts_list:
+        for prompt_dict in self.prompts:
             result_dict = self.run_inference(**prompt_dict)
             results_list.append(result_dict)
+        # todo: dump predicted samples
         print(results_list)
 
-        # TODO: get scoring model and run eval
 
+        # TODO: run eval
 
-        # upload to iTag
-        itag_manager = ItagManager(tenant_id='', token='', employee_id='')
-        itag_manager.process(dataset_path='',
-                             dataset_name='',
-                             template_id='',
-                             task_name='')
-
-        # TODO: download iTag data -- 人工触发 :  实时接口（获取标注结果，api？）
-        maxcomput_util = MaxComputeUtil(access_id='', access_key='', project_name='', endpoint='')
-        maxcomput_util.fetch_data(table_name='', pt_condition='', output_path='')
-
-
-        # TODO: gen report
 
 
         # TODO: dump result
 
         ...
 
-    def get_samples(self):
-        # TODO: raw_samples -> formatted_samples -> prompts
-        ...
+    # def get_samples(self):
+    #     # TODO: raw_samples -> formatted_samples -> prompts
+    #     ...
 
     def get_model_meta(self):
         ...
@@ -138,10 +138,11 @@ class EvalTask(object):
     def dump_result(self):
         ...
 
-    def _get_formatted_samples(self):
-        ...
+    # def _get_formatted_samples(self):
+    #     ...
 
     def _get_prompts(self):
+        # TODO: search cache dir (default is /tmp/maas_evals/data/prompts) for prompts
         ...
 
     def get_model_info(self):
@@ -154,7 +155,7 @@ class EvalTask(object):
 
 if __name__ == '__main__':
     import os
-    task_cfg_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    task_cfg_file = '/evals/registry/tasks/task_moss_gen_poetry.yaml'
     eval_task = EvalTask(task_cfg_file)
 
     eval_task.run()

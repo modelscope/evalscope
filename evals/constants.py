@@ -1,6 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 
+DEFAULT_CACHE_DIR = "/tmp/maas_evals"
+
+
+class TaskEnvs:
+    # The cache root dir for tasks
+    CACHE_DIR = 'CACHE_DIR'
+
+
 class PredictorMode:
     LOCAL = 'local'
     REMOTE = 'remote'
