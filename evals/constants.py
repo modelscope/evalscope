@@ -49,3 +49,8 @@ class ScoringModel:
     INCLUDES_EVAL = 'includes_eval'
     SIMILARITY_EVAL = 'similarity_eval'
     UNIT_TEST_EVAL = 'unit_test_eval'
+
+
+class DumpMode:
+    OVERWRITE = 'overwrite'
+    APPEND = 'append'

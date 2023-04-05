@@ -6,6 +6,8 @@ import jsonlines as jsonl
 import yaml
 import importlib
 from typing import Any
+
+from evals.constants import DumpMode
 from evals.utils.logger import get_logger
 
 logger = get_logger()
@@ -51,6 +53,23 @@ def jsonl_to_reader(jsonl_file):
     """
     with jsonl.open(jsonl_file, mode='r') as reader:
         return reader
+
+
+def jsonl_dump_data(data_list, jsonl_file, dump_mode):
+    """
+    Dump data to jsonl file.
+
+    Args:
+        data_list: data list to be dumped.
+        jsonl_file: jsonl file path.
+        dump_mode: dump mode. It can be 'overwrite' or 'append'.
+    """
+    if dump_mode == DumpMode.OVERWRITE:
+        dump_mode = 'w'
+    elif dump_mode == DumpMode.APPEND:
+        dump_mode = 'a'
+    with jsonl.open(jsonl_file, mode=dump_mode) as writer:
+        writer.write_all(data_list)
 
 
 def yaml_to_dict(yaml_file) -> dict:

@@ -1,32 +1,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+
 from abc import ABC, abstractmethod
-from typing import Union
 
 
 class Eval(ABC):
 
-    def __init__(self, metrics: list, predicted_samples: Union[list, str], **kwargs):
+    def __init__(self, metrics: list, **kwargs):
 
         self._metrics = metrics
-        # todo: list or path
-        self._predicted_samples = predicted_samples
         self.kwargs = kwargs
 
     @property
     def metrics_list(self) -> list:
         return self._metrics
 
-    @property
-    def predicted_samples(self) -> Union[list, str]:
-        return self._predicted_samples
-
-    def get_predicted_samples(self):
-        # TODO: implement this method
-        return self._predicted_samples
-
     def get_metrics(self):
         """
-        Get metrics from metrics_list.
+        Get metric objects from metrics_list.
         """
         # TODO: do something for self._metrics_list
         ...
@@ -36,5 +26,5 @@ class Eval(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def run(self):
+    def run(self, predicted_samples_file: str):
         raise NotImplementedError()
