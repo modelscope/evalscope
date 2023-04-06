@@ -37,8 +37,11 @@ def jsonl_to_list(jsonl_file):
     Returns:
         list: list of lines. Each line is a dict.
     """
+    res_list = []
     with jsonl.open(jsonl_file, mode='r') as reader:
-        return [line for line in reader]
+        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
+            res_list.append(line)
+    return res_list
 
 
 def jsonl_to_reader(jsonl_file):
@@ -103,7 +106,11 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
 
 
 if __name__ == '__main__':
-    yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
-    stream = yaml_to_dict(yaml_path)
-    print(type(stream))
-    print(stream)
+    # yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    # stream = yaml_to_dict(yaml_path)
+    # print(type(stream))
+    # print(stream)
+
+    jsonl_path = '/tmp/maas_evals/tasks/task_moss_gen_poetry_dev_v0/predicted_samples.jsonl'
+    res = jsonl_to_list(jsonl_path)
+    print(res)

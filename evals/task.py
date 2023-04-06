@@ -2,6 +2,7 @@
 
 from tqdm import tqdm
 from typing import Union, List
+from multiprocessing import Pool as ThreadPool
 
 from evals import Eval
 from evals.constants import EvalTaskConfig, DEFAULT_CACHE_DIR, TaskEnvs, DumpMode
@@ -45,7 +46,7 @@ class EvalTask(object):
 
         if isinstance(prompts, str):
             prompts = jsonl_to_list(prompts)
-        self.prompts = prompts
+        self.prompts: list = prompts
 
         if isinstance(task_cfg, str):
             task_cfg = yaml_to_dict(task_cfg)
@@ -91,7 +92,7 @@ class EvalTask(object):
 
         return cls, cls_args
 
-    def run(self, dump_mode=DumpMode.OVERWRITE):
+    def run(self, num_processes: int = 4, chunksize: int = 1, dump_mode: str = DumpMode.OVERWRITE):
 
         # Note: run的流程从prompts开始, 结束于scoring model的输出结果
 
@@ -110,12 +111,23 @@ class EvalTask(object):
 
         # run inference
         logger.info('Start to run inference...')
-        results_list = []
-        for prompt_dict in tqdm(self.prompts):
-            result_dict = self.run_inference(**prompt_dict)
-            results_list.append(result_dict)
+        if not self.prompts:
+            raise ValueError('input prompts cannot be empty!')
 
-        # dump predicted samples
+        try:
+            with ThreadPool(processes=num_processes) as pool:
+                results_list = list(
+                    tqdm(pool.imap(self.run_inference, self.prompts, chunksize=chunksize), total=len(self.prompts)))
+        except Exception as e:
+            raise e
+
+        invalid_data_num = len([item for item in results_list if item is None])
+        if invalid_data_num > 0:
+            logger.error(f'Predictor got {invalid_data_num} null result '
+                         f'in {self.predicted_samples_path} , error may occur due to multi-processing inference, '
+                         f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
+                         f'Alternatively, you can check input prompts which may contain invalid data.')
+
         jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
         logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
 
@@ -136,8 +148,12 @@ class EvalTask(object):
     def get_batches(self):
         ...
 
-    def run_inference(self, **input_args) -> dict:
-        result_dict = self.predictor_obj(**input_args)
+    def run_inference(self, input_dict: dict) -> dict:
+
+        if 'prompt' not in input_dict:
+            logger.warning(f'prompt must be provided in input_dict for {self.predictor_obj.__name__}.')
+
+        result_dict = self.predictor_obj(**input_dict)
         return result_dict
 
     def gen_report(self):

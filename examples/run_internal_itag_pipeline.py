@@ -29,3 +29,4 @@ xxx
     # Get tag result
     task_id = '1642108430672875520'
     df_res = itag_manager.get_tag_task_result(task_id=task_id)
+    df_res.to_csv('llm_evals_rank.csv', index=False)
