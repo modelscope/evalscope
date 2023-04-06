@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
 from tqdm import tqdm
 from typing import Union, List
 from multiprocessing import Pool as ThreadPool
@@ -117,6 +118,10 @@ class EvalTask(object):
         except Exception as e:
             raise e
 
+        # results_list = []
+        # for prompt in self.prompts:
+        #     results_list.append(self.run_inference(prompt))
+
         invalid_data_num = len([item for item in results_list if item is None])
         if invalid_data_num > 0:
             logger.error(f'Predictor got {invalid_data_num} null result '
@@ -166,13 +171,3 @@ class EvalTask(object):
         :return:
         """
         ...
-
-
-if __name__ == '__main__':
-    import os
-    prompts_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/data/poetry_gen/samples.jsonl'
-    task_cfg_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
-
-    eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
-
-    eval_task.run(dump_mode=DumpMode.OVERWRITE)
