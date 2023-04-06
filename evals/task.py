@@ -92,11 +92,9 @@ class EvalTask(object):
 
         return cls, cls_args
 
-    def run(self, num_processes: int = 4, chunksize: int = 1, dump_mode: str = DumpMode.OVERWRITE):
+    def run(self, num_processes: int = 4, chunksize: int = 2, dump_mode: str = DumpMode.OVERWRITE):
 
-        # Note: run的流程从prompts开始, 结束于scoring model的输出结果
-
-        # TODO: task 流程编排
+        # TODO: task 流程编排  (Note: run的流程从prompts开始, 结束于scoring model的输出结果)
         #   1. 获取raw samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/raw_samples)
         #   2. formatting samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/formatted_samples)
         #   3. 获取prompts (examples里，user自行操作， sdk指定template)  -- 输出到cache dir (默认是 /tmp/maas_evals/data/prompts)
@@ -107,10 +105,8 @@ class EvalTask(object):
         #   8. [可选] 下载iTag数据，并解析结果
         #   9. [可选] 生成报告
 
-        # todo: get batches (or add_batches) --P1
-
-        # run inference
-        logger.info('Start to run inference...')
+        # Run inference by specific predictor
+        logger.info(f'Start to run inference by {self.predictor_obj.__class__.__name__} ...')
         if not self.prompts:
             raise ValueError('input prompts cannot be empty!')
 
@@ -128,13 +124,14 @@ class EvalTask(object):
                          f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
                          f'Alternatively, you can check input prompts which may contain invalid data.')
 
+        # Dump predicted samples
         jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
         logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
 
-        # run eval by using scoring model  TODO: to be implemented
+        # Run eval by using scoring model  TODO: to be implemented
         eval_results = self.scoring_model_obj.run(self.predicted_samples_path)
 
-        # dump eval result
+        # Dump eval result
         jsonl_dump_data(eval_results, self.eval_results_path, dump_mode=dump_mode)
         logger.info(f'Dump eval results to {self.eval_results_path}')
 
