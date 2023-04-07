@@ -1,12 +1,12 @@
-task_name: task_moss_gen_poetry
+task_name: task_moss_exam
 
-task_moss_gen_poetry:
-    id: task_moss_gen_poetry_dev_v0
+task_moss_exam:
+    id: task_moss_exam_dev_v0
     predictor:
         ref: evals.predictors.moss_predictor:MossPredictor
         args:
             mode: remote
-            model: gpt3_13B_v1_dev
+            model: moss_dev5
             max_length: 500
             top_k: 15
     scoring_model:

@@ -1,17 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evals import Eval
+from evals.evaluate import Evaluate
 from evals.utils.utils import jsonl_to_list
 
 
-class GenerationEval(Eval):
+class GenerationEvaluate(Evaluate):
     """
     GenerationEval is a subclass of Eval, which is used to evaluate the generation task of LLMs.
     One of scoring models.
     """
 
     def __init__(self, metrics: list, **kwargs):
-        super(GenerationEval, self).__init__(metrics, **kwargs)
+        super(GenerationEvaluate, self).__init__(metrics, **kwargs)
 
     def eval_samples(self):
         pass

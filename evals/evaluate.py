@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 
-class Eval(ABC):
+class Evaluate(ABC):
 
     def __init__(self, metrics: list, **kwargs):
 

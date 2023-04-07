@@ -5,7 +5,7 @@ from tqdm import tqdm
 from typing import Union, List
 from multiprocessing import Pool as ThreadPool
 
-from evals import Eval
+from evals.evaluate import Evaluate
 from evals.constants import EvalTaskConfig, DEFAULT_CACHE_DIR, TaskEnvs, DumpMode
 from evals.predictors import Predictor
 from evals.utils.utils import yaml_to_dict, get_obj_from_cfg, jsonl_to_list, jsonl_dump_data
@@ -39,7 +39,7 @@ class EvalTask(object):
 
         self.task_id: str = ''
         self.task_name: str = ''
-        self.scoring_model_obj: Eval = None
+        self.scoring_model_obj: Evaluate = None
         self.predictor_obj: Predictor = None
 
         self.cache_root_dir = os.environ.get(TaskEnvs.CACHE_DIR, DEFAULT_CACHE_DIR)
@@ -80,7 +80,7 @@ class EvalTask(object):
         scoring_model_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
         scoring_model_class, scoring_model_args = self._parse_obj_cfg(scoring_model_cfg)
         self.scoring_model_obj = scoring_model_class(**scoring_model_args)
-        if not isinstance(self.scoring_model_obj, Eval):
+        if not isinstance(self.scoring_model_obj, Evaluate):
             raise TypeError('eval_obj must be an instance of evals.Eval')
 
     def _parse_obj_cfg(self, obj_cfg: dict):
@@ -106,21 +106,24 @@ class EvalTask(object):
         #   8. [可选] 下载iTag数据，并解析结果
         #   9. [可选] 生成报告
 
+        # TODO: add streaming write ? (预测完一条写一条)
+
         # Run inference by specific predictor
         logger.info(f'Start to run inference by {self.predictor_obj.__class__.__name__} ...')
         if not self.prompts:
             raise ValueError('input prompts cannot be empty!')
 
-        try:
-            with ThreadPool(processes=num_processes) as pool:
-                results_list = list(
-                    tqdm(pool.imap(self.run_inference, self.prompts, chunksize=chunksize), total=len(self.prompts)))
-        except Exception as e:
-            raise e
+        # try:
+        #     with ThreadPool(processes=num_processes) as pool:
+        #         results_list = list(
+        #             tqdm(pool.imap(self.run_inference, self.prompts, chunksize=chunksize), total=len(self.prompts)))
+        # except Exception as e:
+        #     raise e
 
-        # results_list = []
-        # for prompt in self.prompts:
-        #     results_list.append(self.run_inference(prompt))
+        results_list = []
+        for prompt in self.prompts:
+            print('>>input: ', prompt)
+            results_list.append(self.run_inference(prompt))
 
         invalid_data_num = len([item for item in results_list if item is None])
         if invalid_data_num > 0:
@@ -171,3 +174,14 @@ class EvalTask(object):
         :return:
         """
         ...
+
+
+if __name__ == '__main__':
+    import os
+
+    prompts_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/data/poetry_gen/samples.jsonl'
+    task_cfg_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+
+    eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
+
+    eval_task.run(dump_mode=DumpMode.OVERWRITE)

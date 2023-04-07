@@ -85,12 +85,19 @@ class MossPredictor(Predictor):
             if is_debug == 'true':
                 endpoint = os.environ.get(PredictorEnvs.DEBUG_DASHSCOPE_HTTP_BASE_URL)
                 if not endpoint:
-                    raise ValueError(f"Debug endpoint is not specified when DEBUG_MODE is set to true.")
+                    raise ValueError(f"Debug endpoint is not specified when DEBUG_MODE is set to true, "
+                                     f"please set env: DEBUG_DASHSCOPE_HTTP_BASE_URL")
                 dashscope.base_http_api_url = endpoint
 
             responses = Generation.call(**kwargs)
+            MossPredictor._check_response_on_error(responses)
         except Exception as e:
             raise e
 
         # TODO: output format to be confirmed
         return responses.output
+
+    @staticmethod
+    def _check_response_on_error(resp):
+        if resp.status_code != 200:
+            raise ValueError(f"Failed to call remote inference service: errCode: {resp.code}, errMsg: {resp.message}")
