@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import math
 import os
 from tqdm import tqdm
 from typing import Union, List
 from multiprocessing import Pool as ThreadPool
+from concurrent.futures import ProcessPoolExecutor
 
 from evals.evaluate import Evaluate
 from evals.constants import EvalTaskConfig, DEFAULT_CACHE_DIR, TaskEnvs, DumpMode
@@ -36,6 +37,7 @@ class EvalTask(object):
         # TODO: task_name to be added in registry
         # TODO: task calling in CLI to be added
         # TODO: multi-threads to be added
+        # TODO: output接口： {'input': {'id': 2, 'prompt': 'xxx'}, 'output': {'text': 'xxx', ...}}
 
         self.task_id: str = ''
         self.task_name: str = ''
@@ -113,6 +115,17 @@ class EvalTask(object):
         if not self.prompts:
             raise ValueError('input prompts cannot be empty!')
 
+        # TODO: 用多进程会报错
+        # try:
+        #     with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        #         results_list = list(tqdm(
+        #             executor.map(self.run_inference, self.prompts, chunksize=chunksize),
+        #             total=math.ceil(len(self.prompts)/chunksize)))
+        # except Exception as e:
+        #     raise e
+
+
+        # TODO: 用多进程会报错
         # try:
         #     with ThreadPool(processes=num_processes) as pool:
         #         results_list = list(

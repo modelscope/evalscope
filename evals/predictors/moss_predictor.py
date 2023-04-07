@@ -57,7 +57,8 @@ class MossPredictor(Predictor):
                     ],
                 )
             
-        :return: dict, output of inference
+        :return: dict, output of inference.
+            Example: {'input': {}, 'output': {}}
         """
 
         model_info = {EvalTaskConfig.ARGS_MODEL: self.model_name,
@@ -72,7 +73,9 @@ class MossPredictor(Predictor):
         else:
             raise ValueError(f"Invalid predictor mode: {self.mode}")
 
-        return result
+        final_res = dict(input=input_kwargs, output=result)
+
+        return final_res
 
     def _run_local_inference(self, **kwargs):
         # TODO: to be implemented

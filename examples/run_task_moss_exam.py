@@ -29,8 +29,8 @@ if __name__ == '__main__':
 
     # Step5: run task
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
-    eval_task.run(num_processes=1,
-                  chunksize=1,
+    eval_task.run(num_processes=4,
+                  chunksize=2,
                   dump_mode=DumpMode.OVERWRITE)
     print('Dump eval result to: ', eval_task.eval_results_path)
 

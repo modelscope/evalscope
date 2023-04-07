@@ -1,19 +1,18 @@
-{"id": "61", "prompt": "\u6211\u670910\u5757\u94b1\uff0c\u4f46\u662f\u4eca\u5929\u8981\u82b1\u63895\u5757\u94b1\u5403\u65e9\u9910\uff0c\u6211\u8fd8\u5269\u591a\u5c11\u94b1\uff1f", "tags": "level_1,lang_2,domain_sys_0701,fact_1"}
-{"id": "62", "prompt": "\u4e00\u65a4\u82f9\u679c\u67092\u4e2a\uff0c\u8bf7\u95ee3\u65a4\u82f9\u679c\u6709\u51e0\u4e2a\uff1f", "tags": "level_1,lang_2,domain_sys_0701,fact_1"}
-{"id": "63", "prompt": "\u8bf7\u8bc4\u4ef7\u4e00\u4e0b\u4e60\u8fd1\u5e73\u7684\u6cbb\u56fd\u653f\u7b56\u548c\u7406\u5ff5\u3002", "tags": "level_3,lang_2,domain_sys_0302,fact_2"}
-{"id": "64", "prompt": "\u6211\u8ba4\u4e3a\u4e2d\u56fd\u7684\u7ecf\u6d4e\u4f1a\u6301\u7eed\u4e0b\u884c\uff0c\u7ed9\u6211\u4e00\u4e9b\u8bc1\u636e\u3002", "tags": "level_4,lang_2,domain_sys_02,fact_2"}
-{"id": "65", "prompt": "\u6211\u60f3\u5199\u4e00\u9996\u548f\u4eba\u5de5\u667a\u80fd\u7684\u8bd7\uff0c\u8981\u70ed\u60c5\u6d0b\u6ea2", "tags": "level_4,lang_2,domain_sys_05,fact_2"}
-{"id": "66", "prompt": "\n\nHuman: \u4f60\u597d\uff0c\u6211\u662f\u5c0f\u660e\uff0c\u6211\u4eca\u5e74\u8981\u6bd5\u4e1a\u4e86\u3002\n\nAssistant: \u606d\u559c\u606d\u559c\uff0c\u4f60\u5df2\u7ecf\u6709\u7b7e\u7ea6\u7684\u516c\u53f8\u4e86\u4e48\uff1f\n\nHuman: \u662f\u7684\uff0c\u6211\u5df2\u7ecf\u62ff\u5230\u4e86Alibaba\u7684Offer\u3002\n\nAssistant: \u963f\u91cc\u5df4\u5df4\u662f\u4e00\u5bb6\u4f1f\u5927\u7684\u516c\u53f8\uff0c\u606d\u559c\u4f60\uff01\n\nHuman: \u662f\u7684\uff0c\u4f46\u662f\u6211\u73b0\u5728\u6709\u70b9\u7d27\u5f20\uff0c\u4e0d\u77e5\u9053\u600e\u4e48\u80fd\u5feb\u901f\u9002\u5e94\u516c\u53f8\u7684\u8282\u594f\u3002\n\nAssistant:", "tags": "level_3,lang_2,domain_other_2,fact_2"}
-{"id": "67", "prompt": "\u8bf7\u95ee\u9752\u6d77\u6e56\u548c\u9131\u9633\u6e56\u54ea\u4e2a\u5927\u554a\uff0c\u6211\u60f3\u53bb\u4e00\u4e2a\u5927\u6e56\u65c5\u6e38", "tags": "level_3,lang_2,domain_sys_0705,fact_1"}
-{"id": "68", "prompt": "\u5730\u7403\u6709\u53f2\u4ee5\u6765\u6700\u5927\u7684\u52a8\u7269\u662f\u4ec0\u4e48\uff1f\u690d\u7269\u662f\u4ec0\u4e48\uff1f", "tags": "level_3,lang_2,domain_sys_0705,fact_1"}
-{"id": "69", "prompt": "\u6cb3\u6d41\u4e3a\u4ec0\u4e48\u4f1a\u51b2\u5237\u6cb3\u5cb8\uff1f", "tags": "level_3,lang_2,domain_sys_0710,fact_1"}
-{"id": "70", "prompt": "\u8840\u8089\u82e6\u5f31\uff0c\u673a\u68b0\u98de\u5347\uff0c\u6211\u600e\u4e48\u624d\u80fd\u505a\u5230\u673a\u68b0\u98de\u5347\u5462\uff1f", "tags": "level_3,lang_2,domain_other_99,fact_2"}
-{"id": "71", "prompt": "\u544a\u8bc9\u6211\u5510\u671d\u4e2a\u4eba\u6b66\u529b\u6392\u540d\u5427\uff0c\u6211\u9700\u8981\u8fd9\u4e2a\u3002", "tags": "level_3,lang_2,domain_sys_06,fact_2"}
-{"id": "72", "prompt": "\u5b59\u609f\u7a7a\u6700\u540e\u6210\u4f5b\u4e86\u4e48\uff1f", "tags": "level_3,lang_2,domain_sys_05,fact_1"}
-{"id": "73", "prompt": "\u5927\u9ebb\u548c\u9152\u7cbe\u54ea\u4e2a\u5bf9\u4eba\u4f53\u7684\u5371\u5bb3\u66f4\u5927\uff1f", "tags": "level_4,lang_2,domain_sys_0703,fact_1"}
-{"id": "74", "prompt": "\u5e2e\u6211\u5199\u5c01\u4fe1\uff0c\u6211\u60f3\u5199\u7ed9\u5728\u65b0\u52a0\u5761\u7684\u5f1f\u5f1f\uff0c\u544a\u8bc9\u4ed6\u5bb6\u91cc\u4e00\u5207\u90fd\u597d\uff0c\u5e0c\u671b\u4ed6\u80fd\u56de\u56fd\u770b\u770b", "tags": "level_3,lang_2,domain_other_3,fact_2"}
-{"id": "75", "prompt": "This is an article about how to write a cover letter when applying for jobs: It\u2019s important to spend some time", "tags": "lang_1,fact_2,level_1,task_5,domain_other_3"}
-{"id": "76", "prompt": "The name of the next Star Wars movie is", "tags": "lang_1,fact_2,level_3,domain_other_99,domain_other_10,task_5"}
-{"id": "77", "prompt": "Write a poem about fire, starry sky and green.", "tags": "lang_1,fact_2,level_3,domain_sys_05,domain_other_10,task_5"}
-{"id": "78", "prompt": "Write a story about the great philosopher Aristotle.", "tags": "lang_1,fact_2,level_3,domain_sys_01,domain_other_6,task_5"}
-{"id": "79", "prompt": "My name is Justin. I am the creator of ChatM6, which is a large language model that can play as an AI assistant. Please write an advertisement for me to sell ChatM6 to my customers. Make it attractive!", "tags": "lang_1,fact_2,level_3,domain_other_99"}
+{"id": "0", "prompt": "two plus five equal", "tags": "domain_sys_0701,lang_1,time_1,fact_1"}
+{"id": "1", "prompt": "Let b = -181 + 735. What is the remainder when b is divided by 13?", "tags": "domain_sys_0701,lang_1,time_1,fact_1"}
+{"id": "2", "prompt": "Solve -282*d + 929 - 178 = -1223 for d.", "tags": "domain_sys_0701,lang_1,time_1,fact_1"}
+{"id": "3", "prompt": "I have 4 apples. I then buy 2 bags, each of which has 4. Then how many apples do I have?", "tags": "domain_sys_0701,lang_1,time_1,fact_1"}
+{"id": "4", "prompt": "Write a quick sort algorithm using C++.", "tags": "domain_other_01,lang_1,time_1,fact_1"}
+{"id": "5", "prompt": "Write a binary search algorithm using python.", "tags": "domain_other_01,lang_1,time_1,fact_1"}
+{"id": "6", "prompt": "Write a function to find the longest common prefix in the string array. If there is no public prefix, the empty string \"\" is returned.", "tags": "domain_other_01,lang_1,time_1,fact_1"}
+{"id": "7", "prompt": "Write a quicksort in python.", "tags": "domain_other_01,lang_1,time_1,fact_1"}
+{"id": "8", "prompt": "Write a python file to clean text training data for a language model.", "tags": "domain_other_01,lang_1,time_1,fact_1"}
+{"id": "9", "prompt": "What is Pythagorean theorem and write its mathematical expression.", "tags": "domain_sys_0701,lang_1,time_1,level_02,fact_01"}
+{"id": "10", "prompt": "How far is the distance from the earth to the sun, in kilometers.", "tags": "domain_sys_0704,lang_1,time_1,level_03,fact_01"}
+{"id": "11", "prompt": "If I want to list my files the the current directory, what should I do?", "tags": "domain_sys_0812,lang_1,time_1,level_03,fact_01"}
+{"id": "12", "prompt": "What's the capital of Italy?", "tags": "domain_sys_0705,lang_1,time_2,level_02,fact_01"}
+{"id": "13", "prompt": "who is the president of USA?", "tags": "domain_sys_0302,lang_1,time_5,level_03,fact_01"}
+{"id": "14", "prompt": "Point out the factual mistake of the following statement. \"Earth is larger than the sun\".", "tags": "domain_sys_0704,lang_1,time_1,level_01,fact_01"}
+{"id": "15", "prompt": "Please introduce Newton's three laws of kinematics.", "tags": "domain_sys_0702,lang_1,time_1,level_03,fact_01"}
+{"id": "16", "prompt": "What was the starting and ending time of the Second World War? Which countries participated in the war? What is the end?", "tags": "domain_sys_06,lang_1,time_1,level_02,fact_01"}
+{"id": "17", "prompt": "What are the eight planets?", "tags": "domain_sys_0704,lang_1,time_1,level_01,fact_01"}
