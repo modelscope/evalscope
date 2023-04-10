@@ -135,8 +135,11 @@ class EvalTask(object):
 
         results_list = []
         for prompt in self.prompts:
+            res = self.run_inference(prompt)
             print('>>input: ', prompt)
-            results_list.append(self.run_inference(prompt))
+            print('>>output: ', res)
+            print()
+            results_list.append(res)
 
         invalid_data_num = len([item for item in results_list if item is None])
         if invalid_data_num > 0:
