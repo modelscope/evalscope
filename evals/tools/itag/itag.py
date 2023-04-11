@@ -28,8 +28,8 @@ class ItagManager(object):
     Examples:
         >>> from evals.tools import ItagManager
         >>> itag_manager = ItagManager(tenant_id="your-tenant-id", token="your-token", employee_id="your-employee-id")
-        >>> itag_manager.process(dataset_path="your-dataset.csv", dataset_name='your-dataset-name', template_id="your-template-id", task_name="your-task-name")
-        >>> itag_manager.get_tag_task_result(task_id="your-task-id")
+        >>> task_resp = itag_manager.process(dataset_path="your-dataset.csv", dataset_name='your-dataset-name', template_id="your-template-id", task_name="your-task-name")
+        >>> df_res = itag_manager.get_tag_task_result(task_id=task_resp.get('TaskId'))
     """
 
     def __init__(self, tenant_id, token, employee_id):
@@ -223,7 +223,7 @@ class ItagManager(object):
 
         return df_result
 
-    def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> None:
+    def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> dict:
         """
         Entry pipeline for creating the iTag task from local csv file.
 
@@ -234,7 +234,7 @@ class ItagManager(object):
             task_name (str): Specify a task name.
 
         Returns:
-            None
+            Task response body from iTag. (dict)
         """
 
         # Create dataset from local file
@@ -243,3 +243,4 @@ class ItagManager(object):
         # Create iTag task
         create_task_response = self.create_tag_task(task_name=task_name, dataset_id=dataset_id, template_id=template_id)
         logger.info(f'>>create task resp: {create_task_response}')
+        return create_task_response.body.to_map()

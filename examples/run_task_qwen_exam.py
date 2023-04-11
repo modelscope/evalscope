@@ -56,11 +56,11 @@ if __name__ == '__main__':
             dataset_name='dataset_task_test_llm_evals_exam_v0',
             dataset_path=os.path.join(os.getcwd(), '..', 'evals/tools/itag/datasets/xxxx.csv'),
         )
-        itag_manager.process(**itag_run_args)
+        itag_task_resp = itag_manager.process(**itag_run_args)
 
         #   Step6-2: Get iTag task results
         # Get task id on the website: https://itag2.alibaba-inc.com/v2/console/task-management/task
-        task_id = 'xxx'
+        task_id = itag_task_resp.get('TaskId')
         df_res = itag_manager.get_tag_task_result(task_id=task_id)
         itag_result_file = os.path.join(cache_root_dir,
                                         'tasks/task_qwen_exam_dev_v0',
