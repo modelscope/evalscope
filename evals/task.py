@@ -7,7 +7,7 @@ from multiprocessing import Pool as ThreadPool
 from concurrent.futures import ProcessPoolExecutor
 
 from evals.evaluate import Evaluate
-from evals.constants import EvalTaskConfig, DEFAULT_CACHE_DIR, TaskEnvs, DumpMode
+from evals.constants import EvalTaskConfig, DEFAULT_WORK_DIR, TaskEnvs, DumpMode
 from evals.predictors import Predictor
 from evals.utils.utils import yaml_to_dict, get_obj_from_cfg, jsonl_to_list, jsonl_dump_data
 from evals.utils.logger import get_logger
@@ -28,15 +28,13 @@ class EvalTask(object):
         task_name (str): The task name.
         scoring_model_obj (BaseEvalSpec): The scoring model object.
         predictor_obj (Predictor): The predictor object.
-        cache_root_dir (str): The cache root dir. Default dir: /tmp/maas_evals.
+        work_dir (str): The work root dir. Default dir:   ~/maas_evals
         predicted_samples_path (str): The jsonl file path of samples
             that predicted by specific predictor.
     """
 
     def __init__(self, prompts: Union[List[dict], str], task_cfg: Union[dict, str]):
-        # TODO: task_name to be added in registry
         # TODO: task calling in CLI to be added
-        # TODO: multi-threads to be added
         # TODO: output接口： {'input': {'id': 2, 'prompt': 'xxx'}, 'output': {'text': 'xxx', ...}}
 
         self.task_id: str = ''
@@ -44,8 +42,8 @@ class EvalTask(object):
         self.scoring_model_obj: Evaluate = None
         self.predictor_obj: Predictor = None
 
-        self.cache_root_dir = os.environ.get(TaskEnvs.CACHE_DIR, DEFAULT_CACHE_DIR)
-        os.makedirs(self.cache_root_dir, exist_ok=True)
+        self.work_dir = os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR)
+        os.makedirs(self.work_dir, exist_ok=True)
 
         if isinstance(prompts, str):
             prompts = jsonl_to_list(prompts)
@@ -65,10 +63,10 @@ class EvalTask(object):
 
         self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
 
-        self.cache_task_dir = os.path.join(self.cache_root_dir, 'tasks', self.task_id)
-        os.makedirs(self.cache_task_dir, exist_ok=True)
-        self.predicted_samples_path = os.path.join(self.cache_task_dir, 'predicted_samples.jsonl')
-        self.eval_results_path = os.path.join(self.cache_task_dir, 'eval_results.jsonl')
+        self.task_dir = os.path.join(self.work_dir, 'tasks', self.task_id)
+        os.makedirs(self.task_dir, exist_ok=True)
+        self.predicted_samples_path = os.path.join(self.task_dir, 'predicted_samples.jsonl')
+        self.eval_results_path = os.path.join(self.task_dir, 'eval_results.jsonl')
 
         # Get predictor class and args, and create predictor object
         predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
@@ -98,10 +96,10 @@ class EvalTask(object):
     def run(self, num_processes: int = 4, chunksize: int = 2, dump_mode: str = DumpMode.OVERWRITE):
 
         # TODO: task 流程编排  (Note: run的流程从prompts开始, 结束于scoring model的输出结果)
-        #   1. 获取raw samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/raw_samples)
-        #   2. formatting samples (examples里，user自行操作) -- 输出到cache dir (默认是 /tmp/maas_evals/data/formatted_samples)
-        #   3. 获取prompts (examples里，user自行操作， sdk指定template)  -- 输出到cache dir (默认是 /tmp/maas_evals/data/prompts)
-        #   4. 配置task的 yaml文件 -- 写到cache dir  (默认是 /tmp/maas_evals/tasks/config/task_name_dev_v0.yaml)
+        #   1. 获取raw samples (examples里，user自行操作) -- 输出到work dir (默认是 ~/maas_evals/data/raw_samples)
+        #   2. formatting samples (examples里，user自行操作) -- 输出到work dir (默认是 ~/maas_evals/data/formatted_samples)
+        #   3. 获取prompts (examples里，user自行操作， sdk指定template)  -- 输出到work dir (默认是 ~/maas_evals/data/prompts)
+        #   4. 配置task的 yaml文件 -- 写到work dir  (默认是 ~/maas_evals/tasks/config/task_name_dev_v0.yaml)
         #   5. eval_task = EvalTask(task_cfg=task_cfg)
         #   6. eval_task.run()  -- 输入是prompts jsonl文件， 输出是一一对应的eval results jsonl结果文件
         #   7. [可选] 上传到iTag
@@ -181,7 +179,7 @@ class EvalTask(object):
         ...
 
     def _get_prompts(self):
-        # TODO: search cache dir (default is /tmp/maas_evals/data/prompts) for prompts
+        # TODO: search work dir (default is ~/maas_evals/data/prompts) for prompts
         ...
 
     def get_model_info(self):

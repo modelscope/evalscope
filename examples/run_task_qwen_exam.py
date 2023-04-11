@@ -2,7 +2,7 @@
 
 import os
 
-from evals.constants import DumpMode, TaskEnvs, DEFAULT_CACHE_DIR
+from evals.constants import DumpMode, TaskEnvs, DEFAULT_WORK_DIR
 from evals.task import EvalTask
 from evals.tools import ItagManager
 
@@ -12,7 +12,10 @@ from evals.tools import ItagManager
 if __name__ == '__main__':
 
     # Step0: Set runtime envs
-    cache_root_dir = os.environ.get(TaskEnvs.CACHE_DIR, DEFAULT_CACHE_DIR)
+    #   export DASHSCOPE_API_KEY='xxx'
+
+    # Step1: Get envs
+    work_dir = os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR)
 
     # Step1: Get raw samples
     ...
@@ -62,7 +65,7 @@ if __name__ == '__main__':
         # Get task id on the website: https://itag2.alibaba-inc.com/v2/console/task-management/task
         task_id = itag_task_resp.get('TaskId')
         df_res = itag_manager.get_tag_task_result(task_id=task_id)
-        itag_result_file = os.path.join(cache_root_dir,
+        itag_result_file = os.path.join(work_dir,
                                         'tasks/task_qwen_exam_dev_v0',
                                         'task_qwen_exam_dev_v0_out.csv')
         df_res.to_csv(itag_result_file, index=False)

@@ -13,9 +13,9 @@ DEFAULT_TOP_K = 10
 
 
 class QwenPredictor(Predictor):
-    # TODO:
-    #   1. class name to be confirmed
-    #   2. tdb
+    """
+    Qianwen LLMs service Predictor.
+    """
 
     def __init__(self, api_key: str, mode=PredictorMode.REMOTE, **kwargs):
         super(QwenPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)

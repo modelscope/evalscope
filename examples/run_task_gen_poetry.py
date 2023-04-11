@@ -2,7 +2,7 @@
 
 import os
 
-from evals.constants import DumpMode, TaskEnvs, DEFAULT_CACHE_DIR
+from evals.constants import DumpMode, TaskEnvs, DEFAULT_WORK_DIR
 from evals.task import EvalTask
 from evals.tools import ItagManager
 
@@ -12,7 +12,7 @@ from evals.tools import ItagManager
 if __name__ == '__main__':
 
     # Step0: Set runtime envs
-    cache_root_dir = os.environ.get(TaskEnvs.CACHE_DIR, DEFAULT_CACHE_DIR)
+    cache_root_dir = os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR)
 
     # Step1: Get raw samples
     ...
