@@ -4,7 +4,7 @@ import unittest
 
 import os
 from evals.constants import PredictorMode, PredictorKeys, PredictorEnvs
-from evals.predictors.moss_predictor import MossPredictor
+from evals.predictors.qwen_predictor import QwenPredictor
 from evals.utils.utils import test_level_list
 
 DEFAULT_TEST_LEVEL = 0
@@ -15,29 +15,28 @@ def condition(test_level=DEFAULT_TEST_LEVEL):
     return test_level in test_level_list()
 
 
-class TestMossPredictor(unittest.TestCase):
+class TestQwenPredictor(unittest.TestCase):
 
     # TODO: to be adapted with new predictor
 
     def setUp(self) -> None:
         api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
-        self.remote_predictor = MossPredictor(api_key=api_key, mode=PredictorMode.REMOTE)
+        self.remote_predictor = QwenPredictor(api_key=api_key, mode=PredictorMode.REMOTE)
         self.local_predictor = None
         if ENABLE_LOCAL_PREDICTOR:
-            self.local_predictor = TestMossPredictor._init_local_predictor()
+            self.local_predictor = TestQwenPredictor._init_local_predictor()
 
     @staticmethod
     def _init_local_predictor():
         model_cfg = dict(
             local_model={'model_path': ''},
         )
-        predictor = MossPredictor(api_key='', mode=PredictorMode.LOCAL, **model_cfg)
+        predictor = QwenPredictor(api_key='', mode=PredictorMode.LOCAL, **model_cfg)
 
         return predictor
 
     @unittest.skipUnless(condition(test_level=0), 'skip test in current test level')
     def test_remote_predict(self):
-        from dashscope import Models
 
         input_args = dict(
             model='moss_dev3',

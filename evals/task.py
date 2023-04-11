@@ -196,7 +196,7 @@ if __name__ == '__main__':
     import os
 
     prompts_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/data/poetry_gen/samples.jsonl'
-    task_cfg_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    task_cfg_file = '/evals/registry/tasks/task_qwen_gen_poetry.yaml'
 
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
 

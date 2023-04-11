@@ -12,13 +12,13 @@ DEFAULT_MAX_LEN = 500
 DEFAULT_TOP_K = 10
 
 
-class MossPredictor(Predictor):
+class QwenPredictor(Predictor):
     # TODO:
     #   1. class name to be confirmed
     #   2. tdb
 
     def __init__(self, api_key: str, mode=PredictorMode.REMOTE, **kwargs):
-        super(MossPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)
+        super(QwenPredictor, self).__init__(api_key=api_key, mode=mode, **kwargs)
 
         if not self.api_key:
             self.api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
@@ -93,7 +93,7 @@ class MossPredictor(Predictor):
                 dashscope.base_http_api_url = endpoint
 
             responses = Generation.call(**kwargs)
-            MossPredictor._check_response_on_error(responses)
+            QwenPredictor._check_response_on_error(responses)
         except Exception as e:
             raise e
 

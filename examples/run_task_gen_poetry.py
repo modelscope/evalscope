@@ -25,7 +25,7 @@ if __name__ == '__main__':
     prompts_file = os.path.join(os.getcwd(), '..', 'evals/registry/data/poetry_gen/samples.jsonl')
 
     # Step4: Generate task config (yaml or dict)
-    task_cfg_file = os.path.join(os.getcwd(), '..', 'evals/registry/tasks/task_moss_gen_poetry.yaml')
+    task_cfg_file = os.path.join(os.getcwd(), '..', 'evals/registry/tasks/task_qwen_gen_poetry.yaml')
 
     # Step5: run task
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)

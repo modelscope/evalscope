@@ -106,7 +106,7 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
 
 
 if __name__ == '__main__':
-    # yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_moss_gen_poetry.yaml'
+    # yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_qwen_gen_poetry.yaml'
     # stream = yaml_to_dict(yaml_path)
     # print(type(stream))
     # print(stream)

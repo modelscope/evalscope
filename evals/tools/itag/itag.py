@@ -50,7 +50,7 @@ class ItagManager(object):
         self._itag = ItagSdk(
             config=open_api_models.Config(
                 # TODO: online endpoint to be changed
-                tenant_id, token, endpoint="pre-itag2.alibaba-inc.com"
+                tenant_id, token, endpoint="itag2.alibaba-inc.com"
             ),
             buc_no=employee_id
         )

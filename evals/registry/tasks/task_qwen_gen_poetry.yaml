@@ -1,9 +1,9 @@
-task_name: task_moss_gen_poetry
+task_name: task_qwen_gen_poetry
 
-task_moss_gen_poetry:
-    id: task_moss_gen_poetry_dev_v0
+task_qwen_gen_poetry:
+    id: task_qwen_gen_poetry_dev_v0
     predictor:
-        ref: evals.predictors.moss_predictor:MossPredictor
+        ref: evals.predictors.qwen_predictor:QwenPredictor
         args:
             mode: remote
             model: gpt3_13B_v1_dev

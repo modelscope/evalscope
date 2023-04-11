@@ -25,7 +25,7 @@ if __name__ == '__main__':
     prompts_file = os.path.join(os.getcwd(), '..', 'evals/registry/data/exam/exam_v0.1.jsonl')
 
     # Step4: Generate task config (yaml or dict)
-    task_cfg_file = os.path.join(os.getcwd(), '..', 'evals/registry/tasks/task_moss_exam.yaml')
+    task_cfg_file = os.path.join(os.getcwd(), '..', 'evals/registry/tasks/task_qwen_exam.yaml')
 
     # Step5: run task
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
@@ -63,9 +63,9 @@ if __name__ == '__main__':
         task_id = 'xxx'
         df_res = itag_manager.get_tag_task_result(task_id=task_id)
         itag_result_file = os.path.join(cache_root_dir,
-                                        'tasks/task_moss_exam_dev_v0',
-                                        'task_moss_exam_dev_v0_out.csv')
+                                        'tasks/task_qwen_exam_dev_v0',
+                                        'task_qwen_exam_dev_v0_out.csv')
         df_res.to_csv(itag_result_file, index=False)
 
-    # Step7 [Optional]: Generate evaluation resport
+    # Step7 [Optional]: Generate evaluation report
     ...
