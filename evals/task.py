@@ -106,28 +106,19 @@ class EvalTask(object):
         #   8. [可选] 下载iTag数据，并解析结果
         #   9. [可选] 生成报告
 
-        # TODO: add streaming write ? (预测完一条写一条)
+        # TODO: add streaming write ? (dump one by one)
 
         # Run inference by specific predictor
         logger.info(f'Start to run inference by {self.predictor_obj.__class__.__name__} ...')
         if not self.prompts:
             raise ValueError('input prompts cannot be empty!')
 
-        # TODO: 用多进程会报错
+        # TODO: error when using ProcessPoolExecutor
         # try:
         #     with ProcessPoolExecutor(max_workers=num_processes) as executor:
         #         results_list = list(tqdm(
         #             executor.map(self.run_inference, self.prompts, chunksize=chunksize),
         #             total=math.ceil(len(self.prompts)/chunksize)))
-        # except Exception as e:
-        #     raise e
-
-
-        # TODO: 用多进程会报错
-        # try:
-        #     with ThreadPool(processes=num_processes) as pool:
-        #         results_list = list(
-        #             tqdm(pool.imap(self.run_inference, self.prompts, chunksize=chunksize), total=len(self.prompts)))
         # except Exception as e:
         #     raise e
 
@@ -150,7 +141,7 @@ class EvalTask(object):
         jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
         logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
 
-        # Run eval by using scoring model  TODO: to be implemented
+        # Run eval by using scoring model, if human evaluation is needed, then use DummyEvaluate class (means no eval)
         eval_results = self.scoring_model_obj.run(self.predicted_samples_path)
 
         # Dump eval result
@@ -188,14 +179,3 @@ class EvalTask(object):
         :return:
         """
         ...
-
-
-if __name__ == '__main__':
-    import os
-
-    prompts_file = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/data/poetry_gen/samples.jsonl'
-    task_cfg_file = '/evals/registry/tasks/task_qwen_gen_poetry.yaml'
-
-    eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
-
-    eval_task.run(dump_mode=DumpMode.OVERWRITE)
