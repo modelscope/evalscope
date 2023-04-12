@@ -43,7 +43,8 @@ if __name__ == '__main__':
 
         #   Step6-1: Create iTag dataset and task
         itag_token = """-----BEGIN RSA PRIVATE KEY-----
-            xxx
+xxx
+xxx
             -----END RSA PRIVATE KEY-----
             """
         itag_manager_args = dict(

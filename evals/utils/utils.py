@@ -6,6 +6,7 @@ import jsonlines as jsonl
 import yaml
 import importlib
 from typing import Any
+import pandas as pd
 
 from evals.constants import DumpMode
 from evals.utils.logger import get_logger
@@ -58,6 +59,10 @@ def jsonl_to_reader(jsonl_file):
         return reader
 
 
+def jsonl_to_csv():
+    pass
+
+
 def jsonl_dump_data(data_list, jsonl_file, dump_mode):
     """
     Dump data to jsonl file.
@@ -103,14 +108,3 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
             obj_cls = getattr(obj_cls, attr)
 
     return functools.partial(obj_cls, *args, **kwargs)
-
-
-if __name__ == '__main__':
-    # yaml_path = '/Users/jason/workspace/work/maas/llm-eval/evals/registry/tasks/task_qwen_gen_poetry.yaml'
-    # stream = yaml_to_dict(yaml_path)
-    # print(type(stream))
-    # print(stream)
-
-    jsonl_path = '/tmp/maas_evals/tasks/task_moss_gen_poetry_dev_v0/predicted_samples.jsonl'
-    res = jsonl_to_list(jsonl_path)
-    print(res)
