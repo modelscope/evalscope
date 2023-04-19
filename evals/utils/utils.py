@@ -6,7 +6,6 @@ import jsonlines as jsonl
 import yaml
 import importlib
 from typing import Any
-import pandas as pd
 
 from evals.constants import DumpMode
 from evals.utils.logger import get_logger
