@@ -9,9 +9,9 @@ from evals.utils.logger import get_logger
 
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_openitag20220616 import models as open_itag_models
-from evals.tools.itag.sdk.alpha_data_sdk.alpha_data_sdk import AlphaDataSdk
-from evals.tools.itag.sdk.alpha_data_sdk import models as alphad_model
-from evals.tools.itag.sdk.openitag_sdk.itag_sdk import ItagSdk
+from ITagSDK import itag_models, ItagSdk, Config
+from ITagSDK.alpha_data_sdk.alpha_data_sdk import AlphaDataSdk
+from ITagSDK.alpha_data_sdk import models as alphad_model
 
 logger = get_logger()
 
@@ -47,13 +47,7 @@ class ItagManager(object):
         """
 
         # init iTag sdk
-        self._itag = ItagSdk(
-            config=open_api_models.Config(
-                # TODO: online endpoint to be changed
-                tenant_id, token, endpoint="itag2.alibaba-inc.com"
-            ),
-            buc_no=employee_id
-        )
+        self._itag = ItagSdk(config=Config(tenant_id, token, endpoint="itag2.alibaba-inc.com"), buc_no=employee_id)
 
         # init AlphaD
         self._alphad = AlphaDataSdk(
@@ -138,6 +132,21 @@ class ItagManager(object):
         dataset_info = self._alphad.get_dataset(self._tenant_id, dataset_id)
 
         return dataset_info
+
+    def list_users(self, page_size: int = 10, page_number: int = 1) -> dict:
+        """
+        List iTag users in given tenant scope.
+        :param page_size:
+        :param page_number:
+        :return: users dict.
+            Example: {'Code': 0, 'Message': 'success', 'PageNumber': 1, 'PageSize': 10, 'RequestId': 'xxx',
+            'Success': True, 'TotalCount': 835, 'TotalPage': 84, 'Users': [{'AccountNo': 'xxx', 'AccountType': 'BUC',
+            'Role': 'ADMIN', 'UserId': 12345, 'UserName': 'xiaoming'}, ...]}
+        """
+        request = itag_models.ListUsersRequest(page_size=page_size, page_number=page_number)
+        resp = self._itag.list_users(self._tenant_id, request)
+
+        return resp.body.to_map()
 
     def create_tag_task(self, task_name: str, dataset_id: Union[str, int], template_id: str):
         """
