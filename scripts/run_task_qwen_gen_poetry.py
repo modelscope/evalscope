@@ -59,7 +59,6 @@ if __name__ == '__main__':
         itag_task_resp = itag_manager.process(**itag_run_args)
 
         #   Step6-2: Get iTag task results
-        # Get task id on the website: https://itag2.alibaba-inc.com/v2/console/task-management/task
         task_id = itag_task_resp.get('TaskId')
         df_res = itag_manager.get_tag_task_result(task_id=task_id)
         itag_result_file = os.path.join(cache_root_dir,

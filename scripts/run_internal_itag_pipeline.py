@@ -6,8 +6,7 @@ from evals.tools import ItagManager
 
 if __name__ == "__main__":
 
-    tenant_id = '268ef75a'
-    employee_id = '147543'
+    tenant_id, employee_id = open('private/itag_info.txt').readlines().strip().split(',')
     token = """-----BEGIN RSA PRIVATE KEY-----
 xxx
 xxx

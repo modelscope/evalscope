@@ -130,3 +130,5 @@ result.mp4
 *.pth
 *.pt
 
+# personal info
+private/

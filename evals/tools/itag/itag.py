@@ -1,10 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+
 import os.path
 import uuid
 import time
 from typing import Union
 import pandas as pd
 
+from evals.constants import ItagEnvs
 from evals.utils.logger import get_logger
 
 from alibabacloud_tea_openapi import models as open_api_models
@@ -37,6 +39,14 @@ class ItagManager(object):
         self._token = token
         self._employee_id = employee_id
 
+        self._endpoint = os.environ.get(ItagEnvs.ITAG_INTERNAL_ENDPOINT, None)
+        if not self._endpoint:
+            raise ValueError("env ITAG_INTERNAL_ENDPOINT is not set")
+
+        self._alphad_endpoint = os.environ.get('ALPHAD_INTERNAL_ENDPOINT', None)
+        if not self._alphad_endpoint:
+            raise ValueError("env ALPHAD_INTERNAL_ENDPOINT is not set")
+
         self._itag = None
         self._alphad = None
         self._init_itag_client(tenant_id, token, employee_id)
@@ -47,12 +57,12 @@ class ItagManager(object):
         """
 
         # init iTag sdk
-        self._itag = ItagSdk(config=Config(tenant_id, token, endpoint="itag2.alibaba-inc.com"), buc_no=employee_id)
+        self._itag = ItagSdk(config=Config(tenant_id, token, endpoint=self._endpoint), buc_no=employee_id)
 
         # init AlphaD
         self._alphad = AlphaDataSdk(
             config=open_api_models.Config(
-                tenant_id, token, endpoint="alphad.alibaba-inc.com"
+                tenant_id, token, endpoint=self._alphad_endpoint
             ),
             buc_no=employee_id
         )
@@ -148,6 +158,15 @@ class ItagManager(object):
 
         return resp.body.to_map()
 
+    def list_tasks(self, page_size: int = 10, page_number: int = 1) -> dict:
+        request = itag_models.ListTasksRequest(page_size=page_size, page_number=page_number)
+        resp = self._itag.list_tasks(self._tenant_id, request)
+        resp = resp.body.to_map()
+        if resp['Code'] != 0:
+            raise ValueError(f"list tasks failed, resp: {resp}")
+
+        return resp['Tasks']
+
     def create_tag_task(self, task_name: str, dataset_id: Union[str, int], template_id: str):
         """
         Create a iTag task.
@@ -231,6 +250,19 @@ class ItagManager(object):
             logger.error("Timeout to get iTag task result")
 
         return df_result
+
+    def list_subtasks(self, task_id: str, page_size: int = 10, page_number: int = 1):
+        # TODO: list subtasks
+        import json
+        request = itag_models.ListSubtasksRequest(page_size=page_size, page_number=page_number)
+
+        sub_task_resp = self._itag.list_subtasks(tenant_id=self._tenant_id,
+                                                 task_id=task_id,
+                                                 request=request)
+        sub_task_resp = sub_task_resp.body.to_map()
+        res_list = sub_task_resp.get('Subtasks', [])
+
+        return res_list
 
     def process(self, dataset_path: str, dataset_name: str, template_id: str, task_name: str) -> dict:
         """

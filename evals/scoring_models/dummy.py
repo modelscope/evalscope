@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import Union
 
 from evals.evaluate import Evaluate
 from evals.utils.utils import jsonl_to_list
@@ -15,8 +16,10 @@ class DummyEvaluate(Evaluate):
     def eval_samples(self):
         ...
 
-    def run(self, predicted_samples_file: str):
+    def run(self, prompts: Union[str, list]):
         """
         Nothing to do with evaluating but load the predicted samples to list.
         """
-        return jsonl_to_list(predicted_samples_file)
+        if isinstance(prompts, list):
+            return prompts
+        return jsonl_to_list(prompts)

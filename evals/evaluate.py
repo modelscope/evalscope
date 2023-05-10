@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from abc import ABC, abstractmethod
+from typing import Union
 
 
 class Evaluate(ABC):
@@ -11,7 +12,7 @@ class Evaluate(ABC):
         self.kwargs = kwargs
 
     @property
-    def metrics_list(self) -> list:
+    def metrics(self) -> list:
         return self._metrics
 
     def get_metrics(self):
@@ -22,9 +23,9 @@ class Evaluate(ABC):
         ...
 
     @abstractmethod
-    def eval_samples(self):
+    def eval_samples(self, **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
-    def run(self, predicted_samples_file: str):
+    def run(self, prompts: Union[str, list]) -> list:
         raise NotImplementedError()

@@ -1,6 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Callable
+from evals.metrics.math_accuracy import compute_math_accuracy_one_sample
+from evals.metrics.code_metric import compute_pass_k
+from evals.metrics.rouge_metric import compute_rouge
 
 
 class Metrics:
@@ -22,7 +25,7 @@ class Metrics:
 
     """
 
-    METRICS_NAME = ['accuracy', 'bleu', 'rouge']
+    METRICS_NAME = ['accuracy', 'bleu', 'rouge', 'math_accuracy', 'pass@k']
 
     def __init__(self, metric_name: str = 'accuracy'):
         self._metric_name = metric_name
@@ -35,6 +38,8 @@ class Metrics:
             self._metric_fn = self._get_bleu_fn()
         elif self._metric_name == 'rouge':
             self._metric_fn = self._get_rouge_fn()
+        elif self._metric_fn == 'math_accuracy':
+            self._metric_fn = self._get_math_accuracy()
         else:
             raise ValueError(f'Unknown metric name: {self._metric_name}')
 
@@ -46,13 +51,19 @@ class Metrics:
         pass
 
     def _get_rouge_fn(self):
-        pass
+        return compute_rouge
 
-    def compute(self, *kwargs):
+    def _get_math_accuracy(self):
+        return compute_math_accuracy_one_sample
+
+    def _get_code_passk(self):
+        return compute_pass_k
+
+    def compute(self, **kwargs):
         """
         Common method to compute metric.
         """
-        return self._metric_fn(*kwargs)
+        return self._metric_fn(**kwargs)
 
     @staticmethod
     def show_all_metrics() -> None:
@@ -80,15 +91,4 @@ def get_metric(metric_name) -> Metrics:
 
 if __name__ == '__main__':
 
-    # from bleu import list_bleu
-    from bleu import multi_list_bleu
-
-    ref = ['it is a white cat .', 'wow , this dog is huge .']
-    ref1 = ['This cat is white .', 'wow , this is a huge dog .']
-    hyp = ['it is a white kitten .', 'wowww , the dog is huge !']
-    hyp1 = ["it 's a white kitten .", 'wow , this dog is huge !']
-
-    print(multi_list_bleu([ref, ref1], [hyp, hyp1]))
-
-
-    print('aaa')
+    pass

@@ -83,3 +83,6 @@ class TestQwenPredictor(unittest.TestCase):
         result_dict = self.local_predictor(**input_args)
         print(result_dict)
 
+
+if __name__ == '__main__':
+    unittest.main()

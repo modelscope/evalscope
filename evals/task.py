@@ -42,7 +42,7 @@ class EvalTask(object):
         self.scoring_model_obj: Evaluate = None
         self.predictor_obj: Predictor = None
 
-        self.work_dir = os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR)
+        self.work_dir = os.path.expanduser(os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR))
         os.makedirs(self.work_dir, exist_ok=True)
 
         if isinstance(prompts, str):
@@ -71,22 +71,25 @@ class EvalTask(object):
         # Get predictor class and args, and create predictor object
         predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
         predictor_class, predictor_args = self._parse_obj_cfg(predictor_cfg)
-        predictor_args['api_key'] = ''
-        self.predictor_obj = predictor_class(**predictor_args)
+        if predictor_class:
+            predictor_args['api_key'] = ''
+            self.predictor_obj = predictor_class(**predictor_args)
+
         if not isinstance(self.predictor_obj, Predictor):
-            raise TypeError('predictor_obj must be an instance of evals.predictors.Predictor')
+            logger.warning('predictor_obj should be an instance of evals.predictors.Predictor')
 
         # Get eval class(scoring model) and args, and create eval object
         scoring_model_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
         scoring_model_class, scoring_model_args = self._parse_obj_cfg(scoring_model_cfg)
         self.scoring_model_obj = scoring_model_class(**scoring_model_args)
         if not isinstance(self.scoring_model_obj, Evaluate):
-            raise TypeError('eval_obj must be an instance of evals.Eval')
+            logger.warning('eval_obj should be an instance of evals.Eval')
 
     def _parse_obj_cfg(self, obj_cfg: dict):
         cls_ref = obj_cfg.get(EvalTaskConfig.CLASS_REF, None)
         if not cls_ref:
-            raise ValueError(f'class reference must be provided in task config for task_name={self.task_name}.')
+            logger.warning(f'no class reference in task config task_name={self.task_name}.')
+            return cls_ref, None
 
         cls_args = obj_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
         cls = get_obj_from_cfg(cls_ref)
@@ -109,44 +112,45 @@ class EvalTask(object):
         # TODO: add streaming write ? (dump one by one)
 
         # Run inference by specific predictor
-        logger.info(f'Start to run inference by {self.predictor_obj.__class__.__name__} ...')
-        if not self.prompts:
-            raise ValueError('input prompts cannot be empty!')
-
-        # TODO: error when using ProcessPoolExecutor
-        # try:
-        #     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        #         results_list = list(tqdm(
-        #             executor.map(self.run_inference, self.prompts, chunksize=chunksize),
-        #             total=math.ceil(len(self.prompts)/chunksize)))
-        # except Exception as e:
-        #     raise e
-
         results_list = []
-        for prompt in self.prompts:
-            res = self.run_inference(prompt)
-            print('>>input: ', prompt)
-            print('>>output: ', res)
-            print()
-            results_list.append(res)
+        if self.predictor_obj:
+            logger.info(f'Start to run inference ...')
+            if not self.prompts:
+                raise ValueError('input prompts cannot be empty!')
 
-        invalid_data_num = len([item for item in results_list if item is None])
-        if invalid_data_num > 0:
-            logger.error(f'Predictor got {invalid_data_num} null result '
-                         f'in {self.predicted_samples_path} , error may occur due to multi-processing inference, '
-                         f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
-                         f'Alternatively, you can check input prompts which may contain invalid data.')
+            # TODO: error when using ProcessPoolExecutor
+            # try:
+            #     with ProcessPoolExecutor(max_workers=num_processes) as executor:
+            #         results_list = list(tqdm(
+            #             executor.map(self.run_inference, self.prompts, chunksize=chunksize),
+            #             total=math.ceil(len(self.prompts)/chunksize)))
+            # except Exception as e:
+            #     raise e
+
+            for prompt in self.prompts:
+                res = self.run_inference(prompt)
+                results_list.append(res)
+
+            invalid_data_num = len([item for item in results_list if item is None])
+            if invalid_data_num > 0:
+                logger.error(f'Predictor got {invalid_data_num} null result '
+                             f'in {self.predicted_samples_path} , error may occur due to multi-processing inference, '
+                             f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
+                             f'Alternatively, you can check input prompts which may contain invalid data.')
 
         # Dump predicted samples
-        jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
-        logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
-
-        # Run eval by using scoring model, if human evaluation is needed, then use DummyEvaluate class (means no eval)
-        eval_results = self.scoring_model_obj.run(self.predicted_samples_path)
+        if len(results_list) > 0:
+            jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
+            logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
+            # Run auto-evaluation by using scoring model
+            eval_results = self.scoring_model_obj.run(self.predicted_samples_path)
+        else:
+            eval_results = self.scoring_model_obj.run(self.prompts)
 
         # Dump eval result
-        jsonl_dump_data(eval_results, self.eval_results_path, dump_mode=dump_mode)
-        logger.info(f'Dump eval results to {self.eval_results_path}')
+        if len(eval_results) > 0:
+            jsonl_dump_data(eval_results, self.eval_results_path, dump_mode=dump_mode)
+            logger.info(f'Dump eval results to {self.eval_results_path}')
 
     def get_model_meta(self):
         ...

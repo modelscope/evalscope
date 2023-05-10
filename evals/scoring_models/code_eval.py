@@ -3,41 +3,39 @@ from typing import Union
 
 from evals.constants import MetricMembers
 from evals.evaluate import Evaluate
-from evals.metrics.rouge_metric import run_rouge_eval
+from evals.metrics.code_metric import run_code_eval
 from evals.utils.utils import jsonl_to_list
-
 from evals.utils.logger import get_logger
 
 logger = get_logger()
 
 
-class CommonGenerationEvaluate(Evaluate):
+class CodeEvaluate(Evaluate):
     """
-    GenerationEval is a subclass of Eval, which is used to evaluate common generation tasks of LLMs,
-    like machine translation, summarization, poetry generating etc.
+    CodeEvaluate is used to evaluate coding skill of LLMs.
 
     Args:
-        metrics: A list of metrics to evaluate. e.g. ['rouge']
+        metrics: A list of metrics to evaluate. e.g. ['code_pass_k']
+
     """
 
     def __init__(self, metrics: list, **kwargs):
-        super(CommonGenerationEvaluate, self).__init__(metrics=metrics, **kwargs)
-        logger.info(f'input config kwargs: {kwargs}')
+        super(CodeEvaluate, self).__init__(metrics=metrics, **kwargs)
 
     def eval_samples(self, data_list: list):
 
         # TODO: registry to be added
         for metric in self.metrics:
-            if metric == MetricMembers.ROUGE.value:
+            if metric == MetricMembers.CODE_PASS_K.value:
+                k = self.kwargs.pop('k', 4)
                 md_level = self.kwargs.pop('md_level', 2)
-                report_metric_key = self.kwargs.pop('report_metric_key', 'rouge-l-f')
-                run_rouge_eval(data_list, md_level=md_level, report_metric_key=report_metric_key)
+                run_code_eval(data_list, k, md_level)
             else:
                 raise ValueError(f"Unsupported metric: {metric}")
 
     def run(self, prompts: Union[str, list]) -> list:
         """
-        Load the predicted samples and evaluate them for common generating task.
+        Load the predicted samples and evaluate them for coding task.
         """
         # TODO: res to be added
         res_list = []
@@ -45,7 +43,6 @@ class CommonGenerationEvaluate(Evaluate):
         if isinstance(prompts, str):
             prompts = jsonl_to_list(prompts)
         self.eval_samples(prompts)
-        logger.info(f"Common generating evaluation finished.")
+        logger.info(f"Coding evaluation finished.")
 
         return res_list
-

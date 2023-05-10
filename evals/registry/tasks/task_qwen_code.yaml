@@ -1,0 +1,10 @@
+task_name: task_qwen_code
+
+task_qwen_code:
+    id: task_qwen_code_ver_0
+    scoring_model:
+        ref: evals.scoring_models.code_eval:CodeEvaluate
+        args:
+            metrics: ['code_pass_k']
+            k: 4
+            md_level: 2

@@ -67,7 +67,7 @@ def jsonl_dump_data(data_list, jsonl_file, dump_mode):
     Dump data to jsonl file.
 
     Args:
-        data_list: data list to be dumped.
+        data_list: data list to be dumped.  [{'a': 'aaa'}, ...]
         jsonl_file: jsonl file path.
         dump_mode: dump mode. It can be 'overwrite' or 'append'.
     """
@@ -107,3 +107,15 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
             obj_cls = getattr(obj_cls, attr)
 
     return functools.partial(obj_cls, *args, **kwargs)
+
+
+def markdown_table(header_l, data_l):
+    md_str = f'| {" | ".join(header_l)} |'
+    md_str += f'\n| {" | ".join(["---"] * len(header_l))} |'
+    for data in data_l:
+        if isinstance(data, str):
+            data = [data]
+        assert len(data) <= len(header_l)
+        tmp = data + [''] * (len(header_l) - len(data))
+        md_str += f'\n| {" | ".join(tmp)} |'
+    return md_str

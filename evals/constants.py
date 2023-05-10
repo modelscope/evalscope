@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+from enum import Enum
 
 DEFAULT_WORK_DIR = "~/maas_evals"
 
@@ -29,6 +29,13 @@ class PredictorEnvs:
     DEBUG_MODE = 'DEBUG_MODE'
 
 
+class ItagEnvs:
+
+    ITAG_INTERNAL_ENDPOINT = 'ITAG_INTERNAL_ENDPOINT'
+
+    ALPHAD_INTERNAL_ENDPOINT = 'ALPHAD_INTERNAL_ENDPOINT'
+
+
 class EvalTaskConfig:
     TASK_NAME = 'task_name'
     TASK_ID = 'id'
@@ -54,3 +61,25 @@ class ScoringModel:
 class DumpMode:
     OVERWRITE = 'overwrite'
     APPEND = 'append'
+
+
+class MetricsConstant:
+    EPSILON = float(1e-6)
+    INVALID_VALUE = -9999999
+    ROUGE_KEYS = [
+        'rouge-1-r', 'rouge-1-p', 'rouge-1-f',
+        'rouge-2-r', 'rouge-2-p', 'rouge-2-f',
+        'rouge-l-r', 'rouge-l-p', 'rouge-l-f',
+    ]
+
+
+class MetricMembers(Enum):
+
+    # Math accuracy metric
+    MATH_ACCURACY = 'math_accuracy'
+
+    # Code pass@k metric
+    CODE_PASS_K = 'code_pass_k'
+
+    # Code rouge metric
+    ROUGE = 'rouge'
