@@ -47,6 +47,12 @@ class EvalTaskConfig:
     ARGS_MODEL = 'model'
     ARGS_MAX_LEN = 'max_length'
     ARGS_TOP_K = 'top_k'
+    ARGS_TOP_P = 'top_p'
+    ARGS_TEMPERATURE = 'temperature'
+    ARGS_API_ENDPOINT = 'api_endpoint'
+    ARGS_MODEL_PATH = 'model_path'
+    ARGS_MODEL_REVISION = 'model_revision'
+    ARGS_QUANTIZE_BIT = 'quantize_bit'
 
 
 class ScoringModel:
