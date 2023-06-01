@@ -26,7 +26,7 @@ class EvalTask(object):
     Attributes:
         task_id (str): The task id.
         task_name (str): The task name.
-        scoring_model_obj (BaseEvalSpec): The scoring model object.
+        evaluator_obj (BaseEvalSpec): The scoring model object.
         predictor_obj (Predictor): The predictor object.
         work_dir (str): The work root dir. Default dir:   ~/maas_evals
         predicted_samples_path (str): The jsonl file path of samples
@@ -39,7 +39,7 @@ class EvalTask(object):
 
         self.task_id: str = ''
         self.task_name: str = ''
-        self.scoring_model_obj: Evaluate = None
+        self.evaluator_obj: Evaluate = None
         self.predictor_obj: Predictor = None
 
         self.work_dir = os.path.expanduser(os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR))
@@ -79,10 +79,10 @@ class EvalTask(object):
             logger.warning('predictor_obj should be an instance of evals.predictors.Predictor')
 
         # Get eval class(scoring model) and args, and create eval object
-        scoring_model_cfg = self.task_spec.get(EvalTaskConfig.SCORING_MODEL, {})
-        scoring_model_class, scoring_model_args = self._parse_obj_cfg(scoring_model_cfg)
-        self.scoring_model_obj = scoring_model_class(**scoring_model_args)
-        if not isinstance(self.scoring_model_obj, Evaluate):
+        evaluator_cfg = self.task_spec.get(EvalTaskConfig.EVALUATOR, {})
+        evaluator_class, evaluator_args = self._parse_obj_cfg(evaluator_cfg)
+        self.evaluator_obj = evaluator_class(**evaluator_args)
+        if not isinstance(self.evaluator_obj, Evaluate):
             logger.warning('eval_obj should be an instance of evals.Eval')
 
     def _parse_obj_cfg(self, obj_cfg: dict):
@@ -143,9 +143,9 @@ class EvalTask(object):
             jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
             logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
             # Run auto-evaluation by using scoring model
-            eval_results = self.scoring_model_obj.run(self.predicted_samples_path)
+            eval_results = self.evaluator_obj.run(self.predicted_samples_path)
         else:
-            eval_results = self.scoring_model_obj.run(self.prompts)
+            eval_results = self.evaluator_obj.run(self.prompts)
 
         # Dump eval result
         if len(eval_results) > 0:
@@ -155,7 +155,7 @@ class EvalTask(object):
     def get_model_meta(self):
         ...
 
-    def get_scoring_model(self):
+    def get_evaluator(self):
         # TODO: According to task config(yaml) to get scoring model object from registry.
         ...
 

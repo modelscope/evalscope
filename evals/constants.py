@@ -40,7 +40,7 @@ class EvalTaskConfig:
     TASK_NAME = 'task_name'
     TASK_ID = 'id'
     SAMPLES = 'samples'
-    SCORING_MODEL = 'scoring_model'
+    EVALUATOR = 'evaluator'
     PREDICTOR = 'predictor'
     CLASS_REF = 'ref'
     CLASS_ARGS = 'args'
@@ -83,3 +83,7 @@ class MetricMembers(Enum):
 
     # Code rouge metric
     ROUGE = 'rouge'
+
+    # ELO rating system for pairwise comparison
+    ELO = 'elo'
+

@@ -9,7 +9,7 @@ task_qwen_gen_poetry:
             model: gpt3_13B_v1_dev
             max_length: 500
             top_k: 15
-    scoring_model:
-        ref: evals.scoring_models.generation:GenerationEvaluate
+    evaluator:
+        ref: evals.evaluator.generation:GenerationEvaluate
         args:
             metrics: [ bleu, rouge ]

@@ -9,7 +9,7 @@ task_qwen_exam:
             model: moss_dev5
             max_length: 500
             top_k: 15
-    scoring_model:
-        ref: evals.scoring_models.dummy:DummyEvaluate
+    evaluator:
+        ref: evals.evaluator.dummy:DummyEvaluate
         args:
             metrics: []

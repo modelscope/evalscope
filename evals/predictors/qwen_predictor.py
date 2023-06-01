@@ -7,6 +7,9 @@ from evals.predictors.base import Predictor
 
 import dashscope
 from dashscope import Generation
+from evals.utils.logger import get_logger
+
+logger = get_logger()
 
 DEFAULT_MAX_LEN = 500
 DEFAULT_TOP_K = 10
@@ -26,10 +29,11 @@ class QwenPredictor(Predictor):
             raise ValueError(f"API key is not specified. Please set it in the environment variable "
                              f"{PredictorEnvs.DASHSCOPE_API_KEY} or pass it to the constructor.")
 
-        self.model_name = kwargs.pop(EvalTaskConfig.ARGS_MODEL, '')
-        if not self.model_name:
-            raise ValueError("Model name of predictor is not specified. "
-                             "Please set it in the task configuration or pass it to the constructor.")
+        # # TODO: model name
+        # self.model_name = kwargs.pop(EvalTaskConfig.ARGS_MODEL, '')
+        # if not self.model_name:
+        #     logger.info("Model name of predictor is not specified. "
+        #                 "Please set it in the task configuration or pass it to the constructor.")
 
         self.max_length = int(kwargs.pop(EvalTaskConfig.ARGS_MAX_LEN, DEFAULT_MAX_LEN))
         self.top_k = int(kwargs.pop(EvalTaskConfig.ARGS_TOP_K, DEFAULT_TOP_K))
@@ -61,19 +65,18 @@ class QwenPredictor(Predictor):
             Example: {'input': {}, 'output': {}}
         """
 
-        model_info = {EvalTaskConfig.ARGS_MODEL: self.model_name,
-                      EvalTaskConfig.ARGS_MAX_LEN: self.max_length,
+        input_info = {EvalTaskConfig.ARGS_MAX_LEN: self.max_length,
                       EvalTaskConfig.ARGS_TOP_K: self.top_k}
-        input_kwargs.update(model_info)
+        input_info.update(input_kwargs)
 
         if self.mode == PredictorMode.LOCAL:
-            result = self._run_local_inference(**input_kwargs)
+            result = self._run_local_inference(**input_info)
         elif self.mode == PredictorMode.REMOTE:
-            result = self._run_remote_inference(**input_kwargs)
+            result = self._run_remote_inference(**input_info)
         else:
             raise ValueError(f"Invalid predictor mode: {self.mode}")
 
-        final_res = dict(input=input_kwargs, output=result)
+        final_res = dict(input=input_info, output=result)
 
         return final_res
 

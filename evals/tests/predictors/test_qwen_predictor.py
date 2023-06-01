@@ -21,6 +21,8 @@ class TestQwenPredictor(unittest.TestCase):
 
     def setUp(self) -> None:
         api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
+
+        # TODO: model name
         self.remote_predictor = QwenPredictor(api_key=api_key, mode=PredictorMode.REMOTE)
         self.local_predictor = None
         if ENABLE_LOCAL_PREDICTOR:
@@ -39,7 +41,7 @@ class TestQwenPredictor(unittest.TestCase):
     def test_remote_predict(self):
 
         input_args = dict(
-            model='moss_dev3',
+            model='qwen-v1',
             prompt='推荐一个附近的公园',
             history=[
                 {

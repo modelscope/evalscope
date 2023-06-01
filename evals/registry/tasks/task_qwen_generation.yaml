@@ -2,8 +2,8 @@ task_name: task_qwen_common_generation
 
 task_qwen_common_generation:
     id: task_qwen_common_generation_ver_0
-    scoring_model:
-        ref: evals.scoring_models.generation:CommonGenerationEvaluate
+    evaluator:
+        ref: evals.evaluator.generation:CommonGenerationEvaluate
         args:
             metrics: ['rouge']
             md_level: 2
