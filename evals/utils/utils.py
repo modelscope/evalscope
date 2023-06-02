@@ -62,7 +62,7 @@ def jsonl_to_csv():
     pass
 
 
-def jsonl_dump_data(data_list, jsonl_file, dump_mode):
+def jsonl_dump_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
     """
     Dump data to jsonl file.
 
@@ -71,6 +71,11 @@ def jsonl_dump_data(data_list, jsonl_file, dump_mode):
         jsonl_file: jsonl file path.
         dump_mode: dump mode. It can be 'overwrite' or 'append'.
     """
+    if not jsonl_file:
+        raise ValueError('output file must be provided.')
+
+    jsonl_file = os.path.expanduser(jsonl_file)
+
     if dump_mode == DumpMode.OVERWRITE:
         dump_mode = 'w'
     elif dump_mode == DumpMode.APPEND:

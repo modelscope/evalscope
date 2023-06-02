@@ -16,3 +16,4 @@ jsonlines
 pyyaml
 simple-ddl-parser
 dashscope
+openai
