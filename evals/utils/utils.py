@@ -1,17 +1,18 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
 import functools
-import jsonlines as jsonl
-import yaml
 import importlib
+import os
 from typing import Any
 
+import jsonlines as jsonl
+import pandas as pd
+import pyarrow as pa
+import yaml
 from evals.constants import DumpMode
 from evals.utils.logger import get_logger
 
 logger = get_logger()
-
 
 TEST_LEVEL_LIST = [0, 1]
 
@@ -22,7 +23,9 @@ TEST_LEVEL_LIST_STR = 'TEST_LEVEL_LIST'
 def test_level_list():
     global TEST_LEVEL_LIST
     if TEST_LEVEL_LIST_STR in os.environ:
-        TEST_LEVEL_LIST = [int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')]
+        TEST_LEVEL_LIST = [
+            int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')
+        ]
 
     return TEST_LEVEL_LIST
 
@@ -39,7 +42,8 @@ def jsonl_to_list(jsonl_file):
     """
     res_list = []
     with jsonl.open(jsonl_file, mode='r') as reader:
-        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
+        for line in reader.iter(
+                type=dict, allow_none=True, skip_invalid=False):
             res_list.append(line)
     return res_list
 
@@ -82,6 +86,7 @@ def jsonl_dump_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
         dump_mode = 'a'
     with jsonl.open(jsonl_file, mode=dump_mode) as writer:
         writer.write_all(data_list)
+    logger.info(f'Dump data to {jsonl_file} successfully.')
 
 
 def yaml_to_dict(yaml_file) -> dict:

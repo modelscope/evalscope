@@ -22,16 +22,15 @@ def get_gpt_result():
     session.mount('http://', adapter)
     session.mount('https://', adapter)
 
-    api_url = f'https://api.mit-spider.alibaba-inc.com/chatgpt/api/ask'
+    api_url = 'https://api.mit-spider.alibaba-inc.com/chatgpt/api/ask'
 
-    dataset_info = dict(
-        query='hello, who are you ?',
-    )
-    data = dict(
-        data=dataset_info,
-    )
+    dataset_info = dict(query='hello, who are you ?', )
+    data = dict(data=dataset_info, )
 
-    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer {token}'}
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer {token}'
+    }
 
     r = session.post(url=api_url, json=data, headers=headers)
 

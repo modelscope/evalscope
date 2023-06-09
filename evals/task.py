@@ -1,16 +1,19 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import math
-import os
-from tqdm import tqdm
-from typing import Union, List
-from multiprocessing import Pool as ThreadPool
-from concurrent.futures import ProcessPoolExecutor
 
+import os
+# from concurrent.futures import ProcessPoolExecutor
+# from multiprocessing import Pool as ThreadPool
+from typing import List, Union
+
+from evals.constants import (DEFAULT_WORK_DIR, DumpMode, EvalTaskConfig,
+                             TaskEnvs)
 from evals.evaluate import Evaluate
-from evals.constants import EvalTaskConfig, DEFAULT_WORK_DIR, TaskEnvs, DumpMode
 from evals.predictors import Predictor
-from evals.utils.utils import yaml_to_dict, get_obj_from_cfg, jsonl_to_list, jsonl_dump_data
 from evals.utils.logger import get_logger
+from evals.utils.utils import (get_obj_from_cfg, jsonl_dump_data,
+                               jsonl_to_list, yaml_to_dict)
+
+# from tqdm import tqdm
 
 logger = get_logger()
 
@@ -20,8 +23,10 @@ class EvalTask(object):
     The task class for evaluation.
 
     Args:
-        prompts (Union[List[dict], str]): The list of prompts or the path of the file containing prompts.
-        task_cfg (Union[dict, str]): The task config or the path of the file containing task config.
+        prompts (Union[List[dict], str]):
+            The list of prompts or the path of the file containing prompts.
+        task_cfg (Union[dict, str]):
+            The task config or the path of the file containing task config.
 
     Attributes:
         task_id (str): The task id.
@@ -33,7 +38,8 @@ class EvalTask(object):
             that predicted by specific predictor.
     """
 
-    def __init__(self, prompts: Union[List[dict], str], task_cfg: Union[dict, str]):
+    def __init__(self, prompts: Union[List[dict], str], task_cfg: Union[dict,
+                                                                        str]):
         # TODO: task calling in CLI to be added
         # TODO: output接口： {'input': {'id': 2, 'prompt': 'xxx'}, 'output': {'text': 'xxx', ...}}
 
@@ -42,7 +48,8 @@ class EvalTask(object):
         self.evaluator_obj: Evaluate = None
         self.predictor_obj: Predictor = None
 
-        self.work_dir = os.path.expanduser(os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR))
+        self.work_dir = os.path.expanduser(
+            os.environ.get(TaskEnvs.WORK_DIR, DEFAULT_WORK_DIR))
         os.makedirs(self.work_dir, exist_ok=True)
 
         if isinstance(prompts, str):
@@ -55,18 +62,21 @@ class EvalTask(object):
 
         self.task_name = task_cfg.get(EvalTaskConfig.TASK_NAME, None)
         if not self.task_name:
-            raise ValueError('task_name must be provided in task config.')
+            logger.error('task_name must be provided in task config.')
 
         self.task_spec = task_cfg.get(self.task_name)
         if not self.task_spec:
-            raise ValueError(f'The task specification must be provided in task config for task_name={self.task_name}.')
+            logger.error(f'The task specification must be provided '
+                         f'in task config for task_name={self.task_name}.')
 
         self.task_id = self.task_spec.get(EvalTaskConfig.TASK_ID, None)
 
         self.task_dir = os.path.join(self.work_dir, 'tasks', self.task_id)
         os.makedirs(self.task_dir, exist_ok=True)
-        self.predicted_samples_path = os.path.join(self.task_dir, 'predicted_samples.jsonl')
-        self.eval_results_path = os.path.join(self.task_dir, 'eval_results.jsonl')
+        self.predicted_samples_path = os.path.join(self.task_dir,
+                                                   'predicted_samples.jsonl')
+        self.eval_results_path = os.path.join(self.task_dir,
+                                              'eval_results.jsonl')
 
         # Get predictor class and args, and create predictor object
         predictor_cfg = self.task_spec.get(EvalTaskConfig.PREDICTOR, {})
@@ -76,7 +86,8 @@ class EvalTask(object):
             self.predictor_obj = predictor_class(**predictor_args)
 
         if not isinstance(self.predictor_obj, Predictor):
-            logger.warning('predictor_obj should be an instance of evals.predictors.Predictor')
+            logger.warning('predictor_obj should be an instance of '
+                           'evals.predictors.Predictor')
 
         # Get eval class(scoring model) and args, and create eval object
         evaluator_cfg = self.task_spec.get(EvalTaskConfig.EVALUATOR, {})
@@ -88,7 +99,9 @@ class EvalTask(object):
     def _parse_obj_cfg(self, obj_cfg: dict):
         cls_ref = obj_cfg.get(EvalTaskConfig.CLASS_REF, None)
         if not cls_ref:
-            logger.warning(f'no class reference in task config task_name={self.task_name}.')
+            logger.warning(
+                f'no class reference in task config task_name={self.task_name}.'
+            )
             return cls_ref, None
 
         cls_args = obj_cfg.get(EvalTaskConfig.CLASS_ARGS, {})
@@ -96,7 +109,10 @@ class EvalTask(object):
 
         return cls, cls_args
 
-    def run(self, num_processes: int = 4, chunksize: int = 2, dump_mode: str = DumpMode.OVERWRITE):
+    def run(self,
+            num_processes: int = 4,
+            chunksize: int = 2,
+            dump_mode: str = DumpMode.OVERWRITE):
 
         # TODO: task 流程编排  (Note: run的流程从prompts开始, 结束于scoring model的输出结果)
         #   1. 获取raw samples (examples里，user自行操作) -- 输出到work dir (默认是 ~/maas_evals/data/raw_samples)
@@ -114,7 +130,7 @@ class EvalTask(object):
         # Run inference by specific predictor
         results_list = []
         if self.predictor_obj:
-            logger.info(f'Start to run inference ...')
+            logger.info('Start to run inference ...')
             if not self.prompts:
                 raise ValueError('input prompts cannot be empty!')
 
@@ -131,17 +147,22 @@ class EvalTask(object):
                 res = self.run_inference(prompt)
                 results_list.append(res)
 
-            invalid_data_num = len([item for item in results_list if item is None])
+            invalid_data_num = len(
+                [item for item in results_list if item is None])
             if invalid_data_num > 0:
-                logger.error(f'Predictor got {invalid_data_num} null result '
-                             f'in {self.predicted_samples_path} , error may occur due to multi-processing inference, '
-                             f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
-                             f'Alternatively, you can check input prompts which may contain invalid data.')
+                logger.error(
+                    f'Predictor got {invalid_data_num} null result '
+                    f'in {self.predicted_samples_path} , error may occur due to multi-processing inference, '
+                    f'try to decrease num_processes and chunksize to avoid the limit of predictor service. '
+                    f'Alternatively, you can check input prompts which may contain invalid data.'
+                )
 
         # Dump predicted samples
         if len(results_list) > 0:
-            jsonl_dump_data(results_list, self.predicted_samples_path, dump_mode=dump_mode)
-            logger.info(f'Dump predicted samples to {self.predicted_samples_path}')
+            jsonl_dump_data(
+                results_list, self.predicted_samples_path, dump_mode=dump_mode)
+            logger.info(
+                f'Dump predicted samples to {self.predicted_samples_path}')
             # Run auto-evaluation by using scoring model
             eval_results = self.evaluator_obj.run(self.predicted_samples_path)
         else:
@@ -149,7 +170,8 @@ class EvalTask(object):
 
         # Dump eval result
         if len(eval_results) > 0:
-            jsonl_dump_data(eval_results, self.eval_results_path, dump_mode=dump_mode)
+            jsonl_dump_data(
+                eval_results, self.eval_results_path, dump_mode=dump_mode)
             logger.info(f'Dump eval results to {self.eval_results_path}')
 
     def get_model_meta(self):
@@ -165,7 +187,8 @@ class EvalTask(object):
     def run_inference(self, input_dict: dict) -> dict:
 
         if 'prompt' not in input_dict:
-            logger.warning(f'prompt must be provided in input_dict for {self.predictor_obj.__name__}.')
+            logger.warning(f'prompt must be provided in input_dict '
+                           f'for {self.predictor_obj.__name__}.')
 
         result_dict = self.predictor_obj(**input_dict)
         return result_dict

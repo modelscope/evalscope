@@ -1,9 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
 import unittest
 
-import os
-from evals.constants import PredictorMode, PredictorKeys, PredictorEnvs
+from evals.constants import PredictorEnvs, PredictorMode
 from evals.predictors.qwen_predictor import QwenPredictor
 from evals.utils.utils import test_level_list
 
@@ -23,36 +23,34 @@ class TestQwenPredictor(unittest.TestCase):
         api_key = os.environ.get(PredictorEnvs.DASHSCOPE_API_KEY, None)
 
         # TODO: model name
-        self.remote_predictor = QwenPredictor(api_key=api_key, mode=PredictorMode.REMOTE)
+        self.remote_predictor = QwenPredictor(
+            api_key=api_key, mode=PredictorMode.REMOTE)
         self.local_predictor = None
         if ENABLE_LOCAL_PREDICTOR:
             self.local_predictor = TestQwenPredictor._init_local_predictor()
 
     @staticmethod
     def _init_local_predictor():
-        model_cfg = dict(
-            local_model={'model_path': ''},
-        )
-        predictor = QwenPredictor(api_key='', mode=PredictorMode.LOCAL, **model_cfg)
+        model_cfg = dict(local_model={'model_path': ''}, )
+        predictor = QwenPredictor(
+            api_key='', mode=PredictorMode.LOCAL, **model_cfg)
 
         return predictor
 
-    @unittest.skipUnless(condition(test_level=0), 'skip test in current test level')
+    @unittest.skipUnless(
+        condition(test_level=0), 'skip test in current test level')
     def test_remote_predict(self):
 
         input_args = dict(
             model='qwen-v1',
             prompt='推荐一个附近的公园',
-            history=[
-                {
-                    "user": "今天天气好吗？",
-                    "bot": "今天天气不错，要出去玩玩嘛？"
-                },
-                {
-                    "user": "那你有什么地方推荐？",
-                    "bot": "我建议你去公园，春天来了，花朵开了，很美丽。"
-                }
-            ],
+            history=[{
+                'user': '今天天气好吗？',
+                'bot': '今天天气不错，要出去玩玩嘛？'
+            }, {
+                'user': '那你有什么地方推荐？',
+                'bot': '我建议你去公园，春天来了，花朵开了，很美丽。'
+            }],
             max_length=500,
             top_k=15,
         )
@@ -63,21 +61,19 @@ class TestQwenPredictor(unittest.TestCase):
         self.assertTrue(result_dict['output'])
         self.assertTrue(result_dict['output']['text'])
 
-    @unittest.skipUnless(condition(test_level=1), 'skip test in current test level')
+    @unittest.skipUnless(
+        condition(test_level=1), 'skip test in current test level')
     def test_local_predict(self):
 
         input_args = dict(
             prompt='推荐一个附近的公园',
-            history=[
-                {
-                    "user": "今天天气好吗？",
-                    "bot": "今天天气不错，要出去玩玩嘛？"
-                },
-                {
-                    "user": "那你有什么地方推荐？",
-                    "bot": "我建议你去公园，春天来了，花朵开了，很美丽。"
-                }
-            ],
+            history=[{
+                'user': '今天天气好吗？',
+                'bot': '今天天气不错，要出去玩玩嘛？'
+            }, {
+                'user': '那你有什么地方推荐？',
+                'bot': '我建议你去公园，春天来了，花朵开了，很美丽。'
+            }],
             max_length=500,
             top_k=15,
         )

@@ -2,7 +2,7 @@
 
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def readme():
@@ -126,7 +126,7 @@ def pack_resource():
 
     proj_dir = root_dir + 'llmuses/'
     shutil.copytree('./evals', proj_dir)
-    shutil.copy('./requirements.txt', 'package/requirements.txt')
+    shutil.copy('requirements/requirements.txt', 'package/requirements.txt')
     shutil.copy('./README.md', 'package/README.md')
 
 

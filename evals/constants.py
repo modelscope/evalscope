@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from enum import Enum
 
-DEFAULT_WORK_DIR = "~/maas_evals"
+DEFAULT_WORK_DIR = '~/maas_evals'
 
 
 class TaskEnvs:
@@ -47,6 +47,7 @@ class EvalTaskConfig:
     ARGS_MODEL = 'model'
     ARGS_MAX_LEN = 'max_length'
     ARGS_TOP_K = 'top_k'
+    ENABLE = 'enable'
 
 
 class ScoringModel:
@@ -67,9 +68,15 @@ class MetricsConstant:
     EPSILON = float(1e-6)
     INVALID_VALUE = -9999999
     ROUGE_KEYS = [
-        'rouge-1-r', 'rouge-1-p', 'rouge-1-f',
-        'rouge-2-r', 'rouge-2-p', 'rouge-2-f',
-        'rouge-l-r', 'rouge-l-p', 'rouge-l-f',
+        'rouge-1-r',
+        'rouge-1-p',
+        'rouge-1-f',
+        'rouge-2-r',
+        'rouge-2-p',
+        'rouge-2-f',
+        'rouge-l-r',
+        'rouge-l-p',
+        'rouge-l-f',
     ]
 
 
@@ -87,3 +94,15 @@ class MetricMembers(Enum):
     # ELO rating system for pairwise comparison
     ELO = 'elo'
 
+
+class ArenaWinner:
+
+    MODEL_A = 'model_a'
+
+    MODEL_B = 'model_b'
+
+    TIE = 'tie'
+
+    TIE_BOTH_BAD = 'tie_both_bad'
+
+    UNKNOWN = 'unknown'

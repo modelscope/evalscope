@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from typing import Callable
-from evals.metrics.math_accuracy import compute_math_accuracy_one_sample
+
 from evals.metrics.code_metric import compute_pass_k
-from evals.metrics.rouge_metric import compute_rouge
+from evals.metrics.math_accuracy import compute_math_accuracy_one_sample
+from evals.metrics.rouge_metric import compute_rouge_score
 
 
 class Metrics:
@@ -11,14 +12,14 @@ class Metrics:
     #   1. add more metrics: accuracy, precision, recall, f1, auc, mae, mse, rmse, bleu, rouge, etc.
     #   2. lazyload tobe added
     #   3. add registry
-
     """
     Metrics.
 
     Examples:
-        >>> from evals.metrics import Metrics
+        >>> from evals.metrics.metrics import Metrics
+        >>> from evals.metrics.metrics import get_metric
         >>> Metrics.show_all_metrics()
-        >>> metrics = Metrics.get_metric('accuracy')
+        >>> metrics = get_metric('accuracy')
         >>> kwargs = {'references': [0, 1, 2, 0, 1, 2], 'predictions': [0, 1, 1, 2, 1, 2]}
         >>> results = metrics.compute(**kwargs)
         >>> print(results)
@@ -51,7 +52,7 @@ class Metrics:
         pass
 
     def _get_rouge_fn(self):
-        return compute_rouge
+        return compute_rouge_score
 
     def _get_math_accuracy(self):
         return compute_math_accuracy_one_sample

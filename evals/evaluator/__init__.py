@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-
-
+from evals.evaluator.base_reviewer import BaseReviewer
 
 #
 # from typing import TYPE_CHECKING

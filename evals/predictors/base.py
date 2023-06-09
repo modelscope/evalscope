@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from evals.constants import PredictorMode, PredictorKeys
+from evals.constants import PredictorKeys, PredictorMode
 
 
 class Predictor(ABC):
@@ -12,7 +12,10 @@ class Predictor(ABC):
     #   1. Multi-thread calling to be supported
     #   2. Async calling to be supported
 
-    def __init__(self, api_key: str, mode: str = PredictorMode.REMOTE, **kwargs):
+    def __init__(self,
+                 api_key: str,
+                 mode: str = PredictorMode.REMOTE,
+                 **kwargs):
         self.mode: str = mode
         self.api_key = api_key
         self.model: Any = None
@@ -33,7 +36,7 @@ class Predictor(ABC):
         elif self.mode == PredictorMode.REMOTE:
             return self._run_remote_inference(**kwargs)
         else:
-            raise ValueError(f"Invalid predictor mode: {self.mode}")
+            raise ValueError(f'Invalid predictor mode: {self.mode}')
 
     @abstractmethod
     def _run_local_inference(self, **kwargs) -> dict:
@@ -46,7 +49,6 @@ class Predictor(ABC):
     def _init_local_model(self, **kwargs):
         # TODO: to be added by other developers
         if not kwargs:
-            raise ValueError(f"Local model config is empty")
+            raise ValueError('Local model config is empty')
 
         ...
-

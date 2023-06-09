@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import inspect
 from evals.utils.logger import get_logger
 
 TYPE_NAME = 'type'

@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from odps import ODPS
 import pandas as pd
+from odps import ODPS
 
 
 class MaxComputeUtil:
@@ -43,7 +43,8 @@ class MaxComputeUtil:
 
         return pd_df
 
-    def fetch_data(self, table_name: str, pt_condition: str, output_path: str) -> None:
+    def fetch_data(self, table_name: str, pt_condition: str,
+                   output_path: str) -> None:
         """
         Fetch data from MaxCompute table to local file.
         :param table_name: table name
@@ -54,4 +55,4 @@ class MaxComputeUtil:
         """
         pd_df = self.read_data(table_name, pt_condition)
         pd_df.to_csv(output_path, index=False)
-        print(f"Fetch data to {output_path} successfully.")
+        print(f'Fetch data to {output_path} successfully.')

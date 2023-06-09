@@ -1,9 +1,10 @@
-import regex as re
-import sys
-import json
-from functools import lru_cache
 import logging
+import sys
+from functools import lru_cache
 from typing import Sequence
+
+import json
+import regex as re
 from evals.constants import MetricsConstant
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + \
-         list(range(ord("®"), ord("ÿ") + 1))
+    bs = list(range(ord('!'),
+                    ord('~') + 1)) + list(range(
+                        ord('¡'),
+                        ord('¬') + 1)) + list(range(ord('®'),
+                                                    ord('ÿ') + 1))
     cs = bs[:]
     n = 0
-    for b in range(2 ** 8):
+    for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2 ** 8 + n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
@@ -54,8 +58,12 @@ class GPT2Tokenizer(object):
     [NOTE]: Copied from megatron.tokenizer.gpt2_tokenization.GPT2Tokenizer.
     """
 
-    def __init__(self, vocab_file, merges_file, errors='replace',
-                 special_tokens=None, max_len=None):
+    def __init__(self,
+                 vocab_file,
+                 merges_file,
+                 errors='replace',
+                 special_tokens=None,
+                 max_len=None):
         assert sys.version_info[0] != 2
 
         self.max_len = max_len if max_len is not None else int(1e12)
@@ -72,7 +80,8 @@ class GPT2Tokenizer(object):
         # Should haved added re.IGNORECASE so BPE merges can happen for
         # capitalized versions of contractions
         self.pat = re.compile(
-            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        )
 
         self.special_tokens = {}
         self.special_tokens_decoder = {}
@@ -92,8 +101,11 @@ class GPT2Tokenizer(object):
             return
         self.special_tokens = dict((tok, len(self.encoder) + i)
                                    for i, tok in enumerate(special_tokens))
-        self.special_tokens_decoder = {v: k for k, v in self.special_tokens.items()}
-        logger.info("Special tokens {}".format(self.special_tokens))
+        self.special_tokens_decoder = {
+            v: k
+            for k, v in self.special_tokens.items()
+        }
+        logger.info('Special tokens {}'.format(self.special_tokens))
 
     def bpe(self, token):
         if token in self.cache:
@@ -105,7 +117,8 @@ class GPT2Tokenizer(object):
             return token
 
         while True:
-            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float('inf')))
+            bigram = min(
+                pairs, key=lambda pair: self.bpe_ranks.get(pair, float('inf')))
             if bigram not in self.bpe_ranks:
                 break
             first, second = bigram
@@ -120,7 +133,8 @@ class GPT2Tokenizer(object):
                     new_word.extend(word[i:])
                     break
 
-                if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
+                if word[i] == first and i < len(word) - 1 and word[
+                        i + 1] == second:
                     new_word.append(first + second)
                     i += 2
                 else:
@@ -143,8 +157,10 @@ class GPT2Tokenizer(object):
             if sys.version_info[0] == 2:
                 token = ''.join(self.byte_encoder[ord(b)] for b in token)
             else:
-                token = ''.join(self.byte_encoder[b] for b in token.encode('utf-8'))
-            bpe_tokens.extend(bpe_token for bpe_token in self.bpe(token).split(' '))
+                token = ''.join(self.byte_encoder[b]
+                                for b in token.encode('utf-8'))
+            bpe_tokens.extend(
+                bpe_token for bpe_token in self.bpe(token).split(' '))
         return bpe_tokens
 
     def convert_tokens_to_ids(self, tokens):
@@ -162,11 +178,10 @@ class GPT2Tokenizer(object):
                 ids.append(self.encoder.get(token, 0))
         if len(ids) > self.max_len:
             logger.warning(
-                "Token indices sequence length is longer than the specified maximum "
-                " sequence length for this OpenAI GPT model ({} > {}). Running this"
-                " sequence through the model will result in indexing errors".format(
-                    len(ids), self.max_len)
-            )
+                'Token indices sequence length is longer than the specified maximum '
+                ' sequence length for this OpenAI GPT model ({} > {}). Running this'
+                ' sequence through the model will result in indexing errors'.
+                format(len(ids), self.max_len))
         return ids
 
     def convert_ids_to_tokens(self, ids, skip_special_tokens=False):
@@ -185,11 +200,13 @@ class GPT2Tokenizer(object):
 
     def decode(self, tokens):
         text = ''.join([self.decoder[token] for token in tokens])
-        text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors=self.errors)
+        text = bytearray([self.byte_decoder[c] for c in text]).decode(
+            'utf-8', errors=self.errors)
         return text
 
 
 class DummyTokenizer:
+
     def tokenize(self, text: str):
         return text.split()
 

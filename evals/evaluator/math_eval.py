@@ -4,8 +4,8 @@ from typing import Union
 from evals.constants import MetricMembers
 from evals.evaluate import Evaluate
 from evals.metrics.math_accuracy import run_math_eval
-from evals.utils.utils import jsonl_to_list
 from evals.utils.logger import get_logger
+from evals.utils.utils import jsonl_to_list
 
 logger = get_logger()
 
@@ -30,7 +30,7 @@ class MathEvaluate(Evaluate):
                 md_level = self.kwargs.pop('md_level', 2)
                 run_math_eval(data_list, md_level=md_level)
             else:
-                raise ValueError(f"Unsupported metric: {metric}")
+                raise ValueError(f'Unsupported metric: {metric}')
 
     def run(self, prompts: Union[str, list]) -> list:
         """
@@ -42,6 +42,6 @@ class MathEvaluate(Evaluate):
         if isinstance(prompts, str):
             prompts = jsonl_to_list(prompts)
         self.eval_samples(prompts)
-        logger.info(f"Math evaluation finished.")
+        logger.info('Math evaluation finished.')
 
         return res_list

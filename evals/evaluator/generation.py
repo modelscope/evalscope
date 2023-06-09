@@ -4,9 +4,8 @@ from typing import Union
 from evals.constants import MetricMembers
 from evals.evaluate import Evaluate
 from evals.metrics.rouge_metric import run_rouge_eval
-from evals.utils.utils import jsonl_to_list
-
 from evals.utils.logger import get_logger
+from evals.utils.utils import jsonl_to_list
 
 logger = get_logger()
 
@@ -21,7 +20,8 @@ class CommonGenerationEvaluate(Evaluate):
     """
 
     def __init__(self, metrics: list, **kwargs):
-        super(CommonGenerationEvaluate, self).__init__(metrics=metrics, **kwargs)
+        super(CommonGenerationEvaluate, self).__init__(
+            metrics=metrics, **kwargs)
         logger.info(f'input config kwargs: {kwargs}')
 
     def eval_samples(self, data_list: list):
@@ -30,10 +30,14 @@ class CommonGenerationEvaluate(Evaluate):
         for metric in self.metrics:
             if metric == MetricMembers.ROUGE.value:
                 md_level = self.kwargs.pop('md_level', 2)
-                report_metric_key = self.kwargs.pop('report_metric_key', 'rouge-l-f')
-                run_rouge_eval(data_list, md_level=md_level, report_metric_key=report_metric_key)
+                report_metric_key = self.kwargs.pop('report_metric_key',
+                                                    'rouge-l-f')
+                run_rouge_eval(
+                    data_list,
+                    md_level=md_level,
+                    report_metric_key=report_metric_key)
             else:
-                raise ValueError(f"Unsupported metric: {metric}")
+                raise ValueError(f'Unsupported metric: {metric}')
 
     def run(self, prompts: Union[str, list]) -> list:
         """
@@ -45,7 +49,6 @@ class CommonGenerationEvaluate(Evaluate):
         if isinstance(prompts, str):
             prompts = jsonl_to_list(prompts)
         self.eval_samples(prompts)
-        logger.info(f"Common generating evaluation finished.")
+        logger.info('Common generating evaluation finished.')
 
         return res_list
-
