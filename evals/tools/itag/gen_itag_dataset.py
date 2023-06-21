@@ -1,11 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
-import json
 import csv
-import pandas as pd
+import os
 
+import json
+import pandas as pd
 from evals.utils.logger import get_logger
+
 logger = get_logger()
 
 
@@ -26,10 +27,14 @@ class GenItagDataset:
     def get_mock_data(self) -> list:
         # Generate mock data
         mock_data = list()
-        mock_data.append(['aaa' + str(i) for i in range(len(self.csv_headers))])
-        mock_data.append(['bbb' + str(i) for i in range(len(self.csv_headers))])
-        mock_data.append(['ccc' + str(i) for i in range(len(self.csv_headers))])
-        mock_data.append(['ddd' + str(i) for i in range(len(self.csv_headers))])
+        mock_data.append(
+            ['aaa' + str(i) for i in range(len(self.csv_headers))])
+        mock_data.append(
+            ['bbb' + str(i) for i in range(len(self.csv_headers))])
+        mock_data.append(
+            ['ccc' + str(i) for i in range(len(self.csv_headers))])
+        mock_data.append(
+            ['ddd' + str(i) for i in range(len(self.csv_headers))])
 
         return mock_data
 
@@ -44,9 +49,11 @@ class GenItagDataset:
 
 if __name__ == '__main__':
 
-    template_file_path = os.path.join(os.path.dirname('__file__'), 'templates/template_xc_response_rank_0329.json')
-    output_file_path = os.path.join(os.path.dirname('__file__'), 'datasets/llm_evals_datasets_rank.csv')
+    template_file_path = os.path.join(
+        os.path.dirname('__file__'),
+        'templates/template_xc_response_rank_0329.json')
+    output_file_path = os.path.join(
+        os.path.dirname('__file__'), 'datasets/llm_evals_datasets_rank.csv')
 
     gen_itag_dataset = GenItagDataset(template_file_path)
     gen_itag_dataset.gen_dataset(output_file_path)
-

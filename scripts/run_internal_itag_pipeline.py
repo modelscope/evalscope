@@ -1,19 +1,21 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+
 from evals.tools import ItagManager
 
+if __name__ == '__main__':
 
-if __name__ == "__main__":
-
-    tenant_id, employee_id = open('private/itag_info.txt').readlines().strip().split(',')
+    tenant_id, employee_id = open(
+        'private/itag_info.txt').readlines().strip().split(',')
     token = """-----BEGIN RSA PRIVATE KEY-----
 xxx
 xxx
 -----END RSA PRIVATE KEY-----
     """
 
-    itag_manager = ItagManager(tenant_id=tenant_id, token=token, employee_id=employee_id)
+    itag_manager = ItagManager(
+        tenant_id=tenant_id, token=token, employee_id=employee_id)
 
     # Create itag task from local csv file.
     # template_id = '1642827551965851648'

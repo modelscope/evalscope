@@ -10,8 +10,9 @@ def get_table_schema(ddl_file) -> dict:
     Get table schema from DDL file.
     :param ddl_file:  local DDL file path.
     :return:  a dict which contains table schema. e.g.:
-        {'columns': [{'name': 'gmt_create'}, {...}], 'primary_key': [], 'partitioned_by': {},
-            'table_name': 'itag_task', 'if_not_exists': true, 'comment': 'xxx', 'LIFECYCLE': 7}
+        {'columns': [{'name': 'gmt_create'}, {...}], 'primary_key': [],
+            'partitioned_by': {}, 'table_name': 'itag_task',
+            'if_not_exists': true, 'comment': 'xxx', 'LIFECYCLE': 7}
     """
     if not os.path.isfile(ddl_file):
         raise FileNotFoundError(f'DDL file not found: {ddl_file}')

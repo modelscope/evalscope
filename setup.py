@@ -2,7 +2,7 @@
 
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def readme():
@@ -126,7 +126,7 @@ def pack_resource():
 
     proj_dir = root_dir + 'llmuses/'
     shutil.copytree('./evals', proj_dir)
-    shutil.copy('./requirements.txt', 'package/requirements.txt')
+    shutil.copy('requirements/requirements.txt', 'package/requirements.txt')
     shutil.copy('./README.md', 'package/README.md')
 
 
@@ -140,8 +140,8 @@ if __name__ == '__main__':
     setup(
         name='llmuses',
         version='0.0.2',
-        author='Alibaba ModelScope team',
-        author_email='modelscope@list.alibaba-inc.com',
+        author='ModelScope team',
+        author_email='contact@modelscope.cn',
         keywords='python,llm,evaluation',
         description='LLMs Evaluation Framework',
         long_description=readme(),

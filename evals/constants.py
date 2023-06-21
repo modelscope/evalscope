@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from enum import Enum
 
-DEFAULT_WORK_DIR = "~/maas_evals"
+DEFAULT_WORK_DIR = '~/maas_evals'
 
 
 class TaskEnvs:
@@ -40,7 +40,7 @@ class EvalTaskConfig:
     TASK_NAME = 'task_name'
     TASK_ID = 'id'
     SAMPLES = 'samples'
-    SCORING_MODEL = 'scoring_model'
+    EVALUATOR = 'evaluator'
     PREDICTOR = 'predictor'
     CLASS_REF = 'ref'
     CLASS_ARGS = 'args'
@@ -53,6 +53,7 @@ class EvalTaskConfig:
     ARGS_MODEL_PATH = 'model_path'
     ARGS_MODEL_REVISION = 'model_revision'
     ARGS_QUANTIZE_BIT = 'quantize_bit'
+    ENABLE = 'enable'
 
 
 class ScoringModel:
@@ -73,9 +74,15 @@ class MetricsConstant:
     EPSILON = float(1e-6)
     INVALID_VALUE = -9999999
     ROUGE_KEYS = [
-        'rouge-1-r', 'rouge-1-p', 'rouge-1-f',
-        'rouge-2-r', 'rouge-2-p', 'rouge-2-f',
-        'rouge-l-r', 'rouge-l-p', 'rouge-l-f',
+        'rouge-1-r',
+        'rouge-1-p',
+        'rouge-1-f',
+        'rouge-2-r',
+        'rouge-2-p',
+        'rouge-2-f',
+        'rouge-l-r',
+        'rouge-l-p',
+        'rouge-l-f',
     ]
 
 
@@ -89,3 +96,19 @@ class MetricMembers(Enum):
 
     # Code rouge metric
     ROUGE = 'rouge'
+
+    # ELO rating system for pairwise comparison
+    ELO = 'elo'
+
+
+class ArenaWinner:
+
+    MODEL_A = 'model_a'
+
+    MODEL_B = 'model_b'
+
+    TIE = 'tie'
+
+    TIE_BOTH_BAD = 'tie_both_bad'
+
+    UNKNOWN = 'unknown'

@@ -6,6 +6,8 @@
 - 抽象了评估任务（eval task），通过配置文件实现对评估方法、数据、metrics的管理和串联
 - 评估报告生成
 - 自动评估流程和人工评估流程的支持
+- 竞技场模式(Arena），支持多个模型的两两对比评估
+- AI Enhanced Auto-Reviewer（AAR），支持基于专家模型的自动评估流程
 
 我们提供以下评估指标：
 1. rouge
@@ -40,6 +42,36 @@ python3 scripts/run_eval.py --input evals/registry/data/common_generation/rouge_
 ```
 
 
+## 竞技场模式（Arena）
+竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
+#### 1. 环境准备
+```text
+a. 数据准备，questions data格式参考：evals/registry/data/arena/question.jsonl
+b. 如果需要使用自动评估流程（AAR），则需要配置相关环境变量，我们以GPT-4 based auto-reviewer流程为例，需要配置以下环境变量：
+> export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+```
+
+#### 2. 配置文件
+```text
+arena评估流程的配置文件参考： evals/registry/tasks/cfg_arena.yaml
+字段说明：
+    questions_file: question data的路径
+    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
+    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
+    elo_rating: ELO rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+```
+
+#### 3. 执行脚本
+```python
+Usage:
+# python3 scripts/run_arena.py --c /path/to/xxx_cfg_arena.yaml
+
+Example:
+> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_arena.yaml
+```
+
+
+
 # 数据格式
 
 为了保证能够方便的贡献评测数据集，我们设计了最基础的数据格式和为了相应评估方法的可选数据格式。 数据是以jsonl的形式存储，具体介绍如下：
@@ -67,4 +99,3 @@ keep all keys of the input json, and add a new key named `gen`
 | key | 类型 | 是否必须 | 含义 |
 | --- | --- | --- | ---|
 | `gen`| list of str | 是 | 生成结果，可以生成多个，所以这里是list |
-

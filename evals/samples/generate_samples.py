@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
-from typing import Union, List
+from typing import List, Union
 
 from evals.utils.utils import jsonl_to_list
 
@@ -14,11 +14,13 @@ class GenerateSamples:
     1. formatting raw samples
     2. gen prompts
 
-    prompts_jsonl: the path of prompts jsonl file; User can also provide a list of prompts.
+    prompts_jsonl: the path of prompts jsonl file;
+        User can also provide a list of prompts.
     """
 
     def __init__(self, prompts_jsonl: Union[str, List[str]]):
-        self._prompts_jsonl = os.path.join(os.path.dirname(__file__), '..', prompts_jsonl)
+        self._prompts_jsonl = os.path.join(
+            os.path.dirname(__file__), '..', prompts_jsonl)
 
     def run(self):
         # TODO: the pipeline to be implemented

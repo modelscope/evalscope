@@ -1,14 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import re
-from tqdm import tqdm
 from collections import defaultdict
 
 from evals.constants import MetricsConstant
+from tqdm import tqdm
 
 
 def get_last_number(s):
-    match = re.search(r"[-+]?\d*\.\d+|\d+", s[::-1])
+    match = re.search(r'[-+]?\d*\.\d+|\d+', s[::-1])
     if match:
         last_digit = match.group()[::-1]
     else:
@@ -43,15 +43,17 @@ def compute_math_accuracy(predict_l, reference_l):
 def run_math_eval(data_l, md_level=2):
     print(f"{'#' * md_level} Math Eval(math accuracy)")
     for data in tqdm(data_l):
-        data['math_accuracy'] = compute_math_accuracy_one_sample(data['gen'], data['target'])
+        data['math_accuracy'] = compute_math_accuracy_one_sample(
+            data['gen'], data['target'])
     task_data_d = defaultdict(list)
     for data in data_l:
         for task in data['task_tags']:
             task_data_d[task].append(data)
     correct_cnt = sum([data['math_accuracy'] for data in data_l])
-    print(f"[total], count: {len(data_l)}, math accuracy: "
-          f"{correct_cnt / len(data_l) * 100:0.2f}%")
+    print(f'[total], count: {len(data_l)}, math accuracy: '
+          f'{correct_cnt / len(data_l) * 100:0.2f}%')
     for task in task_data_d.keys():
-        correct_cnt = sum([data['math_accuracy'] for data in task_data_d[task]])
-        print(f"[{task}], count: {len(task_data_d[task])}, math accuracy: "
-              f"{correct_cnt/len(task_data_d[task])*100:0.2f}%")
+        correct_cnt = sum(
+            [data['math_accuracy'] for data in task_data_d[task]])
+        print(f'[{task}], count: {len(task_data_d[task])}, math accuracy: '
+              f'{correct_cnt/len(task_data_d[task])*100:0.2f}%')

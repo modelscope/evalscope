@@ -1,13 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# yapf: disable
+# isort:skip_file
 
 import os
 
-from evals.constants import DumpMode, TaskEnvs, DEFAULT_WORK_DIR
+from evals.constants import DEFAULT_WORK_DIR, DumpMode, TaskEnvs
 from evals.task import EvalTask
 from evals.tools import ItagManager
-
 """ This is an example of running a evaluation task pipeline. """
-
 
 if __name__ == '__main__':
 
@@ -22,16 +22,16 @@ if __name__ == '__main__':
 
     # Step3: Generate prompts
     ...
-    prompts_file = os.path.join(os.getcwd(), '..', 'evals/registry/data/poetry_gen/samples.jsonl')
+    prompts_file = os.path.join(
+        os.getcwd(), '..', 'evals/registry/data/poetry_gen/samples.jsonl')
 
     # Step4: Generate task config (yaml or dict)
-    task_cfg_file = os.path.join(os.getcwd(), '..', 'evals/registry/tasks/task_qwen_gen_poetry.yaml')
+    task_cfg_file = os.path.join(
+        os.getcwd(), '..', 'evals/registry/tasks/task_qwen_gen_poetry.yaml')
 
     # Step5: run task
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
-    eval_task.run(num_processes=1,
-                  chunksize=1,
-                  dump_mode=DumpMode.OVERWRITE)
+    eval_task.run(num_processes=1, chunksize=1, dump_mode=DumpMode.OVERWRITE)
     print('Dump eval result to: ', eval_task.eval_results_path)
 
     # Step6 [Optional]: iTag pipeline (if you want to use iTag to tag your samples)
@@ -54,7 +54,9 @@ if __name__ == '__main__':
             template_id='1642827551965851648',
             task_name='task_test_llm_evals_rank_v1',
             dataset_name='dataset_test_llm_evals_rank_v1',
-            dataset_path=os.path.join(os.getcwd(), '..', 'evals/tools/itag/datasets/llm_evals_datasets_rank.csv'),
+            dataset_path=os.path.join(
+                os.getcwd(), '..',
+                'evals/tools/itag/datasets/llm_evals_datasets_rank.csv'),
         )
         itag_task_resp = itag_manager.process(**itag_run_args)
 

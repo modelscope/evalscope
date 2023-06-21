@@ -1,8 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 class GenerateReport:
@@ -11,7 +11,8 @@ class GenerateReport:
         self._df = df
 
     def gen_mock_chart(self):
-        data = pd.DataFrame(np.random.randint(1, 5, size=(5, 3)), columns=list('ABC'))
+        data = pd.DataFrame(
+            np.random.randint(1, 5, size=(5, 3)), columns=list('ABC'))
         plt.figure()
         data.plot(kind='bar')
         plt.show()
