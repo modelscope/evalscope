@@ -1,0 +1,53 @@
+# input raw data
+question_file: evals/registry/data/alpaca_eval/question.jsonl
+
+# candidate models to be battled
+answers_gen:
+    gpt-3.5-turbo:
+        enable: false           # enable or disable this model
+        ref: evals.tasks.task_eval_gpt35_completion:TaskEvalGpt35Completion
+        args:
+            max_tokens: 1024
+            temperature: 0.2
+        output_file: evals/registry/data/alpaca_eval/answers/answer_gpt35_dummy.jsonl
+    vicuna-13b:
+        enable: false
+        ref: null
+        args:
+            max_tokens: 512
+            temperature: 0.2
+        output_file: evals/registry/data/alpaca_eval/answers/answer_vicuna-13b.jsonl
+    llama-7b:
+        enable: false
+        ref: null
+        args:
+            max_tokens: 512
+            temperature: 0.2
+        output_file: evals/registry/data/alpaca_eval/answers/answer_llama-7b.jsonl
+
+# model of auto-reviewer
+reviews_gen:
+    enable: true
+    reviewer:
+        ref: evals.evaluator.auto_reviewer_gpt4:AutoReviewerGpt4
+        args:
+            model: gpt-4-0613
+            max_tokens: 1024
+            temperature: 0
+            # Whether to randomize output_1, output_2 when formatting.
+            is_randomize_output_order: true
+    # target answers list to be reviewed, could be replaced by your own path: /path/to/answers.jsonl
+    target_answers: [evals/registry/data/alpaca_eval/answers/answer_gpt35.jsonl,
+                     evals/registry/data/alpaca_eval/answers/answer_gpt35_dummy.jsonl]
+    # the path to the outputs of the reference model
+    reference_file: evals/registry/data/alpaca_eval/answers/answer_davinci_003.jsonl
+    # prompt templates for auto reviewer(GPT-4)
+    prompt_file: evals/registry/data/alpaca_eval/prompt_template.jsonl
+    # output file of auto reviewer
+    review_file: evals/registry/data/alpaca_eval/reviews/review_gpt4.jsonl
+
+# ELO rating
+elo_rating:
+    enable: true
+    # elo rating report file
+    report_file: evals/registry/data/alpaca_eval/reports/elo_rating.csv

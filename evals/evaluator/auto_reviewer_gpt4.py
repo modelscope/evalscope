@@ -8,9 +8,9 @@ import pandas as pd
 from evals.constants import ArenaWinner
 from evals.evaluator import BaseReviewer
 from evals.predictors.openai_gpt_predictor import OpenaiGptPredictor
-from evals.utils.arena_utils import get_battle_pairs, merge_ques_ans
+from evals.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
 from evals.utils.logger import get_logger
-from evals.utils.utils import jsonl_dump_data, jsonl_to_list
+from evals.utils.utils import jsonl_dump_data, jsonl_to_list, random_seeded_choice
 
 logger = get_logger()
 
@@ -37,7 +37,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
     MODEL_NAME = 'gpt-4'
 
-    def __init__(self, prompt_file: str, answer_file_list: list,
+    def __init__(self, prompt_file: str, answer_file_list: list, reference_file: str,
                  review_file: str, reviewer_args: dict, **kwargs):
         super().__init__(**kwargs)
 
@@ -46,9 +46,15 @@ class AutoReviewerGpt4(BaseReviewer):
         self.answer_list = [
             jsonl_to_list(answer_file) for answer_file in answer_file_list
         ]
+        if reference_file:
+            self.answer_list.append(jsonl_to_list(reference_file))
+            self.reference_idx = len(self.answer_list) - 1
 
         self.reviewer_args = reviewer_args if reviewer_args \
             else self._get_default_args()
+        self.is_randomize_output_order = self.reviewer_args.pop(
+            'is_randomize_output_order', True)
+        self.seed = self.reviewer_args.pop('seed', 123)
         self.gpt_predictor = OpenaiGptPredictor(**self.reviewer_args)
 
     @staticmethod
@@ -159,11 +165,24 @@ class AutoReviewerGpt4(BaseReviewer):
         merged_ans_df = merge_ques_ans(self.answer_list, merge_key=merge_key)
         merged_ans_df = merged_ans_df.drop(columns=['question_id'])
 
-        battle_pairs = get_battle_pairs(merged_ans_df.columns)
+        battle_pairs = get_battle_pairs(merged_ans_df.columns, self.reference_idx)
 
         res_list = []
         for t in battle_pairs:
             pair_df = merged_ans_df[list(t)]
+            if self.is_randomize_output_order:
+                pair_df.columns = ['output_1', 'output_2']
+                pair_df["is_switched_outputs"] = pair_df.apply(
+                    lambda x: random_seeded_choice(
+                        seed="is_switched_outputs" + x[0]["text"] + str(self.seed),
+                        choices=[False, True],
+                    ),
+                    axis=1,
+                )
+                pair_df = shuffle_pairwise_preferences(
+                    pair_df, pair_df["is_switched_outputs"]
+                )
+                
             pair_df_combine = pair_df.apply(
                 lambda x: self.get_reviews(x), axis=1)
             res_list.extend(pair_df_combine.to_list())

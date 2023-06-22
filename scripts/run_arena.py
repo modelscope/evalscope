@@ -37,7 +37,6 @@ class ArenaWorkflow:
         self.review_file = os.path.abspath(self.reviews_gen.get('review_file'))
 
         self.elo_rating: dict = self.cfg_dict.get('elo_rating', {})
-        self.report_file = os.path.abspath(self.elo_rating.get('report_file'))
 
     @staticmethod
     def _get_obj_from_cfg(obj_cfg: dict):
@@ -95,9 +94,14 @@ class ArenaWorkflow:
                 os.path.abspath(file_path) for file_path in target_answers
             ]
 
+            reference_file = self.reviews_gen.get('reference_file', None)
+            if reference_file:
+                reference_file = os.path.abspath(reference_file)
+
             input_kwargs = dict(
                 prompt_file=self.prompt_file,
                 answer_file_list=target_answers,
+                reference_file=reference_file,
                 review_file=self.review_file,
                 reviewer_args=reviewer_args)
             reviewer_obj = reviewer_cls(**input_kwargs)
@@ -113,13 +117,14 @@ class ArenaWorkflow:
     def get_elo_rating(self):
         enable = self.elo_rating.get(EvalTaskConfig.ENABLE, True)
         if enable:
+            report_file = os.path.abspath(self.elo_rating.get('report_file'))
             metrics = ['elo']
             ae = EloRatingEvaluate(metrics=metrics)
             res_list = ae.run(self.review_file)
             elo_df = res_list[0]
             logger.info(f'ELO rating results:\n{elo_df}')
-            elo_df.to_csv(self.report_file, index=True)
-            logger.info(f'ELO rating results are saved to {self.report_file}.')
+            elo_df.to_csv(report_file, index=True)
+            logger.info(f'ELO rating results are saved to {report_file}.')
         else:
             logger.warning('Skip elo rating because it is not enabled.')
 
