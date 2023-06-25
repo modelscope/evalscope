@@ -3,14 +3,16 @@
 import os
 import random
 import time
+from functools import partial
 
 import pandas as pd
-from evals.constants import ArenaWinner
+from evals.constants import ArenaWinner, ArenaMode, EvalTaskConfig, FnCompletionParser
 from evals.evaluator import BaseReviewer
 from evals.predictors.openai_gpt_predictor import OpenaiGptPredictor
 from evals.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
 from evals.utils.logger import get_logger
 from evals.utils.utils import jsonl_dump_data, jsonl_to_list, random_seeded_choice
+from evals.utils import completion_parsers
 
 logger = get_logger()
 
@@ -37,8 +39,8 @@ class AutoReviewerGpt4(BaseReviewer):
 
     MODEL_NAME = 'gpt-4'
 
-    def __init__(self, prompt_file: str, answer_file_list: list, reference_file: str,
-                 review_file: str, reviewer_args: dict, **kwargs):
+    def __init__(self, prompt_file: str, answer_file_list: list, baseline_file: str, reference_file: str,
+                 review_file: str, reviewer_args: dict, cache_file: str, **kwargs):
         super().__init__(**kwargs)
 
         self.review_file = review_file
@@ -46,24 +48,51 @@ class AutoReviewerGpt4(BaseReviewer):
         self.answer_list = [
             jsonl_to_list(answer_file) for answer_file in answer_file_list
         ]
-        if reference_file:
-            self.answer_list.append(jsonl_to_list(reference_file))
-            self.reference_idx = len(self.answer_list) - 1
+        self.reference_list = jsonl_to_list(reference_file) if reference_file else []
+        self.cache_list = jsonl_to_list(cache_file) if cache_file and os.path.isfile(cache_file) else []
 
         self.reviewer_args = reviewer_args if reviewer_args \
             else self._get_default_args()
+        
+        self.mode = self.reviewer_args.pop('mode', ArenaMode.PAIRWISE_ALL)
+        if self.mode == ArenaMode.PAIRWISE_BASELINE:
+            assert baseline_file is not NotImplemented
+            self.answer_list.append(jsonl_to_list(baseline_file))
+            self.baseline_idx = len(self.answer_list) - 1
+
         self.is_randomize_output_order = self.reviewer_args.pop(
-            'is_randomize_output_order', True)
-        self.seed = self.reviewer_args.pop('seed', 123)
+            EvalTaskConfig.IS_RANDOMIZE_OUTPUT_ORDER, False)
+        self.seed = self.reviewer_args.pop(EvalTaskConfig.SEED, 123)
+
+        fn_completion_parser = self.reviewer_args.pop(
+            EvalTaskConfig.FN_COMPLETION_PARSER, FnCompletionParser.LMSYS_PARSER
+        )
+        completion_parser_kwargs = self.reviewer_args.pop(
+            EvalTaskConfig.COMPLETION_PARSER_KWARGS, {}
+        )
+        if isinstance(fn_completion_parser, str):
+            fn_completion_parser = getattr(completion_parsers, fn_completion_parser)
+
+        self.fn_completion_parser = partial(
+            fn_completion_parser, **completion_parser_kwargs
+        )
         self.gpt_predictor = OpenaiGptPredictor(**self.reviewer_args)
 
     @staticmethod
     def _get_default_args():
-        return dict(max_tokens=1024, temperature=0.2)
+        return dict(
+            max_tokens=1024,
+            temperature=0.2,
+            mode=ArenaMode.PAIRWISE_ALL,
+            is_randomize_output_order=True,
+            fn_completion_parser=FnCompletionParser.LMSYS_PARSER,
+            # completion_parser_kwargs=dict(output_format="[[rating_a,rating_b]]")
+            seed=123
+        )
 
     @staticmethod
-    def gen_prompt(prompts_list: list, category: str, ques: str, ans1: str,
-                   ans2: str):
+    def gen_prompt(prompts_list: list, type: str, category: str, ques: str, ans1: str,
+                   ans2: str, ans_ref: str = None):
         """
         Generate prompt for Auto-reviewer with GPT-4.
         """
@@ -71,37 +100,29 @@ class AutoReviewerGpt4(BaseReviewer):
         # Default to general category (idx 0)
         target_prompt_dict = prompts_list[0]
         for item in prompts_list:
-            if item['category'] == category:
+            is_category_match = category in item['category'] if isinstance(item['category'], list) else item['category'] == category
+            is_type_match = item.get('type', 'pairwise') == type
+            if is_category_match and is_type_match:
                 target_prompt_dict = item
                 break
 
         sys_prompt = target_prompt_dict['system_prompt']
         prompt_template = target_prompt_dict['prompt_template']
-        defaults = target_prompt_dict['defaults']
+        defaults = target_prompt_dict.get('defaults', dict({}))
+        output_format = target_prompt_dict.get('output_format', '[[rating_a,rating_b]]')
 
         user_prompt = prompt_template.format(
-            question=ques, answer_1=ans1, answer_2=ans2, **defaults)
+            question=ques, answer_a=ans1, answer_b=ans2, ref_answer_1=ans_ref, **defaults)
 
-        return sys_prompt, user_prompt
+        return sys_prompt, user_prompt, output_format
 
-    @staticmethod
-    def parse_score(review):
-        try:
-            score_pair = review.split('\n')[0]
-            score_pair = score_pair.replace(',', ' ')
-            sp = score_pair.split(' ')
-            if len(sp) == 2:
-                return [float(sp[0]), float(sp[1])]
-            else:
-                raise Exception('Invalid score pair.')
-        except Exception as e:
-            logger.error(f'{e}\nContent: {review}\n'
-                         'You must manually fix the score pair.')
-            return [-1, -1]
-
-    def get_answer_dummy(self, sys_prompt: str, user_prompt: str) -> list:
+    def get_answer_dummy(self, sys_prompt: str, user_prompt: str, output_format) -> list:
         logger.info('Get dummy scores for input prompt ...')
-        return [round(random.random(), 2), round(random.random(), 2)]
+        if output_format == '[[rating_a,rating_b]]':
+            ans_list = [round(random.random(), 2), round(random.random(), 2)]
+            return ' '.join(str(element) for element in ans_list)
+        elif output_format == '[[A]]':
+            return random.choice(['[[A]]', '[[B]]', '[[C]]'])
 
     def get_answer(self, sys_prompt: str, user_prompt: str) -> list:
 
@@ -113,8 +134,7 @@ class AutoReviewerGpt4(BaseReviewer):
         ans_text = resp['ans_text']
         # model_id = resp['model_id']
 
-        score_pair = AutoReviewerGpt4.parse_score(ans_text)
-        return score_pair
+        return ans_text
 
     def get_reviews(self, item: pd.Series) -> dict:
 
@@ -127,47 +147,54 @@ class AutoReviewerGpt4(BaseReviewer):
         model_a = item[0]['model_id']
         model_b = item[1]['model_id']
 
-        sys_prompt, user_prompt = AutoReviewerGpt4.gen_prompt(
-            prompts_list=self.prompt_list, **input_msg)
+        if self.reference_list:
+            ans_ref = next((ref for ref in self.reference_list if ref.get('question_id') == item[0]['question_id']), None)
+            assert ans_ref['answer']
+            input_msg['ans_ref'] = ans_ref['answer']
 
-        scores = self.get_answer_dummy(sys_prompt,
-                                       user_prompt)  # TODO: ONLY FOR TEST
+        sys_prompt, user_prompt, output_format = AutoReviewerGpt4.gen_prompt(
+            prompts_list=self.prompt_list,
+            type='single' if self.mode == ArenaMode.SINGLE else 'pairwise',
+            **input_msg
+        )
 
-        # scores = self.get_answer(sys_prompt, user_prompt)
+        # TODO: ONLY FOR TEST
+        review_text = self.get_answer_dummy(sys_prompt, user_prompt, output_format)  
 
-        def get_winner(scores_pair: list) -> str:
-            if scores_pair[0] > scores_pair[1]:
-                return ArenaWinner.MODEL_A
-            elif scores_pair[0] < scores_pair[1]:
-                return ArenaWinner.MODEL_B
-            else:
-                if scores_pair[0] == scores_pair[1] == -1:
-                    return ArenaWinner.UNKNOWN
-                return ArenaWinner.TIE
+        # review_text = self.get_answer(sys_prompt, user_prompt)
+
+        winner = self.fn_completion_parser(review_text, output_format)
 
         review_result = dict(
             model_a=model_a,
             model_b=model_b,
-            scores=scores,
-            win=get_winner(scores),
+            win=winner,
             anony=True,
             tstamp=time.time(),
-            language='NA',
+            language=item[0].get('language', 'NA'),
             question_id=item[0]['question_id'],
             category=input_msg['category'],
-            question=input_msg['ques'])
+            question=input_msg['ques'],
+            review_text=review_text)
         return review_result
 
     def run(self):
         print('Run battles for models ...')
 
+        os.makedirs(os.path.dirname(self.review_file), exist_ok=True)
+
         merge_key = 'question_id'
         merged_ans_df = merge_ques_ans(self.answer_list, merge_key=merge_key)
         merged_ans_df = merged_ans_df.drop(columns=['question_id'])
 
-        battle_pairs = get_battle_pairs(merged_ans_df.columns, self.reference_idx)
+        if self.mode == ArenaMode.PAIRWISE_ALL:
+            battle_pairs = get_battle_pairs(merged_ans_df.columns)
+        elif self.mode == ArenaMode.PAIRWISE_BASELINE:
+            battle_pairs = get_battle_pairs(merged_ans_df.columns, self.baseline_idx)
+        else:
+            raise Exception(f'NotSupported mode: {self.mode}')
 
-        res_list = []
+        res_list = self.cache_list
         for t in battle_pairs:
             pair_df = merged_ans_df[list(t)]
             if self.is_randomize_output_order:
@@ -182,10 +209,15 @@ class AutoReviewerGpt4(BaseReviewer):
                 pair_df = shuffle_pairwise_preferences(
                     pair_df, pair_df["is_switched_outputs"]
                 )
-                
-            pair_df_combine = pair_df.apply(
-                lambda x: self.get_reviews(x), axis=1)
-            res_list.extend(pair_df_combine.to_list())
+            
+            for index, row in pair_df.iterrows():
+                model_a = row[0]['model_id']
+                model_b = row[1]['model_id']
+                question = row[0]['text']
+                if any(r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question for r in res_list):
+                    logger.info(f"Use cache review for {model_a} vs {model_b} ...")
+                    continue
 
-        os.makedirs(os.path.dirname(self.review_file), exist_ok=True)
-        jsonl_dump_data(res_list, self.review_file)
+                row_result = self.get_reviews(row)
+                res_list.append(row_result)
+                jsonl_dump_data(res_list, self.review_file)

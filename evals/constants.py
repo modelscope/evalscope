@@ -54,6 +54,11 @@ class EvalTaskConfig:
     ARGS_MODEL_REVISION = 'model_revision'
     ARGS_QUANTIZE_BIT = 'quantize_bit'
     ENABLE = 'enable'
+    MODE = 'mode'
+    IS_RANDOMIZE_OUTPUT_ORDER = 'is_randomize_output_order'
+    SEED = 'seed'
+    FN_COMPLETION_PARSER = 'fn_completion_parser'
+    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
 
 
 class ScoringModel:
@@ -69,6 +74,16 @@ class DumpMode:
     OVERWRITE = 'overwrite'
     APPEND = 'append'
 
+
+class ArenaMode:
+    SINGLE = 'single'
+    PAIRWISE_BASELINE = 'pairwise_baseline'
+    PAIRWISE_ALL = 'pairwise_all'
+
+class FnCompletionParser:
+    REGEX_PARSER: str = 'regex_parser'
+    LMSYS_PARSER: str = 'lmsys_parser'
+    RANKING_PARSER: str = 'ranking_parser'
 
 class MetricsConstant:
     EPSILON = float(1e-6)

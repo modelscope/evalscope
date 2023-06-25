@@ -8,7 +8,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evals.constants import EvalTaskConfig
+from evals.constants import EvalTaskConfig, ArenaMode
 from evals.evaluator.elo_rating_eval import EloRatingEvaluate
 from evals.utils.logger import get_logger
 from evals.utils.utils import get_obj_from_cfg, yaml_to_dict
@@ -94,16 +94,26 @@ class ArenaWorkflow:
                 os.path.abspath(file_path) for file_path in target_answers
             ]
 
+            baseline_file = self.reviews_gen.get('baseline_file', None)
+            if baseline_file:
+                baseline_file = os.path.abspath(baseline_file)
+
             reference_file = self.reviews_gen.get('reference_file', None)
             if reference_file:
                 reference_file = os.path.abspath(reference_file)
 
+            cache_file = self.reviews_gen.get('cache_file', None)
+            if cache_file:
+                cache_file = os.path.abspath(cache_file)
+
             input_kwargs = dict(
                 prompt_file=self.prompt_file,
                 answer_file_list=target_answers,
+                baseline_file=baseline_file,
                 reference_file=reference_file,
                 review_file=self.review_file,
-                reviewer_args=reviewer_args)
+                reviewer_args=reviewer_args,
+                cache_file=cache_file)
             reviewer_obj = reviewer_cls(**input_kwargs)
 
             reviewer_obj.run()

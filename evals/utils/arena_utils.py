@@ -49,7 +49,7 @@ def merge_ques_ans(answer_list_all,
     return ans_df
 
 
-def get_battle_pairs(columns: List[str], reference_idx: int = -1) -> List[tuple]:
+def get_battle_pairs(columns: List[str], baseline_idx: int = -1) -> List[tuple]:
     """
     Get battle pair names from columns.
 
@@ -76,8 +76,8 @@ def get_battle_pairs(columns: List[str], reference_idx: int = -1) -> List[tuple]
     if cols_num <= 0:
         return res_list
     
-    if reference_idx != -1:
-        n_column = columns[reference_idx]
+    if baseline_idx != -1:
+        n_column = columns[baseline_idx]
         res_list = [(column, n_column) for column in columns if column != n_column]
     else:
         mat = np.ones((cols_num, cols_num))
