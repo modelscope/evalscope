@@ -41,8 +41,9 @@ reviews_gen:
     # output file of auto reviewer
     review_file: evals/registry/data/arena/reviews/review_gpt4.jsonl
 
-# ELO rating
-elo_rating:
+# rating results
+rating_gen:
     enable: true
+    metrics: ['elo']
     # elo rating report file
     report_file: evals/registry/data/arena/reports/elo_rating.csv

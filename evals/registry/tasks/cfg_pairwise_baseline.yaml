@@ -54,8 +54,10 @@ reviews_gen:
     # cache file of auto reviewer
     cache_file: evals/registry/data/arena/reviews/review_gpt4_pair_baseline.jsonl
 
-# ELO rating
-elo_rating:
+# rating results
+rating_gen:
     enable: true
+    metrics: ['pairwise']
+    baseline_model: text_davinci_003
     # elo rating report file
-    report_file: evals/registry/data/arena/reports/elo_rating_pair_baseline.csv
+    report_file: evals/registry/data/arena/reports/rating_pairwise_baseline.csv

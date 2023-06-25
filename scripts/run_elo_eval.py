@@ -2,7 +2,7 @@
 
 import os
 
-from evals.evaluator.elo_rating_eval import EloRatingEvaluate
+from evals.evaluator.rating_eval import RatingEvaluate
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
                                     'review_gpt4.jsonl')
 
     metrics = ['elo']
-    ae = EloRatingEvaluate(metrics=metrics)
+    ae = RatingEvaluate(metrics=metrics)
     res_list = ae.run(review_data_path)
 
     print(res_list[0])
