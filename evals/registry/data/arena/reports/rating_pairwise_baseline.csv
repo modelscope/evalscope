@@ -1,3 +1,3 @@
-model,win,loss,tie,win_rate,loss_rate
-gpt-3.5-turbo:20230327,32,28,20,0.4,0.35
-gpt-3.5-turbo,24,26,30,0.3,0.325
+model,win,loss,tie,win_rate,loss_rate,tie_rate
+gpt-3.5-turbo,9,7,64,0.1125,0.0875,0.8
+gpt-3.5-turbo:20230327,6,7,67,0.075,0.0875,0.8375

@@ -6,7 +6,7 @@ import time
 from functools import partial
 
 import pandas as pd
-from evals.constants import ArenaWinner, ArenaMode, EvalTaskConfig, FnCompletionParser
+from evals.constants import ArenaWinner, ArenaMode, EvalTaskConfig, FnCompletionParser, PositionBiasMitigation
 from evals.evaluator import BaseReviewer
 from evals.predictors.openai_gpt_predictor import OpenaiGptPredictor
 from evals.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
@@ -60,9 +60,10 @@ class AutoReviewerGpt4(BaseReviewer):
             self.answer_list.append(jsonl_to_list(baseline_file))
             self.baseline_idx = len(self.answer_list) - 1
 
-        self.is_randomize_output_order = self.reviewer_args.pop(
-            EvalTaskConfig.IS_RANDOMIZE_OUTPUT_ORDER, False)
-        self.seed = self.reviewer_args.pop(EvalTaskConfig.SEED, 123)
+        self.position_bias_mitigation = self.reviewer_args.pop(
+            EvalTaskConfig.POSITION_BIAS_MITIGATION, PositionBiasMitigation.NONE)
+        if self.position_bias_mitigation == PositionBiasMitigation.RANDOMIZE_ORDER:
+            self.random_seed = self.reviewer_args.pop(EvalTaskConfig.RANDOM_SEED, 123)
 
         fn_completion_parser = self.reviewer_args.pop(
             EvalTaskConfig.FN_COMPLETION_PARSER, FnCompletionParser.LMSYS_PARSER
@@ -84,10 +85,10 @@ class AutoReviewerGpt4(BaseReviewer):
             max_tokens=1024,
             temperature=0.2,
             mode=ArenaMode.PAIRWISE_ALL,
-            is_randomize_output_order=True,
+            position_bias_mitigation=PositionBiasMitigation.NONE,
+            # random_seed=123
             fn_completion_parser=FnCompletionParser.LMSYS_PARSER,
             # completion_parser_kwargs=dict(output_format="[[rating_a,rating_b]]")
-            seed=123
         )
 
     @staticmethod
@@ -135,20 +136,20 @@ class AutoReviewerGpt4(BaseReviewer):
         # model_id = resp['model_id']
 
         return ans_text
+    
+    def get_review_cache(self, model_a, model_b, question) -> list:
+        cache_hit = next((r for r in self.cache_list if r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question), None)
+        return cache_hit
 
-    def get_reviews(self, item: pd.Series) -> dict:
-
+    def get_review_for_pair(self, model_a, model_b, question, category, ans1, ans2) -> dict:
         input_msg = dict(
-            ques=item[0]['text'],
-            category=item[0]['category'],
-            ans1=item[0]['answer'],
-            ans2=item[1]['answer'])
-
-        model_a = item[0]['model_id']
-        model_b = item[1]['model_id']
+            ques=question,
+            category=category,
+            ans1=ans1,
+            ans2=ans2)
 
         if self.reference_list:
-            ans_ref = next((ref for ref in self.reference_list if ref.get('question_id') == item[0]['question_id']), None)
+            ans_ref = next((ref for ref in self.reference_list if ref.get('text') == question), None)
             assert ans_ref['answer']
             input_msg['ans_ref'] = ans_ref['answer']
 
@@ -164,18 +165,57 @@ class AutoReviewerGpt4(BaseReviewer):
         # review_text = self.get_answer(sys_prompt, user_prompt)
 
         winner = self.fn_completion_parser(review_text, output_format)
+        return review_text, winner
+    
+    def get_reviews(self, item:pd.Series) -> dict:
+        model_a = item[0]['model_id']
+        model_b = item[1]['model_id']
+        question = item[0]['text']
+        question_id = item[0]['question_id']
+        category = item[0]['category']
+        ans1 = item[0]['answer']
+        ans2 = item[1]['answer']
 
-        review_result = dict(
-            model_a=model_a,
-            model_b=model_b,
-            win=winner,
-            anony=True,
-            tstamp=time.time(),
-            language=item[0].get('language', 'NA'),
-            question_id=item[0]['question_id'],
-            category=input_msg['category'],
-            question=input_msg['ques'],
-            review_text=review_text)
+        review_cache = self.get_review_cache(model_a, model_b, question)
+        if review_cache:
+            logger.info(f"Use cache review for {model_a} vs {model_b} ...")
+            return review_cache
+
+        if self.position_bias_mitigation == PositionBiasMitigation.SWAP_POSITION:
+            review_text_1, winner_1 = self.get_review_for_pair(model_a, model_b, question, category, ans1, ans2)
+            review_text_2, winner_2 = self.get_review_for_pair(model_b, model_a, question, category, ans2, ans1)
+
+            # Swap winner for the second round.
+            if winner_2 == 'model_a':
+                winner_2 = 'model_b'
+            elif winner_2 == 'model_b':
+                winner_2 = 'model_a'
+            review_result = dict(
+                model_a=model_a,
+                model_b=model_b,
+                win_1=winner_1,
+                win_2=winner_2,
+                anony=True,
+                tstamp=time.time(),
+                language=item[0].get('language', 'NA'),
+                question_id=question_id,
+                category=category,
+                question=question,
+                review_text_1=review_text_1,
+                review_text_2=review_text_2)
+        else:
+            review_text, winner = self.get_review_for_pair(model_a, model_b, question, category, ans1, ans2)
+            review_result = dict(
+                model_a=model_a,
+                model_b=model_b,
+                win=winner,
+                anony=True,
+                tstamp=time.time(),
+                language=item[0].get('language', 'NA'),
+                question_id=question_id,
+                category=category,
+                question=question,
+                review_text=review_text)
         return review_result
 
     def run(self):
@@ -194,14 +234,14 @@ class AutoReviewerGpt4(BaseReviewer):
         else:
             raise Exception(f'NotSupported mode: {self.mode}')
 
-        res_list = self.cache_list
+        res_list = []
         for t in battle_pairs:
             pair_df = merged_ans_df[list(t)]
-            if self.is_randomize_output_order:
+            if self.position_bias_mitigation == PositionBiasMitigation.RANDOMIZE_ORDER:
                 pair_df.columns = ['output_1', 'output_2']
                 pair_df["is_switched_outputs"] = pair_df.apply(
                     lambda x: random_seeded_choice(
-                        seed="is_switched_outputs" + x[0]["text"] + str(self.seed),
+                        seed="is_switched_outputs" + x[0]["text"] + str(self.random_seed),
                         choices=[False, True],
                     ),
                     axis=1,
@@ -211,13 +251,6 @@ class AutoReviewerGpt4(BaseReviewer):
                 )
             
             for index, row in pair_df.iterrows():
-                model_a = row[0]['model_id']
-                model_b = row[1]['model_id']
-                question = row[0]['text']
-                if any(r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question for r in res_list):
-                    logger.info(f"Use cache review for {model_a} vs {model_b} ...")
-                    continue
-
                 row_result = self.get_reviews(row)
                 res_list.append(row_result)
                 jsonl_dump_data(res_list, self.review_file)

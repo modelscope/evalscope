@@ -47,6 +47,45 @@ class RatingEvaluate(Evaluate):
         elo_ratings_res = elo_ratings_res.round({col_elo_rating: 1})
         return elo_ratings_res
     
+    def get_single_pairwise_rating(self, row: pd.Series):
+        tie = False
+        if 'win' in row:
+            win = row['win']
+            if win == "tie":
+                tie = True
+            else:
+                if win == "model_a":
+                    winner = row["model_a"]
+                    loser = row["model_b"]
+                else:
+                    winner = row["model_b"]
+                    loser = row["model_a"]
+        elif 'win_1' in row:
+            win_1 = row['win_1']
+            win_2 = row['win_2']
+            if win_1 == 'tie' or win_1 != win_2:
+                tie = True
+            else:
+                if win_1 == "model_a":
+                    winner = row["model_a"]
+                    loser = row["model_b"]
+                else:
+                    winner = row["model_b"]
+                    loser = row["model_a"]
+        else:
+            raise ValueError('Unsupported data format')
+        
+        if tie:
+            return [
+                    {"model": row["model_a"], "win": 0, "loss": 0, "tie": 1},
+                    {"model": row["model_b"], "win": 0, "loss": 0, "tie": 1}
+                ]
+        else:
+            return [
+                    {"model": winner, "win": 1, "loss": 0, "tie": 0},
+                    {"model": loser, "win": 0, "loss": 1, "tie": 0}
+                ]
+    
     def compute_pairwise_rating(self, raw_data):
         df_all = self.preprocess(raw_data_df=raw_data)
         model_list = (
@@ -59,19 +98,10 @@ class RatingEvaluate(Evaluate):
         for index, row in df_all.iterrows():
             if self.baseline_model is not None:
                 if self.baseline_model not in [row["model_a"], row["model_b"]]:
+                    logger.warning(f"One of the models in the battle should be the baseline model: {self.baseline_model}")
                     continue
-            if row["win"] == "tie":
-                list_res.append({"model": row["model_a"], "win": 0, "loss": 0, "tie": 1})
-                list_res.append({"model": row["model_b"], "win": 0, "loss": 0, "tie": 1})
-            else:
-                if row["win"] == "model_a":
-                    winner = row["model_a"]
-                    loser = row["model_b"]
-                else:
-                    winner = row["model_b"]
-                    loser = row["model_a"]
-                list_res.append({"model": winner, "win": 1, "loss": 0, "tie": 0})
-                list_res.append({"model": loser, "win": 0, "loss": 1, "tie": 0})
+            rating = self.get_single_pairwise_rating(row)
+            list_res = list_res + rating
 
         df = pd.DataFrame(list_res)
         df = df.groupby(["model"]).sum()
@@ -82,6 +112,7 @@ class RatingEvaluate(Evaluate):
         # add win rate
         df["win_rate"] = df["win"] / (df["win"] + df["loss"] + df["tie"])
         df["loss_rate"] = df["loss"] / (df["win"] + df["loss"] + df["tie"])
+        df["tie_rate"] = df["tie"] / (df["win"] + df["loss"] + df["tie"])
         return df.sort_values(by="win_rate", ascending=False)
 
     def eval_samples(self, data_list: list):

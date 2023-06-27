@@ -36,8 +36,8 @@ reviews_gen:
             temperature: 0
             # pairwise comparison against baseline
             mode: pairwise_baseline
-            # Whether to randomize output_1, output_2 to mitigate postional bias of auto evaluator, default is true
-            is_randomize_output_order: true
+            # position bias mitigation strategy, options: swap_position, randomize_order, None. default is None
+            position_bias_mitigation: swap_position
             # completion parser config, default is lmsys_parser
             fn_completion_parser: lmsys_parser
     # target answers list to be reviewed, could be replaced by your own path: /path/to/answers.jsonl

@@ -55,8 +55,8 @@ class EvalTaskConfig:
     ARGS_QUANTIZE_BIT = 'quantize_bit'
     ENABLE = 'enable'
     MODE = 'mode'
-    IS_RANDOMIZE_OUTPUT_ORDER = 'is_randomize_output_order'
-    SEED = 'seed'
+    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
+    RANDOM_SEED = 'random_seed'
     FN_COMPLETION_PARSER = 'fn_completion_parser'
     COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
 
@@ -84,6 +84,11 @@ class FnCompletionParser:
     REGEX_PARSER: str = 'regex_parser'
     LMSYS_PARSER: str = 'lmsys_parser'
     RANKING_PARSER: str = 'ranking_parser'
+
+class PositionBiasMitigation:
+    NONE = 'none'
+    RANDOMIZE_ORDER = 'randomize_order'
+    SWAP_POSITION = 'swap_position'
 
 class MetricsConstant:
     EPSILON = float(1e-6)
