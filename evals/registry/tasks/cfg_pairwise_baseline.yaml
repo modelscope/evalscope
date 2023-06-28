@@ -48,7 +48,7 @@ reviews_gen:
     # the path to the reference answers
     reference_file: evals/registry/data/arena/answers/answer_gpt35.jsonl
     # prompt templates for auto reviewer(GPT-4)
-    prompt_file: evals/registry/data/arena/prompt_template_v2.jsonl
+    prompt_file: evals/registry/data/arena/prompt_template/lmsys_v2.jsonl
     # output file of auto reviewer
     review_file: evals/registry/data/arena/reviews/review_gpt4_pair_baseline.jsonl
     # cache file of auto reviewer

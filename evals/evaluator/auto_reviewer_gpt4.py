@@ -56,7 +56,7 @@ class AutoReviewerGpt4(BaseReviewer):
         
         self.mode = self.reviewer_args.pop('mode', ArenaMode.PAIRWISE_ALL)
         if self.mode == ArenaMode.PAIRWISE_BASELINE:
-            assert baseline_file is not NotImplemented
+            assert baseline_file is not None, "baseline_file is required for PAIRWISE_BASELINE mode"
             self.answer_list.append(jsonl_to_list(baseline_file))
             self.baseline_idx = len(self.answer_list) - 1
 
