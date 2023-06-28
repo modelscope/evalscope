@@ -23,7 +23,7 @@ DEFAULT_COLUMNS_MAPPING = {
 
 class RatingEvaluate(Evaluate):
 
-    def __init__(self, metrics: list, baseline_model: str, **kwargs):
+    def __init__(self, metrics: list, baseline_model: str = None, **kwargs):
         super().__init__(metrics=metrics, **kwargs)
         self.baseline_model = baseline_model
 
@@ -114,6 +114,13 @@ class RatingEvaluate(Evaluate):
         df["loss_rate"] = df["loss"] / (df["win"] + df["loss"] + df["tie"])
         df["tie_rate"] = df["tie"] / (df["win"] + df["loss"] + df["tie"])
         return df.sort_values(by="win_rate", ascending=False)
+    
+    def compute_score_rating(self, raw_data):
+        df_all = self.preprocess(raw_data_df=raw_data)
+        df = df_all[["model", "score"]]
+
+        df_score = df.groupby(["model"]).mean()
+        return df_score.sort_values(by="score", ascending=False)
 
     def eval_samples(self, data_list: list):
         res_all = []
@@ -131,6 +138,10 @@ class RatingEvaluate(Evaluate):
 
             elif metric == MetricMembers.PAIRWISE.value:
                 res = self.compute_pairwise_rating(raw_data)
+                res_all.append(res)
+
+            elif metric == MetricMembers.SCORE.value:
+                res = self.compute_score_rating(raw_data)
                 res_all.append(res)
 
             else:

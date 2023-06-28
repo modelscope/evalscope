@@ -93,7 +93,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
     @staticmethod
     def gen_prompt(prompts_list: list, type: str, category: str, ques: str, ans1: str,
-                   ans2: str, ans_ref: str = None):
+                   ans2: str = None, ans_ref: str = None):
         """
         Generate prompt for Auto-reviewer with GPT-4.
         """
@@ -106,19 +106,27 @@ class AutoReviewerGpt4(BaseReviewer):
             if is_category_match and is_type_match:
                 target_prompt_dict = item
                 break
+            elif is_type_match and target_prompt_dict['type'] != type:
+                target_prompt_dict = item   # fallback to type match
 
         sys_prompt = target_prompt_dict['system_prompt']
         prompt_template = target_prompt_dict['prompt_template']
         defaults = target_prompt_dict.get('defaults', dict({}))
         output_format = target_prompt_dict.get('output_format', '[[rating_a,rating_b]]')
 
-        user_prompt = prompt_template.format(
-            question=ques, answer_a=ans1, answer_b=ans2, ref_answer_1=ans_ref, **defaults)
+        if type == ArenaMode.SINGLE:
+            user_prompt = prompt_template.format(
+                question=ques, answer=ans1, ref_answer_1=ans_ref, **defaults)
+        else:
+            user_prompt = prompt_template.format(
+                question=ques, answer_a=ans1, answer_b=ans2, ref_answer_1=ans_ref, **defaults)
 
         return sys_prompt, user_prompt, output_format
 
     def get_answer_dummy(self, sys_prompt: str, user_prompt: str, output_format) -> list:
         logger.info('Get dummy scores for input prompt ...')
+        if output_format == '[[rating]]':
+            return f"[[{round(random.random(), 2)}]]"
         if output_format == '[[rating_a,rating_b]]':
             ans_list = [round(random.random(), 2), round(random.random(), 2)]
             return ' '.join(str(element) for element in ans_list)
@@ -138,10 +146,13 @@ class AutoReviewerGpt4(BaseReviewer):
         return ans_text
     
     def get_review_cache(self, model_a, model_b, question) -> list:
-        cache_hit = next((r for r in self.cache_list if r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question), None)
+        if model_b:
+            cache_hit = next((r for r in self.cache_list if r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question), None)
+        else:
+            cache_hit = next((r for r in self.cache_list if r['model'] == model_a and r['question'] == question), None)
         return cache_hit
 
-    def get_review_for_pair(self, model_a, model_b, question, category, ans1, ans2) -> dict:
+    def run_review_pair(self, model_a, model_b, question, category, ans1, ans2) -> dict:
         input_msg = dict(
             ques=question,
             category=category,
@@ -167,7 +178,32 @@ class AutoReviewerGpt4(BaseReviewer):
         winner = self.fn_completion_parser(review_text, output_format)
         return review_text, winner
     
-    def get_reviews(self, item:pd.Series) -> dict:
+    def run_review_single(self, model, question, category, answer) -> dict:
+        input_msg = dict(
+            ques=question,
+            category=category,
+            ans1=answer)
+
+        if self.reference_list:
+            ans_ref = next((ref for ref in self.reference_list if ref.get('text') == question), None)
+            assert ans_ref['answer']
+            input_msg['ans_ref'] = ans_ref['answer']
+
+        sys_prompt, user_prompt, output_format = AutoReviewerGpt4.gen_prompt(
+            prompts_list=self.prompt_list,
+            type='single' if self.mode == ArenaMode.SINGLE else 'pairwise',
+            **input_msg
+        )
+
+        # TODO: ONLY FOR TEST
+        review_text = self.get_answer_dummy(sys_prompt, user_prompt, output_format)  
+
+        # review_text = self.get_answer(sys_prompt, user_prompt)
+
+        score = self.fn_completion_parser(review_text, output_format)
+        return review_text, score
+    
+    def get_review_pair(self, item:pd.Series) -> dict:
         model_a = item[0]['model_id']
         model_b = item[1]['model_id']
         question = item[0]['text']
@@ -182,8 +218,8 @@ class AutoReviewerGpt4(BaseReviewer):
             return review_cache
 
         if self.position_bias_mitigation == PositionBiasMitigation.SWAP_POSITION:
-            review_text_1, winner_1 = self.get_review_for_pair(model_a, model_b, question, category, ans1, ans2)
-            review_text_2, winner_2 = self.get_review_for_pair(model_b, model_a, question, category, ans2, ans1)
+            review_text_1, winner_1 = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
+            review_text_2, winner_2 = self.run_review_pair(model_b, model_a, question, category, ans2, ans1)
 
             # Swap winner for the second round.
             if winner_2 == 'model_a':
@@ -204,7 +240,7 @@ class AutoReviewerGpt4(BaseReviewer):
                 review_text_1=review_text_1,
                 review_text_2=review_text_2)
         else:
-            review_text, winner = self.get_review_for_pair(model_a, model_b, question, category, ans1, ans2)
+            review_text, winner = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
             review_result = dict(
                 model_a=model_a,
                 model_b=model_b,
@@ -216,6 +252,33 @@ class AutoReviewerGpt4(BaseReviewer):
                 category=category,
                 question=question,
                 review_text=review_text)
+        return review_result
+    
+    def get_review_single(self, row: pd.Series):
+        item = row[0]
+        model = item['model_id']
+        question = item['text']
+        question_id = item['question_id']
+        category = item['category']
+        answer = item['answer']
+
+        review_cache = self.get_review_cache(model, None, question)
+        if review_cache:
+            logger.info(f"Use cache review for {model} ...")
+            return review_cache
+
+        review_text, score = self.run_review_single(model, question, category, answer)
+
+        review_result = dict(
+            model=model,
+            score=score,
+            anony=True,
+            tstamp=time.time(),
+            language=item.get('language', 'NA'),
+            question_id=question_id,
+            category=category,
+            question=question,
+            review_text=review_text)
         return review_result
 
     def run(self):
@@ -231,6 +294,8 @@ class AutoReviewerGpt4(BaseReviewer):
             battle_pairs = get_battle_pairs(merged_ans_df.columns)
         elif self.mode == ArenaMode.PAIRWISE_BASELINE:
             battle_pairs = get_battle_pairs(merged_ans_df.columns, self.baseline_idx)
+        elif self.mode == ArenaMode.SINGLE:
+            battle_pairs = [(col, ) for col in merged_ans_df.columns]
         else:
             raise Exception(f'NotSupported mode: {self.mode}')
 
@@ -251,6 +316,6 @@ class AutoReviewerGpt4(BaseReviewer):
                 )
             
             for index, row in pair_df.iterrows():
-                row_result = self.get_reviews(row)
+                row_result = self.get_review_pair(row) if self.mode != ArenaMode.SINGLE else self.get_review_single(row)
                 res_list.append(row_result)
                 jsonl_dump_data(res_list, self.review_file)

@@ -123,6 +123,9 @@ class MetricMembers(Enum):
     # Pairwise comparison win/tie and lose(optional)
     PAIRWISE = 'pairwise'
 
+    # Rating score for single model
+    SCORE = 'score'
+
 
 class ArenaWinner:
 

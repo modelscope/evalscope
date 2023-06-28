@@ -10,6 +10,9 @@ from evals.utils.logger import get_logger
 
 logger = get_logger()
 
+one_score_pattern = re.compile("\[\[(\d+\.?\d*)\]\]")
+one_score_pattern_backup = re.compile("\[(\d+\.?\d*)\]")
+
 def regex_parser(completion: str, outputs_to_match: dict[str, Any]) -> list[Any]:
     """Parse a single batch of completions, by returning a sequence of keys in the order in which outputs_to_match
     was matched.
@@ -64,6 +67,19 @@ def regex_parser(completion: str, outputs_to_match: dict[str, Any]) -> list[Any]
 # modified from: https://github.com/lm-sys/FastChat/blob/main/fastchat/eval/eval_gpt_review.py#L47
 # does not work with batched completions
 def lmsys_parser(completion, output_format):
+    if output_format == '[[rating]]':
+        match = re.search(one_score_pattern, completion)
+        if not match:
+            match = re.search(one_score_pattern_backup, completion)
+
+        if match:
+            rating = ast.literal_eval(match.groups()[0])
+        else:
+            logger.error(f'Content: {completion}\n'
+                'You must manually fix the score.')
+            rating = -1
+
+        return rating
     if output_format == '[[rating_a,rating_b]]':
         try:
             score_pair = completion.split('\n')[0]
