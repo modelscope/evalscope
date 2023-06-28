@@ -116,17 +116,17 @@ def lmsys_parser(completion, output_format):
         return winner
 
 
-def ranking_parser(completion):
+def ranking_parser(completion, **kwargs):
     try:
         if isinstance(completion, str):
             ordered_completions = ast.literal_eval(completion)
         else:
             ordered_completions = completion
 
-        rank = [c for c in ordered_completions if c["model"] == "model_1"][0]["rank"]
+        rank = [c for c in ordered_completions if c["model"] == "model_a"][0]["rank"]
         assert rank in [1, 2]
 
-        return [rank]
+        return ArenaWinner.MODEL_A if rank == 1 else ArenaWinner.MODEL_B
     except Exception as e:
         logger.error(f"{e}\nContent: {completion}\n" "You must manually fix the score pair.")
-        return [np.nan]
+        return ArenaWinner.UNKNOWN

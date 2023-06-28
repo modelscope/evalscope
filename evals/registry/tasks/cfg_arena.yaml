@@ -33,11 +33,17 @@ reviews_gen:
         args:
             max_tokens: 1024
             temperature: 0.2
+            # options: pairwise_all, pairwise_baseline, single, default is pairwise_all
+            mode: pairwise_all
+            # position bias mitigation strategy, options: swap_position, randomize_order, None. default is None
+            position_bias_mitigation: None
+            # completion parser config, default is lmsys_parser
+            fn_completion_parser: lmsys_parser
     # target answers list to be reviewed, could be replaced by your own path: /path/to/answers.jsonl
     target_answers: [evals/registry/data/arena/answers/answer_gpt35.jsonl,
                      evals/registry/data/arena/answers/answer_gpt35_dummy.jsonl]
     # prompt templates for auto reviewer(GPT-4)
-    prompt_file: evals/registry/data/arena/prompt_template.jsonl
+    prompt_file: evals/registry/data/arena/prompt_template/lmsys.jsonl
     # output file of auto reviewer
     review_file: evals/registry/data/arena/reviews/review_gpt4.jsonl
 

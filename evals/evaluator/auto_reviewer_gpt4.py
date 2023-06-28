@@ -106,7 +106,7 @@ class AutoReviewerGpt4(BaseReviewer):
             if is_category_match and is_type_match:
                 target_prompt_dict = item
                 break
-            elif is_type_match and target_prompt_dict['type'] != type:
+            elif is_type_match and target_prompt_dict.get('type', 'pairwise') != type:
                 target_prompt_dict = item   # fallback to type match
 
         sys_prompt = target_prompt_dict['system_prompt']
@@ -132,6 +132,10 @@ class AutoReviewerGpt4(BaseReviewer):
             return ' '.join(str(element) for element in ans_list)
         elif output_format == '[[A]]':
             return random.choice(['[[A]]', '[[B]]', '[[C]]'])
+        elif output_format == "[{'model': <model-name>, 'rank': <model-rank>}, {'model': <model-name>, 'rank': <model-rank>}]":
+            rank_1 = random.choice([1, 2])
+            rank_2 = 1 if rank_1 == 2 else 2
+            return f"[{{'model': 'model_a', 'rank': {rank_1}}}, {{'model': 'model_b', 'rank': {rank_2}}}]"
 
     def get_answer(self, sys_prompt: str, user_prompt: str) -> list:
 
@@ -175,7 +179,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
         # review_text = self.get_answer(sys_prompt, user_prompt)
 
-        winner = self.fn_completion_parser(review_text, output_format)
+        winner = self.fn_completion_parser(review_text, output_format=output_format)
         return review_text, winner
     
     def run_review_single(self, model, question, category, answer) -> dict:
