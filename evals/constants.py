@@ -120,7 +120,7 @@ class MetricMembers(Enum):
     # ELO rating system for pairwise comparison
     ELO = 'elo'
 
-    # Pairwise comparison win/tie and lose(optional)
+    # Pairwise comparison win/lose and tie(optional)
     PAIRWISE = 'pairwise'
 
     # Rating score for single model
