@@ -86,9 +86,7 @@ class AutoReviewerGpt4(BaseReviewer):
             temperature=0.2,
             mode=ArenaMode.PAIRWISE_ALL,
             position_bias_mitigation=PositionBiasMitigation.NONE,
-            # random_seed=123
             fn_completion_parser=FnCompletionParser.LMSYS_PARSER,
-            # completion_parser_kwargs=dict(output_format="[[rating_a,rating_b]]")
         )
 
     @staticmethod
@@ -179,9 +177,11 @@ class AutoReviewerGpt4(BaseReviewer):
 
         # review_text = self.get_answer(sys_prompt, user_prompt)
 
-        winner = self.fn_completion_parser(review_text, output_format=output_format)
-        return review_text, winner
-    
+        result = self.fn_completion_parser(review_text, output_format=output_format)
+        if not isinstance(result, tuple):
+            result = (result, None)
+        return review_text, *result
+
     def run_review_single(self, model, question, category, answer) -> dict:
         input_msg = dict(
             ques=question,
@@ -222,8 +222,8 @@ class AutoReviewerGpt4(BaseReviewer):
             return review_cache
 
         if self.position_bias_mitigation == PositionBiasMitigation.SWAP_POSITION:
-            review_text_1, winner_1 = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
-            review_text_2, winner_2 = self.run_review_pair(model_b, model_a, question, category, ans2, ans1)
+            review_text_1, winner_1, score_1 = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
+            review_text_2, winner_2, score_2 = self.run_review_pair(model_b, model_a, question, category, ans2, ans1)
 
             # Swap winner for the second round.
             if winner_2 == 'model_a':
@@ -244,10 +244,11 @@ class AutoReviewerGpt4(BaseReviewer):
                 review_text_1=review_text_1,
                 review_text_2=review_text_2)
         else:
-            review_text, winner = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
+            review_text, winner, scores = self.run_review_pair(model_a, model_b, question, category, ans1, ans2)
             review_result = dict(
                 model_a=model_a,
                 model_b=model_b,
+                scores=scores,
                 win=winner,
                 anony=True,
                 tstamp=time.time(),

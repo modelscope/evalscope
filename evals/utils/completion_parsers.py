@@ -89,19 +89,20 @@ def lmsys_parser(completion, output_format):
                 score_1 = float(sp[0])
                 score_2 = float(sp[1])
                 if score_1 > score_2:
-                    return ArenaWinner.MODEL_A
+                    winner = ArenaWinner.MODEL_A
                 elif score_1 < score_2:
-                    return ArenaWinner.MODEL_B
+                    winner = ArenaWinner.MODEL_B
                 else:
                     if score_1 == score_1 == -1:
-                        return ArenaWinner.UNKNOWN
-                    return ArenaWinner.TIE
+                        winner = ArenaWinner.UNKNOWN
+                    winner = ArenaWinner.TIE
+                return winner, [score_1, score_2]
             else:
                 raise Exception('Invalid score pair.')
         except Exception as e:
             logger.error(f'{e}\nContent: {completion}\n'
                         'You must manually fix the score pair.')
-            return [-1, -1]
+            return ArenaWinner.UNKNOWN, [-1, -1]
     elif output_format == '[[A]]':
         if "[[A]]" in completion:
             winner = ArenaWinner.MODEL_A
