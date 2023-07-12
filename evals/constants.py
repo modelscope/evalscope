@@ -53,6 +53,7 @@ class EvalTaskConfig:
     ARGS_MODEL_PATH = 'model_path'
     ARGS_MODEL_REVISION = 'model_revision'
     ARGS_QUANTIZE_BIT = 'quantize_bit'
+    ARGS_NUM_GPUS = 'num_gpus'
     ENABLE = 'enable'
     MODE = 'mode'
     POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
