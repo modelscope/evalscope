@@ -3,12 +3,13 @@
 import functools
 import importlib
 import os
-from typing import Any
+from typing import Any, Union
 
 import jsonlines as jsonl
 import pandas as pd
 import pyarrow as pa
 import yaml
+import random
 from evals.constants import DumpMode
 from evals.utils.logger import get_logger
 
@@ -129,3 +130,7 @@ def markdown_table(header_l, data_l):
         tmp = data + [''] * (len(header_l) - len(data))
         md_str += f'\n| {" | ".join(tmp)} |'
     return md_str
+
+def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
+    """Random choice with a (potentially string) seed."""
+    return random.Random(seed).choices(choices, k=1, **kwargs)[0]

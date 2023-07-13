@@ -17,4 +17,5 @@ rouge-score
 sacrebleu
 scikit-learn
 simple-ddl-parser
+transformers
 tqdm

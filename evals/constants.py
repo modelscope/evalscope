@@ -47,7 +47,19 @@ class EvalTaskConfig:
     ARGS_MODEL = 'model'
     ARGS_MAX_LEN = 'max_length'
     ARGS_TOP_K = 'top_k'
+    ARGS_TOP_P = 'top_p'
+    ARGS_TEMPERATURE = 'temperature'
+    ARGS_API_ENDPOINT = 'api_endpoint'
+    ARGS_MODEL_PATH = 'model_path'
+    ARGS_MODEL_REVISION = 'model_revision'
+    ARGS_QUANTIZE_BIT = 'quantize_bit'
+    ARGS_NUM_GPUS = 'num_gpus'
     ENABLE = 'enable'
+    MODE = 'mode'
+    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
+    RANDOM_SEED = 'random_seed'
+    FN_COMPLETION_PARSER = 'fn_completion_parser'
+    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
 
 
 class ScoringModel:
@@ -63,6 +75,21 @@ class DumpMode:
     OVERWRITE = 'overwrite'
     APPEND = 'append'
 
+
+class ArenaMode:
+    SINGLE = 'single'
+    PAIRWISE_BASELINE = 'pairwise_baseline'
+    PAIRWISE_ALL = 'pairwise_all'
+
+class FnCompletionParser:
+    REGEX_PARSER: str = 'regex_parser'
+    LMSYS_PARSER: str = 'lmsys_parser'
+    RANKING_PARSER: str = 'ranking_parser'
+
+class PositionBiasMitigation:
+    NONE = 'none'
+    RANDOMIZE_ORDER = 'randomize_order'
+    SWAP_POSITION = 'swap_position'
 
 class MetricsConstant:
     EPSILON = float(1e-6)
@@ -93,6 +120,12 @@ class MetricMembers(Enum):
 
     # ELO rating system for pairwise comparison
     ELO = 'elo'
+
+    # Pairwise comparison win/lose and tie(optional)
+    PAIRWISE = 'pairwise'
+
+    # Rating score for single model
+    SCORE = 'score'
 
 
 class ArenaWinner:

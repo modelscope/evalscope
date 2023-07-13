@@ -70,7 +70,46 @@ Example:
 > python3 scripts/run_arena.py --c evals/registry/tasks/cfg_arena.yaml
 ```
 
+### 其他的评分模式
+除了竞技场模式两两对比（pairwise battle）的评分模式，我们还支持以下两种评分模式：
+- `single`: 只对单个模型输出做打分，不做两两对比
+- `pairwise-baseline`: 选定 baseline 模型，其他模型与 baseline 模型做对比评分
 
+#### Option 2: 单个模型打分（single mode）
+
+这个模式下，我们只对单个模型输出做打分，不做两两对比。这个模式可以更方便的把新模型加入到 Leaderboard 中（只需要对新模型跑一遍打分即可）
+
+```text
+评估流程的配置文件参考： evals/registry/tasks/cfg_single.yaml
+字段说明：
+    questions_file: question data的路径
+    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
+    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
+    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+```
+
+```python
+Example:
+> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_single.yaml
+```
+
+#### Option 3: 与 baseline 模型对比（pairwise-baseline mode）
+
+这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
+
+```text
+评估流程的配置文件参考： evals/registry/tasks/cfg_pairwise_baseline.yaml
+字段说明：
+    questions_file: question data的路径
+    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
+    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
+    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+```
+
+```python
+Example:
+> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_pairwise_baseline.yaml
+```
 
 # 数据格式
 

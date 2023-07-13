@@ -1,12 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) lmsys.org.
 
-from typing import List
+from typing import List, Sequence
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 from evals.utils.logger import get_logger
+
 
 logger = get_logger()
 
@@ -48,7 +49,7 @@ def merge_ques_ans(answer_list_all,
     return ans_df
 
 
-def get_battle_pairs(columns: List[str]):
+def get_battle_pairs(columns: List[str], baseline_idx: int = -1) -> List[tuple]:
     """
     Get battle pair names from columns.
 
@@ -63,16 +64,52 @@ def get_battle_pairs(columns: List[str]):
         >>> res = get_battle_pairs(columns)
         >>> print(res)
         >>> [('B', 'A'), ('C', 'A'), ('C', 'B')]
+
+        >>> columns = ['A', 'B', 'C']
+        >>> res = get_battle_pairs(columns, 2)
+        >>> print(res)
+        >>> [('A', 'C'), ('B', 'C')]
     """
     res_list = []
 
     cols_num = len(columns)
     if cols_num <= 0:
         return res_list
-    mat = np.ones((cols_num, cols_num))
-    mat_lower_tril = np.tril(mat, k=-1)
-    x_ids, y_ids = np.where(mat_lower_tril == 1)
-    res_list = [(columns[x_id], columns[y_id])
-                for x_id, y_id in zip(x_ids, y_ids)]
+    
+    if baseline_idx != -1:
+        n_column = columns[baseline_idx]
+        res_list = [(column, n_column) for column in columns if column != n_column]
+    else:
+        mat = np.ones((cols_num, cols_num))
+        mat_lower_tril = np.tril(mat, k=-1)
+        x_ids, y_ids = np.where(mat_lower_tril == 1)
+        res_list = [(columns[x_id], columns[y_id])
+                    for x_id, y_id in zip(x_ids, y_ids)]
 
     return res_list
+
+def shuffle_pairwise_preferences(
+    df: pd.DataFrame, arr_is_shuffle: Sequence[int]
+) -> pd.DataFrame:
+    """Shuffle the outputs of a pairwise preference dataframe.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame([dict(instruction='2+2', output_1='3', output_2='4', preference=2),
+                           dict(instruction='2+3', output_1='5', output_2='4', preference=1)])
+    >>> print(shuffle_pairwise_preferences(df, [True, False]))
+        instruction output_1 output_2  preference
+    0         2+2        4        3           1
+    1         2+3        5        4           1
+    """
+    col_1 = df["output_1"].copy()
+    col_2 = df["output_2"].copy()
+    df["output_1"] = np.where(arr_is_shuffle, col_2, col_1)
+    df["output_2"] = np.where(arr_is_shuffle, col_1, col_2)
+
+    if "preference" in df.columns:
+        df["preference"] = np.where(
+            arr_is_shuffle, 3 - df["preference"], df["preference"]
+        )
+
+    return df

@@ -8,8 +8,8 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evals.constants import EvalTaskConfig
-from evals.evaluator.elo_rating_eval import EloRatingEvaluate
+from evals.constants import EvalTaskConfig, ArenaMode
+from evals.evaluator.rating_eval import RatingEvaluate
 from evals.utils.logger import get_logger
 from evals.utils.utils import get_obj_from_cfg, yaml_to_dict
 
@@ -36,8 +36,7 @@ class ArenaWorkflow:
         self.prompt_file = os.path.abspath(self.reviews_gen.get('prompt_file'))
         self.review_file = os.path.abspath(self.reviews_gen.get('review_file'))
 
-        self.elo_rating: dict = self.cfg_dict.get('elo_rating', {})
-        self.report_file = os.path.abspath(self.elo_rating.get('report_file'))
+        self.rating_gen: dict = self.cfg_dict.get('rating_gen', {})
 
     @staticmethod
     def _get_obj_from_cfg(obj_cfg: dict):
@@ -95,11 +94,26 @@ class ArenaWorkflow:
                 os.path.abspath(file_path) for file_path in target_answers
             ]
 
+            baseline_file = self.reviews_gen.get('baseline_file', None)
+            if baseline_file:
+                baseline_file = os.path.abspath(baseline_file)
+
+            reference_file = self.reviews_gen.get('reference_file', None)
+            if reference_file:
+                reference_file = os.path.abspath(reference_file)
+
+            cache_file = self.reviews_gen.get('cache_file', None)
+            if cache_file:
+                cache_file = os.path.abspath(cache_file)
+
             input_kwargs = dict(
                 prompt_file=self.prompt_file,
                 answer_file_list=target_answers,
+                baseline_file=baseline_file,
+                reference_file=reference_file,
                 review_file=self.review_file,
-                reviewer_args=reviewer_args)
+                reviewer_args=reviewer_args,
+                cache_file=cache_file)
             reviewer_obj = reviewer_cls(**input_kwargs)
 
             reviewer_obj.run()
@@ -110,18 +124,20 @@ class ArenaWorkflow:
             logger.warning(
                 'Skip reviews generation because it is not enabled.')
 
-    def get_elo_rating(self):
-        enable = self.elo_rating.get(EvalTaskConfig.ENABLE, True)
+    def get_rating_results(self):
+        enable = self.rating_gen.get(EvalTaskConfig.ENABLE, True)
         if enable:
-            metrics = ['elo']
-            ae = EloRatingEvaluate(metrics=metrics)
+            report_file = os.path.abspath(self.rating_gen.get('report_file'))
+            metrics = self.rating_gen.get('metrics', ['elo'])
+            baseline_model = self.rating_gen.get('baseline_model') if metrics[0] == 'pairwise' else None
+            ae = RatingEvaluate(metrics=metrics, baseline_model=baseline_model)
             res_list = ae.run(self.review_file)
-            elo_df = res_list[0]
-            logger.info(f'ELO rating results:\n{elo_df}')
-            elo_df.to_csv(self.report_file, index=True)
-            logger.info(f'ELO rating results are saved to {self.report_file}.')
+            rating_df = res_list[0]
+            logger.info(f'Rating results:\n{rating_df}')
+            rating_df.to_csv(report_file, index=True)
+            logger.info(f'Rating results are saved to {report_file}.')
         else:
-            logger.warning('Skip elo rating because it is not enabled.')
+            logger.warning('Skip rating because it is not enabled.')
 
     def run(self):
 
@@ -131,8 +147,8 @@ class ArenaWorkflow:
         # Get all reviews
         self.get_reviews()
 
-        # Get ELO rating results
-        self.get_elo_rating()
+        # Get rating results
+        self.get_rating_results()
 
         logger.info('*** Arena workflow is finished. ***')
 

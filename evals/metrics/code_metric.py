@@ -89,7 +89,8 @@ def run_code_eval(data_l, k=4, md_level=2):
     for data in tqdm(data_l):
         data[f'pass@{k}'] = compute_pass_k_one_sample(data['gen'],
                                                       data['func_args'],
-                                                      data['func_outputs'])
+                                                      data['func_outputs'],
+                                                      k)
     task_data_d = defaultdict(list)
     for data in data_l:
         for task in data['task_tags']:

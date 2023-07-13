@@ -31,25 +31,29 @@ reviews_gen:
     reviewer:
         ref: evals.evaluator.auto_reviewer_gpt4:AutoReviewerGpt4
         args:
+            model: gpt-4
             max_tokens: 1024
-            temperature: 0.2
-            # options: pairwise_all, pairwise_baseline, single, default is pairwise_all
-            mode: pairwise_all
-            # position bias mitigation strategy, options: swap_position, randomize_order, None. default is None
-            position_bias_mitigation: None
+            temperature: 0
+            # pairwise comparison against baseline
+            mode: single
             # completion parser config, default is lmsys_parser
             fn_completion_parser: lmsys_parser
     # target answers list to be reviewed, could be replaced by your own path: /path/to/answers.jsonl
     target_answers: [evals/registry/data/arena/answers/answer_gpt35.jsonl,
-                     evals/registry/data/arena/answers/answer_gpt35_dummy.jsonl]
+                     evals/registry/data/arena/answers/answer_gpt35_dummy.jsonl,
+                     evals/registry/data/arena/answers/answer_text_davinci_003.jsonl]
+    # the path to the reference answers
+    reference_file: evals/registry/data/arena/answers/answer_gpt35.jsonl
     # prompt templates for auto reviewer(GPT-4)
-    prompt_file: evals/registry/data/arena/prompt_template/lmsys.jsonl
+    prompt_file: evals/registry/data/arena/prompt_template/lmsys_v2.jsonl
     # output file of auto reviewer
-    review_file: evals/registry/data/arena/reviews/review_gpt4.jsonl
+    review_file: evals/registry/data/arena/reviews/review_gpt4_single.jsonl
+    # cache file of auto reviewer
+    cache_file: evals/registry/data/arena/reviews/review_gpt4_single.jsonl
 
 # rating results
 rating_gen:
     enable: true
-    metrics: ['elo']
+    metrics: ['score']
     # elo rating report file
-    report_file: evals/registry/data/arena/reports/elo_rating.csv
+    report_file: evals/registry/data/arena/reports/rating_single.csv
