@@ -19,3 +19,6 @@ scikit-learn
 simple-ddl-parser
 transformers
 tqdm
+streamlit
+plotly
+seaborn

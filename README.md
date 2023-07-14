@@ -70,12 +70,22 @@ Example:
 > python3 scripts/run_arena.py --c evals/registry/tasks/cfg_arena.yaml
 ```
 
+#### 4. 结果可视化
+
+```python
+Usage:
+# streamlit run apps/app.py -- --review_file /path/to/xxx_review_file.jsonl --category_file /path/to/xxx_category_mapping.yaml
+
+Example:
+> streamlit run scripts/run_qa_browser.py -- --review_file evals/registry/data/qa_browser/battle.jsonl --category_file evals/registry/data/qa_browser/category_mapping.yaml
+```
+
 ### 其他的评分模式
 除了竞技场模式两两对比（pairwise battle）的评分模式，我们还支持以下两种评分模式：
 - `single`: 只对单个模型输出做打分，不做两两对比
 - `pairwise-baseline`: 选定 baseline 模型，其他模型与 baseline 模型做对比评分
 
-#### Option 2: 单个模型打分（single mode）
+#### 1. Single mode: 单个模型打分
 
 这个模式下，我们只对单个模型输出做打分，不做两两对比。这个模式可以更方便的把新模型加入到 Leaderboard 中（只需要对新模型跑一遍打分即可）
 
@@ -93,7 +103,7 @@ Example:
 > python3 scripts/run_arena.py --c evals/registry/tasks/cfg_single.yaml
 ```
 
-#### Option 3: 与 baseline 模型对比（pairwise-baseline mode）
+#### 2. Pairwise-baseline mode: 与 baseline 模型对比
 
 这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
 
