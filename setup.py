@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
     setup(
         name='llmuses',
-        version='0.0.2',
+        version=get_version(),
         author='ModelScope team',
         author_email='contact@modelscope.cn',
         keywords='python,llm,evaluation',
