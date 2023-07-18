@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# isort:skip_file
 
 import os
 import random
@@ -7,8 +8,7 @@ from functools import partial
 
 import pandas as pd
 
-from llmuses.constants import (ArenaMode, EvalTaskConfig, FnCompletionParser,
-                               PositionBiasMitigation)
+from llmuses.constants import ArenaMode, EvalTaskConfig, FnCompletionParser, PositionBiasMitigation
 from llmuses.evaluator import BaseReviewer
 from llmuses.predictors.openai_gpt_predictor import OpenaiGptPredictor
 from llmuses.utils import completion_parsers
@@ -16,8 +16,7 @@ from llmuses.utils.arena_utils import (BattlePairSelection, get_battle_pairs,
                                        merge_ques_ans,
                                        shuffle_pairwise_preferences)
 from llmuses.utils.logger import get_logger
-from llmuses.utils.utils import (jsonl_dump_data, jsonl_to_list,
-                                 random_seeded_choice)
+from llmuses.utils.utils import jsonl_dump_data, jsonl_to_list, random_seeded_choice
 
 logger = get_logger()
 
@@ -91,6 +90,7 @@ class AutoReviewerGpt4(BaseReviewer):
     @staticmethod
     def _get_default_args():
         return dict(
+            model=AutoReviewerGpt4.MODEL_NAME,
             max_tokens=1024,
             temperature=0.2,
             mode=ArenaMode.PAIRWISE_ALL,

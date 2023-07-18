@@ -26,6 +26,7 @@ class TaskEvalGpt35Completion(BaseTask):
 
     def _get_default_cfg(self):
         default_cfg = dict(
+            model=self.MODEL_NAME,
             question_file='llmuses/registry/data/arena/question.jsonl',
             max_tokens=1024,
             temperature=0.2,
@@ -55,14 +56,19 @@ class TaskEvalGpt35Completion(BaseTask):
         res_list = list()
 
         for question in self.question_list:
-            input_data = dict()
-            print('>>>task_cfg: ', self.task_cfg)
-            input_data.update(self.task_cfg)
-            input_data['sys_prompt'] = ''
-            input_data['user_prompt'] = question['text']
-            resp = self.gpt_predictor.predict(**input_data)
-            ans_text = resp['ans_text']
-            model_id = resp['model_id']
+            input_cfg = dict()
+            input_cfg.update(self.task_cfg)
+            input_cfg['sys_prompt'] = ''
+            input_cfg['user_prompt'] = question['text']
+
+            try:
+                resp = self.gpt_predictor.predict(**input_cfg)
+                ans_text = resp['ans_text']
+                model_id = resp['model_id']
+            except Exception as e:
+                logger.warning(f'GPT-3.5-turbo failed to predict: {e}')
+                ans_text = ''
+                model_id = input_cfg['model']
 
             ans = {
                 'question_id': question['question_id'],
