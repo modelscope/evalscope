@@ -73,6 +73,7 @@ class ArenaWorkflow:
             input_kwargs['question_file'] = self.question_file
             input_kwargs['output_file'] = cfg.get('output_file')
             input_kwargs.update(model_args)
+            logger.info(f'Calling the model: {model_id} ...')
             model_obj = model_cls(**input_kwargs)
 
             # model_obj.run_dummy()  # Note: only for test

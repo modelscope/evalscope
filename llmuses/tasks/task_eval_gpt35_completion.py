@@ -68,7 +68,7 @@ class TaskEvalGpt35Completion(BaseTask):
             except Exception as e:
                 logger.warning(f'GPT-3.5-turbo failed to predict: {e}')
                 ans_text = ''
-                model_id = input_cfg['model']
+                model_id = input_cfg.get('model', self.MODEL_NAME)
 
             ans = {
                 'question_id': question['question_id'],
@@ -80,7 +80,8 @@ class TaskEvalGpt35Completion(BaseTask):
             }
             res_list.append(ans)
 
-        os.makedirs(os.path.dirname(self.ans_file), exist_ok=True)
+        if os.path.dirname(self.ans_file):
+            os.makedirs(os.path.dirname(self.ans_file), exist_ok=True)
         jsonl_dump_data(res_list, self.ans_file)
 
         return self.ans_file
