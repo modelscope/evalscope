@@ -4,9 +4,9 @@
 
 import os
 
-from evals.constants import DEFAULT_WORK_DIR, DumpMode, TaskEnvs
-from evals.task import EvalTask
-from evals.tools import ItagManager
+from llmuses.constants import DEFAULT_WORK_DIR, DumpMode, TaskEnvs
+from llmuses.task import EvalTask
+from llmuses.tools import ItagManager
 """ This is an example of running a evaluation task pipeline. """
 
 if __name__ == '__main__':
@@ -23,11 +23,11 @@ if __name__ == '__main__':
     # Step3: Generate prompts
     ...
     prompts_file = os.path.join(
-        os.getcwd(), '..', 'evals/registry/data/poetry_gen/samples.jsonl')
+        os.getcwd(), '..', 'llmuses/registry/data/poetry_gen/samples.jsonl')
 
     # Step4: Generate task config (yaml or dict)
     task_cfg_file = os.path.join(
-        os.getcwd(), '..', 'evals/registry/tasks/task_qwen_gen_poetry.yaml')
+        os.getcwd(), '..', 'llmuses/registry/tasks/task_qwen_gen_poetry.yaml')
 
     # Step5: run task
     eval_task = EvalTask(prompts=prompts_file, task_cfg=task_cfg_file)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
             dataset_name='dataset_test_llm_evals_rank_v1',
             dataset_path=os.path.join(
                 os.getcwd(), '..',
-                'evals/tools/itag/datasets/llm_evals_datasets_rank.csv'),
+                'llmuses/tools/itag/datasets/llm_evals_datasets_rank.csv'),
         )
         itag_task_resp = itag_manager.process(**itag_run_args)
 

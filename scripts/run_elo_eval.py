@@ -2,16 +2,17 @@
 
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evals.evaluator.rating_eval import RatingEvaluate
+from llmuses.evaluator.rating_eval import RatingEvaluate
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main():
     # Supported columns for model battles:
     # 'model_a', 'model_b', 'win', 'tstamp', 'language'
     review_data_path = os.path.join(os.getcwd(),
-                                    'evals/registry/data/arena/reviews',
+                                    'llmuses/registry/data/arena/reviews',
                                     'review_gpt4.jsonl')
 
     metrics = ['elo']

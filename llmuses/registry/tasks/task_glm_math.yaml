@@ -1,0 +1,20 @@
+task_name: task_chatglm_math
+
+task_chatglm_math:
+  id: task_math_v3_chatglm
+  predictor:
+    ref: llmuses.predictors.glm_predictor:GlmPredictor
+    args:
+      mode: remote
+      # local_model:
+      #   model_path: /mnt/workspace/projects/chatglm-6b
+      #   model_revision: v1.1.0
+      #   quantize_bit: 8
+      api_endpoint: http://localhost:8000
+      model: chatglm-6b
+      temperature: 0
+  scoring_model:
+    ref: llmuses.scoring_models.math_eval:MathEvaluate
+    args:
+      metrics: ['math_accuracy']
+      md_level: 2

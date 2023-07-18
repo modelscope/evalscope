@@ -4,12 +4,12 @@ import argparse
 import os
 import sys
 
-from evals.preprocess.tokenizers.gpt2_tokenizer import (GPT2Tokenizer,
-                                                        get_tokenized_string)
-from evals.tasks.task_eval_qwen_code import TaskQwenCodeEval
-from evals.tasks.task_eval_qwen_generation import TaskQwenGenerationEval
-from evals.tasks.task_eval_qwen_math import TaskQwenMathEval
-from evals.utils.utils import jsonl_to_list
+from llmuses.preprocess.tokenizers.gpt2_tokenizer import (GPT2Tokenizer,
+                                                          get_tokenized_string)
+from llmuses.tasks.task_eval_qwen_code import TaskQwenCodeEval
+from llmuses.tasks.task_eval_qwen_generation import TaskQwenGenerationEval
+from llmuses.tasks.task_eval_qwen_math import TaskQwenMathEval
+from llmuses.utils.utils import jsonl_to_list
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_path, '..'))
@@ -47,13 +47,13 @@ def get_args():
     parser.add_argument(
         '--vocab-file',
         type=str,
-        default='evals/metrics/resources/gpt2-zhcn3-v4.json',
+        default='llmuses/metrics/resources/gpt2-zhcn3-v4.json',
         help='Vocab file name',
     )
     parser.add_argument(
         '--merge-file',
         type=str,
-        default='evals/metrics/resources/gpt2-zhcn3-v4.bpe',
+        default='llmuses/metrics/resources/gpt2-zhcn3-v4.bpe',
         help='Merge file name',
     )
 

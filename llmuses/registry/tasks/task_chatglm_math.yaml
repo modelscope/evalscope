@@ -1,0 +1,18 @@
+task_name: task_chatglm_mgsm
+
+task_chatglm_mgsm:
+  id: task_chatglm_mgsm_ver_0
+  predictor:
+    ref: llmuses.predictors.chatglm_predictor:ChatGLMPredictor
+    args:
+      mode: local
+      model: chatglm2-6b
+      local_model:
+        model_path: /mnt/workspace/models/chatglm2-6b
+      max_length: 2048
+      temperature: 0
+  evaluator:
+    ref: llmuses.evaluator.math_eval:MathEvaluate
+    args:
+      metrics: ['math_accuracy']
+      md_level: 2

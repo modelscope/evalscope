@@ -1,0 +1,15 @@
+task_name: task_qwen_gen_poetry
+
+task_qwen_gen_poetry:
+    id: task_qwen_gen_poetry_dev_v0
+    predictor:
+        ref: llmuses.predictors.qwen_predictor:QwenPredictor
+        args:
+            mode: remote
+            model: gpt3_13B_v1_dev
+            max_length: 500
+            top_k: 15
+    evaluator:
+        ref: llmuses.evaluator.generation:GenerationEvaluate
+        args:
+            metrics: [ bleu, rouge ]
