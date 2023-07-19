@@ -162,6 +162,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
         input_msg = dict(sys_prompt=sys_prompt, user_prompt=user_prompt)
         input_msg.update(self.reviewer_args)
+        input_msg['model'] = self.MODEL_NAME
 
         # Call GPT-4 predictor
         resp = self.gpt_predictor.predict(**input_msg)

@@ -28,17 +28,17 @@ llmuses框架还支持其他LLM的接口，包括：
 Auto-Evaluate指无需人工干预的自动评估任务，其输入的数据中已包含模型预测结果和ground truth，以下是几个自动评估的任务示例：
 #### 1. 模型coding能力评估
 ```python
-python3 scripts/run_eval.py --input evals/registry/data/code/code_test_v2_model_result.jsonl --task_cfg evals/registry/tasks/task_qwen_code.yaml --eval-type=code
+python3 scripts/run_eval.py --input llmuses/registry/data/code/code_test_v2_model_result.jsonl --task_cfg llmuses/registry/tasks/task_qwen_code.yaml --eval-type=code
 ```
 
 #### 2. 模型数学能力评估
 ```python
-python3 scripts/run_eval.py --input evals/registry/data/math/math_test_v2_model_result.jsonl --task_cfg evals/registry/tasks/task_qwen_math.yaml --eval-type=math
+python3 scripts/run_eval.py --input llmuses/registry/data/math/math_test_v2_model_result.jsonl --task_cfg llmuses/registry/tasks/task_qwen_math.yaml --eval-type=math
 ```
 
 #### 3. 模型通用生成能力评估（翻译、诗歌生成、成语接龙等）
 ```python
-python3 scripts/run_eval.py --input evals/registry/data/common_generation/rouge_test_v7_model_result.jsonl --task_cfg evals/registry/tasks/task_qwen_generation.yaml --eval-type=rouge
+python3 scripts/run_eval.py --input llmuses/registry/data/common_generation/rouge_test_v7_model_result.jsonl --task_cfg llmuses/registry/tasks/task_qwen_generation.yaml --eval-type=rouge
 ```
 
 
@@ -46,14 +46,14 @@ python3 scripts/run_eval.py --input evals/registry/data/common_generation/rouge_
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
 #### 1. 环境准备
 ```text
-a. 数据准备，questions data格式参考：evals/registry/data/arena/question.jsonl
+a. 数据准备，questions data格式参考：llmuses/registry/data/arena/question.jsonl
 b. 如果需要使用自动评估流程（AAR），则需要配置相关环境变量，我们以GPT-4 based auto-reviewer流程为例，需要配置以下环境变量：
 > export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 #### 2. 配置文件
 ```text
-arena评估流程的配置文件参考： evals/registry/tasks/cfg_arena.yaml
+arena评估流程的配置文件参考： llmuses/registry/tasks/cfg_arena.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -67,7 +67,7 @@ Usage:
 # python3 scripts/run_arena.py --c /path/to/xxx_cfg_arena.yaml
 
 Example:
-> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_arena.yaml
+> python3 scripts/run_arena.py --c llmuses/registry/tasks/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
@@ -77,7 +77,7 @@ Usage:
 # streamlit run apps/app.py -- --review_file /path/to/xxx_review_file.jsonl --category_file /path/to/xxx_category_mapping.yaml
 
 Example:
-> streamlit run scripts/run_qa_browser.py -- --review_file evals/registry/data/qa_browser/battle.jsonl --category_file evals/registry/data/qa_browser/category_mapping.yaml
+> streamlit run scripts/run_qa_browser.py -- --review_file llmuses/registry/data/qa_browser/battle.jsonl --category_file llmuses/registry/data/qa_browser/category_mapping.yaml
 ```
 
 ### 其他的评分模式
@@ -90,7 +90,7 @@ Example:
 这个模式下，我们只对单个模型输出做打分，不做两两对比。这个模式可以更方便的把新模型加入到 Leaderboard 中（只需要对新模型跑一遍打分即可）
 
 ```text
-评估流程的配置文件参考： evals/registry/tasks/cfg_single.yaml
+评估流程的配置文件参考： llmuses/registry/tasks/cfg_single.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -100,7 +100,7 @@ Example:
 
 ```python
 Example:
-> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_single.yaml
+> python3 scripts/run_arena.py --c llmuses/registry/tasks/cfg_single.yaml
 ```
 
 #### 2. Pairwise-baseline mode: 与 baseline 模型对比
@@ -108,7 +108,7 @@ Example:
 这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
 
 ```text
-评估流程的配置文件参考： evals/registry/tasks/cfg_pairwise_baseline.yaml
+评估流程的配置文件参考： llmuses/registry/tasks/cfg_pairwise_baseline.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -118,7 +118,7 @@ Example:
 
 ```python
 Example:
-> python3 scripts/run_arena.py --c evals/registry/tasks/cfg_pairwise_baseline.yaml
+> python3 scripts/run_arena.py --c llmuses/registry/tasks/cfg_pairwise_baseline.yaml
 ```
 
 # 数据格式
