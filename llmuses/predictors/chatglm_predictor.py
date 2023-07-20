@@ -27,7 +27,7 @@ class ChatGLMPredictor(Predictor):
 
         if mode == PredictorMode.REMOTE:
             raise ValueError(
-                'Remote inference is not supported for ChatGLM Predicator, use OpenAI API predictor instead.'
+                'Remote inference is not supported for ChatGLM Predictor, use OpenAI API predictor instead.'
             )
 
         self.max_length = int(kwargs.pop(EvalTaskConfig.ARGS_MAX_LEN, 2048))

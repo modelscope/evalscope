@@ -7,7 +7,7 @@ import pyarrow as pa
 
 from llmuses.constants import MetricMembers
 from llmuses.evaluate import Evaluate
-from llmuses.metrics.arena_metrics import compute_elo
+from llmuses.utils.arena_utils import compute_elo
 from llmuses.utils.logger import get_logger
 from llmuses.utils.utils import jsonl_to_list
 
