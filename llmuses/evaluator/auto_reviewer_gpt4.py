@@ -372,4 +372,4 @@ class AutoReviewerGpt4(BaseReviewer):
                 ) if self.mode != ArenaMode.SINGLE else self.get_review_single(
                     row)
                 res_list.append(row_result)
-                jsonl_dump_data(res_list, self.review_file)
+        jsonl_dump_data(res_list, self.review_file)
