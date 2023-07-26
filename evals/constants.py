@@ -80,7 +80,6 @@ class ArenaMode:
     PAIRWISE_ALL = 'pairwise_all'
 
 class FnCompletionParser:
-    REGEX_PARSER: str = 'regex_parser'
     LMSYS_PARSER: str = 'lmsys_parser'
     RANKING_PARSER: str = 'ranking_parser'
 
