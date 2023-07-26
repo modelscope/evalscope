@@ -77,7 +77,7 @@ Usage:
 # streamlit run apps/app.py -- --review_file /path/to/xxx_review_file.jsonl --category_file /path/to/xxx_category_mapping.yaml
 
 Example:
-> streamlit run scripts/run_qa_browser.py -- --review_file llmuses/registry/data/qa_browser/battle.jsonl --category_file llmuses/registry/data/qa_browser/category_mapping.yaml
+> streamlit run scripts/run_qa_browser.py --review_file llmuses/registry/data/qa_browser/battle.jsonl --category_file llmuses/registry/data/qa_browser/category_mapping.yaml
 ```
 
 ### 其他的评分模式
