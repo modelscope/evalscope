@@ -1,4 +1,5 @@
 absl-py
+accelerate
 alibaba_itag_sdk
 dashscope
 editdistance
@@ -22,3 +23,4 @@ simple-ddl-parser
 streamlit
 tqdm
 transformers
+transformers_stream_generator

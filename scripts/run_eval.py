@@ -4,8 +4,7 @@ import argparse
 import os
 import sys
 
-from llmuses.preprocess.tokenizers.gpt2_tokenizer import (GPT2Tokenizer,
-                                                          get_tokenized_string)
+from llmuses.preprocess.tokenizers.gpt2_tokenizer import GPT2Tokenizer, get_tokenized_string
 from llmuses.tasks.task_eval_qwen_code import TaskQwenCodeEval
 from llmuses.tasks.task_eval_qwen_generation import TaskQwenGenerationEval
 from llmuses.tasks.task_eval_qwen_math import TaskQwenMathEval
