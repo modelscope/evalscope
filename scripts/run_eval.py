@@ -4,16 +4,16 @@ import argparse
 import os
 import sys
 
+current_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(current_path, '..'))
+
+
 from evals.preprocess.tokenizers.gpt2_tokenizer import (GPT2Tokenizer,
                                                         get_tokenized_string)
 from evals.tasks.task_eval_qwen_code import TaskQwenCodeEval
 from evals.tasks.task_eval_qwen_generation import TaskQwenGenerationEval
 from evals.tasks.task_eval_qwen_math import TaskQwenMathEval
 from evals.utils.utils import jsonl_to_list
-
-current_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_path, '..'))
-
 
 def get_args():
     parser = argparse.ArgumentParser(
