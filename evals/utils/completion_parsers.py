@@ -1,14 +1,14 @@
 import ast
-from typing import Any
 import re
+from typing import Any
 
-from evals.constants import ArenaWinner
-from evals.utils.logger import get_logger
+from llmuses.constants import ArenaWinner
+from llmuses.utils.logger import get_logger
 
 logger = get_logger()
 
-one_score_pattern = re.compile("\[\[(\d+\.?\d*)\]\]")
-one_score_pattern_backup = re.compile("\[(\d+\.?\d*)\]")
+one_score_pattern = re.compile('\[\[(\d+\.?\d*)\]\]')  # noqa
+one_score_pattern_backup = re.compile('\[(\d+\.?\d*)\]')  # noqa
 
 
 # modified from: https://github.com/lm-sys/FastChat/blob/main/fastchat/eval/eval_gpt_review.py#L47
@@ -23,7 +23,7 @@ def lmsys_parser(completion, output_format):
             rating = ast.literal_eval(match.groups()[0])
         else:
             logger.error(f'Content: {completion}\n'
-                'You must manually fix the score.')
+                         'You must manually fix the score.')
             rating = -1
 
         return rating
@@ -48,18 +48,18 @@ def lmsys_parser(completion, output_format):
                 raise Exception('Invalid score pair.')
         except Exception as e:
             logger.error(f'{e}\nContent: {completion}\n'
-                        'You must manually fix the score pair.')
+                         'You must manually fix the score pair.')
             return ArenaWinner.UNKNOWN, [-1, -1]
     elif output_format == '[[A]]':
-        if "[[A]]" in completion:
+        if '[[A]]' in completion:
             winner = ArenaWinner.MODEL_A
-        elif "[[B]]" in completion:
+        elif '[[B]]' in completion:
             winner = ArenaWinner.MODEL_B
-        elif "[[C]]" in completion:
+        elif '[[C]]' in completion:
             winner = ArenaWinner.TIE
         else:
             logger.error(f'\nContent: {completion}\n'
-                        'You must manually fix the score.')
+                         'You must manually fix the score.')
             winner = ArenaWinner.UNKNOWN
         return winner
 
@@ -71,10 +71,12 @@ def ranking_parser(completion, **kwargs):
         else:
             ordered_completions = completion
 
-        rank = [c for c in ordered_completions if c["model"] == "model_a"][0]["rank"]
+        rank = [c for c in ordered_completions
+                if c['model'] == 'model_a'][0]['rank']
         assert rank in [1, 2]
 
         return ArenaWinner.MODEL_A if rank == 1 else ArenaWinner.MODEL_B
     except Exception as e:
-        logger.error(f"{e}\nContent: {completion}\n" "You must manually fix the score pair.")
+        logger.error(f'{e}\nContent: {completion}\n'
+                     'You must manually fix the score pair.')
         return ArenaWinner.UNKNOWN

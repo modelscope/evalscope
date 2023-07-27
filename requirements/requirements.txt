@@ -8,7 +8,6 @@ openai
 pandas
 plotly
 pyarrow
-pyodps
 pyyaml
 regex
 requests
@@ -16,6 +15,7 @@ requests-toolbelt
 rouge-score
 sacrebleu
 scikit-learn
+seaborn
 seaborn
 sentencepiece
 simple-ddl-parser

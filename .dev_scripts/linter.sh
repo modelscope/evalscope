@@ -1,3 +1,3 @@
-yapf -r -i evals/ setup.py
-isort -rc evals/ setup.py
-flake8 evals/ setup.py
+yapf -r -i llmuses/ setup.py
+isort -rc llmuses/ setup.py
+flake8 llmuses/ setup.py

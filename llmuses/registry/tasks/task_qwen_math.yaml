@@ -1,0 +1,9 @@
+task_name: task_qwen_math
+
+task_qwen_math:
+    id: task_qwen_math_ver_0
+    evaluator:
+        ref: llmuses.evaluator.math_eval:MathEvaluate
+        args:
+            metrics: ['math_accuracy']
+            md_level: 2

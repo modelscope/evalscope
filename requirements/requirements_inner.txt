@@ -4,6 +4,7 @@ alibaba_itag_sdk
 dashscope
 editdistance
 jsonlines
+jsonlines
 nltk
 openai
 pandas==1.5.3
@@ -18,10 +19,8 @@ rouge-score
 sacrebleu
 scikit-learn
 seaborn
-sentencepiece
 simple-ddl-parser
 streamlit
-torch
 tqdm
 transformers
 transformers_stream_generator

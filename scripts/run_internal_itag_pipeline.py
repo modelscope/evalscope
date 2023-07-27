@@ -2,7 +2,7 @@
 
 import os
 
-from evals.tools import ItagManager
+from llmuses.tools import ItagManager
 
 if __name__ == '__main__':
 

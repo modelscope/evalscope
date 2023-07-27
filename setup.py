@@ -11,7 +11,7 @@ def readme():
     return content
 
 
-VERSION_FILE = 'evals/version.py'
+VERSION_FILE = os.path.abspath('llmuses/version.py')
 
 
 def get_version():
@@ -125,13 +125,13 @@ def pack_resource():
     os.makedirs(root_dir)
 
     proj_dir = root_dir + 'llmuses/'
-    shutil.copytree('./evals', proj_dir)
+    shutil.copytree('llmuses', proj_dir)
     shutil.copy('requirements/requirements.txt', 'package/requirements.txt')
     shutil.copy('./README.md', 'package/README.md')
 
 
 if __name__ == '__main__':
-    # Usage: python3 setup.py bdist_wheel
+    print('Usage: python3 setup.py bdist_wheel')
 
     pack_resource()
     os.chdir('package')
@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
     setup(
         name='llmuses',
-        version='0.0.2',
+        version=get_version(),
         author='ModelScope team',
         author_email='contact@modelscope.cn',
         keywords='python,llm,evaluation',
