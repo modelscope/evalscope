@@ -8,24 +8,24 @@ repos:
                 thirdparty/|
                 examples/
             )$
-  - repo: /home/admin/pre-commit/isort
-    rev: 4.3.21
-    hooks:
-      - id: isort
-        exclude: |
-            (?x)^(
-                thirdparty/|
-                examples/
-            )$
-  - repo: /home/admin/pre-commit/mirrors-yapf
-    rev: v0.30.0
-    hooks:
-      - id: yapf
-        exclude: |
-            (?x)^(
-                thirdparty/|
-                examples/
-            )$
+#  - repo: /home/admin/pre-commit/isort
+#    rev: 4.3.21
+#    hooks:
+#      - id: isort
+#        exclude: |
+#            (?x)^(
+#                thirdparty/|
+#                examples/
+#            )$
+#  - repo: /home/admin/pre-commit/mirrors-yapf
+#    rev: v0.30.0
+#    hooks:
+#      - id: yapf
+#        exclude: |
+#            (?x)^(
+#                thirdparty/|
+#                examples/
+#            )$
   - repo: /home/admin/pre-commit/pre-commit-hooks
     rev: v3.1.0
     hooks:

@@ -6,10 +6,9 @@ import pandas as pd
 import pyarrow as pa
 
 from llmuses.constants import MetricMembers
-from llmuses.evaluate import Evaluate
 from llmuses.utils.arena_utils import compute_elo
 from llmuses.utils.logger import get_logger
-from llmuses.utils.utils import jsonl_to_list
+from llmuses.utils import jsonl_to_list
 
 logger = get_logger()
 
@@ -22,11 +21,12 @@ DEFAULT_COLUMNS_MAPPING = {
 }
 
 
-class RatingEvaluate(Evaluate):
+class RatingEvaluate(object):
 
     def __init__(self, metrics: list, baseline_model: str = None, **kwargs):
-        super().__init__(metrics=metrics, **kwargs)
+        self.metrics = metrics
         self.baseline_model = baseline_model
+        self.kwargs = kwargs
 
     def preprocess(self, raw_data_df: pd.DataFrame, **kwargs):
 

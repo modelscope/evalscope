@@ -6,8 +6,6 @@ from typing import Sequence
 import json
 import regex as re
 
-from llmuses.constants import MetricsConstant
-
 logger = logging.getLogger(__name__)
 
 

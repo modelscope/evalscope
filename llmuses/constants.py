@@ -1,94 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
 from enum import Enum
 
-DEFAULT_WORK_DIR = '~/maas_evals'
+DEFAULT_ROOT_DIR = '~/.cache/llmuses'
 
-
-class TaskEnvs:
-    # The cache root dir for tasks
-    WORK_DIR = 'WORK_DIR'
-
-
-class PredictorMode:
-    LOCAL = 'local'
-    REMOTE = 'remote'
-
-
-class PredictorKeys:
-    LOCAL_MODEL = 'local_model'
-
-
-class PredictorEnvs:
-    # The api key for DashScope, which can be obtained from the DashScope console.
-    DASHSCOPE_API_KEY = 'DASHSCOPE_API_KEY'
-
-    # The base url for DashScope, it's necessary when DEBUG_MODE is set to true.
-    DEBUG_DASHSCOPE_HTTP_BASE_URL = 'DEBUG_DASHSCOPE_HTTP_BASE_URL'
-
-    # Debug mode, set to 'true' to enable debug mode, otherwise ignore it.
-    DEBUG_MODE = 'DEBUG_MODE'
-
-
-class ItagEnvs:
-
-    ITAG_INTERNAL_ENDPOINT = 'ITAG_INTERNAL_ENDPOINT'
-
-    ALPHAD_INTERNAL_ENDPOINT = 'ALPHAD_INTERNAL_ENDPOINT'
-
-
-class EvalTaskConfig:
-    TASK_NAME = 'task_name'
-    TASK_ID = 'id'
-    SAMPLES = 'samples'
-    EVALUATOR = 'evaluator'
-    PREDICTOR = 'predictor'
-    CLASS_REF = 'ref'
-    CLASS_ARGS = 'args'
-    ARGS_MODEL = 'model'
-    ARGS_MODEL_PATH = 'model_path'
-    ARGS_MAX_LEN = 'max_length'
-    ARGS_MAX_NEW_TOKENS = 'max_new_tokens'
-    ARGS_TOP_K = 'top_k'
-    ARGS_TOP_P = 'top_p'
-    ARGS_TEMPERATURE = 'temperature'
-    ARGS_API_ENDPOINT = 'api_endpoint'
-    ENABLE = 'enable'
-    MODE = 'mode'
-    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
-    RANDOM_SEED = 'random_seed'
-    FN_COMPLETION_PARSER = 'fn_completion_parser'
-    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
-
-
-class ScoringModel:
-    GENERATION_EVAL = 'generation_eval'
-    CLASSIFICATION_EVAL = 'classification_eval'
-    MATCH_EVAL = 'match_eval'
-    INCLUDES_EVAL = 'includes_eval'
-    SIMILARITY_EVAL = 'similarity_eval'
-    UNIT_TEST_EVAL = 'unit_test_eval'
+HERE = os.path.dirname(os.path.abspath(__file__))
+PARENT = os.path.join(HERE, '..')
+DEFAULT_OUTPUTS_DIR = os.path.join(PARENT, 'outputs/default')
 
 
 class DumpMode:
     OVERWRITE = 'overwrite'
     APPEND = 'append'
-
-
-class ArenaMode:
-    SINGLE = 'single'
-    PAIRWISE_BASELINE = 'pairwise_baseline'
-    PAIRWISE_ALL = 'pairwise_all'
-
-
-class FnCompletionParser:
-    LMSYS_PARSER: str = 'lmsys_parser'
-    RANKING_PARSER: str = 'ranking_parser'
-
-
-class PositionBiasMitigation:
-    NONE = 'none'
-    RANDOMIZE_ORDER = 'randomize_order'
-    SWAP_POSITION = 'swap_position'
 
 
 class MetricsConstant:
@@ -139,3 +62,84 @@ class ArenaWinner:
     TIE_BOTH_BAD = 'tie_both_bad'
 
     UNKNOWN = 'unknown'
+
+
+class ArenaMode:
+    SINGLE = 'single'
+    PAIRWISE = 'pairwise'
+    PAIRWISE_BASELINE = 'pairwise_baseline'
+
+
+class OutputsStructure:
+
+    LOGS_DIR = 'logs_dir'
+
+    PREDICTIONS_DIR = 'predictions_dir'
+
+    REVIEWS_DIR = 'reviews_dir'
+
+    REPORTS_DIR = 'reports_dir'
+
+
+class AnswerKeys:
+
+    ANSWER_ID = 'answer_id'
+
+    RAW_INPUT = 'raw_input'
+
+    ORIGIN_PROMPT = 'origin_prompt'
+
+    MODEL_SPEC = 'model_spec'
+
+    SUBSET_NAME = 'subset_name'
+
+    CHOICES = 'choices'
+
+
+class ReviewKeys:
+
+    REVIEW_ID = 'review_id'
+
+    REVIEWED = 'reviewed'
+
+    REVIEWER_SPEC = 'reviewer_spec'
+
+    REVIEW_TIME = 'review_time'
+
+    MESSAGE = 'message'
+
+    CONTENT = 'content'
+
+    GOLD = 'gold'
+
+    PRED = 'pred'
+
+    RESULT = 'result'
+
+    REVIEW = 'review'
+
+
+class EvalConfigKeys:
+    CLASS_REF = 'ref'
+    CLASS_ARGS = 'args'
+    ENABLE = 'enable'
+    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
+    RANDOM_SEED = 'random_seed'
+    FN_COMPLETION_PARSER = 'fn_completion_parser'
+    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
+    OUTPUT_FILE = 'output_file'
+    MODEL_ID_OR_PATH = 'model_id_or_path'
+    MODEL_REVISION = 'revision'
+    GENERATION_CONFIG = 'generation_config'
+    PRECISION = 'precision'
+
+
+class FnCompletionParser:
+    LMSYS_PARSER: str = 'lmsys_parser'
+    RANKING_PARSER: str = 'ranking_parser'
+
+
+class PositionBiasMitigation:
+    NONE = 'none'
+    RANDOMIZE_ORDER = 'randomize_order'
+    SWAP_POSITION = 'swap_position'

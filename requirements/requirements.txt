@@ -1,13 +1,18 @@
+# pip3 install --no-dependencies -r requirements.txt
 absl-py
-accelerate
-dashscope
+auto-gptq==0.4.2
+cachetools
+datasets>=2.14.5
 editdistance
 jsonlines
+matplotlib
+modelscope>=1.9.5
 nltk
-openai
+openai==0.28
 pandas
 plotly
 pyarrow
+pympler
 pyyaml
 regex
 requests
@@ -16,10 +21,11 @@ rouge-score
 sacrebleu
 scikit-learn
 seaborn
-seaborn
 sentencepiece
 simple-ddl-parser
 streamlit
+tabulate
+tiktoken
 torch
 tqdm
 transformers

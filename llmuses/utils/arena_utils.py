@@ -63,7 +63,7 @@ def merge_ques_ans(answer_list_all,
 
     Returns:
         pandas DataFrame: merged dataframe, e.g. columns are
-            ['question_id', 'text', 'category', 'gpt-3.5-turbo', ...]
+            ['question_id', 'gpt-3.5-turbo', 'llama2-7b']
     """
     ans_df = pd.DataFrame()
     for ans_list in answer_list_all:
@@ -83,8 +83,7 @@ def merge_ques_ans(answer_list_all,
     return ans_df
 
 
-def get_battle_pairs(columns: List[str],
-                     baseline_idx: int = -1) -> List[tuple]:
+def get_battle_pairs(columns: List[str], baseline_idx: int = -1) -> List[tuple]:
     """
     Get battle pair names from columns.
 

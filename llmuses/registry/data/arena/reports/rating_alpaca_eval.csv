@@ -1,3 +1,0 @@
-model,win,loss,tie,win_rate,loss_rate,tie_rate
-gpt-3.5-turbo:20230327,46,34,0,0.575,0.425,0.0
-gpt-3.5-turbo,38,42,0,0.475,0.525,0.0

@@ -1,17 +1,19 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# Copyright (c) OpenCompass.
 
 import functools
 import importlib
 import os
+import re
 import random
-from typing import Any, Union
+from typing import Any, Union, Dict
+import hashlib
+import datetime
 
 import jsonlines as jsonl
-import pandas as pd
-import pyarrow as pa
 import yaml
 
-from llmuses.constants import DumpMode
+from llmuses.constants import DumpMode, OutputsStructure, DEFAULT_OUTPUTS_DIR
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -68,7 +70,7 @@ def jsonl_to_csv():
     pass
 
 
-def jsonl_dump_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
+def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
     """
     Dump data to jsonl file.
 
@@ -136,3 +138,134 @@ def markdown_table(header_l, data_l):
 def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
     """Random choice with a (potentially string) seed."""
     return random.Random(seed).choices(choices, k=1, **kwargs)[0]
+
+
+def gen_hash(name: str):
+    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()
+
+
+def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
+    """
+        Checks whether the passed dictionary and its nested dicts have a *torch_dtype* key and if it's not None,
+        converts torch.dtype to a string of just the type. For example, `torch.float32` get converted into *"float32"*
+        string, which can then be stored in the json format.
+
+        Refer to: https://github.com/huggingface/transformers/pull/16065/files for details.
+        """
+    if d.get('torch_dtype', None) is not None and not isinstance(d['torch_dtype'], str):
+        d['torch_dtype'] = str(d['torch_dtype']).split('.')[1]
+
+    for value in d.values():
+        if isinstance(value, dict):
+            dict_torch_dtype_to_str(value)
+
+    return d
+
+
+class ResponseParser:
+
+    @staticmethod
+    def parse_first_capital(text: str) -> str:
+        for t in text:
+            if t.isupper():
+                return t
+        return ''
+
+    @staticmethod
+    def parse_last_capital(text: str) -> str:
+        for t in text[::-1]:
+            if t.isupper():
+                return t
+        return ''
+
+    @staticmethod
+    def parse_first_option(text: str, options: str) -> str:
+        """Find first valid option for text."""
+
+        patterns = [
+            f'[Tt]he answer is [{options}]',
+            f'[Tt]he correct answer is [{options}]',
+            f'答案是(.*?)[{options}]',
+            f'答案为(.*?)[{options}]',
+            f'固选(.*?)[{options}]',
+            f'答案应该是(.*?)[{options}]',
+            f'(\s|^)[{options}][\s。，,\.$]',  # noqa
+            f'[{options}]',
+        ]
+
+        regexes = [re.compile(pattern) for pattern in patterns]
+        for regex in regexes:
+            match = regex.search(text)
+            if match:
+                outputs = match.group(0)
+                for i in options:
+                    if i in outputs:
+                        return i
+        return ''
+
+    @staticmethod
+    def parse_first_capital_multi(text: str) -> str:
+        match = re.search(r'([A-D]+)', text)
+        if match:
+            return match.group(1)
+        return ''
+
+    @staticmethod
+    def parse_last_option(text: str, options: str) -> str:
+        match = re.findall(rf'([{options}])', text)
+        if match:
+            return match[-1]
+        return ''
+
+
+def make_outputs_dir(model_id: str, model_revision: str):
+    model_revision = model_revision if model_revision is not None else 'none'
+    now = datetime.datetime.now()
+    format_time = now.strftime('%Y%m%d_%H%M%S')
+    outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
+    outputs_dir = os.path.join(DEFAULT_OUTPUTS_DIR, outputs_name)
+
+    return outputs_dir
+
+
+def make_outputs_structure(outputs_dir: str):
+    logs_dir = os.path.join(outputs_dir, 'logs')
+    predictions_dir = os.path.join(outputs_dir, 'predictions')
+    reviews_dir = os.path.join(outputs_dir, 'reviews')
+    reports_dir = os.path.join(outputs_dir, 'reports')
+
+    os.makedirs(outputs_dir, exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
+    os.makedirs(predictions_dir, exist_ok=True)
+    os.makedirs(reviews_dir, exist_ok=True)
+    os.makedirs(reports_dir, exist_ok=True)
+
+    outputs_structure = {
+        OutputsStructure.LOGS_DIR: logs_dir,
+        OutputsStructure.PREDICTIONS_DIR: predictions_dir,
+        OutputsStructure.REVIEWS_DIR: reviews_dir,
+        OutputsStructure.REPORTS_DIR: reports_dir,
+    }
+
+    return outputs_structure
+
+
+def import_module_util(import_path_prefix: str, module_name: str, members_to_import: list) -> dict:
+    """
+    Import module utility function.
+
+    Args:
+        import_path_prefix: e.g. 'llmuses.benchmarks.'
+        module_name: The module name to import. e.g. 'mmlu'
+        members_to_import: The members to import.
+            e.g. ['DATASET_ID', 'SUBJECT_MAPPING', 'SUBSET_LIST', 'DataAdapterClass']
+
+    Returns:
+        dict: imported modules map. e.g. {'DATASET_ID': 'mmlu', 'SUBJECT_MAPPING': {...}, ...}
+    """
+    imported_modules = {}
+    module = importlib.import_module(import_path_prefix + module_name)
+    for member_name in members_to_import:
+        imported_modules[member_name] = getattr(module, member_name)
+
+    return imported_modules
