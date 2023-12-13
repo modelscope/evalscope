@@ -25,12 +25,12 @@
 
 ## 环境准备
 ```shell
-# 1. 代码下载 (TODO: To be updated to github link)
-git clone -b dev/refactor_master git@gitlab.alibaba-inc.com:DamoAGI/llm-eval.git
+# 1. 代码下载
+git clone git@github.com:modelscope/llmuses.git
 
 # 2. 安装依赖
 cd llm-eval
-pip install --no-dependencies -r requirements.txt
+pip install -r requirements.txt
 pip install -e .
 ```
 
