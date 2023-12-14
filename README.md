@@ -25,8 +25,8 @@
 
 ## 环境准备
 ```shell
-# 1. 代码下载 (TODO: To be updated to github link)
-git clone -b dev/refactor_master git@gitlab.alibaba-inc.com:DamoAGI/llm-eval.git
+# 1. 代码下载 (TODO: ONLY FOR EVALUATION ON DASHSCOPE)
+git clone -b dev/eval_dashscope git@gitlab.alibaba-inc.com:DamoAGI/llm-eval.git
 
 # 2. 安装依赖
 cd llm-eval
