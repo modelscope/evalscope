@@ -29,8 +29,8 @@
 git clone git@github.com:modelscope/llmuses.git
 
 # 2. 安装依赖
-cd llm-eval
-pip install -r requirements.txt
+cd llmuses/
+pip install -r requirements/requirements.txt
 pip install -e .
 ```
 
