@@ -60,6 +60,7 @@ def gen_table(reports_path_list: list):
             single_row = []
             single_row.append(model_name)
             for single_report in report_list:
+                # e.g. '28.51 (acc)'
                 single_row.append(single_report['score'])
             table_values.append(single_row)
 

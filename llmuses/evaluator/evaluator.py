@@ -8,7 +8,7 @@ import re
 from collections import OrderedDict
 
 from tqdm import tqdm
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 
 from llmuses.benchmarks import DataAdapter
 from llmuses.cache import Cache, init_mem_cache
@@ -285,7 +285,8 @@ class Evaluator(object):
             review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
             review_res_list.append(review_res)
 
-        return self.data_adapter.compute_metric(review_res_list=review_res_list)
+        metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
+        return self._normalize_score(score=metric_score)
 
     def dump_report(self, report_map: dict):
         """
@@ -326,6 +327,17 @@ class Evaluator(object):
             cache_len = len(self.mem_cache)
             self.mem_cache.clear()
             logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
+
+    def _normalize_score(self, score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
+
+        if isinstance(score, float):
+            score = round(score * 100, keep_num)
+        elif isinstance(score, dict):
+            score = {k: round(v * 100, keep_num) for k, v in score.items()}
+        else:
+            logger.warning(f'Unknown score type: {type(score)}')
+
+        return score
 
     def eval(self,
              infer_cfg: dict = None,
@@ -497,7 +509,7 @@ class HumanevalEvaluator(object):
             "total_num":100
         }
         """
-        results = {k: round(v, 4) * 100 for k, v in results.items()}
+        results = {k: round(v * 100, 4) for k, v in results.items()}
 
         category_d = dict(name='DEFAULT',
                           score=results,
