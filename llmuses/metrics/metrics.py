@@ -300,30 +300,6 @@ def exact_match(gold: str, pred: str) -> float:
     return 1 if gold.strip() == pred.strip() else 0
 
 
-def weighted_average_acc(category_score_map: dict, total_num: int) -> (float, list):
-    """
-    Compute weighted average accuracy.
-
-    Args:
-        category_score_map: category -> score mapping. e.g. {'abstract_algebra': [0, 1, 0, 1, 1]}
-        total_num: total number of samples
-
-    Returns:
-        weighted average accuracy (float)
-        list of category -> average score mapping (list)
-    """
-    weighted_avg_acc = 0
-    cate_avg_list = []
-
-    for cate, score_list in category_score_map.items():
-        cate_avg_score = np.mean(score_list)
-        weighted_avg_acc += len(score_list) / total_num * cate_avg_score
-
-        cate_avg_list.append({'name': cate, 'score': round(float(cate_avg_score), 4), 'num': len(score_list)})
-
-    return round(weighted_avg_acc, 4), cate_avg_list
-
-
 def calculate_arc_accuracy(question_answers: Dict[str, str], predictions: Dict[str, List[str]]) -> float:
     """
     Calculate accuracy for ARC benchmark.
