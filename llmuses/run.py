@@ -95,7 +95,7 @@ def parse_str_args(str_args: str):
     for k, v in arg_dict.items():
         try:
             final_args[k] = eval(v)
-        except NameError:
+        except:
             final_args[k] = v
 
     return final_args
