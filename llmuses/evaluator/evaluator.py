@@ -4,6 +4,7 @@ import os
 import time
 import json
 import re
+from copy import deepcopy
 from collections import OrderedDict
 
 from tqdm import tqdm
@@ -14,7 +15,8 @@ from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
 from llmuses.models.model_adapter import BaseModelAdapter
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir
+from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
+    normalize_score
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -188,18 +190,18 @@ class Evaluator(object):
         if reviewer_spec is None:
             reviewer_spec = {}
 
-        rev = answer_d
-        choices = answer_d[AnswerKeys.CHOICES]
+        review_res = deepcopy(answer_d)
+        choices = review_res[AnswerKeys.CHOICES]
         if len(choices) == 0:
-            rev[ReviewKeys.REVIEWED] = False
-            rev[ReviewKeys.REVIEW_ID] = None
-            rev[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-            rev[ReviewKeys.REVIEW_TIME] = time.time()
-            return rev
+            review_res[ReviewKeys.REVIEWED] = False
+            review_res[ReviewKeys.REVIEW_ID] = None
+            review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
+            review_res[ReviewKeys.REVIEW_TIME] = time.time()
+            return review_res
 
         rev_choices = []
         for choice in choices:
-            raw_input_d: dict = answer_d[AnswerKeys.RAW_INPUT]
+            raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
             answer_content = self.data_adapter.parse_pred_result(answer_content, raw_input_d)
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
@@ -211,16 +213,16 @@ class Evaluator(object):
 
             rev_choices.append(choice)
 
-        rev[AnswerKeys.CHOICES] = rev_choices
-        rev[ReviewKeys.REVIEWED] = True
-        rev[ReviewKeys.REVIEW_ID] = review_id
-        rev[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-        rev[ReviewKeys.REVIEW_TIME] = time.time()
+        review_res[AnswerKeys.CHOICES] = rev_choices
+        review_res[ReviewKeys.REVIEWED] = True
+        review_res[ReviewKeys.REVIEW_ID] = review_id
+        review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
+        review_res[ReviewKeys.REVIEW_TIME] = time.time()
 
         if self.mem_cache is not None:
-            self.mem_cache[review_id] = rev
+            self.mem_cache[review_id] = review_res
 
-        return rev
+        return review_res
 
     def get_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
         """
@@ -260,7 +262,7 @@ class Evaluator(object):
         review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
         review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
         os.makedirs(review_dir, exist_ok=True)
-        dump_jsonl_data(answers_list, os.path.join(review_dir, review_file_name))
+        dump_jsonl_data(reviews_list, os.path.join(review_dir, review_file_name))
 
         return reviews_list
 
@@ -286,7 +288,7 @@ class Evaluator(object):
             review_res_list.append(review_res)
 
         metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
-        return self._normalize_score(score=metric_score)
+        return normalize_score(score=metric_score)
 
     def dump_report(self, report_map: dict):
         """
@@ -327,17 +329,6 @@ class Evaluator(object):
             cache_len = len(self.mem_cache)
             self.mem_cache.clear()
             logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
-
-    def _normalize_score(self, score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
-
-        if isinstance(score, float):
-            score = round(score * 100, keep_num)
-        elif isinstance(score, dict):
-            score = {k: round(v * 100, keep_num) for k, v in score.items()}
-        else:
-            logger.warning(f'Unknown score type: {type(score)}')
-
-        return score
 
     def eval(self,
              infer_cfg: dict = None,
@@ -506,7 +497,7 @@ class HumanevalEvaluator(object):
             "total_num":100
         }
         """
-        results = {k: round(v * 100, 4) for k, v in results.items()}
+        results = {k: round(v, 4) * 100 for k, v in results.items()}
 
         category_d = dict(name='DEFAULT',
                           score=results,

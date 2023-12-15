@@ -159,5 +159,6 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
   - [ ] GAIA
   - [ ] GPQA
   - [ ] BBH
+  - [ ] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
