@@ -13,7 +13,7 @@ import datetime
 import jsonlines as jsonl
 import yaml
 
-from llmuses.constants import DumpMode, OutputsStructure, DEFAULT_OUTPUTS_DIR
+from llmuses.constants import DumpMode, OutputsStructure
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -218,12 +218,12 @@ class ResponseParser:
         return ''
 
 
-def make_outputs_dir(model_id: str, model_revision: str):
+def make_outputs_dir(work_dir: str, model_id: str, model_revision: str):
     model_revision = model_revision if model_revision is not None else 'none'
     now = datetime.datetime.now()
     format_time = now.strftime('%Y%m%d_%H%M%S')
     outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
-    outputs_dir = os.path.join(DEFAULT_OUTPUTS_DIR, outputs_name)
+    outputs_dir = os.path.join(work_dir, outputs_name)
 
     return outputs_dir
 
