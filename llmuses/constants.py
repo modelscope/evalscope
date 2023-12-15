@@ -1,12 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from enum import Enum
 
-DEFAULT_ROOT_DIR = '~/.cache/llmuses'
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-PARENT = os.path.join(HERE, '..')
-DEFAULT_OUTPUTS_DIR = os.path.join(PARENT, 'outputs/default')
+DEFAULT_ROOT_CACHE_DIR = '~/.cache/llmuses'
 
 
 class DumpMode:
