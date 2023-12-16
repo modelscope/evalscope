@@ -80,10 +80,10 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 cd llmuses
 
 # dry-run模式 (模型answer正常生成，但专家模型不会被触发，评估结果会随机生成)
-python run_arena.py --c registry/config/cfg_arena.yaml --dry-run
+python llmuses/run_arena.py -c llmuses/registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
-python run_arena.py --c registry/config/cfg_arena.yaml
+python llmuses/run_arena.py --c llmuses/registry/config/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
