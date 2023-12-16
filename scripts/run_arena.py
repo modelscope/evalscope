@@ -157,7 +157,7 @@ class ArenaWorkflow:
         enable = self.rating_gen.get(EvalConfigKeys.ENABLE, True)
         if enable:
             report_file = os.path.join(WORK_DIR, self.rating_gen.get('report_file'))
-            metrics = self.rating_gen.get('metrics', ['elo'])
+            metrics = self.rating_gen.get('../llmuses/metrics', ['elo'])
             baseline_model = self.rating_gen.get(
                 'baseline_model') if metrics[0] == 'pairwise' else None
             ae = RatingEvaluate(metrics=metrics, baseline_model=baseline_model)
