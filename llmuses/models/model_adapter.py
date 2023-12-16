@@ -460,7 +460,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         return response
 
     @torch.no_grad()
-    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = None) -> dict:
+    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = dict({})) -> dict:
 
         # Process inputs
         if isinstance(inputs, str):
