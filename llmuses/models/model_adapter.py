@@ -353,7 +353,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         tokenizer = AutoTokenizer.from_pretrained(self.model_id,
                                                   revision=model_revision,
-                                                  trust_remote_code=True, )
+                                                  trust_remote_code=True,
+                                                  padding_side='left', )       # TODO: only for test
 
         model = AutoModelForCausalLM.from_pretrained(self.model_id,
                                                      revision=model_revision,
