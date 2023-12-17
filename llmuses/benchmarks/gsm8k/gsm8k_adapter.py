@@ -21,7 +21,7 @@ class GSM8KAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 4,     # GSM8K uses 4-shot examples by system
+                 few_shot_num: int = 4,     # GSM8K uses 4-shot examples with CoT by system
                  train_split: str = 'train',
                  eval_split: str = 'test',
                  **kwargs):

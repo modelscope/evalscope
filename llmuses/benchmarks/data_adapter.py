@@ -106,6 +106,11 @@ class DataAdapter(ABC):
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
 
+        rnd = random.Random()
+        rnd.seed(42)
+        for k, v in res_dict.items():
+            rnd.shuffle(v)
+
         return res_dict
 
     @abstractmethod
