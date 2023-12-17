@@ -451,7 +451,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             if stop else self.origin_tokenizer.eos_token_id
 
         # TODO: ONLY FOR TEST
-        eos_token_id = 92345  # ':'
+        # eos_token_id = 92345  # ':'
+        # stop = ':'
+        # (eos_token_id,) = self.tokenizer.encode(stop, add_special_tokens=False)
+        logger.info(f'>>eos_token_id: {eos_token_id}')
 
         # context, max_length, eos_token_id
         generation_kwargs = {'do_sample': False, 'max_new_tokens': infer_cfg.get('max_new_tokens', 256)}
