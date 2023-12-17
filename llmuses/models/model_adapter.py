@@ -406,7 +406,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return generation_config, generation_template
 
-    def _model_generate_old(self, query: str, infer_cfg: dict) -> str:
+    def _model_generate(self, query: str, infer_cfg: dict) -> str:
         example = dict(query=query,
                        history=[],
                        system=None)
@@ -439,7 +439,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
         return response
 
-    def _model_generate(self, query: str, infer_cfg: dict) -> str:
+    def _model_generate_old(self, query: str, infer_cfg: dict) -> str:
 
         print(f'\n>>context_str:{query}\n')
 
