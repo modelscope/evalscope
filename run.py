@@ -170,5 +170,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # Usage: python scripts/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
     main()

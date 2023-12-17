@@ -394,5 +394,5 @@ def main():
 
 if __name__ == '__main__':
 
-    print('**Usage:\n streamlit run scripts/app.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml')
+    print('**Usage:\n streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml')
     main()
