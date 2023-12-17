@@ -421,6 +421,16 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
 
+        # TODO: FOR TEST  until
+        stop = infer_cfg.get('stop', None)
+        eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
+            if stop else self.tokenizer.eos_token_id
+
+        if eos_token_id is not None:
+            infer_cfg['eos_token_id'] = eos_token_id
+            infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
+
+
         self.generation_config.update(**infer_cfg)
 
         # stopping
