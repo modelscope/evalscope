@@ -456,6 +456,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             generation_kwargs['eos_token_id'] = eos_token_id
             generation_kwargs['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
 
+
+        # TODO: ONLY FOR TEST
+        generation_kwargs['eos_token_id'] = 92345
+
+
         print('>>> _model_generate: ')
         print(f'>>context:\n{input_ids}, >shape:{input_ids.shape}')
         print(f'>>max_length:\n{self.generation_config.max_length}')  # 1898
