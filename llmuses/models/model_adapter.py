@@ -441,6 +441,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
     def _model_generate(self, query: str, infer_cfg: dict) -> str:
 
+        print(f'\n>>context_str:{query}\n')
+
         input_ids = self.origin_tokenizer(query, padding=False)['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
 
@@ -460,6 +462,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         print(f'>>eos_token_id:\n{eos_token_id}')  # 92345
         if hasattr(self.model, 'generation_config'):
             print(f'>>generation_config:\n{self.model.generation_config}')
+        print(f'>>>true_gen_config:{generation_kwargs}\n')
 
 
         output_ids = self.model.generate(input_ids, **generation_kwargs)
