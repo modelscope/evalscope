@@ -40,12 +40,12 @@ pip install -e .
 ### 简单评估
 ```shell
 # 在特定数据集上评估某个模型
-python scripts/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
+python run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
 ```
 
 ### 带参数评估
 ```shell
-python scripts/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
+python run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
 
 # 参数说明
 # --model-args: 模型参数，以逗号分隔，key=value形式
@@ -80,17 +80,17 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 cd llmuses
 
 # dry-run模式 (模型answer正常生成，但专家模型不会被触发，评估结果会随机生成)
-python scripts/run_arena.py -c llmuses/registry/config/cfg_arena.yaml --dry-run
+python run_arena.py -c llmuses/registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
-python scripts/run_arena.py --c llmuses/registry/config/cfg_arena.yaml
+python run_arena.py --c llmuses/registry/config/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
 
 ```shell
 # Usage:
-streamlit run scripts/app.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
+streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
 ```
 
 
@@ -109,7 +109,7 @@ streamlit run scripts/app.py -- --review-file llmuses/registry/data/qa_browser/b
 #### 2. 执行脚本
 ```shell
 #Example:
-python scripts/run_arena.py --c llmuses/registry/config/cfg_single.yaml
+python run_arena.py --c llmuses/registry/config/cfg_single.yaml
 ```
 
 ### Baseline模型对比模式（Pairwise-baseline mode）
@@ -127,7 +127,7 @@ python scripts/run_arena.py --c llmuses/registry/config/cfg_single.yaml
 #### 2. 执行脚本
 ```shell
 # Example:
-python scripts/run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
+python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 ```
 
 

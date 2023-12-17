@@ -135,5 +135,5 @@ if __name__ == '__main__':
     main()
 
     # Usage:
-    # python scripts/run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16
-    # python scripts/run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10
+    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16
+    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10
