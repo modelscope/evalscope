@@ -454,6 +454,14 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             generation_kwargs['eos_token_id'] = eos_token_id
             generation_kwargs['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
 
+        print('>>> _model_generate: ')
+        print(f'>>context:\n{input_ids}, >shape:{input_ids.shape}')
+        print(f'>>max_length:\n{self.generation_config.max_length}')  # 1898
+        print(f'>>eos_token_id:\n{eos_token_id}')  # 92345
+        if hasattr(self.model, 'generation_config'):
+            print(f'>>generation_config:\n{self.model.generation_config}')
+
+
         output_ids = self.model.generate(input_ids, **generation_kwargs)
 
         response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):])
