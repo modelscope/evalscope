@@ -450,15 +450,14 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         eos_token_id = self.origin_tokenizer.encode(stop, add_special_tokens=False)[0] \
             if stop else self.origin_tokenizer.eos_token_id
 
+        # TODO: ONLY FOR TEST
+        eos_token_id = 92345  # ':'
+
         # context, max_length, eos_token_id
         generation_kwargs = {'do_sample': False, 'max_new_tokens': infer_cfg.get('max_new_tokens', 256)}
         if eos_token_id is not None:
             generation_kwargs['eos_token_id'] = eos_token_id
             generation_kwargs['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
-
-
-        # TODO: ONLY FOR TEST
-        generation_kwargs['eos_token_id'] = 92345
 
 
         print('>>> _model_generate: ')
