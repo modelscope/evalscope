@@ -5,7 +5,7 @@ from typing import Any, Optional
 import random
 
 from llmuses.benchmarks import Benchmark
-from llmuses.constants import DEFAULT_ROOT_DIR, AnswerKeys
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, AnswerKeys
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -37,7 +37,7 @@ class DataAdapter(ABC):
     def load(self,
              dataset_name_or_path: str,
              subset_list: list = None,
-             work_dir: Optional[str] = DEFAULT_ROOT_DIR,
+             work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
              **kwargs) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
@@ -105,6 +105,11 @@ class DataAdapter(ABC):
                 prompt_d = self.gen_prompt(input_d=sample_d, subset_name=sub_name, few_shot_list=few_shot_data)
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
+
+        rnd = random.Random()
+        rnd.seed(42)
+        for k, v in res_dict.items():
+            rnd.shuffle(v)
 
         return res_dict
 

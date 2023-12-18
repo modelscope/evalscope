@@ -20,17 +20,17 @@
 - model-based自动评估流程，支持多种评估模式
   - Single mode: 专家模型对单个模型打分
   - Pairwise-baseline mode: 与 baseline 模型对比
-  - Arena mode: 竞技场模式，多个模型两两对比
+  - Pairwise (all) mode: 全部模型两两对比
 
 
 ## 环境准备
 ```shell
-# 1. 代码下载 (TODO: To be updated to github link)
-git clone -b dev/refactor_master git@gitlab.alibaba-inc.com:DamoAGI/llm-eval.git
+# 1. 代码下载
+git clone git@github.com:modelscope/llmuses.git
 
 # 2. 安装依赖
-cd llm-eval
-pip install --no-dependencies -r requirements.txt
+cd llmuses/
+pip install -r requirements/requirements.txt
 pip install -e .
 ```
 
@@ -40,12 +40,12 @@ pip install -e .
 ### 简单评估
 ```shell
 # 在特定数据集上评估某个模型
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
+python run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
 ```
 
 ### 带参数评估
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
+python run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
 
 # 参数说明
 # --model-args: 模型参数，以逗号分隔，key=value形式
@@ -80,17 +80,17 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 cd llmuses
 
 # dry-run模式 (模型answer正常生成，但专家模型不会被触发，评估结果会随机生成)
-python run_arena.py --c registry/config/cfg_arena.yaml --dry-run
+python run_arena.py -c llmuses/registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
-python run_arena.py --c registry/config/cfg_arena.yaml
+python run_arena.py --c llmuses/registry/config/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
 
 ```shell
 # Usage:
-streamlit run scripts/app.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
+streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
 ```
 
 
@@ -109,7 +109,7 @@ streamlit run scripts/app.py -- --review-file llmuses/registry/data/qa_browser/b
 #### 2. 执行脚本
 ```shell
 #Example:
-python llmuses/run_arena.py --c llmuses/registry/config/cfg_single.yaml
+python run_arena.py --c llmuses/registry/config/cfg_single.yaml
 ```
 
 ### Baseline模型对比模式（Pairwise-baseline mode）
@@ -127,7 +127,7 @@ python llmuses/run_arena.py --c llmuses/registry/config/cfg_single.yaml
 #### 2. 执行脚本
 ```shell
 # Example:
-python llmuses/run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
+python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 ```
 
 
@@ -159,5 +159,6 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
   - [ ] GAIA
   - [ ] GPQA
   - [ ] BBH
+  - [ ] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max

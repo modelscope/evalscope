@@ -13,7 +13,7 @@ import datetime
 import jsonlines as jsonl
 import yaml
 
-from llmuses.constants import DumpMode, OutputsStructure, DEFAULT_OUTPUTS_DIR
+from llmuses.constants import DumpMode, OutputsStructure
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -218,12 +218,12 @@ class ResponseParser:
         return ''
 
 
-def make_outputs_dir(model_id: str, model_revision: str):
+def make_outputs_dir(work_dir: str, model_id: str, model_revision: str):
     model_revision = model_revision if model_revision is not None else 'none'
     now = datetime.datetime.now()
     format_time = now.strftime('%Y%m%d_%H%M%S')
     outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
-    outputs_dir = os.path.join(DEFAULT_OUTPUTS_DIR, outputs_name)
+    outputs_dir = os.path.join(work_dir, outputs_name)
 
     return outputs_dir
 
@@ -269,3 +269,24 @@ def import_module_util(import_path_prefix: str, module_name: str, members_to_imp
         imported_modules[member_name] = getattr(module, member_name)
 
     return imported_modules
+
+
+def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
+    """
+    Normalize score.
+
+    Args:
+        score: input score, could be float or dict. e.g. 0.1234 or {'acc': 0.1234, 'f1': 0.2345}
+        keep_num: number of digits to keep.
+
+    Returns:
+        Union[float, dict]: normalized score. e.g. 12.34 or {'acc': 12.34, 'f1': 23.45}
+    """
+    if isinstance(score, float):
+        score = round(score, keep_num) * 100
+    elif isinstance(score, dict):
+        score = {k: round(v, keep_num) * 100 for k, v in score.items()}
+    else:
+        logger.warning(f'Unknown score type: {type(score)}')
+
+    return score

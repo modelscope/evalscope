@@ -2,20 +2,21 @@
 
 import os
 import time
-import datetime
 import json
 import re
+from copy import deepcopy
 from collections import OrderedDict
 
 from tqdm import tqdm
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 
 from llmuses.benchmarks import DataAdapter
 from llmuses.cache import Cache, init_mem_cache
-from llmuses.constants import DEFAULT_ROOT_DIR, DEFAULT_OUTPUTS_DIR, OutputsStructure, AnswerKeys, ReviewKeys
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
 from llmuses.models.model_adapter import BaseModelAdapter
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir
+from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
+    normalize_score
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -34,14 +35,14 @@ class Evaluator(object):
                  model_adapter: Optional[BaseModelAdapter] = None,
                  use_cache: bool = True,
                  mem_cache_method: str = 'ttl',
-                 root_work_dir: Optional[str] = DEFAULT_ROOT_DIR,
-                 outputs_dir: Optional[str] = None,
-                 datasets_dir: Optional[str] = DEFAULT_ROOT_DIR,
+                 root_cache_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+                 outputs_dir: Optional[str] = '',
+                 datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
                  stage: Optional[str] = 'all',
                  **kwargs):
 
         self.dataset_name_or_path = dataset_name_or_path
-        self.root_work_dir = os.path.expanduser(root_work_dir)
+        self.root_cache_dir = os.path.expanduser(root_cache_dir)
         self.datasets_dir = os.path.expanduser(datasets_dir)
         self.kwargs = kwargs
         self.data_adapter = data_adapter
@@ -53,8 +54,9 @@ class Evaluator(object):
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
         # Get default outputs_dir
-        if outputs_dir is None:
-            outputs_dir = make_outputs_dir(model_id=self.model_id, model_revision=self.model_revision_str)
+        outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                       model_id=self.model_id,
+                                       model_revision=self.model_revision_str)
 
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
@@ -77,7 +79,7 @@ class Evaluator(object):
             '_' + self.model_id.replace('/', '_') + \
             '_' + self.model_revision_str + \
             '_cache.pkl'
-        self.mem_cache_path = os.path.join(self.root_work_dir, 'mem_cache', mem_cache_file_name)
+        self.mem_cache_path = os.path.join(self.root_cache_dir, 'mem_cache', mem_cache_file_name)
         self.use_cache = use_cache
         self.mem_cache_method = mem_cache_method
         self.mem_cache = None
@@ -188,18 +190,18 @@ class Evaluator(object):
         if reviewer_spec is None:
             reviewer_spec = {}
 
-        rev = answer_d
-        choices = answer_d[AnswerKeys.CHOICES]
+        review_res = deepcopy(answer_d)
+        choices = review_res[AnswerKeys.CHOICES]
         if len(choices) == 0:
-            rev[ReviewKeys.REVIEWED] = False
-            rev[ReviewKeys.REVIEW_ID] = None
-            rev[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-            rev[ReviewKeys.REVIEW_TIME] = time.time()
-            return rev
+            review_res[ReviewKeys.REVIEWED] = False
+            review_res[ReviewKeys.REVIEW_ID] = None
+            review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
+            review_res[ReviewKeys.REVIEW_TIME] = time.time()
+            return review_res
 
         rev_choices = []
         for choice in choices:
-            raw_input_d: dict = answer_d[AnswerKeys.RAW_INPUT]
+            raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
             answer_content = self.data_adapter.parse_pred_result(answer_content, raw_input_d)
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
@@ -211,16 +213,16 @@ class Evaluator(object):
 
             rev_choices.append(choice)
 
-        rev[AnswerKeys.CHOICES] = rev_choices
-        rev[ReviewKeys.REVIEWED] = True
-        rev[ReviewKeys.REVIEW_ID] = review_id
-        rev[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-        rev[ReviewKeys.REVIEW_TIME] = time.time()
+        review_res[AnswerKeys.CHOICES] = rev_choices
+        review_res[ReviewKeys.REVIEWED] = True
+        review_res[ReviewKeys.REVIEW_ID] = review_id
+        review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
+        review_res[ReviewKeys.REVIEW_TIME] = time.time()
 
         if self.mem_cache is not None:
-            self.mem_cache[review_id] = rev
+            self.mem_cache[review_id] = review_res
 
-        return rev
+        return review_res
 
     def get_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
         """
@@ -260,7 +262,7 @@ class Evaluator(object):
         review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
         review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
         os.makedirs(review_dir, exist_ok=True)
-        dump_jsonl_data(answers_list, os.path.join(review_dir, review_file_name))
+        dump_jsonl_data(reviews_list, os.path.join(review_dir, review_file_name))
 
         return reviews_list
 
@@ -285,7 +287,8 @@ class Evaluator(object):
             review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
             review_res_list.append(review_res)
 
-        return self.data_adapter.compute_metric(review_res_list=review_res_list)
+        metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
+        return normalize_score(score=metric_score)
 
     def dump_report(self, report_map: dict):
         """
@@ -388,7 +391,7 @@ class HumanevalEvaluator(object):
                  model_id: str,
                  model_revision: str,
                  model_adapter: BaseModelAdapter,
-                 outputs_dir: Optional[str] = None,
+                 outputs_dir: Optional[str] = '',
                  k: List[int] = [1, 10, 100],
                  n_workers: int = 4,
                  timeout: float = 3.0,):
@@ -415,12 +418,9 @@ class HumanevalEvaluator(object):
 
         # Get default outputs_dir
         model_revision_str: str = model_revision if model_revision is not None else 'none'
-        if outputs_dir is None:
-            now = datetime.datetime.now()
-            format_time = now.strftime('%Y%m%d_%H%M%S')
-            outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision_str
-            outputs_dir = os.path.join(DEFAULT_OUTPUTS_DIR, outputs_name)
-
+        outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                       model_id=model_id,
+                                       model_revision=model_revision_str)
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
