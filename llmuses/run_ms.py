@@ -117,7 +117,7 @@ def main():
                                                            torch_dtype=model_precision,
                                                            model_revision=model_revision, )
 
-        root_work_dir = args.cache_dir if args.cache_dir is not None else DEFAULT_ROOT_CACHE_DIR
+        root_work_dir = args.work_dir if args.work_dir is not None else DEFAULT_ROOT_CACHE_DIR
         evaluator = Evaluator(dataset_name_or_path=dataset_name,
                               subset_list=None,
                               data_adapter=data_adapter,
