@@ -21,7 +21,7 @@ class GSM8KAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 4,     # GSM8K uses 4-shot examples by system
+                 few_shot_num: int = 4,     # GSM8K uses 4-shot examples with CoT by system
                  train_split: str = 'train',
                  eval_split: str = 'test',
                  **kwargs):
@@ -44,7 +44,7 @@ class GSM8KAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 4:
-            logger.warning(f'GSM8K uses 4-shot examples by system, but got {few_shot_num}.')
+            logger.warning(f'GSM8K uses 4-shot examples with CoT by system, but got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
@@ -65,7 +65,7 @@ class GSM8KAdapter(DataAdapter):
             }
         """
         use_fewshot = self.few_shot_num > 0
-        full_prompt = self._generate_prompt(input_d, use_fewshot=use_fewshot)
+        full_prompt = self._generate_prompt(input_d, few_shot_list=few_shot_list, use_fewshot=use_fewshot)
 
         return {'data': [full_prompt]}
 
@@ -161,7 +161,7 @@ class GSM8KAdapter(DataAdapter):
         return res_map
 
     @classmethod
-    def _generate_prompt(cls, input_d: dict, use_fewshot: bool = True) -> str:
+    def _generate_prompt(cls, input_d: dict, few_shot_list: list, use_fewshot: bool = True) -> str:
         if use_fewshot:
             # Use 4-shot examples by system
             context = (
@@ -175,6 +175,10 @@ class GSM8KAdapter(DataAdapter):
                 'For the first three baskets, the number of apples and oranges in one basket is 9+15=24\nIn total, together with bananas, the number of fruits in one basket is 24+14=38 for the first three baskets.\nSince there are three baskets each having 38 fruits, there are 3*38=114 fruits in the first three baskets.\nThe number of apples in the fourth basket is 9-2=7\nThere are also 15-2=13 oranges in the fourth basket\nThe combined number of oranges and apples in the fourth basket is 13+7=20\nThe fourth basket also contains 14-2=12 bananas.\nIn total, the fourth basket has 20+12=32 fruits.\nThe four baskets together have 32+114=146 fruits.\nThe answer is 146\n\n'
                 f"Question: {input_d['question']}\nLet's think step by step\nAnswer:"
             )
+            # context = input_d['question']
+            # fewshot_prompts = ['Question: ' + item_d['question'] + '\nAnswer: ' + item_d['answer'] for item_d in few_shot_list]
+            # fewshot_prompts = fewshot_prompts + ['Question: ' + context + '\nAnswer:']
+            # context = '\n\n'.join(fewshot_prompts)
         else:
             context = input_d['question']
             context = 'Question: ' + context + '\nAnswer:'

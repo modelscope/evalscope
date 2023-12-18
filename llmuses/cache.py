@@ -9,7 +9,7 @@ from pympler import asizeof
 from datetime import datetime, timedelta
 import pickle
 
-from llmuses.constants import DEFAULT_ROOT_DIR
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -18,7 +18,7 @@ logger = get_logger()
 DEFAULT_CACHE_MAXSIZE = 1 * 1024 * 1024 * 1024  # 1 GB
 DEFAULT_CACHE_EXPIRE = 60 * 60 * 24             # 1 day (seconds)
 DEFAULT_MEM_CACHE_PATH = os.environ.get('MEM_CACHE_PATH',
-                                        os.path.join(os.path.expanduser(DEFAULT_ROOT_DIR),
+                                        os.path.join(os.path.expanduser(DEFAULT_ROOT_CACHE_DIR),
                                                      'mem_cache', 'global_cache.pkl'))
 
 

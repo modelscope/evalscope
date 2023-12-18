@@ -3,7 +3,7 @@
 import os.path
 from typing import Optional
 
-from llmuses.constants import DEFAULT_ROOT_DIR
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 
 
 class Benchmark(object):
@@ -20,7 +20,7 @@ class Benchmark(object):
              split: str = None,
              token: str = None,
              hub: str = 'ModelScope',
-             work_dir: Optional[str] = DEFAULT_ROOT_DIR,
+             work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
              **kwargs):
         """
         Load a dataset from ModelScope or HuggingFace.
