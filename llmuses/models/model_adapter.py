@@ -353,7 +353,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         tokenizer = AutoTokenizer.from_pretrained(self.model_id,
                                                   revision=model_revision,
-                                                  trust_remote_code=True, )
+                                                  trust_remote_code=True,)
 
         model = AutoModelForCausalLM.from_pretrained(self.model_id,
                                                      revision=model_revision,
@@ -406,7 +406,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return generation_config, generation_template
 
-    def _model_generate_old(self, query: str, infer_cfg: dict) -> str:
+    def _model_generate(self, query: str, infer_cfg: dict) -> str:
         example = dict(query=query,
                        history=[],
                        system=None)
@@ -420,6 +420,16 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         infer_cfg = infer_cfg or {}
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
+
+        # TODO: stop settings
+        stop = infer_cfg.get('stop', None)
+        eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
+            if stop else self.tokenizer.eos_token_id
+
+        if eos_token_id is not None:
+            infer_cfg['eos_token_id'] = eos_token_id
+            infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
+
 
         self.generation_config.update(**infer_cfg)
 
@@ -437,26 +447,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             stopping_criteria=stopping_criteria, )
 
         response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
-        return response
-
-    def _model_generate(self, query: str, infer_cfg: dict) -> str:
-
-        input_ids = self.origin_tokenizer(query, padding=False)['input_ids']
-        input_ids = torch.tensor(input_ids)[None].to(self.device)
-
-        stop = infer_cfg.get('stop', None)
-        eos_token_id = self.origin_tokenizer.encode(stop, add_special_tokens=False)[0] \
-            if stop else self.origin_tokenizer.eos_token_id
-
-        # context, max_length, eos_token_id
-        generation_kwargs = {'do_sample': False, 'max_new_tokens': infer_cfg.get('max_new_tokens', 256)}
-        if eos_token_id is not None:
-            generation_kwargs['eos_token_id'] = eos_token_id
-            generation_kwargs['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
-
-        output_ids = self.model.generate(input_ids, **generation_kwargs)
-
-        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):])
         return response
 
     @torch.no_grad()
