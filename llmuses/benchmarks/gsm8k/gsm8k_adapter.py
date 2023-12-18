@@ -21,7 +21,7 @@ class GSM8KAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 8,     # GSM8K uses 4-shot examples with CoT by system
+                 few_shot_num: int = 8,     # GSM8K uses 8-shot examples
                  train_split: str = 'train',
                  eval_split: str = 'test',
                  **kwargs):
@@ -43,8 +43,8 @@ class GSM8KAdapter(DataAdapter):
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
-        if few_shot_num != 4:
-            logger.warning(f'GSM8K uses 4-shot examples by system, but got {few_shot_num}.')
+        if few_shot_num != 8:
+            logger.warning(f'GSM8K uses 8-shot examples, but got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
