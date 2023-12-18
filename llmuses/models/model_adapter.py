@@ -421,7 +421,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
 
-        # TODO: FOR TEST  until
+        # TODO: stop settings
         stop = infer_cfg.get('stop', None)
         eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
             if stop else self.tokenizer.eos_token_id
@@ -447,44 +447,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             stopping_criteria=stopping_criteria, )
 
         response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
-        return response
-
-    def _model_generate_old(self, query: str, infer_cfg: dict) -> str:
-
-        print(f'\n>>context_str:{query}\n')
-
-        input_ids = self.origin_tokenizer(query, padding=False)['input_ids']
-        input_ids = torch.tensor(input_ids)[None].to(self.device)
-
-        stop = infer_cfg.get('stop', None)
-        eos_token_id = self.origin_tokenizer.encode(stop, add_special_tokens=False)[0] \
-            if stop else self.origin_tokenizer.eos_token_id
-
-        # TODO: ONLY FOR TEST
-        # eos_token_id = 92345  # ':'
-        # stop = ':'
-        # (eos_token_id,) = self.tokenizer.encode(stop, add_special_tokens=False)
-        logger.info(f'>>eos_token_id: {eos_token_id}')
-
-        # context, max_length, eos_token_id
-        generation_kwargs = {'do_sample': False, 'max_new_tokens': infer_cfg.get('max_new_tokens', 256)}
-        if eos_token_id is not None:
-            generation_kwargs['eos_token_id'] = eos_token_id
-            generation_kwargs['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
-
-
-        print('>>> _model_generate: ')
-        print(f'>>context:\n{input_ids}, >shape:{input_ids.shape}')
-        print(f'>>max_length:\n{self.generation_config.max_length}')  # 1898
-        print(f'>>eos_token_id:\n{eos_token_id}')  # 92345
-        if hasattr(self.model, 'generation_config'):
-            print(f'>>generation_config:\n{self.model.generation_config}')
-        print(f'>>>true_gen_config:{generation_kwargs}\n')
-
-
-        output_ids = self.model.generate(input_ids, **generation_kwargs)
-
-        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):])
         return response
 
     @torch.no_grad()
