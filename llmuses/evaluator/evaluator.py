@@ -37,6 +37,7 @@ class Evaluator(object):
                  mem_cache_method: str = 'ttl',
                  root_cache_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
                  outputs_dir: Optional[str] = '',
+                 is_custom_outputs_dir: bool = False,
                  datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
                  stage: Optional[str] = 'all',
                  **kwargs):
@@ -54,9 +55,10 @@ class Evaluator(object):
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
         # Get default outputs_dir
-        outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                       model_id=self.model_id,
-                                       model_revision=self.model_revision_str)
+        if not is_custom_outputs_dir:
+            outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                           model_id=self.model_id,
+                                           model_revision=self.model_revision_str)
 
         self.outputs_dir = os.path.expanduser(outputs_dir)
 

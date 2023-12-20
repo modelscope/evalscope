@@ -125,6 +125,7 @@ def main():
                               use_cache=args.mem_cache,
                               root_cache_dir=root_work_dir,
                               outputs_dir=args.outputs_dir,
+                              is_custom_outputs_dir=True,
                               datasets_dir=args.datasets_dir, )
 
         infer_cfg = dict(max_length=2048, limit=args.max_eval_size)
