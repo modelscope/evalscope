@@ -26,7 +26,7 @@ simple-ddl-parser
 streamlit
 tabulate
 tiktoken
-torch
+torch==2.0.1
 tqdm
 transformers
 transformers_stream_generator

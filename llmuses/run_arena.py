@@ -16,7 +16,7 @@ from modelscope.utils.hf_util import GenerationConfig
 
 logger = get_logger()
 
-WORK_DIR = os.path.join(Path(__file__).absolute().parent, '..')
+WORK_DIR = Path(__file__).absolute().parent
 
 
 class ArenaWorkflow:

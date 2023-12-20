@@ -1,9 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa
 
-import os
 import argparse
-import datetime
 import torch
 
 from llmuses.benchmarks.ceval import DATASET_ID as CEVAL_EXAM
@@ -11,7 +9,7 @@ from llmuses.benchmarks.mmlu import DATASET_ID as MMLU
 from llmuses.benchmarks.hellaswag import DATASET_ID as HELLA_SWAG
 from llmuses.benchmarks.arc import DATASET_ID as ARC
 from llmuses.benchmarks.truthful_qa import DATASET_ID as TRUTHFUL_QA
-from llmuses.constants import DEFAULT_ROOT_DIR, DEFAULT_OUTPUTS_DIR
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.models.model_adapter import MultiChoiceModelAdapter, ContinuationLogitsModelAdapter
 from llmuses.utils.logger import get_logger
@@ -33,10 +31,10 @@ def parse_args():
     parser.add_argument('--revision', help='Model revision.', required=False, default=None)
     parser.add_argument('--precision', help='Model precision.', default='bf16')
     parser.add_argument('--work-dir', help='root work cache dir.', default=None)
-    parser.add_argument('--outputs-dir', help='Outputs dir.', default=None)
-    parser.add_argument('--datasets-dir', help='Datasets dir.', default=DEFAULT_ROOT_DIR)
+    parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
+    parser.add_argument('--datasets-dir', help='Datasets dir.', default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--device-map', help='device map.', default='auto')
-    parser.add_argument('--limit', type=int, help='Max evaluation samples num for each subset', default=None)
+    parser.add_argument('--max-eval-size', type=int, help='Max evaluation samples num for each subset', default=None)
     parser.add_argument('--dataset-id', help='Dataset id on modelscope', required=False, default=None)
 
     parser.add_argument('--debug',
@@ -55,16 +53,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
-
-def make_outputs_dir(model_id: str, model_revision: str):
-    model_revision = model_revision if model_revision is not None else 'none'
-    now = datetime.datetime.now()
-    format_time = now.strftime('%Y%m%d_%H%M%S')
-    outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
-    outputs_dir = os.path.join(DEFAULT_OUTPUTS_DIR, outputs_name)
-
-    return outputs_dir
 
 
 def main():
@@ -99,9 +87,6 @@ def main():
                                                 torch_dtype=model_precision,
                                                 model_revision=model_revision,)
 
-    # Get outputs dir
-    outputs_dir = args.outputs_dir if args.outputs_dir is not None else make_outputs_dir(model_id, model_revision)
-
     # Evaluate on each dataset
     for dataset_name in datasets:
         if dataset_name == CEVAL_EXAM:
@@ -132,17 +117,18 @@ def main():
                                                            torch_dtype=model_precision,
                                                            model_revision=model_revision, )
 
-        root_work_dir = args.cache_dir if args.cache_dir is not None else DEFAULT_ROOT_DIR
+        root_work_dir = args.work_dir if args.work_dir is not None else DEFAULT_ROOT_CACHE_DIR
         evaluator = Evaluator(dataset_name_or_path=dataset_name,
                               subset_list=None,
                               data_adapter=data_adapter,
                               model_adapter=model_adapter,
                               use_cache=args.mem_cache,
-                              root_work_dir=root_work_dir,
-                              outputs_dir=outputs_dir,
+                              root_cache_dir=root_work_dir,
+                              outputs_dir=args.outputs_dir,
+                              is_custom_outputs_dir=True,
                               datasets_dir=args.datasets_dir, )
 
-        infer_cfg = dict(max_length=2048, limit=args.limit)
+        infer_cfg = dict(max_length=2048, limit=args.max_eval_size)
         evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
 
 
@@ -150,5 +136,5 @@ if __name__ == '__main__':
     main()
 
     # Usage:
-    # python3 llmuses/run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16
-    # python3 llmuses/run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10
+    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16
+    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10

@@ -5,10 +5,10 @@ import json
 import argparse
 import torch        # noqa
 
-from llmuses.constants import DEFAULT_ROOT_DIR
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
-from llmuses.utils import import_module_util, make_outputs_dir
+from llmuses.utils import import_module_util
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -53,11 +53,11 @@ def parse_args():
                         default='{}')
     parser.add_argument('--outputs',
                         help='Outputs dir.',
-                        default=None)
+                        default='outputs')
     parser.add_argument('--work-dir',
                         help='The root cache dir.',
                         required=False,
-                        default=DEFAULT_ROOT_DIR)
+                        default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--limit',
                         type=int,
                         help='Max evaluation samples num for each subset. Default to None, which means no limit.',
@@ -95,7 +95,7 @@ def parse_str_args(str_args: str):
     for k, v in arg_dict.items():
         try:
             final_args[k] = eval(v)
-        except NameError:
+        except:
             final_args[k] = v
 
     return final_args
@@ -121,9 +121,6 @@ def main():
         model_revision: str = model_args.get('revision', None)
         if model_revision == 'None':
             model_revision = eval(model_revision)
-
-    # Get outputs dir
-    outputs_dir = args.outputs if args.outputs is not None else make_outputs_dir(model_id, model_revision)
 
     datasets_list = args.datasets
     for dataset_name in datasets_list:
@@ -155,17 +152,17 @@ def main():
                                            model_id=model_id,
                                            model_revision=model_revision,
                                            model_adapter=model_adapter,
-                                           outputs_dir=outputs_dir,)
+                                           outputs_dir=args.outputs,)
         else:
             evaluator = Evaluator(dataset_name_or_path=imported_modules['DATASET_ID'],
                                   subset_list=imported_modules['SUBSET_LIST'],
                                   data_adapter=data_adapter,
                                   model_adapter=model_adapter,
                                   use_cache=args.mem_cache,
-                                  root_work_dir=args.work_dir,
-                                  outputs_dir=outputs_dir,
+                                  root_cache_dir=args.work_dir,
+                                  outputs_dir=args.outputs,
                                   datasets_dir=args.work_dir,
-                                  stage=args.stage,)
+                                  stage=args.stage, )
 
         infer_cfg = generation_args or {}
         infer_cfg.update(dict(limit=args.limit))
@@ -173,5 +170,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
     main()

@@ -265,6 +265,8 @@ class CEVALAdapter(DataAdapter):
                                   'subset': [{'name': subset_name, 'score': subset_score}
                                              for subset_name, subset_score, _ in domain_res_list]})
 
+        category_list = sorted(category_list, key=lambda x: x['name'])
+
         # Get final dict of report
         res_map = dict(name='C-Eval',
                        metric=self.metric_list[0]['name'],
