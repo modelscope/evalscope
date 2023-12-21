@@ -61,7 +61,7 @@ class ARCAdapter(DataAdapter):
             }
 
         Returns:
-            {'data': [(context, continuation), ...]}
+            {'data': ['xxx'], 'multi_choices': ['A', 'B', 'C', 'D']}
         """
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
         context: str = '\n'.join(few_shot_prompts) + '\n'
