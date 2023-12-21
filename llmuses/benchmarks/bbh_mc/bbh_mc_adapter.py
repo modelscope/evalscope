@@ -55,8 +55,8 @@ class BBHMCAdapter(DataAdapter):
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
-        if self.few_shot_num != 3:
-            logger.warning(f'BBHMCAdapter: few_shot_num is set to {self.few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
+        if few_shot_num != 3:
+            logger.warning(f'BBHMCAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
