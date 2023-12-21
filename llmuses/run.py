@@ -152,7 +152,8 @@ def main():
                                            model_id=model_id,
                                            model_revision=model_revision,
                                            model_adapter=model_adapter,
-                                           outputs_dir=args.outputs,)
+                                           outputs_dir=args.outputs,
+                                           is_custom_outputs_dir=True,)
         else:
             evaluator = Evaluator(dataset_name_or_path=imported_modules['DATASET_ID'],
                                   subset_list=imported_modules['SUBSET_LIST'],
@@ -161,6 +162,7 @@ def main():
                                   use_cache=args.mem_cache,
                                   root_cache_dir=args.work_dir,
                                   outputs_dir=args.outputs,
+                                  is_custom_outputs_dir=True,
                                   datasets_dir=args.work_dir,
                                   stage=args.stage, )
 

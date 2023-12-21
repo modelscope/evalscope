@@ -290,6 +290,10 @@ class Evaluator(object):
             review_res_list.append(review_res)
 
         metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
+
+        logger.debug(f'>>>raw score: {metric_score}')
+        logger.debug(f'>>>norm score: {normalize_score(score=metric_score)}')
+
         return normalize_score(score=metric_score)
 
     def dump_report(self, report_map: dict, use_table: bool = True):
@@ -399,6 +403,7 @@ class HumanevalEvaluator(object):
                  model_revision: str,
                  model_adapter: BaseModelAdapter,
                  outputs_dir: Optional[str] = '',
+                 is_custom_outputs_dir: bool = False,
                  k: List[int] = [1, 10, 100],
                  n_workers: int = 4,
                  timeout: float = 3.0,):
@@ -425,9 +430,10 @@ class HumanevalEvaluator(object):
 
         # Get default outputs_dir
         model_revision_str: str = model_revision if model_revision is not None else 'none'
-        outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                       model_id=model_id,
-                                       model_revision=model_revision_str)
+        if not is_custom_outputs_dir:
+            outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                           model_id=model_id,
+                                           model_revision=model_revision_str)
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
@@ -476,9 +482,12 @@ class HumanevalEvaluator(object):
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
         logger.info(f'** Dump report to {report_file} \n')
 
-        # Make table
-        report_table: str = gen_table([report_dir])
-        logger.info(f'** Report table: \n {report_table} \n')
+        try:
+            # Make table
+            report_table: str = gen_table([report_dir])
+            logger.info(f'** Report table: \n {report_table} \n')
+        except:
+            logger.error('Failed to generate report table.')
 
     def gen_report(self, results: dict) -> dict:
         """
