@@ -7,38 +7,31 @@ from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.constants import AnswerKeys
 from llmuses.metrics.metrics import exact_match, weighted_mean
 from llmuses.utils.logger import get_logger
-
 # flake8: noqa
 
 logger = get_logger()
 
 DATASET_ID = 'modelscope/bbh'
 
-# BBH multiple choice subset list
+
+# The free form subset list of BBH dataset
 SUBSET_LIST = [
-    'temporal_sequences',
-    'disambiguation_qa',
-    'date_understanding',
-    'tracking_shuffled_objects_three_objects',
-    'penguins_in_a_table',
-    'geometric_shapes',
-    'snarks',
-    'ruin_names',
-    'tracking_shuffled_objects_seven_objects',
-    'tracking_shuffled_objects_five_objects',
-    'logical_deduction_three_objects',
-    'hyperbaton',
-    'logical_deduction_five_objects',
-    'logical_deduction_seven_objects',
-    'movie_recommendation',
-    'salient_translation_error_detection',
-    'reasoning_about_colored_objects',
+    'multistep_arithmetic_two',
+    'navigate',
+    'dyck_languages',
+    'word_sorting',
+    'sports_understanding',
+    'boolean_expressions',
+    'object_counting',
+    'formal_fallacies',
+    'causal_judgement',
+    'web_of_lies',
 ]
 
 
-class BBHMCAdapter(DataAdapter):
+class BBHAdapter(DataAdapter):
     """
-    Adapter for BBH multiple choice sub-task.
+    Adapter for BBH free-form and multiple-choices sub-tasks.  # TODO: add multiple choice support
     """
 
     def __init__(self,
@@ -56,7 +49,7 @@ class BBHMCAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 3:
-            logger.warning(f'BBHMCAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
+            logger.warning(f'BBHAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
@@ -73,20 +66,18 @@ class BBHMCAdapter(DataAdapter):
             input_d (dict): The raw input. A single data format of the BBH:
 
             {
-                'input': 'In the following sentences, explain the antecedent of the pronoun (which thing the pronoun refers to), or state that it is ambiguous. Sentence: The patient was referred to the specialist because he had a rare skin condition. Options: (A) The patient had a skin condition (B) The specialist had a skin condition (C) Ambiguous',
-                'target': '(A)',
+                'input': '((-1 + 2 + 9 * 5) - (-2 + -4 + -4 * -7)) =',
+                'target': '24',
             }
 
         Returns:
-            {'data': ['xxx'], 'multi_choices': ['(A)', '(B)', ...]}
+            {'data': ['xxx']}
         """
         # few_shot_list: should be ['xxxx']
         cot_prompts: str = few_shot_list[0] if len(few_shot_list) > 0 else ''
         full_prompt: str = f"Follow the given examples and answer the question.\n{cot_prompts}\n\nQ: {{input}}\nA: Let's think step by step."
-        choices: list = kwargs.get('choices')
-        assert choices is not None, f'BBHMCAdapter: choices is None.'
 
-        return {'data': [full_prompt], 'multi_choices': choices}
+        return {'data': [full_prompt]}
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
@@ -118,13 +109,9 @@ class BBHMCAdapter(DataAdapter):
                     cot_prompt_str = f.read()
                 few_shot_data = [cot_prompt_str]
 
-            choices: list = [item['target'] for item in sub_data_dict[self.eval_split]]
-            choices = sorted(list(set(choices)))
-
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
-                in_args: dict = {'choices': choices}
-                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=few_shot_data, **in_args)
+                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=few_shot_data)
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
 
@@ -139,7 +126,7 @@ class BBHMCAdapter(DataAdapter):
         # Get the gold choice
         gold = input_d.get('target')
         if gold is None:
-            logger.error(f'BBHMCAdapter: gold is None.')
+            logger.error(f'BBHAdapter: gold is None.')
         return gold
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
@@ -153,7 +140,7 @@ class BBHMCAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        return self._extract_pred_answer(result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -180,7 +167,7 @@ class BBHMCAdapter(DataAdapter):
 
         Returns: A dict of metric calculation results. The format is like:
         {
-            "name":"BBH-MC",
+            "name":"BBH",
             "metric":"WeightedAverageAccuracy",
             "score":0.3389,
             "category":[
@@ -189,7 +176,7 @@ class BBHMCAdapter(DataAdapter):
                     "score":0.3389,
                     "subset":[
                         {
-                            "name":"BBH-MC",
+                            "name":"BBH",
                             "score":0.3389
                         },
                     ]
@@ -206,10 +193,20 @@ class BBHMCAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='BBH-MC',
+        res_map = dict(name='BBH',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],
                        total_num=total_num)
 
         return res_map
+
+    @classmethod
+    def _extract_pred_answer(cls, ans: str):
+        ans_line = ans.split('answer is ')
+        if len(ans_line) != 1:
+            ans = ans_line[1].strip()
+        ans = ans.split('\n')[0]
+        if ans.endswith('.'):
+            ans = ans[:-1]
+        return ans
