@@ -75,7 +75,7 @@ class BBHAdapter(DataAdapter):
         """
         # few_shot_list: should be ['xxxx']
         cot_prompts: str = few_shot_list[0] if len(few_shot_list) > 0 else ''
-        full_prompt: str = f"Follow the given examples and answer the question.\n{cot_prompts}\n\nQ: {{input}}\nA: Let's think step by step."
+        full_prompt: str = f"Follow the given examples and answer the question.\n{cot_prompts}\n\nQ: {input_d['input']}\nA: Let's think step by step."
 
         return {'data': [full_prompt]}
 
