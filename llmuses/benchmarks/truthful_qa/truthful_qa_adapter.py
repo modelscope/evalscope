@@ -264,7 +264,7 @@ class TruthfulQaAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='TruthfulQA',
+        res_map = dict(name='truthful_qa',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

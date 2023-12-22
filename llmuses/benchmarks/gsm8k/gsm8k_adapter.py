@@ -152,7 +152,7 @@ class GSM8KAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='GSM8K',
+        res_map = dict(name='gsm8k',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

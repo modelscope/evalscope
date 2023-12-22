@@ -519,7 +519,7 @@ class HumanevalEvaluator(object):
                           score=results,
                           subset=[])
 
-        res_map = dict(name='HumanEval',
+        res_map = dict(name='humaneval',
                        metric='pass@k',
                        score=results,
                        category=[category_d],

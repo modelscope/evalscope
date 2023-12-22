@@ -206,7 +206,7 @@ class BBHMCAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='BBH-MC',
+        res_map = dict(name='bbh_mc',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],
