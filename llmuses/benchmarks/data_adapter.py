@@ -200,19 +200,21 @@ class DataAdapter(ABC):
             subset_score_map: The subset-score map.
                 e.g. {subset_name: (score, num)}
 
-        Returns: The evaluation report. Here is a format example for ARC-Challenge:
+        Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
+
+        Here is a format example for ARC-Challenge:
         {
             "name":"ARC-Challenge",
             "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
+            "score": 33.89,
             "category":[
                 {
                     "name":"DEFAULT",
-                    "score":0.3389,
+                    "score": 33.89,
                     "subset":[
                         {
                             "name":"ARC-Challenge",
-                            "score":0.3389
+                            "score": 33.89
                         },
                     ]
                 }

@@ -291,10 +291,7 @@ class Evaluator(object):
 
         metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
 
-        # logger.debug(f'>>>raw score: {metric_score}')
-        # logger.debug(f'>>>norm score: {normalize_score(score=metric_score)}')
-
-        return normalize_score(score=metric_score)
+        return metric_score
 
     def dump_report(self, report_map: dict, use_table: bool = True):
         """
@@ -513,7 +510,7 @@ class HumanevalEvaluator(object):
             "total_num":100
         }
         """
-        results = {k: round(v, 4) * 100 for k, v in results.items()}
+        results = {k: normalize_score(score=v) for k, v in results.items()}
 
         category_d = dict(name='DEFAULT',
                           score=results,

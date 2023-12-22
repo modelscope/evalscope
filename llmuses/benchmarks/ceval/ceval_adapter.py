@@ -2,6 +2,7 @@
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 
 # flake8: noqa
@@ -245,6 +246,7 @@ class CEVALAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
 
         # Get domain-subject mapping
         subject_review_map = {}
@@ -260,9 +262,10 @@ class CEVALAdapter(DataAdapter):
         for domain_name, domain_res_list in subject_review_map.items():
             domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
                                       sum([num for _, _, num in domain_res_list])
+            domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
             category_list.append({'name': domain_name,
                                   'score': domain_weighted_avg_acc,
-                                  'subset': [{'name': subset_name, 'score': subset_score}
+                                  'subset': [{'name': subset_name, 'score': normalize_score(score=subset_score)}
                                              for subset_name, subset_score, _ in domain_res_list]})
 
         category_list = sorted(category_list, key=lambda x: x['name'])

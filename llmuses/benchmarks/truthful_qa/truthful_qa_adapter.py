@@ -6,6 +6,7 @@ import numpy as np
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -258,7 +259,8 @@ class TruthfulQaAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT',
                           score=weighted_avg_acc,
