@@ -312,7 +312,8 @@ class Evaluator(object):
         report_path: str = os.path.join(report_dir, report_file_name)
         with open(report_path, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        logger.info(f'##report##** Dump report to {report_path} \n')
+        # logger.info(f'##report##** Dump report to {report_path} \n')
+        logger.info(f'##report##** Dump report: {report_file_name} \n')
 
         if use_table:
             try:
@@ -361,7 +362,7 @@ class Evaluator(object):
             None.
         """
 
-        logger.info(f'##report##**** Start evaluating on dataset {self.dataset_name_or_path} ****')
+        logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
 
         reviews_map_all = {}      # {subset_name: (score, num)}
         for subset_name, prompts_list in self.prompts.items():
@@ -389,7 +390,7 @@ class Evaluator(object):
         self.save_cache()
         self.clear_cache()
 
-        logger.info(f'##report##\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
+        logger.info(f'\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
 
 
 class HumanevalEvaluator(object):
@@ -461,7 +462,8 @@ class HumanevalEvaluator(object):
                                          'human_eval_predictions.jsonl')
 
         self.write_jsonl_func(filename=ans_out_file, data=ans_list)
-        logger.info(f'##report##** Dump predictions to {ans_out_file} successfully.')
+        # logger.info(f'##report##** Dump predictions to {ans_out_file} successfully.')
+        logger.info('##report##** Dump predictions successfully.')
 
         # evaluate  results: e.g. {'pass@1': 0.333, 'pass@10': 0.111}
         results = self.eval_func(sample_file=ans_out_file,
@@ -477,7 +479,8 @@ class HumanevalEvaluator(object):
 
         with open(report_file, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        logger.info(f'##report##** Dump report to {report_file} \n')
+        # logger.info(f'##report##** Dump report to {report_file} \n')
+        logger.info(f'##report##** Dump report \n')
 
         try:
             # Make table

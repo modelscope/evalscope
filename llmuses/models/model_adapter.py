@@ -387,7 +387,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             logger.warning(f'##report##Got local model: {self.model_id}, '
                            f'please make sure the type of path in the form of `/path/to/your_model_name`')
         model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
-        logger.info(f'##report##**Model name: {model_name}')
+        logger.info(f'**Model name: {model_name}')
         template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
         if template_type is None:
             from llmuses.models.template import TemplateType

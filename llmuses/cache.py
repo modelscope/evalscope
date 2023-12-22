@@ -51,7 +51,7 @@ class Cache:
             The cache instance loaded from disk. Should be cachetools.Cache or None.
         """
         if os.path.exists(path):
-            logger.info(f'##report##** Loading cache from {path} ...')
+            logger.info(f'** Loading cache from {path} ...')
             with open(path, 'rb') as f:
                 return pickle.load(f)
         else:
@@ -71,7 +71,7 @@ class Cache:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'wb') as f:
             pickle.dump(cache, f)
-        logger.info(f'##report##** Cache saved to {path} !')
+        logger.info(f'** Cache saved to {path} !')
 
 
 def init_mem_cache(method: str = 'ttl', cache_file_path: str = DEFAULT_MEM_CACHE_PATH) -> CachetoolsCache:
