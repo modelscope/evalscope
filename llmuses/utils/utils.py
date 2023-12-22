@@ -101,7 +101,7 @@ def yaml_to_dict(yaml_file) -> dict:
         try:
             stream = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            logger.error(e)
+            logger.error(f'##report##{e}')
             raise e
 
     return stream
@@ -113,7 +113,7 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
     try:
         obj_cls = importlib.import_module(module_name)
     except ImportError as e:
-        logger.error(e)
+        logger.error(f'##report##{e}')
         raise e
 
     if spliter:
@@ -287,6 +287,6 @@ def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float
     elif isinstance(score, dict):
         score = {k: round(v, keep_num) * 100 for k, v in score.items()}
     else:
-        logger.warning(f'Unknown score type: {type(score)}')
+        logger.warning(f'##report##Unknown score type: {type(score)}')
 
     return score

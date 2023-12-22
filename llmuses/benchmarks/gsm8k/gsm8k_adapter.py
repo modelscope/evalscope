@@ -45,7 +45,7 @@ class GSM8KAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 4:
-            logger.warning(f'GSM8K uses 4-shot examples with CoT by system, but got {few_shot_num}.')
+            logger.warning(f'##report##GSM8K uses 4-shot examples with CoT by system, but got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,

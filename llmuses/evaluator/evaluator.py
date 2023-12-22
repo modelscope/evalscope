@@ -87,7 +87,7 @@ class Evaluator(object):
         self.mem_cache = None
         if self.use_cache:
             self.mem_cache = init_mem_cache(method=self.mem_cache_method, cache_file_path=self.mem_cache_path)
-            logger.info(f'** Using memory cache with size: {len(self.mem_cache)}')
+            logger.info(f'##report##** Using memory cache with size: {len(self.mem_cache)}')
 
     def _pred_answer(self,
                      input_d: dict,
@@ -98,7 +98,7 @@ class Evaluator(object):
         # Get answer from memory cache
         if self.mem_cache is not None:
             if answer_id in self.mem_cache:
-                logger.info(f'** Reusing answer `{answer_id}` in memory cache.')
+                logger.info(f'##report##** Reusing answer `{answer_id}` in memory cache.')
                 return self.mem_cache[answer_id]
 
         ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
@@ -186,7 +186,7 @@ class Evaluator(object):
         # Get review from memory cache
         if self.mem_cache is not None:
             if review_id in self.mem_cache:
-                logger.info(f'** Reusing review `{review_id}` in memory cache.')
+                logger.info(f'##report##** Reusing review `{review_id}` in memory cache.')
                 return self.mem_cache[review_id]
 
         if reviewer_spec is None:
@@ -283,7 +283,7 @@ class Evaluator(object):
         review_res_list = []
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'** Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'##report##** Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
                 continue
 
             review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
@@ -312,19 +312,19 @@ class Evaluator(object):
         report_path: str = os.path.join(report_dir, report_file_name)
         with open(report_path, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        logger.info(f'** Dump report to {report_path} \n')
+        logger.info(f'##report##** Dump report to {report_path} \n')
 
         if use_table:
             try:
                 # Make table
                 report_table: str = gen_table([report_dir])
-                logger.info(f'** Report table: \n {report_table} \n')
+                logger.info(f'##report##** Report table: \n {report_table} \n')
             except:
-                logger.error('Failed to generate report table.')
+                logger.error('##report##Failed to generate report table.')
 
     def save_cache(self):
         if self.mem_cache is not None:
-            logger.info(f'** Saving memory cache with size: {len(self.mem_cache)}')
+            logger.info(f'##report##** Saving memory cache with size: {len(self.mem_cache)}')
             Cache.save(cache=self.mem_cache, path=self.mem_cache_path)
 
     def clear_cache(self):
@@ -336,7 +336,7 @@ class Evaluator(object):
         if self.mem_cache is not None:
             cache_len = len(self.mem_cache)
             self.mem_cache.clear()
-            logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
+            logger.info(f'##report##** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
 
     def eval(self,
              infer_cfg: dict = None,
@@ -361,7 +361,7 @@ class Evaluator(object):
             None.
         """
 
-        logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
+        logger.info(f'##report##**** Start evaluating on dataset {self.dataset_name_or_path} ****')
 
         reviews_map_all = {}      # {subset_name: (score, num)}
         for subset_name, prompts_list in self.prompts.items():
@@ -389,7 +389,7 @@ class Evaluator(object):
         self.save_cache()
         self.clear_cache()
 
-        logger.info(f'\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
+        logger.info(f'##report##\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
 
 
 class HumanevalEvaluator(object):
@@ -461,7 +461,7 @@ class HumanevalEvaluator(object):
                                          'human_eval_predictions.jsonl')
 
         self.write_jsonl_func(filename=ans_out_file, data=ans_list)
-        logger.info(f'** Dump predictions to {ans_out_file} successfully.')
+        logger.info(f'##report##** Dump predictions to {ans_out_file} successfully.')
 
         # evaluate  results: e.g. {'pass@1': 0.333, 'pass@10': 0.111}
         results = self.eval_func(sample_file=ans_out_file,
@@ -477,14 +477,14 @@ class HumanevalEvaluator(object):
 
         with open(report_file, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        logger.info(f'** Dump report to {report_file} \n')
+        logger.info(f'##report##** Dump report to {report_file} \n')
 
         try:
             # Make table
             report_table: str = gen_table([report_dir])
-            logger.info(f'** Report table: \n {report_table} \n')
+            logger.info(f'##report##** Report table: \n {report_table} \n')
         except:
-            logger.error('Failed to generate report table.')
+            logger.error('##report##Failed to generate report table.')
 
     def gen_report(self, results: dict) -> dict:
         """

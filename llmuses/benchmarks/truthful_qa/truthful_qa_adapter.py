@@ -220,7 +220,7 @@ class TruthfulQaAdapter(DataAdapter):
             elif 'generation' in review_res_d:
                 pass  # TODO: to be added
             else:
-                logger.error(f'** Unknown review_res: {review_res_d}')
+                logger.error(f'##report##** Unknown review_res: {review_res_d}')
 
         # To get mc2 score
         items = [(score, 1.0) for score in mc2_list]
