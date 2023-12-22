@@ -2,7 +2,7 @@
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import bleu_ngram_one_sample, weighted_mean
-from llmuses.metrics.rouge_metric import compute_rouge_score_one_sample
+from llmuses.metrics.rouge_metric import compute_rouge_score_one_sample_zh
 from llmuses.utils.logger import get_logger
 from typing import Any, Optional
 from collections import defaultdict
@@ -10,7 +10,7 @@ import json
 
 logger = get_logger()
 
-DATASET_ID = '/path/to/dataset/'
+DATASET_ID = 'general_qa'
 SUBSET_LIST = ['default']
 
 class GeneralQAAdapter(DataAdapter):
@@ -102,7 +102,7 @@ class GeneralQAAdapter(DataAdapter):
         """
         item = [(gold, pred)]
         res = dict()
-        rouge_dict = compute_rouge_score_one_sample([pred], [gold])
+        rouge_dict = compute_rouge_score_one_sample_zh([pred], [gold])
         bleu_dict = bleu_ngram_one_sample(pred, gold)
         res.update(rouge_dict)
         res.update(bleu_dict)

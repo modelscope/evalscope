@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Dict, List, Union
 from nltk.translate.bleu_score import sentence_bleu
 from nltk import word_tokenize
+import jieba
 
 import numpy as np
 import sacrebleu
@@ -149,8 +150,14 @@ def bleu_ngram_one_sample(predict, reference):
         }
 
     """
-    predict = word_tokenize(predict)
-    reference = [word_tokenize(reference)]
+    def is_contains_chinese(strs):
+        for _char in strs:
+            if '\u4e00' <= _char <= '\u9fa5':
+                return True
+        return False
+
+    predict = list(jieba.cut(predict)) if is_contains_chinese(predict) else word_tokenize(predict)
+    reference = [list(jieba.cut(reference))] if is_contains_chinese(reference) else [word_tokenize(reference)]
 
     result = dict()
     result['bleu-1'] = sentence_bleu(reference, predict, weights=(1, 0, 0, 0))
@@ -159,6 +166,7 @@ def bleu_ngram_one_sample(predict, reference):
     result['bleu-4'] = sentence_bleu(reference, predict, weights=(0, 0, 0, 1))
 
     return result
+
 
 def chrf(items):
     """chrF++ is a tool for automatic evaluation of machine translation output
@@ -326,30 +334,6 @@ def exact_match(gold: str, pred: str) -> float:
         return 0
 
     return 1 if gold.strip() == pred.strip() else 0
-
-
-def weighted_average_acc(category_score_map: dict, total_num: int) -> (float, list):
-    """
-    Compute weighted average accuracy.
-
-    Args:
-        category_score_map: category -> score mapping. e.g. {'abstract_algebra': [0, 1, 0, 1, 1]}
-        total_num: total number of samples
-
-    Returns:
-        weighted average accuracy (float)
-        list of category -> average score mapping (list)
-    """
-    weighted_avg_acc = 0
-    cate_avg_list = []
-
-    for cate, score_list in category_score_map.items():
-        cate_avg_score = np.mean(score_list)
-        weighted_avg_acc += len(score_list) / total_num * cate_avg_score
-
-        cate_avg_list.append({'name': cate, 'score': round(float(cate_avg_score), 4), 'num': len(score_list)})
-
-    return round(weighted_avg_acc, 4), cate_avg_list
 
 
 def calculate_arc_accuracy(question_answers: Dict[str, str], predictions: Dict[str, List[str]]) -> float:
