@@ -1,0 +1,12 @@
+from registry.cn-hangzhou.aliyuncs.com/modelscope-repo/modelscope:ubuntu22.04-cuda11.8.0-py310-torch2.1.0-tf2.14.0-1.10.0
+
+workdir /home/workspace
+
+copy llmuses /home/workspace/llmuses
+copy requirements /home/workspace/requirements
+copy setup.py /home/workspace/setup.py
+copy setup.cfg /home/workspace/setup.cfg
+copy README.md /home/workspace/README.md
+
+RUN pip install -r /home/workspace/requirements/requirements.txt
+RUN pip install -e /home/workspace/.
