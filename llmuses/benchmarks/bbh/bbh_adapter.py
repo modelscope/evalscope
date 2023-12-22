@@ -178,12 +178,13 @@ class BBHAdapter(DataAdapter):
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
         task_type: str = raw_input_d.get(TASK_TYPE)
-        assert task_type in SUBSET_LIST, f'Invalid task type: {task_type}'
 
         if task_type == MULTIPLE_CHOICE:
             return self._extract_mc_answer(result)
         elif task_type == FREE_FORM:
             return self._extract_ff_answer(result)
+        else:
+            raise ValueError(f'Invalid task type: {task_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
