@@ -142,7 +142,7 @@ class Evaluator(object):
         assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
 
         answers_list = []
-        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
+        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'##report##Predicting({subset_name}): '):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
@@ -240,7 +240,7 @@ class Evaluator(object):
         Returns: reviews list.
         """
         reviews_list = []
-        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
+        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'##report##Reviewing({subset_name}): '):
 
             # Gen review_id (concat: answer_id + reviewer_spec)
             answer_id = answer_d[AnswerKeys.ANSWER_ID]
@@ -439,7 +439,7 @@ class HumanevalEvaluator(object):
     def get_answers(self, infer_cfg: dict) -> List[dict]:
         ans_list: list = []
         system_prompt: str = 'Complete the following python code:\n'
-        for task_id, data_d in tqdm(self.problems.items(), total=len(self.problems), desc='Predicting(problems)'):
+        for task_id, data_d in tqdm(self.problems.items(), total=len(self.problems), desc='##report##Predicting(problems)'):
             prompt: str = system_prompt + data_d['prompt']
             inputs: dict = {'data': [prompt]}
             # pred_res: dict = self.model_adapter.predict(inputs)
