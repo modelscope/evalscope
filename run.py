@@ -154,7 +154,8 @@ def main():
                                            model_adapter=model_adapter,
                                            outputs_dir=args.outputs,)
         else:
-            evaluator = Evaluator(dataset_name_or_path=imported_modules['DATASET_ID'],
+            dataset_name_or_path: str = args.dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
+            evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
                                   subset_list=imported_modules['SUBSET_LIST'],
                                   data_adapter=data_adapter,
                                   model_adapter=model_adapter,
