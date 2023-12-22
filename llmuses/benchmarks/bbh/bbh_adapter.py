@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import re
 import random
 
 from llmuses.benchmarks.data_adapter import DataAdapter
@@ -15,8 +16,31 @@ logger = get_logger()
 DATASET_ID = 'modelscope/bbh'
 
 
+# BBH multiple choice subset list
+MULTIPLE_CHOICE = 'multiple_choice'
+MULTIPLE_CHOICE_LIST = [
+    'temporal_sequences',
+    'disambiguation_qa',
+    'date_understanding',
+    'tracking_shuffled_objects_three_objects',
+    'penguins_in_a_table',
+    'geometric_shapes',
+    'snarks',
+    'ruin_names',
+    'tracking_shuffled_objects_seven_objects',
+    'tracking_shuffled_objects_five_objects',
+    'logical_deduction_three_objects',
+    'hyperbaton',
+    'logical_deduction_five_objects',
+    'logical_deduction_seven_objects',
+    'movie_recommendation',
+    'salient_translation_error_detection',
+    'reasoning_about_colored_objects',
+]
+
 # The free form subset list of BBH dataset
-SUBSET_LIST = [
+FREE_FORM = 'free_form'
+FREE_FORM_LIST = [
     'multistep_arithmetic_two',
     'navigate',
     'dyck_languages',
@@ -28,6 +52,10 @@ SUBSET_LIST = [
     'causal_judgement',
     'web_of_lies',
 ]
+
+# BBH sub-task type
+TASK_TYPE = 'task_type'
+SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
 
 class BBHAdapter(DataAdapter):
@@ -113,7 +141,15 @@ class BBHAdapter(DataAdapter):
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
                 prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=few_shot_data)
-                prompt_d[AnswerKeys.RAW_INPUT] = sample_d
+                sample_d_new = sample_d.copy()
+                if sub_name in MULTIPLE_CHOICE_LIST:
+                    sample_d_new[TASK_TYPE] = MULTIPLE_CHOICE
+                elif sub_name in FREE_FORM_LIST:
+                    sample_d_new[TASK_TYPE] = FREE_FORM
+                else:
+                    raise ValueError(f'Invalid subset name: {sub_name}')
+
+                prompt_d[AnswerKeys.RAW_INPUT] = sample_d_new
                 res_dict[sub_name].append(prompt_d)
 
         rnd = random.Random()
@@ -141,7 +177,13 @@ class BBHAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return self._extract_pred_answer(result)
+        task_type: str = raw_input_d.get(TASK_TYPE)
+        assert task_type in SUBSET_LIST, f'Invalid task type: {task_type}'
+
+        if task_type == MULTIPLE_CHOICE:
+            return self._extract_mc_answer(result)
+        elif task_type == FREE_FORM:
+            return self._extract_ff_answer(result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -204,7 +246,26 @@ class BBHAdapter(DataAdapter):
         return res_map
 
     @classmethod
-    def _extract_pred_answer(cls, ans: str):
+    def _extract_mc_answer(cls, ans: str) -> str:
+        """
+        Extract the answer from the model output for Multiple choice task.
+        """
+        ans_line = ans.split('answer is ')
+        if len(ans_line) != 1:
+            ans = ans_line[1].strip()
+        match = re.search(r'\(([A-Z])\)*', ans)
+        if match:
+            return match.group(1)
+        match = re.search(r'([A-Z])', ans)
+        if match:
+            return match.group(1)
+        return ans
+
+    @classmethod
+    def _extract_ff_answer(cls, ans: str):
+        """
+        Extract the answer from the model output for Free-form task.
+        """
         ans_line = ans.split('answer is ')
         if len(ans_line) != 1:
             ans = ans_line[1].strip()
