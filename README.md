@@ -143,6 +143,7 @@ python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 | `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | active |    |
 | `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | active |    |
 | `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | active |    |
+| `bbh`                | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | active |    |
 
 
 ## Leaderboard
