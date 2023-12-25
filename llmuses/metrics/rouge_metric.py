@@ -10,6 +10,8 @@ from tqdm import tqdm
 from llmuses.constants import MetricsConstant
 from llmuses.metrics.bundled_rouge_score import rouge_scorer
 from llmuses.preprocess.tokenizers.gpt2_tokenizer import DummyTokenizer
+from rouge_chinese import Rouge
+import jieba
 
 HERE = Path(__file__).absolute().parent
 
@@ -17,7 +19,14 @@ logger = logging.getLogger(__name__)
 
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'],
                                   tokenizer=DummyTokenizer())
+zh_scorer = Rouge()
 
+
+def is_contains_chinese(strs):
+    for _char in strs:
+        if '\u4e00' <= _char <= '\u9fa5':
+            return True
+    return False
 
 def compute_rouge_score(predict_l, reference_l):
     assert len(predict_l) == len(reference_l)
@@ -38,6 +47,24 @@ def compute_rouge_score(predict_l, reference_l):
             else MetricsConstant.INVALID_VALUE
     return rlt
 
+def compute_rouge_score_one_sample_zh(predict, reference):
+    result = dict()
+    for p, r in zip(predict, reference):
+        p = ' '.join(jieba.cut(p)) if is_contains_chinese(p) else p
+        r = ' '.join(jieba.cut(r)) if is_contains_chinese(r) else r
+
+        score = zh_scorer.get_scores(p, r)[0]
+        result['rouge-1-r'] = score['rouge-1']['r']
+        result['rouge-1-p'] = score['rouge-1']['p']
+        result['rouge-1-f'] = score['rouge-1']['f']
+        result['rouge-2-r'] = score['rouge-2']['r']
+        result['rouge-2-p'] = score['rouge-2']['p']
+        result['rouge-2-f'] = score['rouge-2']['f']
+        result['rouge-l-r'] = score['rouge-l']['r']
+        result['rouge-l-p'] = score['rouge-l']['p']
+        result['rouge-l-f'] = score['rouge-l']['f']
+    
+    return result
 
 def compute_rouge_score_one_sample(predict, reference):
     result = dict()

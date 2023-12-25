@@ -6,6 +6,9 @@ import math
 from collections.abc import Iterable
 from collections import defaultdict
 from typing import Dict, List, Union
+from nltk.translate.bleu_score import sentence_bleu
+from nltk import word_tokenize
+import jieba
 
 import numpy as np
 import sacrebleu
@@ -130,6 +133,39 @@ def bleu(items):
     preds = list(zip(*items))[1]
     refs, preds = _sacreformat(refs, preds)
     return sacrebleu.corpus_bleu(preds, refs).score
+
+def bleu_ngram_one_sample(predict, reference):
+    """
+    Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
+
+    Args:
+        items: [(ref, pred)]
+        
+    Returns:
+        {
+            'bleu-1': 0.8,
+            'bleu-2': 0.45,
+            'bleu-3': 0.0,
+            'bleu-4': 0.0
+        }
+
+    """
+    def is_contains_chinese(strs):
+        for _char in strs:
+            if '\u4e00' <= _char <= '\u9fa5':
+                return True
+        return False
+
+    predict = list(jieba.cut(predict)) if is_contains_chinese(predict) else word_tokenize(predict)
+    reference = [list(jieba.cut(reference))] if is_contains_chinese(reference) else [word_tokenize(reference)]
+
+    result = dict()
+    result['bleu-1'] = sentence_bleu(reference, predict, weights=(1, 0, 0, 0))
+    result['bleu-2'] = sentence_bleu(reference, predict, weights=(0, 1, 0, 0))
+    result['bleu-3'] = sentence_bleu(reference, predict, weights=(0, 0, 1, 0))
+    result['bleu-4'] = sentence_bleu(reference, predict, weights=(0, 0, 0, 1))
+
+    return result
 
 
 def chrf(items):
