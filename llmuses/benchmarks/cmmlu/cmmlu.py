@@ -15,124 +15,129 @@
 # flake8: noqa
 
 import os
-
 import datasets
 import pandas as pd
 
-"""The MMLU dataset on ModelScope hub. READ ONLY, DO NOT MODIFY."""
-
 
 _CITATION = """\
-@article{hendryckstest2021,
-  title={Measuring Massive Multitask Language Understanding},
-  author={Dan Hendrycks and Collin Burns and Steven Basart and Andy Zou and Mantas Mazeika and Dawn Song and Jacob Steinhardt},
-  journal={Proceedings of the International Conference on Learning Representations (ICLR)},
-  year={2021}
+@misc{li2023cmmlu,
+      title={CMMLU: Measuring massive multitask language understanding in Chinese},
+      author={Haonan Li and Yixuan Zhang and Fajri Koto and Yifei Yang and Hai Zhao and Yeyun Gong and Nan Duan and Timothy Baldwin},
+      year={2023},
+      eprint={2306.09212},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
 }
 """
 
 _DESCRIPTION = """\
-Measuring Massive Multitask Language Understanding by Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas
-Mazeika, Dawn Song, and Jacob Steinhardt (ICLR 2021).
+CMMLU is a comprehensive Chinese assessment suite specifically designed to evaluate the advanced knowledge and reasoning abilities of LLMs within the Chinese language and cultural context.
 """
 
-_HOMEPAGE = 'https://modelscope.cn/datasets/modelscope/mmlu/summary'
+_HOMEPAGE = "https://modelscope.cn/datasets/modelscope/cmmlu/summary"
 
-_LICENSE = 'MIT'
 
-# _URL = "https://people.eecs.berkeley.edu/~hendrycks/data.tar"
-_URL = 'https://modelscope.cn/api/v1/datasets/modelscope/mmlu/repo?Revision=master&FilePath=data.tar'
+# _URL = r"https://huggingface.co/datasets/haonan-li/cmmlu/resolve/main/cmmlu_v1_0_1.zip"
+_URL = r"https://modelscope.cn/api/v1/datasets/modelscope/cmmlu/repo?Revision=master&FilePath=cmmlu_v1_0_1.zip"
 
 task_list = [
-    'high_school_european_history',
-    'business_ethics',
-    'clinical_knowledge',
-    'medical_genetics',
-    'high_school_us_history',
-    'high_school_physics',
-    'high_school_world_history',
-    'virology',
-    'high_school_microeconomics',
-    'econometrics',
-    'college_computer_science',
-    'high_school_biology',
-    'abstract_algebra',
-    'professional_accounting',
-    'philosophy',
-    'professional_medicine',
-    'nutrition',
-    'global_facts',
-    'machine_learning',
-    'security_studies',
-    'public_relations',
-    'professional_psychology',
-    'prehistory',
-    'anatomy',
-    'human_sexuality',
-    'college_medicine',
-    'high_school_government_and_politics',
-    'college_chemistry',
-    'logical_fallacies',
-    'high_school_geography',
-    'elementary_mathematics',
-    'human_aging',
-    'college_mathematics',
-    'high_school_psychology',
-    'formal_logic',
-    'high_school_statistics',
-    'international_law',
-    'high_school_mathematics',
-    'high_school_computer_science',
-    'conceptual_physics',
-    'miscellaneous',
-    'high_school_chemistry',
-    'marketing',
-    'professional_law',
-    'management',
-    'college_physics',
-    'jurisprudence',
-    'world_religions',
-    'sociology',
-    'us_foreign_policy',
-    'high_school_macroeconomics',
-    'computer_security',
-    'moral_scenarios',
-    'moral_disputes',
-    'electrical_engineering',
-    'astronomy',
-    'college_biology',
+     'agronomy',
+     'anatomy',
+     'ancient_chinese',
+     'arts',
+     'astronomy',
+     'business_ethics',
+     'chinese_civil_service_exam',
+     'chinese_driving_rule',
+     'chinese_food_culture',
+     'chinese_foreign_policy',
+     'chinese_history',
+     'chinese_literature',
+     'chinese_teacher_qualification',
+     'clinical_knowledge',
+     'college_actuarial_science',
+     'college_education',
+     'college_engineering_hydrology',
+     'college_law',
+     'college_mathematics',
+     'college_medical_statistics',
+     'college_medicine',
+     'computer_science',
+     'computer_security',
+     'conceptual_physics',
+     'construction_project_management',
+     'economics',
+     'education',
+     'electrical_engineering',
+     'elementary_chinese',
+     'elementary_commonsense',
+     'elementary_information_and_technology',
+     'elementary_mathematics',
+     'ethnology',
+     'food_science',
+     'genetics',
+     'global_facts',
+     'high_school_biology',
+     'high_school_chemistry',
+     'high_school_geography',
+     'high_school_mathematics',
+     'high_school_physics',
+     'high_school_politics',
+     'human_sexuality',
+     'international_law',
+     'journalism',
+     'jurisprudence',
+     'legal_and_moral_basis',
+     'logical',
+     'machine_learning',
+     'management',
+     'marketing',
+     'marxist_theory',
+     'modern_chinese',
+     'nutrition',
+     'philosophy',
+     'professional_accounting',
+     'professional_law',
+     'professional_medicine',
+     'professional_psychology',
+     'public_relations',
+     'security_study',
+     'sociology',
+     'sports_science',
+     'traditional_chinese_medicine',
+     'virology',
+     'world_history',
+     'world_religions',
 ]
 
 
-class MMLUConfig(datasets.BuilderConfig):
+class CMMLUConfig(datasets.BuilderConfig):
     def __init__(self, **kwargs):
-        super().__init__(version=datasets.Version('1.0.0'), **kwargs)
+        super().__init__(version=datasets.Version("1.0.1"), **kwargs)
+        # V1.0.1 Fix: One comma missing in word_religions.csv
+        # V1.0.0 Init version
 
 
-class MMLU(datasets.GeneratorBasedBuilder):
+class CMMLU(datasets.GeneratorBasedBuilder):
     BUILDER_CONFIGS = [
-        MMLUConfig(
-            name=task_name,
-        )
-        for task_name in task_list
+        CMMLUConfig(name=task_name) for task_name in task_list
     ]
 
     def _info(self):
         features = datasets.Features(
             {
-                'input': datasets.Value('string'),
-                'A': datasets.Value('string'),
-                'B': datasets.Value('string'),
-                'C': datasets.Value('string'),
-                'D': datasets.Value('string'),
-                'target': datasets.Value('string'),
+                "Question": datasets.Value("string"),
+                "A": datasets.Value("string"),
+                "B": datasets.Value("string"),
+                "C": datasets.Value("string"),
+                "D": datasets.Value("string"),
+                "Answer": datasets.Value("string"),
             }
         )
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
             features=features,
             homepage=_HOMEPAGE,
-            license=_LICENSE,
             citation=_CITATION,
         )
 
@@ -143,32 +148,18 @@ class MMLU(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.TEST,
                 gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir, 'data', 'test', f'{task_name}_test.csv'
-                    ),
+                    "filepath": os.path.join(data_dir, f"test/{task_name}.csv"),
                 },
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.VALIDATION,
+                name=datasets.Split("dev"),
                 gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir, 'data', 'val', f'{task_name}_val.csv'
-                    ),
-                },
-            ),
-            datasets.SplitGenerator(
-                name=datasets.Split.TRAIN,
-                gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir, 'data', 'dev', f'{task_name}_dev.csv'
-                    ),
+                    "filepath": os.path.join(data_dir, f"dev/{task_name}.csv"),
                 },
             ),
         ]
 
     def _generate_examples(self, filepath):
-        df = pd.read_csv(filepath)
-        df.columns = ['input', 'A', 'B', 'C', 'D', 'target']
-
-        for i, instance in enumerate(df.to_dict(orient='records')):
+        df = pd.read_csv(filepath, header=0, index_col=0, encoding="utf-8")
+        for i, instance in enumerate(df.to_dict(orient="records")):
             yield i, instance

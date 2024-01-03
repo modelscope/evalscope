@@ -179,10 +179,10 @@ class CMMLUAdapter(DataAdapter):
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
-        Generate model prompt from raw input, unify the prompt format for MMLU benchmark.
+        Generate model prompt from raw input, unify the prompt format for CMMLU benchmark.
 
         Args:
-            input_d (dict): The raw input. A single data format of the MMLU:
+            input_d (dict): The raw input. A single data format of the CMMLU:
 
             {'Question': '下列关于重力的说法正确的是',
             'A': '在地球周围的物体都要受到重力作用，与其运动状态无关',
