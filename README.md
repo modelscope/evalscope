@@ -145,10 +145,15 @@ python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 | `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | active |    |
 
 
-## Leaderboard
+## Leaderboard 榜单
 ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面的评估标准和平台，帮助研究人员和开发者了解和比较ModelScope上的模型在各种任务上的性能表现。
 
 [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
+
+
+
+## 实验和报告
+参考： [Experiments](./resources/experiments.md)
 
 ## TO-DO List
 - [ ] Agents evaluation
