@@ -41,7 +41,7 @@ class OpenAIModel(ChatBaseModel):
         max_tokens: int = kwargs.pop('max_tokens', 1024)
         mode: str = kwargs.pop('mode', 'chat.completion')
 
-        logger.info(f'Using OpenAI model_id: {model_id}')
+        logger.info(f'##report##Using OpenAI model_id: {model_id}')
 
         res = self._predict(model_id=model_id,
                             sys_prompt=sys_prompt,

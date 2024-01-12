@@ -5,6 +5,7 @@ import re
 import math
 from llmuses.benchmarks import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -44,7 +45,7 @@ class GSM8KAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 4:
-            logger.warning(f'GSM8K uses 4-shot examples with CoT by system, but got {few_shot_num}.')
+            logger.warning(f'##report##GSM8K uses 4-shot examples with CoT by system, but got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
@@ -146,13 +147,14 @@ class GSM8KAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT',
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='GSM8K',
+        res_map = dict(name='gsm8k',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

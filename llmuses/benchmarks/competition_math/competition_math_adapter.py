@@ -3,6 +3,7 @@
 
 from llmuses.benchmarks import DataAdapter
 from llmuses.metrics.metrics import weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -30,7 +31,7 @@ class CompetitionMathAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 4:
-            logger.warning('Use the 4-shot settings by system for CompetitionMath dataset.')
+            logger.warning('##report##Use the 4-shot settings by system for CompetitionMath dataset.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
@@ -125,13 +126,14 @@ class CompetitionMathAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT',
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='CompetitionMath',
+        res_map = dict(name='competition_math',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],
@@ -220,7 +222,7 @@ class CompetitionMathAdapter(DataAdapter):
     @classmethod
     def _is_equiv(cls, str1, str2, verbose=False):
         if str1 is None and str2 is None:
-            logger.warning('WARNING: Both None')
+            logger.warning('##report##WARNING: Both None')
             return True
         if str1 is None or str2 is None:
             return False
@@ -229,7 +231,7 @@ class CompetitionMathAdapter(DataAdapter):
             ss1 = cls.strip_string(str1)
             ss2 = cls.strip_string(str2)
             if verbose:
-                logger.info(f'ss1: {ss1}, ss2: {ss2}')
+                logger.info(f'##report##ss1: {ss1}, ss2: {ss2}')
             return ss1 == ss2
         except Exception:
             return str1 == str2

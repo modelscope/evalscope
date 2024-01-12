@@ -2,6 +2,7 @@
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 
 # flake8: noqa
@@ -61,7 +62,7 @@ class ARCAdapter(DataAdapter):
             }
 
         Returns:
-            {'data': [(context, continuation), ...]}
+            {'data': ['xxx'], 'multi_choices': ['A', 'B', 'C', 'D']}
         """
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
         context: str = '\n'.join(few_shot_prompts) + '\n'
@@ -136,13 +137,14 @@ class ARCAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT',
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='ARC',
+        res_map = dict(name='arc',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

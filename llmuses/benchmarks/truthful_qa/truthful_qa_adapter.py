@@ -6,6 +6,7 @@ import numpy as np
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -219,7 +220,7 @@ class TruthfulQaAdapter(DataAdapter):
             elif 'generation' in review_res_d:
                 pass  # TODO: to be added
             else:
-                logger.error(f'** Unknown review_res: {review_res_d}')
+                logger.error(f'##report##** Unknown review_res: {review_res_d}')
 
         # To get mc2 score
         items = [(score, 1.0) for score in mc2_list]
@@ -258,13 +259,14 @@ class TruthfulQaAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT',
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='TruthfulQA',
+        res_map = dict(name='truthful_qa',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

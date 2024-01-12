@@ -2,6 +2,7 @@
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -71,62 +72,62 @@ SUBSET_LIST = [
 
 
 SUBJECT_MAPPING = {'abstract_algebra': ['Abstract Algebra', 'math', 'STEM'],
-                   'anatomy': ['Anatomy', 'health', 'other (business, health, misc.)'],
+                   'anatomy': ['Anatomy', 'health', 'Other'],
                    'astronomy': ['Astronomy', 'physics', 'STEM'],
-                   'business_ethics': ['Business Ethics', 'business', 'other (business, health, misc.)'],
-                   'clinical_knowledge': ['Clinical Knowledge', 'health', 'other (business, health, misc.)'],
+                   'business_ethics': ['Business Ethics', 'business', 'Other'],
+                   'clinical_knowledge': ['Clinical Knowledge', 'health', 'Other'],
                    'college_biology': ['College Biology', 'biology', 'STEM'],
                    'college_chemistry': ['College Chemistry', 'chemistry', 'STEM'],
                    'college_computer_science': ['College Computer Science', 'computer science', 'STEM'],
                    'college_mathematics': ['College Mathematics', 'math', 'STEM'],
-                   'college_medicine': ['College Medicine', 'health', 'other (business, health, misc.)'],
+                   'college_medicine': ['College Medicine', 'health', 'Other'],
                    'college_physics': ['College Physics', 'physics', 'STEM'],
                    'computer_security': ['Computer Security', 'computer science', 'STEM'],
                    'conceptual_physics': ['Conceptual Physics', 'physics', 'STEM'],
-                   'econometrics': ['Econometrics', 'economics', 'social sciences'],
+                   'econometrics': ['Econometrics', 'economics', 'Social Science'],
                    'electrical_engineering': ['Electrical Engineering', 'engineering', 'STEM'],
                    'elementary_mathematics': ['Elementary Mathematics', 'math', 'STEM'],
-                   'formal_logic': ['Formal Logic', 'philosophy', 'humanities'],
-                   'global_facts': ['Global Facts', 'other', 'other (business, health, misc.)'],
+                   'formal_logic': ['Formal Logic', 'philosophy', 'Humanities'],
+                   'global_facts': ['Global Facts', 'other', 'Other'],
                    'high_school_biology': ['High School Biology', 'biology', 'STEM'],
                    'high_school_chemistry': ['High School Chemistry', 'chemistry', 'STEM'],
                    'high_school_computer_science': ['High School Computer Science', 'computer science', 'STEM'],
-                   'high_school_european_history': ['High School European History', 'history', 'humanities'],
-                   'high_school_geography': ['High School Geography', 'geography', 'social sciences'],
-                   'high_school_government_and_politics': ['High School Government And Politics', 'politics', 'social sciences'],
-                   'high_school_macroeconomics': ['High School Macroeconomics', 'economics', 'social sciences'],
+                   'high_school_european_history': ['High School European History', 'history', 'Humanities'],
+                   'high_school_geography': ['High School Geography', 'geography', 'Social Science'],
+                   'high_school_government_and_politics': ['High School Government And Politics', 'politics', 'Social Science'],
+                   'high_school_macroeconomics': ['High School Macroeconomics', 'economics', 'Social Science'],
                    'high_school_mathematics': ['High School Mathematics', 'math', 'STEM'],
-                   'high_school_microeconomics': ['High School Microeconomics', 'economics', 'social sciences'],
+                   'high_school_microeconomics': ['High School Microeconomics', 'economics', 'Social Science'],
                    'high_school_physics': ['High School Physics', 'physics', 'STEM'],
-                   'high_school_psychology': ['High School Psychology', 'psychology', 'social sciences'],
+                   'high_school_psychology': ['High School Psychology', 'psychology', 'Social Science'],
                    'high_school_statistics': ['High School Statistics', 'math', 'STEM'],
-                   'high_school_us_history': ['High School Us History', 'history', 'humanities'],
-                   'high_school_world_history': ['High School World History', 'history', 'humanities'],
-                   'human_aging': ['Human Aging', 'health', 'other (business, health, misc.)'],
-                   'human_sexuality': ['Human Sexuality', 'culture', 'social sciences'],
-                   'international_law': ['International Law', 'law', 'humanities'],
-                   'jurisprudence': ['Jurisprudence', 'law', 'humanities'],
-                   'logical_fallacies': ['Logical Fallacies', 'philosophy', 'humanities'],
+                   'high_school_us_history': ['High School Us History', 'history', 'Humanities'],
+                   'high_school_world_history': ['High School World History', 'history', 'Humanities'],
+                   'human_aging': ['Human Aging', 'health', 'Other'],
+                   'human_sexuality': ['Human Sexuality', 'culture', 'Social Science'],
+                   'international_law': ['International Law', 'law', 'Humanities'],
+                   'jurisprudence': ['Jurisprudence', 'law', 'Humanities'],
+                   'logical_fallacies': ['Logical Fallacies', 'philosophy', 'Humanities'],
                    'machine_learning': ['Machine Learning', 'computer science', 'STEM'],
-                   'management': ['Management', 'business', 'other (business, health, misc.)'],
-                   'marketing': ['Marketing', 'business', 'other (business, health, misc.)'],
-                   'medical_genetics': ['Medical Genetics', 'health', 'other (business, health, misc.)'],
-                   'miscellaneous': ['Miscellaneous', 'other', 'other (business, health, misc.)'],
-                   'moral_disputes': ['Moral Disputes', 'philosophy', 'humanities'],
-                   'moral_scenarios': ['Moral Scenarios', 'philosophy', 'humanities'],
-                   'nutrition': ['Nutrition', 'health', 'other (business, health, misc.)'],
-                   'philosophy': ['Philosophy', 'philosophy', 'humanities'],
-                   'prehistory': ['Prehistory', 'history', 'humanities'],
-                   'professional_accounting': ['Professional Accounting', 'other', 'other (business, health, misc.)'],
-                   'professional_law': ['Professional Law', 'law', 'humanities'],
-                   'professional_medicine': ['Professional Medicine', 'health', 'other (business, health, misc.)'],
-                   'professional_psychology': ['Professional Psychology', 'psychology', 'social sciences'],
-                   'public_relations': ['Public Relations', 'politics', 'social sciences'],
-                   'security_studies': ['Security Studies', 'politics', 'social sciences'],
-                   'sociology': ['Sociology', 'culture', 'social sciences'],
-                   'us_foreign_policy': ['Us Foreign Policy', 'politics', 'social sciences'],
-                   'virology': ['Virology', 'health', 'other (business, health, misc.)'],
-                   'world_religions': ['World Religions', 'philosophy', 'humanities'],
+                   'management': ['Management', 'business', 'Other'],
+                   'marketing': ['Marketing', 'business', 'Other'],
+                   'medical_genetics': ['Medical Genetics', 'health', 'Other'],
+                   'miscellaneous': ['Miscellaneous', 'other', 'Other'],
+                   'moral_disputes': ['Moral Disputes', 'philosophy', 'Humanities'],
+                   'moral_scenarios': ['Moral Scenarios', 'philosophy', 'Humanities'],
+                   'nutrition': ['Nutrition', 'health', 'Other'],
+                   'philosophy': ['Philosophy', 'philosophy', 'Humanities'],
+                   'prehistory': ['Prehistory', 'history', 'Humanities'],
+                   'professional_accounting': ['Professional Accounting', 'other', 'Other'],
+                   'professional_law': ['Professional Law', 'law', 'Humanities'],
+                   'professional_medicine': ['Professional Medicine', 'health', 'Other'],
+                   'professional_psychology': ['Professional Psychology', 'psychology', 'Social Science'],
+                   'public_relations': ['Public Relations', 'politics', 'Social Science'],
+                   'security_studies': ['Security Studies', 'politics', 'Social Science'],
+                   'sociology': ['Sociology', 'culture', 'Social Science'],
+                   'us_foreign_policy': ['Us Foreign Policy', 'politics', 'Social Science'],
+                   'virology': ['Virology', 'health', 'Other'],
+                   'world_religions': ['World Religions', 'philosophy', 'Humanities'],
                    }
 
 
@@ -256,6 +257,7 @@ class MMLUAdapter(DataAdapter):
         """
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
 
         # Get domain-subject mapping
         subject_review_map = {}
@@ -271,13 +273,16 @@ class MMLUAdapter(DataAdapter):
         for domain_name, domain_res_list in subject_review_map.items():
             domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
                                       sum([num for _, _, num in domain_res_list])
+            domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
             category_list.append({'name': domain_name,
                                   'score': domain_weighted_avg_acc,
-                                  'subset': [{'name': subset_name, 'score': subset_score}
+                                  'subset': [{'name': subset_name, 'score': normalize_score(score=subset_score)}
                                              for subset_name, subset_score, _ in domain_res_list]})
 
+        category_list = sorted(category_list, key=lambda x: x['name'])
+
         # Get final dict of report
-        res_map = dict(name='MMLU',
+        res_map = dict(name='mmlu',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=category_list,

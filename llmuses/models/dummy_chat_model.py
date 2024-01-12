@@ -25,8 +25,8 @@ class DummyChatModel(ChatBaseModel):
             messages = inputs['messages']
             history = inputs['history']
 
-            logger.info(f'** messages: {messages}')
-            logger.info(f'** history: {history}')
+            logger.info(f'##report##** messages: {messages}')
+            logger.info(f'##report##** history: {history}')
 
         choice = random.choice(['A', 'B', 'C', 'D'])
 

@@ -104,7 +104,7 @@ class GPT2Tokenizer(object):
             v: k
             for k, v in self.special_tokens.items()
         }
-        logger.info('Special tokens {}'.format(self.special_tokens))
+        logger.info('##report##Special tokens {}'.format(self.special_tokens))
 
     def bpe(self, token):
         if token in self.cache:
