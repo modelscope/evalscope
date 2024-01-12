@@ -4,6 +4,7 @@ workdir /home/workspace
 
 copy llmuses /home/workspace/llmuses
 copy requirements /home/workspace/requirements
+copy resources /home/workspace/resources
 copy setup.py /home/workspace/setup.py
 copy setup.cfg /home/workspace/setup.cfg
 copy README.md /home/workspace/README.md

@@ -153,7 +153,7 @@ def main():
                                            model_revision=model_revision,
                                            model_adapter=model_adapter,
                                            outputs_dir=args.outputs,
-                                           is_custom_outputs_dir=True,)
+                                           is_custom_outputs_dir=False,)
         else:
             dataset_name_or_path: str = args.dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
             evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
@@ -163,7 +163,7 @@ def main():
                                   use_cache=args.mem_cache,
                                   root_cache_dir=args.work_dir,
                                   outputs_dir=args.outputs,
-                                  is_custom_outputs_dir=True,
+                                  is_custom_outputs_dir=False,
                                   datasets_dir=args.work_dir,
                                   stage=args.stage, )
 

@@ -206,15 +206,15 @@ class DataAdapter(ABC):
         {
             "name":"ARC-Challenge",
             "metric":"WeightedAverageAccuracy",
-            "score": 33.89,
+            "score": 0.3389,
             "category":[
                 {
                     "name":"DEFAULT",
-                    "score": 33.89,
+                    "score": 0.3389,
                     "subset":[
                         {
                             "name":"ARC-Challenge",
-                            "score": 33.89
+                            "score": 0.3389
                         },
                     ]
                 }

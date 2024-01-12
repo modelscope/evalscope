@@ -185,7 +185,7 @@ class ArenaWorkflow:
 
 def main():
 
-    # Usage: python run_arena.py -c /path/to/xxx_cfg_arena.yaml
+    # Usage: python llmuses/run_arena.py -c /path/to/xxx_cfg_arena.yaml
 
     parser = argparse.ArgumentParser(description='LLMs evaluations with arena mode.')
     parser.add_argument('-c', '--cfg-file', required=True)
