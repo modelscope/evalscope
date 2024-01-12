@@ -364,7 +364,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.origin_tokenizer = deepcopy(tokenizer)
 
         self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
-        logger.info(f'##report##**Generation config init: {self.generation_config.to_dict()}')
+        logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
         super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
 
@@ -380,11 +380,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                 trust_remote_code=True)
             generation_config.update(**remote_config.to_dict())
         except:
-            logger.warning(f'##report##Failed to get generation config of {self.model_id} from model hub, use default.')
+            logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
 
         # Parse templates for chat-completion
         if os.path.exists(self.model_id):
-            logger.warning(f'##report##Got local model: {self.model_id}, '
+            logger.warning(f'Got local model: {self.model_id}, '
                            f'please make sure the type of path in the form of `/path/to/your_model_name`')
         model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
         logger.info(f'**Model name: {model_name}')
@@ -392,9 +392,9 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if template_type is None:
             from llmuses.models.template import TemplateType
             template_type = TemplateType.default_generation
-            logger.warning(f'##report##Failed to get template type of {self.model_id}, use default: {template_type}')
+            logger.warning(f'Failed to get template type of {self.model_id}, use default: {template_type}')
 
-        logger.info(f'##report##**Template type of generation: {template_type}')
+        logger.info(f'**Template type of generation: {template_type}')
         generation_template = get_template(model_name, template_type, tokenizer)
 
         if tokenizer.eos_token_id is not None:

@@ -85,7 +85,7 @@ def init_mem_cache(method: str = 'ttl', cache_file_path: str = DEFAULT_MEM_CACHE
     Returns:
         The cache instance. Should be cachetools.Cache.
     """
-    logger.info(f'##report##** Initializing memory cache with method `{method}` ... \n')
+    logger.info(f'** Initializing memory cache with method `{method}` ... \n')
     mem_cache = Cache.load(path=cache_file_path)
     if mem_cache is None:
         if method == 'ttl':

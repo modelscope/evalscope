@@ -26,7 +26,7 @@ def lmsys_parser(completion, output_format):
         if match:
             rating = ast.literal_eval(match.groups()[0])
         else:
-            logger.error(f'##report##Content: {completion}\n'
+            logger.error(f'Content: {completion}\n'
                          'You must manually fix the score.')
             rating = -1
 
@@ -52,7 +52,7 @@ def lmsys_parser(completion, output_format):
                 raise Exception('Invalid score pair.')
         except Exception as e:
             logger.error(
-                f'##report##{e}\nContent: {completion}\nYou must manually fix the score pair.'
+                f'{e}\nContent: {completion}\nYou must manually fix the score pair.'
             )
             return ArenaWinner.UNKNOWN, [-1, -1]
     elif output_format == '[[A]]':
@@ -64,7 +64,7 @@ def lmsys_parser(completion, output_format):
             winner = ArenaWinner.TIE
         else:
             logger.error(
-                f'##report##\nContent: {completion}\nYou must manually fix the score.')
+                f'\nContent: {completion}\nYou must manually fix the score.')
             winner = ArenaWinner.UNKNOWN
         return winner
 
@@ -82,6 +82,6 @@ def ranking_parser(completion, **kwargs):
 
         return ArenaWinner.MODEL_A if rank == 1 else ArenaWinner.MODEL_B
     except Exception as e:
-        logger.error(f'##report##{e}\nContent: {completion}\n'
+        logger.error(f'{e}\nContent: {completion}\n'
                      'You must manually fix the score pair.')
         return ArenaWinner.UNKNOWN

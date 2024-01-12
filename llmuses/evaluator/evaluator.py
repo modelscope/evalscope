@@ -87,7 +87,7 @@ class Evaluator(object):
         self.mem_cache = None
         if self.use_cache:
             self.mem_cache = init_mem_cache(method=self.mem_cache_method, cache_file_path=self.mem_cache_path)
-            logger.info(f'##report##** Using memory cache with size: {len(self.mem_cache)}')
+            logger.info(f'** Using memory cache with size: {len(self.mem_cache)}')
 
     def _pred_answer(self,
                      input_d: dict,
@@ -98,7 +98,7 @@ class Evaluator(object):
         # Get answer from memory cache
         if self.mem_cache is not None:
             if answer_id in self.mem_cache:
-                logger.info(f'##report##** Reusing answer `{answer_id}` in memory cache.')
+                logger.info(f'** Reusing answer `{answer_id}` in memory cache.')
                 return self.mem_cache[answer_id]
 
         ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
@@ -142,7 +142,7 @@ class Evaluator(object):
         assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
 
         answers_list = []
-        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'##report##Predicting({subset_name}): '):
+        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
@@ -186,7 +186,7 @@ class Evaluator(object):
         # Get review from memory cache
         if self.mem_cache is not None:
             if review_id in self.mem_cache:
-                logger.info(f'##report##** Reusing review `{review_id}` in memory cache.')
+                logger.info(f'** Reusing review `{review_id}` in memory cache.')
                 return self.mem_cache[review_id]
 
         if reviewer_spec is None:
@@ -240,7 +240,7 @@ class Evaluator(object):
         Returns: reviews list.
         """
         reviews_list = []
-        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'##report##Reviewing({subset_name}): '):
+        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
 
             # Gen review_id (concat: answer_id + reviewer_spec)
             answer_id = answer_d[AnswerKeys.ANSWER_ID]
@@ -283,7 +283,7 @@ class Evaluator(object):
         review_res_list = []
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'##report##** Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'** Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
                 continue
 
             review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
@@ -312,20 +312,20 @@ class Evaluator(object):
         report_path: str = os.path.join(report_dir, report_file_name)
         with open(report_path, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        # logger.info(f'##report##** Dump report to {report_path} \n')
-        logger.info(f'##report##** Dump report: {report_file_name} \n')
+        # logger.info(f'** Dump report to {report_path} \n')
+        logger.info(f'** Dump report: {report_file_name} \n')
 
         if use_table:
             try:
                 # Make table
                 report_table: str = gen_table([report_dir])
-                logger.info(f'##report##** Report table: \n {report_table} \n')
+                logger.info(f'** Report table: \n {report_table} \n')
             except:
-                logger.error('##report##Failed to generate report table.')
+                logger.error('Failed to generate report table.')
 
     def save_cache(self):
         if self.mem_cache is not None:
-            logger.info(f'##report##** Saving memory cache with size: {len(self.mem_cache)}')
+            logger.info(f'** Saving memory cache with size: {len(self.mem_cache)}')
             Cache.save(cache=self.mem_cache, path=self.mem_cache_path)
 
     def clear_cache(self):
@@ -337,7 +337,7 @@ class Evaluator(object):
         if self.mem_cache is not None:
             cache_len = len(self.mem_cache)
             self.mem_cache.clear()
-            logger.info(f'##report##** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
+            logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
 
     def eval(self,
              infer_cfg: dict = None,
@@ -440,7 +440,7 @@ class HumanevalEvaluator(object):
     def get_answers(self, infer_cfg: dict) -> List[dict]:
         ans_list: list = []
         system_prompt: str = 'Complete the following python code:\n'
-        for task_id, data_d in tqdm(self.problems.items(), total=len(self.problems), desc='##report##Predicting(problems)'):
+        for task_id, data_d in tqdm(self.problems.items(), total=len(self.problems), desc='Predicting(problems)'):
             prompt: str = system_prompt + data_d['prompt']
             inputs: dict = {'data': [prompt]}
             # pred_res: dict = self.model_adapter.predict(inputs)
@@ -462,8 +462,8 @@ class HumanevalEvaluator(object):
                                          'human_eval_predictions.jsonl')
 
         self.write_jsonl_func(filename=ans_out_file, data=ans_list)
-        # logger.info(f'##report##** Dump predictions to {ans_out_file} successfully.')
-        logger.info('##report##** Dump predictions successfully.')
+        # logger.info(f'** Dump predictions to {ans_out_file} successfully.')
+        logger.info('** Dump predictions successfully.')
 
         # evaluate  results: e.g. {'pass@1': 0.333, 'pass@10': 0.111}
         results = self.eval_func(sample_file=ans_out_file,
@@ -479,15 +479,15 @@ class HumanevalEvaluator(object):
 
         with open(report_file, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        # logger.info(f'##report##** Dump report to {report_file} \n')
-        logger.info(f'##report##** Dump report \n')
+        # logger.info(f'** Dump report to {report_file} \n')
+        logger.info(f'** Dump report \n')
 
         try:
             # Make table
             report_table: str = gen_table([report_dir])
-            logger.info(f'##report##** Report table: \n {report_table} \n')
+            logger.info(f'** Report table: \n {report_table} \n')
         except:
-            logger.error('##report##Failed to generate report table.')
+            logger.error('Failed to generate report table.')
 
     def gen_report(self, results: dict) -> dict:
         """

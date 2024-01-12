@@ -188,7 +188,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
         review_cache = self.get_review_cache(model_a, model_b, question)
         if review_cache:
-            logger.info(f'##report##Use cache review for {model_a} vs {model_b} ...')
+            logger.info(f'Use cache review for {model_a} vs {model_b} ...')
             return review_cache
 
         if self.position_bias_mitigation == PositionBiasMitigation.SWAP_POSITION:
@@ -247,7 +247,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
         review_cache = self.get_review_cache(model, None, question)
         if review_cache:
-            logger.info(f'##report##Use cache review for {model} ...')
+            logger.info(f'Use cache review for {model} ...')
             return review_cache
 
         review_text, score = self._get_review_single(model, question, category, answer, dry_run=dry_run, **kwargs)
@@ -314,7 +314,7 @@ class AutoReviewerGpt4(BaseReviewer):
 
     def _get_reviewer_prediction_dummy(self, sys_prompt: str, user_prompt: str,
                                        output_format) -> str:
-        logger.info('##report##Get dummy scores for input prompt ...')
+        logger.info('Get dummy scores for input prompt ...')
         if output_format == '[[rating]]':
             return f'[[{round(random.random(), 2)}]]'
         if output_format == '[[rating_a,rating_b]]':

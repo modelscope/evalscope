@@ -78,7 +78,7 @@ class BBHAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         if few_shot_num != 3:
-            logger.warning(f'##report##BBHAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
+            logger.warning(f'BBHAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
@@ -126,7 +126,7 @@ class BBHAdapter(DataAdapter):
         if self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'##report##\n** Use default settings: \n'
+        logger.info(f'\n** Use default settings: \n'
                     f'>few_shot_num: {self.few_shot_num}, '
                     f'>few_shot_split: {self.train_split}, '
                     f'>target_eval_split: {self.eval_split}')
@@ -163,7 +163,7 @@ class BBHAdapter(DataAdapter):
         # Get the gold choice
         gold = input_d.get('target')
         if gold is None:
-            logger.error(f'##report##BBHAdapter: gold is None.')
+            logger.error(f'BBHAdapter: gold is None.')
         return gold
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:

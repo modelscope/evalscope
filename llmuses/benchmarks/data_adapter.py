@@ -52,7 +52,7 @@ class DataAdapter(ABC):
 
         split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
         if len(split_list) == 0:
-            logger.error(f'##report##Got empty split list: {split_list}')
+            logger.error(f'Got empty split list: {split_list}')
 
         subset_list = subset_list if subset_list is not None else self.subset_list
         for sub_name in subset_list:
@@ -88,7 +88,7 @@ class DataAdapter(ABC):
         if self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'##report##\n** Use default settings: \n'
+        logger.info(f'\n** Use default settings: \n'
                     f'>few_shot_num: {self.few_shot_num}, '
                     f'>few_shot_split: {self.train_split}, '
                     f'>target_eval_split: {self.eval_split}')
