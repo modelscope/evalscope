@@ -4,6 +4,7 @@ import os
 import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -41,11 +42,11 @@ class RACEAdapter(DataAdapter):
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
         super().__init__(subset_list=subset_list,
-                        metric_list=metric_list,
-                        few_shot_num=few_shot_num,
-                        train_split=train_split,
-                        eval_split=eval_split,
-                        **kwargs)
+                         metric_list=metric_list,
+                         few_shot_num=few_shot_num,
+                         train_split=train_split,
+                         eval_split=eval_split,
+                         **kwargs)
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
@@ -158,17 +159,18 @@ class RACEAdapter(DataAdapter):
         for domain_name, domain_res_list in subject_review_map.items():
             domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
                                      sum([num for _, _, num in domain_res_list])
+            domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
             category_list.append({'name': domain_name,
-                                 'score': domain_weighted_avg_acc,
-                                 'subset': [{'name': subset_name, 'score': subset_score}
-                                           for subset_name, subset_score, _ in domain_res_list]})
+                                  'score': normalize_score(score=domain_weighted_avg_acc),
+                                  'subset': [{'name': subset_name, 'score': subset_score}
+                                             for subset_name, subset_score, _ in domain_res_list]})
 
         # Get final dict of report
         res_map = dict(name='RACE',
-                      metric=self.metric_list[0]['name'],
-                      score=weighted_avg_acc,
-                      category=category_list,
-                      total_num=total_num)
+                       metric=self.metric_list[0]['name'],
+                       score=weighted_avg_acc,
+                       category=category_list,
+                       total_num=total_num)
 
         return res_map
 
