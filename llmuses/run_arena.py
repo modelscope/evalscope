@@ -157,7 +157,7 @@ class ArenaWorkflow:
         enable = self.rating_gen.get(EvalConfigKeys.ENABLE, True)
         if enable:
             report_file = os.path.join(WORK_DIR, self.rating_gen.get('report_file'))
-            metrics = self.rating_gen.get('llmuses/metrics', ['elo'])
+            metrics = self.rating_gen.get('metrics', ['elo'])
             baseline_model = self.rating_gen.get(
                 'baseline_model') if metrics[0] == 'pairwise' else None
             ae = RatingEvaluate(metrics=metrics, baseline_model=baseline_model)
@@ -185,7 +185,7 @@ class ArenaWorkflow:
 
 def main():
 
-    # Usage: python run_arena.py -c /path/to/xxx_cfg_arena.yaml
+    # Usage: python llmuses/run_arena.py -c /path/to/xxx_cfg_arena.yaml
 
     parser = argparse.ArgumentParser(description='LLMs evaluations with arena mode.')
     parser.add_argument('-c', '--cfg-file', required=True)

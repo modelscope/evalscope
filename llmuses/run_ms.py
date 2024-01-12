@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
     parser.add_argument('--datasets-dir', help='Datasets dir.', default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--device-map', help='device map.', default='auto')
-    parser.add_argument('--limit', type=int, help='Max evaluation samples num for each subset', default=None)
+    parser.add_argument('--max-eval-size', type=int, help='Max evaluation samples num for each subset', default=None)
     parser.add_argument('--dataset-id', help='Dataset id on modelscope', required=False, default=None)
 
     parser.add_argument('--debug',
@@ -117,17 +117,18 @@ def main():
                                                            torch_dtype=model_precision,
                                                            model_revision=model_revision, )
 
-        root_work_dir = args.cache_dir if args.cache_dir is not None else DEFAULT_ROOT_CACHE_DIR
+        root_work_dir = args.work_dir if args.work_dir is not None else DEFAULT_ROOT_CACHE_DIR
         evaluator = Evaluator(dataset_name_or_path=dataset_name,
                               subset_list=None,
                               data_adapter=data_adapter,
                               model_adapter=model_adapter,
                               use_cache=args.mem_cache,
                               root_cache_dir=root_work_dir,
-                              outputs_dir=args.outputs,
+                              outputs_dir=args.outputs_dir,
+                              is_custom_outputs_dir=True,
                               datasets_dir=args.datasets_dir, )
 
-        infer_cfg = dict(max_length=2048, limit=args.limit)
+        infer_cfg = dict(max_length=2048, limit=args.max_eval_size)
         evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
 
 
@@ -135,5 +136,5 @@ if __name__ == '__main__':
     main()
 
     # Usage:
-    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16
-    # python run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10
+    # python llmuses/run_ms.py --model ZhipuAI/chatglm2-6b --precision fp16 --dry-run --dataset-id modelscope/mmlu --limit 10
+

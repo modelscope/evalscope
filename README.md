@@ -40,12 +40,12 @@ pip install -e .
 ### 简单评估
 ```shell
 # 在特定数据集上评估某个模型
-python run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
 ```
 
 ### 带参数评估
 ```shell
-python run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
 
 # 参数说明
 # --model-args: 模型参数，以逗号分隔，key=value形式
@@ -80,10 +80,10 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 cd llmuses
 
 # dry-run模式 (模型answer正常生成，但专家模型不会被触发，评估结果会随机生成)
-python run_arena.py -c llmuses/registry/config/cfg_arena.yaml --dry-run
+python llmuses/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
-python run_arena.py --c llmuses/registry/config/cfg_arena.yaml
+python llmuses/run_arena.py --c registry/config/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
@@ -109,7 +109,7 @@ streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.js
 #### 2. 执行脚本
 ```shell
 #Example:
-python run_arena.py --c llmuses/registry/config/cfg_single.yaml
+python llmuses/run_arena.py --c registry/config/cfg_single.yaml
 ```
 
 ### Baseline模型对比模式（Pairwise-baseline mode）
@@ -127,7 +127,7 @@ python run_arena.py --c llmuses/registry/config/cfg_single.yaml
 #### 2. 执行脚本
 ```shell
 # Example:
-python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
+python llmuses/run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 ```
 
 
@@ -143,6 +143,7 @@ python run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
 | `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | active |    |
 | `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | active |    |
 | `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | active |    |
+| `bbh`                | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | active |    |
 
 
 ## Leaderboard 榜单
@@ -163,7 +164,6 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
 - [ ] Benchmarks
   - [ ] GAIA
   - [ ] GPQA
-  - [ ] BBH
   - [ ] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max

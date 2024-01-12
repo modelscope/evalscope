@@ -101,7 +101,7 @@ def yaml_to_dict(yaml_file) -> dict:
         try:
             stream = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            logger.error(e)
+            logger.error(f'{e}')
             raise e
 
     return stream
@@ -113,7 +113,7 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
     try:
         obj_cls = importlib.import_module(module_name)
     except ImportError as e:
-        logger.error(e)
+        logger.error(f'{e}')
         raise e
 
     if spliter:
@@ -276,16 +276,16 @@ def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float
     Normalize score.
 
     Args:
-        score: input score, could be float or dict. e.g. 0.1234 or {'acc': 0.1234, 'f1': 0.2345}
+        score: input score, could be float or dict. e.g. 0.12345678 or {'acc': 0.12345678, 'f1': 0.12345678}
         keep_num: number of digits to keep.
 
     Returns:
-        Union[float, dict]: normalized score. e.g. 12.34 or {'acc': 12.34, 'f1': 23.45}
+        Union[float, dict]: normalized score. e.g. 0.1234 or {'acc': 0.1234, 'f1': 0.1234}
     """
     if isinstance(score, float):
-        score = round(score, keep_num) * 100
+        score = round(score, keep_num)
     elif isinstance(score, dict):
-        score = {k: round(v, keep_num) * 100 for k, v in score.items()}
+        score = {k: round(v, keep_num) for k, v in score.items()}
     else:
         logger.warning(f'Unknown score type: {type(score)}')
 
