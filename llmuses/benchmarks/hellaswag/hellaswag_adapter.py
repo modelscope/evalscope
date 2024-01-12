@@ -151,7 +151,7 @@ class HellaSwagAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='hellaswag',
+        res_map = dict(name='HellaSwag',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

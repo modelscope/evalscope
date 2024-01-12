@@ -238,7 +238,7 @@ class BBHAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='bbh',
+        res_map = dict(name='BBH',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

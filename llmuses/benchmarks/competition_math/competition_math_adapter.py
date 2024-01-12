@@ -133,7 +133,7 @@ class CompetitionMathAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='competition_math',
+        res_map = dict(name='CompetitionMath',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

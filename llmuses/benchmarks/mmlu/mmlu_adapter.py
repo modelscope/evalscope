@@ -282,7 +282,7 @@ class MMLUAdapter(DataAdapter):
         category_list = sorted(category_list, key=lambda x: x['name'])
 
         # Get final dict of report
-        res_map = dict(name='mmlu',
+        res_map = dict(name='MMLU',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=category_list,
