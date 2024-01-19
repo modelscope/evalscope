@@ -1,0 +1,1 @@
+python http_client.py --url 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation' --parallel 1 --rate 1 --headers 'Authorization=sk-' 'X-DashScope-SSE=enable' --model 'qwen-turbo'  --prompt "hello" --parameters top_p=0.8 temperature=0.8 max_tokens=256 --format dashscope_message -n 1 --log-every-n-query 1 
