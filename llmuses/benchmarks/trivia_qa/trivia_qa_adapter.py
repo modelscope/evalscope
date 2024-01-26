@@ -21,7 +21,7 @@ class TriviaQaAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 5,
+                 few_shot_num: int = None,
                  train_split: str = 'dev',
                  eval_split: str = 'test',
                  **kwargs):
@@ -31,6 +31,10 @@ class TriviaQaAdapter(DataAdapter):
 
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
+
+        if few_shot_num is None:
+            logger.info(f'few_shot_num is not specified for TriviaQA, use default value: 5')
+            few_shot_num = 5
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
