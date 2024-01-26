@@ -162,7 +162,9 @@ def main():
 
             # Init data adapter
             few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
-            data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num)
+            few_shot_random: bool = dataset_args.get(dataset_name, {}).get('few_shot_random', True)
+            data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
+                                                                few_shot_random=few_shot_random)
 
             evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
                                   subset_list=imported_modules['SUBSET_LIST'],
