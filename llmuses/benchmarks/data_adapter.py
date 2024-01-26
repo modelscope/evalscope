@@ -33,6 +33,7 @@ class DataAdapter(ABC):
         self.few_shot_num = few_shot_num
         self.train_split = train_split
         self.eval_split = eval_split
+        self.config_kwargs = kwargs
 
     def load(self,
              dataset_name_or_path: str,
@@ -96,9 +97,11 @@ class DataAdapter(ABC):
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
             if self.few_shot_num > 0:
+                few_shot_random: bool = self.config_kwargs.get('few_shot_random', True)
                 few_shot_data = self.get_fewshot_examples(
                     [item for item in sub_data_dict[self.train_split]],
-                    self.few_shot_num)
+                    self.few_shot_num,
+                    few_shot_random=few_shot_random)
 
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
@@ -224,9 +227,11 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    def get_fewshot_examples(self, data_list: list, k: int):
+    def get_fewshot_examples(self, data_list: list, k: int, few_shot_random: bool = True):
 
         if k > len(data_list):
             k = len(data_list)
-
-        return random.sample(data_list, k)
+        if few_shot_random:
+            return random.sample(data_list, k)
+        else:
+            return data_list[:k]
