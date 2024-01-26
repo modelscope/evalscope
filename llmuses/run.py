@@ -96,6 +96,10 @@ def parse_str_args(str_args: str):
         try:
             final_args[k] = eval(v)
         except:
+            if v.lower() == 'true':
+                v = True
+            if v.lower() == 'false':
+                v = False
             final_args[k] = v
 
     return final_args
@@ -108,10 +112,8 @@ def main():
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
 
-    print(f'\n>>>generation_args in run: {generation_args}')
-
     # Parse args
-    model_precision = model_args.get('precision', 'torch.float16')
+    model_precision = model_args.get('precision', torch.float16)
 
     # Get model args
     if args.dry_run:
@@ -175,5 +177,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # Usage: python llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --generation-config do_sample=false,temperature=0.0 --datasets ceval --limit 10
     main()

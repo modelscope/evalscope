@@ -149,8 +149,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         """
 
         # TODO: unused
-        if infer_cfg is None:
-            infer_cfg = {'do_sample': False, 'max_length': 1024}
+        infer_cfg = infer_cfg or {}
 
         print(f'>>infer_cfg in predict: {infer_cfg}')
         self.model.generation_config.update(**infer_cfg)
