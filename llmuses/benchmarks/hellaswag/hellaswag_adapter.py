@@ -24,7 +24,7 @@ class HellaSwagAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 0,
+                 few_shot_num: int = None,
                  train_split: str = 'train',
                  eval_split: str = 'validation',
                  **kwargs):
@@ -34,6 +34,15 @@ class HellaSwagAdapter(DataAdapter):
 
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
+
+        if few_shot_num is None:
+            # Use 0-shot by default
+            logger.info(f'Set 0-shot examples by system for HellaSwag.')
+            few_shot_num = 0
+
+        if few_shot_num != 0:
+            logger.warning(f'few_shot_num should be 0 for HellaSwag, but got {few_shot_num}. Use 0-shot by default.')
+            few_shot_num = 0
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
