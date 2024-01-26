@@ -32,6 +32,9 @@ git clone git@github.com:modelscope/llmuses.git
 cd llmuses/
 pip install -r requirements/requirements.txt
 pip install -e .
+
+# Note: 您也可以使用自定义的源安装依赖
+pip install -r requirements/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 
@@ -47,11 +50,14 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
 
+python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0}}' --limit 10
+
 # 参数说明
 # --model-args: 模型参数，以逗号分隔，key=value形式
 # --datasets: 数据集名称，参考下文`数据集列表`章节
 # --mem-cache: 是否使用内存缓存，若开启，则已经跑过的数据会自动缓存，并持久化到本地磁盘
 # --limit: 每个subset最大评估数据量
+# --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
 ```
 
 

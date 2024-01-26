@@ -13,7 +13,9 @@ logger = get_logger()
 DATASET_ID = 'general_qa'
 SUBSET_LIST = ['default']
 
+
 class GeneralQAAdapter(DataAdapter):
+    # TODO: set few_shot_num
 
     def __init__(self,
                  subset_list: list = None,

@@ -44,7 +44,7 @@ class TruthfulQaAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 0,
+                 few_shot_num: int = None,
                  train_split: str = None,
                  eval_split: str = 'validation',
                  **kwargs):
@@ -54,6 +54,14 @@ class TruthfulQaAdapter(DataAdapter):
 
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
+
+        if few_shot_num is None:
+            logger.info(f'Set 0-shot examples by system for TruthfulQA.')
+            few_shot_num = 0
+
+        if few_shot_num != 0:
+            logger.warning(f'few_shot_num should be 0 for TruthfulQA, but got {few_shot_num}. Use 0-shot by default.')
+            few_shot_num = 0
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
