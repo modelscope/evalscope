@@ -150,9 +150,11 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
         # TODO: unused
         if infer_cfg is None:
-            infer_cfg = {'do_sample': True, 'max_length': 1024}
+            infer_cfg = {'do_sample': False, 'max_length': 1024}
 
         print(f'>>infer_cfg in predict: {infer_cfg}')
+        self.model.generation_config.update(**infer_cfg)
+        print(f'>>generation_config in predict: {self.model.generation_config.to_dict()}')
 
         input_data = inputs['data']
         multi_choices = inputs['multi_choices']
