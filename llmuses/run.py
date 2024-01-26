@@ -108,6 +108,8 @@ def main():
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
 
+    print(f'\n>>>generation_args in run: {generation_args}')
+
     # Parse args
     model_precision = model_args.get('precision', 'torch.float16')
 

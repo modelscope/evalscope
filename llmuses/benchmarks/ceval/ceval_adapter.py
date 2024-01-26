@@ -127,7 +127,7 @@ class CEVALAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 0,     # TODO: ONLY FOR TEST
+                 few_shot_num: int = 5,
                  train_split: str = 'dev',
                  eval_split: str = 'val',
                  **kwargs):
