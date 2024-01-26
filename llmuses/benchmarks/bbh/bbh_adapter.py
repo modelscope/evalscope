@@ -66,7 +66,7 @@ class BBHAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 3,     # 3-shot with CoT by system
+                 few_shot_num: int = None,
                  train_split: str = None,
                  eval_split: str = 'test',
                  **kwargs):
@@ -77,8 +77,14 @@ class BBHAdapter(DataAdapter):
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
 
-        if few_shot_num != 3:
-            logger.warning(f'BBHAdapter: few_shot_num is set to {few_shot_num}, but the BBH dataset uses 3-shot with CoT by system.')
+        if few_shot_num is None:
+            logger.info(f'Set 3-shot examples by system for BBH.')
+            few_shot_num = 3
+
+        if few_shot_num != 3 and few_shot_num != 0:
+            logger.error(f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
+                         f'Use 3-shot by default.')
+            few_shot_num = 3
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,

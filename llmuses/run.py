@@ -111,6 +111,7 @@ def main():
 
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
+    dataset_args: dict = args.dataset_args
 
     # Parse args
     model_precision = model_args.get('precision', torch.float16)
@@ -130,10 +131,8 @@ def main():
     for dataset_name in datasets_list:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
-        # Init data adapter
-        data_adapter = imported_modules['DataAdapterClass']()
 
-        if dataset_name == 'humaneval' and args.dataset_args.get('humaneval', {}).get('local_path') is None:
+        if dataset_name == 'humaneval' and dataset_args.get('humaneval', {}).get('local_path') is None:
             raise ValueError('Please specify the local problem path of humaneval dataset in --dataset-args,'
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}, '
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
@@ -150,7 +149,7 @@ def main():
                                                                   torch_dtype=model_precision,)
 
         if dataset_name == 'humaneval':
-            problem_file: str = args.dataset_args.get('humaneval', {}).get('local_path')
+            problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
 
             evaluator = HumanevalEvaluator(problem_file=problem_file,
                                            model_id=model_id,
@@ -159,7 +158,12 @@ def main():
                                            outputs_dir=args.outputs,
                                            is_custom_outputs_dir=False,)
         else:
-            dataset_name_or_path: str = args.dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
+            dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
+
+            # Init data adapter
+            few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
+            data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num)
+
             evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
                                   subset_list=imported_modules['SUBSET_LIST'],
                                   data_adapter=data_adapter,
@@ -178,5 +182,5 @@ def main():
 
 if __name__ == '__main__':
     # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
-    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --generation-config do_sample=false,temperature=0.0 --datasets ceval --limit 10
+    # Usage: python3 llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0}}' --limit 10
     main()
