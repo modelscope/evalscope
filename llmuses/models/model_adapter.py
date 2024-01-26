@@ -147,13 +147,8 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
               }
             }
         """
-
-        # TODO: unused
         infer_cfg = infer_cfg or {}
-
-        print(f'>>infer_cfg in predict: {infer_cfg}')
         self.model.generation_config.update(**infer_cfg)
-        print(f'>>generation_config in predict: {self.model.generation_config.to_dict()}')
 
         input_data = inputs['data']
         multi_choices = inputs['multi_choices']
@@ -256,8 +251,7 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
               }
             }
         """
-        if infer_cfg is None:
-            infer_cfg = {'do_sample': True, 'max_length': 2048}
+        infer_cfg = infer_cfg or {}
 
         pred_list: list = self.loglikelihood(inputs=inputs['data'], infer_cfg=infer_cfg)
 
@@ -279,6 +273,7 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
         return res_d
 
     def loglikelihood(self, inputs: list, infer_cfg: dict = None) -> list:
+        self.model.generation_config.update(**infer_cfg)
         # To predict one doc
         doc_ele_pred = []
         for ctx, continuation in inputs:

@@ -127,7 +127,7 @@ class CEVALAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 few_shot_num: int = 5,
+                 few_shot_num: int = None,
                  train_split: str = 'dev',
                  eval_split: str = 'val',
                  **kwargs):
@@ -137,6 +137,15 @@ class CEVALAdapter(DataAdapter):
 
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
+
+        if few_shot_num is None:
+            # Use 5-shot by default
+            logger.info(f'Set 5-shot examples by default for C-Eval.')
+            few_shot_num = 5
+
+        if few_shot_num > 5:
+            logger.warning(f'few_shot_num <= 5 for C-Eval, but got {few_shot_num}. Use 5-shot by default.')
+            few_shot_num = 5
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
