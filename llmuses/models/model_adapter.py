@@ -152,6 +152,8 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         if infer_cfg is None:
             infer_cfg = {'do_sample': True, 'max_length': 1024}
 
+        print(f'>>infer_cfg in predict: {infer_cfg}')
+
         input_data = inputs['data']
         multi_choices = inputs['multi_choices']
 
