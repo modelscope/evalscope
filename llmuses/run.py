@@ -10,6 +10,9 @@ from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.utils import import_module_util
 from llmuses.utils.logger import get_logger
+from llmuses.constants import OutputsStructure
+from llmuses.tools.combine_reports import ReportsRecorder
+import os
 
 logger = get_logger()
 
@@ -34,6 +37,11 @@ def parse_args():
                         required=False,
                         default='revision=None,precision=torch.float16,device_map=auto'
                         )
+    parser.add_argument('--qwen-path',
+                        help='The qwen model id on modelscope, or local model dir.',
+                        type=str,
+                        required=False,
+                        default="")
     parser.add_argument('--generation-config',
                         type=str,
                         help='The generation config, should be a string.',
@@ -47,8 +55,8 @@ def parse_args():
                         required=True)
     parser.add_argument('--dataset-args',
                         type=json.loads,
-                        help='The dataset args, should be a json string. The key of dict should be aligned to datasets,'
-                             'e.g. {"humaneval": {"local_path": "/to/your/path"}}',
+                        help='The dataset args, should be a json list string. The key of dict should be aligned to datasets,'
+                             'e.g. {"humaneval": {"local_path": ["/to/your/path"]}}',
                         required=False,
                         default='{}')
     parser.add_argument('--outputs',
@@ -79,6 +87,12 @@ def parse_args():
                              'can be `all`, `infer`, `review`, `report`. Default to `all`.',
                         type=str,
                         default='all')
+    parser.add_argument('--oss-args',
+                        type=json.loads,
+                        help='The oss args, should be a json string. The key of dict should covers "key_id, key_secret, oss_url, endpoint",'
+                             'e.g. {"key_id": "XXX", "key_secret": "XXX", "endpoint": "https://oss-cn-hangzhou.aliyuncs.com", "oss_url": "oss://xxx/xxx/"}',
+                        required=False,
+                        default='{}')
 
     args = parser.parse_args()
 
@@ -96,14 +110,19 @@ def parse_str_args(str_args: str):
         try:
             final_args[k] = eval(v)
         except:
-            if v.lower() == 'true':
-                v = True
-            if v.lower() == 'false':
-                v = False
             final_args[k] = v
 
     return final_args
 
+def get_report_path(evaluator):
+    report_dir: str = evaluator.outputs_structure[OutputsStructure.REPORTS_DIR]
+    report_file_name: str = evaluator.dataset_name_or_path.replace('/', '_') + '.json'
+    report_path: str = os.path.join(report_dir, report_file_name)
+    return report_path
+
+def set_oss_environ(args):
+    os.environ['OSS_ACCESS_KEY_ID'] = args.get("key_id", "")
+    os.environ['OSS_ACCESS_KEY_SECRET'] = args.get("key_secret", "")
 
 def main():
     args = parse_args()
@@ -111,10 +130,10 @@ def main():
 
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
-    dataset_args: dict = args.dataset_args
+    set_oss_environ(args.oss_args)
 
     # Parse args
-    model_precision = model_args.get('precision', torch.float16)
+    model_precision = model_args.get('precision', 'torch.float16')
 
     # Get model args
     if args.dry_run:
@@ -126,63 +145,74 @@ def main():
         model_revision: str = model_args.get('revision', None)
         if model_revision == 'None':
             model_revision = eval(model_revision)
+        qwen_model_id: str = args.qwen_path
 
+    reports_recorder = ReportsRecorder(
+        oss_url=args.oss_args.get("oss_url", ""),
+        endpoint=args.oss_args.get("endpoint", "")
+    )
     datasets_list = args.datasets
     for dataset_name in datasets_list:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
+        # Init data adapter
+        data_adapter = imported_modules['DataAdapterClass']()
 
-        if dataset_name == 'humaneval' and dataset_args.get('humaneval', {}).get('local_path') is None:
+        if dataset_name == 'humaneval' and args.dataset_args.get('humaneval', {}).get('local_path') is None:
             raise ValueError('Please specify the local problem path of humaneval dataset in --dataset-args,'
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}, '
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
 
-        if args.dry_run:
-            from llmuses.models.dummy_chat_model import DummyChatModel
-            model_adapter = DummyChatModel(model_cfg=dict())
-        else:
-            # Init model adapter
-            model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
-                                                                  model_revision=model_revision,
-                                                                  device_map=model_args.get('device_map', 'auto'),
-                                                                  torch_dtype=model_precision,)
+        dataset_local_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
+        dataset_local_path_list = dataset_local_path_list if isinstance(dataset_local_path_list, list) else [imported_modules['DATASET_ID']]
 
-        if dataset_name == 'humaneval':
-            problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
+        for dataset_name_or_path in dataset_local_path_list:
+            if args.dry_run:
+                from llmuses.models.dummy_chat_model import DummyChatModel
+                model_adapter = DummyChatModel(model_cfg=dict())
+            else:
+                # Init model adapter
+                model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
+                                                                    model_revision=model_revision,
+                                                                    device_map=model_args.get('device_map', 'auto'),
+                                                                    torch_dtype=model_precision,)
+                qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
+                                                                        model_revision=None,
+                                                                        device_map=model_args.get('device_map', 'auto'),
+                                                                        torch_dtype=model_precision,) if len(qwen_model_id)>0 else None
 
-            evaluator = HumanevalEvaluator(problem_file=problem_file,
-                                           model_id=model_id,
-                                           model_revision=model_revision,
-                                           model_adapter=model_adapter,
-                                           outputs_dir=args.outputs,
-                                           is_custom_outputs_dir=False,)
-        else:
-            dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
+            if dataset_name == 'humaneval':
+                problem_file: str = dataset_name_or_path
 
-            # Init data adapter
-            few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
-            few_shot_random: bool = dataset_args.get(dataset_name, {}).get('few_shot_random', True)
-            data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
-                                                                few_shot_random=few_shot_random)
+                evaluator = HumanevalEvaluator(problem_file=problem_file,
+                                            model_id=model_id,
+                                            model_revision=model_revision,
+                                            model_adapter=model_adapter,
+                                            outputs_dir=args.outputs,
+                                            is_custom_outputs_dir=False,)
+            else:
+                evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
+                                    subset_list=imported_modules['SUBSET_LIST'],
+                                    data_adapter=data_adapter,
+                                    model_adapter=model_adapter,
+                                    qwen_model_adapter=qwen_model_adapter,
+                                    use_cache=args.mem_cache,
+                                    root_cache_dir=args.work_dir,
+                                    outputs_dir=args.outputs,
+                                    is_custom_outputs_dir=False,
+                                    datasets_dir=args.work_dir,
+                                    stage=args.stage, )
 
-            evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
-                                  subset_list=imported_modules['SUBSET_LIST'],
-                                  data_adapter=data_adapter,
-                                  model_adapter=model_adapter,
-                                  use_cache=args.mem_cache,
-                                  root_cache_dir=args.work_dir,
-                                  outputs_dir=args.outputs,
-                                  is_custom_outputs_dir=False,
-                                  datasets_dir=args.work_dir,
-                                  stage=args.stage, )
+            infer_cfg = generation_args or {}
+            infer_cfg.update(dict(limit=args.limit))
+            evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
 
-        infer_cfg = generation_args or {}
-        infer_cfg.update(dict(limit=args.limit))
-        evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
-
+            report_path = get_report_path(evaluator)
+            reports_recorder.append_path(report_path, dataset_name)
+        
+    reports_recorder.dump_reports("./")
 
 if __name__ == '__main__':
-    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
-    # Usage: python3 llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0}}' --limit 10
+    # Usage: python llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
     main()
