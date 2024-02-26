@@ -4,6 +4,9 @@ import os
 import json
 import glob
 from tabulate import tabulate
+from llmuses.utils.logger import get_logger
+
+logger = get_logger()
 
 """
 Combine and generate table for reports of LLMs.
@@ -23,7 +26,8 @@ def get_report(report_file: str):
         score_d['acc'] = score
     else:
         raise ValueError(f'Unknown score type: {type(score)}')
-    score_str = '\n'.join([str(v) + ' (' + k + ')' for k, v in score_d.items()])
+    # score_str = '\n'.join([str(v) + ' (' + k + ')' for k, v in score_d.items()])
+    score_str = '\n'.join(['(' + dataset_name + '/' + k + ') ' + str(v) for k, v in score_d.items()])
 
     return {'dataset_name': dataset_name, 'score': score_str}
 
@@ -67,6 +71,57 @@ def gen_table(reports_path_list: list):
     report_table = tabulate(table_values, headers=headers, tablefmt='grid')
     return report_table
 
+class ReportsRecorder:
+    COMMON_DATASET_PATH = []
+    CUSTOM_DATASET_PATH = []
+
+    def __init__(self, oss_url: str = "", endpoint: str = ""):
+        if oss_url and endpoint:
+            import oss2
+            from oss2.credentials import EnvironmentVariableCredentialsProvider
+
+            auth = oss2.ProviderAuth(EnvironmentVariableCredentialsProvider())
+            oss_url = oss_url.replace("oss://", "").split('/')
+            bucket_name = oss_url[0]
+
+            self.object_path = "/".join(oss_url[1:])
+            self.bucket = oss2.Bucket(auth, endpoint, bucket_name)
+        else:
+            self.object_path = ""
+            self.bucket = None
+
+
+    def append_path(self, report_path: str, dataset_name: str):
+        if dataset_name == "general_qa":
+            self.CUSTOM_DATASET_PATH.append(report_path)
+        else:
+            self.COMMON_DATASET_PATH.append(report_path)
+    
+    def dump_reports(self, output_dir: str):
+        result = {
+            "CommonDataset": [],
+            "CustomDataset": []
+        }
+        for line in self.COMMON_DATASET_PATH:
+            with open(line, 'r') as f:
+                report = json.load(f)
+                result['CommonDataset'].append(report)
+        for line in self.CUSTOM_DATASET_PATH:
+            with open(line, 'r') as f:
+                report = json.load(f)
+                report.update({"name": os.path.basename(line)})
+                result['CustomDataset'].append(report)
+        
+        os.makedirs(output_dir, exist_ok=True)
+        output_file_name = "metric.json"
+        output_path = os.path.join(output_dir, output_file_name)
+        with open(output_path, 'w+') as f:
+            f.write(json.dumps(result, ensure_ascii=False, indent=4))
+        
+        if self.bucket:
+            remote_path = os.path.join(self.object_path, output_file_name)
+            logger.info(f"** Upload report to oss: {remote_path}")
+            self.bucket.put_object_from_file(remote_path, output_path)
 
 if __name__ == '__main__':
     report_dir_1 = '/to/path/20231129_020533_default_ZhipuAI_chatglm2-6b-base_none/reports'
