@@ -20,7 +20,7 @@ class GeneralQAAdapter(DataAdapter):
     def __init__(self,
                  subset_list: list = None,
                  metric_list: list = None,
-                 train_split: str = 'train',
+                 train_split: str = None,
                  eval_split: str = 'test',
                  **kwargs):
         if subset_list is None:
@@ -47,39 +47,43 @@ class GeneralQAAdapter(DataAdapter):
 
             try:
                 with open(dataset_name_or_path, 'r') as f:
-                    data = json.load(f)
+                    # data = json.load(f)
+                    data = [json.loads(line) for line in f.readlines()]
             except Exception as e:
                 raise e
             
             for split in split_list:
-                dataset = data[split]
+                dataset = data
                 data_dict[sub_name].update({split: dataset})
 
         return data_dict
     
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def gen_prompt(self, input_d: list, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
         Args:
-            input_d: {'history': [], 'input': '', 'output': ''}
+            input_d: [{'question': '', 'answer': ''},{'question': '', 'answer': ''},...]
 
         Returns:
             {'data': [prompt]}
 
         """
         # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        prompt = input_d['input']
+        prompt = ""
+        for qa in input_d[:-1]:
+            prompt += f"Human: {qa['question']}\nAssistant: {qa['answer']}\n"
+        prompt += f"Human: {input_d[-1]['question']}\nAssistant: "
         return {'data': [prompt]}
     
-    def get_gold_answer(self, input_d: dict) -> str:
+    def get_gold_answer(self, input_d: list) -> str:
         """
         Args:
-            input_d: {'history': [], 'input': '', 'output': ''}
+            input_d: [{'question': '', 'answer': ''},{'question': '', 'answer': ''},...]
 
         Returns:
             gold_answer: str
 
         """
-        return input_d.get('output', '')
+        return input_d[-1].get('answer', '')
     
     def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
         """
