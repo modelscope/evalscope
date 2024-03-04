@@ -58,6 +58,10 @@ def parse_args():
                         help='The root cache dir.',
                         required=False,
                         default=DEFAULT_ROOT_CACHE_DIR)
+    parser.add_argument('--datasets-dir',
+                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.',
+                        required=False,
+                        default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--limit',
                         type=int,
                         help='Max evaluation samples num for each subset. Default to None, which means no limit.',
@@ -174,7 +178,7 @@ def main():
                                   root_cache_dir=args.work_dir,
                                   outputs_dir=args.outputs,
                                   is_custom_outputs_dir=False,
-                                  datasets_dir=args.work_dir,
+                                  datasets_dir=args.datasets_dir,
                                   stage=args.stage, )
 
         infer_cfg = generation_args or {}
