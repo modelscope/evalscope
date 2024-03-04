@@ -39,6 +39,7 @@ class Evaluator(object):
                  outputs_dir: Optional[str] = '',
                  is_custom_outputs_dir: bool = False,
                  datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+                 datasets_hub: Optional[str] = 'ModelScope',
                  stage: Optional[str] = 'all',
                  **kwargs):
 
@@ -69,6 +70,7 @@ class Evaluator(object):
         self.dataset = self.data_adapter.load(dataset_name_or_path=dataset_name_or_path,
                                               subset_list=subset_list,
                                               work_dir=self.datasets_dir,
+                                              datasets_hub=datasets_hub,
                                               **kwargs)
 
         # Get prompts from dataset

@@ -51,15 +51,19 @@ def parse_args():
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}',
                         required=False,
                         default='{}')
+    parser.add_argument('--datasets-dir',
+                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.',
+                        required=False,
+                        default=DEFAULT_ROOT_CACHE_DIR)
+    parser.add_argument('--datasets-hub',
+                        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. Default to `ModelScope`.',
+                        required=False,
+                        default='ModelScope')
     parser.add_argument('--outputs',
                         help='Outputs dir.',
                         default='outputs')
     parser.add_argument('--work-dir',
                         help='The root cache dir.',
-                        required=False,
-                        default=DEFAULT_ROOT_CACHE_DIR)
-    parser.add_argument('--datasets-dir',
-                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.',
                         required=False,
                         default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--limit',
@@ -170,7 +174,7 @@ def main():
             data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
                                                                 few_shot_random=few_shot_random)
 
-            evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
+            evaluator = Evaluator(dataset_name_or_path=dataset_name if args.datasets_hub == 'Local' else dataset_name_or_path,
                                   subset_list=imported_modules['SUBSET_LIST'],
                                   data_adapter=data_adapter,
                                   model_adapter=model_adapter,
@@ -179,6 +183,7 @@ def main():
                                   outputs_dir=args.outputs,
                                   is_custom_outputs_dir=False,
                                   datasets_dir=args.datasets_dir,
+                                  datasets_hub=args.datasets_hub,
                                   stage=args.stage, )
 
         infer_cfg = generation_args or {}
