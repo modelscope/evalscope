@@ -49,27 +49,38 @@ class DataAdapter(ABC):
 
         TODO: local data path to be supported.
         """
-        data_dict = {}
+        # Try to load dataset from local disk
+        data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
 
-        split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
-        if len(split_list) == 0:
-            logger.error(f'Got empty split list: {split_list}')
+        if len(data_dict) == 0:
+            # Load dataset from remote
+            logger.info(f'**Load dataset from remote: {dataset_name_or_path}')
+            split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
+            if len(split_list) == 0:
+                logger.error(f'Got empty split list: {split_list}')
 
-        subset_list = subset_list if subset_list is not None else self.subset_list
-        for sub_name in subset_list:
-            data_dict[sub_name] = {}
-            # e.g. train: few-shot, test: target dataset to evaluate
-            for split in split_list:
-                dataset = Benchmark.load(dataset_name=dataset_name_or_path,
-                                         subset=sub_name,
-                                         split=split,
-                                         hub='ModelScope',
-                                         work_dir=work_dir,
-                                         **kwargs)
+            subset_list = subset_list if subset_list is not None else self.subset_list
+            for sub_name in subset_list:
+                data_dict[sub_name] = {}
+                # e.g. train: few-shot, test: target dataset to evaluate
+                for split in split_list:
+                    dataset = Benchmark.load(dataset_name=dataset_name_or_path,
+                                             subset=sub_name,
+                                             split=split,
+                                             hub='ModelScope',
+                                             work_dir=work_dir,
+                                             **kwargs)
 
-                data_dict[sub_name].update({split: dataset})
+                    data_dict[sub_name].update({split: dataset})
 
         return data_dict
+
+    def load_from_disk(self, *args, **kwargs) -> dict:
+        """
+        Load the dataset from local disk.
+        If you want to support local dataset, please rewrite this method in xxx_data_adapter.
+        """
+        return {}
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
