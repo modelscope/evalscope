@@ -83,7 +83,11 @@ class ARCAdapter(DataAdapter):
                                 'textC': question['choices'][2]['text'],
                                 'textD': question['choices'][3]['text'],
                             })
-                        data_dict[subset_name][split_name] = rows
+
+                        if subset_name in data_dict:
+                            data_dict[subset_name].update({split_name.lower(): rows})
+                        else:
+                            data_dict[subset_name] = {split_name.lower(): rows}
 
         return data_dict
 
