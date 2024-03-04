@@ -70,18 +70,13 @@ class ARCAdapter(DataAdapter):
                         rows = []
                         for line in in_f:
                             item = json.loads(line.strip())
-                            question = item['question']
-                            if len(question['choices']) != 4:
-                                continue
-                            labels = [c['label'] for c in question['choices']]
-                            answerKey = 'ABCD'[labels.index(item['answerKey'])]
+                            raw_choices = item['question']['choices']
                             rows.append({
-                                'question': question['stem'],
-                                'answerKey': answerKey,
-                                'textA': question['choices'][0]['text'],
-                                'textB': question['choices'][1]['text'],
-                                'textC': question['choices'][2]['text'],
-                                'textD': question['choices'][3]['text'],
+                                'id': item['id'],
+                                'question': item['question']['stem'],
+                                'choices': {'text': [d['text'] for d in raw_choices],
+                                            'label': [d['label'] for d in raw_choices]},
+                                'answerKey': item['answerKey'],
                             })
 
                         if subset_name in data_dict:
