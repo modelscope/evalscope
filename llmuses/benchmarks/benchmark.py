@@ -50,7 +50,7 @@ class Benchmark(object):
             return dataset
         elif hub == 'HuggingFace':
             # TODO: implement this by xingjun.wxj@alibaba-inc.com
-            ...
+            raise NotImplementedError('HuggingFace hub is not supported yet.')
         else:
             raise ValueError(f'hub must be `ModelScope` or `HuggingFace`, but got {hub}')
 

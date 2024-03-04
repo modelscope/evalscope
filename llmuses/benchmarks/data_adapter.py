@@ -39,6 +39,7 @@ class DataAdapter(ABC):
              dataset_name_or_path: str,
              subset_list: list = None,
              work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+             datasets_hub: str = 'ModelScope',
              **kwargs) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
@@ -54,7 +55,7 @@ class DataAdapter(ABC):
 
         if len(data_dict) == 0:
             # Load dataset from remote
-            logger.info(f'**Load dataset from remote: {dataset_name_or_path}')
+            logger.info(f'**Local dataset is empty, load dataset from remote: {dataset_name_or_path}')
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
             if len(split_list) == 0:
                 logger.error(f'Got empty split list: {split_list}')
@@ -67,7 +68,7 @@ class DataAdapter(ABC):
                     dataset = Benchmark.load(dataset_name=dataset_name_or_path,
                                              subset=sub_name,
                                              split=split,
-                                             hub='ModelScope',
+                                             hub=datasets_hub,
                                              work_dir=work_dir,
                                              **kwargs)
 
