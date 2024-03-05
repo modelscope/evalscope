@@ -73,6 +73,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
         self.model_id: str = model_id
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.warning(f'**Device: {self.device}')
 
         torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
 
@@ -339,6 +340,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.model_id: str = model_id
         self.model_revision: str = model_revision
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.warning(f'**Device: {self.device}')
 
         torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
 
