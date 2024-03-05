@@ -155,9 +155,10 @@ def main():
             model_adapter = DummyChatModel(model_cfg=dict())
         else:
             # Init model adapter
+            device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
             model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
                                                                   model_revision=model_revision,
-                                                                  device_map=model_args.get('device_map', 'auto'),
+                                                                  device_map=device_map,
                                                                   torch_dtype=model_precision,)
 
         if dataset_name == 'humaneval':
