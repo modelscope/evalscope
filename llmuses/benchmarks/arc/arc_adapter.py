@@ -59,7 +59,6 @@ class ARCAdapter(DataAdapter):
         work_dir: str, the local root data directory. e.g. '/path/to/data'
         kwargs: dict, other arguments.
         """
-        logger.info(f'**Try to load dataset from local disk: {dataset_name_or_path}')
         data_dict = {}
         for subset_name in subset_list:
             subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
