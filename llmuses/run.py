@@ -52,11 +52,15 @@ def parse_args():
                         required=False,
                         default='{}')
     parser.add_argument('--datasets-dir',
-                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.',
+                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.'
+                             'See --datasets-hub for more details.',
                         required=False,
                         default=DEFAULT_ROOT_CACHE_DIR)
     parser.add_argument('--datasets-hub',
-                        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. Default to `ModelScope`.',
+                        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. '
+                             'Default to `ModelScope`.'
+                             'If `Local`, the --datasets-dir should be local input data dir.'
+                             'Otherwise, the --datasets-dir should be the cache dir for datasets.',
                         required=False,
                         default='ModelScope')
     parser.add_argument('--outputs',

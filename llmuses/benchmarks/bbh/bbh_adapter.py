@@ -3,6 +3,7 @@
 import os
 import re
 import random
+import json
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.constants import AnswerKeys
@@ -92,6 +93,21 @@ class BBHAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            for split_name in [self.eval_split]:
+                file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
+                if os.path.exists(file_path):
+                    with open(file_path, 'r') as f:
+                        examples = json.load(f)['examples']
+                        if subset_name in data_dict:
+                            data_dict[subset_name].update({split_name: examples})
+                        else:
+                            data_dict[subset_name] = {split_name: examples}
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """
