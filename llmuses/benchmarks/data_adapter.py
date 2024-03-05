@@ -57,6 +57,7 @@ class DataAdapter(ABC):
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
         else:
             # Load dataset from remote
+            logger.info(f'Loading dataset from {datasets_hub} hub: >dataset_name: {dataset_name_or_path}')
             data_dict = {}
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
             if len(split_list) == 0:
