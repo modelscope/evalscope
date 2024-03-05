@@ -159,7 +159,8 @@ def main():
             model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
                                                                   model_revision=model_revision,
                                                                   device_map=device_map,
-                                                                  torch_dtype=model_precision,)
+                                                                  torch_dtype=model_precision,
+                                                                  cache_dir=args.work_dir)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
