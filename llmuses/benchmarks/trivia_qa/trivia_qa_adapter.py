@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI Inc, and its affiliates.
-
+import csv
+import os
 from typing import List
 import numpy as np
 
@@ -42,6 +43,31 @@ class TriviaQaAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            data_dict[subset_name] = {}
+            for split in [self.train_split, self.eval_split]:
+                file_path = os.path.join(work_dir, dataset_name_or_path, f'trivia-{split}.qa.csv')
+                if os.path.exists(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        reader = csv.reader(f, delimiter='\t')
+                        split_data = []
+                        for row in reader:
+                            assert len(row) == 2
+                            question = row[0]
+                            answers = eval(row[1])
+                            split_data.append({
+                                'input': [
+                                    {"role": "system", "content": "Follow the given examples and answer the question."},
+                                    {"role": "user", "content": question}
+                                ],
+                                'ideal': answers
+                            })
+                        data_dict[subset_name][split] = split_data
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
