@@ -51,6 +51,18 @@ def parse_args():
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}',
                         required=False,
                         default='{}')
+    parser.add_argument('--dataset-dir',
+                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.'
+                             'See --dataset-hub for more details.',
+                        required=False,
+                        default=DEFAULT_ROOT_CACHE_DIR)
+    parser.add_argument('--dataset-hub',
+                        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. '
+                             'Default to `ModelScope`.'
+                             'If `Local`, the --dataset-dir should be local input data dir.'
+                             'Otherwise, the --dataset-dir should be the cache dir for datasets.',
+                        required=False,
+                        default='ModelScope')
     parser.add_argument('--outputs',
                         help='Outputs dir.',
                         default='outputs')
@@ -143,10 +155,12 @@ def main():
             model_adapter = DummyChatModel(model_cfg=dict())
         else:
             # Init model adapter
+            device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
             model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
                                                                   model_revision=model_revision,
-                                                                  device_map=model_args.get('device_map', 'auto'),
-                                                                  torch_dtype=model_precision,)
+                                                                  device_map=device_map,
+                                                                  torch_dtype=model_precision,
+                                                                  cache_dir=args.work_dir)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
@@ -166,7 +180,7 @@ def main():
             data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
                                                                 few_shot_random=few_shot_random)
 
-            evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
+            evaluator = Evaluator(dataset_name_or_path=dataset_name if args.dataset_hub == 'Local' else dataset_name_or_path,
                                   subset_list=imported_modules['SUBSET_LIST'],
                                   data_adapter=data_adapter,
                                   model_adapter=model_adapter,
@@ -174,7 +188,8 @@ def main():
                                   root_cache_dir=args.work_dir,
                                   outputs_dir=args.outputs,
                                   is_custom_outputs_dir=False,
-                                  datasets_dir=args.work_dir,
+                                  datasets_dir=args.dataset_dir,
+                                  datasets_hub=args.dataset_hub,
                                   stage=args.stage, )
 
         infer_cfg = generation_args or {}

@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
+import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
 from llmuses.utils import normalize_score
@@ -47,6 +49,41 @@ class ARCAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        """
+        Load the dataset from local disk.
+
+        dataset_name_or_path: str, the dataset id or path. e.g. 'arc'
+        subset_list: list, the subset list to load. e.g. ['ARC-Easy', 'ARC-Challenge']
+        work_dir: str, the local root data directory. e.g. '/path/to/data'
+        kwargs: dict, other arguments.
+        """
+        data_dict = {}
+        for subset_name in subset_list:
+            subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
+            for split_name in ['Train', 'Test']:
+                split_path = os.path.join(subset_path, f'{subset_name}-{split_name}.jsonl')
+                if os.path.exists(split_path):
+                    with open(split_path, 'r', errors='ignore') as in_f:
+                        rows = []
+                        for line in in_f:
+                            item = json.loads(line.strip())
+                            raw_choices = item['question']['choices']
+                            rows.append({
+                                'id': item['id'],
+                                'question': item['question']['stem'],
+                                'choices': {'text': [d['text'] for d in raw_choices],
+                                            'label': [d['label'] for d in raw_choices]},
+                                'answerKey': item['answerKey'],
+                            })
+
+                        if subset_name in data_dict:
+                            data_dict[subset_name].update({split_name.lower(): rows})
+                        else:
+                            data_dict[subset_name] = {split_name.lower(): rows}
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """
