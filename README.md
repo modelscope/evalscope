@@ -70,15 +70,15 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 # 假如当前本地工作路径为 /path/to/workdir
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
-# 则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--datasets-dir参数的值传入
+# 则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
 ```
 #### 2. 使用本地数据集创建评估任务
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --datasets-hub Local --datasets-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
 # 参数说明
-# --datasets-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
-# --datasets-dir: 当--datasets-hub为`Local`时，该参数指本地数据集路径; 如果--datasets-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
+# --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
+# --dataset-dir: 当--dataset-hub为`Local`时，该参数指本地数据集路径; 如果--dataset-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
 
 ```
 
