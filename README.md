@@ -63,6 +63,26 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 #   -- few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
 ```
 
+### 使用本地数据集
+数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
+#### 1. 下载数据集到本地
+```shell
+# 假如当前本地工作路径为 /path/to/workdir
+wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+unzip data.zip
+# 则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--datasets-dir参数的值传入
+```
+#### 2. 使用本地数据集创建评估任务
+```shell
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --datasets-hub Local --datasets-dir /path/to/workdir/data --limit 10
+
+# 参数说明
+# --datasets-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
+# --datasets-dir: 当--datasets-hub为`Local`时，该参数指本地数据集路径; 如果--datasets-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
+
+```
+
+
 
 ### 竞技场模式（Arena）
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：

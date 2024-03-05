@@ -49,12 +49,14 @@ class DataAdapter(ABC):
             train_dataset, test_dataset: Iterable dataset, object each item of which is a dict.
 
         """
-        # Try to load dataset from local disk
-        data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
-
-        if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
+        if datasets_hub == 'Local':
+            # Try to load dataset from local disk
+            data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
+            if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
+                raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
+        else:
             # Load dataset from remote
-            logger.info(f'**Local dataset is empty, load dataset from remote: {dataset_name_or_path}')
+            data_dict = {}
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
             if len(split_list) == 0:
                 logger.error(f'Got empty split list: {split_list}')
