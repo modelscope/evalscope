@@ -48,12 +48,11 @@ class DataAdapter(ABC):
         Returns: {'subset_name': {'train': train_dataset, 'test': test_dataset}}
             train_dataset, test_dataset: Iterable dataset, object each item of which is a dict.
 
-        TODO: local data path to be supported.
         """
         # Try to load dataset from local disk
         data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
 
-        if len(data_dict) == 0:
+        if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
             # Load dataset from remote
             logger.info(f'**Local dataset is empty, load dataset from remote: {dataset_name_or_path}')
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
