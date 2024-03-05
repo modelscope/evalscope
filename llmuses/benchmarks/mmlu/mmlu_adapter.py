@@ -1,4 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import csv
+import os
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
@@ -164,6 +166,43 @@ class MMLUAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            data_dict[subset_name] = {}
+
+            for split_name in [self.train_split, self.eval_split]:
+                if self.train_split == 'train':
+                    split_name_suffix = 'dev'
+                elif self.eval_split == 'test':
+                    split_name_suffix = 'test'
+                elif self.eval_split == 'validation':
+                    split_name_suffix = 'val'
+                else:
+                    raise ValueError(f'Invalid split name: {split_name}')
+
+                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                if os.path.exists(file_path):
+                    with open(file_path, encoding='utf-8') as f:
+                        rows = []
+                        reader = csv.reader(f)
+                        for row in reader:
+                            if len(row) != 6:
+                                logger.error(f'Mismatch len of row: {row}, len of row should be 6. Skip this row.')
+                                continue
+                            rows.append({
+                                'input': row[0],
+                                'A': row[1],
+                                'B': row[2],
+                                'C': row[3],
+                                'D': row[4],
+                                'target': row[5],
+                            })
+
+                        data_dict[subset_name].update({split_name: rows})
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

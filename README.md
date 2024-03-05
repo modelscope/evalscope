@@ -63,6 +63,38 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 #   -- few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
 ```
 
+### 使用本地数据集
+数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
+#### 1. 下载数据集到本地
+```shell
+# 假如当前本地工作路径为 /path/to/workdir
+wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+unzip data.zip
+# 则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
+```
+#### 2. 使用本地数据集创建评估任务
+```shell
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+
+# 参数说明
+# --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
+# --dataset-dir: 当--dataset-hub为`Local`时，该参数指本地数据集路径; 如果--dataset-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
+
+```
+#### 3. (可选)在离线环境加载模型和评测
+模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
+```shell
+# 1. 在联网环境跑评估任务示例，选择您需要的模型（如chatglm3-6b），以便将模型文件加载到相应路径
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir --limit 2
+
+# 2. 此时会在/path/to/workdir中，自动创建一个models文件夹
+
+# 3. 将上述models文件夹整体移动到目标环境的对应路径下，例如 /path/to/workdir_2 路径下
+
+# 4. 离线环境下执行任务
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir_2 --limit 2
+```
+
 
 ### 竞技场模式（Arena）
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
