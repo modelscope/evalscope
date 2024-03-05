@@ -51,6 +51,7 @@ class DataAdapter(ABC):
         """
         if datasets_hub == 'Local':
             # Try to load dataset from local disk
+            logger.info(f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
