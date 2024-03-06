@@ -95,6 +95,45 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /pat
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir_2 --limit 2
 ```
 
+### 使用task_run函数提交评估任务
+llmuses支持通过import依赖的方式实现任务提交，步骤如下：
+#### 1. 安装依赖
+```shell
+pip install https://sail-moe.oss-cn-hangzhou.aliyuncs.com/open_data/packages/llmuses-0.2.6-py3-none-any.whl
+```
+
+#### 2. 配置任务
+```python
+import torch
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+
+# 示例
+your_task_cfg = {
+        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
+        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
+        'dataset_args': {},
+        'dry_run': False,
+        'model': 'ZhipuAI/chatglm3-6b',
+        'datasets': ['arc', 'hellaswag'],
+        'work_dir': DEFAULT_ROOT_CACHE_DIR,
+        'outputs': DEFAULT_ROOT_CACHE_DIR,
+        'mem_cache': False,
+        'dataset_hub': 'ModelScope',
+        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
+        'stage': 'all',
+        'limit': 10,
+        'debug': False
+    }
+
+```
+
+#### 3. 执行任务
+```python
+from llmuses.run import run_task
+
+run_task(task_cfg=your_task_cfg)
+```
+
 
 ### 竞技场模式（Arena）
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
