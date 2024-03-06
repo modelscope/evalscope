@@ -95,10 +95,13 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /pat
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir_2 --limit 2
 ```
 
-### 使用task_run函数提交评估任务
+### 使用run_task函数提交评估任务
 llmuses支持通过import依赖的方式实现任务提交，步骤如下：
 #### 1. 安装依赖
 ```shell
+# 参考上文`环境准备`章节，安装依赖requirements.txt中的内容
+
+# 安装llmuses包
 pip install https://sail-moe.oss-cn-hangzhou.aliyuncs.com/open_data/packages/llmuses-0.2.6-py3-none-any.whl
 ```
 
