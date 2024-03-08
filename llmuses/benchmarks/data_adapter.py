@@ -164,13 +164,14 @@ class DataAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse_pred_result(self, result: Any, raw_input_d: dict = None) -> Any:
+    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> Any:
         """
         Parse the predicted result and extract proper answer.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.

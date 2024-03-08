@@ -95,32 +95,41 @@ class GSM8KAdapter(DataAdapter):
         #     logger.error(f'No ground truth answer found in the input: {input_d}')
         return ans
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type (str): 'checkpoint' or 'service'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        # try:
-        #     last_number = re.findall(r'\d+', result)[-1]
-        #     result = str(last_number).strip()
-        # except:
-        #     result = INVALID_ANS
-
-        return result
+        # Note: to use same extraction method for both of checkpoint and custom.
+        return self.extract_answer(result)
 
     def match(self, gold: str, pred: str) -> float:
-        # if gold == INVALID_ANS or pred == INVALID_ANS:
-        #     return 0
-        #
-        # return exact_match(gold=gold, pred=pred)
+        """
+        Match the gold answer and predicted answer.
 
-        return self._is_correct(completion=pred, answer=gold)
+        Args:
+            gold (str): The golden answer. Note: to be extracted.
+            pred (str): The extracted prediction. Usually a string for chat/multiple-choice-questions.
+                        e.g. 'B'
+        """
+
+        def number_equal(gold_ans, pred_ans):
+            if pred_ans is None:
+                return False
+            try:
+                return math.isclose(eval(gold_ans), eval(pred_ans), rel_tol=0, abs_tol=1e-4)
+            except:
+                logger.warning(f'##report##Cannot compare two numbers: gold_ans={gold_ans}, pred_ans={pred_ans}')
+                return False
+
+        return number_equal(gold_ans=gold, pred_ans=pred)
 
     def compute_metric(self, review_res_list: list) -> float:
         """
@@ -203,18 +212,8 @@ class GSM8KAdapter(DataAdapter):
             context = 'Question: ' + context + '\nAnswer:'
         return context
 
-    # @classmethod
-    # def _extract_answer(cls, completion):
-    #     match = ANS_RE.search(completion)
-    #     if match:
-    #         match_str = match.group(1).strip()
-    #         match_str = match_str.replace(',', '')
-    #         return match_str
-    #     else:
-    #         return INVALID_ANS
-
-    @classmethod
-    def _extract_answer(cls, s: str) -> str:
+    @staticmethod
+    def extract_answer(s: str) -> str:
         _PAT_LAST_DIGIT = re.compile(
             r'([+-])?(?=([0-9]|\.[0-9]))(0|([1-9](\d{0,2}(,\d{3})*)|\d*))?(\.\d*)?(?=\D|$)'
         )
@@ -227,21 +226,3 @@ class GSM8KAdapter(DataAdapter):
             print(f'No digits found in {s!r}', flush=True)
 
         return last_digit
-
-    @classmethod
-    def _is_correct(cls, completion, answer):
-        gold = cls._extract_answer(answer)
-        assert gold is not None, 'No ground truth answer found in the document.'
-
-        def number_equal(answer, pred):
-            if pred is None:
-                return False
-            try:
-                return math.isclose(eval(answer), eval(pred), rel_tol=0, abs_tol=1e-4)
-            except:
-                print(
-                    f'cannot compare two numbers: answer={answer}, pred={pred}', flush=True
-                )
-                return False
-
-        return number_equal(gold, cls._extract_answer(completion))

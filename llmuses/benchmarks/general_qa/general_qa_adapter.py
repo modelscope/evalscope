@@ -81,7 +81,7 @@ class GeneralQAAdapter(DataAdapter):
         """
         return input_d.get('output', '')
     
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Args:
             result: str

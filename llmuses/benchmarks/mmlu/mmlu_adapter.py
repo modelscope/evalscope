@@ -4,7 +4,7 @@ import os
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -239,18 +239,26 @@ class MMLUAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('target', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or 'custom'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option(result, self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option(result, self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)

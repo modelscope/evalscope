@@ -230,7 +230,9 @@ def run_task(task_cfg: dict):
                 is_custom_outputs_dir=False,
                 datasets_dir=dataset_dir,
                 datasets_hub=dataset_hub,
-                stage=stage, )
+                stage=stage,
+                eval_type=model_type,
+            )
 
         infer_cfg = generation_config or {}
         infer_cfg.update(dict(limit=limit))

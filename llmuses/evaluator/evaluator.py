@@ -41,6 +41,7 @@ class Evaluator(object):
                  datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
                  datasets_hub: Optional[str] = 'ModelScope',
                  stage: Optional[str] = 'all',
+                 eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
                  **kwargs):
 
         self.dataset_name_or_path = dataset_name_or_path
@@ -49,6 +50,7 @@ class Evaluator(object):
         self.kwargs = kwargs
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
+        self.eval_type = eval_type
 
         self.model_cfg = self.model_adapter.model_cfg
         self.model_id = self.model_cfg['model_id']
@@ -207,7 +209,9 @@ class Evaluator(object):
         for choice in choices:
             raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
-            answer_content = self.data_adapter.parse_pred_result(answer_content, raw_input_d)
+            answer_content = self.data_adapter.parse_pred_result(result=answer_content,
+                                                                 raw_input_d=raw_input_d,
+                                                                 eval_type=self.eval_type)
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
 
             review_result = self.data_adapter.match(gold_content, answer_content)

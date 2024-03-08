@@ -215,18 +215,26 @@ class TruthfulQaAdapter(DataAdapter):
         return {'mc1_labels': input_d['mc1_targets']['labels'],
                 'mc2_labels': input_d['mc2_targets']['labels']}
 
-    def parse_pred_result(self, result: list, raw_input_d: dict = None) -> list:
+    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> list:
         """
         Parse the model output to get the answer.
 
         Args:
             result: Predicted answer from the model. A list of loglikelihood values for inputs pairs.
             raw_input_d: The raw input. A single data format of the TruthfulQA:
+            eval_type: 'checkpoint' or 'service' or 'custom', default: 'checkpoint'
 
         Returns:
             The predicted answer.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':  # TODO: to be supported !
+            return result
+        elif eval_type == 'custom':  # TODO: to be supported !
+            return result
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: dict, pred: list) -> dict:
         """

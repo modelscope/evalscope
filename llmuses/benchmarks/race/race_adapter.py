@@ -105,18 +105,26 @@ class RACEAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('answer', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: The evaluation type. e.g. 'checkpoint' or 'service' or 'custom'.
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':        # TODO: to be implemented
+            return result
+        elif eval_type == 'custom':         # TODO: to be implemented
+            return result
+        else:
+            raise ValueError(f'Unknown eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)

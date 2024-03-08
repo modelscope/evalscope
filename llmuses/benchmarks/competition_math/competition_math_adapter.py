@@ -91,18 +91,20 @@ class CompetitionMathAdapter(DataAdapter):
         # Extract the gold answer from the input dict.
         return self._preprocess_input(input_d['solution'])
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
         # TODO: check answer extraction
+        # Note: Use same extraction method for both of checkpoint/service/custom
         return self._math_postprocess(result)
 
     def match(self, gold: str, pred: str) -> float:

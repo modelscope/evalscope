@@ -100,24 +100,32 @@ class HellaSwagAdapter(DataAdapter):
         # Get the gold choice
         return input_d['label']
 
-    def parse_pred_result(self, result: list, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input dict.
+            eval_type: The evaluation type. e.g. checkpoint, service, custom.
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        # answer: in the form of [-2.3, -4.5, ...], len of self.choices
-        result = np.array(result)
-        endings: list = [self._preprocess(ending) for ending in raw_input_d['endings']]
-        completion_len = np.array([float(len(i)) for i in endings])
-        best_choice_idx = np.argmax(result / completion_len)
+        if eval_type == 'checkpoint':
+            # answer: in the form of [-2.3, -4.5, ...], len of self.choices
+            result = np.array(result)
+            endings: list = [self._preprocess(ending) for ending in raw_input_d['endings']]
+            completion_len = np.array([float(len(i)) for i in endings])
+            best_choice_idx = np.argmax(result / completion_len)
 
-        return str(best_choice_idx)
+            return str(best_choice_idx)
+        elif eval_type == 'service':
+            return result           # TODO: to be supported !
+        elif eval_type == 'custom':
+            return result           # TODO: to be supported !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))

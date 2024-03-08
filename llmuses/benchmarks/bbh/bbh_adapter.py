@@ -188,17 +188,19 @@ class BBHAdapter(DataAdapter):
             logger.error(f'BBHAdapter: gold is None.')
         return gold
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
+        # Note: to use same extraction method for both of checkpoint/service/custom.
         task_type: str = raw_input_d.get(TASK_TYPE)
 
         if task_type == MULTIPLE_CHOICE:

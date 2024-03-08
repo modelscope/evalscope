@@ -113,18 +113,26 @@ class TriviaQaAdapter(DataAdapter):
         ans: list = input_d.get("ideal", [])
         return ans
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer.
 
         Args:
             result: Predicted answer from the model. A list of loglikelihood values for inputs pairs.
             raw_input_d: The raw input. A single data format of the TriviaQA:
+            eval_type: The type of evaluation, e.g. 'checkpoint' or 'service' or 'custom'.
 
         Returns:
             The predicted answer.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':  # TODO: to be implemented
+            return result
+        elif eval_type == 'custom':  # TODO: to be implemented
+            return result
+        else:
+            raise ValueError(f'Unknown eval_type: {eval_type}')
 
     def match(self, gold: list, pred: str) -> float:
         return max([exact_match(gold=ref, pred=pred) for ref in gold])

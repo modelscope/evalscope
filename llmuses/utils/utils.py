@@ -179,18 +179,26 @@ class ResponseParser:
         return ''
 
     @staticmethod
-    def parse_first_option(text: str, options: str) -> str:
-        """Find first valid option for text."""
+    def parse_first_option(text: str, options: list) -> str:
+        """
+        Find first valid option for text.
+
+        Args:
+            text: The text to parse.
+            options: The options to find. e.g. ['A', 'B', 'C', 'D']
+        """
+        options_concat = '|'.join([str(i) for i in options])
 
         patterns = [
-            f'[Tt]he answer is [{options}]',
-            f'[Tt]he correct answer is [{options}]',
-            f'答案是(.*?)[{options}]',
-            f'答案为(.*?)[{options}]',
-            f'固选(.*?)[{options}]',
-            f'答案应该是(.*?)[{options}]',
-            f'(\s|^)[{options}][\s。，,\.$]',  # noqa
-            f'[{options}]',
+            f'[Tt]he answer is [{options_concat}]',
+            f'[Tt]he correct answer is [{options_concat}]',
+            f'[Tt]he correct answer is:\n[{options_concat}]',
+            f'答案是(.*?)[{options_concat}]',
+            f'答案为(.*?)[{options_concat}]',
+            f'固选(.*?)[{options_concat}]',
+            f'答案应该是(.*?)[{options_concat}]',
+            f'(\s|^)[{options_concat}][\s。，,\.$]',  # noqa
+            f'[{options_concat}]',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
