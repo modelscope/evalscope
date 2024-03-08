@@ -1,3 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from custom_model import *
+from llmuses.models.custom.custom_model import *
+

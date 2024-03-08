@@ -142,7 +142,7 @@ def run_task(task_cfg: dict):
     dataset_args: dict = task_cfg.get('dataset_args', {})
     dry_run: bool = task_cfg.get('dry_run', False)
     model: Union[str, CustomModel] = task_cfg.get('model', None)
-    model_type: str = task_cfg.get('model_type', 'checkpoint')
+    eval_type: str = task_cfg.get('eval_type', 'checkpoint')
     datasets: list = task_cfg.get('datasets', None)
     work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
     outputs: str = task_cfg.get('outputs', 'outputs')
@@ -163,7 +163,7 @@ def run_task(task_cfg: dict):
         from llmuses.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
-    elif model_type == 'custom':
+    elif eval_type == 'custom':
         model_id: str = None
         model_revision: str = None
     else:
@@ -185,7 +185,7 @@ def run_task(task_cfg: dict):
         if dry_run:
             from llmuses.models.dummy_chat_model import DummyChatModel
             model_adapter = DummyChatModel(model_cfg=dict())
-        elif model_type == 'custom':
+        elif eval_type == 'custom':
             if not isinstance(model, CustomModel):
                 raise ValueError('Please provide a custom model instance '
                                  'in format of llmuses.models.custom.CustomModel.')
@@ -231,7 +231,7 @@ def run_task(task_cfg: dict):
                 datasets_dir=dataset_dir,
                 datasets_hub=dataset_hub,
                 stage=stage,
-                eval_type=model_type,
+                eval_type=eval_type,
             )
 
         infer_cfg = generation_config or {}
@@ -249,7 +249,7 @@ def main():
         'dataset_args': args.dataset_args,
         'dry_run': args.dry_run,
         'model': args.model,
-        'model_type': args.model_type,
+        'eval_type': args.eval_type,
         'datasets': args.datasets,
         'work_dir': args.work_dir,
         'outputs': args.outputs,
