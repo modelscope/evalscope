@@ -3,7 +3,7 @@
 # flake8: noqa
 import os
 import sys
-from typing import List, Any, Union
+from typing import List, Any, Union, Dict
 import numpy as np
 import time
 from abc import ABC, abstractmethod
@@ -13,6 +13,7 @@ import torch
 from torch import dtype
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+from llmuses.models.custom import CustomModel
 from llmuses.models.template import get_template, StopWordsCriteria, MODEL_TEMPLATE_MAP
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
@@ -516,21 +517,15 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         return res_d
 
 
-if __name__ == '__main__':
+class CustomModelAdapter(BaseModelAdapter):
 
-    if sys.argv and len(sys.argv) > 1:
-        model_id_or_path = sys.argv[1]
-        model_revision = sys.argv[2]
-        query = sys.argv[3]
-        infer_cfg = sys.argv[4]
-    else:
-        # model_id_or_path = '/to/path/.cache/modelscope/ZhipuAI/chatglm3-6b'
-        model_id_or_path = 'ZhipuAI/chatglm3-6b-base'
-        model_revision = 'v1.0.1'
-        query = 'Question:俄罗斯的首都是哪里？ \n\nAnswer:'
-        infer_cfg = None
+    def __init__(self, custom_model: CustomModel, custom_config: dict, **kwargs):
+        """
+        Custom model adapter.
+        config (dict): The model configuration. Must contain the model_id (user-defined).
+        """
+        self.custom_model = custom_model
+        super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_config)
 
-    model_adapter = ChatGenerationModelAdapter(model_id=model_id_or_path, model_revision=model_revision)
-
-    res_d = model_adapter.predict(inputs={'data': [query]}, infer_cfg=infer_cfg)
-    print(res_d)
+    def predict(self, inputs: Union[str, dict, list], **kwargs) -> Dict[str, Any]:
+        self.custom_model.predict()
