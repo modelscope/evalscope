@@ -3,11 +3,13 @@
 
 import json
 import argparse
+from typing import Union
 import torch        # noqa
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
+from llmuses.models.custom import CustomModel
 from llmuses.utils import import_module_util
 from llmuses.utils.logger import get_logger
 
@@ -28,6 +30,17 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--model-type',
+                        type=str,
+                        help='The type for evaluating. '
+                             'service - for APIs, TO-DO'
+                             'checkpoint - for models on ModelScope or local model dir, '
+                             'custom - for custom models.'
+                             '         Need to set `--model` to llmuses.models.custom.CustomModel format.'
+                             'default to `checkpoint`.',
+                        required=False,
+                        default='checkpoint',
+                        )
     parser.add_argument('--model-args',
                         type=str,
                         help='The model args, should be a string.',
@@ -128,7 +141,8 @@ def run_task(task_cfg: dict):
                                            {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512})
     dataset_args: dict = task_cfg.get('dataset_args', {})
     dry_run: bool = task_cfg.get('dry_run', False)
-    model: str = task_cfg.get('model', None)
+    model: Union[str, CustomModel] = task_cfg.get('model', None)
+    model_type: str = task_cfg.get('model_type', 'checkpoint')
     datasets: list = task_cfg.get('datasets', None)
     work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
     outputs: str = task_cfg.get('outputs', 'outputs')
@@ -149,6 +163,9 @@ def run_task(task_cfg: dict):
         from llmuses.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
+    elif model_type == 'custom':
+        model_id: str = None
+        model_revision: str = None
     else:
         model_id: str = model
         model_revision: str = model_args.get('revision', None)
@@ -168,6 +185,12 @@ def run_task(task_cfg: dict):
         if dry_run:
             from llmuses.models.dummy_chat_model import DummyChatModel
             model_adapter = DummyChatModel(model_cfg=dict())
+        elif model_type == 'custom':
+            if not isinstance(model, CustomModel):
+                raise ValueError('Please provide a custom model instance '
+                                 'in format of llmuses.models.custom.CustomModel.')
+            from llmuses.models.model_adapter import CustomModelAdapter
+            model_adapter = CustomModelAdapter(custom_model=model)
         else:
             # Init model adapter
             device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
@@ -224,6 +247,7 @@ def main():
         'dataset_args': args.dataset_args,
         'dry_run': args.dry_run,
         'model': args.model,
+        'model_type': args.model_type,
         'datasets': args.datasets,
         'work_dir': args.work_dir,
         'outputs': args.outputs,

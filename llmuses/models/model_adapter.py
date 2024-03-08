@@ -519,13 +519,17 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
 class CustomModelAdapter(BaseModelAdapter):
 
-    def __init__(self, custom_model: CustomModel, custom_config: dict, **kwargs):
+    def __init__(self, custom_model: CustomModel, **kwargs):
         """
         Custom model adapter.
-        config (dict): The model configuration. Must contain the model_id (user-defined).
+
+        Args:
+            custom_model: The custom model instance.
+            **kwargs: Other args.
         """
         self.custom_model = custom_model
-        super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_config)
+        super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_model.config)
 
     def predict(self, inputs: Union[str, dict, list], **kwargs) -> Dict[str, Any]:
-        self.custom_model.predict()
+        # TODO
+        ...
