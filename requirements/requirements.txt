@@ -1,6 +1,6 @@
 # pip3 install --no-dependencies -r requirements.txt
 absl-py
-auto-gptq==0.4.2
+auto-gptq
 cachetools
 datasets>=2.14.5
 editdistance

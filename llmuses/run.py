@@ -65,6 +65,7 @@ def parse_args():
                         default='ModelScope')
     parser.add_argument('--outputs',
                         help='Outputs dir.',
+                        required=False,
                         default='outputs')
     parser.add_argument('--work-dir',
                         help='The root cache dir.',
@@ -97,7 +98,7 @@ def parse_args():
     return args
 
 
-def parse_str_args(str_args: str):
+def parse_str_args(str_args: str) -> dict:
     assert isinstance(str_args, str), 'args should be a string.'
     arg_list: list = str_args.strip().split(',')
     arg_list = [arg.strip() for arg in arg_list]
@@ -117,30 +118,44 @@ def parse_str_args(str_args: str):
     return final_args
 
 
-def main():
-    args = parse_args()
-    logger.info(args)
+def run_task(task_cfg: dict):
 
-    model_args = parse_str_args(args.model_args)
-    generation_args = parse_str_args(args.generation_config)
-    dataset_args: dict = args.dataset_args
+    logger.info(task_cfg)
 
-    # Parse args
+    model_args: dict = task_cfg.get('model_args',
+                                    {'revision': None, 'precision': torch.float16, 'device_map': 'auto'})
+    generation_config: dict = task_cfg.get('generation_config',
+                                           {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512})
+    dataset_args: dict = task_cfg.get('dataset_args', {})
+    dry_run: bool = task_cfg.get('dry_run', False)
+    model: str = task_cfg.get('model', None)
+    datasets: list = task_cfg.get('datasets', None)
+    work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
+    outputs: str = task_cfg.get('outputs', 'outputs')
+    mem_cache: bool = task_cfg.get('mem_cache', False)
+    dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
+    dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_ROOT_CACHE_DIR)
+    stage: str = task_cfg.get('stage', 'all')                               # TODO: to be implemented
+    limit: int = task_cfg.get('limit', None)
+    debug: str = task_cfg.get('debug', False)
+
+    if model is None or datasets is None:
+        raise ValueError('** Args: Please provide model and datasets. **')
+
     model_precision = model_args.get('precision', torch.float16)
 
     # Get model args
-    if args.dry_run:
+    if dry_run:
         from llmuses.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
     else:
-        model_id: str = args.model
+        model_id: str = model
         model_revision: str = model_args.get('revision', None)
         if model_revision == 'None':
             model_revision = eval(model_revision)
 
-    datasets_list = args.datasets
-    for dataset_name in datasets_list:
+    for dataset_name in datasets:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
 
@@ -150,7 +165,7 @@ def main():
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
 
-        if args.dry_run:
+        if dry_run:
             from llmuses.models.dummy_chat_model import DummyChatModel
             model_adapter = DummyChatModel(model_cfg=dict())
         else:
@@ -160,7 +175,7 @@ def main():
                                                                   model_revision=model_revision,
                                                                   device_map=device_map,
                                                                   torch_dtype=model_precision,
-                                                                  cache_dir=args.work_dir)
+                                                                  cache_dir=work_dir)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
@@ -169,10 +184,11 @@ def main():
                                            model_id=model_id,
                                            model_revision=model_revision,
                                            model_adapter=model_adapter,
-                                           outputs_dir=args.outputs,
-                                           is_custom_outputs_dir=False,)
+                                           outputs_dir=outputs,
+                                           is_custom_outputs_dir=False, )
         else:
-            dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules['DATASET_ID']
+            dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules[
+                'DATASET_ID']
 
             # Init data adapter
             few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
@@ -180,21 +196,46 @@ def main():
             data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
                                                                 few_shot_random=few_shot_random)
 
-            evaluator = Evaluator(dataset_name_or_path=dataset_name if args.dataset_hub == 'Local' else dataset_name_or_path,
-                                  subset_list=imported_modules['SUBSET_LIST'],
-                                  data_adapter=data_adapter,
-                                  model_adapter=model_adapter,
-                                  use_cache=args.mem_cache,
-                                  root_cache_dir=args.work_dir,
-                                  outputs_dir=args.outputs,
-                                  is_custom_outputs_dir=False,
-                                  datasets_dir=args.dataset_dir,
-                                  datasets_hub=args.dataset_hub,
-                                  stage=args.stage, )
+            evaluator = Evaluator(
+                dataset_name_or_path=dataset_name if dataset_hub == 'Local' else dataset_name_or_path,
+                subset_list=imported_modules['SUBSET_LIST'],
+                data_adapter=data_adapter,
+                model_adapter=model_adapter,
+                use_cache=mem_cache,
+                root_cache_dir=work_dir,
+                outputs_dir=outputs,
+                is_custom_outputs_dir=False,
+                datasets_dir=dataset_dir,
+                datasets_hub=dataset_hub,
+                stage=stage, )
 
-        infer_cfg = generation_args or {}
-        infer_cfg.update(dict(limit=args.limit))
-        evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
+        infer_cfg = generation_config or {}
+        infer_cfg.update(dict(limit=limit))
+        evaluator.eval(infer_cfg=infer_cfg, debug=debug)
+
+
+def main():
+    args = parse_args()
+
+    # Get task_cfg
+    task_cfg = {
+        'model_args': parse_str_args(args.model_args),
+        'generation_config': parse_str_args(args.generation_config),
+        'dataset_args': args.dataset_args,
+        'dry_run': args.dry_run,
+        'model': args.model,
+        'datasets': args.datasets,
+        'work_dir': args.work_dir,
+        'outputs': args.outputs,
+        'mem_cache': args.mem_cache,
+        'dataset_hub': args.dataset_hub,
+        'dataset_dir': args.dataset_dir,
+        'stage': args.stage,
+        'limit': args.limit,
+        'debug': args.debug
+    }
+
+    run_task(task_cfg)
 
 
 if __name__ == '__main__':
