@@ -531,5 +531,48 @@ class CustomModelAdapter(BaseModelAdapter):
         super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_model.config)
 
     def predict(self, inputs: Union[str, dict, list], **kwargs) -> Dict[str, Any]:
-        # TODO
-        ...
+        """
+        Model prediction func.
+
+        Args:
+            inputs (Union[str, dict, list]): The input data. Depending on the specific model.
+                str: 'xxx'
+                dict: {'data': [full_prompt]}
+                list: ['xxx', 'yyy', 'zzz']
+            **kwargs: kwargs
+
+        Returns:
+            res (dict): The model prediction results. Format:
+            {
+              'choices': [
+                {
+                  'index': 0,
+                  'message': {
+                    'content': 'xxx',
+                    'role': 'assistant'
+                  }
+                }
+              ],
+              'created': 1677664795,
+              'model': 'gpt-3.5-turbo-0613',   # should be model_id
+              'object': 'chat.completion',
+              'usage': {
+                'completion_tokens': 17,
+                'prompt_tokens': 57,
+                'total_tokens': 74
+              }
+            }
+        """
+
+        # Process inputs
+        if isinstance(inputs, str):
+            query = inputs
+        elif isinstance(inputs, dict):
+            query = inputs['data'][0]
+        elif isinstance(inputs, list):
+            query = '\n'.join(inputs)
+        else:
+            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+
+        return self.custom_model.predict(prompt=query, **kwargs)
+
