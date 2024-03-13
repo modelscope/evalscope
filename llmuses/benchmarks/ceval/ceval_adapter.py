@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import csv
+import os
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
 from llmuses.utils import normalize_score
@@ -153,6 +154,29 @@ class CEVALAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            for split_name in [self.train_split, self.eval_split]:
+                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
+                if os.path.exists(file_path):
+                    with open(file_path, encoding='utf-8') as f:
+                        rows = []
+                        reader = csv.reader(f)
+                        header = next(reader)
+                        for row in reader:
+                            item = dict(zip(header, row))
+                            item.setdefault('explanation', '')
+                            item.setdefault('answer', '')
+                            rows.append(item)
+
+                        if subset_name in data_dict:
+                            data_dict[subset_name].update({split_name: rows})
+                        else:
+                            data_dict[subset_name] = {split_name: rows}
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

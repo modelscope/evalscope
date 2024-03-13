@@ -39,6 +39,7 @@ class DataAdapter(ABC):
              dataset_name_or_path: str,
              subset_list: list = None,
              work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+             datasets_hub: str = 'ModelScope',
              **kwargs) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
@@ -47,29 +48,43 @@ class DataAdapter(ABC):
         Returns: {'subset_name': {'train': train_dataset, 'test': test_dataset}}
             train_dataset, test_dataset: Iterable dataset, object each item of which is a dict.
 
-        TODO: local data path to be supported.
         """
-        data_dict = {}
+        if datasets_hub == 'Local':
+            # Try to load dataset from local disk
+            logger.info(f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
+            data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
+            if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
+                raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
+        else:
+            # Load dataset from remote
+            logger.info(f'Loading dataset from {datasets_hub} hub: >dataset_name: {dataset_name_or_path}')
+            data_dict = {}
+            split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
+            if len(split_list) == 0:
+                logger.error(f'Got empty split list: {split_list}')
 
-        split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
-        if len(split_list) == 0:
-            logger.error(f'Got empty split list: {split_list}')
+            subset_list = subset_list if subset_list is not None else self.subset_list
+            for sub_name in subset_list:
+                data_dict[sub_name] = {}
+                # e.g. train: few-shot, test: target dataset to evaluate
+                for split in split_list:
+                    dataset = Benchmark.load(dataset_name=dataset_name_or_path,
+                                             subset=sub_name,
+                                             split=split,
+                                             hub=datasets_hub,
+                                             work_dir=work_dir,
+                                             **kwargs)
 
-        subset_list = subset_list if subset_list is not None else self.subset_list
-        for sub_name in subset_list:
-            data_dict[sub_name] = {}
-            # e.g. train: few-shot, test: target dataset to evaluate
-            for split in split_list:
-                dataset = Benchmark.load(dataset_name=dataset_name_or_path,
-                                         subset=sub_name,
-                                         split=split,
-                                         hub='ModelScope',
-                                         work_dir=work_dir,
-                                         **kwargs)
-
-                data_dict[sub_name].update({split: dataset})
+                    data_dict[sub_name].update({split: dataset})
 
         return data_dict
+
+    def load_from_disk(self, *args, **kwargs) -> dict:
+        """
+        Load the dataset from local disk.
+        If you want to support local dataset, please rewrite this method in xxx_data_adapter.
+        """
+        return {}
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
