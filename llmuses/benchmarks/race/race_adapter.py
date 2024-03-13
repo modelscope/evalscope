@@ -4,7 +4,7 @@ import os
 import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, jsonl_to_list
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -55,6 +55,17 @@ class RACEAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            data_dict[subset_name] = {}
+            for split in [self.train_split, self.eval_split]:
+                file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, f'{split}.jsonl')
+                if os.path.exists(file_path):
+                    data_dict[subset_name][split] = jsonl_to_list(file_path)
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

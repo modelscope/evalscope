@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI Inc, and its affiliates.
-
+import csv
+import json
+import os
 from typing import List
 import numpy as np
 
@@ -69,6 +71,60 @@ class TruthfulQaAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            data_dict[subset_name] = {}
+            for split in [self.eval_split]:
+                if subset_name == 'generation':
+                    file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'TruthfulQA.csv')
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            rows = []
+                            reader = csv.reader(f)
+                            # Type,Category,Question,Best Answer,Correct Answers,Incorrect Answers,Source
+                            header = next(reader)
+                            for row in reader:
+                                item = dict(zip(header, row))
+                                new_item = {
+                                    'type': item['Type'],
+                                    'category': item['Category'],
+                                    'question': item['Question'],
+                                    'best_answer': item['Best Answer'],
+                                    'correct_answers': item['Correct Answers'].split('; '),
+                                    'incorrect_answers': item['Incorrect Answers'].split('; '),
+                                    'source': item['Source']
+                                }
+
+                                rows.append(new_item)
+                            data_dict[subset_name][split] = rows
+
+                elif subset_name == 'multiple_choice':
+                    file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'mc_task.json')
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            rows = []
+                            raw_list = json.load(f)
+                            for item in raw_list:
+                                new_item = {
+                                    'question': item['question'],
+                                    'mc1_targets': {
+                                        'choices': list(item['mc1_targets'].keys()),
+                                        'labels': list(item['mc1_targets'].values())
+                                    },
+                                    'mc2_targets': {
+                                        'choices': list(item['mc2_targets'].keys()),
+                                        'labels': list(item['mc2_targets'].values())
+                                    }
+                                }
+                                rows.append(new_item)
+
+                            data_dict[subset_name][split] = rows
+                else:
+                    raise ValueError(f'** Unknown subset_name: {subset_name}')
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

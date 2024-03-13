@@ -1,5 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI, Inc. and its affiliates.
+import glob
+import json
+import os
 
 from llmuses.benchmarks import DataAdapter
 from llmuses.metrics.metrics import weighted_mean
@@ -46,6 +49,24 @@ class CompetitionMathAdapter(DataAdapter):
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict: dict = {}
+        for subset_name in subset_list:
+            for split_name in [self.train_split, self.eval_split]:
+                split_dir = os.path.join(work_dir, dataset_name_or_path, split_name)
+                split_files = glob.glob(os.path.join(split_dir, '**', '*.json'))
+                split_data = []
+                for file_path in split_files:
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as f:
+                            split_data.append(json.load(f))
+                if subset_name in data_dict:
+                    data_dict[subset_name].update({split_name: split_data})
+                else:
+                    data_dict[subset_name] = {split_name: split_data}
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """

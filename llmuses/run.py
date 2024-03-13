@@ -59,6 +59,18 @@ def parse_args():
                              'e.g. {"humaneval": {"local_path": ["/to/your/path"]}}',
                         required=False,
                         default='{}')
+    parser.add_argument('--dataset-dir',
+                        help='The datasets dir. Use to specify the local datasets or datasets cache dir.'
+                             'See --dataset-hub for more details.',
+                        required=False,
+                        default=DEFAULT_ROOT_CACHE_DIR)
+    parser.add_argument('--dataset-hub',
+                        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. '
+                             'Default to `ModelScope`.'
+                             'If `Local`, the --dataset-dir should be local input data dir.'
+                             'Otherwise, the --dataset-dir should be the cache dir for datasets.',
+                        required=False,
+                        default='ModelScope')
     parser.add_argument('--outputs',
                         help='Outputs dir.',
                         default='outputs')
@@ -97,7 +109,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
 
 def parse_str_args(str_args: str):
     assert isinstance(str_args, str), 'args should be a string.'
@@ -163,7 +174,7 @@ def main():
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}, '
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
-
+            
         dataset_local_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
         dataset_local_path_list = dataset_local_path_list if isinstance(dataset_local_path_list, list) else [imported_modules['DATASET_ID']]
 
@@ -210,9 +221,9 @@ def main():
 
             report_path = get_report_path(evaluator)
             reports_recorder.append_path(report_path, dataset_name)
-        
+
     reports_recorder.dump_reports("./")
 
 if __name__ == '__main__':
     # Usage: python llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
-    main()
+    
