@@ -33,6 +33,7 @@ class Evaluator(object):
                  data_adapter: DataAdapter,
                  subset_list: Optional[list] = None,
                  model_adapter: Optional[BaseModelAdapter] = None,
+                 qwen_model_adapter: Optional[BaseModelAdapter] = None,
                  use_cache: bool = True,
                  mem_cache_method: str = 'ttl',
                  root_cache_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
@@ -49,9 +50,13 @@ class Evaluator(object):
         self.kwargs = kwargs
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
+        self.qwen_model_adapter = qwen_model_adapter
 
         self.model_cfg = self.model_adapter.model_cfg
         self.model_id = self.model_cfg['model_id']
+        if self.qwen_model_adapter:
+            self.qwen_model_cfg = self.qwen_model_adapter.model_cfg
+            self.qwen_model_id = self.qwen_model_cfg['model_id']
         self.model_revision = self.model_cfg.get('revision', None)
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
@@ -59,12 +64,18 @@ class Evaluator(object):
         if not is_custom_outputs_dir:
             outputs_dir = make_outputs_dir(work_dir=outputs_dir,
                                            model_id=self.model_id,
-                                           model_revision=self.model_revision_str)
+                                           model_revision=self.model_revision_str,
+                                           dataset_id=self.dataset_name_or_path)
+            qwen_outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                                model_id=self.qwen_model_id,
+                                                model_revision='none') if self.qwen_model_adapter else ""
 
         self.outputs_dir = os.path.expanduser(outputs_dir)
+        self.qwen_outputs_dir = os.path.expanduser(qwen_outputs_dir)
 
         # Deal with the output paths
         self.outputs_structure = make_outputs_structure(self.outputs_dir)
+        self.qwen_outputs_structure = make_outputs_structure(self.qwen_outputs_dir) if self.qwen_model_adapter else ""
 
         # Load dataset
         self.dataset = self.data_adapter.load(dataset_name_or_path=dataset_name_or_path,
@@ -104,6 +115,27 @@ class Evaluator(object):
                 return self.mem_cache[answer_id]
 
         ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
+        ans[AnswerKeys.ANSWER_ID] = answer_id
+        ans[AnswerKeys.SUBSET_NAME] = subset_name
+
+        if self.mem_cache is not None:
+            self.mem_cache[answer_id] = ans
+
+        return ans
+
+    def _qwen_pred_answer(self,
+                     input_d: dict,
+                     infer_cfg: dict,
+                     subset_name: str,
+                     answer_id: str = None) -> dict:
+
+        # Get answer from memory cache
+        if self.mem_cache is not None:
+            if answer_id in self.mem_cache:
+                logger.info(f'** Reusing answer `{answer_id}` in memory cache.')
+                return self.mem_cache[answer_id]
+
+        ans: dict = self.qwen_model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
         ans[AnswerKeys.ANSWER_ID] = answer_id
         ans[AnswerKeys.SUBSET_NAME] = subset_name
 
@@ -174,6 +206,75 @@ class Evaluator(object):
 
         # Dump answers
         pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
+        pred_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+        os.makedirs(pred_dir, exist_ok=True)
+        dump_jsonl_data(answers_list, os.path.join(pred_dir, pred_file_name))
+
+        return answers_list
+
+
+    def get_qwen_answers(self,
+                    subset_name: str,
+                    prompts_list: List[dict],
+                    infer_cfg: dict = None,
+                    debug: bool = False,
+                    **kwargs) -> list:
+        """
+        Get answers from model inference.
+        It is required to rewrite this method to support your own evaluator.
+
+        Args:
+            subset_name: subset name for benchmark.
+            prompts_list: prompts list.
+            infer_cfg: model inference config.
+                Attributes:
+                    do_sample: bool, whether to use sampling.
+                    top_k: int, the number of highest probability vocabulary tokens to keep for top-k-filtering.
+                    top_p: float, if set to float < 1, only the most probable tokens with probabilities to add.
+                    temperature: float, the value used to module the next token probabilities.
+                    num_beams: int, number of beams for beam search. 1 means no beam search.
+                    max_length: int, the max length of the sequence to be generated.
+                    max_new_tokens: int, the max number of new tokens to be generated.
+                    repetition_penalty: float, the parameter for repetition penalty. 1.0 means no penalty.
+            debug: whether to run in debug mode.
+            **kwargs: kwargs.
+
+        Returns: The list of answers.
+        """
+        assert self.data_adapter is not None, 'data_adapter must be provided when calling func get_answers() !'
+        assert self.qwen_model_adapter is not None, 'model must be provided when calling func get_answers() !'
+
+        answers_list = []
+        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
+
+            # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
+            model_cfg_str = json.dumps(
+                OrderedDict(sorted(dict_torch_dtype_to_str(self.qwen_model_adapter.model_cfg).items())),
+                ensure_ascii=False)
+            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+                                          ensure_ascii=False)
+            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+                                       ensure_ascii=False)
+            answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
+
+            # Get answers
+            answer_d: dict = self._qwen_pred_answer(input_d=input_prompt,
+                                               infer_cfg=infer_cfg,
+                                               subset_name=subset_name,
+                                               answer_id=answer_id)
+
+            answer_d[AnswerKeys.MODEL_SPEC] = self.qwen_model_adapter.model_cfg
+            answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
+            answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+
+            if debug:
+                logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
+                logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+
+            answers_list.append(answer_d)
+
+        # Dump answers
+        pred_dir: str = self.qwen_outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
         pred_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
         os.makedirs(pred_dir, exist_ok=True)
         dump_jsonl_data(answers_list, os.path.join(pred_dir, pred_file_name))
@@ -270,6 +371,48 @@ class Evaluator(object):
 
         return reviews_list
 
+    def get_qwen_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
+        """
+        Get reviews from answers.
+        It is required to rewrite this method to support your own evaluator.
+
+        Args:
+            subset_name: subset name of benchmark
+            answers_list: inference results list.
+            debug: whether to run in debug mode.
+            **kwargs: kwargs.
+
+        Returns: reviews list.
+        """
+        reviews_list = []
+        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
+
+            # Gen review_id (concat: answer_id + reviewer_spec)
+            answer_id = answer_d[AnswerKeys.ANSWER_ID]
+
+            reviewer_spec: dict = {'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
+                                   'reviewer': ['Evaluator'],
+                                   'revision': ['default']}
+            reviewer_spec_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())),
+                                           ensure_ascii=False)
+            review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
+
+            # Get review
+            review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
+
+            if debug:
+                logger.debug(review_d)
+
+            reviews_list.append(review_d)
+
+        # Dump reviews
+        review_dir: str = self.qwen_outputs_structure.get(OutputsStructure.REVIEWS_DIR)
+        review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+        os.makedirs(review_dir, exist_ok=True)
+        dump_jsonl_data(reviews_list, os.path.join(review_dir, review_file_name))
+
+        return reviews_list
+
     def compute_metrics(self, reviews_list: List[dict]) -> Any:
         """
         To compute metrics from reviews_list for each subset.
@@ -295,7 +438,7 @@ class Evaluator(object):
 
         return metric_score
 
-    def dump_report(self, report_map: dict, use_table: bool = True):
+    def dump_report(self, report_map: dict, qwen_report_map: dict = None, use_table: bool = True):
         """
         Get report for total reviews of specific dataset.
         It is required to rewrite this method to support your own evaluator.
@@ -317,10 +460,23 @@ class Evaluator(object):
         # logger.info(f'** Dump report to {report_path} \n')
         logger.info(f'** Dump report: {report_file_name} \n')
 
+        report_list = [report_dir]
+
+        # Dump Qwen report
+        if qwen_report_map:
+            qwen_report_dir: str = self.qwen_outputs_structure[OutputsStructure.REPORTS_DIR]
+            os.makedirs(qwen_report_dir, exist_ok=True)
+            qwen_report_path: str = os.path.join(qwen_report_dir, report_file_name)
+            with open(qwen_report_path, 'w') as f:
+                f.write(json.dumps(qwen_report_map, ensure_ascii=False, indent=4))
+            # logger.info(f'** Dump report to {report_path} \n')
+            logger.info(f'** Dump Qwen report: {report_file_name} \n')
+            report_list.append(qwen_report_dir)
+
         if use_table:
             try:
                 # Make table
-                report_table: str = gen_table([report_dir])
+                report_table: str = gen_table(report_list)
                 logger.info(f'** Report table: \n {report_table} \n')
             except:
                 logger.error('Failed to generate report table.')
@@ -367,6 +523,7 @@ class Evaluator(object):
         logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
 
         reviews_map_all = {}      # {subset_name: (score, num)}
+        qwen_review_map_all = {}
         for subset_name, prompts_list in self.prompts.items():
             limit = infer_cfg.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
@@ -385,9 +542,25 @@ class Evaluator(object):
             metric_res = self.compute_metrics(reviews_list=reviews_list)
             reviews_map_all[subset_name] = (metric_res, len(reviews_list))
 
+            if self.qwen_model_adapter:
+                qwen_answers_list: list = self.get_qwen_answers(subset_name=subset_name,
+                                                                prompts_list=prompts_list,
+                                                                infer_cfg=infer_cfg,
+                                                                debug=debug,
+                                                                **kwargs)
+
+                qwen_reviews_list: list = self.get_qwen_reviews(subset_name=subset_name,
+                                                                answers_list=qwen_answers_list,
+                                                                debug=debug,
+                                                                **kwargs)
+
+                qwen_metric_res = self.compute_metrics(reviews_list=qwen_reviews_list)
+                qwen_review_map_all[subset_name] = (qwen_metric_res, len(qwen_reviews_list))
+
         # Generate report
         report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_map_all)
-        self.dump_report(report_map=report_map)
+        qwen_report_map: dict = self.data_adapter.gen_report(subset_score_map=qwen_review_map_all) if self.qwen_model_adapter else None
+        self.dump_report(report_map=report_map, qwen_report_map=qwen_report_map)
 
         self.save_cache()
         self.clear_cache()
@@ -433,7 +606,8 @@ class HumanevalEvaluator(object):
         if not is_custom_outputs_dir:
             outputs_dir = make_outputs_dir(work_dir=outputs_dir,
                                            model_id=model_id,
-                                           model_revision=model_revision_str)
+                                           model_revision=model_revision_str,
+                                           dataset_id="humaneval")
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
