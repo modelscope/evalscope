@@ -137,8 +137,16 @@ def run_task(task_cfg: dict):
 
     model_args: dict = task_cfg.get('model_args',
                                     {'revision': None, 'precision': torch.float16, 'device_map': 'auto'})
+    # Get the GLOBAL default config (infer_cfg) for prediction
     generation_config: dict = task_cfg.get('generation_config',
-                                           {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512})
+                                           {'do_sample': False,
+                                            'repetition_penalty': 1.0,
+                                            'max_length': 2048,
+                                            'max_new_tokens': 512,
+                                            'temperature': 0.3,
+                                            'top_k': 50,
+                                            'top_p': 0.8, }
+                                           )
     dataset_args: dict = task_cfg.get('dataset_args', {})
     dry_run: bool = task_cfg.get('dry_run', False)
     model: Union[str, CustomModel] = task_cfg.get('model', None)
