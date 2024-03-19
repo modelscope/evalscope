@@ -165,6 +165,8 @@ def run_task(task_cfg: dict):
         raise ValueError('** Args: Please provide model and datasets. **')
 
     model_precision = model_args.get('precision', torch.float16)
+    if isinstance(model_precision, str):
+        model_precision = eval(model_precision)
 
     # Get model args
     if dry_run:

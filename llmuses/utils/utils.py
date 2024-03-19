@@ -241,18 +241,21 @@ def make_outputs_structure(outputs_dir: str):
     predictions_dir = os.path.join(outputs_dir, 'predictions')
     reviews_dir = os.path.join(outputs_dir, 'reviews')
     reports_dir = os.path.join(outputs_dir, 'reports')
+    configs_dir = os.path.join(outputs_dir, 'configs')
 
     os.makedirs(outputs_dir, exist_ok=True)
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(predictions_dir, exist_ok=True)
     os.makedirs(reviews_dir, exist_ok=True)
     os.makedirs(reports_dir, exist_ok=True)
+    os.makedirs(configs_dir, exist_ok=True)
 
     outputs_structure = {
         OutputsStructure.LOGS_DIR: logs_dir,
         OutputsStructure.PREDICTIONS_DIR: predictions_dir,
         OutputsStructure.REVIEWS_DIR: reviews_dir,
         OutputsStructure.REPORTS_DIR: reports_dir,
+        OutputsStructure.CONFIGS_DIR: configs_dir,
     }
 
     return outputs_structure

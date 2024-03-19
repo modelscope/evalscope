@@ -75,6 +75,8 @@ class OutputsStructure:
 
     REPORTS_DIR = 'reports_dir'
 
+    CONFIGS_DIR = 'configs_dir'
+
 
 class AnswerKeys:
 

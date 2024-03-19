@@ -42,6 +42,7 @@ class Evaluator(object):
                  datasets_hub: Optional[str] = 'ModelScope',
                  stage: Optional[str] = 'all',
                  eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
+                 overall_task_cfg: Optional[dict] = None,
                  **kwargs):
 
         self.dataset_name_or_path = dataset_name_or_path

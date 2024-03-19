@@ -4,13 +4,16 @@ import time
 
 from llmuses.models.custom import CustomModel
 from llmuses.run import run_task
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+from llmuses.utils import yaml_to_dict
+from llmuses.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class SwiftModel(CustomModel):
 
     def __init__(self, config: dict, **kwargs):
-        if len(config) == 0:
-            config: dict = {'model_id': 'swift_dummy_model_0308'}
 
         # TODO:  swift model implementation
         ####  swift model implementation  ####
@@ -72,33 +75,43 @@ class SwiftModel(CustomModel):
         return res_d
 
 
-def get_task_cfg(model_instance: CustomModel):
-    from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+def get_task_cfg(cfg_file: str, model_instance: CustomModel):
 
-    # config 示例
-    swift_task_cfg = {
-        'model_args': {},
-        'generation_config': {},
-        'dataset_args': {},
-        'dry_run': False,
-        'model': model_instance,    # NOTE: model_id or # model_dir or model_instance(CustomModel)
-        'eval_type': 'custom',      # NOTE: `checkpoint` or `custom` or `service`
-        'datasets': ['arc'],
-        'work_dir': DEFAULT_ROOT_CACHE_DIR,
-        'outputs': './outputs/eval_swift_dummy',
-        'mem_cache': False,
-        'dataset_hub': 'ModelScope',
-        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
-        'stage': 'all',
-        'limit': 10,
-        'debug': False
-    }
+    if cfg_file:
+        logger.info(f'Loading task config from {cfg_file}')
+        task_cfg_d: dict = yaml_to_dict(yaml_file=cfg_file)
+        task_cfg_d.update({'model': model_instance})
+        logger.info(f'**Task config: {task_cfg_d}')
+    else:
+        # 默认config 示例
+        task_cfg_d = {
+            'model_args': {},
+            'generation_config': {},
+            'dataset_args': {},
+            'dry_run': False,
+            'model': model_instance,    # NOTE: model_id or # model_dir or model_instance(CustomModel)
+            'eval_type': 'custom',      # NOTE: `checkpoint` or `custom` or `service`
+            'datasets': ['arc'],
+            'work_dir': DEFAULT_ROOT_CACHE_DIR,
+            'outputs': './outputs/eval_swift_dummy',
+            'mem_cache': False,
+            'dataset_hub': 'ModelScope',
+            'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
+            'stage': 'all',
+            'limit': 10,
+            'debug': False
+        }
 
-    return swift_task_cfg
+    return task_cfg_d
 
 
 if __name__ == '__main__':
 
-    swift_model = SwiftModel(config={})
-    task_cfg = get_task_cfg(model_instance=swift_model)
+    # `model_id` is required in config for CustomModel, e.g. swift_qwen-7b-chat_v100
+    swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat_v100'})
+    task_cfg = get_task_cfg(cfg_file='../tasks/eval_qwen-7b-chat_v100.yaml', model_instance=swift_model)
     run_task(task_cfg=task_cfg)
+
+    # import json
+    # cfg_d = yaml_to_dict(yaml_file='../tasks/eval_qwen-7b-chat_v100.yaml')
+    # print(json.dumps(cfg_d, indent=4, ensure_ascii=False))
