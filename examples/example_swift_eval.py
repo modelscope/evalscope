@@ -118,5 +118,6 @@ if __name__ == '__main__':
     task_cfg = get_task_cfg(cfg_file=task_cfg_file, model_instance=swift_model)
     run_task(task_cfg=task_cfg)
 
+    # Get the final report for your evaluation task
     report_list: list = Summarizer.get_report_from_cfg(cfg_file=task_cfg_file)
     print(f'*** Final report ***\n {report_list}\n')
