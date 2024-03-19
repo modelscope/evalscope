@@ -1,5 +1,5 @@
 model_args:    # model args should be followed by benchmark requirements
-  revision: v1.0.0
+  revision: default
   precision: torch.float16
   device_map: auto
 #  model_name_or_path: qwen/qwen-7b-chat
@@ -20,8 +20,7 @@ model: null   # Note: to be implemented as CustomModel
 eval_type: custom
 datasets:
   - arc
-  - gsm8k
-outputs: /path/to/outputs_swift/eval_qwen-7b-chat_v100    # Directory to save the outputs, structure: logs, predictions, reviews, reports
+outputs: null    # structure: configs, logs, predictions, reviews, reports # TODO: need to parse
 mem_cache: false
 dataset_hub: ModelScope    # `Local` or `ModelScope`
 limit: 10

@@ -51,7 +51,7 @@ class Summarizer:
 
 
 if __name__ == '__main__':
-    cfg_file = '../tasks/eval_qwen-7b-chat_v100.yaml'
+    cfg_file = 'registry/tasks/eval_qwen-7b-chat_v100.yaml'
     report_list = Summarizer.get_report_from_cfg(cfg_file)
 
     print(report_list)

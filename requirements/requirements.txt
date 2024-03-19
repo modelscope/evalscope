@@ -32,3 +32,4 @@ transformers
 transformers_stream_generator
 jieba
 rouge-chinese
+wandb

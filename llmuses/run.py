@@ -131,7 +131,7 @@ def parse_str_args(str_args: str) -> dict:
     return final_args
 
 
-def run_task(task_cfg: dict):
+def run_task(task_cfg: Union[str, dict]):
 
     logger.info(task_cfg)
 
