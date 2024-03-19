@@ -2,6 +2,7 @@
 
 import os
 import time
+from typing import List
 
 from llmuses.models.custom import CustomModel
 from llmuses.run import run_task
@@ -19,27 +20,27 @@ class SwiftModel(CustomModel):
 
         # TODO:  swift model implementation
         ####  swift model implementation  ####
-        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
-        from swift.llm import (
-            get_model_tokenizer, get_template, inference, ModelType, get_default_template_type,
-        )
-        from swift.utils import seed_everything
-
-        model_type = ModelType.qwen_7b_chat
-        template_type = get_default_template_type(model_type)
-        print(f'template_type: {template_type}')  # template_type: qwen
-
-        kwargs = {}
-        # kwargs['use_flash_attn'] = True  # 使用flash_attn
-        self.model, self.tokenizer = get_model_tokenizer(model_type, model_kwargs={'device_map': 'auto'}, **kwargs)
-        # 修改max_new_tokens
-        self.model.generation_config.max_new_tokens = 128
-
-        self.template = get_template(template_type, self.tokenizer)
-        seed_everything(42)
-
-        self.inference = inference
+        # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        #
+        # from swift.llm import (
+        #     get_model_tokenizer, get_template, inference, ModelType, get_default_template_type,
+        # )
+        # from swift.utils import seed_everything
+        #
+        # model_type = ModelType.qwen_7b_chat
+        # template_type = get_default_template_type(model_type)
+        # print(f'template_type: {template_type}')  # template_type: qwen
+        #
+        # kwargs = {}
+        # # kwargs['use_flash_attn'] = True  # 使用flash_attn
+        # self.model, self.tokenizer = get_model_tokenizer(model_type, model_kwargs={'device_map': 'auto'}, **kwargs)
+        # # 修改max_new_tokens
+        # self.model.generation_config.max_new_tokens = 128
+        #
+        # self.template = get_template(template_type, self.tokenizer)
+        # seed_everything(42)
+        #
+        # self.inference = inference
 
         ####  swift model implementation  ####
 
@@ -48,11 +49,11 @@ class SwiftModel(CustomModel):
     def predict(self, prompt: str, **kwargs):
 
         # query = '浙江的省会在哪里？'
-        response, history = self.inference(self.model, self.template, prompt)
-        response: str = str(response)
+        # response, history = self.inference(self.model, self.template, prompt)
+        # response: str = str(response)
 
         # ONLY FOR TEST
-        # response = 'The answer is C. NOTE: ONLY FOR TEST'
+        response = 'The answer is C. NOTE: ONLY FOR TEST'
 
         res_d: dict = {
             'choices': [
@@ -111,13 +112,27 @@ def get_task_cfg(cfg_file: str, model_instance: CustomModel):
 
 if __name__ == '__main__':
 
-    task_cfg_file: str = 'registry/tasks/eval_qwen-7b-chat_v100.yaml'
+    # task_cfg_file: str = 'registry/tasks/eval_qwen-7b-chat_v100.yaml'
+    #
+    # # `model_id` is required in config for CustomModel, e.g. swift_qwen-7b-chat_v100
+    # swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat_v100'})
+    # task_cfg = get_task_cfg(cfg_file=task_cfg_file, model_instance=swift_model)
+    # run_task(task_cfg=task_cfg)   # 1. data class  2. specify task name 3. final report table
+    #
+    # # Get the final report for your evaluation task
+    # report_list: list = Summarizer.get_report_from_cfg(task_cfg=task_cfg_file)
+    # print(f'*** Final report ***\n {report_list}\n')
 
-    # `model_id` is required in config for CustomModel, e.g. swift_qwen-7b-chat_v100
-    swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat_v100'})
-    task_cfg = get_task_cfg(cfg_file=task_cfg_file, model_instance=swift_model)
-    run_task(task_cfg=task_cfg)   # 1. data class  2. specify task name 3. final report table
+    from llmuses.config import TaskConfig
+
+    swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat'})
+    task_config: TaskConfig = TaskConfig()
+    print(task_config.list())    # ['arc', 'gsm8k']
+    task_config = task_config.load(custom_model=swift_model, tasks=['arc', 'gsm8k'])
+    print(task_config)
+
+    run_task(task_cfg=task_config)
 
     # Get the final report for your evaluation task
-    report_list: list = Summarizer.get_report_from_cfg(cfg_file=task_cfg_file)
-    print(f'*** Final report ***\n {report_list}\n')
+    final_report: List[dict] = Summarizer.get_report_from_cfg(task_cfg=task_config)
+    logger.info(f'*** Final report ***\n {final_report}\n')

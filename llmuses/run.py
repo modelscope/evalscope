@@ -6,6 +6,7 @@ import argparse
 from typing import Union
 import torch        # noqa
 
+from llmuses.config import TaskConfig
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
@@ -131,7 +132,10 @@ def parse_str_args(str_args: str) -> dict:
     return final_args
 
 
-def run_task(task_cfg: Union[str, dict]):
+def run_task(task_cfg: Union[str, dict, TaskConfig]):
+    # TODO
+    if isinstance(task_cfg, TaskConfig):
+        task_cfg = task_cfg.to_dict()
 
     logger.info(task_cfg)
 
@@ -140,7 +144,7 @@ def run_task(task_cfg: Union[str, dict]):
     output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
 
     model_args: dict = task_cfg.get('model_args',
-                                    {'revision': None, 'precision': torch.float16, 'device_map': 'auto'})
+                                    {'revision': 'default', 'precision': torch.float16, 'device_map': 'auto'})
     # Get the GLOBAL default config (infer_cfg) for prediction
     generation_config: dict = task_cfg.get('generation_config',
                                            {'do_sample': False,

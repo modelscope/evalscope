@@ -19,7 +19,7 @@ dry_run: false
 model: null   # Note: to be implemented as CustomModel
 eval_type: custom
 datasets:
-  - arc
+  - gsm8k
 outputs: null    # structure: configs, logs, predictions, reviews, reports # TODO: need to parse
 mem_cache: false
 dataset_hub: ModelScope    # `Local` or `ModelScope`

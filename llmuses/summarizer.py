@@ -2,8 +2,9 @@
 import json
 import os
 import glob
-from typing import List
+from typing import List, Union
 
+from llmuses.config import TaskConfig
 from llmuses.constants import OutputsStructure
 from llmuses.utils import process_outputs_structure, yaml_to_dict
 from llmuses.utils.logger import get_logger
@@ -30,22 +31,29 @@ class Summarizer:
         return res_list
 
     @staticmethod
-    def get_report_from_cfg(cfg_file: str) -> List[dict]:
+    def get_report_from_cfg(task_cfg: Union[str, TaskConfig]) -> List[dict]:
         """
         Get report from cfg file.
 
         Args:
-            cfg_file: task cfg file path. refer to llmuses/tasks/eval_qwen-7b-chat_v100.yaml
+            task_cfg: task cfg file path. refer to llmuses/tasks/eval_qwen-7b-chat_v100.yaml
 
         Returns:
             list: list of report dict.
             A report dict is a overall report on a benchmark for specific model.
         """
-        task_cfg: dict = yaml_to_dict(cfg_file)
+        if isinstance(task_cfg, str):
+            task_cfg: dict = yaml_to_dict(task_cfg)
+        elif isinstance(task_cfg, TaskConfig):
+            task_cfg: dict = task_cfg.to_dict()
+        else:
+            raise ValueError(f'Invalid task_cfg: {task_cfg}')
+
         logger.info(f'**Task cfg: {task_cfg}')
         outputs_dir: str = task_cfg.get('outputs')
+        outputs_dir: str = os.path.expanduser(outputs_dir)
         if outputs_dir is None:
-            raise ValueError(f'No outputs_dir in {cfg_file}')
+            raise ValueError(f'No outputs_dir in {task_cfg}')
 
         return Summarizer.get_report(outputs_dir=outputs_dir)
 
