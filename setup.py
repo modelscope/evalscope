@@ -148,6 +148,8 @@ if __name__ == '__main__':
         long_description_content_type='text/markdown',
         # github url to be added
         url='',
+        include_package_data=True,
+        package_data={'llmuses': ['registry/tasks/*.yaml']},
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',

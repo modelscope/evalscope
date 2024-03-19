@@ -129,7 +129,7 @@ if __name__ == '__main__':
     task_config: TaskConfig = TaskConfig()
     print(task_config.list())    # ['arc', 'gsm8k']
     task_config = task_config.load(custom_model=swift_model, tasks=['arc', 'gsm8k'])
-    print(task_config)
+    task_config.limit = 10      # Note: limit the number of each subset to evaluate; default is None
 
     run_task(task_cfg=task_config)
 
