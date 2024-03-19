@@ -6,6 +6,7 @@ from typing import List, Union
 
 from llmuses.config import TaskConfig
 from llmuses.constants import OutputsStructure
+from llmuses.tools.combine_reports import gen_table
 from llmuses.utils import process_outputs_structure, yaml_to_dict
 from llmuses.utils.logger import get_logger
 
@@ -27,6 +28,9 @@ class Summarizer:
         for report_file in report_files:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
+
+        report_table: str = gen_table([reports_dir])
+        logger.info(f'*** Report table ***\n{report_table}')
 
         return res_list
 
