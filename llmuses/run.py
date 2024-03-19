@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa
-
+import copy
 import json
 import argparse
 from typing import Union
@@ -77,7 +77,7 @@ def parse_args():
                         required=False,
                         default='ModelScope')
     parser.add_argument('--outputs',
-                        help='Outputs dir.',
+                        help='Outputs dir. Default to `outputs`, which means dump to current path: ./outputs',
                         required=False,
                         default='outputs')
     parser.add_argument('--work-dir',
@@ -134,6 +134,10 @@ def parse_str_args(str_args: str) -> dict:
 def run_task(task_cfg: dict):
 
     logger.info(task_cfg)
+
+    # Get the output task config
+    output_task_cfg = copy.copy(task_cfg)
+    output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
 
     model_args: dict = task_cfg.get('model_args',
                                     {'revision': None, 'precision': torch.float16, 'device_map': 'auto'})
@@ -237,11 +241,12 @@ def run_task(task_cfg: dict):
                 use_cache=mem_cache,
                 root_cache_dir=work_dir,
                 outputs_dir=outputs,
-                is_custom_outputs_dir=False,
+                is_custom_outputs_dir=outputs != 'outputs',
                 datasets_dir=dataset_dir,
                 datasets_hub=dataset_hub,
                 stage=stage,
                 eval_type=eval_type,
+                overall_task_cfg=output_task_cfg,
             )
 
         infer_cfg = generation_config or {}

@@ -21,7 +21,7 @@ eval_type: custom
 datasets:
   - arc
   - gsm8k
-outputs: outputs/eval_qwen-7b-chat    # Directory to save the outputs, structure: logs, predictions, reviews, reports
+outputs: /path/to/outputs_swift/eval_qwen-7b-chat_v100    # Directory to save the outputs, structure: logs, predictions, reviews, reports
 mem_cache: false
 dataset_hub: ModelScope    # `Local` or `ModelScope`
 limit: 10

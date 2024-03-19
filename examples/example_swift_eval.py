@@ -1,11 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
 import time
 
 from llmuses.models.custom import CustomModel
 from llmuses.run import run_task
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.utils import yaml_to_dict
+from llmuses.summarizer import Summarizer
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -17,7 +19,6 @@ class SwiftModel(CustomModel):
 
         # TODO:  swift model implementation
         ####  swift model implementation  ####
-        import os
         os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
         from swift.llm import (
@@ -45,11 +46,13 @@ class SwiftModel(CustomModel):
         super(SwiftModel, self).__init__(config=config, **kwargs)
 
     def predict(self, prompt: str, **kwargs):
-        # TODO
 
         # query = '浙江的省会在哪里？'
         response, history = self.inference(self.model, self.template, prompt)
         response: str = str(response)
+
+        # ONLY FOR TEST
+        # response = 'The answer is C. NOTE: ONLY FOR TEST'
 
         res_d: dict = {
             'choices': [
@@ -78,6 +81,7 @@ class SwiftModel(CustomModel):
 def get_task_cfg(cfg_file: str, model_instance: CustomModel):
 
     if cfg_file:
+        cfg_file: str = os.path.abspath(cfg_file)
         logger.info(f'Loading task config from {cfg_file}')
         task_cfg_d: dict = yaml_to_dict(yaml_file=cfg_file)
         task_cfg_d.update({'model': model_instance})
@@ -107,11 +111,12 @@ def get_task_cfg(cfg_file: str, model_instance: CustomModel):
 
 if __name__ == '__main__':
 
+    task_cfg_file: str = '../tasks/eval_qwen-7b-chat_v100.yaml'
+
     # `model_id` is required in config for CustomModel, e.g. swift_qwen-7b-chat_v100
     swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat_v100'})
-    task_cfg = get_task_cfg(cfg_file='../tasks/eval_qwen-7b-chat_v100.yaml', model_instance=swift_model)
+    task_cfg = get_task_cfg(cfg_file=task_cfg_file, model_instance=swift_model)
     run_task(task_cfg=task_cfg)
 
-    # import json
-    # cfg_d = yaml_to_dict(yaml_file='../tasks/eval_qwen-7b-chat_v100.yaml')
-    # print(json.dumps(cfg_d, indent=4, ensure_ascii=False))
+    report_list: list = Summarizer.get_report_from_cfg(cfg_file=task_cfg_file)
+    print(f'*** Final report ***\n {report_list}\n')

@@ -13,10 +13,10 @@ from typing import Optional, List, Any, Union
 from llmuses.benchmarks import DataAdapter
 from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
-from llmuses.models.model_adapter import BaseModelAdapter
+from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
-    normalize_score
+from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, make_outputs_dir, \
+    normalize_score, dict_to_yaml
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -52,6 +52,9 @@ class Evaluator(object):
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
         self.eval_type = eval_type
+        self.overall_task_cfg = overall_task_cfg
+        if isinstance(self.model_adapter, CustomModelAdapter):
+            self.overall_task_cfg.update({'custom_config': self.model_adapter.custom_model.config})
 
         self.model_cfg = self.model_adapter.model_cfg
         self.model_id = self.model_cfg['model_id']
@@ -67,7 +70,7 @@ class Evaluator(object):
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
-        self.outputs_structure = make_outputs_structure(self.outputs_dir)
+        self.outputs_structure = process_outputs_structure(self.outputs_dir)
 
         # Load dataset
         self.dataset = self.data_adapter.load(dataset_name_or_path=dataset_name_or_path,
@@ -394,6 +397,12 @@ class Evaluator(object):
         report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_map_all)
         self.dump_report(report_map=report_map)
 
+        # Dump overall task config
+        overall_task_cfg_file: str = os.path.join(self.outputs_structure.get(OutputsStructure.CONFIGS_DIR),
+                                                  'task_output_config.yaml')
+        overall_task_cfg_file = os.path.abspath(overall_task_cfg_file)
+        dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
+
         self.save_cache()
         self.clear_cache()
 
@@ -442,7 +451,7 @@ class HumanevalEvaluator(object):
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
-        self.outputs_structure = make_outputs_structure(self.outputs_dir)
+        self.outputs_structure = process_outputs_structure(self.outputs_dir)
 
     def get_answers(self, infer_cfg: dict) -> List[dict]:
         ans_list: list = []

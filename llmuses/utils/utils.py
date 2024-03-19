@@ -107,6 +107,15 @@ def yaml_to_dict(yaml_file) -> dict:
     return stream
 
 
+def dict_to_yaml(d: dict, yaml_file: str):
+    """
+    Dump dict to yaml file.
+    """
+    with open(yaml_file, 'w') as f:
+        yaml.dump(d, f, default_flow_style=False)
+    logger.info(f'Dump data to {yaml_file} successfully.')
+
+
 def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
     module_name, spliter, cls_name = eval_class_ref.partition(':')
 
@@ -236,19 +245,20 @@ def make_outputs_dir(work_dir: str, model_id: str, model_revision: str):
     return outputs_dir
 
 
-def make_outputs_structure(outputs_dir: str):
+def process_outputs_structure(outputs_dir: str, is_make: bool = True) -> dict:
     logs_dir = os.path.join(outputs_dir, 'logs')
     predictions_dir = os.path.join(outputs_dir, 'predictions')
     reviews_dir = os.path.join(outputs_dir, 'reviews')
     reports_dir = os.path.join(outputs_dir, 'reports')
     configs_dir = os.path.join(outputs_dir, 'configs')
 
-    os.makedirs(outputs_dir, exist_ok=True)
-    os.makedirs(logs_dir, exist_ok=True)
-    os.makedirs(predictions_dir, exist_ok=True)
-    os.makedirs(reviews_dir, exist_ok=True)
-    os.makedirs(reports_dir, exist_ok=True)
-    os.makedirs(configs_dir, exist_ok=True)
+    if is_make:
+        os.makedirs(outputs_dir, exist_ok=True)
+        os.makedirs(logs_dir, exist_ok=True)
+        os.makedirs(predictions_dir, exist_ok=True)
+        os.makedirs(reviews_dir, exist_ok=True)
+        os.makedirs(reports_dir, exist_ok=True)
+        os.makedirs(configs_dir, exist_ok=True)
 
     outputs_structure = {
         OutputsStructure.LOGS_DIR: logs_dir,
