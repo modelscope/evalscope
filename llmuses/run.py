@@ -135,16 +135,12 @@ def parse_str_args(str_args: str) -> dict:
 def run_task(task_cfg: Union[str, dict, TaskConfig]):
     # TODO
     if isinstance(task_cfg, TaskConfig):
-        _tmp_model = task_cfg.model
-        task_cfg.model = None
         task_cfg = task_cfg.to_dict()
-        task_cfg['model'] = _tmp_model
-
-    logger.info(task_cfg)
 
     # Get the output task config
     output_task_cfg = copy.copy(task_cfg)
     output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
+    logger.info(output_task_cfg)
 
     model_args: dict = task_cfg.get('model_args',
                                     {'revision': 'default', 'precision': torch.float16, 'device_map': 'auto'})

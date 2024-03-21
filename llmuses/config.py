@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import copy
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List
 
@@ -34,10 +35,20 @@ class TaskConfig:
         self.registry_tasks = {
             'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
             'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
+            'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
+            'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
+            'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
         }
 
     def to_dict(self):
-        return asdict(self)
+        # Note: to avoid serialization error for some model instance
+        _tmp_model = copy.copy(self.model)
+        self.model = None
+        res_dict = asdict(self)
+        res_dict.update({'model': _tmp_model})
+        self.model = _tmp_model
+
+        return res_dict
 
     def load(self, custom_model: CustomModel, tasks: List[str]):
         tmp_d: dict = {}
