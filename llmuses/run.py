@@ -135,7 +135,10 @@ def parse_str_args(str_args: str) -> dict:
 def run_task(task_cfg: Union[str, dict, TaskConfig]):
     # TODO
     if isinstance(task_cfg, TaskConfig):
+        _tmp_model = task_cfg.model
+        task_cfg.model = None
         task_cfg = task_cfg.to_dict()
+        task_cfg['model'] = _tmp_model
 
     logger.info(task_cfg)
 
