@@ -38,6 +38,11 @@ class TaskConfig:
             'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
             'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
             'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
+
+            'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
+            'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
+            'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
+
         }
 
     def to_dict(self):
@@ -51,7 +56,9 @@ class TaskConfig:
         return res_dict
 
     def load(self, custom_model: CustomModel, tasks: List[str]):
+        # TODO: check merge run args, like dataset_args, model_args, generation_config ...
         tmp_d: dict = {}
+        tmp_dataset_args: dict = {}
         datasets: list = []
         for task_name in tasks:
             task: dict = self.registry_tasks.get(task_name, None)
@@ -60,9 +67,11 @@ class TaskConfig:
                 continue
             tmp_d = task
             datasets.extend(task.get('datasets', []))
+            tmp_dataset_args.update(task.get('dataset_args', {}))
 
         tmp_d.update({'datasets': datasets})
         tmp_d.update({'model': custom_model})
+        tmp_d.update({'dataset_args': tmp_dataset_args})
 
         res = TaskConfig(**tmp_d)
         if res.outputs is None:

@@ -125,11 +125,11 @@ if __name__ == '__main__':
 
     from llmuses.config import TaskConfig
 
-    swift_model = SwiftModel(config={'model_id': 'swift_qwen-7b-chat'})
+    swift_model = SwiftModel(config={'model_id': 'swift_grok-base-dummy'})
     task_config: TaskConfig = TaskConfig()
-    print(task_config.list())    # ['arc', 'gsm8k']
-    task_config = task_config.load(custom_model=swift_model, tasks=['arc', 'gsm8k'])
-    task_config.limit = 10      # Note: limit the number of each subset to evaluate; default is None
+    print(task_config.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'
+    task_config = task_config.load(custom_model=swift_model, tasks=['arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'])
+    task_config.limit = 2      # Note: limit the number of each subset to evaluate; default is None
 
     run_task(task_cfg=task_config)
 
