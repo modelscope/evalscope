@@ -1,5 +1,5 @@
 # pip3 install --no-dependencies -r requirements.txt
-torch
+#torch
 absl-py
 #auto-gptq
 cachetools
