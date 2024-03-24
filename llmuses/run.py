@@ -182,6 +182,7 @@ def main():
             if args.dry_run:
                 from llmuses.models.dummy_chat_model import DummyChatModel
                 model_adapter = DummyChatModel(model_cfg=dict())
+                qwen_model_adapter = None
             else:
                 # Init model adapter
                 model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
@@ -224,6 +225,8 @@ def main():
 
     reports_recorder.dump_reports("./")
 
+
 if __name__ == '__main__':
-    # Usage: python llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets arc --limit 10 --dry-run
+    main()
     
