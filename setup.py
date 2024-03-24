@@ -149,7 +149,7 @@ if __name__ == '__main__':
         # github url to be added
         url='',
         include_package_data=True,
-        package_data={'llmuses': ['registry/tasks/*.yaml']},
+        package_data={'llmuses': ['registry/tasks/*.yaml', 'benchmarks/bbh/cot_prompts/*.txt']},
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',
