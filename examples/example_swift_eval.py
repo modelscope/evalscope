@@ -134,7 +134,8 @@ if __name__ == '__main__':
     task_config.limit = 2      # Note: limit the number of each subset to evaluate; default is None
     task_config.stage = 'all'  # Note: 'all' or 'infer' or 'review'
 
-    run_task(task_cfg=task_config)
+    eval_results: dict = run_task(task_cfg=task_config)
+    print(f'** Evaluation results finished !\n')
 
     # Get the final report for your evaluation task
     final_report: List[dict] = Summarizer.get_report_from_cfg(task_cfg=task_config)
