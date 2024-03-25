@@ -27,6 +27,8 @@ class TaskConfig:
     work_dir: str = DEFAULT_ROOT_CACHE_DIR
     outputs: str = None
     mem_cache: bool = False
+    use_cache: bool = True
+    stage: str = 'all'      # `all` or `infer` or `review`
     dataset_hub: str = 'ModelScope'
     dataset_dir: str = ''
     limit: int = None
