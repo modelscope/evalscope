@@ -11,7 +11,7 @@ from tqdm import tqdm
 from typing import Optional, List, Any, Union
 
 from llmuses.benchmarks import DataAdapter
-from llmuses.cache import Cache, init_mem_cache
+from llmuses.cache import Cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys, EvalStage
 from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
