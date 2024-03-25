@@ -401,7 +401,14 @@ class Evaluator(object):
         overall_task_cfg_file: str = os.path.join(self.outputs_structure.get(OutputsStructure.CONFIGS_DIR),
                                                   'task_output_config.yaml')
         overall_task_cfg_file = os.path.abspath(overall_task_cfg_file)
-        dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
+
+        # TODO: check the robustness of dump yaml
+        try:
+            logger.info(f'** Dumping overall task config to {overall_task_cfg_file} ...')
+            logger.info(f'** The overall task config:\n {self.overall_task_cfg}')
+            dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
+        except Exception as e:
+            logger.warning(f'Failed to dump overall task config: {e}')
 
         self.save_cache()
         self.clear_cache()
