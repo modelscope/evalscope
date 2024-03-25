@@ -31,7 +31,7 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
-    parser.add_argument('--model-type',
+    parser.add_argument('--eval-type',
                         type=str,
                         help='The type for evaluating. '
                              'service - for APIs, TO-DO'
