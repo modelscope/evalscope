@@ -143,8 +143,7 @@ class PositionBiasMitigation:
 
 
 class EvalStage:
-    # Enums: `all`, `infer`, `review`, `report`
+    # Enums: `all`, `infer`, `review`
     ALL = 'all'
     INFER = 'infer'
     REVIEW = 'review'
-    REPORT = 'report'

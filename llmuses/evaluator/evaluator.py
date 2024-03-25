@@ -374,7 +374,7 @@ class Evaluator(object):
     def eval(self,
              infer_cfg: dict = None,
              debug: bool = False,
-             **kwargs):
+             **kwargs) -> dict:
         """
         Evaluate the model on the specific benchmark. Streaming & parallel mode is supported.
         It is required to rewrite this method to support your own evaluator.
@@ -391,12 +391,19 @@ class Evaluator(object):
             debug: Whether to run in debug mode. Default: False.
 
         Returns:
-            None.
+            Dict of results. Depends on the stage of evaluation.
+
+            stage == 'all': return the report_map
+            stage == 'infer': return the answers_map
+            stage == 'review': return the reviews_map
         """
 
         logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
 
-        reviews_map_all = {}      # {subset_name: (score, num)}
+        reviews_score_all = {}      # {subset_name: (score, num)}
+        stage_answers_dict = {}
+        stage_reviews_dict = {}
+
         for subset_name, prompts_list in self.prompts.items():
             limit = infer_cfg.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
@@ -406,6 +413,9 @@ class Evaluator(object):
                                                   infer_cfg=infer_cfg,
                                                   debug=debug,
                                                   **kwargs)
+            if self.stage == EvalStage.INFER:
+                stage_answers_dict[subset_name] = answers_list
+                continue
 
             reviews_list: list = self.get_reviews(subset_name=subset_name,
                                                   answers_list=answers_list,
@@ -413,10 +423,13 @@ class Evaluator(object):
                                                   **kwargs)
 
             metric_res = self.compute_metrics(reviews_list=reviews_list)
-            reviews_map_all[subset_name] = (metric_res, len(reviews_list))
+            reviews_score_all[subset_name] = (metric_res, len(reviews_list))
+
+        if self.stage == EvalStage.INFER:
+            return stage_answers_dict
 
         # Generate report
-        report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_map_all)
+        report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_score_all)
         self.dump_report(report_map=report_map)
 
         # Dump overall task config

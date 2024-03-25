@@ -107,7 +107,7 @@ def parse_args():
                         default=True)
     parser.add_argument('--stage',      # TODO
                         help='The stage of evaluation pipeline, '
-                             'can be `all`, `infer`, `review`, `report`. Default to `all`.',
+                             'can be `all`, `infer`, `review`. Default to `all`.',
                         type=str,
                         default='all')
 
