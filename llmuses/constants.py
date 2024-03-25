@@ -140,3 +140,11 @@ class PositionBiasMitigation:
     NONE = 'none'
     RANDOMIZE_ORDER = 'randomize_order'
     SWAP_POSITION = 'swap_position'
+
+
+class EvalStage:
+    # Enums: `all`, `infer`, `review`, `report`
+    ALL = 'all'
+    INFER = 'infer'
+    REVIEW = 'review'
+    REPORT = 'report'

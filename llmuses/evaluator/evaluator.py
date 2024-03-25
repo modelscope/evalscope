@@ -12,7 +12,7 @@ from typing import Optional, List, Any, Union
 
 from llmuses.benchmarks import DataAdapter
 from llmuses.cache import Cache, init_mem_cache
-from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys, EvalStage
 from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
 from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, make_outputs_dir, \
@@ -40,7 +40,7 @@ class Evaluator(object):
                  is_custom_outputs_dir: bool = False,
                  datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
                  datasets_hub: Optional[str] = 'ModelScope',
-                 stage: Optional[str] = 'all',
+                 stage: Optional[str] = 'all',      # refer to llmuses.constants.EvalStage
                  eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
                  overall_task_cfg: Optional[dict] = None,
                  **kwargs):
@@ -52,6 +52,7 @@ class Evaluator(object):
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
         self.eval_type = eval_type
+        self.stage = stage
         self.overall_task_cfg = overall_task_cfg
         if isinstance(self.model_adapter, CustomModelAdapter):
             self.overall_task_cfg.update({'custom_config': self.model_adapter.custom_model.config})
@@ -62,6 +63,7 @@ class Evaluator(object):
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
         # Get default outputs_dir
+        # TODO: refactor outputs_dir, del timestamp concat
         if not is_custom_outputs_dir:
             outputs_dir = make_outputs_dir(work_dir=outputs_dir,
                                            model_id=self.model_id,
@@ -250,6 +252,15 @@ class Evaluator(object):
         Returns: reviews list.
         """
         reviews_list = []
+
+        review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
+        review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+        review_file_path: str = os.path.join(review_dir, review_file_name)
+
+        # If the stage is `review`, then get the answers and re-run the reviewing process
+        if self.stage == EvalStage.REVIEW:
+            pass
+
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
 
             # Gen review_id (concat: answer_id + reviewer_spec)
@@ -271,10 +282,8 @@ class Evaluator(object):
             reviews_list.append(review_d)
 
         # Dump reviews
-        review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
-        review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
         os.makedirs(review_dir, exist_ok=True)
-        dump_jsonl_data(reviews_list, os.path.join(review_dir, review_file_name))
+        dump_jsonl_data(reviews_list, review_file_path)
 
         return reviews_list
 

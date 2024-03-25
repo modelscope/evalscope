@@ -101,6 +101,10 @@ def parse_args():
                         help='To use memory cache or not.',
                         action='store_true',
                         default=False)
+    parser.add_argument('--use-cache',
+                        help='To reuse the cache or not. Default to True.',
+                        action='store_true',
+                        default=True)
     parser.add_argument('--stage',      # TODO
                         help='The stage of evaluation pipeline, '
                              'can be `all`, `infer`, `review`, `report`. Default to `all`.',
@@ -133,7 +137,7 @@ def parse_str_args(str_args: str) -> dict:
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig]):
-    # TODO
+
     if isinstance(task_cfg, TaskConfig):
         task_cfg = task_cfg.to_dict()
 
@@ -174,6 +178,9 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
     model_precision = model_args.get('precision', torch.float16)
     if isinstance(model_precision, str):
         model_precision = eval(model_precision)
+
+    if mem_cache:
+        logger.warning('** DeprecatedWarning: `--mem-cache` is deprecated, please use `--use-cache` instead.')
 
     # Get model args
     if dry_run:
