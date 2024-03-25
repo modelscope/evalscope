@@ -90,9 +90,9 @@ class GSM8KAdapter(DataAdapter):
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.
         ans: str = input_d.get('answer', '')
-        # ans = self._extract_answer(ans).strip()
-        # if not ans:
-        #     logger.error(f'No ground truth answer found in the input: {input_d}')
+        ans = self.extract_answer(ans).strip()
+        if not ans:
+            logger.error(f'No ground truth answer found in the input: {input_d}')
         return ans
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
