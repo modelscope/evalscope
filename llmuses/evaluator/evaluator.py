@@ -160,9 +160,8 @@ class Evaluator(object):
         pred_file_path: str = os.path.join(pred_dir, pred_file_name)
 
         if self.use_cache and os.path.exists(pred_file_path):
-            logger.info(f'** Reusing predictions from {pred_file_path}')
             answers_list = jsonl_to_list(pred_file_path)
-            logger.info(f'** Reusing predictions successfully, got {len(answers_list)} answers.')
+            logger.info(f'** Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
         else:
             for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
 
@@ -270,9 +269,8 @@ class Evaluator(object):
         review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
         review_file_path: str = os.path.join(review_dir, review_file_name)
 
-        # If the stage is `review`, then get the answers and re-run the reviewing process
-        if self.stage == EvalStage.REVIEW:
-            pass
+        if self.use_cache and os.path.exists(review_file_path):
+            logger.warning(f'** Ignore use_cache, updating the review file: {review_file_path} ...')
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
 
@@ -424,9 +422,13 @@ class Evaluator(object):
 
             metric_res = self.compute_metrics(reviews_list=reviews_list)
             reviews_score_all[subset_name] = (metric_res, len(reviews_list))
+            stage_reviews_dict[subset_name] = reviews_list
 
         if self.stage == EvalStage.INFER:
             return stage_answers_dict
+
+        if self.stage == EvalStage.REVIEW:
+            return stage_reviews_dict
 
         # Generate report
         report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_score_all)
@@ -445,10 +447,13 @@ class Evaluator(object):
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')
 
-        self.save_cache()
-        self.clear_cache()
+        # Note: deprecated
+        # self.save_cache()
+        # self.clear_cache()
 
         logger.info(f'\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
+
+        return report_map
 
 
 class HumanevalEvaluator(object):

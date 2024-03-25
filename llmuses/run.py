@@ -136,7 +136,7 @@ def parse_str_args(str_args: str) -> dict:
     return final_args
 
 
-def run_task(task_cfg: Union[str, dict, TaskConfig]):
+def run_task(task_cfg: Union[str, dict, TaskConfig]) -> dict:
 
     if isinstance(task_cfg, TaskConfig):
         task_cfg = task_cfg.to_dict()
@@ -199,6 +199,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
         if model_revision == 'None':
             model_revision = eval(model_revision)
 
+    eval_results = dict()
     for dataset_name in datasets:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
@@ -268,7 +269,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
 
         infer_cfg = generation_config or {}
         infer_cfg.update(dict(limit=limit))
-        evaluator.eval(infer_cfg=infer_cfg, debug=debug)
+        res_dict: dict = evaluator.eval(infer_cfg=infer_cfg, debug=debug)
+
+        eval_results[dataset_name] = res_dict
+
+    return eval_results
 
 
 def main():

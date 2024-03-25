@@ -22,6 +22,7 @@ datasets:
   - arc
   - gsm8k
 outputs: /Users/jason/workspace/work/maas/github/llmuses_work/llmuses/temp/outputs_swift/eval_qwen-7b-chat_v100    # Directory to save the outputs, structure: logs, predictions, reviews, reports
-mem_cache: false
+use_cache: true
+stage: all
 dataset_hub: ModelScope    # `Local` or `ModelScope`
 limit: 10
