@@ -166,6 +166,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
     work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
     outputs: str = task_cfg.get('outputs', 'outputs')
     mem_cache: bool = task_cfg.get('mem_cache', False)
+    use_cache: bool = task_cfg.get('use_cache', True)
     dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
     dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_ROOT_CACHE_DIR)
     stage: str = task_cfg.get('stage', 'all')                               # TODO: to be implemented
@@ -181,6 +182,8 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
 
     if mem_cache:
         logger.warning('** DeprecatedWarning: `--mem-cache` is deprecated, please use `--use-cache` instead.')
+
+    logger.info(f'Set use_cache to {use_cache}.')
 
     # Get model args
     if dry_run:
@@ -252,7 +255,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]):
                 subset_list=in_subset_list,
                 data_adapter=data_adapter,
                 model_adapter=model_adapter,
-                use_cache=mem_cache,
+                use_cache=use_cache,
                 root_cache_dir=work_dir,
                 outputs_dir=outputs,
                 is_custom_outputs_dir=outputs != 'outputs',
@@ -283,6 +286,7 @@ def main():
         'work_dir': args.work_dir,
         'outputs': args.outputs,
         'mem_cache': args.mem_cache,
+        'use_cache': args.use_cache,
         'dataset_hub': args.dataset_hub,
         'dataset_dir': args.dataset_dir,
         'stage': args.stage,
