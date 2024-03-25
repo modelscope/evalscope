@@ -162,34 +162,36 @@ class Evaluator(object):
         if self.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
             logger.info(f'** Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
-        else:
-            for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
 
-                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-                model_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                    ensure_ascii=False)
-                input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
-                                              ensure_ascii=False)
-                infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
-                                           ensure_ascii=False)
-                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
+            return answers_list
 
-                # Get answers
-                answer_d: dict = self._pred_answer(input_d=input_prompt,
-                                                   infer_cfg=infer_cfg,
-                                                   subset_name=subset_name,
-                                                   answer_id=answer_id)
+        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
 
-                answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-                answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
-                answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+            # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
+            model_cfg_str = json.dumps(
+                OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
+                ensure_ascii=False)
+            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+                                          ensure_ascii=False)
+            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+                                       ensure_ascii=False)
+            answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
-                if debug:
-                    logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                    logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+            # Get answers
+            answer_d: dict = self._pred_answer(input_d=input_prompt,
+                                               infer_cfg=infer_cfg,
+                                               subset_name=subset_name,
+                                               answer_id=answer_id)
 
-                answers_list.append(answer_d)
+            answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+            answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
+            answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+
+            if debug:
+                logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
+                logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+
+            answers_list.append(answer_d)
 
         if len(answers_list) == 0:
             logger.error(f'** Got empty predictions on subset {subset_name} of dataset: {self.dataset_name_or_path}')
@@ -270,7 +272,7 @@ class Evaluator(object):
         review_file_path: str = os.path.join(review_dir, review_file_name)
 
         if self.use_cache and os.path.exists(review_file_path):
-            logger.warning(f'** Ignore use_cache, updating the review file: {review_file_path} ...')
+            logger.warning(f'** Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
 
