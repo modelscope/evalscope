@@ -15,8 +15,9 @@ from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys, EvalStage
 from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, make_outputs_dir, \
-    normalize_score, dict_to_yaml
+from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, \
+    make_outputs_dir, \
+    normalize_score, dict_to_yaml, jsonl_to_list
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -53,6 +54,7 @@ class Evaluator(object):
         self.model_adapter = model_adapter
         self.eval_type = eval_type
         self.stage = stage
+        self.use_cache = use_cache
         self.overall_task_cfg = overall_task_cfg
         if isinstance(self.model_adapter, CustomModelAdapter):
             self.overall_task_cfg.update({'custom_config': self.model_adapter.custom_model.config})
@@ -92,12 +94,13 @@ class Evaluator(object):
             '_' + self.model_revision_str + \
             '_cache.pkl'
         self.mem_cache_path = os.path.join(self.root_cache_dir, 'mem_cache', mem_cache_file_name)
-        self.use_cache = use_cache
-        self.mem_cache_method = mem_cache_method
+
+        # Note: mem_cache is deprecated, use `use_cache` instead
         self.mem_cache = None
-        if self.use_cache:
-            self.mem_cache = init_mem_cache(method=self.mem_cache_method, cache_file_path=self.mem_cache_path)
-            logger.info(f'** Using memory cache with size: {len(self.mem_cache)}')
+        self.mem_cache_method = mem_cache_method
+        # if self.use_cache:
+        #     self.mem_cache = init_mem_cache(method=self.mem_cache_method, cache_file_path=self.mem_cache_path)
+        #     logger.info(f'** Using memory cache with size: {len(self.mem_cache)}')
 
     def _pred_answer(self,
                      input_d: dict,
@@ -152,39 +155,49 @@ class Evaluator(object):
         assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
 
         answers_list = []
-        for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
-
-            # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-            model_cfg_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                ensure_ascii=False)
-            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
-                                          ensure_ascii=False)
-            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
-                                       ensure_ascii=False)
-            answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-            # Get answers
-            answer_d: dict = self._pred_answer(input_d=input_prompt,
-                                               infer_cfg=infer_cfg,
-                                               subset_name=subset_name,
-                                               answer_id=answer_id)
-
-            answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-            answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
-            answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
-
-            if debug:
-                logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
-
-            answers_list.append(answer_d)
-
-        # Dump answers
         pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
         pred_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+        pred_file_path: str = os.path.join(pred_dir, pred_file_name)
+
+        if self.use_cache and os.path.exists(pred_file_path):
+            logger.info(f'** Reusing predictions from {pred_file_path}')
+            answers_list = jsonl_to_list(pred_file_path)
+            logger.info(f'** Reusing predictions successfully, got {len(answers_list)} answers.')
+        else:
+            for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
+
+                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
+                model_cfg_str = json.dumps(
+                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
+                    ensure_ascii=False)
+                input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+                                              ensure_ascii=False)
+                infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+                                           ensure_ascii=False)
+                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
+
+                # Get answers
+                answer_d: dict = self._pred_answer(input_d=input_prompt,
+                                                   infer_cfg=infer_cfg,
+                                                   subset_name=subset_name,
+                                                   answer_id=answer_id)
+
+                answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+                answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
+                answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+
+                if debug:
+                    logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
+                    logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+
+                answers_list.append(answer_d)
+
+        if len(answers_list) == 0:
+            logger.error(f'** Got empty predictions on subset {subset_name} of dataset: {self.dataset_name_or_path}')
+
+        # Dump answers
         os.makedirs(pred_dir, exist_ok=True)
-        dump_jsonl_data(answers_list, os.path.join(pred_dir, pred_file_name))
+        dump_jsonl_data(answers_list, pred_file_path)
 
         return answers_list
 
