@@ -150,6 +150,7 @@ def main():
     if args.dry_run:
         from llmuses.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
+        qwen_model_id = 'qwen_dummy'
         model_revision: str = 'v1.0.0'
     else:
         model_id: str = args.model
@@ -186,35 +187,36 @@ def main():
             else:
                 # Init model adapter
                 model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
-                                                                    model_revision=model_revision,
-                                                                    device_map=model_args.get('device_map', 'auto'),
-                                                                    torch_dtype=model_precision,)
+                                                                      model_revision=model_revision,
+                                                                      device_map=model_args.get('device_map', 'auto'),
+                                                                      torch_dtype=model_precision,)
                 qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
-                                                                        model_revision=None,
-                                                                        device_map=model_args.get('device_map', 'auto'),
-                                                                        torch_dtype=model_precision,) if len(qwen_model_id)>0 else None
+                                                                           model_revision=None,
+                                                                           device_map=model_args.get('device_map', 'auto'),
+                                                                           torch_dtype=model_precision,) if len(qwen_model_id) > 0 else None
 
             if dataset_name == 'humaneval':
                 problem_file: str = dataset_name_or_path
 
                 evaluator = HumanevalEvaluator(problem_file=problem_file,
-                                            model_id=model_id,
-                                            model_revision=model_revision,
-                                            model_adapter=model_adapter,
-                                            outputs_dir=args.outputs,
-                                            is_custom_outputs_dir=False,)
+                                               model_id=model_id,
+                                               model_revision=model_revision,
+                                               model_adapter=model_adapter,
+                                               outputs_dir=args.outputs,
+                                               is_custom_outputs_dir=False,)
             else:
                 evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
-                                    subset_list=imported_modules['SUBSET_LIST'],
-                                    data_adapter=data_adapter,
-                                    model_adapter=model_adapter,
-                                    qwen_model_adapter=qwen_model_adapter,
-                                    use_cache=args.mem_cache,
-                                    root_cache_dir=args.work_dir,
-                                    outputs_dir=args.outputs,
-                                    is_custom_outputs_dir=False,
-                                    datasets_dir=args.work_dir,
-                                    stage=args.stage, )
+                                      subset_list=imported_modules['SUBSET_LIST'],
+                                      data_adapter=data_adapter,
+                                      model_adapter=model_adapter,
+                                      qwen_model_adapter=qwen_model_adapter,
+                                      use_cache=args.mem_cache,
+                                      root_cache_dir=args.work_dir,
+                                      outputs_dir=args.outputs,
+                                      is_custom_outputs_dir=False,
+                                      datasets_dir=args.dataset_dir,
+                                      datasets_hub=args.dataset_hub,
+                                      stage=args.stage, )
 
             infer_cfg = generation_args or {}
             infer_cfg.update(dict(limit=args.limit))
