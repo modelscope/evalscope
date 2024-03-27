@@ -61,14 +61,17 @@ class Evaluator(object):
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
         # Get default outputs_dir
-        if not is_custom_outputs_dir:
-            outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                           model_id=self.model_id,
-                                           model_revision=self.model_revision_str,
-                                           dataset_id=self.dataset_name_or_path)
-            qwen_outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                                model_id=self.qwen_model_id,
-                                                model_revision='none') if self.qwen_model_adapter else ""
+        if is_custom_outputs_dir:
+            logger.info(f'Deprecated: Please use the default outputs_dir.')
+
+        outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                       model_id=self.model_id,
+                                       model_revision=self.model_revision_str,
+                                       dataset_id=self.dataset_name_or_path)
+        qwen_outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+                                            model_id=self.qwen_model_id,
+                                            model_revision='none',
+                                            dataset_id=self.dataset_name_or_path) if self.qwen_model_adapter else ""
 
         self.outputs_dir = os.path.expanduser(outputs_dir)
         self.qwen_outputs_dir = os.path.expanduser(qwen_outputs_dir)
