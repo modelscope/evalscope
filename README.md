@@ -90,6 +90,10 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 # 2. 执行离线评估任务
 python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
+# 3. 将上述models文件夹整体移动到目标环境的对应路径下，例如 /path/to/workdir_2 路径下
+
+# 4. 离线环境下执行任务
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir_2 --limit 2
 ```
 
 
