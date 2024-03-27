@@ -179,8 +179,6 @@ def main():
         dataset_local_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
         dataset_local_path_list = dataset_local_path_list if isinstance(dataset_local_path_list, list) else [imported_modules['DATASET_ID']]
 
-        print(f"\n>> dataset_local_path_list: {dataset_local_path_list}")
-
         for dataset_name_or_path in dataset_local_path_list:
             if args.dry_run:
                 from llmuses.models.dummy_chat_model import DummyChatModel
@@ -207,7 +205,7 @@ def main():
                                                outputs_dir=args.outputs,
                                                is_custom_outputs_dir=False,)
             else:
-                evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
+                evaluator = Evaluator(dataset_name_or_path=dataset_name if args.dataset_hub == 'Local' else dataset_name_or_path,
                                       subset_list=imported_modules['SUBSET_LIST'],
                                       data_adapter=data_adapter,
                                       model_adapter=model_adapter,
