@@ -189,11 +189,14 @@ def main():
                 model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
                                                                       model_revision=model_revision,
                                                                       device_map=model_args.get('device_map', 'auto'),
-                                                                      torch_dtype=model_precision,)
+                                                                      torch_dtype=model_precision,
+                                                                      cache_dir=args.work_dir,)
                 qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
                                                                            model_revision=None,
                                                                            device_map=model_args.get('device_map', 'auto'),
-                                                                           torch_dtype=model_precision,) if len(qwen_model_id) > 0 else None
+                                                                           torch_dtype=model_precision,
+                                                                           cache_dir=args.work_dir,
+                                                                           ) if len(qwen_model_id) > 0 else None
 
             if dataset_name == 'humaneval':
                 problem_file: str = dataset_name_or_path
