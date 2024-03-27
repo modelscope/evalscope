@@ -93,26 +93,28 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         model_cfg['torch_dtype'] = str(torch_dtype)
 
         from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        from modelscope import snapshot_download
+        # from modelscope import snapshot_download
 
-        try:
-            model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-            logger.warning('**Use local_files_only to load model **')
-        except:
-            model_dir = snapshot_download(self.model_id,
-                                          revision=model_revision,
-                                          cache_dir=model_cache_dir, )
-            logger.warning('**Load model from ModelScope hub **')
+        # try:
+        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
+        #     logger.warning('**Use local_files_only to load model **')
+        # except:
+        #     model_dir = snapshot_download(self.model_id,
+        #                                   revision=model_revision,
+        #                                   cache_dir=model_cache_dir, )
+        #     logger.warning('**Load model from ModelScope hub **')
 
-        tokenizer = AutoTokenizer.from_pretrained(model_dir,    # self.model_id
+        tokenizer = AutoTokenizer.from_pretrained(self.model_id,    # self.model_id
                                                   revision=model_revision,
-                                                  trust_remote_code=True,)
+                                                  trust_remote_code=True,
+                                                  cache_dir=model_cache_dir,)
 
-        model = AutoModelForCausalLM.from_pretrained(model_dir,  # self.model_id
+        model = AutoModelForCausalLM.from_pretrained(self.model_id,  # self.model_id
                                                      revision=model_revision,
                                                      device_map=device_map,
                                                      trust_remote_code=True,
-                                                     torch_dtype=torch_dtype,)
+                                                     torch_dtype=torch_dtype,
+                                                     cache_dir=model_cache_dir,)
 
         # model.generation_config = GenerationConfig.from_pretrained(model_id, trust_remote_code=True)
 
@@ -374,26 +376,28 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         model_cfg['torch_dtype'] = str(torch_dtype)
 
         from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        from modelscope import snapshot_download
+        # from modelscope import snapshot_download
 
-        try:
-            model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-            logger.warning('**Use local_files_only to load model **')
-        except:
-            model_dir = snapshot_download(self.model_id,
-                                          revision=model_revision,
-                                          cache_dir=model_cache_dir, )
-            logger.warning('**Load model from ModelScope hub **')
+        # try:
+        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
+        #     logger.warning('**Use local_files_only to load model **')
+        # except:
+        #     model_dir = snapshot_download(self.model_id,
+        #                                   revision=model_revision,
+        #                                   cache_dir=model_cache_dir, )
+        #     logger.warning('**Load model from ModelScope hub **')
 
-        tokenizer = AutoTokenizer.from_pretrained(model_dir,
+        tokenizer = AutoTokenizer.from_pretrained(self.model_id,
                                                   revision=model_revision,
-                                                  trust_remote_code=True,)
+                                                  trust_remote_code=True,
+                                                  cache_dir=model_cache_dir,)
 
-        model = AutoModelForCausalLM.from_pretrained(model_dir,
+        model = AutoModelForCausalLM.from_pretrained(self.model_id,
                                                      revision=model_revision,
                                                      device_map=device_map,
                                                      trust_remote_code=True,
-                                                     torch_dtype=torch_dtype, )
+                                                     torch_dtype=torch_dtype,
+                                                     cache_dir=model_cache_dir,)
 
         self.origin_tokenizer = deepcopy(tokenizer)
 
