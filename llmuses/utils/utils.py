@@ -188,7 +188,7 @@ class ResponseParser:
         return ''
 
     @staticmethod
-    def parse_first_option(text: str, options: list) -> str:
+    def parse_first_option_with_choices(text: str, options: list) -> str:
         """
         Find first valid option for text.
 
@@ -199,15 +199,52 @@ class ResponseParser:
         options_concat = '|'.join([str(i) for i in options])
 
         patterns = [
-            f'[Tt]he answer is [{options_concat}]',
-            f'[Tt]he correct answer is [{options_concat}]',
-            f'[Tt]he correct answer is:\n[{options_concat}]',
+            f'答案是?\s?([{options_concat}])',
+            f'答案是?\s?：([{options_concat}])',
+            f'答案是?\s?:([{options_concat}])',
+            f'答案应该?是\s?([{options_concat}])',
+            f'答案应该?选\s?([{options_concat}])',
+            f'答案为\s?([{options_concat}])',
+            f'答案选\s?([{options_concat}])',
+            f'选择?\s?([{options_concat}])',
+            f'故选?\s?([{options_concat}])'
+            f'只有选?项?\s?([{options_concat}])\s?是?对',
+            f'只有选?项?\s?([{options_concat}])\s?是?错',
+            f'只有选?项?\s?([{options_concat}])\s?不?正确',
+            f'只有选?项?\s?([{options_concat}])\s?错误',
+            f'说法不?对选?项?的?是\s?([{options_concat}])',
+            f'说法不?正确选?项?的?是\s?([{options_concat}])',
+            f'说法错误选?项?的?是\s?([{options_concat}])',
+            f'([{options_concat}])\s?是正确的',
+            f'([{options_concat}])\s?是正确答案',
+            f'选项\s?([{options_concat}])\s?正确',
+            f'所以答\s?([{options_concat}])',
+            f'1.\s?([{options_concat}])[.。$]?$',
+            f'所以\s?([{options_concat}][.。$]?$)',
+            f'所有\s?([{options_concat}][.。$]?$)',
+            f'[\s，：:,]([{options_concat}])[。，,\.]?$',
+            f'[\s，,：:][故即]([{options_concat}])[。\.]?$',
+            f'[\s，,：:]因此([{options_concat}])[。\.]?$',
+            f'[是为。]\s?([{options_concat}])[。\.]?$',
+            f'因此\s?([{options_concat}])[。\.]?$',
+            f'显然\s?([{options_concat}])[。\.]?$',
+            f'答案是\s?(\S+)(?:。|$)',
+            f'答案应该是\s?(\S+)(?:。|$)',
+            f'答案为\s?(\S+)(?:。|$)',
             f'答案是(.*?)[{options_concat}]',
             f'答案为(.*?)[{options_concat}]',
             f'固选(.*?)[{options_concat}]',
             f'答案应该是(.*?)[{options_concat}]',
+            f'[Tt]he answer is [{options_concat}]',
+            f'[Tt]he correct answer is [{options_concat}]',
+            f'[Tt]he correct answer is:\n[{options_concat}]',
             f'(\s|^)[{options_concat}][\s。，,\.$]',  # noqa
             f'[{options_concat}]',
+            f'^选项\s?([{options_concat}])',
+            f'^([{options_concat}])\s?选?项',
+            f'(\s|^)[{options_concat}][\s。，,：:\.$]',
+            f'(\s|^)[{options_concat}](\s|$)',
+            f'1.\s?(.*?)$',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
@@ -218,6 +255,30 @@ class ResponseParser:
                 for i in options:
                     if i in outputs:
                         return i
+        return ''
+
+    @staticmethod
+    def parse_first_option(text: str) -> str:
+        """
+        Find first valid option for text.
+
+        Args:
+            text: The text to parse.
+        """
+        patterns = [
+            r"[Aa]nswer:\s*(\w+)",
+            r"[Tt]he correct answer is:\s*(\w+)",
+            r"[Tt]he correct answer is:\n\s*(\w+)",
+            r"[Tt]he correct answer is:\n\n-\s*(\w+)",
+            r"[Tt]he answer might be:\n\n-\s*(\w+)",
+            r"[Tt]he answer is \s*(\w+)",
+        ]
+
+        regexes = [re.compile(pattern) for pattern in patterns]
+        for regex in regexes:
+            match = regex.search(text)
+            if match:
+                return match.group(1)
         return ''
 
     @staticmethod

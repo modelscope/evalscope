@@ -135,9 +135,9 @@ class ARCAdapter(DataAdapter):
         if eval_type == 'checkpoint':
             return result
         elif eval_type == 'service':
-            return ResponseParser.parse_first_option(text=result, options=self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
         elif eval_type == 'custom':
-            return ResponseParser.parse_first_option(text=result, options=self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 

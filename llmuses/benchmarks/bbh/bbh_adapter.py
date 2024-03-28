@@ -8,7 +8,7 @@ import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.constants import AnswerKeys
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -291,6 +291,10 @@ class BBHAdapter(DataAdapter):
         """
         Extract the answer from the model output for Free-form task.
         """
+        res = ResponseParser.parse_first_option_with_choices(ans)
+        if res:
+            return res
+
         ans_line = ans.split('answer is ')
         if len(ans_line) != 1:
             ans = ans_line[1].strip()
