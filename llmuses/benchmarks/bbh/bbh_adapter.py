@@ -291,7 +291,7 @@ class BBHAdapter(DataAdapter):
         """
         Extract the answer from the model output for Free-form task.
         """
-        res = ResponseParser.parse_first_option_with_choices(ans)
+        res = ResponseParser.parse_first_option(ans)
         if res:
             return res
 
