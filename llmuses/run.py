@@ -259,7 +259,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             logger.info(f'\n** Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
             evaluator = Evaluator(
-                dataset_name_or_path=dataset_name if dataset_hub == 'Local' else dataset_name_or_path,
+                dataset_name_or_path=dataset_name_or_path,
                 subset_list=in_subset_list,
                 data_adapter=data_adapter,
                 model_adapter=model_adapter,

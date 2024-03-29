@@ -69,6 +69,8 @@ class TaskConfig:
             data_pattern: str, the data pattern for the task.
                     e.g. `mmlu`, `ceval`, `gsm8k`, ...
                     refer to task_config.list() for all available datasets.
+            datasets_dir: str, the directory to store multiple datasets files. e.g. /path/to/data, 
+                then your specific custom dataset directory will be /path/to/data/{name}
         """
         available_datasets = self.list()
         if data_pattern not in available_datasets:
@@ -77,11 +79,13 @@ class TaskConfig:
 
         # Reuse the existing task config and update the datasets
         pattern_config = registry_tasks.get(data_pattern)
+
         custom_config = copy.deepcopy(pattern_config)
-        custom_config.update({'datasets': [name]})
+        custom_config.update({'datasets': [data_pattern]})
         custom_config.update({'dataset_hub': 'Local'})     # TODO: to support `ModelScope`
         if datasets_dir is not None:
-            custom_config.update({'dataset_dir': datasets_dir})
+            custom_config.update({'dataset_args': {data_pattern: {'local_path': os.path.join(datasets_dir, name)}}})
+
         registry_tasks.update({name: custom_config})
         logger.info(f'** Registered task: {name} with data pattern: {data_pattern}')
 
@@ -131,10 +135,10 @@ if __name__ == '__main__':
     task_config = TaskConfig()
 
     # Register a new task
-    task_config.registry(name='arc_swift_custom', data_pattern='arc')
+    task_config.registry(name='arc_swift', data_pattern='arc', datasets_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
 
     import json
-    swift_eval_task: List[TaskConfig] = task_config.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift_custom'])
+    swift_eval_task: List[TaskConfig] = task_config.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift'])
     for item in swift_eval_task:
         print(item.to_dict())
         print()
