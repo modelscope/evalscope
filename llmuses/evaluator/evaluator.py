@@ -65,6 +65,10 @@ class Evaluator(object):
                  **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
+        self.custom_task_name: str = None
+        if os.path.exists(self.dataset_name_or_path):
+            self.custom_task_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep))
+
         self.root_cache_dir = os.path.expanduser(root_cache_dir)
         self.datasets_dir = os.path.expanduser(datasets_dir)
         self.kwargs = kwargs
@@ -175,8 +179,8 @@ class Evaluator(object):
         answers_list = []
         pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
 
-        if os.path.isdir(self.dataset_name_or_path):
-            pred_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '_' + subset_name + '.jsonl'
+        if self.custom_task_name:
+            pred_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
         else:
             pred_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
 
@@ -291,8 +295,8 @@ class Evaluator(object):
         reviews_list = []
 
         review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
-        if os.path.isdir(self.dataset_name_or_path):
-            review_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '_' + subset_name + '.jsonl'
+        if self.custom_task_name:
+            review_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
         else:
             review_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
         review_file_path: str = os.path.join(review_dir, review_file_name)
@@ -366,8 +370,8 @@ class Evaluator(object):
         # Dump report
         report_dir: str = self.outputs_structure[OutputsStructure.REPORTS_DIR]
 
-        if os.path.isdir(self.dataset_name_or_path):
-            report_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '.json'
+        if self.custom_task_name:
+            report_file_name: str = self.custom_task_name + '.json'
         else:
             report_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '.json'
 
@@ -464,7 +468,8 @@ class Evaluator(object):
             return stage_reviews_dict
 
         # Generate report
-        report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_score_all)
+        report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_score_all,
+                                                        report_name=self.custom_task_name)
         self.dump_report(report_map=report_map)
 
         # Dump overall task config

@@ -147,12 +147,13 @@ class GSM8KAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name. Default: None
 
         Returns: A dict of metric calculation results. The format is like:
         {
@@ -183,7 +184,7 @@ class GSM8KAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='GSM8K',
+        res_map = dict(name=report_name or 'gsm8k',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

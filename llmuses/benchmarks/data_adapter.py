@@ -215,13 +215,15 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation results for all subsets.
 
         Args:
             subset_score_map: The subset-score map.
                 e.g. {subset_name: (score, num)}
+
+            report_name: str, the user-defined report name. Default: None
 
         Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
 

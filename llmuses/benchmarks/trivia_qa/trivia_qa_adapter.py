@@ -153,12 +153,13 @@ class TriviaQaAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -188,7 +189,7 @@ class TriviaQaAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='TriviaQA',
+        res_map = dict(name=report_name or 'trivia_qa',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

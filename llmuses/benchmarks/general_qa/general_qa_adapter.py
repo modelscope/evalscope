@@ -131,10 +131,11 @@ class GeneralQAAdapter(DataAdapter):
         # return weighted_mean(items)
         return res
     
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Args:
             subset_score_map: {subset_name: (score_dict, num), ...}
+            report_name: str, the user-defined report name.
 
         Returns:
         {
@@ -168,7 +169,7 @@ class GeneralQAAdapter(DataAdapter):
                           score=total_avg_list,
                           subset=cate_avg_list)
         
-        res_map = dict(name="GeneralQA",
+        res_map = dict(name=report_name or "general_qa",
                        metric=self.metric_list[0]['name'],
                        score=total_avg_list,
                        category=[category_d],

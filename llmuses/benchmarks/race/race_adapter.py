@@ -145,12 +145,13 @@ class RACEAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -196,7 +197,7 @@ class RACEAdapter(DataAdapter):
                                              for subset_name, subset_score, _ in domain_res_list]})
 
         # Get final dict of report
-        res_map = dict(name='RACE',
+        res_map = dict(name=report_name or 'race',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=category_list,
