@@ -182,7 +182,11 @@ class MMLUAdapter(DataAdapter):
                 else:
                     raise ValueError(f'Invalid split name: {split_name}')
 
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+
                 if os.path.exists(file_path):
                     with open(file_path, encoding='utf-8') as f:
                         rows = []

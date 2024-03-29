@@ -49,7 +49,10 @@ class TriviaQaAdapter(DataAdapter):
         for subset_name in subset_list:
             data_dict[subset_name] = {}
             for split in [self.train_split, self.eval_split]:
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'trivia-{split}.qa.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'trivia-{split}.qa.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'trivia-{split}.qa.csv')
                 if os.path.exists(file_path):
                     with open(file_path, 'r', encoding='utf-8') as f:
                         reader = csv.reader(f, delimiter='\t')

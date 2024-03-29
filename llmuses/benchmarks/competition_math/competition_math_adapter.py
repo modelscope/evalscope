@@ -54,7 +54,10 @@ class CompetitionMathAdapter(DataAdapter):
         data_dict: dict = {}
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
-                split_dir = os.path.join(work_dir, dataset_name_or_path, split_name)
+                if os.path.exists(dataset_name_or_path):
+                    split_dir = os.path.join(dataset_name_or_path, split_name)
+                else:
+                    split_dir = os.path.join(work_dir, dataset_name_or_path, split_name)
                 split_files = glob.glob(os.path.join(split_dir, '**', '*.json'))
                 split_data = []
                 for file_path in split_files:

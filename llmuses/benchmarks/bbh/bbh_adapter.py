@@ -98,7 +98,10 @@ class BBHAdapter(DataAdapter):
         data_dict = {}
         for subset_name in subset_list:
             for split_name in [self.eval_split]:
-                file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}.json')
+                else:
+                    file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
                 if os.path.exists(file_path):
                     with open(file_path, 'r') as f:
                         examples = json.load(f)['examples']

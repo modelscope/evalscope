@@ -61,7 +61,10 @@ class ARCAdapter(DataAdapter):
         """
         data_dict = {}
         for subset_name in subset_list:
-            subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
+            if os.path.exists(dataset_name_or_path):
+                subset_path = os.path.join(dataset_name_or_path, subset_name)
+            else:
+                subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
             for split_name in ['Train', 'Test']:
                 split_path = os.path.join(subset_path, f'{subset_name}-{split_name}.jsonl')
                 if os.path.exists(split_path):

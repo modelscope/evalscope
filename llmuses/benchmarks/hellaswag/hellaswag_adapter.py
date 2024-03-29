@@ -56,7 +56,10 @@ class HellaSwagAdapter(DataAdapter):
         for subset_name in subset_list:
             data_dict[subset_name] = {}
             for split in [self.train_split, self.eval_split]:
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'hellaswag_{split}.jsonl')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'hellaswag_{split}.jsonl')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'hellaswag_{split}.jsonl')
                 if os.path.exists(file_path):
                     data_dict[subset_name][split] = jsonl_to_list(file_path)
 

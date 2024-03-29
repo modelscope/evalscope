@@ -78,7 +78,10 @@ class TruthfulQaAdapter(DataAdapter):
             data_dict[subset_name] = {}
             for split in [self.eval_split]:
                 if subset_name == 'generation':
-                    file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'TruthfulQA.csv')
+                    if os.path.exists(dataset_name_or_path):
+                        file_path = os.path.join(dataset_name_or_path, subset_name, 'TruthfulQA.csv')
+                    else:
+                        file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'TruthfulQA.csv')
                     if os.path.exists(file_path):
                         with open(file_path, 'r', encoding='utf-8') as f:
                             rows = []
