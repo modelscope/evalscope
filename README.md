@@ -84,15 +84,12 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 #### 3. (可选)在离线环境加载模型和评测
 模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
 ```shell
-# 1. 在联网环境跑评估任务示例，选择您需要的模型（如chatglm3-6b），以便将模型文件加载到相应路径
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir --limit 2
+# 1. 准备模型本地文件夹，文件夹结构参考chatglm3-6b，链接：https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files
+# 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
 
-# 2. 此时会在/path/to/workdir中，自动创建一个models文件夹
+# 2. 执行离线评估任务
+python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
-# 3. 将上述models文件夹整体移动到目标环境的对应路径下，例如 /path/to/workdir_2 路径下
-
-# 4. 离线环境下执行任务
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --work-dir /path/to/workdir_2 --limit 2
 ```
 
 ### 使用run_task函数提交评估任务
