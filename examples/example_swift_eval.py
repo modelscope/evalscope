@@ -126,16 +126,15 @@ if __name__ == '__main__':
     from llmuses.config import TaskConfig
 
     swift_model = SwiftModel(config={'model_id': 'swift_grok-base-dummy'})
-    task_config: TaskConfig = TaskConfig()
-    print(task_config.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'
+    print(TaskConfig.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'
 
     # Customize your own dataset, refer to datasets:
     # wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
     # unzip data.zip
-    task_config.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
+    TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
 
     # Load the task config list
-    task_config_list = task_config.load(custom_model=swift_model, tasks=['arc_swift', 'gsm8k'])
+    task_config_list = TaskConfig.load(custom_model=swift_model, tasks=['arc_swift', 'gsm8k'])
 
     # You can update the task_config with your own settings
     for config_item in task_config_list:

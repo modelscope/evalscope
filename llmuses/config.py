@@ -60,7 +60,8 @@ class TaskConfig:
     #
     #     }
 
-    def registry(self, name: str, data_pattern: str, dataset_dir: str = None) -> None:
+    @staticmethod
+    def registry(name: str, data_pattern: str, dataset_dir: str = None) -> None:
         """
         Register a new task (dataset) for evaluation.
 
@@ -72,7 +73,7 @@ class TaskConfig:
             dataset_dir: str, the directory to store multiple datasets files. e.g. /path/to/data, 
                 then your specific custom dataset directory will be /path/to/data/{name}
         """
-        available_datasets = self.list()
+        available_datasets = list(registry_tasks.keys())
         if data_pattern not in available_datasets:
             logger.error(f'No dataset found in available datasets: {available_datasets}, got data_pattern: {data_pattern}')
             return
@@ -99,12 +100,13 @@ class TaskConfig:
 
         return res_dict
 
-    def load(self, custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
+    @staticmethod
+    def load(custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
         res_list = []
         for task_name in tasks:
             task: dict = registry_tasks.get(task_name, None)
             if task is None:
-                logger.error(f'No task found in tasks: {self.list()}, got task_name: {task_name}')
+                logger.error(f'No task found in tasks: {list(registry_tasks.keys())}, got task_name: {task_name}')
                 continue
 
             res = TaskConfig(**task)
@@ -117,7 +119,8 @@ class TaskConfig:
 
         return res_list
 
-    def list(self):
+    @staticmethod
+    def list():
         return list(registry_tasks.keys())
 
 
@@ -135,10 +138,10 @@ if __name__ == '__main__':
     task_config = TaskConfig()
 
     # Register a new task
-    task_config.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
+    TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
 
     import json
-    swift_eval_task: List[TaskConfig] = task_config.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift'])
+    swift_eval_task: List[TaskConfig] = TaskConfig.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift'])
     for item in swift_eval_task:
         print(item.to_dict())
         print()
