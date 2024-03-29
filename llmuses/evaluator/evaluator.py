@@ -46,7 +46,7 @@ class Evaluator(object):
                  overall_task_cfg: Optional[dict] = None,
                  **kwargs):
 
-        self.dataset_name_or_path = dataset_name_or_path
+        self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.root_cache_dir = os.path.expanduser(root_cache_dir)
         self.datasets_dir = os.path.expanduser(datasets_dir)
         self.kwargs = kwargs
@@ -89,11 +89,11 @@ class Evaluator(object):
 
         # Init memory cache
         # TODO: refactor mem cache manager
-        mem_cache_file_name = self.dataset_name_or_path.replace('/', '_') + \
-            '_' + self.model_id.replace('/', '_') + \
-            '_' + self.model_revision_str + \
-            '_cache.pkl'
-        self.mem_cache_path = os.path.join(self.root_cache_dir, 'mem_cache', mem_cache_file_name)
+        # mem_cache_file_name = self.dataset_name_or_path.replace('/', '_') + \
+        #     '_' + self.model_id.replace('/', '_') + \
+        #     '_' + self.model_revision_str + \
+        #     '_cache.pkl'
+        # self.mem_cache_path = os.path.join(self.root_cache_dir, 'mem_cache', mem_cache_file_name)
 
         # Note: mem_cache is deprecated, use `use_cache` instead
         self.mem_cache = None
@@ -156,7 +156,12 @@ class Evaluator(object):
 
         answers_list = []
         pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
-        pred_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+
+        if os.path.isdir(self.dataset_name_or_path):
+            pred_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '_' + subset_name + '.jsonl'
+        else:
+            pred_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
+
         pred_file_path: str = os.path.join(pred_dir, pred_file_name)
 
         if self.use_cache and os.path.exists(pred_file_path):
@@ -268,7 +273,10 @@ class Evaluator(object):
         reviews_list = []
 
         review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
-        review_file_name: str = self.dataset_name_or_path.replace('/', '_') + '_' + subset_name + '.jsonl'
+        if os.path.isdir(self.dataset_name_or_path):
+            review_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '_' + subset_name + '.jsonl'
+        else:
+            review_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
         review_file_path: str = os.path.join(review_dir, review_file_name)
 
         if self.use_cache and os.path.exists(review_file_path):
@@ -339,7 +347,12 @@ class Evaluator(object):
 
         # Dump report
         report_dir: str = self.outputs_structure[OutputsStructure.REPORTS_DIR]
-        report_file_name: str = self.dataset_name_or_path.replace('/', '_') + '.json'
+
+        if os.path.isdir(self.dataset_name_or_path):
+            report_file_name: str = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)) + '.json'
+        else:
+            report_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '.json'
+
         os.makedirs(report_dir, exist_ok=True)
         report_path: str = os.path.join(report_dir, report_file_name)
         with open(report_path, 'w') as f:
@@ -355,21 +368,21 @@ class Evaluator(object):
             except:
                 logger.error('Failed to generate report table.')
 
-    def save_cache(self):
-        if self.mem_cache is not None:
-            logger.info(f'** Saving memory cache with size: {len(self.mem_cache)}')
-            Cache.save(cache=self.mem_cache, path=self.mem_cache_path)
+    # def save_cache(self):
+    #     if self.mem_cache is not None:
+    #         logger.info(f'** Saving memory cache with size: {len(self.mem_cache)}')
+    #         Cache.save(cache=self.mem_cache, path=self.mem_cache_path)
 
-    def clear_cache(self):
-        """
-        Clear memory cache.
-
-        Returns: None
-        """
-        if self.mem_cache is not None:
-            cache_len = len(self.mem_cache)
-            self.mem_cache.clear()
-            logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
+    # def clear_cache(self):
+    #     """
+    #     Clear memory cache.
+    #
+    #     Returns: None
+    #     """
+    #     if self.mem_cache is not None:
+    #         cache_len = len(self.mem_cache)
+    #         self.mem_cache.clear()
+    #         logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
 
     def eval(self,
              infer_cfg: dict = None,

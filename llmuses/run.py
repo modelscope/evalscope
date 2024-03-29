@@ -3,7 +3,7 @@
 import copy
 import json
 import argparse
-from typing import Union
+from typing import Union, List
 import torch        # noqa
 
 from llmuses.config import TaskConfig
@@ -136,7 +136,13 @@ def parse_str_args(str_args: str) -> dict:
     return final_args
 
 
-def run_task(task_cfg: Union[str, dict, TaskConfig]) -> dict:
+def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[dict, List[dict]]:
+
+    if isinstance(task_cfg, list):
+        eval_results = []
+        for one_task_cfg in task_cfg:
+            eval_results.append(run_task(one_task_cfg))
+        return eval_results
 
     if isinstance(task_cfg, TaskConfig):
         task_cfg = task_cfg.to_dict()
@@ -238,6 +244,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig]) -> dict:
                                            outputs_dir=outputs,
                                            is_custom_outputs_dir=False, )
         else:
+            # TODO: CHECK dataset_args
             dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules[
                 'DATASET_ID']
 

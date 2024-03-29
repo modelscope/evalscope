@@ -14,6 +14,19 @@ logger = get_logger()
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
+registry_tasks = {
+    'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
+    'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
+    'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
+    'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
+    'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
+
+    # 'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
+    # 'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
+    # 'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
+
+}
+
 
 @dataclass
 class TaskConfig:
@@ -33,19 +46,44 @@ class TaskConfig:
     dataset_dir: str = ''
     limit: int = None
 
-    def __post_init__(self):
-        self.registry_tasks = {
-            'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
-            'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
-            'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
-            'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
-            'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
+    # def __post_init__(self):
+    #     self.registry_tasks = {
+    #         'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
+    #         'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
+    #         'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
+    #         'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
+    #         'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
+    #
+    #         'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
+    #         'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
+    #         'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
+    #
+    #     }
 
-            'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
-            'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
-            'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
+    def registry(self, name: str, data_pattern: str, datasets_dir: str = None) -> None:
+        """
+        Register a new task (dataset) for evaluation.
 
-        }
+        Args:
+            name: str, the dataset name.
+            data_pattern: str, the data pattern for the task.
+                    e.g. `mmlu`, `ceval`, `gsm8k`, ...
+                    refer to task_config.list() for all available datasets.
+        """
+        available_datasets = self.list()
+        if data_pattern not in available_datasets:
+            logger.error(f'No dataset found in available datasets: {available_datasets}, got data_pattern: {data_pattern}')
+            return
+
+        # Reuse the existing task config and update the datasets
+        pattern_config = registry_tasks.get(data_pattern)
+        custom_config = copy.deepcopy(pattern_config)
+        custom_config.update({'datasets': [name]})
+        custom_config.update({'dataset_hub': 'Local'})     # TODO: to support `ModelScope`
+        if datasets_dir is not None:
+            custom_config.update({'dataset_dir': datasets_dir})
+        registry_tasks.update({name: custom_config})
+        logger.info(f'** Registered task: {name} with data pattern: {data_pattern}')
 
     def to_dict(self):
         # Note: to avoid serialization error for some model instance
@@ -57,34 +95,26 @@ class TaskConfig:
 
         return res_dict
 
-    def load(self, custom_model: CustomModel, tasks: List[str]):
-        # TODO: check merge run args, like dataset_args, model_args, generation_config ...
-        tmp_d: dict = {}
-        tmp_dataset_args: dict = {}
-        datasets: list = []
+    def load(self, custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
+        res_list = []
         for task_name in tasks:
-            task: dict = self.registry_tasks.get(task_name, None)
+            task: dict = registry_tasks.get(task_name, None)
             if task is None:
                 logger.error(f'No task found in tasks: {self.list()}, got task_name: {task_name}')
                 continue
-            tmp_d = task
-            datasets.extend(task.get('datasets', []))
-            tmp_dataset_args.update(task.get('dataset_args', {}))
 
-        tmp_d.update({'datasets': datasets})
-        tmp_d.update({'model': custom_model})
-        tmp_d.update({'dataset_args': tmp_dataset_args})
+            res = TaskConfig(**task)
+            res.model = custom_model
+            if res.outputs is None:
+                res.outputs = os.path.join(res.work_dir,
+                                           'outputs',
+                                           f"eval_{'-'.join(tasks)}_{res.model.config['model_id']}_{res.model_args.get('revision', 'default')}")
+            res_list.append(res)
 
-        res = TaskConfig(**tmp_d)
-        if res.outputs is None:
-            res.outputs = os.path.join(res.work_dir,
-                                       'outputs',
-                                       f"eval_{'-'.join(tasks)}_{res.model.config['model_id']}_{res.model_args.get('revision', 'default')}")
-
-        return res
+        return res_list
 
     def list(self):
-        return list(self.registry_tasks.keys())
+        return list(registry_tasks.keys())
 
 
 class TempModel(CustomModel):
@@ -98,9 +128,14 @@ class TempModel(CustomModel):
 
 if __name__ == '__main__':
     model = TempModel(config={'model_id': 'test-swift-dummy-model'})
-    task_cfg = TaskConfig()
+    task_config = TaskConfig()
 
-    task_inst: TaskConfig = task_cfg.load(custom_model=model, tasks=['arc', 'gsm8k'])
+    # Register a new task
+    task_config.registry(name='arc_swift_custom', data_pattern='arc')
 
-    print(task_inst.to_dict())
-    print(task_inst.list())
+    import json
+    swift_eval_task: List[TaskConfig] = task_config.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift_custom'])
+    for item in swift_eval_task:
+        print(item.to_dict())
+        print()
+

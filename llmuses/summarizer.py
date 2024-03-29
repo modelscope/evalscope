@@ -29,13 +29,13 @@ class Summarizer:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
 
-        report_table: str = gen_table([reports_dir])
-        logger.info(f'*** Report table ***\n{report_table}')
+        # report_table: str = gen_table([reports_dir])
+        # logger.info(f'*** Report table ***\n{report_table}')
 
         return res_list
 
     @staticmethod
-    def get_report_from_cfg(task_cfg: Union[str, TaskConfig]) -> List[dict]:
+    def get_report_from_cfg(task_cfg: Union[str, TaskConfig, List[TaskConfig]]) -> List[dict]:
         """
         Get report from cfg file.
 
@@ -44,8 +44,17 @@ class Summarizer:
 
         Returns:
             list: list of report dict.
-            A report dict is a overall report on a benchmark for specific model.
+            A report dict is overall report on a benchmark for specific model.
         """
+        if isinstance(task_cfg, list):
+            res_list: list = []
+            for task_cfg_item in task_cfg:
+                res_list.extend(Summarizer.get_report_from_cfg(task_cfg_item))
+            res_list = [json.dumps(item, ensure_ascii=False) for item in res_list]
+            res_list = list(set(res_list))
+            res_list = [json.loads(item) for item in res_list]
+            return res_list
+
         if isinstance(task_cfg, str):
             task_cfg: dict = yaml_to_dict(task_cfg)
         elif isinstance(task_cfg, TaskConfig):

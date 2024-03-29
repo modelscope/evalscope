@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import json
 import os
 import time
 from typing import List
@@ -128,15 +128,22 @@ if __name__ == '__main__':
     swift_model = SwiftModel(config={'model_id': 'swift_grok-base-dummy'})
     task_config: TaskConfig = TaskConfig()
     print(task_config.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'
-    task_config = task_config.load(custom_model=swift_model, tasks=['arc', 'gsm8k', 'bbh_mini'])
+
+    # Customize your own dataset
+    task_config.registry(name='my_arc_mini', data_pattern='arc', datasets_dir='/Users/jason/workspace/work/maas/benchmarks/data')
+
+    # Load the task config list
+    task_config_list = task_config.load(custom_model=swift_model, tasks=['my_arc_mini', 'gsm8k'])
 
     # You can update the task_config with your own settings
-    task_config.limit = 2      # Note: limit the number of each subset to evaluate; default is None
-    task_config.stage = 'all'  # Note: 'all' or 'infer' or 'review'
+    for config_item in task_config_list:
+        config_item.limit = 2           # Note: limit the number of each subset to evaluate; default is None
 
-    eval_results: dict = run_task(task_cfg=task_config)
+    print(task_config_list)
+
+    eval_results: dict = run_task(task_cfg=task_config_list)
     print(f'** Evaluation results finished !\n')
 
     # Get the final report for your evaluation task
-    final_report: List[dict] = Summarizer.get_report_from_cfg(task_cfg=task_config)
-    print(f'*** Final report ***\n {final_report}\n')
+    final_report: List[dict] = Summarizer.get_report_from_cfg(task_cfg=task_config_list)
+    print(f'*** Final report ***\n {json.dumps(final_report, ensure_ascii=False)}\n')
