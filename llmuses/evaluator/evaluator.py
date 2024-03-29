@@ -11,7 +11,6 @@ from tqdm import tqdm
 from typing import Optional, List, Any, Union
 
 from llmuses.benchmarks import DataAdapter
-from llmuses.cache import Cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys, EvalStage
 from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
@@ -27,6 +26,25 @@ class Evaluator(object):
 
     """
     The evaluator for model on datasets.
+
+    Args:
+        dataset_name_or_path: str, the dataset name or path.
+                if the dataset is a local path, e.g. /path/to/your_dataset_name,
+                then the task name will be the basename of the path, which is `your_dataset_name`.
+        data_adapter: DataAdapter, the data adapter for the dataset.
+        subset_list: list, the subset list for the dataset.
+        model_adapter: BaseModelAdapter, the model adapter for the model.
+        use_cache: bool, whether to use local cache. Default: True
+        mem_cache_method: str, the memory cache method. Default: 'ttl' (deprecated)
+        root_cache_dir: str, the root cache dir. Default: DEFAULT_ROOT_CACHE_DIR
+        outputs_dir: str, the outputs dir. Default: ''
+        is_custom_outputs_dir: bool, whether to use custom outputs dir. Default: False  (deprecated)
+        datasets_dir: str, the datasets dir. Default: DEFAULT_ROOT_CACHE_DIR
+        datasets_hub: str, the datasets hub. `Local`, `ModelScope` or `HuggingFace`. Default: 'ModelScope'
+        stage: str, the stage of evaluation. `all` or `infer` or `review`. Default: 'all'
+        eval_type: str, the evaluation type. `checkpoint` or `service` or `custom`. Default: 'checkpoint'
+        overall_task_cfg: dict, the overall task config. Default: None
+        **kwargs: kwargs.
     """
 
     def __init__(self,
