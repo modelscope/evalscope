@@ -29,13 +29,13 @@ class Summarizer:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
 
-        # report_table: str = gen_table([reports_dir])
-        # logger.info(f'*** Report table ***\n{report_table}')
+        report_table: str = gen_table([reports_dir])
+        logger.info(f'*** Report table ***\n{report_table}')
 
         return res_list
 
     @staticmethod
-    def get_report_from_cfg(task_cfg: Union[str, TaskConfig, List[TaskConfig]]) -> List[dict]:
+    def get_report_from_cfg(task_cfg: Union[str, List[str], TaskConfig, List[TaskConfig]]) -> List[dict]:
         """
         Get report from cfg file.
 
@@ -46,29 +46,40 @@ class Summarizer:
             list: list of report dict.
             A report dict is overall report on a benchmark for specific model.
         """
-        if isinstance(task_cfg, list):
-            res_list: list = []
-            for task_cfg_item in task_cfg:
-                res_list.extend(Summarizer.get_report_from_cfg(task_cfg_item))
-            res_list = [json.dumps(item, ensure_ascii=False) for item in res_list]
-            res_list = list(set(res_list))
-            res_list = [json.loads(item) for item in res_list]
-            return res_list
+        candidate_task_cfgs: List[dict] = []
 
         if isinstance(task_cfg, str):
             task_cfg: dict = yaml_to_dict(task_cfg)
+            candidate_task_cfgs = [task_cfg]
         elif isinstance(task_cfg, TaskConfig):
             task_cfg: dict = task_cfg.to_dict()
+            candidate_task_cfgs = [task_cfg]
+        elif isinstance(task_cfg, list):
+            for task_cfg_item in task_cfg:
+                if isinstance(task_cfg_item, str):
+                    task_cfg_item: dict = yaml_to_dict(task_cfg_item)
+                elif isinstance(task_cfg_item, TaskConfig):
+                    task_cfg_item: dict = task_cfg_item.to_dict()
+                candidate_task_cfgs.append(task_cfg_item)
         else:
             raise ValueError(f'Invalid task_cfg: {task_cfg}')
 
-        logger.info(f'**Task cfg: {task_cfg}')
-        outputs_dir: str = task_cfg.get('outputs')
-        outputs_dir: str = os.path.expanduser(outputs_dir)
-        if outputs_dir is None:
-            raise ValueError(f'No outputs_dir in {task_cfg}')
+        final_res_list: list = []
+        outputs_dir_list: list = []
+        for candidate_task in candidate_task_cfgs:
+            logger.info(f'**Task cfg: {candidate_task}')
+            outputs_dir: str = candidate_task.get('outputs')
+            outputs_dir: str = os.path.expanduser(outputs_dir)
+            if outputs_dir is None:
+                raise ValueError(f'No outputs_dir in {task_cfg}')
+            outputs_dir_list.append(outputs_dir)
+        outputs_dir_list = list(set(outputs_dir_list))
 
-        return Summarizer.get_report(outputs_dir=outputs_dir)
+        for outputs_dir_item in outputs_dir_list:
+            res_list: list = Summarizer.get_report(outputs_dir=outputs_dir_item)
+            final_res_list.extend(res_list)
+
+        return final_res_list
 
 
 if __name__ == '__main__':

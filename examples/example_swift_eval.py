@@ -129,7 +129,9 @@ if __name__ == '__main__':
     task_config: TaskConfig = TaskConfig()
     print(task_config.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'
 
-    # Customize your own dataset
+    # Customize your own dataset, refer to datasets:
+    # wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+    # unzip data.zip
     task_config.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
 
     # Load the task config list
