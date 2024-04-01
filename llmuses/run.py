@@ -11,7 +11,7 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.models.custom import CustomModel
-from llmuses.utils import import_module_util
+from llmuses.utils import import_module_util, yaml_to_dict
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -146,10 +146,18 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
     if isinstance(task_cfg, TaskConfig):
         task_cfg = task_cfg.to_dict()
+    elif isinstance(task_cfg, str):
+        task_cfg = yaml_to_dict(task_cfg)
+    else:
+        raise ValueError('** Args: Please provide a valid task config. **')
 
     # Get the output task config
     output_task_cfg = copy.copy(task_cfg)
-    output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
+    if 'model' in task_cfg and hasattr(task_cfg['model'], '__class__'):
+        output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
+    else:
+        task_cfg.update({'model': None})
+
     logger.info(output_task_cfg)
 
     model_args: dict = task_cfg.get('model_args',
