@@ -331,7 +331,7 @@ class CEVALAdapter(DataAdapter):
             example += f'\n{choice}. {input_d[f"{choice}"]}'
 
         if include_answer:
-            example += '\n答案：' + input_d['answer'] + '\n\n'
+            example += '\n答案: ' + input_d['answer'] + '\n\n'
         else:
-            example += '\n答案：'
+            example += '\n答案: '
         return example
