@@ -179,7 +179,6 @@ def main():
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
 
-        dataset_path_list = []
         if dataset_hub == 'Local':
             dataset_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
             if not dataset_path_list:
