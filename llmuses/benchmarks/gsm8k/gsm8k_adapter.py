@@ -90,9 +90,9 @@ class GSM8KAdapter(DataAdapter):
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.
         ans: str = input_d.get('answer', '')
-        # ans = self._extract_answer(ans).strip()
-        # if not ans:
-        #     logger.error(f'No ground truth answer found in the input: {input_d}')
+        ans = self._extract_answer(ans).strip()
+        if not ans:
+            logger.error(f'No ground truth answer found in the input: {input_d}')
         return ans
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
@@ -112,7 +112,9 @@ class GSM8KAdapter(DataAdapter):
         # except:
         #     result = INVALID_ANS
 
-        return result
+        return self._extract_answer(result)
+
+        # return result
 
     def match(self, gold: str, pred: str) -> float:
         # if gold == INVALID_ANS or pred == INVALID_ANS:
@@ -230,7 +232,8 @@ class GSM8KAdapter(DataAdapter):
 
     @classmethod
     def _is_correct(cls, completion, answer):
-        gold = cls._extract_answer(answer)
+        # gold = cls._extract_answer(answer)
+        gold = answer
         assert gold is not None, 'No ground truth answer found in the document.'
 
         def number_equal(answer, pred):
@@ -244,4 +247,5 @@ class GSM8KAdapter(DataAdapter):
                 )
                 return False
 
-        return number_equal(gold, cls._extract_answer(completion))
+        # return number_equal(gold, cls._extract_answer(completion))
+        return number_equal(gold, completion)

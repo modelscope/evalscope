@@ -46,7 +46,7 @@ class GeneralQAAdapter(DataAdapter):
             data_dict[sub_name] = {}
 
             try:
-                with open(dataset_name_or_path, 'r') as f:
+                with open(dataset_name_or_path, 'r', encoding='utf-8') as f:
                     # data = json.load(f)
                     data = [json.loads(line) for line in f.readlines()]
             except Exception as e:
