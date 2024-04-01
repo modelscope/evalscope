@@ -101,11 +101,15 @@ def parse_args():
                         help='To use memory cache or not.',
                         action='store_true',
                         default=False)
+    # parser.add_argument('--use-cache',
+    #                     help='To reuse the cache or not. Default to True.',
+    #                     action='store_true',
+    #                     default=True)
     parser.add_argument('--use-cache',
-                        help='To reuse the cache or not. Default to True.',
-                        action='store_true',
-                        default=True)
-    parser.add_argument('--stage',      # TODO
+                        help='To reuse the cache or not. Default to `true`.',
+                        type=str,
+                        default='true')
+    parser.add_argument('--stage',
                         help='The stage of evaluation pipeline, '
                              'can be `all`, `infer`, `review`. Default to `all`.',
                         type=str,
@@ -194,7 +198,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     if mem_cache:
         logger.warning('** DeprecatedWarning: `--mem-cache` is deprecated, please use `--use-cache` instead.')
 
-    logger.info(f'Set use_cache to {use_cache}.')
+    logger.info(f'** Set use_cache to {use_cache}.')
 
     # Get model args
     if dry_run:
@@ -291,6 +295,7 @@ def main():
     args = parse_args()
 
     # Get task_cfg
+    use_cache: bool = False if args.use_cache.lower() == 'false' else True
     task_cfg = {
         'model_args': parse_str_args(args.model_args),
         'generation_config': parse_str_args(args.generation_config),
@@ -302,7 +307,7 @@ def main():
         'work_dir': args.work_dir,
         'outputs': args.outputs,
         'mem_cache': args.mem_cache,
-        'use_cache': args.use_cache,
+        'use_cache': use_cache,
         'dataset_hub': args.dataset_hub,
         'dataset_dir': args.dataset_dir,
         'stage': args.stage,
