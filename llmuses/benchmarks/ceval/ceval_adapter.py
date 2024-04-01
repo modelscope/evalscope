@@ -150,7 +150,7 @@ class CEVALAdapter(DataAdapter):
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
-                         few_shot_num=few_shot_num,
+                         few_shot_num=0,
                          train_split=train_split,
                          eval_split=eval_split,
                          **kwargs)
