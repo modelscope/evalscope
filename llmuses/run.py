@@ -179,6 +179,8 @@ def main():
         dataset_local_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
         dataset_local_path_list = dataset_local_path_list if isinstance(dataset_local_path_list, list) else [imported_modules['DATASET_ID']]
 
+        print(f'> dataset_local_path_list: {dataset_local_path_list}')
+
         for dataset_name_or_path in dataset_local_path_list:
             if args.dry_run:
                 from llmuses.models.dummy_chat_model import DummyChatModel
