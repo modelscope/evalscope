@@ -148,16 +148,13 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         task_cfg = task_cfg.to_dict()
     elif isinstance(task_cfg, str):
         task_cfg = yaml_to_dict(task_cfg)
+    elif isinstance(task_cfg, dict):
+        logger.info('** Args: Task config is provided with dictionary type. **')
     else:
         raise ValueError('** Args: Please provide a valid task config. **')
 
     # Get the output task config
     output_task_cfg = copy.copy(task_cfg)
-    if 'model' in task_cfg and hasattr(task_cfg['model'], '__class__'):
-        output_task_cfg.update({'model': task_cfg['model'].__class__.__name__})
-    else:
-        task_cfg.update({'model': None})
-
     logger.info(output_task_cfg)
 
     model_args: dict = task_cfg.get('model_args',
@@ -229,8 +226,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             model_adapter = DummyChatModel(model_cfg=dict())
         elif eval_type == 'custom':
             if not isinstance(model, CustomModel):
-                raise ValueError('Please provide a custom model instance '
-                                 'in format of llmuses.models.custom.CustomModel.')
+                raise ValueError(f'Expected llmuses.models.custom.CustomModel, but got {type(model)}.')
             from llmuses.models.model_adapter import CustomModelAdapter
             model_adapter = CustomModelAdapter(custom_model=model)
         else:
