@@ -146,6 +146,9 @@ def main():
     # Parse args
     model_precision = model_args.get('precision', 'torch.float16')
 
+    # Dataset hub
+    dataset_hub: str = args.dataset_hub
+
     # Get model args
     if args.dry_run:
         from llmuses.models.dummy_chat_model import DummyChatModel
@@ -175,11 +178,21 @@ def main():
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}, '
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
-            
-        dataset_local_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
-        dataset_local_path_list = dataset_local_path_list if isinstance(dataset_local_path_list, list) else [imported_modules['DATASET_ID']]
 
-        for dataset_name_or_path in dataset_local_path_list:
+        if dataset_hub == 'Local':
+            dataset_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
+            if not dataset_path_list:
+                dataset_path_list = [dataset_name]
+        elif dataset_hub == 'ModelScope':
+            dataset_path_list = [imported_modules['DATASET_ID']]
+        elif dataset_hub == 'HuggingFace':
+            raise NotImplementedError('HuggingFace dataset hub is not supported yet.')
+        else:
+            raise ValueError(f'Unknown dataset hub: {dataset_hub}')
+
+        print(f'> dataset_local_path_list: {dataset_path_list}')      # TODO: ONLY FOR TEST
+
+        for dataset_name_or_path in dataset_path_list:
             if args.dry_run:
                 from llmuses.models.dummy_chat_model import DummyChatModel
                 model_adapter = DummyChatModel(model_cfg=dict())
@@ -208,7 +221,7 @@ def main():
                                                outputs_dir=args.outputs,
                                                is_custom_outputs_dir=False,)
             else:
-                evaluator = Evaluator(dataset_name_or_path=dataset_name if args.dataset_hub == 'Local' else dataset_name_or_path,
+                evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
                                       subset_list=imported_modules['SUBSET_LIST'],
                                       data_adapter=data_adapter,
                                       model_adapter=model_adapter,
