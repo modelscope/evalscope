@@ -481,6 +481,9 @@ class Evaluator(object):
         try:
             logger.info(f'** Dumping overall task config to {overall_task_cfg_file} ...')
             logger.info(f'** The overall task config:\n {self.overall_task_cfg}')
+            if 'model' in self.overall_task_cfg and not isinstance(self.overall_task_cfg['model'], str):
+                self.overall_task_cfg['model'] = None
+                logger.info(f'>> Overwrite overall_task_cfg for `model` due to it is not a string')
             dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')
