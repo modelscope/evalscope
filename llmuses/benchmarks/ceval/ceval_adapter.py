@@ -209,6 +209,7 @@ class CEVALAdapter(DataAdapter):
             context = ''
 
         full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
+        full_prompt = f"以下是中国关于{SUBJECT_MAPPING.get(subset_name)[1]}考试的单项选择题，请选出其中的正确答案。\n" + full_prompt
 
         return {'data': [full_prompt], 'multi_choices': self.choices}
 
