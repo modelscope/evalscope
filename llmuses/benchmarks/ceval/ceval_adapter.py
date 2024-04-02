@@ -142,7 +142,7 @@ class CEVALAdapter(DataAdapter):
         if few_shot_num is None:
             # Use 5-shot by default
             logger.info(f'Set 0-shot examples by default for C-Eval.')
-            few_shot_num = 0
+            few_shot_num = 5
 
         if few_shot_num > 5:
             logger.warning(f'few_shot_num <= 5 for C-Eval, but got {few_shot_num}. Use 5-shot by default.')
