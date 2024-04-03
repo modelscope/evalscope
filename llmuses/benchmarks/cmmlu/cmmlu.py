@@ -40,6 +40,7 @@ _HOMEPAGE = "https://modelscope.cn/datasets/modelscope/cmmlu/summary"
 # _URL = r"https://huggingface.co/datasets/haonan-li/cmmlu/resolve/main/cmmlu_v1_0_1.zip"
 _URL = r"https://modelscope.cn/api/v1/datasets/modelscope/cmmlu/repo?Revision=master&FilePath=cmmlu_v1_0_1.zip"
 
+# contains 67 sub-tasks
 task_list = [
      'agronomy',
      'anatomy',
