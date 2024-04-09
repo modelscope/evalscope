@@ -209,7 +209,9 @@ class CEVALAdapter(DataAdapter):
             context = ''
 
         full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
-        full_prompt = f"以下是中国关于{SUBJECT_MAPPING.get(subset_name)[1]}考试的单项选择题，请选出其中的正确答案。\n" + full_prompt
+
+        subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
+        full_prompt = f"以下是中国关于{subject_name}考试的单项选择题，请选出其中的正确答案。\n" + full_prompt
 
         return {'data': [full_prompt], 'multi_choices': self.choices}
 
@@ -297,7 +299,7 @@ class CEVALAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2] if SUBJECT_MAPPING.get(subset_name) else 'DEFAULT'
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:

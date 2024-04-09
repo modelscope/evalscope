@@ -323,7 +323,7 @@ class MMLUAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2] if SUBJECT_MAPPING.get(subset_name) else subset_name
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:

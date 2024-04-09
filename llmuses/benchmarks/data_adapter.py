@@ -105,7 +105,7 @@ class DataAdapter(ABC):
         """
         res_dict: dict = {}
 
-        if self.few_shot_num < 0:
+        if self.few_shot_num and self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
         logger.info(f'\n** Use default settings: \n'
@@ -115,7 +115,7 @@ class DataAdapter(ABC):
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
-            if self.few_shot_num > 0:
+            if self.few_shot_num and self.few_shot_num > 0:
                 few_shot_random: bool = self.config_kwargs.get('few_shot_random', True)
                 few_shot_data = self.get_fewshot_examples(
                     [item for item in sub_data_dict[self.train_split]],

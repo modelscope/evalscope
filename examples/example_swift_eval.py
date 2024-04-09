@@ -131,14 +131,21 @@ if __name__ == '__main__':
     # Customize your own dataset, refer to datasets:
     # wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
     # unzip data.zip
-    TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
+    custom_dataset_name = 'general_qa_swift_custom_dataset'
+    custom_dataset_pattern = 'general_qa'    # 可选范围： ['arc', 'gsm8k', 'mmlu', 'ceval', 'bbh']
+    TaskConfig.registry(name=custom_dataset_name,
+                        data_pattern=custom_dataset_pattern,
+                        dataset_dir='/path/to/data/general_qa_swift',
+                        # subset_list=['my_swift_custom_subset1', 'my_swift_custom_subset2'],
+                        )
 
     # Load the task config list
-    task_config_list = TaskConfig.load(custom_model=swift_model, tasks=['arc_swift', 'gsm8k'])
+    task_config_list = TaskConfig.load(custom_model=swift_model, tasks=[custom_dataset_name, 'arc'])
 
     # You can update the task_config with your own settings
     for config_item in task_config_list:
         config_item.limit = 20           # Note: limit the number of each subset to evaluate; default is None
+        config_item.use_cache = False
 
     print(task_config_list)
 
