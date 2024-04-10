@@ -43,10 +43,11 @@ class GeneralQAAdapter(DataAdapter):
              subset_list: list = None,
              **kwargs) -> dict:
 
-        file_list = glob.glob(os.path.join(dataset_name_or_path, '*.jsonl'))
+        data_file_list = glob.glob(os.path.join(dataset_name_or_path, '*.jsonl'))
         data_list = []
+
         try:
-            for file_path in file_list:
+            for file_path in data_file_list:
                 data_list.extend(jsonl_to_list(file_path))
         except Exception as e:
             raise ValueError(f"Failed to load data from {dataset_name_or_path}, got error: {e}")
@@ -58,17 +59,23 @@ class GeneralQAAdapter(DataAdapter):
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
         Args:
-            input_d: {'history': [], 'question': '', 'answer': ''}
+            input_d:
+                format1: {'history': [['q1', 'a1'], ['q2', 'a2']], 'question': '', 'answer': ''}
+                format2: {'history': [['q1', 'a1'], ['q2', 'a2']], 'query': '', 'response': ''}
 
         Returns:
             {'data': [prompt]}
 
         """
         # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        history = input_d.get('history', [])
-        prompt = input_d['question']
+        history = input_d.get('history', [])    # history: [['q1', 'a1'], ['q2', 'a2'], ...]
         if len(history) > 0:
-            prompt = '\n'.join(history) + '\n' + prompt
+            logger.warning(f"The history is not included in the prompt for GeneralQA. To be supported in the future.")
+
+        prompt = input_d.get('question', '') or input_d.get('query', '')
+
+        # if len(history) > 0:
+        #     prompt = '\n'.join(history) + '\n' + prompt
         return {'data': [prompt]}
     
     def get_gold_answer(self, input_d: dict) -> str:
@@ -80,7 +87,7 @@ class GeneralQAAdapter(DataAdapter):
             gold_answer: str
 
         """
-        return input_d.get('answer', '')
+        return input_d.get('answer', '') or input_d.get('response', '')
     
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
