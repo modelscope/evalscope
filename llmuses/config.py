@@ -88,7 +88,11 @@ class TaskConfig:
         custom_config = copy.deepcopy(pattern_config)
         custom_config.update({'datasets': [data_pattern]})
         custom_config.update({'dataset_hub': 'Local'})     # TODO: to support `ModelScope`
-        custom_config.update({'dataset_args': {data_pattern: {}}})
+        if 'dataset_args' in custom_config:
+            if data_pattern not in custom_config:
+                custom_config['dataset_args'].update({data_pattern: {}})
+        else:
+            custom_config.update({'dataset_args': {data_pattern: {}}})
 
         if dataset_dir is not None:
             custom_config['dataset_args'][data_pattern].update({'local_path': dataset_dir})

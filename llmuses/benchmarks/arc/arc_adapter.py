@@ -27,6 +27,7 @@ class ARCAdapter(DataAdapter):
                  few_shot_num: int = None,
                  train_split: str = 'train',
                  eval_split: str = 'test',
+                 prompt_template: str = '',
                  **kwargs):
 
         if subset_list is None:
@@ -48,6 +49,7 @@ class ARCAdapter(DataAdapter):
                          few_shot_num=few_shot_num,
                          train_split=train_split,
                          eval_split=eval_split,
+                         prompt_template=prompt_template,
                          **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
@@ -115,8 +117,9 @@ class ARCAdapter(DataAdapter):
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
         context: str = '\n'.join(few_shot_prompts)
 
-        # TODO: to be checked !
-        context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
+        context = f'{self.prompt_template}\n{context}' if self.prompt_template else context
+
+        # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
         full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
 
         return {'data': [full_prompt], 'multi_choices': self.choices}

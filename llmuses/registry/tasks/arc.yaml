@@ -14,7 +14,9 @@ generation_config:
   repetition_penalty: 1.0
 #  eos_token_id: null
 #  pad_token_id: null
-dataset_args: {}
+dataset_args:
+  arc:
+    prompt_template: 'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:'
 dry_run: false
 model: null   # Note: to be implemented as CustomModel
 eval_type: custom

@@ -256,11 +256,14 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules[
                 'DATASET_ID']
 
+            in_prompt_template: str = dataset_args.get(dataset_name, {}).get('prompt_template', '')
+
             # Init data adapter
             few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
             few_shot_random: bool = dataset_args.get(dataset_name, {}).get('few_shot_random', True)
             data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
-                                                                few_shot_random=few_shot_random)
+                                                                few_shot_random=few_shot_random,
+                                                                prompt_template=in_prompt_template,)
 
             in_subset_list: list = dataset_args.get(dataset_name, {})\
                 .get('subset_list', imported_modules['SUBSET_LIST'])

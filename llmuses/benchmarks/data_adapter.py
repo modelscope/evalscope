@@ -19,6 +19,7 @@ class DataAdapter(ABC):
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
+                 prompt_template: str = '',
                  **kwargs):
         """
         Args:
@@ -27,12 +28,15 @@ class DataAdapter(ABC):
             few_shot_num: int, number of few-shot examples. Default: 0
             train_split: str, usually for few-shot examples. e.g. 'train'
             eval_split: str, the target eval split name. e.g. 'test'
+            prompt_template: str, the prompt template for the benchmark,
+                e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:`
         """
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num
         self.train_split = train_split
         self.eval_split = eval_split
+        self.prompt_template = prompt_template
         self.config_kwargs = kwargs
 
     def load(self,
