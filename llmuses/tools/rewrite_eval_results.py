@@ -11,17 +11,18 @@ from llmuses.utils.logger import get_logger
 logger = get_logger()
 
 """
-ONLY FOR REWRITING EVAL RESULTS.
+This script is used to rewrite the evaluation results without re-running the model predictions.
 """
 
 
-class SwiftModel(CustomModel):
+class DummyCustomModel(CustomModel):
 
     def __init__(self, config: dict, **kwargs):
-        super(SwiftModel, self).__init__(config=config, **kwargs)
+        super(DummyCustomModel, self).__init__(config=config, **kwargs)
 
     def predict(self, prompt: str, **kwargs):
-        # ONLY FOR TEST
+        # ONLY FOR DUMMY IMPLEMENTATION, DO NOT EDIT OR USE IN PRODUCTION.
+
         response = 'The answer is C. NOTE: ONLY FOR TEST'
 
         res_d: dict = {
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     # step1: 如果outputs做了迁移，需要修改outputs/eval_xxx 中的configs/task_output_config.yaml中的路径配置
     # step2: 执行此脚本，默认使用use_cache=True，实现免推理对eval结果进行刷新
 
-    swift_model = SwiftModel(config={'model_id': 'swift-model-dummy'})
+    swift_model = DummyCustomModel(config={'model_id': 'swift-model-dummy'})
 
     task_cfg_file = '/path/to/eval_your_model_results/configs/task_output_config.yaml'
 
