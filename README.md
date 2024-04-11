@@ -112,16 +112,8 @@ python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --datasets arc --data
 ```
 
 ### 使用run_task函数提交评估任务
-llmuses支持通过import依赖的方式实现任务提交，步骤如下：
-#### 1. 安装依赖
-```shell
-# 参考上文`环境准备`章节，安装依赖requirements.txt中的内容
 
-# 安装llmuses包
-pip install https://sail-moe.oss-cn-hangzhou.aliyuncs.com/open_data/packages/llmuses-0.2.6-py3-none-any.whl
-```
-
-#### 2. 配置任务
+#### 1. 配置任务
 ```python
 import torch
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
@@ -146,7 +138,7 @@ your_task_cfg = {
 
 ```
 
-#### 3. 执行任务
+#### 2. 执行任务
 ```python
 from llmuses.run import run_task
 

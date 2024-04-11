@@ -296,12 +296,14 @@ class ResponseParser:
         return ''
 
 
-def make_outputs_dir(work_dir: str, model_id: str, model_revision: str):
+def make_outputs_dir(work_dir: str, model_id: str, model_revision: str, dataset_id: str):
     model_revision = model_revision if model_revision is not None else 'none'
-    now = datetime.datetime.now()
-    format_time = now.strftime('%Y%m%d_%H%M%S')
-    outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
-    outputs_dir = os.path.join(work_dir, outputs_name)
+    # now = datetime.datetime.now()
+    # format_time = now.strftime('%Y%m%d_%H%M%S')
+    # outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
+    # outputs_dir = os.path.join(work_dir, outputs_name)
+    dataset_name = dataset_id.replace('/', '_')
+    outputs_dir = os.path.join(work_dir, dataset_name)
 
     return outputs_dir
 
