@@ -4,7 +4,7 @@ import os
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -182,7 +182,11 @@ class MMLUAdapter(DataAdapter):
                 else:
                     raise ValueError(f'Invalid split name: {split_name}')
 
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+
                 if os.path.exists(file_path):
                     with open(file_path, encoding='utf-8') as f:
                         rows = []
@@ -239,18 +243,26 @@ class MMLUAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('target', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or 'custom'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -268,12 +280,13 @@ class MMLUAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -310,7 +323,7 @@ class MMLUAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2] if SUBJECT_MAPPING.get(subset_name) else subset_name
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:
@@ -330,7 +343,7 @@ class MMLUAdapter(DataAdapter):
         category_list = sorted(category_list, key=lambda x: x['name'])
 
         # Get final dict of report
-        res_map = dict(name='MMLU',
+        res_map = dict(name=report_name or 'mmlu',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=category_list,

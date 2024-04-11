@@ -1,6 +1,7 @@
 # pip3 install --no-dependencies -r requirements.txt
+torch
 absl-py
-auto-gptq==0.4.2
+#auto-gptq
 cachetools
 datasets>=2.14.5
 editdistance
@@ -26,9 +27,9 @@ simple-ddl-parser
 streamlit
 tabulate
 tiktoken
-torch
 tqdm
 transformers
 transformers_stream_generator
 jieba
 rouge-chinese
+wandb

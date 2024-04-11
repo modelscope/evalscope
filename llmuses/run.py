@@ -1,18 +1,19 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa
-
+import copy
 import json
 import argparse
+import os.path
+from typing import Union, List
 import torch        # noqa
 
+from llmuses.config import TaskConfig
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
-from llmuses.utils import import_module_util
+from llmuses.models.custom import CustomModel
+from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir
 from llmuses.utils.logger import get_logger
-from llmuses.constants import OutputsStructure
-from llmuses.tools.combine_reports import ReportsRecorder
-import os
 
 logger = get_logger()
 
@@ -31,17 +32,28 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--model-type',
+                        help='The model type for evaluating. It is available only when `--model` is a local model dir. ',
+                        type=str,
+                        required=False,
+                        default=None)
+    parser.add_argument('--eval-type',
+                        type=str,
+                        help='The type for evaluating. '
+                             'service - for APIs, TO-DO'
+                             'checkpoint - for models on ModelScope or local model dir, '
+                             'custom - for custom models.'
+                             '         Need to set `--model` to llmuses.models.custom.CustomModel format.'
+                             'default to `checkpoint`.',
+                        required=False,
+                        default='checkpoint',
+                        )
     parser.add_argument('--model-args',
                         type=str,
                         help='The model args, should be a string.',
                         required=False,
                         default='revision=None,precision=torch.float16,device_map=auto'
                         )
-    parser.add_argument('--qwen-path',
-                        help='The qwen model id on modelscope, or local model dir.',
-                        type=str,
-                        required=False,
-                        default="")
     parser.add_argument('--generation-config',
                         type=str,
                         help='The generation config, should be a string.',
@@ -55,8 +67,8 @@ def parse_args():
                         required=True)
     parser.add_argument('--dataset-args',
                         type=json.loads,
-                        help='The dataset args, should be a json list string. The key of dict should be aligned to datasets,'
-                             'e.g. {"humaneval": {"local_path": ["/to/your/path"]}}',
+                        help='The dataset args, should be a json string. The key of dict should be aligned to datasets,'
+                             'e.g. {"humaneval": {"local_path": "/to/your/path"}}',
                         required=False,
                         default='{}')
     parser.add_argument('--dataset-dir',
@@ -72,7 +84,8 @@ def parse_args():
                         required=False,
                         default='ModelScope')
     parser.add_argument('--outputs',
-                        help='Outputs dir.',
+                        help='Outputs dir. Default to `outputs`, which means dump to current path: ./outputs',
+                        required=False,
                         default='outputs')
     parser.add_argument('--work-dir',
                         help='The root cache dir.',
@@ -94,23 +107,22 @@ def parse_args():
                         help='To use memory cache or not.',
                         action='store_true',
                         default=False)
-    parser.add_argument('--stage',      # TODO
+    parser.add_argument('--use-cache',
+                        help='To reuse the cache or not. Default to `true`.',
+                        type=str,
+                        default='false')
+    parser.add_argument('--stage',
                         help='The stage of evaluation pipeline, '
-                             'can be `all`, `infer`, `review`, `report`. Default to `all`.',
+                             'can be `all`, `infer`, `review`. Default to `all`.',
                         type=str,
                         default='all')
-    parser.add_argument('--oss-args',
-                        type=json.loads,
-                        help='The oss args, should be a json string. The key of dict should covers "key_id, key_secret, oss_url, endpoint",'
-                             'e.g. {"key_id": "XXX", "key_secret": "XXX", "endpoint": "https://oss-cn-hangzhou.aliyuncs.com", "oss_url": "oss://xxx/xxx/"}',
-                        required=False,
-                        default='{}')
 
     args = parser.parse_args()
 
     return args
 
-def parse_str_args(str_args: str):
+
+def parse_str_args(str_args: str) -> dict:
     assert isinstance(str_args, str), 'args should be a string.'
     arg_list: list = str_args.strip().split(',')
     arg_list = [arg.strip() for arg in arg_list]
@@ -121,130 +133,208 @@ def parse_str_args(str_args: str):
         try:
             final_args[k] = eval(v)
         except:
+            if v.lower() == 'true':
+                v = True
+            if v.lower() == 'false':
+                v = False
             final_args[k] = v
 
     return final_args
 
-def get_report_path(evaluator):
-    report_dir: str = evaluator.outputs_structure[OutputsStructure.REPORTS_DIR]
-    report_file_name: str = evaluator.dataset_name_or_path.replace('/', '_') + '.json'
-    report_path: str = os.path.join(report_dir, report_file_name)
-    return report_path
 
-def set_oss_environ(args):
-    os.environ['OSS_ACCESS_KEY_ID'] = args.get("key_id", "")
-    os.environ['OSS_ACCESS_KEY_SECRET'] = args.get("key_secret", "")
+def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[dict, List[dict]]:
 
-def main():
-    args = parse_args()
-    logger.info(args)
+    if isinstance(task_cfg, list):
+        eval_results = []
+        for one_task_cfg in task_cfg:
+            eval_results.append(run_task(one_task_cfg))
+        return eval_results
 
-    model_args = parse_str_args(args.model_args)
-    generation_args = parse_str_args(args.generation_config)
-    set_oss_environ(args.oss_args)
+    if isinstance(task_cfg, TaskConfig):
+        task_cfg = task_cfg.to_dict()
+    elif isinstance(task_cfg, str):
+        task_cfg = yaml_to_dict(task_cfg)
+    elif isinstance(task_cfg, dict):
+        logger.info('** Args: Task config is provided with dictionary type. **')
+    else:
+        raise ValueError('** Args: Please provide a valid task config. **')
 
-    # Parse args
-    model_precision = model_args.get('precision', 'torch.float16')
+    # Get the output task config
+    output_task_cfg = copy.copy(task_cfg)
+    logger.info(output_task_cfg)
 
-    # Dataset hub
-    dataset_hub: str = args.dataset_hub
+    model_args: dict = task_cfg.get('model_args',
+                                    {'revision': 'default', 'precision': torch.float16, 'device_map': 'auto'})
+    # Get the GLOBAL default config (infer_cfg) for prediction
+    generation_config: dict = task_cfg.get('generation_config',
+                                           {'do_sample': False,
+                                            'repetition_penalty': 1.0,
+                                            'max_length': 2048,
+                                            'max_new_tokens': 512,
+                                            'temperature': 0.3,
+                                            'top_k': 50,
+                                            'top_p': 0.8, }
+                                           )
+    dataset_args: dict = task_cfg.get('dataset_args', {})
+    dry_run: bool = task_cfg.get('dry_run', False)
+    model: Union[str, CustomModel] = task_cfg.get('model', None)
+    model_type: str = task_cfg.get('model_type', None)
+    eval_type: str = task_cfg.get('eval_type', 'checkpoint')
+    datasets: list = task_cfg.get('datasets', None)
+    work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
+    outputs: str = task_cfg.get('outputs', 'outputs')
+    mem_cache: bool = task_cfg.get('mem_cache', False)
+    use_cache: bool = task_cfg.get('use_cache', True)
+    dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
+    dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_ROOT_CACHE_DIR)
+    stage: str = task_cfg.get('stage', 'all')                               # TODO: to be implemented
+    limit: int = task_cfg.get('limit', None)
+    debug: str = task_cfg.get('debug', False)
+
+    if model is None or datasets is None:
+        raise ValueError('** Args: Please provide model and datasets. **')
+
+    # TODO: Check model type
+    if os.path.isdir(os.path.expanduser(model)):
+        if model_type is None:
+            raise ValueError('** Args: Please provide model type for local model dir. **')
+
+    model_precision = model_args.get('precision', torch.float16)
+    if isinstance(model_precision, str):
+        model_precision = eval(model_precision)
+
+    if mem_cache:
+        logger.warning('** DeprecatedWarning: `--mem-cache` is deprecated, please use `--use-cache` instead.')
+
+    logger.info(f'** Set use_cache to {use_cache}.')
 
     # Get model args
-    if args.dry_run:
+    if dry_run:
         from llmuses.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
-        qwen_model_id = 'qwen_dummy'
         model_revision: str = 'v1.0.0'
+    elif eval_type == 'custom':
+        model_id: str = None
+        model_revision: str = None
     else:
-        model_id: str = args.model
-        model_revision: str = model_args.get('revision', None)
-        if model_revision == 'None':
-            model_revision = eval(model_revision)
-        qwen_model_id: str = args.qwen_path
+        model_id: str = model
+        model_revision: str = model_args.get('revision', 'default')
 
-    reports_recorder = ReportsRecorder(
-        oss_url=args.oss_args.get("oss_url", ""),
-        endpoint=args.oss_args.get("endpoint", "")
-    )
-    datasets_list = args.datasets
-    for dataset_name in datasets_list:
+    # Get outputs directory
+    if outputs == 'outputs':
+        outputs = make_outputs_dir(root_dir=os.path.join(work_dir, 'outputs'),
+                                   datasets=datasets,
+                                   model_id=model_type or model_id,
+                                   model_revision=model_revision,)
+
+    eval_results = dict()
+    for dataset_name in datasets:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
-        # Init data adapter
-        data_adapter = imported_modules['DataAdapterClass']()
 
-        if dataset_name == 'humaneval' and args.dataset_args.get('humaneval', {}).get('local_path') is None:
+        if dataset_name == 'humaneval' and dataset_args.get('humaneval', {}).get('local_path') is None:
             raise ValueError('Please specify the local problem path of humaneval dataset in --dataset-args,'
                              'e.g. {"humaneval": {"local_path": "/to/your/path"}}, '
                              'And refer to https://github.com/openai/human-eval/tree/master#installation to install it,'
                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
 
-        if dataset_hub == 'Local':
-            dataset_path_list = args.dataset_args.get(dataset_name, {}).get('local_path')
-            if not dataset_path_list:
-                dataset_path_list = [dataset_name]
-        elif dataset_hub == 'ModelScope':
-            dataset_path_list = [imported_modules['DATASET_ID']]
-        elif dataset_hub == 'HuggingFace':
-            raise NotImplementedError('HuggingFace dataset hub is not supported yet.')
+        if dry_run:
+            from llmuses.models.dummy_chat_model import DummyChatModel
+            model_adapter = DummyChatModel(model_cfg=dict())
+        elif eval_type == 'custom':
+            if not isinstance(model, CustomModel):
+                raise ValueError(f'Expected llmuses.models.custom.CustomModel, but got {type(model)}.')
+            from llmuses.models.model_adapter import CustomModelAdapter
+            model_adapter = CustomModelAdapter(custom_model=model)
         else:
-            raise ValueError(f'Unknown dataset hub: {dataset_hub}')
+            # Init model adapter
+            device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
+            model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
+                                                                  model_revision=model_revision,
+                                                                  device_map=device_map,
+                                                                  torch_dtype=model_precision,
+                                                                  cache_dir=work_dir)
 
-        print(f'> dataset_local_path_list: {dataset_path_list}')      # TODO: ONLY FOR TEST
+        if dataset_name == 'humaneval':
+            problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
 
-        for dataset_name_or_path in dataset_path_list:
-            if args.dry_run:
-                from llmuses.models.dummy_chat_model import DummyChatModel
-                model_adapter = DummyChatModel(model_cfg=dict())
-                qwen_model_adapter = None
-            else:
-                # Init model adapter
-                model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
-                                                                      model_revision=model_revision,
-                                                                      device_map=model_args.get('device_map', 'auto'),
-                                                                      torch_dtype=model_precision,
-                                                                      cache_dir=args.work_dir,)
-                qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
-                                                                           model_revision=None,
-                                                                           device_map=model_args.get('device_map', 'auto'),
-                                                                           torch_dtype=model_precision,
-                                                                           cache_dir=args.work_dir,
-                                                                           ) if len(qwen_model_id) > 0 else None
+            evaluator = HumanevalEvaluator(problem_file=problem_file,
+                                           model_id=model_id,
+                                           model_revision=model_revision,
+                                           model_adapter=model_adapter,
+                                           outputs_dir=outputs,
+                                           is_custom_outputs_dir=False, )
+        else:
+            # TODO: CHECK dataset_args
+            dataset_name_or_path: str = dataset_args.get(dataset_name, {}).get('local_path') or imported_modules[
+                'DATASET_ID']
 
-            if dataset_name == 'humaneval':
-                problem_file: str = dataset_name_or_path
+            in_prompt_template: str = dataset_args.get(dataset_name, {}).get('prompt_template', '')
 
-                evaluator = HumanevalEvaluator(problem_file=problem_file,
-                                               model_id=model_id,
-                                               model_revision=model_revision,
-                                               model_adapter=model_adapter,
-                                               outputs_dir=args.outputs,
-                                               is_custom_outputs_dir=False,)
-            else:
-                evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
-                                      subset_list=imported_modules['SUBSET_LIST'],
-                                      data_adapter=data_adapter,
-                                      model_adapter=model_adapter,
-                                      qwen_model_adapter=qwen_model_adapter,
-                                      use_cache=args.mem_cache,
-                                      root_cache_dir=args.work_dir,
-                                      outputs_dir=args.outputs,
-                                      is_custom_outputs_dir=False,
-                                      datasets_dir=args.dataset_dir,
-                                      datasets_hub=args.dataset_hub,
-                                      stage=args.stage, )
+            # Init data adapter
+            few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
+            few_shot_random: bool = dataset_args.get(dataset_name, {}).get('few_shot_random', True)
+            data_adapter = imported_modules['DataAdapterClass'](few_shot_num=few_shot_num,
+                                                                few_shot_random=few_shot_random,
+                                                                prompt_template=in_prompt_template,)
 
-            infer_cfg = generation_args or {}
-            infer_cfg.update(dict(limit=args.limit))
-            evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
+            in_subset_list: list = dataset_args.get(dataset_name, {})\
+                .get('subset_list', imported_modules['SUBSET_LIST'])
+            logger.info(f'\n** Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
-            report_path = get_report_path(evaluator)
-            reports_recorder.append_path(report_path, dataset_name)
+            evaluator = Evaluator(
+                dataset_name_or_path=dataset_name_or_path,
+                subset_list=in_subset_list,
+                data_adapter=data_adapter,
+                model_adapter=model_adapter,
+                use_cache=use_cache,
+                root_cache_dir=work_dir,
+                outputs_dir=outputs,
+                is_custom_outputs_dir=outputs != 'outputs',
+                datasets_dir=dataset_dir,
+                datasets_hub=dataset_hub,
+                stage=stage,
+                eval_type=eval_type,
+                overall_task_cfg=output_task_cfg,
+            )
 
-    reports_recorder.dump_reports("./")
+        infer_cfg = generation_config or {}
+        infer_cfg.update(dict(limit=limit))
+        res_dict: dict = evaluator.eval(infer_cfg=infer_cfg, debug=debug)
+
+        eval_results[dataset_name] = res_dict
+
+    return eval_results
+
+
+def main():
+    args = parse_args()
+
+    # Get task_cfg
+    use_cache: bool = False if args.use_cache.lower() == 'false' else True
+    task_cfg = {
+        'model_args': parse_str_args(args.model_args),
+        'generation_config': parse_str_args(args.generation_config),
+        'dataset_args': args.dataset_args,
+        'dry_run': args.dry_run,
+        'model': args.model,
+        'eval_type': args.eval_type,
+        'datasets': args.datasets,
+        'work_dir': args.work_dir,
+        'outputs': args.outputs,
+        'mem_cache': args.mem_cache,
+        'use_cache': use_cache,
+        'dataset_hub': args.dataset_hub,
+        'dataset_dir': args.dataset_dir,
+        'stage': args.stage,
+        'limit': args.limit,
+        'debug': args.debug
+    }
+
+    run_task(task_cfg)
 
 
 if __name__ == '__main__':
-    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets arc --limit 10 --dry-run
+    # Usage: python3 llmuses/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
+    # Usage: python3 llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0}}' --limit 10
     main()
-    

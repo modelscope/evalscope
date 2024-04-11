@@ -1,6 +1,6 @@
 ## 简介
 大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了llmuses框架，该框架主要包括以下几个部分：
-- 预置了多个常用的测试基准数据集，包括：MMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
+- 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
 - 常用评估指标（metrics）的实现
 - 统一model接入，兼容多个系列模型的generate、chat接口
 - 自动评估（evaluator）：
@@ -15,7 +15,8 @@
 - 轻量化，尽量减少不必要的抽象和配置
 - 易于定制
   - 仅需实现一个类即可接入新的数据集
-  - 模型可部署在本地，或[ModelScope](https://modelscope.cn)上
+  - 模型可托管在[ModelScope](https://modelscope.cn)上，仅需model id即可一键发起评测
+  - 支持本地模型可部署在本地
   - 评估报告可视化展现
 - 丰富的评估指标
 - model-based自动评估流程，支持多种评估模式
@@ -25,43 +26,60 @@
 
 
 ## 环境准备
+### 使用pip安装
+我们推荐使用conda来管理环境，并使用pip安装依赖:
+1. 创建conda环境
 ```shell
-# 1. 代码下载
-git clone git@github.com:modelscope/llmuses.git
+conda create -n eval-scope python=3.10
+conda activate eval-scope
+```
+2. 安装依赖
+```shell
+pip install llmuses
+```
 
-# 2. 安装依赖
-cd llmuses/
-pip install -r requirements/requirements.txt
+### 使用源码安装
+1. 下载源码
+```shell
+git clone https://github.com/modelscope/eval-scope.git
+```
+2. 安装依赖
+```shell
+cd eval-scope/
 pip install -e .
-
-# Note: 您也可以使用自定义的源安装依赖
-pip install -r requirements/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 
 ## 快速开始
 
 ### 简单评估
+在指定的若干数据集上评估某个模型，流程如下：
+如果使用git安装，可在任意路径下执行：
 ```shell
-# 在特定数据集上评估某个模型
+python -m llmuses.run --model ZhipuAI/chatglm3-6b --datasets arc --limit 100
+```
+如果使用源码安装，在eval-scope路径下执行：
+```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
 ```
+其中，--model参数指定了模型的ModelScope model id，模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 
 ### 带参数评估
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
-
-python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
-
-# 参数说明
-# --model-args: 模型参数，以逗号分隔，key=value形式
-# --datasets: 数据集名称，参考下文`数据集列表`章节
-# --mem-cache: 是否使用内存缓存，若开启，则已经跑过的数据会自动缓存，并持久化到本地磁盘
-# --limit: 每个subset最大评估数据量
-# --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
-#   -- few_shot_num: few-shot的数量
-#   -- few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
+```
+python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
+```
+参数说明：
+- --model-args: 模型参数，以逗号分隔，key=value形式
+- --datasets: 数据集名称，支持输入多个数据集，使用空格分开，参考下文`数据集列表`章节
+- --use-cache: 是否使用本地缓存，默认为`false`;如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
+- --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
+  - --few_shot_num: few-shot的数量
+  - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
+- --limit: 每个subset最大评估数据量
+
 
 ### 使用本地数据集
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
@@ -70,8 +88,9 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 # 假如当前本地工作路径为 /path/to/workdir
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
-# 则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
 ```
+则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
+
 #### 2. 使用本地数据集创建评估任务
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
@@ -79,8 +98,8 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 # 参数说明
 # --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
 # --dataset-dir: 当--dataset-hub为`Local`时，该参数指本地数据集路径; 如果--dataset-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
-
 ```
+
 #### 3. (可选)在离线环境加载模型和评测
 模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
 ```shell
@@ -90,6 +109,40 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 # 2. 执行离线评估任务
 python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
+```
+
+### 使用run_task函数提交评估任务
+
+#### 1. 配置任务
+```python
+import torch
+from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+
+# 示例
+your_task_cfg = {
+        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
+        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
+        'dataset_args': {},
+        'dry_run': False,
+        'model': 'ZhipuAI/chatglm3-6b',
+        'datasets': ['arc', 'hellaswag'],
+        'work_dir': DEFAULT_ROOT_CACHE_DIR,
+        'outputs': DEFAULT_ROOT_CACHE_DIR,
+        'mem_cache': False,
+        'dataset_hub': 'ModelScope',
+        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
+        'stage': 'all',
+        'limit': 10,
+        'debug': False
+    }
+
+```
+
+#### 2. 执行任务
+```python
+from llmuses.run import run_task
+
+run_task(task_cfg=your_task_cfg)
 ```
 
 

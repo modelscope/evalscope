@@ -49,7 +49,10 @@ class TriviaQaAdapter(DataAdapter):
         for subset_name in subset_list:
             data_dict[subset_name] = {}
             for split in [self.train_split, self.eval_split]:
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'trivia-{split}.qa.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'trivia-{split}.qa.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'trivia-{split}.qa.csv')
                 if os.path.exists(file_path):
                     with open(file_path, 'r', encoding='utf-8') as f:
                         reader = csv.reader(f, delimiter='\t')
@@ -113,18 +116,26 @@ class TriviaQaAdapter(DataAdapter):
         ans: list = input_d.get("ideal", [])
         return ans
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer.
 
         Args:
             result: Predicted answer from the model. A list of loglikelihood values for inputs pairs.
             raw_input_d: The raw input. A single data format of the TriviaQA:
+            eval_type: The type of evaluation, e.g. 'checkpoint' or 'service' or 'custom'.
 
         Returns:
             The predicted answer.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':  # TODO: to be implemented
+            return result
+        elif eval_type == 'custom':  # TODO: to be implemented
+            return result
+        else:
+            raise ValueError(f'Unknown eval_type: {eval_type}')
 
     def match(self, gold: list, pred: str) -> float:
         return max([exact_match(gold=ref, pred=pred) for ref in gold])
@@ -142,12 +153,13 @@ class TriviaQaAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -177,7 +189,7 @@ class TriviaQaAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='TriviaQA',
+        res_map = dict(name=report_name or 'trivia_qa',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

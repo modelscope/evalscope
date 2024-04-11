@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os.path
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 import random
@@ -19,6 +19,7 @@ class DataAdapter(ABC):
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
+                 prompt_template: str = '',
                  **kwargs):
         """
         Args:
@@ -27,12 +28,15 @@ class DataAdapter(ABC):
             few_shot_num: int, number of few-shot examples. Default: 0
             train_split: str, usually for few-shot examples. e.g. 'train'
             eval_split: str, the target eval split name. e.g. 'test'
+            prompt_template: str, the prompt template for the benchmark,
+                e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:`
         """
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num
         self.train_split = train_split
         self.eval_split = eval_split
+        self.prompt_template = prompt_template
         self.config_kwargs = kwargs
 
     def load(self,
@@ -49,8 +53,12 @@ class DataAdapter(ABC):
             train_dataset, test_dataset: Iterable dataset, object each item of which is a dict.
 
         """
+        dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         if datasets_hub == 'Local':
             # Try to load dataset from local disk
+            if os.path.isdir(dataset_name_or_path) and not os.path.exists(dataset_name_or_path):
+                raise FileNotFoundError(f'Dataset path not found: {dataset_name_or_path}')
+
             logger.info(f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
@@ -101,7 +109,7 @@ class DataAdapter(ABC):
         """
         res_dict: dict = {}
 
-        if self.few_shot_num < 0:
+        if self.few_shot_num and self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
         logger.info(f'\n** Use default settings: \n'
@@ -111,7 +119,7 @@ class DataAdapter(ABC):
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
-            if self.few_shot_num > 0:
+            if self.few_shot_num and self.few_shot_num > 0:
                 few_shot_random: bool = self.config_kwargs.get('few_shot_random', True)
                 few_shot_data = self.get_fewshot_examples(
                     [item for item in sub_data_dict[self.train_split]],
@@ -164,13 +172,14 @@ class DataAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse_pred_result(self, result: Any, raw_input_d: dict = None) -> Any:
+    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> Any:
         """
         Parse the predicted result and extract proper answer.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
@@ -210,13 +219,15 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation results for all subsets.
 
         Args:
             subset_score_map: The subset-score map.
                 e.g. {subset_name: (score, num)}
+
+            report_name: str, the user-defined report name. Default: None
 
         Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
 

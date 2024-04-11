@@ -1,8 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import glob
+import os.path
 
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import bleu_ngram_one_sample, weighted_mean
 from llmuses.metrics.rouge_metric import compute_rouge_score_one_sample_zh
+from llmuses.utils import jsonl_to_list
 from llmuses.utils.logger import get_logger
 from typing import Any, Optional
 from collections import defaultdict
@@ -39,53 +42,54 @@ class GeneralQAAdapter(DataAdapter):
              dataset_name_or_path: str,
              subset_list: list = None,
              **kwargs) -> dict:
-        data_dict = {}
 
-        split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
-        for sub_name in subset_list:
-            data_dict[sub_name] = {}
+        data_file_list = glob.glob(os.path.join(dataset_name_or_path, '*.jsonl'))
+        data_list = []
 
-            try:
-                with open(dataset_name_or_path, 'r', encoding='utf-8') as f:
-                    # data = json.load(f)
-                    data = [json.loads(line) for line in f.readlines()]
-            except Exception as e:
-                raise e
-            
-            for split in split_list:
-                dataset = data
-                data_dict[sub_name].update({split: dataset})
+        try:
+            for file_path in data_file_list:
+                data_list.extend(jsonl_to_list(file_path))
+        except Exception as e:
+            raise ValueError(f"Failed to load data from {dataset_name_or_path}, got error: {e}")
+
+        data_dict = {'default': {'test': data_list}}
 
         return data_dict
     
-    def gen_prompt(self, input_d: list, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
         Args:
-            input_d: [{'question': '', 'answer': ''},{'question': '', 'answer': ''},...]
+            input_d:
+                format1: {'history': [['q1', 'a1'], ['q2', 'a2']], 'question': '', 'answer': ''}
+                format2: {'history': [['q1', 'a1'], ['q2', 'a2']], 'query': '', 'response': ''}
 
         Returns:
             {'data': [prompt]}
 
         """
         # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        prompt = ""
-        for qa in input_d[:-1]:
-            prompt += f"Human: {qa['question']}\nAssistant: {qa['answer']}\n"
-        prompt += f"Human: {input_d[-1]['question']}\nAssistant: "
+        history = input_d.get('history', [])    # history: [['q1', 'a1'], ['q2', 'a2'], ...]
+        if len(history) > 0:
+            logger.warning(f"The history is not included in the prompt for GeneralQA. To be supported in the future.")
+
+        prompt = input_d.get('question', '') or input_d.get('query', '')
+
+        # if len(history) > 0:
+        #     prompt = '\n'.join(history) + '\n' + prompt
         return {'data': [prompt]}
     
-    def get_gold_answer(self, input_d: list) -> str:
+    def get_gold_answer(self, input_d: dict) -> str:
         """
         Args:
-            input_d: [{'question': '', 'answer': ''},{'question': '', 'answer': ''},...]
+            input_d: {'history': [], 'question': '', 'answer': ''}
 
         Returns:
             gold_answer: str
 
         """
-        return input_d[-1].get('answer', '')
+        return input_d.get('answer', '') or input_d.get('response', '')
     
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Args:
             result: str
@@ -135,10 +139,11 @@ class GeneralQAAdapter(DataAdapter):
         # return weighted_mean(items)
         return res
     
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Args:
             subset_score_map: {subset_name: (score_dict, num), ...}
+            report_name: str, the user-defined report name.
 
         Returns:
         {
@@ -172,7 +177,7 @@ class GeneralQAAdapter(DataAdapter):
                           score=total_avg_list,
                           subset=cate_avg_list)
         
-        res_map = dict(name="GeneralQA",
+        res_map = dict(name=report_name or "general_qa",
                        metric=self.metric_list[0]['name'],
                        score=total_avg_list,
                        category=[category_d],
