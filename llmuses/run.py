@@ -101,14 +101,10 @@ def parse_args():
                         help='To use memory cache or not.',
                         action='store_true',
                         default=False)
-    # parser.add_argument('--use-cache',
-    #                     help='To reuse the cache or not. Default to True.',
-    #                     action='store_true',
-    #                     default=True)
     parser.add_argument('--use-cache',
                         help='To reuse the cache or not. Default to `true`.',
                         type=str,
-                        default='true')
+                        default='false')
     parser.add_argument('--stage',
                         help='The stage of evaluation pipeline, '
                              'can be `all`, `infer`, `review`. Default to `all`.',
