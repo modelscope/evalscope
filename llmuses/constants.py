@@ -75,6 +75,8 @@ class OutputsStructure:
 
     REPORTS_DIR = 'reports_dir'
 
+    CONFIGS_DIR = 'configs_dir'
+
 
 class AnswerKeys:
 
@@ -138,3 +140,10 @@ class PositionBiasMitigation:
     NONE = 'none'
     RANDOMIZE_ORDER = 'randomize_order'
     SWAP_POSITION = 'swap_position'
+
+
+class EvalStage:
+    # Enums: `all`, `infer`, `review`
+    ALL = 'all'
+    INFER = 'infer'
+    REVIEW = 'review'

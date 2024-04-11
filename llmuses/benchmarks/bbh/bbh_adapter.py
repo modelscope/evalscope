@@ -8,7 +8,7 @@ import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.constants import AnswerKeys
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -98,7 +98,10 @@ class BBHAdapter(DataAdapter):
         data_dict = {}
         for subset_name in subset_list:
             for split_name in [self.eval_split]:
-                file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}.json')
+                else:
+                    file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
                 if os.path.exists(file_path):
                     with open(file_path, 'r') as f:
                         examples = json.load(f)['examples']
@@ -188,17 +191,19 @@ class BBHAdapter(DataAdapter):
             logger.error(f'BBHAdapter: gold is None.')
         return gold
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
+        # Note: to use same extraction method for both of checkpoint/service/custom.
         task_type: str = raw_input_d.get(TASK_TYPE)
 
         if task_type == MULTIPLE_CHOICE:
@@ -224,12 +229,13 @@ class BBHAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns: A dict of metric calculation results. The format is like:
         {
@@ -260,7 +266,7 @@ class BBHAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='BBH',
+        res_map = dict(name=report_name or 'bbh',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],
@@ -289,6 +295,10 @@ class BBHAdapter(DataAdapter):
         """
         Extract the answer from the model output for Free-form task.
         """
+        res = ResponseParser.parse_first_option(ans)
+        if res:
+            return res
+
         ans_line = ans.split('answer is ')
         if len(ans_line) != 1:
             ans = ans_line[1].strip()

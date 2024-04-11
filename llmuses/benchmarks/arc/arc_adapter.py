@@ -4,7 +4,7 @@ import os
 import json
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 
 # flake8: noqa
@@ -27,6 +27,7 @@ class ARCAdapter(DataAdapter):
                  few_shot_num: int = None,
                  train_split: str = 'train',
                  eval_split: str = 'test',
+                 prompt_template: str = '',
                  **kwargs):
 
         if subset_list is None:
@@ -41,13 +42,14 @@ class ARCAdapter(DataAdapter):
             few_shot_num = 0
 
         if few_shot_num != 0:
-            logger.warning(f'few_shot_num should be 0 for ARC, but got {few_shot_num}. Use 0-shot by default.')
+            logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
                          few_shot_num=few_shot_num,
                          train_split=train_split,
                          eval_split=eval_split,
+                         prompt_template=prompt_template,
                          **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
@@ -61,7 +63,10 @@ class ARCAdapter(DataAdapter):
         """
         data_dict = {}
         for subset_name in subset_list:
-            subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
+            if os.path.exists(dataset_name_or_path):
+                subset_path = os.path.join(dataset_name_or_path, subset_name)
+            else:
+                subset_path = os.path.join(work_dir, dataset_name_or_path, subset_name)
             for split_name in ['Train', 'Test']:
                 split_path = os.path.join(subset_path, f'{subset_name}-{split_name}.jsonl')
                 if os.path.exists(split_path):
@@ -110,9 +115,12 @@ class ARCAdapter(DataAdapter):
             {'data': ['xxx'], 'multi_choices': ['A', 'B', 'C', 'D']}
         """
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-        context: str = '\n'.join(few_shot_prompts) + '\n'
-        # context = f'The following are multiple choice questions, please output correct answer\n\n: {context}'
-        full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
+        context: str = '\n'.join(few_shot_prompts)
+
+        context = f'{self.prompt_template}\n{context}' if self.prompt_template else context
+
+        # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
+        full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
 
         return {'data': [full_prompt], 'multi_choices': self.choices}
 
@@ -120,18 +128,26 @@ class ARCAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('answerKey', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -149,12 +165,13 @@ class ARCAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns: A dict of metric calculation results. The format is like:
         {
@@ -189,7 +206,7 @@ class ARCAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='ARC',
+        res_map = dict(name=report_name or 'arc',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

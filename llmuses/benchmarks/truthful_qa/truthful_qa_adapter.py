@@ -78,7 +78,10 @@ class TruthfulQaAdapter(DataAdapter):
             data_dict[subset_name] = {}
             for split in [self.eval_split]:
                 if subset_name == 'generation':
-                    file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'TruthfulQA.csv')
+                    if os.path.exists(dataset_name_or_path):
+                        file_path = os.path.join(dataset_name_or_path, subset_name, 'TruthfulQA.csv')
+                    else:
+                        file_path = os.path.join(work_dir, dataset_name_or_path, subset_name, 'TruthfulQA.csv')
                     if os.path.exists(file_path):
                         with open(file_path, 'r', encoding='utf-8') as f:
                             rows = []
@@ -215,18 +218,26 @@ class TruthfulQaAdapter(DataAdapter):
         return {'mc1_labels': input_d['mc1_targets']['labels'],
                 'mc2_labels': input_d['mc2_targets']['labels']}
 
-    def parse_pred_result(self, result: list, raw_input_d: dict = None) -> list:
+    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> list:
         """
         Parse the model output to get the answer.
 
         Args:
             result: Predicted answer from the model. A list of loglikelihood values for inputs pairs.
             raw_input_d: The raw input. A single data format of the TruthfulQA:
+            eval_type: 'checkpoint' or 'service' or 'custom', default: 'checkpoint'
 
         Returns:
             The predicted answer.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':  # TODO: to be supported !
+            return result
+        elif eval_type == 'custom':  # TODO: to be supported !
+            return result
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: dict, pred: list) -> dict:
         """
@@ -290,12 +301,13 @@ class TruthfulQaAdapter(DataAdapter):
         items = [(score, 1.0) for score in mc2_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -330,7 +342,7 @@ class TruthfulQaAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='TruthfulQA',
+        res_map = dict(name=report_name or 'truthful_qa',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],

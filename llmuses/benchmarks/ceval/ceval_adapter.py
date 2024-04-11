@@ -3,7 +3,7 @@ import csv
 import os
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
-from llmuses.utils import normalize_score
+from llmuses.utils import normalize_score, ResponseParser
 from llmuses.utils.logger import get_logger
 
 # flake8: noqa
@@ -141,8 +141,8 @@ class CEVALAdapter(DataAdapter):
 
         if few_shot_num is None:
             # Use 5-shot by default
-            logger.info(f'Set 5-shot examples by default for C-Eval.')
-            few_shot_num = 5
+            logger.info(f'Set 0-shot examples by default for C-Eval.')
+            few_shot_num = 0
 
         if few_shot_num > 5:
             logger.warning(f'few_shot_num <= 5 for C-Eval, but got {few_shot_num}. Use 5-shot by default.')
@@ -159,7 +159,10 @@ class CEVALAdapter(DataAdapter):
         data_dict = {}
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
                 if os.path.exists(file_path):
                     with open(file_path, encoding='utf-8') as f:
                         rows = []
@@ -207,24 +210,35 @@ class CEVALAdapter(DataAdapter):
 
         full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
 
+        subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
+        full_prompt = f"以下是中国关于{subject_name}考试的单项选择题，请选出其中的正确答案。\n" + full_prompt
+
         return {'data': [full_prompt], 'multi_choices': self.choices}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
         return input_d.get('answer', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: `checkpoint` or `service` or `custom`. Default is `checkpoint`.
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -242,12 +256,13 @@ class CEVALAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns:
         {
@@ -284,7 +299,7 @@ class CEVALAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[2] if SUBJECT_MAPPING.get(subset_name) else 'DEFAULT'
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:
@@ -304,7 +319,7 @@ class CEVALAdapter(DataAdapter):
         category_list = sorted(category_list, key=lambda x: x['name'])
 
         # Get final dict of report
-        res_map = dict(name='C-Eval',
+        res_map = dict(name=report_name or 'ceval',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=category_list,
@@ -319,7 +334,7 @@ class CEVALAdapter(DataAdapter):
             example += f'\n{choice}. {input_d[f"{choice}"]}'
 
         if include_answer:
-            example += '\n答案：' + input_d['answer'] + '\n\n'
+            example += '\n答案: ' + input_d['answer'] + '\n\n'
         else:
-            example += '\n答案：'
+            example += '\n答案: '
         return example

@@ -107,6 +107,15 @@ def yaml_to_dict(yaml_file) -> dict:
     return stream
 
 
+def dict_to_yaml(d: dict, yaml_file: str):
+    """
+    Dump dict to yaml file.
+    """
+    with open(yaml_file, 'w') as f:
+        yaml.dump(d, f, default_flow_style=False)
+    logger.info(f'Dump data to {yaml_file} successfully.')
+
+
 def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
     module_name, spliter, cls_name = eval_class_ref.partition(':')
 
@@ -179,18 +188,63 @@ class ResponseParser:
         return ''
 
     @staticmethod
-    def parse_first_option(text: str, options: str) -> str:
-        """Find first valid option for text."""
+    def parse_first_option_with_choices(text: str, options: list) -> str:
+        """
+        Find first valid option for text.
+
+        Args:
+            text: The text to parse.
+            options: The options to find. e.g. ['A', 'B', 'C', 'D']
+        """
+        options_concat = '|'.join([str(i) for i in options])
 
         patterns = [
-            f'[Tt]he answer is [{options}]',
-            f'[Tt]he correct answer is [{options}]',
-            f'答案是(.*?)[{options}]',
-            f'答案为(.*?)[{options}]',
-            f'固选(.*?)[{options}]',
-            f'答案应该是(.*?)[{options}]',
-            f'(\s|^)[{options}][\s。，,\.$]',  # noqa
-            f'[{options}]',
+            f'答案是?\s?([{options_concat}])',
+            f'答案是?\s?：([{options_concat}])',
+            f'答案是?\s?:([{options_concat}])',
+            f'答案应该?是\s?([{options_concat}])',
+            f'答案应该?选\s?([{options_concat}])',
+            f'答案为\s?([{options_concat}])',
+            f'答案选\s?([{options_concat}])',
+            f'选择?\s?([{options_concat}])',
+            f'故选?\s?([{options_concat}])'
+            f'只有选?项?\s?([{options_concat}])\s?是?对',
+            f'只有选?项?\s?([{options_concat}])\s?是?错',
+            f'只有选?项?\s?([{options_concat}])\s?不?正确',
+            f'只有选?项?\s?([{options_concat}])\s?错误',
+            f'说法不?对选?项?的?是\s?([{options_concat}])',
+            f'说法不?正确选?项?的?是\s?([{options_concat}])',
+            f'说法错误选?项?的?是\s?([{options_concat}])',
+            f'([{options_concat}])\s?是正确的',
+            f'([{options_concat}])\s?是正确答案',
+            f'选项\s?([{options_concat}])\s?正确',
+            f'所以答\s?([{options_concat}])',
+            f'1.\s?([{options_concat}])[.。$]?$',
+            f'所以\s?([{options_concat}][.。$]?$)',
+            f'所有\s?([{options_concat}][.。$]?$)',
+            f'[\s，：:,]([{options_concat}])[。，,\.]?$',
+            f'[\s，,：:][故即]([{options_concat}])[。\.]?$',
+            f'[\s，,：:]因此([{options_concat}])[。\.]?$',
+            f'[是为。]\s?([{options_concat}])[。\.]?$',
+            f'因此\s?([{options_concat}])[。\.]?$',
+            f'显然\s?([{options_concat}])[。\.]?$',
+            f'答案是\s?(\S+)(?:。|$)',
+            f'答案应该是\s?(\S+)(?:。|$)',
+            f'答案为\s?(\S+)(?:。|$)',
+            f'答案是(.*?)[{options_concat}]',
+            f'答案为(.*?)[{options_concat}]',
+            f'固选(.*?)[{options_concat}]',
+            f'答案应该是(.*?)[{options_concat}]',
+            f'[Tt]he answer is [{options_concat}]',
+            f'[Tt]he correct answer is [{options_concat}]',
+            f'[Tt]he correct answer is:\n[{options_concat}]',
+            f'(\s|^)[{options_concat}][\s。，,\.$]',  # noqa
+            f'[{options_concat}]',
+            f'^选项\s?([{options_concat}])',
+            f'^([{options_concat}])\s?选?项',
+            f'(\s|^)[{options_concat}][\s。，,：:\.$]',
+            f'(\s|^)[{options_concat}](\s|$)',
+            f'1.\s?(.*?)$',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
@@ -201,6 +255,30 @@ class ResponseParser:
                 for i in options:
                     if i in outputs:
                         return i
+        return ''
+
+    @staticmethod
+    def parse_first_option(text: str) -> str:
+        """
+        Find first valid option for text.
+
+        Args:
+            text: The text to parse.
+        """
+        patterns = [
+            r"[Aa]nswer:\s*(\w+)",
+            r"[Tt]he correct answer is:\s*(\w+)",
+            r"[Tt]he correct answer is:\n\s*(\w+)",
+            r"[Tt]he correct answer is:\n\n-\s*(\w+)",
+            r"[Tt]he answer might be:\n\n-\s*(\w+)",
+            r"[Tt]he answer is \s*(\w+)",
+        ]
+
+        regexes = [re.compile(pattern) for pattern in patterns]
+        for regex in regexes:
+            match = regex.search(text)
+            if match:
+                return match.group(1)
         return ''
 
     @staticmethod
@@ -218,35 +296,49 @@ class ResponseParser:
         return ''
 
 
-def make_outputs_dir(work_dir: str, model_id: str, model_revision: str, dataset_id: str):
-    model_revision = model_revision if model_revision is not None else 'none'
+def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revision: str):
+    # model_revision = model_revision if model_revision is not None else 'none'
     # now = datetime.datetime.now()
     # format_time = now.strftime('%Y%m%d_%H%M%S')
     # outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
     # outputs_dir = os.path.join(work_dir, outputs_name)
-    dataset_name = dataset_id.replace('/', '_')
-    outputs_dir = os.path.join(work_dir, dataset_name)
+    # dataset_name = dataset_id.replace('/', '_')
+    # outputs_dir = os.path.join(work_dir, dataset_name)
+
+    if not model_id:
+        model_id = 'default'
+    model_id = model_id.replace('/', '_')
+
+    if not model_revision:
+        model_revision = 'default'
+
+    outputs_dir = os.path.join(root_dir,
+                               f"eval_{'-'.join(datasets)}_{model_id}_{model_revision}")
 
     return outputs_dir
 
 
-def make_outputs_structure(outputs_dir: str):
+def process_outputs_structure(outputs_dir: str, is_make: bool = True) -> dict:
     logs_dir = os.path.join(outputs_dir, 'logs')
     predictions_dir = os.path.join(outputs_dir, 'predictions')
     reviews_dir = os.path.join(outputs_dir, 'reviews')
     reports_dir = os.path.join(outputs_dir, 'reports')
+    configs_dir = os.path.join(outputs_dir, 'configs')
 
-    os.makedirs(outputs_dir, exist_ok=True)
-    os.makedirs(logs_dir, exist_ok=True)
-    os.makedirs(predictions_dir, exist_ok=True)
-    os.makedirs(reviews_dir, exist_ok=True)
-    os.makedirs(reports_dir, exist_ok=True)
+    if is_make:
+        os.makedirs(outputs_dir, exist_ok=True)
+        os.makedirs(logs_dir, exist_ok=True)
+        os.makedirs(predictions_dir, exist_ok=True)
+        os.makedirs(reviews_dir, exist_ok=True)
+        os.makedirs(reports_dir, exist_ok=True)
+        os.makedirs(configs_dir, exist_ok=True)
 
     outputs_structure = {
         OutputsStructure.LOGS_DIR: logs_dir,
         OutputsStructure.PREDICTIONS_DIR: predictions_dir,
         OutputsStructure.REVIEWS_DIR: reviews_dir,
         OutputsStructure.REPORTS_DIR: reports_dir,
+        OutputsStructure.CONFIGS_DIR: configs_dir,
     }
 
     return outputs_structure

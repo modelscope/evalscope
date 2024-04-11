@@ -54,7 +54,10 @@ class CompetitionMathAdapter(DataAdapter):
         data_dict: dict = {}
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
-                split_dir = os.path.join(work_dir, dataset_name_or_path, split_name)
+                if os.path.exists(dataset_name_or_path):
+                    split_dir = os.path.join(dataset_name_or_path, split_name)
+                else:
+                    split_dir = os.path.join(work_dir, dataset_name_or_path, split_name)
                 split_files = glob.glob(os.path.join(split_dir, '**', '*.json'))
                 split_data = []
                 for file_path in split_files:
@@ -91,18 +94,20 @@ class CompetitionMathAdapter(DataAdapter):
         # Extract the gold answer from the input dict.
         return self._preprocess_input(input_d['solution'])
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d (dict): The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
         # TODO: check answer extraction
+        # Note: Use same extraction method for both of checkpoint/service/custom
         return self._math_postprocess(result)
 
     def match(self, gold: str, pred: str) -> float:
@@ -125,12 +130,13 @@ class CompetitionMathAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate the report for the model output.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: The user-defined report name.
 
         Returns: A dict of metric calculation results. The format is like:
         {
@@ -161,7 +167,7 @@ class CompetitionMathAdapter(DataAdapter):
                           score=weighted_avg_acc,
                           subset=cate_avg_list)
 
-        res_map = dict(name='CompetitionMath',
+        res_map = dict(name=report_name or 'competition_math',
                        metric=self.metric_list[0]['name'],
                        score=weighted_avg_acc,
                        category=[category_d],
