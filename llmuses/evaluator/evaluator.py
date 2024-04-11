@@ -478,11 +478,15 @@ class Evaluator(object):
 
         # TODO: check the robustness of dump yaml
         try:
-            logger.info(f'** Dumping overall task config to {overall_task_cfg_file} ...')
+            logger.info(f'** Dump overall task config to {overall_task_cfg_file}')
             logger.info(f'** The overall task config:\n {self.overall_task_cfg}')
             if 'model' in self.overall_task_cfg and not isinstance(self.overall_task_cfg['model'], str):
                 self.overall_task_cfg['model'] = None
                 logger.info(f'>> Overwrite overall_task_cfg for `model` due to it is not a string')
+            if 'model_args' in self.overall_task_cfg and self.overall_task_cfg.get('model_args') is not None:
+                self.overall_task_cfg['model_args'].update({'precision': str(self.overall_task_cfg['model_args']['precision'])})
+                logger.info(f'>> Overwrite overall_task_cfg for `model_args.precision` due to it is not a string')
+
             dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')

@@ -32,6 +32,11 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--model-type',
+                        help='The model type for evaluating. It is available only when `--model` is a local model dir. ',
+                        type=str,
+                        required=False,
+                        default=None)
     parser.add_argument('--eval-type',
                         type=str,
                         help='The type for evaluating. '
@@ -173,6 +178,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     dataset_args: dict = task_cfg.get('dataset_args', {})
     dry_run: bool = task_cfg.get('dry_run', False)
     model: Union[str, CustomModel] = task_cfg.get('model', None)
+    model_type: str = task_cfg.get('model_type', None)
     eval_type: str = task_cfg.get('eval_type', 'checkpoint')
     datasets: list = task_cfg.get('datasets', None)
     work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
@@ -187,6 +193,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
     if model is None or datasets is None:
         raise ValueError('** Args: Please provide model and datasets. **')
+
+    # TODO: Check model type
+    if os.path.isdir(os.path.expanduser(model)):
+        if model_type is None:
+            raise ValueError('** Args: Please provide model type for local model dir. **')
 
     model_precision = model_args.get('precision', torch.float16)
     if isinstance(model_precision, str):
@@ -213,7 +224,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     if outputs == 'outputs':
         outputs = make_outputs_dir(root_dir=os.path.join(work_dir, 'outputs'),
                                    datasets=datasets,
-                                   model_id=model_id,
+                                   model_id=model_type or model_id,
                                    model_revision=model_revision,)
 
     eval_results = dict()
