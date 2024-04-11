@@ -15,7 +15,6 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKe
 from llmuses.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from llmuses.tools.combine_reports import gen_table
 from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, \
-    make_outputs_dir, \
     normalize_score, dict_to_yaml, jsonl_to_list
 from llmuses.utils.logger import get_logger
 
@@ -88,10 +87,10 @@ class Evaluator(object):
 
         # Get default outputs_dir
         # TODO: refactor outputs_dir, del timestamp concat
-        if not is_custom_outputs_dir:
-            outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                           model_id=self.model_id,
-                                           model_revision=self.model_revision_str)
+        # if not is_custom_outputs_dir:
+        #     outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+        #                                    model_id=self.model_id,
+        #                                    model_revision=self.model_revision_str)
 
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
@@ -532,10 +531,10 @@ class HumanevalEvaluator(object):
 
         # Get default outputs_dir
         model_revision_str: str = model_revision if model_revision is not None else 'none'
-        if not is_custom_outputs_dir:
-            outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-                                           model_id=model_id,
-                                           model_revision=model_revision_str)
+        # if not is_custom_outputs_dir:
+        #     outputs_dir = make_outputs_dir(work_dir=outputs_dir,
+        #                                    model_id=model_id,
+        #                                    model_revision=model_revision_str)
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths

@@ -3,6 +3,7 @@
 import copy
 import json
 import argparse
+import os.path
 from typing import Union, List
 import torch        # noqa
 
@@ -11,7 +12,7 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.models.custom import CustomModel
-from llmuses.utils import import_module_util, yaml_to_dict
+from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -206,9 +207,14 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         model_revision: str = None
     else:
         model_id: str = model
-        model_revision: str = model_args.get('revision', None)
-        if model_revision == 'None':
-            model_revision = eval(model_revision)
+        model_revision: str = model_args.get('revision', 'default')
+
+    # Get outputs directory
+    if outputs == 'outputs':
+        outputs = make_outputs_dir(root_dir=os.path.join(work_dir, 'outputs'),
+                                   datasets=datasets,
+                                   model_id=model_id,
+                                   model_revision=model_revision,)
 
     eval_results = dict()
     for dataset_name in datasets:
