@@ -42,7 +42,7 @@ class ARCAdapter(DataAdapter):
             few_shot_num = 0
 
         if few_shot_num != 0:
-            logger.warning(f'few_shot_num should be 0 for ARC, but got {few_shot_num}. Use 0-shot by default.')
+            logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
         super().__init__(subset_list=subset_list,
                          metric_list=metric_list,
