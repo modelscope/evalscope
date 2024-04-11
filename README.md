@@ -54,6 +54,11 @@ pip install -e .
 
 ### 简单评估
 在指定的若干数据集上评估某个模型，流程如下：
+如果使用git安装，可在任意路径下执行：
+```shell
+python -m llmuses.run --model ZhipuAI/chatglm3-6b --datasets arc --limit 100
+```
+如果使用源码安装，在eval-scope路径下执行：
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
 ```
@@ -61,15 +66,15 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 
 
 ### 带参数评估
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --mem-cache --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
 ```
 python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
 ```
 参数说明：
 - --model-args: 模型参数，以逗号分隔，key=value形式
-- --datasets: 数据集名称，参考下文`数据集列表`章节
-- --use-cache: 是否使用本地缓存，默认为`false`
+- --datasets: 数据集名称，支持输入多个数据集，使用空格分开，参考下文`数据集列表`章节
+- --use-cache: 是否使用本地缓存，默认为`false`;如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
 - --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
   - --few_shot_num: few-shot的数量
   - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
