@@ -380,7 +380,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         from llmuses.models.template import TemplateType
         if os.path.isdir(os.path.expanduser(self.model_id)) and self.template_type is None:
-            raise ValueError(f'Please specify the template_type for local model dir.\n'
+            raise ValueError(f'Please specify the --template-type for local model dir.\n'
                              f'Available template types: {TemplateType.get_template_name_list()}\n'
                              f'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.')
 
@@ -450,6 +450,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                        system=None)
 
         inputs = self.generation_template.encode(example)
+
+        print(f'>>inputs: {inputs}')
+        import sys
+        sys.exit(0)
+
         input_ids = inputs['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
         attention_mask = torch.ones_like(input_ids).to(self.device)
