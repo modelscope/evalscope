@@ -13,7 +13,7 @@ import torch
 from torch import dtype
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
-from llmuses.models.template import get_template, StopWordsCriteria, MODEL_TEMPLATE_MAP
+from llmuses.models.template import get_template, StopWordsCriteria
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
 
@@ -422,18 +422,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         # Parse templates for chat-completion
         if os.path.exists(self.model_id):
-            logger.warning(f'Got local model: {self.model_id}, '
-                           f'please make sure the type of path in the form of `/path/to/your_model_name`')
-        model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
-        logger.info(f'**Model name: {model_name}')
-        template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
-        if template_type is None:
-            from llmuses.models.template import TemplateType
-            template_type = TemplateType.default_generation
-            logger.warning(f'Failed to get template type of {self.model_id}, use default: {template_type}')
+            logger.warning(f'Got local model dir: {self.model_id}')
 
-        logger.info(f'**Template type of generation: {template_type}')
-        generation_template = get_template(model_name, template_type, tokenizer)
+        # TODO：TBD ...
+        generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
 
         if tokenizer.eos_token_id is not None:
             generation_config.eos_token_id = tokenizer.eos_token_id
@@ -467,7 +459,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if eos_token_id is not None:
             infer_cfg['eos_token_id'] = eos_token_id
             infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
-
 
         self.generation_config.update(**infer_cfg)
 
