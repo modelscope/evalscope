@@ -375,6 +375,15 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
 
+        self.template_type = kwargs.pop('template_type', None)
+        logger.warning(f'**Template type: {self.template_type}')
+
+        from llmuses.models.template import TemplateType
+        if os.path.isdir(os.path.expanduser(self.model_id)) and self.template_type is None:
+            raise ValueError(f'Please specify the template_type for local model dir.\n'
+                             f'Available template types: {TemplateType.get_template_name_list()}\n'
+                             f'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.')
+
         from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
         # from modelscope import snapshot_download
 
@@ -424,8 +433,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if os.path.exists(self.model_id):
             logger.warning(f'Got local model dir: {self.model_id}')
 
-        # TODO：TBD ...
-        generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
+        generation_template = get_template(template_type=self.template_type, tokenizer=tokenizer)
 
         if tokenizer.eos_token_id is not None:
             generation_config.eos_token_id = tokenizer.eos_token_id

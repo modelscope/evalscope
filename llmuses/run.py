@@ -48,6 +48,13 @@ def parse_args():
                         required=False,
                         default='do_sample=False,repetition_penalty=1.0,max_new_tokens=512',
                         )
+    parser.add_argument('--template-type',
+                        type=str,
+                        help='The template type for generation, should be a string.'
+                             'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
+                        required=False,
+                        default=None,
+                        )
     parser.add_argument('--datasets',
                         help='Dataset id list, align to the module name in llmuses.benchmarks',
                         type=str,
@@ -203,12 +210,14 @@ def main():
                                                                       model_revision=model_revision,
                                                                       device_map=model_args.get('device_map', 'auto'),
                                                                       torch_dtype=model_precision,
-                                                                      cache_dir=args.work_dir,)
+                                                                      cache_dir=args.work_dir,
+                                                                      template_type=args.template_type,)
                 qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
                                                                            model_revision=None,
                                                                            device_map=model_args.get('device_map', 'auto'),
                                                                            torch_dtype=model_precision,
                                                                            cache_dir=args.work_dir,
+                                                                           template_type='qwen',
                                                                            ) if len(qwen_model_id) > 0 else None
 
             if dataset_name == 'humaneval':
