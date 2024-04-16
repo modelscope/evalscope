@@ -451,9 +451,9 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         inputs = self.generation_template.encode(example)
 
+
+        print(f'>>>example: {example}')
         print(f'>>inputs: {inputs}')
-        import sys
-        sys.exit(0)
 
         input_ids = inputs['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
