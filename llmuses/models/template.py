@@ -5,15 +5,12 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import requests
-import torch
 import torch.nn.functional as F
 from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence
 from transformers import PreTrainedTokenizerBase, StoppingCriteria
 
-from swift.llm.agent.utils import calculate_loss_scale
-from swift.torchacc_utils import pad_and_split_batch
-from swift.utils import get_dist_setting, use_torchacc
+from llmuses.utils.utils import calculate_loss_scale, pad_and_split_batch, get_dist_setting, use_torchacc
 
 DEFAULT_SYSTEM = 'You are a helpful assistant.'
 History = List[Union[Tuple[str, str], List[str]]]
