@@ -18,6 +18,7 @@ registry_tasks = {
     'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
     'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
     'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
+    'cmmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/cmmlu.yaml')),
     'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
     'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
     'general_qa': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/general_qa.yaml')),

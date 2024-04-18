@@ -19,7 +19,7 @@ dry_run: false
 model: null   # Note: to be implemented as CustomModel
 eval_type: custom
 datasets:
-  - gsm8k
+  - cmmlu
 outputs: null    # structure: configs, logs, predictions, reviews, reports # TODO: need to parse
 use_cache: false
 stage: all
