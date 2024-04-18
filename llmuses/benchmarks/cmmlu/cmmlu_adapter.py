@@ -4,6 +4,7 @@ import os
 import csv
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import ResponseParser
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -239,7 +240,7 @@ class CMMLUAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('Answer', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
@@ -250,7 +251,14 @@ class CMMLUAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
