@@ -4,6 +4,7 @@ import os
 import csv
 from llmuses.benchmarks.data_adapter import DataAdapter
 from llmuses.metrics.metrics import exact_match, weighted_mean
+from llmuses.utils import ResponseParser, normalize_score
 from llmuses.utils.logger import get_logger
 # flake8: noqa
 
@@ -239,18 +240,26 @@ class CMMLUAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('Answer', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None) -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: The evaluation type. 'checkpoint', 'service', 'custom'.
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return result
+        if eval_type == 'checkpoint':
+            return result
+        elif eval_type == 'service':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        elif eval_type == 'custom':
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+        else:
+            raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -268,12 +277,13 @@ class CMMLUAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: the user-defined report name. Default: None
 
         Returns:
         {
@@ -309,7 +319,7 @@ class CMMLUAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[1]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:
@@ -320,17 +330,18 @@ class CMMLUAdapter(DataAdapter):
         for domain_name, domain_res_list in subject_review_map.items():
             domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
                                      sum([num for _, _, num in domain_res_list])
+            domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
             category_list.append({'name': domain_name,
-                                 'score': domain_weighted_avg_acc,
-                                 'subset': [{'name': subset_name, 'score': subset_score}
-                                           for subset_name, subset_score, _ in domain_res_list]})
+                                  'score': domain_weighted_avg_acc,
+                                  'subset': [{'name': subset_name, 'score': normalize_score(subset_score)}
+                                             for subset_name, subset_score, _ in domain_res_list]})
 
         # Get final dict of report
-        res_map = dict(name='CMMLU',
-                      metric=self.metric_list[0]['name'],
-                      score=weighted_avg_acc,
-                      category=category_list,
-                      total_num=total_num)
+        res_map = dict(name=report_name or 'cmmlu',
+                       metric=self.metric_list[0]['name'],
+                       score=weighted_avg_acc,
+                       category=category_list,
+                       total_num=total_num)
 
         return res_map
 
