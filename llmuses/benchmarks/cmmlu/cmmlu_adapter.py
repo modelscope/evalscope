@@ -277,12 +277,13 @@ class CMMLUAdapter(DataAdapter):
         items = [(score, 1.0) for score in review_res_list]
         return weighted_mean(items)
 
-    def gen_report(self, subset_score_map: dict) -> dict:
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
         Generate report for the evaluation.
 
         Args:
             subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
+            report_name: the user-defined report name. Default: None
 
         Returns:
         {
@@ -318,7 +319,7 @@ class CMMLUAdapter(DataAdapter):
         # Get domain-subject mapping
         subject_review_map = {}
         for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[1]
+            domain_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
             if domain_name in subject_review_map:
                 subject_review_map[domain_name].append((subset_name, subset_score, num))
             else:
@@ -335,11 +336,11 @@ class CMMLUAdapter(DataAdapter):
                                            for subset_name, subset_score, _ in domain_res_list]})
 
         # Get final dict of report
-        res_map = dict(name='CMMLU',
-                      metric=self.metric_list[0]['name'],
-                      score=weighted_avg_acc,
-                      category=category_list,
-                      total_num=total_num)
+        res_map = dict(name=report_name or 'cmmlu',
+                       metric=self.metric_list[0]['name'],
+                       score=weighted_avg_acc,
+                       category=category_list,
+                       total_num=total_num)
 
         return res_map
 
