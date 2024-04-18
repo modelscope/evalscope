@@ -247,6 +247,7 @@ class CMMLUAdapter(DataAdapter):
         Args:
             result: Predicted answer from the model. Usually a string for chat.
             raw_input_d: The raw input. Depending on the dataset.
+            eval_type: The evaluation type. 'checkpoint', 'service', 'custom'.
 
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
