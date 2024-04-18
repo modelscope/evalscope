@@ -195,7 +195,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         raise ValueError('** Args: Please provide model and datasets. **')
 
     # TODO: Check model type
-    if os.path.isdir(os.path.expanduser(model)):
+    if isinstance(model, str) and os.path.isdir(os.path.expanduser(model)):
         if model_type is None:
             raise ValueError('** Args: Please provide model type for local model dir. **')
 
