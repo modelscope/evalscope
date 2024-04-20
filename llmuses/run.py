@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument('--model-type',
                         help='Deprecated. See `--template-type`',
                         type=str,
-                        required=True,
+                        required=False,
                         default=None)
     parser.add_argument('--template-type',
                         type=str,

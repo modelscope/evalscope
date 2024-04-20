@@ -80,7 +80,8 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
   - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
 - --limit: 每个subset最大评估数据量
 - --template-type: 需要手动指定该参数，使得eval-scope能够正确识别模型的类型，用来设置model generation config。  
-具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+
+关于--template-type，具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
 可以使用以下方式，来查看模型的template type list：
 ```shell
 from llmuses.models.template import TemplateType
