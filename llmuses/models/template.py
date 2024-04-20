@@ -12,9 +12,7 @@ from torch import Tensor
 from torch.nn.utils.rnn import pad_sequence
 from transformers import PreTrainedTokenizerBase, StoppingCriteria
 
-from swift.llm.agent.utils import calculate_loss_scale
-from swift.torchacc_utils import pad_and_split_batch
-from swift.utils import get_dist_setting, use_torchacc
+from llmuses.utils.utils import calculate_loss_scale, pad_and_split_batch, get_dist_setting, use_torchacc
 
 DEFAULT_SYSTEM = 'You are a helpful assistant.'
 History = List[Union[Tuple[str, str], List[str]]]
@@ -1446,27 +1444,3 @@ def fuzzy_match(model_name: str, template_type_list: list) -> str:
     else:
         candidate_list = sorted(candidate_list, key=lambda x: len(x), reverse=True)
         return candidate_list[0]
-
-
-if __name__ == '__main__':
-
-    # from modelscope import AutoTokenizer
-    # import torch
-    #
-    # model_id = 'ZhipuAI/chatglm3-6b'
-    # model_revision = 'v1.0.2'
-    # tokenizer = AutoTokenizer.from_pretrained(model_id,
-    #                                           revision=model_revision,
-    #                                           trust_remote_code=True, )
-    # print(tokenizer)
-    #
-    # example = {'query': 'who are you', 'history': [], 'system': 'you are a bot'}
-    # template = get_template(TemplateType.chatglm3, tokenizer)
-    # inputs = template.encode(example)
-    # input_ids = torch.tensor(inputs['input_ids'])[None]
-    # print(template.tokenizer.decode(input_ids[0]))
-    ...
-
-    model_name = 'Qwen-7B'
-    template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
-    print(template_type)
