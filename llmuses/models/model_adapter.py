@@ -433,7 +433,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
 
         # Parse templates for chat-completion
-        if isinstance(self.model, str) and os.path.exists(self.model_id):
+        if isinstance(self.model_id, str) and os.path.exists(self.model_id):
             logger.warning(f'Got local model dir: {self.model_id}')
 
         generation_template = get_template(template_type=self.template_type, tokenizer=tokenizer)
