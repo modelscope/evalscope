@@ -56,17 +56,17 @@ pip install -e .
 在指定的若干数据集上评估某个模型，流程如下：
 如果使用git安装，可在任意路径下执行：
 ```shell
-python -m llmuses.run --model ZhipuAI/chatglm3-6b --datasets arc --limit 100
+python -m llmuses.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
 ```
 如果使用源码安装，在eval-scope路径下执行：
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets mmlu ceval --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
 ```
 其中，--model参数指定了模型的ModelScope model id，模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 
 ### 带参数评估
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
 ```
 python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
@@ -79,6 +79,13 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
   - --few_shot_num: few-shot的数量
   - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
 - --limit: 每个subset最大评估数据量
+- --template-type: 需要手动指定该参数，使得eval-scope能够正确识别模型的类型，用来设置model generation config。  
+具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+可以使用以下方式，来查看模型的template type list：
+```shell
+from llmuses.models.template import TemplateType
+print(TemplateType.get_template_name_list())
+```
 
 
 ### 使用本地数据集
@@ -93,7 +100,7 @@ unzip data.zip
 
 #### 2. 使用本地数据集创建评估任务
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
 # 参数说明
 # --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
@@ -109,13 +116,7 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 # 2. 执行离线评估任务
 python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 ```
-注意：如果指定本地的model dir，需要配置--template-type参数，以便eval-scope能够正确识别模型的类型，用来设置model generation config。  
-具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
-可以使用以下方式，来查看模型的template type list：
-```shell
-from llmuses.models.template import TemplateType
-print(TemplateType.get_template_name_list())
-```
+
 
 ### 使用run_task函数提交评估任务
 
