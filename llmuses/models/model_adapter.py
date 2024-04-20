@@ -14,7 +14,7 @@ from torch import dtype
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.models.custom import CustomModel
-from llmuses.models.template import get_template, StopWordsCriteria, MODEL_TEMPLATE_MAP
+from llmuses.models.template import get_template, StopWordsCriteria
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
 
@@ -376,6 +376,17 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
 
+        self.template_type = kwargs.pop('template_type', None)
+        logger.warning(f'**Template type: {self.template_type}')
+
+        from llmuses.models.template import TemplateType
+        if isinstance(self.model_id, str) \
+                and os.path.isdir(os.path.expanduser(self.model_id)) \
+                and self.template_type is None:
+            raise ValueError(f'Please specify the --template-type for local model dir.\n'
+                             f'Available template types: {TemplateType.get_template_name_list()}\n'
+                             f'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.')
+
         from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
         # from modelscope import snapshot_download
 
@@ -422,19 +433,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
 
         # Parse templates for chat-completion
-        if os.path.exists(self.model_id):
-            logger.warning(f'Got local model: {self.model_id}, '
-                           f'please make sure the type of path in the form of `/path/to/your_model_name`')
-        model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
-        logger.info(f'**Model name: {model_name}')
-        template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
-        if template_type is None:
-            from llmuses.models.template import TemplateType
-            template_type = TemplateType.default_generation
-            logger.warning(f'Failed to get template type of {self.model_id}, use default: {template_type}')
+        if isinstance(self.model, str) and os.path.exists(self.model_id):
+            logger.warning(f'Got local model dir: {self.model_id}')
 
-        logger.info(f'**Template type of generation: {template_type}')
-        generation_template = get_template(model_name, template_type, tokenizer)
+        generation_template = get_template(template_type=self.template_type, tokenizer=tokenizer)
 
         if tokenizer.eos_token_id is not None:
             generation_config.eos_token_id = tokenizer.eos_token_id
@@ -450,7 +452,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                        history=[],
                        system=None)
 
-        inputs = self.generation_template.encode(example)
+        inputs, _ = self.generation_template.encode(example)
         input_ids = inputs['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
         attention_mask = torch.ones_like(input_ids).to(self.device)
@@ -468,7 +470,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if eos_token_id is not None:
             infer_cfg['eos_token_id'] = eos_token_id
             infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
-
 
         self.generation_config.update(**infer_cfg)
 

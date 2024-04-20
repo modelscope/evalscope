@@ -107,8 +107,14 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --datasets arc --dataset-hub L
 # 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
 
 # 2. 执行离线评估任务
-python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
-
+python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+```
+注意：如果指定本地的model dir，需要配置--template-type参数，以便eval-scope能够正确识别模型的类型，用来设置model generation config。  
+具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+可以使用以下方式，来查看模型的template type list：
+```shell
+from llmuses.models.template import TemplateType
+print(TemplateType.get_template_name_list())
 ```
 
 ### 使用run_task函数提交评估任务
