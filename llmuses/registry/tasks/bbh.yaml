@@ -21,7 +21,7 @@ eval_type: custom
 datasets:
   - bbh
 outputs: null    # structure: configs, logs, predictions, reviews, reports # TODO: need to parse
-use_cache: true
+use_cache: false
 stage: all
 dataset_hub: ModelScope    # `Local` or `ModelScope`
 limit: null
