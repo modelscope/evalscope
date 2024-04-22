@@ -25,6 +25,7 @@ class GSM8KAdapter(DataAdapter):
                  few_shot_num: int = None,
                  train_split: str = 'train',
                  eval_split: str = 'test',
+                 prompt_template: str = '',
                  **kwargs):
         """
         Data adapter for GSM8K dataset.
@@ -58,6 +59,7 @@ class GSM8KAdapter(DataAdapter):
                          few_shot_num=few_shot_num,
                          train_split=train_split,
                          eval_split=eval_split,
+                         prompt_template=prompt_template,
                          **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
@@ -86,7 +88,9 @@ class GSM8KAdapter(DataAdapter):
             }
         """
         use_fewshot = self.few_shot_num > 0
+
         full_prompt = self._generate_prompt(input_d, few_shot_list=few_shot_list, use_fewshot=use_fewshot)
+        full_prompt = f'{self.prompt_template}\n{full_prompt}' if self.prompt_template else full_prompt
 
         return {'data': [full_prompt]}
 
