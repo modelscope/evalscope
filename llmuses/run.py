@@ -12,7 +12,7 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.models.custom import CustomModel
-from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir
+from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir, gen_hash
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -33,10 +33,16 @@ def parse_args():
                         type=str,
                         required=True)
     parser.add_argument('--model-type',
-                        help='The model type for evaluating. It is available only when `--model` is a local model dir. ',
+                        help='Deprecated. See `--template-type`',
                         type=str,
                         required=False,
                         default=None)
+    parser.add_argument('--template-type',
+                        type=str,
+                        help='The template type for generation, should be a string.'
+                             'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
+                        required=True,
+                        )
     parser.add_argument('--eval-type',
                         type=str,
                         help='The type for evaluating. '
@@ -179,6 +185,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     dry_run: bool = task_cfg.get('dry_run', False)
     model: Union[str, CustomModel] = task_cfg.get('model', None)
     model_type: str = task_cfg.get('model_type', None)
+    template_type: str = task_cfg.get('template_type', None)
     eval_type: str = task_cfg.get('eval_type', 'checkpoint')
     datasets: list = task_cfg.get('datasets', None)
     work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
@@ -187,17 +194,15 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     use_cache: bool = task_cfg.get('use_cache', True)
     dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
     dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_ROOT_CACHE_DIR)
-    stage: str = task_cfg.get('stage', 'all')                               # TODO: to be implemented
+    stage: str = task_cfg.get('stage', 'all')
     limit: int = task_cfg.get('limit', None)
     debug: str = task_cfg.get('debug', False)
 
     if model is None or datasets is None:
         raise ValueError('** Args: Please provide model and datasets. **')
 
-    # TODO: Check model type
-    if os.path.isdir(os.path.expanduser(model)):
-        if model_type is None:
-            raise ValueError('** Args: Please provide model type for local model dir. **')
+    if model_type:
+        logger.warning('** DeprecatedWarning: `--model-type` is deprecated, please use `--template-type` instead.')
 
     model_precision = model_args.get('precision', torch.float16)
     if isinstance(model_precision, str):
@@ -221,10 +226,15 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         model_revision: str = model_args.get('revision', 'default')
 
     # Get outputs directory
+    if isinstance(model_id, str) and os.path.isdir(os.path.expanduser(model_id)):
+        # get the output_model_id when model_id is a local model dir
+        output_model_id: str = gen_hash(model_id)
+    else:
+        output_model_id: str = model_id
     if outputs == 'outputs':
         outputs = make_outputs_dir(root_dir=os.path.join(work_dir, 'outputs'),
                                    datasets=datasets,
-                                   model_id=model_type or model_id,
+                                   model_id=output_model_id,
                                    model_revision=model_revision,)
 
     eval_results = dict()
@@ -253,7 +263,8 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
                                                                   model_revision=model_revision,
                                                                   device_map=device_map,
                                                                   torch_dtype=model_precision,
-                                                                  cache_dir=work_dir)
+                                                                  cache_dir=work_dir,
+                                                                  template_type=template_type)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
@@ -318,6 +329,7 @@ def main():
         'dataset_args': args.dataset_args,
         'dry_run': args.dry_run,
         'model': args.model,
+        'template_type': args.template_type,
         'eval_type': args.eval_type,
         'datasets': args.datasets,
         'work_dir': args.work_dir,
