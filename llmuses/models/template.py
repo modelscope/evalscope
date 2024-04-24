@@ -28,6 +28,7 @@ class TemplateType:
     default = 'default'
     qwen = 'qwen'
     qwen_audio = 'qwen-audio'
+    modelscope_agent = 'modelscope-agent'
     baichuan = 'baichuan'
     chatglm2 = 'chatglm2'
     chatglm3 = 'chatglm3'
@@ -36,6 +37,7 @@ class TemplateType:
     llava_mistral_instruct = 'llava-mistral-instruct'
     llava_yi_instruct = 'llava-yi-instruct'
     openbuddy = 'openbuddy'
+    openbuddy2 = 'openbuddy2'
     internlm = 'internlm'
     internlm2 = 'internlm2'
     internlm_xcomposer2 = 'internlm-xcomposer2'
@@ -64,6 +66,7 @@ class TemplateType:
     wizardlm2_awq = 'wizardlm2-awq'
     wizardlm2 = 'wizardlm2'
     atom = 'atom'
+    phi3 = 'phi3'
     # compatibility. (Deprecated)
     chatml = 'chatml'
     telechat = 'telechat'
@@ -307,9 +310,9 @@ class Template:
         for i, (context,
                 loss_weight) in enumerate(zip(context_list, compute_loss_idx)):
             if isinstance(context, str):
-                curr_tokenizer_kwargs = self.get_tokenizer_kwargs(context)
-                self.concat_tokenizer_kwargs(tokenizer_kwargs,
-                                             curr_tokenizer_kwargs)
+                curr_tokenizer_kwargs = self._get_tokenizer_kwargs(context)
+                self._concat_tokenizer_kwargs(tokenizer_kwargs,
+                                              curr_tokenizer_kwargs)
                 token_list = tokenizer(
                     context,
                     return_attention_mask=False,
@@ -385,11 +388,11 @@ class Template:
             inputs['loss_scale'] = loss_scale
         return inputs, tokenizer_kwargs
 
-    def get_tokenizer_kwargs(self, context: str) -> Dict[str, Any]:
+    def _get_tokenizer_kwargs(self, context: str) -> Dict[str, Any]:
         """return: curr_tokenizer_kwargs"""
         return {}
 
-    def concat_tokenizer_kwargs(
+    def _concat_tokenizer_kwargs(
             self, old_tokenizer_kwargs: Dict[str, Any],
             curr_tokenizer_kwargs: Dict[str, Any]) -> Dict[str, Any]:
         assert len(old_tokenizer_kwargs) == 0
@@ -458,6 +461,85 @@ class Template:
                          input_token_len: int) -> List[int]:
         return generate_ids[0, input_token_len:].tolist()
 
+    @staticmethod
+    def _is_chinese_char(cp: int) -> bool:
+        """Checks whether CP is the codepoint of a CJK character."""
+        # copy from transformers.generation.streamers.TextStreamer
+        if ((cp >= 0x4E00 and cp <= 0x9FFF) or (cp >= 0x3400 and cp <= 0x4DBF)
+                or (cp >= 0x20000 and cp <= 0x2A6DF)
+                or (cp >= 0x2A700 and cp <= 0x2B73F)
+                or (cp >= 0x2B740 and cp <= 0x2B81F)
+                or (cp >= 0x2B820 and cp <= 0x2CEAF)
+                or (cp >= 0xF900 and cp <= 0xFAFF)
+                or (cp >= 0x2F800 and cp <= 0x2FA1F)):
+            return True
+
+        return False
+
+    @classmethod
+    def _get_safe_print_idx(cls,
+                            response: str,
+                            print_idx: int,
+                            is_finished: bool = False) -> int:
+        if is_finished:
+            return len(response)
+        if response.endswith(
+                '\n') or len(response) > 0 and cls._is_chinese_char(
+                    ord(response[-1])):
+            print_idx = len(response)
+        else:
+            print_idx = max(response.rfind(' ') + 1, print_idx)
+        return print_idx
+
+    def generate_ids_to_response(
+        self,
+        generate_ids: List[int],
+        is_finished: bool = True,
+        *,
+        tokenizer_kwargs: Optional[Dict[str, Any]] = None,
+        # only stream=True
+        return_delta: bool = False,
+        print_idx: Optional[List[int]] = None,
+        first_num_space: Optional[List[int]] = None,
+    ):
+        if tokenizer_kwargs is None:
+            tokenizer_kwargs = {}
+        tokenizer = self.tokenizer
+        # avoid printing template.suffix[-1])
+        if isinstance(self.suffix[-1], list) and (
+                not is_finished or is_finished
+                and generate_ids[-len(self.suffix[-1]):] == self.suffix[-1]):
+            generate_ids = generate_ids[:-len(self.suffix[-1])]
+        response = tokenizer.decode(generate_ids, **tokenizer_kwargs)
+        if first_num_space is not None:
+            # Avoid the occurrence of repeated words in sentence.
+            res_fns = first_num_space  # res_first_num_space
+            first_num_space = first_num_space[0]
+            cur_num_space = len(response) - len(response.lstrip(' '))
+            if not is_finished and first_num_space == -1:
+                first_num_space = cur_num_space
+                res_fns[0] = first_num_space
+            if cur_num_space < first_num_space:
+                response = ' ' * (first_num_space - cur_num_space) + response
+            elif cur_num_space > first_num_space:
+                response = response[cur_num_space - first_num_space:]
+        if isinstance(self.suffix[-1], str) and (
+                not is_finished or is_finished
+                and response[-len(self.suffix[-1]):] == self.suffix[-1]):
+            response = response[:-len(self.suffix[-1])]
+
+        if print_idx is not None:
+            old_print_idx = print_idx[0]
+            if not is_finished:
+                # avoid printing incomplete words
+                print_idx[0] = self._get_safe_print_idx(response, print_idx[0])
+                response = response[:print_idx[0]]
+            if return_delta:
+                response = response[old_print_idx:]
+        else:
+            assert is_finished and not return_delta
+        return response
+
 
 TEMPLATE_MAPPING: Dict[str, Dict[str, Any]] = {}
 
@@ -507,6 +589,11 @@ class QwenTemplate(Template):
 register_template(TemplateType.qwen, QwenTemplate())
 register_template(TemplateType.chatml, QwenTemplate())
 
+register_template(
+    TemplateType.modelscope_agent,
+    Template([], [' \n\n<|user|>:{{QUERY}} \n\n<|assistant|>:'], [],
+             [' \n\n</s>'], DEFAULT_SYSTEM, [' \n\n<|system|>:{{SYSTEM}}']))
+
 
 class _QwenAudioTemplateMixin:
 
@@ -518,11 +605,12 @@ class _QwenAudioTemplateMixin:
         inputs.update(tokenizer_kwargs)
         return inputs, tokenizer_kwargs
 
-    def get_tokenizer_kwargs(self, context: str) -> Dict[str, Any]:
+    def _get_tokenizer_kwargs(self, context: str) -> Dict[str, Any]:
         return {'audio_info': self.tokenizer.process_audio(context)}
 
-    def concat_tokenizer_kwargs(self, tokenizer_kwargs: Dict[str, Any],
-                                curr_tokenizer_kwargs: Dict[str, Any]) -> None:
+    def _concat_tokenizer_kwargs(
+            self, tokenizer_kwargs: Dict[str, Any],
+            curr_tokenizer_kwargs: Dict[str, Any]) -> None:
         audio_info = curr_tokenizer_kwargs.get('audio_info')
         old_audio_info = tokenizer_kwargs.get('audio_info')
         if old_audio_info is None:
@@ -649,8 +737,7 @@ register_template(
 register_template(
     TemplateType.chatglm3,
     Template([[64790, 64792]], [[64795], '\n {{QUERY}}', [64796], '\n'], [],
-             [['eos_token_id']], None,
-             [[64790, 64792, 64794], '\n {{SYSTEM}}']))
+             [[64795]], None, [[64790, 64792, 64794], '\n {{SYSTEM}}']))
 
 register_template(
     TemplateType.deepseek,
@@ -703,6 +790,24 @@ register_template(
     Template([['bos_token_id']], ['User: {{QUERY}}\nAssistant:'], ['\n'],
              [['eos_token_id']], OPENBUDDY_DEFAULT_SYSTEM,
              [['bos_token_id'], '{{SYSTEM}}\n\n']))
+
+OPENBUDDY2_DEFAULT_SYSTEM = (
+    'You(assistant) are a helpful, respectful and honest INTP-T AI Assistant named Buddy. '
+    'You are talking to a human(user).\nAlways answer as helpfully and logically as possible, while being safe. '
+    'Your answers should not include any harmful, political, religious, unethical, racist, '
+    'sexist, toxic, dangerous, or illegal content. '
+    'Please ensure that your responses are socially unbiased and positive in nature.\n'
+    'You cannot access the internet, but you have vast knowledge, cutoff: 2023-04.\n'
+    'You are trained by OpenBuddy team, (https://openbuddy.ai, https://github.com/OpenBuddy/OpenBuddy), '
+    'not related to GPT or OpenAI')
+
+register_template(
+    TemplateType.openbuddy2,
+    Template(
+        [],
+        ['<|role|>user<|says|>{{QUERY}}<|end|>\n<|role|>assistant<|says|>'],
+        ['<|end|>\n'], ['<|end|>'], OPENBUDDY2_DEFAULT_SYSTEM,
+        ['<|role|>system<|says|>{{SYSTEM}}<|end|>\n']))
 
 INTERNLM_SYSTEM = (
     'You are an AI assistant whose name is InternLM (书生·浦语).\n'
@@ -763,7 +868,9 @@ class InternLMXComposer2(Template):
             self, example: Dict[str,
                                 Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         example = example.copy()
-        history = example.pop('history', [])
+        history = example.pop('history', None)
+        if history is None:
+            history = []
         example['query'], example['history'], images_path = replace_img_tab(
             example['query'], history, '</s>')
 
@@ -1010,7 +1117,9 @@ class DeepseekVLTemplate(Template):
             'docs/source/Multi-Modal/deepseek-vl最佳实践.md')
 
         example = example.copy()
-        history = example.pop('history', [])
+        history = example.pop('history', None)
+        if history is None:
+            history = []
         example['query'], example['history'], images_path = replace_img_tab(
             example['query'], history, '<image_placeholder>')
 
@@ -1401,6 +1510,15 @@ register_template(
     TemplateType.wizardlm2,
     Template(['{{SYSTEM}}'], ['USER: {{QUERY}} ASSISTANT:'], ['</s>'],
              ['</s>'], _wizardlm2_system))
+
+_default_phi3_system = (
+    'You are a helpful digital assistant. '
+    'Please provide safe, ethical and accurate information to the user.')
+register_template(
+    TemplateType.phi3,
+    Template(['<s>'], ['<|user|>{{QUERY}}<|end|><|assistant|>'], ['<|end|>'],
+             ['<|end|>'], _default_phi3_system,
+             '<s><|system|>{{SYSTEM}}<|end|>'))
 
 register_template(
     TemplateType.atom,
