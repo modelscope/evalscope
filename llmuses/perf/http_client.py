@@ -146,7 +146,7 @@ def dynamic_import_module(input_output_process_file_path: str):
     return input_output_process_module
 
 def get_input_output_processor(input_output_format: str):
-    if input_output_format in ['vllm_qwen_openai_completion', 'dashscope_message']:
+    if input_output_format in ['vllm_qwen_openai_completion', 'dashscope_message', 'lmdeploy_openai_completion']:
         return dynamic_import_module(os.path.join(_current_path, '%s.py'%input_output_format))
     else:
         return dynamic_import_module(input_output_format)

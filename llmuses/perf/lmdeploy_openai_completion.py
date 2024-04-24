@@ -14,8 +14,6 @@ def get_query(model: str, prompt: str, **kwargs) -> Dict:
     """    
     return {
         "model": model,
-         "stop": ["<|im_end|>", "<|endoftext|>"],
-         "stream": True,
         "messages": [
            {
            "content": "\"%s\","%prompt,
