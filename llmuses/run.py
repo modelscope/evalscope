@@ -6,12 +6,13 @@ import argparse
 import torch        # noqa
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
-from llmuses.evaluator import Evaluator
+from llmuses.evaluator import InferenceEngine, EvaluateEngine
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.utils import import_module_util
 from llmuses.utils.logger import get_logger
 from llmuses.constants import OutputsStructure
 from llmuses.tools.combine_reports import ReportsRecorder
+from llmuses.models import load_model
 import os
 
 logger = get_logger()
@@ -167,6 +168,20 @@ def main():
         endpoint=args.oss_args.get("endpoint", "")
     )
     datasets_list = args.datasets
+
+    if not args.dry_run:
+        model, tokenizer, model_cfg = load_model(model_id=model_id,
+                                                 device_map=model_args.get("device_map", "auto"),
+                                                 torch_dtype=model_precision,
+                                                 model_revision=model_revision,
+                                                 cache_dir=args.work_dir
+                                                 )
+        qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
+                                                                device_map=model_args.get("device_map", "auto"),
+                                                                torch_dtype=model_precision,
+                                                                model_revision=None,
+                                                                cache_dir=args.work_dir
+                                                                ) if len(qwen_model_id)>0 else (None, None, None)
     for dataset_name in datasets_list:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
@@ -200,15 +215,13 @@ def main():
             else:
                 # Init model adapter
                 model_adapter = imported_modules['ModelAdapterClass'](model_id=model_id,
-                                                                      model_revision=model_revision,
-                                                                      device_map=model_args.get('device_map', 'auto'),
-                                                                      torch_dtype=model_precision,
-                                                                      cache_dir=args.work_dir,)
+                                                                      model=model,
+                                                                      tokenizer=tokenizer,
+                                                                      model_cfg=model_cfg,)
                 qwen_model_adapter = imported_modules['ModelAdapterClass'](model_id=qwen_model_id,
-                                                                           model_revision=None,
-                                                                           device_map=model_args.get('device_map', 'auto'),
-                                                                           torch_dtype=model_precision,
-                                                                           cache_dir=args.work_dir,
+                                                                           model=qwen_model,
+                                                                           tokenizer=qwen_tokenizer,
+                                                                           model_cfg=qwen_model_cfg,
                                                                            ) if len(qwen_model_id) > 0 else None
 
             if dataset_name == 'humaneval':
@@ -220,26 +233,50 @@ def main():
                                                model_adapter=model_adapter,
                                                outputs_dir=args.outputs,
                                                is_custom_outputs_dir=False,)
+                
+                infer_cfg = generation_args or {}
+                infer_cfg.update(dict(limit=args.limit))
+                evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
+                report_path = get_report_path(evaluator)
             else:
-                evaluator = Evaluator(dataset_name_or_path=dataset_name_or_path,
-                                      subset_list=imported_modules['SUBSET_LIST'],
-                                      data_adapter=data_adapter,
-                                      model_adapter=model_adapter,
-                                      qwen_model_adapter=qwen_model_adapter,
-                                      use_cache=args.mem_cache,
-                                      root_cache_dir=args.work_dir,
-                                      outputs_dir=args.outputs,
-                                      is_custom_outputs_dir=False,
-                                      datasets_dir=args.dataset_dir,
-                                      datasets_hub=args.dataset_hub,
-                                      stage=args.stage, )
+                user_prompt = args.dataset_args.get(dataset_name, {}).get('user_prompt', {})
+                if args.stage in ['infer', 'all']:
+                    inference_engine = InferenceEngine(dataset_name_or_path=dataset_name_or_path,
+                                                    subset_list=imported_modules['SUBSET_LIST'],
+                                                    data_adapter=data_adapter,
+                                                    model_adapter=model_adapter,
+                                                    qwen_model_adapter=qwen_model_adapter,
+                                                    use_cache=args.mem_cache,
+                                                    root_cache_dir=args.work_dir,
+                                                    outputs_dir=args.outputs,
+                                                    is_custom_outputs_dir=False,
+                                                    datasets_dir=args.dataset_dir,
+                                                    datasets_hub=args.dataset_hub,
+                                                    stage=args.stage,
+                                                    user_prompt=user_prompt)
+                    
+                    infer_cfg = generation_args or {}
+                    infer_cfg.update(dict(limit=args.limit))
+                    inference_engine.infer(infer_cfg=infer_cfg, debug=args.debug)
+                if args.stage in ['review', 'all']:
+                    evaluate_engine = EvaluateEngine(dataset_name_or_path=dataset_name_or_path,
+                                                    subset_list=imported_modules['SUBSET_LIST'],
+                                                    data_adapter=data_adapter,
+                                                    model_adapter=model_adapter,
+                                                    qwen_model_adapter=qwen_model_adapter,
+                                                    use_cache=args.mem_cache,
+                                                    root_cache_dir=args.work_dir,
+                                                    outputs_dir=args.outputs,
+                                                    is_custom_outputs_dir=False,
+                                                    datasets_dir=args.dataset_dir,
+                                                    datasets_hub=args.dataset_hub,
+                                                    stage=args.stage,
+                                                    user_prompt=user_prompt)
+                    
+                    evaluate_engine.eval(debug=args.debug)
 
-            infer_cfg = generation_args or {}
-            infer_cfg.update(dict(limit=args.limit))
-            evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
-
-            report_path = get_report_path(evaluator)
-            reports_recorder.append_path(report_path, dataset_name)
+                    report_path = get_report_path(evaluate_engine)
+                    reports_recorder.append_path(report_path, dataset_name)
 
     reports_recorder.dump_reports("./")
 

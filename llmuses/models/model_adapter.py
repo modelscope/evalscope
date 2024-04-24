@@ -6,6 +6,7 @@ import sys
 from typing import List, Any, Union
 import numpy as np
 import time
+import gc
 from abc import ABC, abstractmethod
 from copy import deepcopy
 
@@ -29,6 +30,38 @@ def get_model_cache_dir(root_cache_dir: str):
     os.makedirs(model_cache_dir, exist_ok=True)
     return model_cache_dir
 
+def load_model(
+    model_id: str,
+    device_map: str = 'auto',
+    torch_dtype: dtype = torch.bfloat16,
+    model_revision: str = None,
+    cache_dir: str = DEFAULT_ROOT_CACHE_DIR        
+):
+    model_cache_dir = get_model_cache_dir(cache_dir)
+
+    torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
+
+    model_cfg: dict = dict()
+    model_cfg['model_id'] = model_id
+    model_cfg['device_map'] = device_map
+    model_cfg['torch_dtype'] = str(torch_dtype)
+
+    from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id,
+                                              revision=model_revision,
+                                              trust_remote_code=True,
+                                              cache_dir=model_cache_dir,)
+
+    model = AutoModelForCausalLM.from_pretrained(model_id,
+                                                 revision=model_revision,
+                                                 device_map=device_map,
+                                                 trust_remote_code=True,
+                                                 torch_dtype=torch_dtype,
+                                                 cache_dir=model_cache_dir,)
+
+    return model, tokenizer, model_cfg
+    
 
 class BaseModelAdapter(ABC):
     """
@@ -55,6 +88,14 @@ class BaseModelAdapter(ABC):
         Model prediction func.
         """
         raise NotImplementedError
+    
+    def del_model_cache(self):
+        if isinstance(self.model, torch.nn.DataParallel) or isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            del self.model.module
+        del self.model
+        self.model = None
+        torch.cuda.empty_cache()
+        gc.collect()
 
 
 class MultiChoiceModelAdapter(BaseModelAdapter):
@@ -64,11 +105,10 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
     def __init__(self,
                  model_id: str,
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = torch.bfloat16,
-                 model_revision: str = None,
+                 model,
+                 tokenizer,
+                 model_cfg,
                  max_length: int = None,
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
                  **kwargs):
         """
         Args:
@@ -79,44 +119,10 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
             max_length: The max length of input sequence. Default: None.
             **kwargs: Other args.
         """
-        model_cache_dir = get_model_cache_dir(cache_dir)
-
         self.model_id: str = model_id
+
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logger.warning(f'**Device: {self.device}')
-
-        torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
-
-        model_cfg: dict = dict()
-        model_cfg['model_id'] = model_id
-        model_cfg['device_map'] = device_map
-        model_cfg['torch_dtype'] = str(torch_dtype)
-
-        from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        # from modelscope import snapshot_download
-
-        # try:
-        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-        #     logger.warning('**Use local_files_only to load model **')
-        # except:
-        #     model_dir = snapshot_download(self.model_id,
-        #                                   revision=model_revision,
-        #                                   cache_dir=model_cache_dir, )
-        #     logger.warning('**Load model from ModelScope hub **')
-
-        tokenizer = AutoTokenizer.from_pretrained(self.model_id,    # self.model_id
-                                                  revision=model_revision,
-                                                  trust_remote_code=True,
-                                                  cache_dir=model_cache_dir,)
-
-        model = AutoModelForCausalLM.from_pretrained(self.model_id,  # self.model_id
-                                                     revision=model_revision,
-                                                     device_map=device_map,
-                                                     trust_remote_code=True,
-                                                     torch_dtype=torch_dtype,
-                                                     cache_dir=model_cache_dir,)
-
-        # model.generation_config = GenerationConfig.from_pretrained(model_id, trust_remote_code=True)
 
         super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
@@ -222,10 +228,9 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
 
     def __init__(self,
                  model_id: str,
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = torch.bfloat16,
-                 model_revision: str = None,
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 model,
+                 tokenizer,
+                 model_cfg,
                  **kwargs):
         """
         Continuation-logits model adapter.
@@ -239,10 +244,9 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
         """
 
         super().__init__(model_id=model_id,
-                         device_map=device_map,
-                         torch_dtype=torch_dtype,
-                         model_revision=model_revision,
-                         cache_dir=cache_dir,
+                         model=model,
+                         tokenizer=tokenizer,
+                         model_cfg=model_cfg,
                          **kwargs)
 
     @torch.no_grad()
@@ -346,10 +350,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
     def __init__(self,
                  model_id: str,
-                 model_revision: str,
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = torch.float16,
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 model,
+                 tokenizer,
+                 model_cfg,
+                 model_revision: str = None,
                  **kwargs):
         """
         Chat completion model adapter. Tasks of chat and generation are supported.
@@ -361,43 +365,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             torch_dtype: The torch dtype for model inference. Default: torch.float16.
             **kwargs: Other args.
         """
-        model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
-
         self.model_id: str = model_id
         self.model_revision: str = model_revision
+
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logger.warning(f'**Device: {self.device}')
-
-        torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
-
-        model_cfg: dict = dict()
-        model_cfg['model_id'] = model_id
-        model_cfg['device_map'] = device_map
-        model_cfg['torch_dtype'] = str(torch_dtype)
-
-        from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        # from modelscope import snapshot_download
-
-        # try:
-        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-        #     logger.warning('**Use local_files_only to load model **')
-        # except:
-        #     model_dir = snapshot_download(self.model_id,
-        #                                   revision=model_revision,
-        #                                   cache_dir=model_cache_dir, )
-        #     logger.warning('**Load model from ModelScope hub **')
-
-        tokenizer = AutoTokenizer.from_pretrained(self.model_id,
-                                                  revision=model_revision,
-                                                  trust_remote_code=True,
-                                                  cache_dir=model_cache_dir,)
-
-        model = AutoModelForCausalLM.from_pretrained(self.model_id,
-                                                     revision=model_revision,
-                                                     device_map=device_map,
-                                                     trust_remote_code=True,
-                                                     torch_dtype=torch_dtype,
-                                                     cache_dir=model_cache_dir,)
 
         self.origin_tokenizer = deepcopy(tokenizer)
 
