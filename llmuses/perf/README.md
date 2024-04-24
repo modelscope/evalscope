@@ -29,7 +29,7 @@ docker run --rm --name perf_bench --gpus='"device=0"' --shm-size=384gb -e MODELS
 #### Start the client
 ```bash
 # Local mode
-python http_client.py --url 'http://0.0.0.0:8000/v1/completions' --parallel 20 --rate 30 --model 'qwen/Qwen-7B-Chat' --prompt "hello" --parameters top_p=0.8 temperature=0.8 max_tokens=256 -n 1000 --log-every-n-query 10 --read-timeout=10 --format 'vllm_qwen_openai_completion'
+python http_client.py --url 'http://0.0.0.0:8000/v1/chat/completions' --parallel 20 --rate 30 --model 'qwen/Qwen-7B-Chat' --prompt "hello" --parameters top_p=0.8 temperature=0.8 max_tokens=256 -n 1000 --log-every-n-query 10 --read-timeout=10 --format 'vllm_qwen_openai_completion'
 # APIs 
 python http_client.py --url 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation' --parallel 1 --rate 1 --headers 'Authorization=your_api_key' 'X-DashScope-SSE=enable' --model 'qwen/Qwen-7B-Chat'  --prompt "hello" --parameters top_p=0.8 temperature=0.8 max_tokens=256 --format dashscope_message -n 1 --log-every-n-query 1 
 
