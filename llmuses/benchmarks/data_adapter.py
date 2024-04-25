@@ -86,7 +86,7 @@ class DataAdapter(ABC):
         """
         return {}
 
-    def gen_prompts(self, data_dict: dict) -> dict:
+    def gen_prompts(self, data_dict: dict, **kwargs) -> dict:
         """
         Generate dataset prompts from raw input, unify the prompt format for different datasets.
 
@@ -120,7 +120,10 @@ class DataAdapter(ABC):
 
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
-                prompt_d = self.gen_prompt(input_d=sample_d, subset_name=sub_name, few_shot_list=few_shot_data)
+                prompt_d = self.gen_prompt(input_d=sample_d,
+                                           subset_name=sub_name,
+                                           few_shot_list=few_shot_data,
+                                           **kwargs)
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
 
