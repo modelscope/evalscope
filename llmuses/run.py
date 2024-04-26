@@ -32,6 +32,12 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--template-type',
+                        type=str,
+                        help='The template type for generation, should be a string.'
+                             'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
+                        required=True,
+                        )
     parser.add_argument('--model-args',
                         type=str,
                         help='The model args, should be a string.',
@@ -147,6 +153,7 @@ def main():
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
     set_oss_environ(args.oss_args)
+    template_type: str = args.template_type
 
     # Parse args
     model_precision = model_args.get('precision', 'torch.float16')
@@ -178,14 +185,16 @@ def main():
                                                  device_map=model_args.get("device_map", "auto"),
                                                  torch_dtype=model_precision,
                                                  model_revision=model_revision,
-                                                 cache_dir=args.work_dir
+                                                 cache_dir=args.work_dir,
+                                                 template_type=template_type,
                                                  )
         qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
                                                                 device_map=model_args.get("device_map", "auto"),
                                                                 torch_dtype=model_precision,
                                                                 model_revision=None,
-                                                                cache_dir=args.work_dir
-                                                                ) if len(qwen_model_id)>0 else (None, None, None)
+                                                                cache_dir=args.work_dir,
+                                                                template_type=template_type,
+                                                                ) if len(qwen_model_id) > 0 else (None, None, None)
     else:
         logger.warning('Dry run mode, will use dummy model.')
         model, tokenizer, model_cfg = None, None, None
