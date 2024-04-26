@@ -20,6 +20,7 @@ class TestCommonCli(unittest.TestCase):
         cls.template_type: str = 'chatglm3'
         cls.dataset_list: str = 'arc ceval'
 
+    @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.test_root_dir)
         logger.info(f'==> Temporary directory {cls.test_root_dir} successfully removed!')

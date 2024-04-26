@@ -394,26 +394,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
 
         # Parse templates for chat-completion
-        if os.path.exists(self.model_id):
-            logger.warning(f'Got local model: {self.model_id}, '
-                           f'please make sure the type of path in the form of `/path/to/your_model_name`')
-        model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
-        logger.info(f'**Model name: {model_name}')
-        template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
-        if template_type is None:
-            from llmuses.models.template import TemplateType
-            template_type = TemplateType.default_generation
-            logger.warning(f'Failed to get template type of {self.model_id}, use default: {template_type}')
+        if isinstance(self.model_id, str) and os.path.exists(self.model_id):
+            logger.warning(f'Got local model dir: {self.model_id}')
 
-        logger.info(f'**Template type of generation: {template_type}')
-        generation_template = get_template(model_name, template_type, tokenizer)
-
-        if tokenizer.eos_token_id is not None:
-            generation_config.eos_token_id = tokenizer.eos_token_id
-        if tokenizer.pad_token_id is not None:
-            generation_config.pad_token_id = tokenizer.pad_token_id
-        if generation_config.max_new_tokens is not None:
-            generation_config.max_length = 20
+        generation_template = get_template(template_type=self.template_type, tokenizer=tokenizer)
 
         return generation_config, generation_template
 
