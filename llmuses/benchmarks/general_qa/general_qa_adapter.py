@@ -58,7 +58,7 @@ class GeneralQAAdapter(DataAdapter):
 
         return data_dict
     
-    def gen_prompt(self, input_d: list, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def gen_prompt(self, input_d: list, subset_name: str, few_shot_list: list, user_prompt: dict, **kwargs) -> dict:
         """
         Args:
             input_d: [{'question': '', 'answer': ''},{'question': '', 'answer': ''},...]
@@ -68,10 +68,16 @@ class GeneralQAAdapter(DataAdapter):
 
         """
         # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        prompt = ""
+        system_prompt = user_prompt.get("system_prompt", "")
+        human_prefix = user_prompt.get("human_prefix", "Human: ")
+        assistant_prefix = user_prompt.get("assistant_prefix", "Assistant: ")
+        seperator = user_prompt.get("seperator", "\n")
+
+        prompt = f"{system_prompt}{seperator}"
         for qa in input_d[:-1]:
-            prompt += f"Human: {qa['question']}\nAssistant: {qa['answer']}\n"
-        prompt += f"Human: {input_d[-1]['question']}\nAssistant: "
+            prompt += f"{human_prefix}{qa['question']}{seperator}{assistant_prefix}{qa['answer']}{seperator}"
+        prompt += f"{human_prefix}{input_d[-1]['question']}{seperator}{assistant_prefix}"
+
         return {'data': [prompt]}
     
     def get_gold_answer(self, input_d: list) -> str:
