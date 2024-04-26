@@ -33,7 +33,8 @@ class TestCommonCli(unittest.TestCase):
               f'--model {self.model_id} ' \
               f'--template-type {self.template_type} ' \
               f'--datasets {self.dataset_list} ' \
-              f'--dry-run'
+              f'--dry-run ' \
+              f'--work-dir {self.test_root_dir}'
 
         stat, output = subprocess.getstatusoutput(cmd)
         if stat != 0:
