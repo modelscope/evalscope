@@ -111,6 +111,7 @@ def parse_args():
 
     return args
 
+
 def parse_str_args(str_args: str):
     assert isinstance(str_args, str), 'args should be a string.'
     arg_list: list = str_args.strip().split(',')
@@ -126,15 +127,18 @@ def parse_str_args(str_args: str):
 
     return final_args
 
+
 def get_report_path(evaluator):
     report_dir: str = evaluator.outputs_structure[OutputsStructure.REPORTS_DIR]
     report_file_name: str = evaluator.dataset_name_or_path.replace('/', '_') + '.json'
     report_path: str = os.path.join(report_dir, report_file_name)
     return report_path
 
+
 def set_oss_environ(args):
     os.environ['OSS_ACCESS_KEY_ID'] = args.get("key_id", "")
     os.environ['OSS_ACCESS_KEY_SECRET'] = args.get("key_secret", "")
+
 
 def main():
     args = parse_args()
@@ -182,6 +186,11 @@ def main():
                                                                 model_revision=None,
                                                                 cache_dir=args.work_dir
                                                                 ) if len(qwen_model_id)>0 else (None, None, None)
+    else:
+        logger.warning('Dry run mode, will use dummy model.')
+        model, tokenizer, model_cfg = None, None, None
+        qwen_model, qwen_tokenizer, qwen_model_cfg = None, None, None
+
     for dataset_name in datasets_list:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
@@ -237,7 +246,7 @@ def main():
                 infer_cfg = generation_args or {}
                 infer_cfg.update(dict(limit=args.limit))
                 evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
-                report_path = get_report_path(evaluator)
+                # report_path = get_report_path(evaluator)
             else:
                 user_prompt = args.dataset_args.get(dataset_name, {}).get('user_prompt', {})
                 if args.stage in ['infer', 'all']:

@@ -30,6 +30,7 @@ def get_model_cache_dir(root_cache_dir: str):
     os.makedirs(model_cache_dir, exist_ok=True)
     return model_cache_dir
 
+
 def load_model(
     model_id: str,
     device_map: str = 'auto',
