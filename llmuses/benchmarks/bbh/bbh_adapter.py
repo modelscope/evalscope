@@ -158,7 +158,7 @@ class BBHAdapter(DataAdapter):
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
             if self.few_shot_num > 0:
-                with open(os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r') as f:
+                with open(os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r', encoding='utf-8') as f:
                     cot_prompt_str = f.read()
                 few_shot_data = [cot_prompt_str]
 
