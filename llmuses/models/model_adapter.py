@@ -407,7 +407,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                        history=[],
                        system=None)
 
-        inputs = self.generation_template.encode(example)
+        inputs, _ = self.generation_template.encode(example)
         input_ids = inputs['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
         attention_mask = torch.ones_like(input_ids).to(self.device)
