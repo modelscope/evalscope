@@ -18,7 +18,7 @@ class TestCommonCli(unittest.TestCase):
 
         cls.model_id: str = 'ZhipuAI/chatglm3-6b'
         cls.template_type: str = 'chatglm3'
-        cls.dataset_list: str = 'arc ceval'
+        cls.dataset_list: str = 'arc ceval bbh'
 
     @classmethod
     def tearDownClass(cls) -> None:
