@@ -130,7 +130,7 @@ class BBHAdapter(DataAdapter):
 
         return {'data': [full_prompt]}
 
-    def gen_prompts(self, data_dict: dict) -> dict:
+    def gen_prompts(self, data_dict: dict, **kwargs) -> dict:
         """
         Generate dataset prompts from raw input, unify the prompt format for different datasets.
 
@@ -143,6 +143,8 @@ class BBHAdapter(DataAdapter):
 
         e.g. train -- few-shot data, test -- target dataset to evaluate.
         """
+        # TODO: support user_prompt in kwargs
+
         res_dict: dict = {}
 
         if self.few_shot_num < 0:
