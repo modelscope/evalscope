@@ -189,7 +189,7 @@ class InferenceEngine(object):
                                                subset_name=subset_name,
                                                answer_id=answer_id)
 
-            answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+            answer_d[AnswerKeys.MODEL_SPEC] = remove_objects_in_dict(self.model_adapter.model_cfg)
             answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
             answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
 
