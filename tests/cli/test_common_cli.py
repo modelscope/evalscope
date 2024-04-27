@@ -41,6 +41,22 @@ class TestCommonCli(unittest.TestCase):
             logger.error(output)
         self.assertEqual(stat, 0)
 
+    @unittest.skipUnless(test_level() >= 1, '>> Skip test in current test level')
+    def test_simple_run(self):
+        logger.info('==> Test simple run ...')
+
+        cmd = f'python3 -m llmuses.run ' \
+              f'--model {self.model_id} ' \
+              f'--template-type {self.template_type} ' \
+              f'--datasets {self.dataset_list} ' \
+              f'--work-dir {self.test_root_dir} ' \
+              f'--limit 5'
+
+        stat, output = subprocess.getstatusoutput(cmd)
+        if stat != 0:
+            logger.error(output)
+        self.assertEqual(stat, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
