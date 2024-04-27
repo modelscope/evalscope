@@ -15,7 +15,7 @@ from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
 from llmuses.models.model_adapter import BaseModelAdapter
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
+from llmuses.utils import gen_hash, remove_objects_in_dict, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
     normalize_score
 from llmuses.utils.logger import get_logger
 
@@ -183,11 +183,11 @@ class Evaluator(object):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
+                OrderedDict(sorted(remove_objects_in_dict(self.model_adapter.model_cfg).items())),
                 ensure_ascii=False)
-            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+            input_prompt_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(input_prompt).items())),
                                           ensure_ascii=False)
-            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+            infer_cfg_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(infer_cfg).items())),
                                        ensure_ascii=False)
             answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
@@ -252,11 +252,11 @@ class Evaluator(object):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(self.qwen_model_adapter.model_cfg).items())),
+                OrderedDict(sorted(remove_objects_in_dict(self.qwen_model_adapter.model_cfg).items())),
                 ensure_ascii=False)
-            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+            input_prompt_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(input_prompt).items())),
                                           ensure_ascii=False)
-            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+            infer_cfg_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(infer_cfg).items())),
                                        ensure_ascii=False)
             answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
@@ -354,7 +354,7 @@ class Evaluator(object):
             reviewer_spec: dict = {'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
                                    'reviewer': ['Evaluator'],
                                    'revision': ['default']}
-            reviewer_spec_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())),
+            reviewer_spec_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(reviewer_spec).items())),
                                            ensure_ascii=False)
             review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
 
@@ -396,7 +396,7 @@ class Evaluator(object):
             reviewer_spec: dict = {'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
                                    'reviewer': ['Evaluator'],
                                    'revision': ['default']}
-            reviewer_spec_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())),
+            reviewer_spec_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(reviewer_spec).items())),
                                            ensure_ascii=False)
             review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
 

@@ -156,14 +156,20 @@ def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
     if d.get('torch_dtype', None) is not None and not isinstance(d['torch_dtype'], str):
         d['torch_dtype'] = str(d['torch_dtype']).split('.')[1]
 
-    d.pop('generation_config', None)
-    d.pop('generation_template', None)
-
     for value in d.values():
         if isinstance(value, dict):
             dict_torch_dtype_to_str(value)
 
     return d
+
+
+def remove_objects_in_dict(d: Dict[str, Any]) -> dict:
+    res = {}
+    for k, v in d.items():
+        if isinstance(v, (int, float, str, dict)):
+            res[k] = str(v)
+
+    return res
 
 
 class ResponseParser:
