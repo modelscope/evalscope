@@ -443,7 +443,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if tokenizer.pad_token_id is not None:
             generation_config.pad_token_id = tokenizer.pad_token_id
         if generation_config.max_new_tokens is not None:
-            generation_config.max_length = 20
+            generation_config.max_length = 2048
 
         return generation_config, generation_template
 
