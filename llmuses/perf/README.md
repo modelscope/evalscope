@@ -1,5 +1,5 @@
 ## Quick Start
-
+专注于大语言模型的压测工具，可定制化支持各种不通的数据集格式，以及不同的API协议格式。
 ### Usage
 
 #### Command line  
@@ -47,6 +47,7 @@ options:
 
 ```bash
 ##### 通过open qa数据集测试qwen在vllm和llmdeploy下的性能
+#### 数据集地址: https://huggingface.co/datasets/Hello-SimpleAI/HC3-Chinese/blob/main/open_qa.jsonl
 llmuses perf --url 'http://IP:PORT/v1/chat/completions' --parallel 1 --model 'qwen' --dataset 'datasets/open_qa.jsonl'  --log-every-n-query 1 --read-timeout=120  --parser 'openai_openqa_qwen' -n 10 --max-prompt-length 128000 --tokenizer-path /data/models/Qwen1.5-32B/
 ```
 ##### 输出
