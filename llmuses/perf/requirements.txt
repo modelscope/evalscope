@@ -1,2 +1,6 @@
+# http requests
 aiohttp
+# for tokenizer
+transformers
+# for calc result.
 numpy
