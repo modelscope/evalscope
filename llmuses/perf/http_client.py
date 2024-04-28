@@ -165,7 +165,7 @@ def get_input_output_processor(input_output_format: str):
                       "openai_openqa_qwen": "openai/openqa_qwen.py",
                       "openai_openqa_llama3": "openai/openqa_llama3.py",
                       "openai_longalpaca_12k_qwen": "openai/longalpaca_12k_qwen.py",
-                      "openai_longalpaca_12k_llama3": "openai/longalpaca_12k_llama2.py"}
+                      "openai_longalpaca_12k_llama3": "openai/longalpaca_12k_llama3.py"}
     if input_output_format in system_parsers:
         parser_path = os.path.join(_current_path, system_parsers[input_output_format])
     else:
