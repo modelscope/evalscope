@@ -38,7 +38,7 @@ def load_model(
     cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
     template_type: str = '',
 ):
-    logger.info(f'>> template_type: {template_type}')
+    logger.info(f'>Load template_type: {template_type}')
     model_cache_dir = get_model_cache_dir(cache_dir)
 
     torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
@@ -92,6 +92,7 @@ def load_model(
             logger.error(f'Failed to find template for model_type: {model_type}, use default_generation. '
                          f'Please set the arg `--template-type` manually.')
 
+    logger.info(f'Use template_type: {template_type}')
     generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
 
     model_cfg['generation_config'] = generation_config
