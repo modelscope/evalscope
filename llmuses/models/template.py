@@ -1321,15 +1321,17 @@ def fuzzy_match(model_name: str, template_type_list: list) -> str:
     fuzzy match template_type from model_name
 
     Args:
-        model_name: model name, e.g. ChatGLM2-7B
+        model_name: model name or type, e.g. ChatGLM2-7B
         template_type_list: template_type list, e.g. ['chatglm2', 'baichuan', ...]
 
     Returns:
         The best matched template_type.
     """
     candidate_list = []
+    model_name = model_name.lower()
     for template_type in template_type_list:
-        if template_type in model_name.lower():
+        template_type = template_type.lower()
+        if template_type in model_name or model_name in template_type:
             candidate_list.append(template_type)
     if len(candidate_list) == 0:
         return TemplateType.default_generation   # TODO: default template
