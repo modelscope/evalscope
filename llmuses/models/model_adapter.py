@@ -80,6 +80,7 @@ def load_model(
     if not template_type:
         template_list_all = TemplateType.get_template_name_list()
         model_type: str = getattr(model.config, 'model_type', '') if hasattr(model, 'config') else ''
+        logger.info(f'Got model_type: {model_type}')
         if not model_type:
             logger.error(f'Failed to get model_type from model.config: {model.config}')
 
