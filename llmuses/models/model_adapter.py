@@ -80,6 +80,9 @@ def load_model(
 
     generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
 
+    print(f'\n>>>generation_config: {generation_config}\n')
+
+
     model_cfg['generation_config'] = generation_config
     model_cfg['generation_template'] = generation_template
 
