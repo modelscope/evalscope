@@ -81,7 +81,12 @@ def load_model(
         model_type: str = getattr(model.config, 'model_type', '') if hasattr(model, 'config') else ''
         if not model_type:
             logger.error(f'Failed to get model_type from model.config: {model.config}')
-        template_type = fuzzy_match(model_type, template_list_all)
+
+        if isinstance(model_id, str) and model_id.count('/') == 1:
+            template_type = fuzzy_match(model_id, template_list_all)
+        else:
+            template_type = fuzzy_match(model_type, template_list_all)
+
         if template_type == TemplateType.default_generation:
             logger.error(f'Failed to find template for model_type: {model_type}, use default_generation. '
                          f'Please set the arg `--template-type` manually.')

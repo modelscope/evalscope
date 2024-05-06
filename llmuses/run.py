@@ -36,7 +36,7 @@ def parse_args():
                         type=str,
                         help='The template type for generation, should be a string.'
                              'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
-                        required=True,
+                        required=False,
                         )
     parser.add_argument('--model-args',
                         type=str,
