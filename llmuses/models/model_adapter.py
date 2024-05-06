@@ -13,7 +13,7 @@ import torch
 from torch import dtype
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
-from llmuses.models.template import get_template, StopWordsCriteria
+from llmuses.models.template import get_template, StopWordsCriteria, TemplateType, fuzzy_match
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
 
@@ -38,8 +38,7 @@ def load_model(
     cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
     template_type: str = '',
 ):
-    if not template_type:
-        logger.error('template_type is empty for loading model.')
+    logger.info(f'>Load template_type: {template_type}')
     model_cache_dir = get_model_cache_dir(cache_dir)
 
     torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
@@ -78,6 +77,23 @@ def load_model(
     if isinstance(model_id, str) and os.path.exists(model_id):
         logger.warning(f'Got local model dir: {model_id}')
 
+    if not template_type:
+        template_list_all = TemplateType.get_template_name_list()
+        model_type: str = getattr(model.config, 'model_type', '') if hasattr(model, 'config') else ''
+        logger.info(f'Got model_type: {model_type}')
+        if not model_type:
+            logger.error(f'Failed to get model_type from model.config: {model.config}')
+
+        if isinstance(model_id, str) and model_id.count('/') == 1:
+            template_type = fuzzy_match(model_id, template_list_all)
+        else:
+            template_type = fuzzy_match(model_type, template_list_all)
+
+        if template_type == TemplateType.default_generation:
+            logger.error(f'Failed to find template for model_type: {model_type}, use default_generation. '
+                         f'Please set the arg `--template-type` manually.')
+
+    logger.info(f'Use template_type: {template_type}')
     generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
 
     model_cfg['generation_config'] = generation_config
