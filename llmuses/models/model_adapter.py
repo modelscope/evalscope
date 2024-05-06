@@ -8,13 +8,12 @@ import numpy as np
 import time
 import gc
 from abc import ABC, abstractmethod
-from copy import deepcopy
 
 import torch
 from torch import dtype
 
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
-from llmuses.models.template import get_template, StopWordsCriteria, MODEL_TEMPLATE_MAP
+from llmuses.models.template import get_template, StopWordsCriteria
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
 
@@ -30,13 +29,17 @@ def get_model_cache_dir(root_cache_dir: str):
     os.makedirs(model_cache_dir, exist_ok=True)
     return model_cache_dir
 
+
 def load_model(
     model_id: str,
     device_map: str = 'auto',
     torch_dtype: dtype = torch.bfloat16,
     model_revision: str = None,
-    cache_dir: str = DEFAULT_ROOT_CACHE_DIR        
+    cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+    template_type: str = '',
 ):
+    if not template_type:
+        logger.error('template_type is empty for loading model.')
     model_cache_dir = get_model_cache_dir(cache_dir)
 
     torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
@@ -46,7 +49,7 @@ def load_model(
     model_cfg['device_map'] = device_map
     model_cfg['torch_dtype'] = str(torch_dtype)
 
-    from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
+    from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 
     tokenizer = AutoTokenizer.from_pretrained(model_id,
                                               revision=model_revision,
@@ -59,6 +62,26 @@ def load_model(
                                                  trust_remote_code=True,
                                                  torch_dtype=torch_dtype,
                                                  cache_dir=model_cache_dir,)
+
+    # Get generation config
+    generation_config = getattr(model, 'generation_config', GenerationConfig())
+    try:
+        remote_config = GenerationConfig.from_pretrained(
+            model_id,
+            revision=model_revision,
+            trust_remote_code=True)
+        generation_config.update(**remote_config.to_dict())
+    except:
+        logger.warning(f'Failed to get generation config of {model_id} from model hub, use default.')
+
+    # Parse templates for chat-completion
+    if isinstance(model_id, str) and os.path.exists(model_id):
+        logger.warning(f'Got local model dir: {model_id}')
+
+    generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
+
+    model_cfg['generation_config'] = generation_config
+    model_cfg['generation_template'] = generation_template
 
     return model, tokenizer, model_cfg
     
@@ -371,57 +394,20 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logger.warning(f'**Device: {self.device}')
 
-        self.origin_tokenizer = deepcopy(tokenizer)
+        self.generation_config = model_cfg.pop('generation_config', None)
+        self.generation_template = model_cfg.pop('generation_template', None)
 
-        self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
-        logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
+        if self.generation_config is None or self.generation_template is None:
+            raise ValueError('generation_config or generation_template is required for chat generation.')
 
-        super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
-
-    def _parse_generation_config(self, tokenizer, model):
-        from modelscope.utils.hf_util import GenerationConfig
-
-        generation_config = getattr(model, 'generation_config', GenerationConfig())
-
-        try:
-            remote_config = GenerationConfig.from_pretrained(
-                self.model_id,
-                revision=self.model_revision,
-                trust_remote_code=True)
-            generation_config.update(**remote_config.to_dict())
-        except:
-            logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
-
-        # Parse templates for chat-completion
-        if os.path.exists(self.model_id):
-            logger.warning(f'Got local model: {self.model_id}, '
-                           f'please make sure the type of path in the form of `/path/to/your_model_name`')
-        model_name = os.path.basename(os.path.normpath(self.model_id))      # TODO: check compatibility with path
-        logger.info(f'**Model name: {model_name}')
-        template_type: str = MODEL_TEMPLATE_MAP.get(model_name, [None, None])[0]
-        if template_type is None:
-            from llmuses.models.template import TemplateType
-            template_type = TemplateType.default_generation
-            logger.warning(f'Failed to get template type of {self.model_id}, use default: {template_type}')
-
-        logger.info(f'**Template type of generation: {template_type}')
-        generation_template = get_template(model_name, template_type, tokenizer)
-
-        if tokenizer.eos_token_id is not None:
-            generation_config.eos_token_id = tokenizer.eos_token_id
-        if tokenizer.pad_token_id is not None:
-            generation_config.pad_token_id = tokenizer.pad_token_id
-        if generation_config.max_new_tokens is not None:
-            generation_config.max_length = 20
-
-        return generation_config, generation_template
+        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
     def _model_generate(self, query: str, infer_cfg: dict) -> str:
         example = dict(query=query,
                        history=[],
                        system=None)
 
-        inputs = self.generation_template.encode(example)
+        inputs, _ = self.generation_template.encode(example)
         input_ids = inputs['input_ids']
         input_ids = torch.tensor(input_ids)[None].to(self.device)
         attention_mask = torch.ones_like(input_ids).to(self.device)

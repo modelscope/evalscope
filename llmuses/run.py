@@ -32,6 +32,12 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--template-type',
+                        type=str,
+                        help='The template type for generation, should be a string.'
+                             'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
+                        required=True,
+                        )
     parser.add_argument('--model-args',
                         type=str,
                         help='The model args, should be a string.',
@@ -111,6 +117,7 @@ def parse_args():
 
     return args
 
+
 def parse_str_args(str_args: str):
     assert isinstance(str_args, str), 'args should be a string.'
     arg_list: list = str_args.strip().split(',')
@@ -126,15 +133,18 @@ def parse_str_args(str_args: str):
 
     return final_args
 
+
 def get_report_path(evaluator):
     report_dir: str = evaluator.outputs_structure[OutputsStructure.REPORTS_DIR]
     report_file_name: str = evaluator.dataset_name_or_path.replace('/', '_') + '.json'
     report_path: str = os.path.join(report_dir, report_file_name)
     return report_path
 
+
 def set_oss_environ(args):
     os.environ['OSS_ACCESS_KEY_ID'] = args.get("key_id", "")
     os.environ['OSS_ACCESS_KEY_SECRET'] = args.get("key_secret", "")
+
 
 def main():
     args = parse_args()
@@ -143,6 +153,7 @@ def main():
     model_args = parse_str_args(args.model_args)
     generation_args = parse_str_args(args.generation_config)
     set_oss_environ(args.oss_args)
+    template_type: str = args.template_type
 
     # Parse args
     model_precision = model_args.get('precision', 'torch.float16')
@@ -174,14 +185,21 @@ def main():
                                                  device_map=model_args.get("device_map", "auto"),
                                                  torch_dtype=model_precision,
                                                  model_revision=model_revision,
-                                                 cache_dir=args.work_dir
+                                                 cache_dir=args.work_dir,
+                                                 template_type=template_type,
                                                  )
         qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
                                                                 device_map=model_args.get("device_map", "auto"),
                                                                 torch_dtype=model_precision,
                                                                 model_revision=None,
-                                                                cache_dir=args.work_dir
-                                                                ) if len(qwen_model_id)>0 else (None, None, None)
+                                                                cache_dir=args.work_dir,
+                                                                template_type=template_type,
+                                                                ) if len(qwen_model_id) > 0 else (None, None, None)
+    else:
+        logger.warning('Dry run mode, will use dummy model.')
+        model, tokenizer, model_cfg = None, None, None
+        qwen_model, qwen_tokenizer, qwen_model_cfg = None, None, None
+
     for dataset_name in datasets_list:
         # Get imported_modules
         imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
@@ -237,7 +255,7 @@ def main():
                 infer_cfg = generation_args or {}
                 infer_cfg.update(dict(limit=args.limit))
                 evaluator.eval(infer_cfg=infer_cfg, debug=args.debug)
-                report_path = get_report_path(evaluator)
+                # report_path = get_report_path(evaluator)
             else:
                 user_prompt = args.dataset_args.get(dataset_name, {}).get('user_prompt', {})
                 if args.stage in ['infer', 'all']:

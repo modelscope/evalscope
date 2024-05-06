@@ -163,6 +163,15 @@ def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
     return d
 
 
+def remove_objects_in_dict(d: Dict[str, Any]) -> dict:
+    res = {}
+    for k, v in d.items():
+        if isinstance(v, (int, float, str, dict)):
+            res[k] = str(v)
+
+    return res
+
+
 class ResponseParser:
 
     @staticmethod

@@ -12,7 +12,7 @@ from llmuses.models.model_adapter import BaseModelAdapter
 from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
+from llmuses.utils import gen_hash, remove_objects_in_dict, dump_jsonl_data, make_outputs_structure, make_outputs_dir, \
     jsonl_to_list
 from llmuses.utils.logger import get_logger
 
@@ -173,7 +173,7 @@ class EvaluateEngine(object):
             reviewer_spec: dict = {'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
                                    'reviewer': ['Evaluator'],
                                    'revision': ['default']}
-            reviewer_spec_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())),
+            reviewer_spec_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(reviewer_spec).items())),
                                            ensure_ascii=False)
             review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
 

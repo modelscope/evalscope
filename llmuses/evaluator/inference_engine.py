@@ -8,7 +8,7 @@ from llmuses.benchmarks import DataAdapter
 from llmuses.models.model_adapter import BaseModelAdapter
 from llmuses.cache import Cache, init_mem_cache
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys
-from llmuses.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, make_outputs_structure, make_outputs_dir
+from llmuses.utils import gen_hash, remove_objects_in_dict, dump_jsonl_data, make_outputs_structure, make_outputs_dir
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -175,11 +175,11 @@ class InferenceEngine(object):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
+                OrderedDict(sorted(remove_objects_in_dict(self.model_adapter.model_cfg).items())),
                 ensure_ascii=False)
-            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+            input_prompt_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(input_prompt).items())),
                                           ensure_ascii=False)
-            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+            infer_cfg_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(infer_cfg).items())),
                                        ensure_ascii=False)
             answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
@@ -189,7 +189,7 @@ class InferenceEngine(object):
                                                subset_name=subset_name,
                                                answer_id=answer_id)
 
-            answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+            answer_d[AnswerKeys.MODEL_SPEC] = remove_objects_in_dict(self.model_adapter.model_cfg)
             answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
             answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
 
@@ -243,11 +243,11 @@ class InferenceEngine(object):
 
             # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
             model_cfg_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(self.qwen_model_adapter.model_cfg).items())),
+                OrderedDict(sorted(remove_objects_in_dict(self.qwen_model_adapter.model_cfg).items())),
                 ensure_ascii=False)
-            input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
+            input_prompt_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(input_prompt).items())),
                                           ensure_ascii=False)
-            infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
+            infer_cfg_str = json.dumps(OrderedDict(sorted(remove_objects_in_dict(infer_cfg).items())),
                                        ensure_ascii=False)
             answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
