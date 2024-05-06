@@ -1331,13 +1331,15 @@ def fuzzy_match(model_name: str, template_type_list: list) -> str:
     model_name = model_name.lower()
     for template_type in template_type_list:
         template_type = template_type.lower()
-        if template_type in model_name or model_name in template_type:
-            candidate_list.append(template_type)
+        mutual_chars = set(model_name) & set(template_type)
+        if len(mutual_chars) > 0:
+            candidate_list.append((template_type, len(mutual_chars)/len(template_type)))
+
     if len(candidate_list) == 0:
         return TemplateType.default_generation   # TODO: default template
     else:
-        candidate_list = sorted(candidate_list, key=lambda x: len(x), reverse=True)
-        return candidate_list[0]
+        candidate_list = sorted(candidate_list, key=lambda x: x[1], reverse=True)
+        return candidate_list[0][0]
 
 
 if __name__ == '__main__':
