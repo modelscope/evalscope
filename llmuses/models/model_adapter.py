@@ -38,6 +38,7 @@ def load_model(
     cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
     template_type: str = '',
 ):
+    logger.info(f'>> template_type: {template_type}')
     model_cache_dir = get_model_cache_dir(cache_dir)
 
     torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
@@ -92,9 +93,6 @@ def load_model(
                          f'Please set the arg `--template-type` manually.')
 
     generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
-
-    print(f'\n>>>generation_config: {generation_config}\n')
-    print(f'>>model config: {model.config}\n')
 
     model_cfg['generation_config'] = generation_config
     model_cfg['generation_template'] = generation_template
