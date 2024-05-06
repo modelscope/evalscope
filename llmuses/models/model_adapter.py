@@ -77,11 +77,13 @@ def load_model(
     # Parse templates for chat-completion
     if isinstance(model_id, str) and os.path.exists(model_id):
         logger.warning(f'Got local model dir: {model_id}')
+        # Get the model_type from config.json in the model_dir
+        pass
 
     generation_template = get_template(template_type=template_type, tokenizer=tokenizer)
 
     print(f'\n>>>generation_config: {generation_config}\n')
-
+    print(f'>>model config: {model.config}\n')
 
     model_cfg['generation_config'] = generation_config
     model_cfg['generation_template'] = generation_template
