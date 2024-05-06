@@ -16,6 +16,7 @@ class OpenaiPluginBase(PerfPluginBase):
                 input and output tokens.
         """
         self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+
     def build_request(self,
                       model: str,
                       prompt: str = None,
@@ -23,6 +24,21 @@ class OpenaiPluginBase(PerfPluginBase):
                       max_length: int = sys.maxsize,
                       min_length: int = 0,
                       **kwargs: Any) -> Iterator[Dict]:
+        """Build the openai format request based on prompt, dataset
+
+        Args:
+            model (str): The model to use.
+            prompt (str, optional): The user prompt. Defaults to None.
+            dataset (str, optional): The dataset file path. Defaults to None.
+            max_length (int, optional): The max length of the prompt in byte. Defaults to sys.maxsize.
+            min_length (int, optional): The min length of the prompt in byte. Defaults to 0.
+
+        Raises:
+            Exception: NotImplemented
+
+        Yields:
+            Iterator[Dict]: The iter of the request body.
+        """
         raise Exception('Not implemented!')
 
     def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
