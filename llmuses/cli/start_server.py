@@ -15,7 +15,7 @@ print(root_path)
 def subparser_func(args):
     """ Function which will be called for a specific sub parser.
     """
-    return PerfCMD(args)
+    return PerfServerCMD(args)
 
 def add_perf_args(parser):
     parser.add_argument(
@@ -109,7 +109,7 @@ def wait_for_workers(workers):
             break
         time.sleep(0.1)
         
-class PerfCMD(CLICommand):
+class PerfServerCMD(CLICommand):
     name = 'server'
 
     def __init__(self, args):
@@ -119,7 +119,7 @@ class PerfCMD(CLICommand):
     def define_args(parsers: ArgumentParser):
         """ define args for create pipeline template command.
         """
-        parser = parsers.add_parser(PerfCMD.name)
+        parser = parsers.add_parser(PerfServerCMD.name)
         add_perf_args(parser)
         parser.set_defaults(func=subparser_func)
 
