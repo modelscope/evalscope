@@ -164,5 +164,8 @@ if __name__ == '__main__':
         python_requires='>=3.7',
         zip_safe=False,
         install_requires=install_requires,
+        entry_points={  
+            'console_scripts': ['llmuses=llmuses.cli.cli:run_cmd']
+        },
         dependency_links=deps_link,
     )

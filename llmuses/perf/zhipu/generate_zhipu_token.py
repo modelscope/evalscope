@@ -2,6 +2,7 @@
 import time
 import jwt
 import argparse
+# pip install PyJWT
 def generate_token(apikey: str, exp_seconds: int):
     try:
         id, secret = apikey.split(".")
