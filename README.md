@@ -257,6 +257,9 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
 ## 实验和报告
 参考： [Experiments](./resources/experiments.md)
 
+## 性能评测工具
+参考： [性能测试](llmuses/perf/README.md)
+
 ## TO-DO List
 - [ ] Agents evaluation
 - [ ] vLLM
@@ -268,3 +271,5 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
   - [ ] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
+
+

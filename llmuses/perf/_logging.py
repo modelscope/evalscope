@@ -17,12 +17,12 @@ def enable_logging():
             logger.setLevel(logging.DEBUG)
         # set default logging handler
         console_handler = logging.StreamHandler()
-        #formatter = logging.Formatter(
-        #    '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'  # noqa E501
-        #)
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # noqa E501
+            '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'  # noqa E501
         )
+        #formatter = logging.Formatter(
+        #    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # noqa E501
+        #)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
