@@ -32,3 +32,5 @@ transformers
 transformers_stream_generator
 jieba
 rouge-chinese
+fuzzywuzzy
+python-Levenshtein

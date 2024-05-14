@@ -2,6 +2,7 @@
 from copy import deepcopy
 from io import BytesIO
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from fuzzywuzzy import process
 
 import numpy as np
 import requests
@@ -1327,34 +1328,30 @@ def fuzzy_match(model_name: str, template_type_list: list) -> str:
     Returns:
         The best matched template_type.
     """
-    candidate_list = []
-    model_name = model_name.lower()
-    for template_type in template_type_list:
-        template_type = template_type.lower()
-        mutual_chars = set(model_name) & set(template_type)
-        if len(mutual_chars) > 0:
-            candidate_list.append((template_type, len(mutual_chars)/len(template_type)))
 
+    candidate_list = process.extract(model_name, template_type_list, limit=2)
     if len(candidate_list) == 0:
         return TemplateType.default_generation   # TODO: default template
     else:
-        candidate_list = sorted(candidate_list, key=lambda x: x[1], reverse=True)
         return candidate_list[0][0]
 
 
 if __name__ == '__main__':
 
-    from modelscope import AutoTokenizer
-    import torch
+    # from modelscope import AutoTokenizer
+    # import torch
+    #
+    # model_id = 'ZhipuAI/chatglm3-6b'
+    # model_type = 'chatglm3-6b'
+    # model_revision = 'v1.0.2'
+    # tokenizer = AutoTokenizer.from_pretrained(model_id,
+    #                                           revision=model_revision,
+    #                                           trust_remote_code=True, )
+    # print(tokenizer)
+    # print(TemplateType.get_template_name_list())
+    #
+    # template = get_template(template_type=TemplateType.chatglm3, tokenizer=tokenizer)
+    # print(template)
 
-    model_id = 'ZhipuAI/chatglm3-6b'
-    model_type = 'chatglm3-6b'
-    model_revision = 'v1.0.2'
-    tokenizer = AutoTokenizer.from_pretrained(model_id,
-                                              revision=model_revision,
-                                              trust_remote_code=True, )
-    print(tokenizer)
-    print(TemplateType.get_template_name_list())
-
-    template = get_template(template_type=TemplateType.chatglm3, tokenizer=tokenizer)
-    print(template)
+    res = fuzzy_match('chatglm', ['chatml', 'chatglm3', 'chatglm2'])
+    print(res)
