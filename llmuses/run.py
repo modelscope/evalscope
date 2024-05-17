@@ -192,7 +192,13 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             oc_parser = OpenCompassBackendArgsParser(config=task_config)
             logger.info(f'** OpenCompass cmd: {oc_parser.cmd}')
 
-            os.system(oc_parser.cmd)
+            status = os.system(oc_parser.cmd)
+            if status != 0:
+                logger.error(f'** OpenCompass failed with status {status}. **')
+            else:
+                logger.info(f'** Eval backend: OpenCompass task finished with status {status}. **')
+
+        return dict()
 
     # Get the output task config
     output_task_cfg = copy.copy(task_cfg)
@@ -228,7 +234,8 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     debug: str = task_cfg.get('debug', False)
 
     if model is None or datasets is None:
-        raise ValueError('** Args: Please provide model and datasets. **')
+        if not task_cfg.get('eval_backend'):
+            raise ValueError('** Args: Please provide model and datasets. **')
 
     if model_type:
         logger.warning('** DeprecatedWarning: `--model-type` is deprecated, please use `--template-type` instead.')
