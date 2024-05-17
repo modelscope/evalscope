@@ -31,7 +31,9 @@ def parse_args():
     parser.add_argument('--model',
                         help='The model id on modelscope, or local model dir.',
                         type=str,
-                        required=True)
+                        # required=True,
+                        required=False,
+                        )
     parser.add_argument('--model-type',
                         help='Deprecated. See `--template-type`',
                         type=str,
@@ -41,7 +43,8 @@ def parse_args():
                         type=str,
                         help='The template type for generation, should be a string.'
                              'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.',
-                        required=True,
+                        # required=True,
+                        required=False,
                         )
     parser.add_argument('--eval-type',
                         type=str,
@@ -70,7 +73,9 @@ def parse_args():
                         help='Dataset id list, align to the module name in llmuses.benchmarks',
                         type=str,
                         nargs='+',
-                        required=True)
+                        # required=True,
+                        required=False,
+                        )
     parser.add_argument('--dataset-args',
                         type=json.loads,
                         help='The dataset args, should be a json string. The key of dict should be aligned to datasets,'
@@ -123,6 +128,19 @@ def parse_args():
                         type=str,
                         default='all')
 
+    parser.add_argument('--eval-backend',
+                        help='The evaluation backend to use. Default to None.'
+                             'can be `OpenCompass`, ...',
+                        type=str,
+                        default=None,
+                        required=False)
+
+    parser.add_argument('--task-config',
+                        help='The task config file path for evaluation backend, should be a yaml file.',
+                        type=str,
+                        default=None,
+                        required=False)
+
     args = parser.parse_args()
 
     return args
@@ -164,6 +182,17 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         logger.info('** Args: Task config is provided with dictionary type. **')
     else:
         raise ValueError('** Args: Please provide a valid task config. **')
+
+    # Check and run evaluation backend
+    if task_cfg.get('eval_backend'):
+        eval_backend = task_cfg.get('eval_backend')
+        task_config = task_cfg.get('task_config')
+        if eval_backend == 'OpenCompass':
+            from llmuses.utils.parse_eval_backend import OpenCompassBackendArgsParser
+            oc_parser = OpenCompassBackendArgsParser(config=task_config)
+            logger.info(f'** OpenCompass cmd: {oc_parser.cmd}')
+
+            os.system(oc_parser.cmd)
 
     # Get the output task config
     output_task_cfg = copy.copy(task_cfg)
@@ -340,7 +369,10 @@ def main():
         'dataset_dir': args.dataset_dir,
         'stage': args.stage,
         'limit': args.limit,
-        'debug': args.debug
+        'debug': args.debug,
+
+        'eval_backend': args.eval_backend,
+        'task_config': args.task_config,
     }
 
     run_task(task_cfg)
