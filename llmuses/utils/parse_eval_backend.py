@@ -56,7 +56,7 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
         cmd_str = f'python3 -m run ' \
                   f'--models {" ".join(self.oc_args.models)} ' \
                   f'--datasets {" ".join(self.oc_args.datasets)} ' \
-                  f'{OpenCompassBackendArgsParser.get_restore_arg("--dry_run", self.oc_args.dry_run)}'
+                  f'{OpenCompassBackendArgsParser.get_restore_arg("--dry-run", self.oc_args.dry_run)}'
 
         return cmd_str
 
