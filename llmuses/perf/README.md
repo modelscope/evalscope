@@ -44,7 +44,7 @@ options:
   --dataset-path DATASET_PATH
                         Path to the dataset file, Used in conjunction with dataset. If dataset is None, each line defaults to a prompt.
 ```
-##### The result.
+##### The result:
 ```bash
  Total requests: 10
  Succeed requests: 10
@@ -76,7 +76,6 @@ options:
      p95: 7.7003
      p98: 7.7003
      p99: 7.7003
-```
 ```
 #### Start the client
 
@@ -184,7 +183,7 @@ line by line with each line as a prompt.
 longalpaca will get item['instruction'] as prompt.
 openqa will get item['question'] as prompt.
 
-#### How to extension api and dataset.
+#### How to extension dataset.
 To extend api you can create sub class of `DatasetPluginBase`, annotation with @register_dataset('name_of_dataset')
 implement build_prompt api return a prompt.
 ```python
