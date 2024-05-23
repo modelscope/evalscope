@@ -2,22 +2,7 @@
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Union
 
-from llmuses.utils import yaml_to_dict
-
-
-class BackendArgsParser:
-    def __init__(self, config: Union[str, dict], **kwargs):
-        """
-        BackendParser for parsing the evaluation backend configuration.
-        config: str or dict, the configuration of the evaluation backend.
-            could be a string of the path to the configuration file (yaml), or a dictionary.
-        """
-        if isinstance(config, str):
-            self.config_d = yaml_to_dict(config)
-        else:
-            self.config_d = config
-
-        self.kwargs = kwargs
+from llmuses.backend.base import BackendArgsParser
 
 
 @dataclass
@@ -63,7 +48,7 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
 
 if __name__ == '__main__':
 
-    oc_task_cfg_file = '/Users/jason/workspace/work/maas/github/llmuses_work/llmuses/temp/configs/qwen-1p5-7b-chat_mmlu_cfg.yaml'
+    oc_task_cfg_file = '/temp/configs/qwen-1p5-7b-chat_mmlu_cfg.yaml'
     ocp = OpenCompassBackendArgsParser(config=oc_task_cfg_file)
     print(ocp.args)
     print(ocp.cmd)

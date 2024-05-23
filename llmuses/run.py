@@ -188,7 +188,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         eval_backend = task_cfg.get('eval_backend')
         task_config = task_cfg.get('task_config')
         if eval_backend == 'OpenCompass':
-            from llmuses.utils.parse_eval_backend import OpenCompassBackendArgsParser
+            from llmuses.backend.opencompass import OpenCompassBackendArgsParser
             oc_parser = OpenCompassBackendArgsParser(config=task_config)
             logger.info(f'** OpenCompass cmd: {oc_parser.cmd}')
 
