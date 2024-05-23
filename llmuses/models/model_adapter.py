@@ -410,8 +410,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logger.warning(f'**Device: {self.device}')
 
-        self.generation_config = model_cfg.pop('generation_config', None)
-        self.generation_template = model_cfg.pop('generation_template', None)
+        self.generation_config = model_cfg.get('generation_config', None)
+        self.generation_template = model_cfg.get('generation_template', None)
 
         if self.generation_config is None or self.generation_template is None:
             raise ValueError('generation_config or generation_template is required for chat generation.')
