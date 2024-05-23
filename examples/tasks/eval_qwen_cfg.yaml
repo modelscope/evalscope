@@ -1,6 +1,6 @@
 models:
-#   - hf_qwen1_5_1_8b_chat
-   - hf_qwen_1_8b_chat
+   - ms_qwen_7b_chat
+#   - hf_qwen_7b_chat
 datasets:
   - mmlu_ppl
 dry_run: false

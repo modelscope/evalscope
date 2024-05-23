@@ -88,6 +88,23 @@ from llmuses.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
+### Evaluation Backend
+Eval-Scope支持使用第三方评估框架发起评测任务，我们称之为Evaluation Backend。目前支持的Evaluation Backend有：
+- [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
+
+#### 1. OpenCompass Eval-Backend
+环境配置：
+```shell
+# 安装OpenCompass  TODO
+pip install llmuses[opencompass]
+```
+
+执行：
+```shell
+python llmuses/run.py --eval-backend OpenCompass --task-config examples/tasks/eval_qwen_cfg.yaml
+```
+
+
 
 ### 使用本地数据集
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
