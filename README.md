@@ -101,7 +101,12 @@ pip install llmuses[opencompass]
 
 执行：
 ```shell
-python llmuses/run.py --eval-backend OpenCompass --task-config examples/tasks/eval_qwen_cfg.yaml
+python llmuses/run.py --eval-backend OpenCompass --task-config examples/tasks/eval_qwen_oc_cfg.yaml
+
+```
+如果需要评估托管在HuggingFace Hub上的模型，可以使用以下方式：
+```shell
+HF_ENDPOINT=https://hf-mirror.com python llmuses/run.py --eval-backend OpenCompass --task-config examples/tasks/eval_qwen_oc_cfg.yaml
 ```
 
 
