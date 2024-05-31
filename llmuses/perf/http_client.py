@@ -2,8 +2,11 @@
 """
 import argparse
 import asyncio
+import functools
 import json
 import logging
+import platform
+import signal
 import sqlite3
 import os
 import time
@@ -15,13 +18,28 @@ from typing import List, Dict
 from datetime import datetime, timezone
 import aiohttp
 from http import HTTPStatus
-from .server_sent_event import ServerSentEvent
 import aiohttp
 import numpy as np
+from llmuses.perf.plugin_registry import api_registry, dataset_registry
+from llmuses.perf.server_sent_event import ServerSentEvent
+# for plugin registry
+from llmuses.perf.dashscope_api import DashScopeApiPlugin
+from llmuses.perf.openai_api import OpenaiPlugin
+from llmuses.perf.datasets.line_by_line import LineByLineDatasetPlugin
+from llmuses.perf.datasets.longalpaca_12k import LongAlpacaDatasetPlugin
+from llmuses.perf.datasets.openqa import OpenqaDatasetPlugin
+from llmuses.perf.zhipu_api import ZhipuApiPlugin
 
-from ._logging import logger
+from llmuses.perf._logging import logger
 
-_current_path = os.path.dirname(os.path.abspath(__file__))
+__all__ = [
+    DashScopeApiPlugin,
+    OpenaiPlugin,
+    ZhipuApiPlugin,
+    LineByLineDatasetPlugin,
+    LongAlpacaDatasetPlugin,
+    OpenqaDatasetPlugin,
+]
 
 _query_send_completed = False
 _data_process_completed = False
@@ -113,12 +131,22 @@ class AioHttpClient:
         if (response.status == HTTPStatus.OK and "text/event-stream" in response.content_type):
             async for is_error, status_code, data in self._handle_stream(response):
                 yield (is_error, status_code, data)
+        elif response.status == HTTPStatus.OK and "application/json" in response.content_type:
+            content = await response.json()
+            if 'object' in content and content['object'] == 'error':
+                yield(True, content['code'], content['message'])
+            else:
+                yield (False, HTTPStatus.OK, content)            
         elif response.status == HTTPStatus.OK:
             content = await response.read()
             yield (False, HTTPStatus.OK, content)
         else:
             if "application/json" in response.content_type:
                 error = await response.json()
+                yield (True, response.status, error)
+            elif "text/event-stream" in response.content_type:
+                async for _, _, data in self._handle_stream(response):
+                    error = json.loads(data)
                 yield (True, response.status, error)
             else:
                 msg = await response.read()
@@ -158,36 +186,28 @@ def dynamic_import_module(dynamic_module_file_path: str):
     dynamic_module_spec.loader.exec_module(dynamic_module)
     return dynamic_module
 
-
-def get_input_output_processor(input_output_format: str):
-    # find in current path
-    system_parsers = {"openai_prompt":"openai/openai_prompt.py",
-                      "openai_openqa_qwen": "openai/openqa_qwen.py",
-                      "openai_openqa_llama3": "openai/openqa_llama3.py",
-                      "openai_longalpaca_12k_qwen": "openai/longalpaca_12k_qwen.py",
-                      "openai_longalpaca_12k_llama3": "openai/longalpaca_12k_llama3.py"}
-    if input_output_format in system_parsers:
-        parser_path = os.path.join(_current_path, system_parsers[input_output_format])
-    else:
-        parser_path = input_output_format
-    return dynamic_import_module(parser_path)
-
+def get_query_template(args):
+    if args.query_template.startswith('@'):
+        # read from file
+        with open(args.query_template[1:], 'r') as f:
+            content = f.read()
+            return content.strip()
+    return args.query_template.strip()
 
 async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
-    input_output_processor = get_input_output_processor(args.parser).PerfPlugin(args.tokenizer_path)
+    query_generator_class = api_registry(args.api)
+    if not query_generator_class:
+        print('Can not find query generator: %s'%args.api)
+    query_generator = query_generator_class(args.tokenizer_path)
     total_query_counter = 0
+    query_template = get_query_template(args)
     if args.prompt is not None:
         if args.prompt.startswith("@"):  # read local as prompt, same as curl --data
             with open(args.prompt, 'r', encoding='utf-8') as f:
                 prompt = f.read()
         else:
             prompt = args.prompt
-        request = list(input_output_processor.build_request(args.model,
-                                                            prompt,
-                                                            args.dataset,
-                                                            args.min_prompt_length,
-                                                            args.max_prompt_length,
-                                                            **args.parameters))[0]
+        request = query_generator.build_request(args.model, prompt, query_template)
         if args.number is None:
             await request_queue.put(request)
         else:
@@ -199,14 +219,18 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
                     # The next request will be sent after the interval.
                     await asyncio.sleep(interval)
                     await request_queue.put(request)
-    elif args.dataset is not None:
+    elif args.dataset_path is not None:
         # Ensure sufficient quantity of queries.
         while True:
-            for request in input_output_processor.build_request(model=args.model,
-                                                                dataset=args.dataset,
-                                                                min_length=args.min_prompt_length,
-                                                                max_length=args.max_prompt_length,
-                                                                **args.parameters):
+            prompt_generator_class = dataset_registry.get_class(args.dataset)
+            if not prompt_generator_class:
+                print('Can not find dataset: %s plugin.'%(args.dataset))
+                sys.exit(1)
+            prompt_generator = prompt_generator_class(args.dataset_path, args.max_prompt_length, args.min_prompt_length)
+            for prompt in prompt_generator:
+                request = query_generator.build_request(args.model, prompt, query_template)
+                if request is None:
+                    continue
                 await request_queue.put(request)
                 total_query_counter += 1
                 if args.number is not None:
@@ -281,7 +305,10 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     # prefill time = 首包时间-avg_chunk_time
     # n-tokens-per-trunk
     n_benchmark_result = 0
-    response_parser = get_input_output_processor(args.parser).PerfPlugin(args.tokenizer_path)
+    api_plugin_class = api_registry(args.api)
+    if not api_plugin_class:
+        print('Can not find query generator: %s'%args.api)
+    api_plugin = api_plugin_class(args.tokenizer_path)
     utc_dt = datetime.now(timezone.utc)
     current_time = utc_dt.astimezone().strftime("%Y_%m_%d_%H_%M_%S_%f")
     if args.name:
@@ -338,7 +365,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
                 query_n_chunks = 1
                 query_n_chunks_time = query_latency
 
-            n_query_prompt_tokens, n_query_completion_tokens = response_parser.parse_responses(
+            n_query_prompt_tokens, n_query_completion_tokens = api_plugin.parse_responses(
                 benchmark_data["response_messages"], 
                 request=benchmark_data["request"])
             n_total_prompt_tokens += n_query_prompt_tokens
@@ -540,12 +567,21 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue, benchmark_
                 benchmark_data["completed_time"] = time.perf_counter()
                 await benchmark_data_queue.put(benchmark_data)
                 logger.error("Request query: %s exception, response: %s" % (request, response_data))
-                import traceback
-                logger.error(traceback.format_exc())
-                logger.error(e)
+                logger.exception(e)
 
+def signal_handler(signal_name, loop):
+    print("Got signal %s: exit" % signal_name)
+    loop.stop()
+    
 
 async def benchmark(args) -> None:
+    # add SIGINT and SIGTERM handler
+    loop = asyncio.get_running_loop()
+    for signal_name in {'SIGINT', 'SIGTERM'}:
+        loop.add_signal_handler(
+            getattr(signal, signal_name),
+            functools.partial(signal_handler, signal_name, loop))
+        
     request_tasks: List[asyncio.Task] = []
     # Queues can be used to distribute workload between several concurrent tasks
     # Create a queue that we will use to store our "workload".
@@ -603,6 +639,7 @@ class ParseKVAction(argparse.Action):
                     value = True
                 if value.lower() == 'bool_false':
                     value = False
+                
                 value = process_number(value)
                 getattr(namespace, self.dest)[key] = value
             except ValueError as ex:
@@ -620,8 +657,6 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument("--model", type=str, required=True,
                         help="The test model name.")
     parser.add_argument("--url", type=str, default="localhost")
-    parser.add_argument("--dataset", type=str, required=False,
-                        help="Path to the dataset, with prompt line by line")
     parser.add_argument("--connect-timeout", type=int, default=120,
                         help="The network connection timeout")
     parser.add_argument("--read-timeout", type=int, default=120,
@@ -646,28 +681,12 @@ def add_argument(parser: argparse.ArgumentParser):
                              "the request arrival times.  Mutual exclusion with parallel")
     parser.add_argument("--log-every-n-query", type=int, default=10,
                         help="Logging every n query.")
-    parser.add_argument("--parameters", nargs="+",
-                        dest="parameters",
-                        default={},
-                        action=ParseKVAction,
-                        help="Extra parameters accepts by key1=value1 key2=value2. "
-                             "The parameters will be use for each query."
-                             "You can use this parameter to specify sample parameters such as top_p, top_k ",
-                        metavar="KEY1=VALUE1")
     parser.add_argument("--headers", nargs="+", dest="headers",
                         action=ParseKVAction,
                         help="Extra http headers accepts by key1=value1 key2=value2. "
                              "The headers will be use for each query."
-                             "You can use this parameter to specify http auchorization and other header.",
+                             "You can use this parameter to specify http authorization and other header.",
                         metavar="KEY1=VALUE1")
-    parser.add_argument("--parser",
-                        type=str,
-                        default="openai_prompt",
-                        help="Specify the request/response processor, the prompt generator, current support,"
-                             "[openai_prompt|openai_openqa_qwen|openai_openqa_llama3|"
-                             "openai_longalpaca_12k_qwen|openai_longalpaca_12k_llama3]"
-                             ",you can define your custom parser python file path, "
-                             "reference llm_parser_base.py,")
     parser.add_argument("--wandb-api-key", type=str, default=None,
                         help="The wandb api key, if set the metric will be saved to wandb.")
     parser.add_argument("--name", type=str,
@@ -675,11 +694,34 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument("--debug", action='store_true', default=False,
                         help='Debug request send.')
     parser.add_argument("--tokenizer-path", type=str, required=None,
-                        help="Specify the tokenizer weight path used to calculate the number of input and output tokens,"
+                        help="Specify the tokenizer weight path, used to calculate the number of input and output tokens,"
                         "usually in the same directory as the model weight.")
-
+    parser.add_argument("--api",
+                        type=str,
+                        default="openai",
+                        help="Specify the service api, current support [openai|dashscope|zhipu]"
+                             "you can define your custom parser with python, and specify the python file path, "
+                             "reference api_plugin_base.py,")
+    parser.add_argument("--query-template",
+                        type=str,
+                        default='{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true}',
+                        help="Specify the query template, should be a json string, or local file,"
+                             "with local file, specified with @local_file_path,"
+                             "will will replace model and prompt in the template.")
+    parser.add_argument("--dataset",
+                        type=str,
+                        default='line_by_line',
+                        help="Specify the dataset [openqa|longalpaca|line_by_line]"
+                             "you can define your custom dataset parser with python, and specify the python file path, "
+                             "reference dataset_plugin_base.py,")
+    parser.add_argument("--dataset-path", type=str, required=False,
+                        help="Path to the dataset file, Used in conjunction with dataset. "
+                             "If dataset is None, each line defaults to a prompt.")
 
 if __name__ == "__main__":
+    # for windows raise RuntimeError: Event loop is closed
+    if platform.system() == 'Windows':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     parser = argparse.ArgumentParser(
         description="Benchmark LLM service performance.")
     add_argument(parser)

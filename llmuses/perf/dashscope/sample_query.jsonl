@@ -1,2 +1,0 @@
-{"input":{"messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"如何做炒西红柿鸡蛋？"}]},"model":"qwen-max","parameters":{"seed":1701329718177,"result_format":"message"}}
-{"input":{"debug":true,"messages":[{"role":"user","content":""},{"role":"assistant","content":""},{"role":"user","content":"帮我写个俄罗斯方块的代码"}]},"model":"qwen-max","parameters":{"seed":1701329378210,"result_format":"message"}}
