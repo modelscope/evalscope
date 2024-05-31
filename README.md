@@ -82,6 +82,7 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 - --template-type: 需要手动指定该参数，使得eval-scope能够正确识别模型的类型，用来设置model generation config。  
 
 关于--template-type，具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+在模型列表中的`Default Template`字段中找到合适的template；  
 可以使用以下方式，来查看模型的template type list：
 ```shell
 from llmuses.models.template import TemplateType
@@ -155,6 +156,7 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'ZhipuAI/chatglm3-6b',
+        'template_type': 'chatglm3', 
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
@@ -200,7 +202,7 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 #Usage:
 cd llmuses
 
-# dry-run模式 (模型answer正常生成，但专家模型不会被触发，评估结果会随机生成)
+# dry-run模式 (模型answer正常生成，但专家模型，如GPT-4，不会被调用，评估结果会随机生成)
 python llmuses/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
@@ -248,7 +250,7 @@ python llmuses/run_arena.py --c registry/config/cfg_single.yaml
 #### 2. 执行脚本
 ```shell
 # Example:
-python llmuses/run_arena.py --c llmuses/registry/config/cfg_pairwise_baseline.yaml
+python llmuses/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 ```
 
 

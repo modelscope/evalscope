@@ -1,10 +1,11 @@
-import sys
 from typing import Any, Dict, Iterator
 import json
-from llmuses.perf.llm_parser_base import PerfPluginBase
+from llmuses.perf.api_plugin_base import ApiPluginBase
 from transformers import AutoTokenizer
+from llmuses.perf.plugin_registry import register_api
 
-class OpenaiPluginBase(PerfPluginBase):
+@register_api("openai")
+class OpenaiPlugin(ApiPluginBase):
     """Base of openai interface.
     """
     def __init__(self, mode_path: str):
@@ -15,31 +16,34 @@ class OpenaiPluginBase(PerfPluginBase):
                 weight in the model to calculate the number of the
                 input and output tokens.
         """
+        super().__init__(model_path=mode_path)
         self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
 
     def build_request(self,
                       model: str,
-                      prompt: str = None,
-                      dataset: str = None,
-                      max_length: int = sys.maxsize,
-                      min_length: int = 0,
-                      **kwargs: Any) -> Iterator[Dict]:
+                      prompt: str,
+                      query_template: str) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
             model (str): The model to use.
             prompt (str, optional): The user prompt. Defaults to None.
-            dataset (str, optional): The dataset file path. Defaults to None.
-            max_length (int, optional): The max length of the prompt in byte. Defaults to sys.maxsize.
-            min_length (int, optional): The min length of the prompt in byte. Defaults to 0.
+            query_template (str): The query template, the plugin will replace "%m" with model and "%p" with prompt.
 
         Raises:
             Exception: NotImplemented
 
-        Yields:
-            Iterator[Dict]: The iter of the request body.
+        Returns:
+            Dict: The request body. None if prompt format is error.
         """
-        raise Exception('Not implemented!')
+        try:
+            query = json.loads(query_template)
+            ApiPluginBase.replace_values(query, model, prompt)
+            return query
+        except Exception as e:
+            print(e)
+            print('Prompt: %s invalidate!'%prompt)
+            return None
 
     def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.

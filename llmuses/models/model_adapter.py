@@ -442,8 +442,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             generation_config.eos_token_id = tokenizer.eos_token_id
         if tokenizer.pad_token_id is not None:
             generation_config.pad_token_id = tokenizer.pad_token_id
-        if generation_config.max_new_tokens is not None:
-            generation_config.max_length = 20
+        if generation_config.max_new_tokens is None:
+            generation_config.max_new_tokens = 2048
 
         return generation_config, generation_template
 
