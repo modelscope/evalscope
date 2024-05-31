@@ -9,6 +9,7 @@ answers_gen:
         revision: v1.0.2        # revision of model, default is NULL
         precision: torch.float16
         enable: true            # enable or disable this model
+        template_type: chatglm3-6b  # see: https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md
         generation_config:
             do_sample: true
             max_new_tokens: 256
@@ -22,6 +23,7 @@ answers_gen:
         revision: v1.0.2       # revision of model, default is NULL
         precision: torch.float16
         enable: false           # enable or disable this model
+        template_type: baichuan2-7b-base
         generation_config:
             do_sample: true
             max_new_tokens: 256
@@ -34,6 +36,7 @@ answers_gen:
         revision: v1.1.8       # revision of model, default is NULL
         precision: torch.float16
         enable: true           # enable or disable this model      # TODO: tokenizer issue
+        template_type: qwen-7b
         generation_config:
             do_sample: true
             max_new_tokens: 256

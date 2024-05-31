@@ -133,6 +133,7 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'ZhipuAI/chatglm3-6b',
+        'template_type': 'chatglm3-6b', 
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
