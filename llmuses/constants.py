@@ -129,6 +129,7 @@ class EvalConfigKeys:
     MODEL_REVISION = 'revision'
     GENERATION_CONFIG = 'generation_config'
     PRECISION = 'precision'
+    TEMPLATE_TYPE = 'template_type'
 
 
 class FnCompletionParser:
