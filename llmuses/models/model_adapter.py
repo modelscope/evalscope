@@ -535,7 +535,7 @@ class CustomModelAdapter(BaseModelAdapter):
         self.custom_model = custom_model
         super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_model.config)
 
-    def predict(self, inputs: Union[str, dict, list], **kwargs) -> Dict[str, Any]:
+    def predict(self, inputs: Union[str, dict, list], **kwargs) -> List[Dict[str, Any]]:
         """
         Model prediction func.
 
@@ -568,16 +568,19 @@ class CustomModelAdapter(BaseModelAdapter):
               }
             }
         """
+        in_prompts = []
 
-        # Process inputs
-        if isinstance(inputs, str):
-            query = inputs
-        elif isinstance(inputs, dict):
-            query = inputs['data'][0]
-        elif isinstance(inputs, list):
-            query = '\n'.join(inputs)
-        else:
-            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+        # Note: here we assume the inputs are all prompts for the benchmark.
+        for input_prompt in inputs:
+            if isinstance(input_prompt, str):
+                in_prompts.append(input_prompt)
+            elif isinstance(input_prompt, dict):
+                # TODO: to be supported for continuation list like truthful_qa
+                in_prompts.append(input_prompt['data'][0])
+            elif isinstance(input_prompt, list):
+                in_prompts.append('\n'.join(input_prompt))
+            else:
+                raise TypeError(f'Unsupported inputs type: {type(input_prompt)}')
 
-        return self.custom_model.predict(prompt=query, **kwargs)
+        return self.custom_model.predict(prompts=in_prompts, **kwargs)
 
