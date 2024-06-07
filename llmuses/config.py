@@ -144,8 +144,8 @@ class TempModel(CustomModel):
     def __init__(self, config: dict):
         super().__init__(config=config)
 
-    def predict(self, prompt: str, **kwargs):
-        return prompt + ': response'
+    def predict(self, prompts: str, **kwargs):
+        return [item + ': response' for item in prompts]
 
 
 if __name__ == '__main__':
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     task_config = TaskConfig()
 
     # Register a new task
-    TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work')
+    TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/path/to/swift_custom_work')
 
     import json
     swift_eval_task: List[TaskConfig] = TaskConfig.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift'])

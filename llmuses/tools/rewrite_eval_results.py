@@ -20,7 +20,7 @@ class DummyCustomModel(CustomModel):
     def __init__(self, config: dict, **kwargs):
         super(DummyCustomModel, self).__init__(config=config, **kwargs)
 
-    def predict(self, prompt: str, **kwargs):
+    def predict(self, prompts: str, **kwargs):
         # ONLY FOR DUMMY IMPLEMENTATION, DO NOT EDIT OR USE IN PRODUCTION.
 
         response = 'The answer is C. NOTE: ONLY FOR TEST'
@@ -46,7 +46,7 @@ class DummyCustomModel(CustomModel):
             }
         }
 
-        return res_d
+        return [res_d for _ in prompts]
 
 
 def get_task_cfg(cfg_file: str, model_instance: CustomModel):
