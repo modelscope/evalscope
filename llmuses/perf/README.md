@@ -5,9 +5,11 @@ A stress testing tool that focuses on large language models and can be customize
 #### Command line  
 ```bash
 llmuses perf --help
-usage: llmuses <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH]
-                                       [--prompt PROMPT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE] [--log-every-n-query LOG_EVERY_N_QUERY] [--headers KEY1=VALUE1 [KEY1=VALUE1 ...]] [--wandb-api-key WANDB_API_KEY]
-                                       [--name NAME] [--debug] [--tokenizer-path TOKENIZER_PATH] [--api API] [--query-template QUERY_TEMPLATE] [--dataset DATASET] [--dataset-path DATASET_PATH]
+usage: llmuses <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
+                                       [--log-every-n-query LOG_EVERY_N_QUERY] [--headers KEY1=VALUE1 [KEY1=VALUE1 ...]] [--wandb-api-key WANDB_API_KEY] [--name NAME] [--debug] [--tokenizer-path TOKENIZER_PATH]
+                                       [--api API] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH] [--prompt PROMPT] [--query-template QUERY_TEMPLATE] [--dataset DATASET]
+                                       [--dataset-path DATASET_PATH] [--frequency-penalty FREQUENCY_PENALTY] [--logprobs] [--max-tokens MAX_TOKENS] [--n-choices N_CHOICES] [--seed SEED] [--stop STOP] [--stream]
+                                       [--temperature TEMPERATURE] [--top-p TOP_P]
 
 options:
   -h, --help            show this help message and exit
@@ -17,11 +19,6 @@ options:
                         The network connection timeout
   --read-timeout READ_TIMEOUT
                         The network read timeout
-  --max-prompt-length MAX_PROMPT_LENGTH
-                        Maximum input prompt length
-  --min-prompt-length MIN_PROMPT_LENGTH
-                        Minimum input prompt length.
-  --prompt PROMPT       Specified the request prompt, all the query will use this prompt, You can specify local file via @file_path, the prompt will be the file content.
   -n NUMBER, --number NUMBER
                         How many requests to be made, if None, will will send request base dataset or prompt.
   --parallel PARALLEL   Set number of concurrency request, default 1
@@ -37,12 +34,31 @@ options:
   --debug               Debug request send.
   --tokenizer-path TOKENIZER_PATH
                         Specify the tokenizer weight path, used to calculate the number of input and output tokens,usually in the same directory as the model weight.
-  --api API             Specify the service api, current support [openai|dashscope|zhipu]you can define your custom parser with python, and specify the python file path, reference api_plugin_base.py,
+  --api API             Specify the service api, current support [openai|dashscope]you can define your custom parser with python, and specify the python file path, reference api_plugin_base.py,
+  --max-prompt-length MAX_PROMPT_LENGTH
+                        Maximum input prompt length
+  --min-prompt-length MIN_PROMPT_LENGTH
+                        Minimum input prompt length.
+  --prompt PROMPT       Specified the request prompt, all the query will use this prompt, You can specify local file via @file_path, the prompt will be the file content.
   --query-template QUERY_TEMPLATE
                         Specify the query template, should be a json string, or local file,with local file, specified with @local_file_path,will will replace model and prompt in the template.
   --dataset DATASET     Specify the dataset [openqa|longalpaca|line_by_line]you can define your custom dataset parser with python, and specify the python file path, reference dataset_plugin_base.py,
   --dataset-path DATASET_PATH
                         Path to the dataset file, Used in conjunction with dataset. If dataset is None, each line defaults to a prompt.
+  --frequency-penalty FREQUENCY_PENALTY
+                        The frequency_penalty value.
+  --logprobs            The logprobs.
+  --max-tokens MAX_TOKENS
+                        The maximum number of tokens can be generated.
+  --n-choices N_CHOICES
+                        How may chmpletion choices to generate.
+  --seed SEED           Rhe random seed.
+  --stop STOP           The stop generating tokens.
+  --stream              Stream output with SSE.
+  --temperature TEMPERATURE
+                        The sample temperature.
+  --top-p TOP_P         Sampling top p.
+
 ```
 ##### The result:
 ```bash
@@ -77,6 +93,8 @@ options:
      p98: 7.7003
      p99: 7.7003
 ```
+#### Request parameter  
+You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
 #### Start the client
 
 ```bash
@@ -140,22 +158,18 @@ class ApiPluginBase:
         self.model_path = model_path
         
     @abstractmethod
-    def build_request(self, 
-                      model:str,
-                      prompt: str,                    
-                      query_template: str)->Dict:
-        """Build the request.
+    def build_request(self, messages: List[Dict], param: QueryParameters)->Dict:
+        """Build a api request body.
 
         Args:
-            model (str): The request model.
-            prompt (str): The input prompt, if not None, use prompt generate request. Defaults to None.
-            query_template (str): The query template, the plugin will replace "%m" with model and "%p" with prompt.
+            messages (List[Dict]): The messages generated by dataset.
+            param (QueryParameters): The query parameters.
 
         Raises:
-            NotImplementedError: The request is not impletion.
+            NotImplementedError: Not implemented.
 
         Returns:
-            Dict: return a request.
+            Dict: The api request body.
         """
         raise NotImplementedError
     
@@ -174,7 +188,7 @@ class ApiPluginBase:
         Returns:
             Tuple: (Number of prompt_tokens and number of completion_tokens).
         """
-        raise NotImplementedError 
+        raise NotImplementedError  
 ```
 
 #### Dataset supported
@@ -187,46 +201,32 @@ openqa will get item['question'] as prompt.
 To extend api you can create sub class of `DatasetPluginBase`, annotation with @register_dataset('name_of_dataset')
 implement build_prompt api return a prompt.
 ```python
-from abc import abstractmethod
-import sys
-from typing import Any, Dict, Iterator, List, Tuple
-import json
-
 class DatasetPluginBase:
-    def __init__(self, 
-                 dataset_path: str,
-                 max_length: int = sys.maxsize, 
-                 min_length: int = 0,):
+    def __init__(self, query_parameters: QueryParameters):
         """Build data set plugin
 
         Args:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
-        self.dataset_path = dataset_path
-        self.max_length = max_length
-        self.min_length = min_length
+        self.query_parameters = query_parameters
 
     def __next__(self):
-        for item in self.build_prompt():
+        for item in self.build_messages():
             yield item
         raise StopIteration
 
     def __iter__(self):
-        return self.build_prompt()
+        return self.build_messages()
     
     @abstractmethod
-    def build_prompt(self)->Iterator[str]:
+    def build_messages(self)->Iterator[List[Dict]]:
         """Build the request.
-
-        Args:
-            max_length (int, optional): The max prompt length by characters. Defaults to sys.maxsize.
-            min_length (int, optional): The min prompt length by characters. Defaults to 0.
 
         Raises:
             NotImplementedError: The request is not impletion.
 
         Yields:
-            Iterator[Dict]: Yield a request.
+            Iterator[List[Dict]]: Yield request messages.
         """
         raise NotImplementedError
     
