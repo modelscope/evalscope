@@ -136,7 +136,7 @@ if __name__ == '__main__':
     custom_dataset_pattern = 'general_qa'    # 可选范围： ['arc', 'gsm8k', 'mmlu', 'ceval', 'bbh']
     TaskConfig.registry(name=custom_dataset_name,
                         data_pattern=custom_dataset_pattern,
-                        dataset_dir='/Users/jason/workspace/work/maas/benchmarks/swift_custom_work/general_qa_swift',
+                        dataset_dir='/path/to/general_qa_swift',
                         # subset_list=['my_swift_custom_subset1', 'my_swift_custom_subset2'],
                         )
 
