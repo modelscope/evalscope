@@ -46,10 +46,11 @@ class SwiftModel(CustomModel):
 
         super(SwiftModel, self).__init__(config=config, **kwargs)
 
-    def predict(self, prompt: str, **kwargs):
+    def predict(self, prompts: str, **kwargs):
 
         # query = '浙江的省会在哪里？'
-        # response, history = self.inference(self.model, self.template, prompt)
+        # prompts = [query]
+        # response, history = self.inference(self.model, self.template, prompts)
         # response: str = str(response)
 
         # ONLY FOR TEST
@@ -76,7 +77,7 @@ class SwiftModel(CustomModel):
             }
         }
 
-        return res_d
+        return [res_d for _ in prompts]
 
 
 def get_task_cfg(cfg_file: str, model_instance: CustomModel):
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     custom_dataset_pattern = 'general_qa'    # 可选范围： ['arc', 'gsm8k', 'mmlu', 'ceval', 'bbh']
     TaskConfig.registry(name=custom_dataset_name,
                         data_pattern=custom_dataset_pattern,
-                        dataset_dir='/path/to/data/general_qa_swift',
+                        dataset_dir='/path/to/general_qa_swift',
                         # subset_list=['my_swift_custom_subset1', 'my_swift_custom_subset2'],
                         )
 
