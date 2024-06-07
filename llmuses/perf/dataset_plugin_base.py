@@ -3,41 +3,34 @@ import sys
 from typing import Any, Dict, Iterator, List, Tuple
 import json
 
+from llmuses.perf.query_parameters import QueryParameters
+
 class DatasetPluginBase:
-    def __init__(self, 
-                 dataset_path: str,
-                 max_length: int = sys.maxsize, 
-                 min_length: int = 0,):
+    def __init__(self, query_parameters: QueryParameters):
         """Build data set plugin
 
         Args:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
-        self.dataset_path = dataset_path
-        self.max_length = max_length
-        self.min_length = min_length
+        self.query_parameters = query_parameters
 
     def __next__(self):
-        for item in self.build_prompt():
+        for item in self.build_messages():
             yield item
         raise StopIteration
 
     def __iter__(self):
-        return self.build_prompt()
+        return self.build_messages()
     
     @abstractmethod
-    def build_prompt(self)->Iterator[str]:
+    def build_messages(self)->Iterator[List[Dict]]:
         """Build the request.
-
-        Args:
-            max_length (int, optional): The max prompt length by characters. Defaults to sys.maxsize.
-            min_length (int, optional): The min prompt length by characters. Defaults to 0.
 
         Raises:
             NotImplementedError: The request is not impletion.
 
         Yields:
-            Iterator[Dict]: Yield a request.
+            Iterator[List[Dict]]: Yield request messages.
         """
         raise NotImplementedError
     

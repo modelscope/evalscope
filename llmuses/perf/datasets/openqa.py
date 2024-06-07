@@ -1,24 +1,22 @@
 from sys import maxsize
 import sys
-from typing import Any, Dict, Iterator
+from typing import Any, Dict, Iterator, List
 import json
 from llmuses.perf.dataset_plugin_base import DatasetPluginBase
 from llmuses.perf.plugin_registry import register_dataset
+from llmuses.perf.query_parameters import QueryParameters
 
 @register_dataset('openqa')
 class OpenqaDatasetPlugin(DatasetPluginBase):
     """Read dataset and return prompt.
         Datasets: https://huggingface.co/datasets/Hello-SimpleAI/HC3-Chinese/blob/main/open_qa.jsonl
     """
-    def __init__(self, 
-                 dataset_path: str,
-                 max_length: int = sys.maxsize, 
-                 min_length: int = 0,):
-        super().__init__(dataset_path, max_length, min_length)
+    def __init__(self, query_parameters: QueryParameters):
+        super().__init__(query_parameters)
         
-    def build_prompt(self) -> Iterator[Dict]:
-        for item in self.dataset_line_by_line(self.dataset_path):
+    def build_messages(self) -> Iterator[List[Dict]]:
+        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)
             prompt = item['question'].strip()
-            if len(prompt) > self.min_length and len(prompt) < self.max_length:
-                yield prompt
+            if len(prompt) > self.query_parameters.min_prompt_length and len(prompt) < self.query_parameters.max_prompt_length:
+                yield [{'role': 'user', 'content': prompt}]
