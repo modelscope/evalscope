@@ -16,7 +16,7 @@ generation_config:
 #  pad_token_id: null
 dataset_args:
   gsm8k:
-    few_shot: 0
+    few_shot_num: 0
 dry_run: false
 model: null   # Note: to be implemented as CustomModel
 eval_type: custom
