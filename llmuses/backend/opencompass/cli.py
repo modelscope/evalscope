@@ -66,7 +66,7 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
 
         if cmd_mode == CmdMode.BASIC:
             # TODO: 指定 --work-dir
-            cmd_str = f'python -m run ' \
+            cmd_str = f'python -m run_oc ' \
                       f'--models {" ".join(self.oc_args.models)} ' \
                       f'--datasets {" ".join(self.oc_args.datasets)} ' \
                       f'{OpenCompassBackendArgsParser.get_restore_arg("dry-run", self.oc_args.dry_run)} ' \
@@ -76,7 +76,7 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
             if self.oc_args.script_file is None:
                 raise ValueError('The script file is required in script mode.')
             # TODO: command `run` to be replaced with another name
-            cmd_str = f'python -m run {self.oc_args.script_file}'
+            cmd_str = f'python -m run_oc {self.oc_args.script_file}'
         else:
             raise ValueError(f'Unsupported command mode: {cmd_mode}')
 
