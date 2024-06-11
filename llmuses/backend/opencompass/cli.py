@@ -42,6 +42,9 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
         else:
             return ''
 
+    def get_task_args(self):
+        return self.args
+
     def get_cmd(self, cmd_mode: str = CmdMode.BASIC):
 
         if cmd_mode == CmdMode.BASIC:
