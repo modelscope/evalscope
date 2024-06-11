@@ -65,7 +65,6 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
     def get_cmd(self, cmd_mode: str = CmdMode.BASIC):
 
         if cmd_mode == CmdMode.BASIC:
-            # TODO: 指定 --work-dir
             cmd_str = f'python -m run_oc ' \
                       f'--models {" ".join(self.oc_args.models)} ' \
                       f'--datasets {" ".join(self.oc_args.datasets)} ' \
