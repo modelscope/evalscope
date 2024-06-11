@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Optional, Union
 
 from llmuses.backend.base import BackendArgsParser
+from opencompass.cli.cli_arguments import Arguments as OpenCompassArguments
 
 
 class CmdMode(Enum):
@@ -17,32 +18,11 @@ class CmdMode(Enum):
     SCRIPT = 'script'
 
 
-@dataclass
-class OpenCompassArgs:
-    models: Optional[list] = field(default_factory=list)
-    datasets: Optional[list] = field(default_factory=list)
-    dry_run: bool = False
-    work_dir: Optional[str] = None
-
-    script_file: Optional[str] = None
-
-
 class OpenCompassBackendArgsParser(BackendArgsParser):
 
     def __init__(self, config: Union[str, dict], **kwargs):
         super().__init__(config, **kwargs)
-
-        self.oc_args = OpenCompassArgs()
-        self.oc_args.models = self.config_d.get('models', [])
-        self.oc_args.datasets = self.config_d.get('datasets', [])
-        self.oc_args.dry_run = self.config_d.get('dry_run', False)
-        self.oc_args.work_dir = self.config_d.get('work_dir', None)
-
-        self.oc_args.script_file = self.config_d.get('script_file', None)
-
-    @property
-    def args(self):
-        return self.oc_args
+        self.args = OpenCompassArguments(**self.config_d)
 
     @property
     def cmd(self):
@@ -65,17 +45,18 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
     def get_cmd(self, cmd_mode: str = CmdMode.BASIC):
 
         if cmd_mode == CmdMode.BASIC:
+            assert self.args.datasets, 'The datasets are required.'
+            assert self.args.models, 'The models are required.'
+
             cmd_str = f'python -m run_oc ' \
-                      f'--models {" ".join(self.oc_args.models)} ' \
-                      f'--datasets {" ".join(self.oc_args.datasets)} ' \
-                      f'{OpenCompassBackendArgsParser.get_restore_arg("dry-run", self.oc_args.dry_run)} ' \
-                      f'{OpenCompassBackendArgsParser.get_arg_with_default("work-dir", self.oc_args.work_dir)}'
+                      f'--models {" ".join(self.args.models)} ' \
+                      f'--datasets {" ".join(self.args.datasets)} ' \
+                      f'{self.get_restore_arg("dry-run", self.args.dry_run)} ' \
+                      f'{self.get_arg_with_default("work-dir", self.args.work_dir)}'
 
         elif cmd_mode == CmdMode.SCRIPT:
-            if self.oc_args.script_file is None:
-                raise ValueError('The script file is required in script mode.')
-            # TODO: command `run` to be replaced with another name
-            cmd_str = f'python -m run_oc {self.oc_args.script_file}'
+            assert self.args.config, 'The script file is required.'
+            cmd_str = f'python -m run_oc {self.args.config}'
         else:
             raise ValueError(f'Unsupported command mode: {cmd_mode}')
 
