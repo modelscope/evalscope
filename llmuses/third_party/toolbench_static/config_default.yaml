@@ -1,15 +1,15 @@
 infer_args:
   in_domain:
-    model_name_or_path: /path/to/model_checkpoint   # TODO: need to replace with your model dir
-    model_type: qwen2-7b-instruct                   # TODO: need to replace with your model type
+    model_name_or_path: /mnt/datasets/xingjun.wxj/transfer/v23-20240531-000907/checkpoint-1348-merged   # TODO: need to replace with your model dir
+    model_type: llama3-8b-instruct                   # TODO: need to replace with your model type  # qwen2-7b-instruct
     data_path: data/in_domain.json
     output_dir: output_res/in_domain
     deploy_type: swift
     max_new_tokens: 2048
     num_infer_samples: null
   out_of_domain:
-    model_name_or_path: /path/to/model_checkpoint    # TODO: need to replace with your model dir
-    model_type: qwen2-7b-instruct                    # TODO: need to replace with your model type
+    model_name_or_path: /mnt/datasets/xingjun.wxj/transfer/v23-20240531-000907/checkpoint-1348-merged   # TODO: need to replace with your model dir
+    model_type: llama3-8b-instruct                    # TODO: need to replace with your model type
     data_path: data/out_of_domain.json
     output_dir: output_res/out_of_domain
     deploy_type: swift

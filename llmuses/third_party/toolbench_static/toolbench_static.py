@@ -28,4 +28,5 @@ def run_task(task_config: Union[str, dict]):
 
 if __name__ == '__main__':
     task_cfg_file = 'config_default.yaml'
+
     run_task(task_config=task_cfg_file)
