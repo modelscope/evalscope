@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from swift.llm import (
-    get_model_tokenizer, get_template, inference, ModelType, get_default_template_type,
+    get_model_tokenizer, get_template, inference, get_default_template_type,
 )
 from swift.utils import seed_everything
 

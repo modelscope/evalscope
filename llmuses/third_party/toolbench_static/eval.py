@@ -16,6 +16,9 @@ class EvalArgs:
 def run_eval(args: EvalArgs):
     print(f'*** Start evaluation with eval args: {args}\n')
 
+    args.input_path = os.path.join(args.input_path, 'predictions.json')
+    args.output_path = os.path.join(args.output_path, 'metrics.json')
+
     def evaluate_rougel(cand_list: list, ref_list: list):
         if len(ref_list) == 0:
             return 0
