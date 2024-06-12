@@ -16,6 +16,7 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.models.template import get_template, StopWordsCriteria, TemplateType, fuzzy_match
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
+from llmuses.models.openai_model import OpenAIModel
 
 logger = get_logger()
 
@@ -413,7 +414,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.generation_config = model_cfg.get('generation_config', None)
         self.generation_template = model_cfg.get('generation_template', None)
 
-        if self.generation_config is None or self.generation_template is None:
+        if type(model) is not OpenAIModel and (self.generation_config is None or self.generation_template is None):
             raise ValueError('generation_config or generation_template is required for chat generation.')
 
         super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
@@ -423,42 +424,45 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                        history=[],
                        system=None)
 
-        inputs, _ = self.generation_template.encode(example)
-        input_ids = inputs['input_ids']
-        input_ids = torch.tensor(input_ids)[None].to(self.device)
-        attention_mask = torch.ones_like(input_ids).to(self.device)
+        if type(self.model) is OpenAIModel:
+            response = self.model.completion(query)
+        else:
+            inputs, _ = self.generation_template.encode(example)
+            input_ids = inputs['input_ids']
+            input_ids = torch.tensor(input_ids)[None].to(self.device)
+            attention_mask = torch.ones_like(input_ids).to(self.device)
 
-        # Process infer_cfg
-        infer_cfg = infer_cfg or {}
-        if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
-            infer_cfg['do_sample'] = True
+            # Process infer_cfg
+            infer_cfg = infer_cfg or {}
+            if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
+                infer_cfg['do_sample'] = True
 
-        # TODO: stop settings
-        stop = infer_cfg.get('stop', None)
-        eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
-            if stop else self.tokenizer.eos_token_id
+            # TODO: stop settings
+            stop = infer_cfg.get('stop', None)
+            eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
+                if stop else self.tokenizer.eos_token_id
 
-        if eos_token_id is not None:
-            infer_cfg['eos_token_id'] = eos_token_id
-            infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
+            if eos_token_id is not None:
+                infer_cfg['eos_token_id'] = eos_token_id
+                infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
 
 
-        self.generation_config.update(**infer_cfg)
+            self.generation_config.update(**infer_cfg)
 
-        # stopping
-        stop_words = [self.generation_template.suffix[-1]]
-        decode_kwargs = {}
-        stopping_criteria = StoppingCriteriaList(
-            [StopWordsCriteria(self.tokenizer, stop_words, **decode_kwargs)])
+            # stopping
+            stop_words = [self.generation_template.suffix[-1]]
+            decode_kwargs = {}
+            stopping_criteria = StoppingCriteriaList(
+                [StopWordsCriteria(self.tokenizer, stop_words, **decode_kwargs)])
 
-        # Run inference
-        output_ids = self.model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            generation_config=self.generation_config,
-            stopping_criteria=stopping_criteria, )
+            # Run inference
+            output_ids = self.model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                generation_config=self.generation_config,
+                stopping_criteria=stopping_criteria, )
 
-        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
+            response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
         return response
 
     @torch.no_grad()

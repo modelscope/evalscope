@@ -13,6 +13,7 @@ from llmuses.utils.logger import get_logger
 from llmuses.constants import OutputsStructure
 from llmuses.tools.combine_reports import ReportsRecorder
 from llmuses.models import load_model
+from llmuses.models.openai_model import OpenAIModel
 import os
 
 logger = get_logger()
@@ -32,6 +33,16 @@ def parse_args():
                         help='The model id on modelscope, or local model dir.',
                         type=str,
                         required=True)
+    parser.add_argument('--base-url',
+                        help='The base url for openai, or other model api service.',
+                        type=str,
+                        required=False,
+                        default="")
+    parser.add_argument('--api-key',
+                        help='The api key for openai, or other model api service.',
+                        type=str,
+                        required=False,
+                        default="")
     parser.add_argument('--template-type',
                         type=str,
                         help='The template type for generation, should be a string.'
@@ -181,20 +192,29 @@ def main():
     datasets_list = args.datasets
 
     if not args.dry_run:
-        model, tokenizer, model_cfg = load_model(model_id=model_id,
-                                                 device_map=model_args.get("device_map", "auto"),
-                                                 torch_dtype=model_precision,
-                                                 model_revision=model_revision,
-                                                 cache_dir=args.work_dir,
-                                                 template_type=template_type,
-                                                 )
-        qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
-                                                                device_map=model_args.get("device_map", "auto"),
-                                                                torch_dtype=model_precision,
-                                                                model_revision=None,
-                                                                cache_dir=args.work_dir,
-                                                                template_type=template_type,
-                                                                ) if len(qwen_model_id) > 0 else (None, None, None)
+        base_url = args.base_url
+        api_key = args.api_key
+        if base_url and api_key:
+            tokenizer, model_cfg = None, {"model_id": model_id}
+            model = OpenAIModel(model_id,
+                                model_cfg=model_cfg,
+                                base_url=base_url,
+                                api_key=api_key)
+        else:
+            model, tokenizer, model_cfg = load_model(model_id=model_id,
+                                                    device_map=model_args.get("device_map", "auto"),
+                                                    torch_dtype=model_precision,
+                                                    model_revision=model_revision,
+                                                    cache_dir=args.work_dir,
+                                                    template_type=template_type,
+                                                    )
+            qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
+                                                                    device_map=model_args.get("device_map", "auto"),
+                                                                    torch_dtype=model_precision,
+                                                                    model_revision=None,
+                                                                    cache_dir=args.work_dir,
+                                                                    template_type=template_type,
+                                                                    ) if len(qwen_model_id) > 0 else (None, None, None)
     else:
         logger.warning('Dry run mode, will use dummy model.')
         model, tokenizer, model_cfg = None, None, None

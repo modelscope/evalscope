@@ -3,7 +3,7 @@
 import os
 import time
 
-import openai
+from openai import OpenAI
 
 from llmuses.models import ChatBaseModel
 from llmuses.utils.logger import get_logger
@@ -19,13 +19,16 @@ class OpenAIModel(ChatBaseModel):
 
     MAX_RETRIES = 3
 
-    def __init__(self, model_cfg: dict, **kwargs):
+    def __init__(self, model_id: str, model_cfg: dict, base_url: str, api_key: str, **kwargs):
         super(OpenAIModel, self).__init__(model_cfg=model_cfg, **kwargs)
 
-        openai_api_key = os.environ.get('OPENAI_API_KEY', None)
-        self.api_key = self.model_cfg.get('api_key', openai_api_key)
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
+        self.model_id = model_id
 
-        if not self.api_key:
+        if not api_key:
             logger.error('OpenAI API key is not provided, please set it in environment variable OPENAI_API_KEY')
             # raise ValueError(
             #     'OpenAI API key is not provided, '
@@ -51,6 +54,35 @@ class OpenAIModel(ChatBaseModel):
                             mode=mode)
 
         return res
+
+    def completion(self, query: str) -> str:
+        predictions = ""
+        for i in range(self.MAX_RETRIES):
+            try:
+                resp = self.client.chat.completions.create(
+                    model=self.model_id,
+                    messages=[{
+                        "role": "user",
+                        "content": query
+                    }],
+                )
+                if resp:
+                    predictions = resp.choices[0].message.content
+                else:
+                    logger.warning(
+                        f'OpenAI GPT API call failed: got empty response '
+                        f'for input {query}')
+                    predictions = ""
+
+                return predictions
+
+            except Exception as e:
+                logger.warning(f'OpenAI API call failed: {e}')
+                time.sleep(3)
+                
+        logger.error(
+            f'OpenAI API call failed after {self.MAX_RETRIES} retries')
+        return predictions
 
     def _predict(self,
                  model_id,
@@ -101,3 +133,6 @@ class OpenAIModel(ChatBaseModel):
         logger.error(
             f'OpenAI API call failed after {self.MAX_RETRIES} retries')
         return res
+
+    def mock_predict(self):
+        return "TEST 测试一下"
