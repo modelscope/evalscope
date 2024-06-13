@@ -118,6 +118,9 @@ class OpenaiPlugin(ApiPluginBase):
                 full_response_content = ''.join([m for m in choice_contents])
                 input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
                 output_tokens += len(self.tokenizer.encode(full_response_content))
+        elif input_tokens is None and output_tokens is None:  # no usage info get.
+            input_tokens = 0
+            output_tokens = 0            
         
         return input_tokens, output_tokens
         
