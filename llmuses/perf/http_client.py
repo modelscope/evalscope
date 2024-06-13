@@ -2,6 +2,7 @@
 """
 import argparse
 import asyncio
+from dataclasses import dataclass
 import functools
 import json
 import logging
@@ -14,13 +15,14 @@ import base64
 import pickle
 import importlib.util
 import sys
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime, timezone
 import aiohttp
 from http import HTTPStatus
 import aiohttp
 import numpy as np
 from llmuses.perf.plugin_registry import api_registry, dataset_registry
+from llmuses.perf.query_parameters import QueryParameters
 from llmuses.perf.server_sent_event import ServerSentEvent
 # for plugin registry
 from llmuses.perf.dashscope_api import DashScopeApiPlugin
@@ -28,14 +30,12 @@ from llmuses.perf.openai_api import OpenaiPlugin
 from llmuses.perf.datasets.line_by_line import LineByLineDatasetPlugin
 from llmuses.perf.datasets.longalpaca_12k import LongAlpacaDatasetPlugin
 from llmuses.perf.datasets.openqa import OpenqaDatasetPlugin
-from llmuses.perf.zhipu_api import ZhipuApiPlugin
 
 from llmuses.perf._logging import logger
 
 __all__ = [
     DashScopeApiPlugin,
     OpenaiPlugin,
-    ZhipuApiPlugin,
     LineByLineDatasetPlugin,
     LongAlpacaDatasetPlugin,
     OpenqaDatasetPlugin,
@@ -136,14 +136,14 @@ class AioHttpClient:
             if 'object' in content and content['object'] == 'error':
                 yield(True, content['code'], content['message'])
             else:
-                yield (False, HTTPStatus.OK, content)            
+                yield (False, HTTPStatus.OK, json.dumps(content))            
         elif response.status == HTTPStatus.OK:
             content = await response.read()
             yield (False, HTTPStatus.OK, content)
         else:
             if "application/json" in response.content_type:
                 error = await response.json()
-                yield (True, response.status, error)
+                yield (True, response.status, json.dumps(error))
             elif "text/event-stream" in response.content_type:
                 async for _, _, data in self._handle_stream(response):
                     error = json.loads(data)
@@ -200,14 +200,15 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
         print('Can not find query generator: %s'%args.api)
     query_generator = query_generator_class(args.tokenizer_path)
     total_query_counter = 0
-    query_template = get_query_template(args)
+    query_parameters = QueryParameters(args)
     if args.prompt is not None:
         if args.prompt.startswith("@"):  # read local as prompt, same as curl --data
             with open(args.prompt, 'r', encoding='utf-8') as f:
                 prompt = f.read()
         else:
             prompt = args.prompt
-        request = query_generator.build_request(args.model, prompt, query_template)
+        messages = {'role': 'user', 'content': prompt}
+        request = query_generator.build_request(messages, query_parameters)
         if args.number is None:
             await request_queue.put(request)
         else:
@@ -222,13 +223,13 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
     elif args.dataset_path is not None:
         # Ensure sufficient quantity of queries.
         while True:
-            prompt_generator_class = dataset_registry.get_class(args.dataset)
-            if not prompt_generator_class:
+            message_generator_class = dataset_registry.get_class(args.dataset)
+            if not message_generator_class:
                 print('Can not find dataset: %s plugin.'%(args.dataset))
                 sys.exit(1)
-            prompt_generator = prompt_generator_class(args.dataset_path, args.max_prompt_length, args.min_prompt_length)
-            for prompt in prompt_generator:
-                request = query_generator.build_request(args.model, prompt, query_template)
+            message_generator = message_generator_class(query_parameters)
+            for messages in message_generator:
+                request = query_generator.build_request(messages, query_parameters)
                 if request is None:
                     continue
                 await request_queue.put(request)
@@ -661,14 +662,6 @@ def add_argument(parser: argparse.ArgumentParser):
                         help="The network connection timeout")
     parser.add_argument("--read-timeout", type=int, default=120,
                         help="The network read timeout")
-    parser.add_argument("--max-prompt-length", type=int, default=sys.maxsize,
-                        help="Maximum input prompt length")
-    parser.add_argument("--min-prompt-length", type=int, default=0,
-                        help="Minimum input prompt length.")
-    parser.add_argument("--prompt", type=str, required=False,
-                        help="Specified the request prompt, all the query will use this prompt, "
-                        "You can specify local file via @file_path, the prompt will be "
-                        "the file content.")
     parser.add_argument("-n", "--number", type=int, default=None,
                         help="How many requests to be made, if None, "
                         "will will send request base dataset or prompt.")
@@ -693,18 +686,26 @@ def add_argument(parser: argparse.ArgumentParser):
                         help="The wandb db result name and result db name, default: {model_name}_{current_time}")
     parser.add_argument("--debug", action='store_true', default=False,
                         help='Debug request send.')
-    parser.add_argument("--tokenizer-path", type=str, required=None,
+    parser.add_argument("--tokenizer-path", type=str, required=False, default=None,
                         help="Specify the tokenizer weight path, used to calculate the number of input and output tokens,"
-                        "usually in the same directory as the model weight.")
+                        "usually in the same directory as the model weight. If service return usage will use usage info.")
     parser.add_argument("--api",
                         type=str,
                         default="openai",
-                        help="Specify the service api, current support [openai|dashscope|zhipu]"
+                        help="Specify the service api, current support [openai|dashscope]"
                              "you can define your custom parser with python, and specify the python file path, "
                              "reference api_plugin_base.py,")
+    parser.add_argument("--max-prompt-length", type=int, default=sys.maxsize,
+                        help="Maximum input prompt length")
+    parser.add_argument("--min-prompt-length", type=int, default=0,
+                        help="Minimum input prompt length.")
+    parser.add_argument("--prompt", type=str, required=False, default=None,
+                        help="Specified the request prompt, all the query will use this prompt, "
+                        "You can specify local file via @file_path, the prompt will be "
+                        "the file content.")
     parser.add_argument("--query-template",
                         type=str,
-                        default='{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true}',
+                        default=None,
                         help="Specify the query template, should be a json string, or local file,"
                              "with local file, specified with @local_file_path,"
                              "will will replace model and prompt in the template.")
@@ -717,6 +718,17 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument("--dataset-path", type=str, required=False,
                         help="Path to the dataset file, Used in conjunction with dataset. "
                              "If dataset is None, each line defaults to a prompt.")
+    
+    parser.add_argument("--frequency-penalty", type=float, help="The frequency_penalty value.", default= None)
+    parser.add_argument("--logprobs", action='store_true', help="The logprobs.", default=None)
+    parser.add_argument("--max-tokens", type=int, help="The maximum number of tokens can be generated.", default=None)
+    parser.add_argument("--n-choices", type=int, help="How may chmpletion choices to generate.", default=None)
+    parser.add_argument("--seed", type=int, help="Rhe random seed.", default=None)
+    parser.add_argument("--stop", nargs='*', help="The stop tokens.", default=None)
+    parser.add_argument("--stop-token-ids", nargs='*', help="Set the stop token ids.", default=None)
+    parser.add_argument("--stream", action='store_true', help="Stream output with SSE, Automatically add stream_option.include_usage with openai interface.", default=None)
+    parser.add_argument("--temperature", type=float, help="The sample temperature.", default=None)
+    parser.add_argument("--top-p", type=float, help="Sampling top p.", default=None)
 
 if __name__ == "__main__":
     # for windows raise RuntimeError: Event loop is closed
