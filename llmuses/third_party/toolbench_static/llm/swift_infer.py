@@ -6,6 +6,8 @@ from swift.llm import (
 )
 from swift.utils import seed_everything
 
+# TODO: Support custom model for swift infer
+
 
 @dataclass
 class SwiftInferArgs:

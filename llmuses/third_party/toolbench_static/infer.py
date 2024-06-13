@@ -210,7 +210,7 @@ class InferArgs:
 def run_infer(args: InferArgs):
 
     if args.deploy_type == 'swift':
-        from llm.swift_infer import SwiftInfer, SwiftInferArgs
+        from llmuses.third_party.toolbench_static.llm.swift_infer import SwiftInfer, SwiftInferArgs
         swift_infer_args = SwiftInferArgs(model_id_or_path=args.model_name_or_path,
                                           model_type=args.model_type,
                                           max_new_tokens=args.max_new_tokens)
