@@ -20,6 +20,7 @@ class QueryParameters:
     top_p: Optional[float]
     max_prompt_length: Optional[int]
     min_prompt_length: Optional[int]    
+    include_usage: Optional[bool]
     
     def __init__(self, args):
         self.model = args.model
@@ -38,3 +39,4 @@ class QueryParameters:
         self.top_p = args.top_p
         self.max_prompt_length = args.max_prompt_length
         self.min_prompt_length = args.min_prompt_length
+        self.stop_token_ids = args.stop_token_ids

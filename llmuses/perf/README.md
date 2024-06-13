@@ -1,8 +1,8 @@
-## Quick Start
+# Quick Start
 A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats.
-### Usage
+## Usage
 
-#### Command line  
+### Command line  
 ```bash
 llmuses perf --help
 usage: llmuses <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
@@ -52,15 +52,16 @@ options:
                         The maximum number of tokens can be generated.
   --n-choices N_CHOICES
                         How may chmpletion choices to generate.
-  --seed SEED           Rhe random seed.
+  --seed SEED           The random seed.
   --stop STOP           The stop generating tokens.
+  --stop-token-ids      Set the stop token ids.
   --stream              Stream output with SSE.
   --temperature TEMPERATURE
                         The sample temperature.
   --top-p TOP_P         Sampling top p.
 
 ```
-##### The result:
+### The result:
 ```bash
  Total requests: 10
  Succeed requests: 10
@@ -93,12 +94,19 @@ options:
      p98: 7.7003
      p99: 7.7003
 ```
-#### Request parameter  
+### Request parameter  
 You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
+#### request with parameters
+Sample request llama3 vllm openai compatible interface.
+```bash
+llmuses perf --url 'http://host:port/v1/chat/completions' --parallel 128 --model 'llama3' --log-every-n-query 10 --read-timeout=120 --dataset-path './datasets/open_qa.jsonl' -n 1 --max-prompt-length 128000 --api openai --stream --n-choices 3 --stop-token-ids 128001 128009 --dataset openqa --debug
+```
+#### query-template usage.
+When you need to process more complex requests, you can use templates to simplify the command line.
 If both the template and the parameter are present, the value in the parameter will prevail.
 Query-template example:
 ```bash
-{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}
+llmuses perf --url 'http://host:port/v1/chat/completions' --parallel 128 --model 'llama3' --log-every-n-query 10 --read-timeout=120 -n 1 --max-prompt-length 128000 --api openai --query-template '{"model": "%m", "messages": [], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}' --dataset openqa --dataset-path './datasets/open_qa.jsonl'
 ```
 For messages, the dataset processor message will replace messages in the query-template.
 

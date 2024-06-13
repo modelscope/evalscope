@@ -724,8 +724,9 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument("--max-tokens", type=int, help="The maximum number of tokens can be generated.", default=None)
     parser.add_argument("--n-choices", type=int, help="How may chmpletion choices to generate.", default=None)
     parser.add_argument("--seed", type=int, help="Rhe random seed.", default=None)
-    parser.add_argument("--stop", type=str, help="The stop generating tokens.", default=None)
-    parser.add_argument("--stream", action='store_true', help="Stream output with SSE.", default=None)
+    parser.add_argument("--stop", nargs='*', help="The stop tokens.", default=None)
+    parser.add_argument("--stop-token-ids", nargs='*', help="Set the stop token ids.", default=None)
+    parser.add_argument("--stream", action='store_true', help="Stream output with SSE, Automatically add stream_option.include_usage with openai interface.", default=None)
     parser.add_argument("--temperature", type=float, help="The sample temperature.", default=None)
     parser.add_argument("--top-p", type=float, help="Sampling top p.", default=None)
 
