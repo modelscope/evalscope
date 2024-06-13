@@ -15,6 +15,16 @@ For more details, please refer to: [Small LLMs Are Weak Tool Learners: A Multi-L
   - Number of out_domain: 781
 
 ## Usage
+
+### Installation
+
+```bash
+pip install llmuses -U
+pip install ms-swift -U
+pip install rouge -U
+```
+
+
 ### Download the dataset
 
 ```bash
