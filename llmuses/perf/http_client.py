@@ -686,9 +686,9 @@ def add_argument(parser: argparse.ArgumentParser):
                         help="The wandb db result name and result db name, default: {model_name}_{current_time}")
     parser.add_argument("--debug", action='store_true', default=False,
                         help='Debug request send.')
-    parser.add_argument("--tokenizer-path", type=str, required=None,
+    parser.add_argument("--tokenizer-path", type=str, required=False, default=None,
                         help="Specify the tokenizer weight path, used to calculate the number of input and output tokens,"
-                        "usually in the same directory as the model weight.")
+                        "usually in the same directory as the model weight. If service return usage will use usage info.")
     parser.add_argument("--api",
                         type=str,
                         default="openai",

@@ -18,7 +18,10 @@ class OpenaiPlugin(ApiPluginBase):
                 input and output tokens.
         """
         super().__init__(model_path=mode_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+        if mode_path is not None:
+            self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+        else:
+            self.tokenizer = None
 
     def build_request(self, messages: List[Dict], param: QueryParameters) -> Dict:
         """Build the openai format request based on prompt, dataset
@@ -82,11 +85,15 @@ class OpenaiPlugin(ApiPluginBase):
         """
         full_response_content = ''
         delta_contents = {}
+        input_tokens = None
+        output_tokens = None
         for response in responses:
             js = json.loads(response)
             if js['object'] == 'chat.completion':
                 for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['message']['content']]                      
+                    delta_contents[choice['index']] = [choice['message']['content']]     
+                input_tokens = js['usage']['prompt_tokens']
+                output_tokens = js['usage']['completion_tokens']                 
             else:  # 'object' == "chat.completion.chunk":
                 if 'choices' in js:
                     for choice in js['choices']:
@@ -99,12 +106,18 @@ class OpenaiPlugin(ApiPluginBase):
                                     delta_contents[idx].append(delta_content)
                                 else:
                                     delta_contents[idx] = [delta_content]
-        input_tokens = 0
-        output_tokens = 0
-        for idx, choice_contents in delta_contents.items():
-            full_response_content = ''.join([m for m in choice_contents])
-            input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
-            output_tokens += len(self.tokenizer.encode(full_response_content))
+                # usage in chunk: {"id":"","object":"chat.completion.chunk","created":1718269986,"model":"llama3",
+                # "choices":[],"usage":{"prompt_tokens":32,"total_tokens":384,"completion_tokens":352}}
+                if 'usage' in js and js['usage']:
+                    input_tokens = js['usage']['prompt_tokens']
+                    output_tokens = js['usage']['completion_tokens']     
+        if input_tokens is None and output_tokens is None and self.tokenizer is not None:                
+            input_tokens = 0
+            output_tokens = 0
+            for idx, choice_contents in delta_contents.items():
+                full_response_content = ''.join([m for m in choice_contents])
+                input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
+                output_tokens += len(self.tokenizer.encode(full_response_content))
         
         return input_tokens, output_tokens
         

@@ -95,6 +95,13 @@ options:
 ```
 #### Request parameter  
 You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
+If both the template and the parameter are present, the value in the parameter will prevail.
+Query-template example:
+```bash
+{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}
+```
+For messages, the dataset processor message will replace messages in the query-template.
+
 #### Start the client
 
 ```bash
