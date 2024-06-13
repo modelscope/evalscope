@@ -15,20 +15,27 @@ For more details, please refer to: [Small LLMs Are Weak Tool Learners: A Multi-L
   - Number of out_domain: 781
 
 ## Usage
-1. Download the dataset
+### Download the dataset
+
 ```bash
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/toolbench-static/data.zip
 ```
 
 
-2. Unzip the dataset
+### Unzip the dataset
+
 ```bash
 unzip data.zip
 # The dataset will be unzipped to the `/path/to/data/toolbench_static` folder
 ```
 
 
-3. Task configuration
+### Task configuration
+
+There are two ways to configure the task: dict and yaml.
+
+1. Configuration with dict:
+
 ```python
 task_config = {
     'infer_args': {
@@ -57,15 +64,40 @@ task_config = {
   - `input_path`: The path to the input directory for evaluation, should be the same as `output_dir` of `infer_args`.
   - `output_path`: The path to the output directory for evaluation.
 
-4. Run the task
+
+2. Configuration with yaml:
+
+```yaml
+infer_args:
+  model_name_or_path: /path/to/model_dir      # absolute path is recommended
+  model_type: qwen2-7b-instruct
+  data_path: /path/to/data/toolbench_static   # absolute path is recommended
+  deploy_type: swift
+  max_new_tokens: 2048
+  num_infer_samples: null
+  output_dir: output_res
+eval_args:
+  input_path: output_res
+  output_path: output_res
+```
+refer to [config_default.yaml](config_default.yaml) for more details.
+
+
+### Run the task
 
 ```python
 from llmuses.third_party.toolbench_static import run_task
 
-run_task(task_config)
+# Run the task with dict configuration
+run_task(task_config=task_config)
+
+# Run the task with yaml configuration
+run_task(task_config='/path/to/your_task_config.yaml')
 ```
 
-5. Results and metrics
+
+### Results and metrics
+
 - Metrics:
   - `Plan.EM`: The agent’s planning decisions at each step for using tools invocation, generating answer, or giving up. Exact match score.
   - `Act.EM`: Action exact match score, including the tool name and arguments.
