@@ -39,5 +39,4 @@ models = []   # TODO: to be passed
 if __name__ == '__main__':
     print('===start===')
 
-    for dataset in datasets:
-        print(dataset['dataset_name'])
+    print(datasets)

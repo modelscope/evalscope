@@ -541,3 +541,11 @@ def get_dist_setting() -> Tuple[int, int, int, int]:
 
 def use_torchacc() -> bool:
     return os.getenv('USE_TORCHACC', '0') == '1'
+
+
+def is_module_installed(module_name):
+    try:
+        importlib.import_module(module_name)
+        return True
+    except ImportError:
+        return False

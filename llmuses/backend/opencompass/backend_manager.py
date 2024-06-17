@@ -3,8 +3,11 @@ from dataclasses import dataclass, field, asdict
 from enum import Enum
 from typing import Optional, Union
 
-from llmuses.backend.base import BackendArgsParser
-from opencompass.cli.cli_arguments import Arguments as OpenCompassArguments
+from llmuses.utils import is_module_installed
+from llmuses.backend.base import BackendManager
+from llmuses.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class CmdMode(Enum):
@@ -18,11 +21,21 @@ class CmdMode(Enum):
     SCRIPT = 'script'
 
 
-class OpenCompassBackendArgsParser(BackendArgsParser):
+class OpenCompassBackendManager(BackendManager):
 
     def __init__(self, config: Union[str, dict], **kwargs):
+        self._check_env()
         super().__init__(config, **kwargs)
+
+        from opencompass.cli.arguments import Arguments as OpenCompassArguments
         self.args = OpenCompassArguments(**self.config_d)
+
+    @staticmethod
+    def _check_env():
+        if is_module_installed('opencompass'):
+            logger.warning('Please make sure you have installed the `ms-opencompass`: `pip install ms-opencompass`')
+        else:
+            raise ModuleNotFoundError('Please install the `ms-opencompass` first: `pip install ms-opencompass`')
 
     @property
     def cmd(self):
@@ -65,12 +78,14 @@ class OpenCompassBackendArgsParser(BackendArgsParser):
 
         return cmd_str
 
+    def run(self):
+        pass
+
 
 if __name__ == '__main__':
 
     oc_task_cfg_file = '../../examples/tasks/eval_qwen_oc_cfg.yaml'
-    ocp = OpenCompassBackendArgsParser(config=oc_task_cfg_file)
-    print(ocp.args)
+    ocm = OpenCompassBackendManager(config=oc_task_cfg_file)
+    print(ocm.args)
     print()
-    print(ocp.cmd)
-
+    print(ocm.cmd)
