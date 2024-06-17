@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from mmengine.config import read_base
-from opencompass.datasets.humaneval import humaneval_gpt_postprocess
-from opencompass.cli.arguments import ModelConfig
 
 
 with read_base():
@@ -11,10 +9,8 @@ with read_base():
 # Note: OpenAI API format evaluation needs a special humaneval postprocessor
 for _dataset in datasets:
     if _dataset['path'] == 'openai_humaneval':
+        from opencompass.datasets.humaneval import humaneval_gpt_postprocess
         _dataset['eval_cfg']['pred_postprocessor']['type'] = humaneval_gpt_postprocess
-
-    # TODO: consider the custom dataset name
-    _dataset['dataset_name'] = _dataset['type'].__module__.split('.')[-1]
 
 
 # 2. Get api meta_template
@@ -35,8 +31,3 @@ api_meta_template = dict(
 models = []   # TODO: to be passed
 
 # todo: oc 的main 传入run_task
-
-if __name__ == '__main__':
-    print('===start===')
-
-    print(datasets)

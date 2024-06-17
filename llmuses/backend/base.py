@@ -19,3 +19,9 @@ class BackendManager:
             self.config_d = config
 
         self.kwargs = kwargs
+
+    def run(self, *args, **kwargs):
+        """
+        Run the evaluation backend.
+        """
+        raise NotImplementedError

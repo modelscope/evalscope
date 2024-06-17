@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from mmengine.config import read_base
+import copy
 
 with read_base():
     from configs.datasets.mmlu.mmlu_gen_4d595a import mmlu_datasets
@@ -54,4 +55,16 @@ with read_base():
     from configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
     from configs.datasets.flores.flores_gen_806ede import flores_datasets
 
-datasets = sum((v for k, v in locals().items() if k.endswith('_datasets')), [])
+
+datasets = []
+_locals = {k: v for k, v in locals().items() if k.endswith('_datasets')}
+
+for k, v in _locals.items():
+    for _dataset in v:
+        _dataset['dataset_name'] = k.replace('_datasets', '')
+        datasets.append(_dataset)
+
+
+if __name__ == '__main__':
+    for _dataset in datasets:
+        print(_dataset)

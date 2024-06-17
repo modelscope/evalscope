@@ -3,6 +3,7 @@
 
 import functools
 import importlib
+import importlib.util
 import os
 import re
 import random
@@ -549,3 +550,26 @@ def is_module_installed(module_name):
         return True
     except ImportError:
         return False
+
+
+def get_module_path(module_name):
+    spec = importlib.util.find_spec(module_name)
+    if spec and spec.origin:
+        return os.path.abspath(spec.origin)
+    else:
+        raise ValueError(f'Cannot find module: {module_name}')
+
+
+def get_valid_list(input_list, candidate_list):
+    """
+    Get the valid and invalid list from input_list based on candidate_list.
+    Args:
+        input_list: The input list.
+        candidate_list: The candidate list.
+
+    Returns:
+        valid_list: The valid list.
+        invalid_list: The invalid list.
+    """
+    return [i for i in input_list if i in candidate_list], \
+           [i for i in input_list if i not in candidate_list]
