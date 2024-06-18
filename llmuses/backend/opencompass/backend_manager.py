@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, Union
 import subprocess
 from dataclasses import asdict
+import tempfile
 
 from llmuses.utils import is_module_installed, get_module_path, get_valid_list
 from llmuses.backend.base import BackendManager
@@ -152,17 +153,16 @@ class OpenCompassBackendManager(BackendManager):
         Returns:
             None
         """
-        from opencompass.cli.arguments import ModelConfig
-
-        assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
-
-        tmp_model_d: dict = self.args.models[0]
-        assert 'path' in tmp_model_d and 'meta_template' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
-            "The format of the model is invalid. In the form of: " \
-            "{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
-
         if run_mode == RunMode.FUNCTION:
             from opencompass.cli.main import run_task
+            from opencompass.cli.arguments import ModelConfig
+
+            assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
+
+            tmp_model_d: dict = self.args.models[0]
+            assert 'path' in tmp_model_d and 'meta_template' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
+                "The format of the model is invalid. In the form of: " \
+                "{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
             # Get valid datasets
             datasets = self.args.datasets
@@ -201,13 +201,15 @@ class OpenCompassBackendManager(BackendManager):
             template_cfg.datasets = datasets
             template_cfg.models = models
 
-            logger.info(f'datasets: {template_cfg.datasets}')
-            logger.info(f'models: {template_cfg.models}')
-            ...
+            # Dump task config to a temporary file
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w')
+            template_cfg.dump(tmp_file.name)
+            logger.info(f'The task config is dumped to: {tmp_file.name}')
+            self.args.config = tmp_file.name
 
-            # create tmp_config_file and config.dump(tmp_config_file) and self.args.config = tmp_config_file
-
-            # run_task(self.args)
+            # Submit the task
+            logger.info(f'*** Run task with following arguments:\n    {self.args} \n')
+            run_task(self.args)
 
         # TODO: add more arguments for the command line
         elif run_mode == RunMode.CMD:
