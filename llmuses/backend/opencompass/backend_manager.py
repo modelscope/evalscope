@@ -2,9 +2,11 @@
 from enum import Enum
 from typing import Optional, Union
 import subprocess
+from dataclasses import asdict
 
 from llmuses.utils import is_module_installed, get_module_path, get_valid_list
 from llmuses.backend.base import BackendManager
+from llmuses.backend.opencompass.api_meta_template import get_template
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -150,6 +152,10 @@ class OpenCompassBackendManager(BackendManager):
         Returns:
             None
         """
+        from opencompass.cli.arguments import ModelConfig
+
+        assert self.args.models, 'The models are required.'
+
         if run_mode == RunMode.FUNCTION:
             from opencompass.cli.main import run_task
 
@@ -169,9 +175,21 @@ class OpenCompassBackendManager(BackendManager):
                 datasets = valid_datasets
 
             # Get valid models
-            # TODO
-            models = self.args.models
-            ...
+            models = []
+            for model_d in self.args.models:
+                # model_d: {'path': 'qwen-7b-chat',
+                #           'meta_template': 'default-api-meta-template-oc',
+                #           'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}
+                # Note: 'meta_template' can be a dict or a string
+
+                if isinstance(model_d['meta_template'], str):
+                    model_d['meta_template'] = get_template(model_d['meta_template'])
+
+                # set the 'abbr' as the 'path' if 'abbr' is not specified
+                model_d['abbr'] = model_d['path']
+
+                model_config = ModelConfig(**model_d)
+                models.append(asdict(model_config))
 
             # Load the initial task template and override configs
             template_cfg = self.load_task_template()

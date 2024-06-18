@@ -1,5 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from mmengine.config import read_base
+from opencompass.models import OpenAI
+from opencompass.partitioners import NaivePartitioner
+from opencompass.runners import LocalRunner
+from opencompass.tasks import OpenICLInferTask
 
 
 with read_base():
@@ -31,3 +35,12 @@ api_meta_template = dict(
 models = []   # TODO: to be passed
 
 # todo: oc 的main 传入run_task
+
+
+infer = dict(
+    partitioner=dict(type=NaivePartitioner),
+    runner=dict(
+        type=LocalRunner,
+        max_num_workers=4,
+        task=dict(type=OpenICLInferTask)),
+)
