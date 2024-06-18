@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
     # 'meta_template': 'default-api-meta-template-oc',
     ocm = OpenCompassBackendManager(
-        config={'datasets': ['ARC_c'],
+        config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                 'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
     )
     ocm.run()
