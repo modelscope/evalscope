@@ -229,46 +229,13 @@ class OpenCompassBackendManager(BackendManager):
 
 
 if __name__ == '__main__':
-    pass
-    # TODO
-    # 1. 使用mmengine config获取eval_api.py作为initial task template
-    # 2. 根据传入的datasets做过滤(使用prefix_filter)，然后赋值给 config.datasets
-    # 3. 组装models，然后赋值给 config.models
-    # 4. 创建临时文件，并将config dump到临时文件中
 
-    # 其它：1）增加list_datasets()方法，用于列出所有的datasets；2）增加list_models()方法，用于列出所有的models
+    # OpenCompassBackendManager.list_datasets()
+    # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
 
     # 'meta_template': 'default-api-meta-template-oc',
     ocm = OpenCompassBackendManager(
-        config={'datasets': ['mmlu', 'ceval'],
+        config={'datasets': ['ARC_c'],
                 'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
     )
     ocm.run()
-
-    # oc_task_cfg_file = '../../examples/tasks/eval_qwen_oc_cfg.yaml'
-    # ocm = OpenCompassBackendManager(config=oc_task_cfg_file)
-    # print(ocm.args)
-    # print()
-    # print(ocm.cmd)
-
-    #
-    # from dataclasses import dataclass
-    # from opencompass.utils.run import get_config_from_arg
-    #
-    # @dataclass
-    # class TempArgs:
-    #     config: str
-    #     accelerator: str = None
-    #
-    # args = TempArgs(
-    #     config='/Users/jason/workspace/work/maas/github/opencompass/configs/eval_openai_format_task_teval_v2_qwen.py')
-    #
-    # config = get_config_from_arg(args)   # mmengine.config.config.Config
-    # # print(config)
-    #
-    # tmp_config_file = '/Users/jason/workspace/work/maas/github/llmuses_work/llmuses/temp/configs/temp_config.py'
-    # config.dump(tmp_config_file)
-    # new_config = get_config_from_arg(TempArgs(config=tmp_config_file))
-    # print(f'>>new config: {new_config}')
-    # print(f'>>new models: {new_config.models}')
-
