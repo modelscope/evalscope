@@ -186,6 +186,8 @@ class OpenCompassBackendManager(BackendManager):
                                                      f'To get the valid datasets, please refer to {dataset_names_all}'
 
             valid_datasets = [_dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names]
+            for _dataset in valid_datasets:
+                _dataset.pop('dataset_name')
 
             # Get valid models
             models = []
