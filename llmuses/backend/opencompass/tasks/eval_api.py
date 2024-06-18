@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from mmengine.config import read_base
-from opencompass.models import OpenAI
 from opencompass.partitioners import NaivePartitioner
 from opencompass.runners import LocalRunner
 from opencompass.tasks import OpenICLInferTask
@@ -17,26 +16,10 @@ for _dataset in datasets:
         _dataset['eval_cfg']['pred_postprocessor']['type'] = humaneval_gpt_postprocess
 
 
-# 2. Get api meta_template
-# TODO: Chat model and base model ?
-api_meta_template = dict(
-    round=[
-        dict(role='HUMAN', api_role='HUMAN'),
-        dict(role='BOT', api_role='BOT', generate=True)
-    ],
-    reserved_roles=[
-        dict(role='SYSTEM', api_role='SYSTEM'),
-    ],
-)
+# 2. Get models, only for placeholder, you should fill in the real model information from command line
+models = []
 
-# 3. Get models
-# model_config = ModelConfig(abbr='', path='', meta_template='', openai_api_base='')
-# models.append(asdict(model_config))
-models = []   # TODO: to be passed
-
-# todo: oc 的main 传入run_task
-
-
+# 3. Get infer config
 infer = dict(
     partitioner=dict(type=NaivePartitioner),
     runner=dict(

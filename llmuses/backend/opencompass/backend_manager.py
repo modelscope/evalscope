@@ -106,7 +106,7 @@ class OpenCompassBackendManager(BackendManager):
         return get_config_from_arg(self.args)
 
     @staticmethod
-    def list_datasets():
+    def list_datasets(return_details: bool = False):
         from opencompass.utils.run import get_config_from_arg
         from dataclasses import dataclass
 
@@ -118,7 +118,13 @@ class OpenCompassBackendManager(BackendManager):
         template_config_path = get_module_path('llmuses.backend.opencompass.tasks.eval_api')
         template_cfg = get_config_from_arg(TempArgs(config=template_config_path))
 
-        return list(set([_dataset['dataset_name'] for _dataset in template_cfg.datasets]))
+        # e.g. ['mmlu', 'ceval', 'openai_humaneval', ...]
+        dataset_show_names = list(set([_dataset['dataset_name'] for _dataset in template_cfg.datasets]))
+
+        if return_details:
+            return dataset_show_names, template_cfg.datasets
+        else:
+            return dataset_show_names
 
     def get_task_args(self):
         return self.args
@@ -165,19 +171,21 @@ class OpenCompassBackendManager(BackendManager):
                 "{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
             # Get valid datasets
-            datasets = self.args.datasets
-            datasets_all = self.list_datasets()
-            if not datasets:
-                logger.warning(f'No datasets are specified in the config. Use all the datasets: {datasets_all}')
-                datasets = datasets_all
+            dataset_names = self.args.datasets       # e.g. ['mmlu', 'ceval']
+            dataset_names_all, real_dataset_all = self.list_datasets(return_details=True)
+
+            if not dataset_names:
+                logger.warning(f'No datasets are specified in the config. Use all the datasets: {dataset_names_all}')
+                valid_dataset_names = dataset_names_all
             else:
-                valid_datasets, invalid_datasets = get_valid_list(datasets, datasets_all)
-                if len(invalid_datasets) > 0:
-                    logger.error(f'Invalid datasets: {invalid_datasets}, '
-                                 f'refer to the following list to get proper dataset name: {datasets_all}')
-                assert len(valid_datasets) > 0, f'No valid datasets. ' \
-                                                f'To get the valid datasets, please refer to {datasets_all}'
-                datasets = valid_datasets
+                valid_dataset_names, invalid_dataset_names = get_valid_list(dataset_names, dataset_names_all)
+                if len(invalid_dataset_names) > 0:
+                    logger.error(f'Invalid datasets: {invalid_dataset_names}, '
+                                 f'refer to the following list to get proper dataset name: {dataset_names_all}')
+                assert len(valid_dataset_names) > 0, f'No valid datasets. ' \
+                                                     f'To get the valid datasets, please refer to {dataset_names_all}'
+
+            valid_datasets = [_dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names]
 
             # Get valid models
             models = []
@@ -198,18 +206,18 @@ class OpenCompassBackendManager(BackendManager):
 
             # Load the initial task template and override configs
             template_cfg = self.load_task_template()
-            template_cfg.datasets = datasets
+            template_cfg.datasets = valid_datasets
             template_cfg.models = models
 
             # Dump task config to a temporary file
             tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w')
             template_cfg.dump(tmp_file.name)
-            logger.info(f'The task config is dumped to: {tmp_file.name}')
+            # logger.info(f'The task config is dumped to: {tmp_file.name}')
             self.args.config = tmp_file.name
 
             # Submit the task
-            logger.info(f'*** Run task with following arguments:\n    {self.args} \n')
-            run_task(self.args)
+            logger.info(f'*** Run task with following config: {self.args.config} \n')
+            # run_task(self.args)
 
         # TODO: add more arguments for the command line
         elif run_mode == RunMode.CMD:
