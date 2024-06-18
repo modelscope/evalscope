@@ -217,7 +217,7 @@ class OpenCompassBackendManager(BackendManager):
 
             # Submit the task
             logger.info(f'*** Run task with following config: {self.args.config} \n')
-            # run_task(self.args)
+            run_task(self.args)
 
         # TODO: add more arguments for the command line
         elif run_mode == RunMode.CMD:
