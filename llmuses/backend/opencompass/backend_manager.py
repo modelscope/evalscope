@@ -154,7 +154,12 @@ class OpenCompassBackendManager(BackendManager):
         """
         from opencompass.cli.arguments import ModelConfig
 
-        assert self.args.models, 'The models are required.'
+        assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
+
+        tmp_model_d: dict = self.args.models[0]
+        assert 'path' in tmp_model_d and 'meta_template' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
+            "The format of the model is invalid. In the form of: " \
+            "{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
         if run_mode == RunMode.FUNCTION:
             from opencompass.cli.main import run_task
@@ -196,12 +201,13 @@ class OpenCompassBackendManager(BackendManager):
             template_cfg.datasets = datasets
             template_cfg.models = models
 
-            print(template_cfg.datasets)
+            logger.info(f'datasets: {template_cfg.datasets}')
+            logger.info(f'models: {template_cfg.models}')
             ...
 
             # create tmp_config_file and config.dump(tmp_config_file) and self.args.config = tmp_config_file
 
-            run_task(self.args)
+            # run_task(self.args)
 
         # TODO: add more arguments for the command line
         elif run_mode == RunMode.CMD:
@@ -220,7 +226,10 @@ if __name__ == '__main__':
 
     # 其它：1）增加list_datasets()方法，用于列出所有的datasets；2）增加list_models()方法，用于列出所有的models
 
-    ocm = OpenCompassBackendManager(config={'datasets': ['mmlu', 'ceval', 'xxx']})
+    ocm = OpenCompassBackendManager(
+        config={'datasets': ['mmlu', 'ceval'],
+                'models': [{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
+    )
     ocm.run()
 
     # oc_task_cfg_file = '../../examples/tasks/eval_qwen_oc_cfg.yaml'
