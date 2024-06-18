@@ -166,9 +166,9 @@ class OpenCompassBackendManager(BackendManager):
             assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
 
             tmp_model_d: dict = self.args.models[0]
-            assert 'path' in tmp_model_d and 'meta_template' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
+            assert 'path' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
                 "The format of the model is invalid. In the form of: " \
-                "{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
+                "{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
             # Get valid datasets
             dataset_names = self.args.datasets       # e.g. ['mmlu', 'ceval']
@@ -193,11 +193,11 @@ class OpenCompassBackendManager(BackendManager):
             models = []
             for model_d in self.args.models:
                 # model_d: {'path': 'qwen-7b-chat',
-                #           'meta_template': 'default-api-meta-template-oc',
+                #           'meta_template': 'default-api-meta-template-oc',   # Optional
                 #           'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}
-                # Note: 'meta_template' can be a dict or a string
+                # Note: 'meta_template' can be a dict or a string, default is None
 
-                if isinstance(model_d['meta_template'], str):
+                if 'meta_template' in model_d and isinstance(model_d['meta_template'], str):
                     model_d['meta_template'] = get_template(model_d['meta_template'])
 
                 # set the 'abbr' as the 'path' if 'abbr' is not specified
@@ -238,9 +238,10 @@ if __name__ == '__main__':
 
     # 其它：1）增加list_datasets()方法，用于列出所有的datasets；2）增加list_models()方法，用于列出所有的models
 
+    # 'meta_template': 'default-api-meta-template-oc',
     ocm = OpenCompassBackendManager(
         config={'datasets': ['mmlu', 'ceval'],
-                'models': [{'path': 'qwen-7b-chat', 'meta_template': 'default-api-meta-template-oc', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
+                'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
     )
     ocm.run()
 
