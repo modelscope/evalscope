@@ -229,13 +229,15 @@ class OpenCompassBackendManager(BackendManager):
 
 
 if __name__ == '__main__':
+    from llmuses.backend.opencompass import OpenCompassBackendManager
 
     # OpenCompassBackendManager.list_datasets()
     # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
 
     # 'meta_template': 'default-api-meta-template-oc',
-    ocm = OpenCompassBackendManager(
+    # models: llama3-8b-instruct, qwen-7b-chat
+    oc_backend_manager = OpenCompassBackendManager(
         config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-                'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
+                'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
     )
-    ocm.run()
+    oc_backend_manager.run()
