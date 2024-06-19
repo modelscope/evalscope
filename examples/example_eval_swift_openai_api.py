@@ -20,7 +20,7 @@ from llmuses.backend.opencompass import OpenCompassBackendManager
 def run_swift_eval():
 
     # List all datasets
-    print(OpenCompassBackendManager.list_datasets())
+    print(f'** all datasets: {OpenCompassBackendManager.list_datasets()}')
 
     # Run task
     oc_backend_manager = OpenCompassBackendManager(
