@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from mmengine.config import read_base
-import copy
 
 with read_base():
     from configs.datasets.mmlu.mmlu_gen_4d595a import mmlu_datasets
