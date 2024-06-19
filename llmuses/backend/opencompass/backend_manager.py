@@ -167,7 +167,7 @@ class OpenCompassBackendManager(BackendManager):
 
             tmp_model_d: dict = self.args.models[0]
             assert 'path' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
-                "The format of the model is invalid. In the form of: " \
+                f"Got invalid model config: {tmp_model_d}. \nTo get valid format: " \
                 "{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
             # Get valid datasets
@@ -229,7 +229,6 @@ class OpenCompassBackendManager(BackendManager):
 
 
 if __name__ == '__main__':
-    from llmuses.backend.opencompass import OpenCompassBackendManager
 
     # OpenCompassBackendManager.list_datasets()
     # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
