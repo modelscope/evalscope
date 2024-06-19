@@ -318,6 +318,10 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     else:
         result_db_path = "./%s_benchmark_%s.db" % (args.model, current_time)
     print('Save the result to : %s'%result_db_path)
+    if os.path.exists(result_db_path):
+        print('The db file exist, delete it and start again!.')
+        sys.exit(1)
+        
     con = sqlite3.connect(result_db_path)
 
     db_cur = con.cursor()

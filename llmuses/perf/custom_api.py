@@ -76,7 +76,7 @@ class CustomPlugin(ApiPluginBase):
             output_tokens = 0
             for _, choice_contents in delta_contents.items():
                 full_response_content = ''.join([m for m in choice_contents])
-                input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
+                input_tokens += len(self.tokenizer.encode(request['text_input']))
                 output_tokens += len(self.tokenizer.encode(full_response_content))
         elif input_tokens is None and output_tokens is None:  # no usage info get.
             input_tokens = 0
