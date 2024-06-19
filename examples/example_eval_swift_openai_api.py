@@ -6,9 +6,13 @@ eval-scope分支： https://github.com/modelscope/eval-scope/tree/dev/add_oc
 opencompass代码： https://github.com/wangxingjun778/opencompass/tree/dev
 pip3 install -e .
 
-2. Deploy model serving
+2. Download dataset to data/ folder
+wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-core-20240207.zip
+unzip OpenCompassData-core-20240207.zip
 
-3. Run eval task
+3. Deploy model serving
+
+4. Run eval task
 """
 from llmuses.backend.opencompass import OpenCompassBackendManager
 
