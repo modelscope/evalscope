@@ -45,10 +45,10 @@ def run_swift_eval():
     )
 
     # Option 2: Use yaml file
-    # task_cfg = 'llmuses/examples/tasks/default_eval_swift_openai_api.yaml'
+    # task_cfg = 'examples/tasks/default_eval_swift_openai_api.yaml'
 
     # Option 3: Use json file
-    # task_cfg = 'llmuses/examples/tasks/default_eval_swift_openai_api.json'
+    # task_cfg = 'examples/tasks/default_eval_swift_openai_api.json'
 
     # Run task
     run_task(task_cfg=task_cfg)
