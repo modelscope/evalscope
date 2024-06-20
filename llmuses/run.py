@@ -12,7 +12,7 @@ from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 from llmuses.evaluator import Evaluator
 from llmuses.evaluator.evaluator import HumanevalEvaluator
 from llmuses.models.custom import CustomModel
-from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir, gen_hash
+from llmuses.utils import import_module_util, yaml_to_dict, make_outputs_dir, gen_hash, json_to_dict, EvalBackend
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -130,13 +130,14 @@ def parse_args():
 
     parser.add_argument('--eval-backend',
                         help='The evaluation backend to use. Default to None.'
-                             'can be `OpenCompass`, ...',
+                             'can be `Native`, `OpenCompass` and `ThirdParty`. '
+                             'Default to `OpenCompass`.',
                         type=str,
-                        default=None,
+                        default=EvalBackend.OPEN_COMPASS.value,
                         required=False)
 
-    parser.add_argument('--task-config',
-                        help='The task config file path for evaluation backend, should be a yaml file.',
+    parser.add_argument('--eval-config',
+                        help='The eval task config file path for evaluation backend, should be a yaml or json file.',
                         type=str,
                         default=None,
                         required=False)
@@ -177,7 +178,12 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     if isinstance(task_cfg, TaskConfig):
         task_cfg = task_cfg.to_dict()
     elif isinstance(task_cfg, str):
-        task_cfg = yaml_to_dict(task_cfg)
+        if task_cfg.endswith('.yaml'):
+            task_cfg = yaml_to_dict(task_cfg)
+        elif task_cfg.endswith('.json'):
+            task_cfg = json_to_dict(task_cfg)
+        else:
+            raise ValueError(f'Unsupported file format: {task_cfg}, should be a yaml or json file.')
     elif isinstance(task_cfg, dict):
         logger.info('** Args: Task config is provided with dictionary type. **')
     else:
@@ -186,18 +192,14 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     # Check and run evaluation backend
     if task_cfg.get('eval_backend'):
         eval_backend = task_cfg.get('eval_backend')
-        task_config = task_cfg.get('task_config')
-        if eval_backend == 'OpenCompass':
-            # TODO: to be finished !!!
-            from llmuses.backend.opencompass import OpenCompassBackendManager
-            oc_parser = OpenCompassBackendManager(config=task_config)
-            logger.info(f'** OpenCompass cmd: {oc_parser.cmd}')
+        eval_config: Union[str, dict] = task_cfg.get('eval_config')
 
-            status = os.system(oc_parser.cmd)
-            if status != 0:
-                logger.error(f'** OpenCompass failed with status {status}. **')
-            else:
-                logger.info(f'** Eval backend: OpenCompass task finished with status {status}. **')
+        assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
+
+        if eval_backend == EvalBackend.OPEN_COMPASS.value:
+            from llmuses.backend.opencompass import OpenCompassBackendManager
+            oc_backend_manager = OpenCompassBackendManager(config=eval_config)
+            oc_backend_manager.run()
 
         return dict()
 
@@ -380,7 +382,7 @@ def main():
         'debug': args.debug,
 
         'eval_backend': args.eval_backend,
-        'task_config': args.task_config,
+        'eval_config': args.eval_config,
     }
 
     run_task(task_cfg)

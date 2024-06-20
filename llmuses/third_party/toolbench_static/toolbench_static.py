@@ -10,18 +10,18 @@ from llmuses.utils import yaml_to_dict, get_logger, json_to_dict
 logger = get_logger()
 
 
-def run_task(task_config: Union[str, dict]):
+def run_task(task_cfg: Union[str, dict]):
 
-    if isinstance(task_config, str):
-        if task_config.endswith('.yaml'):
-            task_config: dict = yaml_to_dict(task_config)
-        elif task_config.endswith('.json'):
-            task_config: dict = json_to_dict(task_config)
+    if isinstance(task_cfg, str):
+        if task_cfg.endswith('.yaml'):
+            task_cfg: dict = yaml_to_dict(task_cfg)
+        elif task_cfg.endswith('.json'):
+            task_cfg: dict = json_to_dict(task_cfg)
         else:
-            raise ValueError(f'Unsupported file format: {task_config}')
+            raise ValueError(f'Unsupported file format: {task_cfg}, should be yaml or json file.')
 
     # Run inference for each domain
-    infer_args: dict = task_config['infer_args']
+    infer_args: dict = task_cfg['infer_args']
     for domain in ['in_domain', 'out_of_domain']:
         domain_infer_args = deepcopy(infer_args)
         domain_infer_args.update({'data_path': os.path.join(infer_args['data_path'], f'{domain}.json')})
@@ -32,7 +32,7 @@ def run_task(task_config: Union[str, dict]):
         run_infer(task_infer_args)
 
     # Run evaluation for each domain
-    eval_args: dict = task_config['eval_args']
+    eval_args: dict = task_cfg['eval_args']
     for domain in ['in_domain', 'out_of_domain']:
         domain_eval_args = deepcopy(eval_args)
         domain_eval_args.update({'input_path': os.path.join(eval_args['input_path'], domain)})
@@ -47,4 +47,4 @@ if __name__ == '__main__':
     # task_cfg_file = 'config_default.yaml'
     task_cfg_file = 'config_default.json'
 
-    run_task(task_config=task_cfg_file)
+    run_task(task_cfg=task_cfg_file)
