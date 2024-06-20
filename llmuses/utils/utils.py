@@ -7,7 +7,7 @@ import os
 import re
 import random
 import sys
-from typing import Any, Union, Dict, List, Tuple
+from typing import Any, Union, Dict, List, Tuple, Optional, Set
 import hashlib
 import torch.nn.functional as F
 
@@ -16,6 +16,7 @@ import yaml
 
 from llmuses.constants import DumpMode, OutputsStructure
 from llmuses.utils.logger import get_logger
+from transformers.utils import strtobool
 
 logger = get_logger()
 
@@ -354,9 +355,36 @@ def split_str_parts_by(text: str, delimiters: List[str]):
     return text_list
 
 
-def calculate_loss_scale(response: str,
-                         use_loss_scale=False
-                         ) -> Tuple[List[str], List[float]]:
+def split_parts_by_regex(text_list: list, regex_delimiters: Dict[str, List[float]]) -> None:
+    import re
+    compiled_patterns = [(re.compile(pattern), scale) for pattern, scale in regex_delimiters.items()]
+    for i in range(len(text_list) - 1, -1, -1):
+        item = text_list[i]
+        if item.get('key') == '':
+            res_text = item['content']
+            last_idx = 0
+            segments = []
+
+            for pattern, scale in compiled_patterns:
+                matches = list(re.finditer(pattern, res_text))
+                for match in matches:
+                    if match.start() > last_idx:
+                        segments.append({'key': '', 'content': res_text[last_idx:match.start()]})
+                    segments.append({'key': scale[0], 'content': match.group(0)})
+                    last_idx = match.end()
+
+            if last_idx < len(res_text):
+                segments.insert(0, {'key': '', 'content': res_text[last_idx:]})
+
+            if segments:
+                text_list[i:i + 1] = segments
+
+
+def calculate_loss_scale(query: str,
+                         response: str,
+                         use_loss_scale=False,
+                         response_loss_scale_map: Optional[Dict[str, list]] = None,
+                         query_loss_scale_map: Optional[Dict[str, list]] = None) -> Tuple[List[str], List[float]]:
     """Calculate the loss scale by splitting the agent response.
 
     This algorithm comes from paper: https://arxiv.org/pdf/2309.00986.pdf
@@ -381,26 +409,35 @@ def calculate_loss_scale(response: str,
     Returns:
         A tuple of agent response parts and their weights.
     """
-    if 'Action:' in response and 'Observation:' in response and use_loss_scale:
-        agent_keyword = [
-            'Action:', 'Action Input:', 'Thought:', 'Final Answer:',
-            'Observation:'
-        ]
-        agent_parts = split_str_parts_by(response, agent_keyword)
+    if use_loss_scale:
+        # query loss scale map
+        if query_loss_scale_map is not None:
+            for key in query_loss_scale_map.keys():
+                if key in query:
+                    if isinstance(query_loss_scale_map[key], (float, int)):
+                        query_loss_scale_map[key] = [query_loss_scale_map[key]]
+                    loss_scale_value = query_loss_scale_map[key][0]
+                    return [response], [float(loss_scale_value)]
+        delimiters = list(k for k in response_loss_scale_map.keys() if len(response_loss_scale_map[k]) == 2)
+        agent_parts = split_str_parts_by(response, delimiters)
+        regex_delimiters = {k: v for k, v in response_loss_scale_map.items() if len(v) == 1}
+        if len(regex_delimiters):
+            split_parts_by_regex(agent_parts, regex_delimiters)
         weights = []
         agent_content = []
         for c in agent_parts:
-            if c['key'] in ('Action:', 'Action Input:'):
-                weights += [2.0]
-                weights += [2.0]
-            elif c['key'] in ('Thought:', 'Final Answer:', ''):
-                weights += [1.0]
-                weights += [1.0]
-            elif c['key'] in ('Observation:', ):
-                weights += [2.0]
-                weights += [0.0]
-            agent_content.append(c['key'])
-            agent_content.append(c['content'])
+            if isinstance(c['key'], (float, int)):
+                weights += [c['key']]
+                agent_content.append(c['content'])
+            else:
+                if c['key'] in response_loss_scale_map:
+                    weights += [response_loss_scale_map[c['key']][0]]
+                    weights += [response_loss_scale_map[c['key']][1]]
+                    agent_content.append(c['key'])
+                    agent_content.append(c['content'])
+                else:
+                    weights += [1.0]
+                    agent_content.append(c['content'])
         return agent_content, weights
     else:
         return [response], [1.0]
@@ -464,4 +501,16 @@ def get_dist_setting() -> Tuple[int, int, int, int]:
 
 
 def use_torchacc() -> bool:
-    return os.getenv('USE_TORCHACC', '0') == '1'
+    return strtobool(os.getenv('USE_TORCHACC', '0'))
+
+
+def fetch_one(element: Union[Tuple, List, Set, Dict, Any]) -> Any:
+    if isinstance(element, (tuple, set, list)):
+        for ele in element:
+            out = fetch_one(ele)
+            if out:
+                return out
+    elif isinstance(element, dict):
+        return fetch_one(list(element.values()))
+    else:
+        return element
