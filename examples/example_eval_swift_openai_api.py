@@ -36,12 +36,19 @@ def run_swift_eval():
                 
                 Refer to `opencompass.cli.arguments.ModelConfig` for other optional attributes.
     """
+    # Option 1: Use dict format
     task_cfg = dict(
         eval_backend='OpenCompass',
         eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                      'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}, ]
                      },
     )
+
+    # Option 2: Use yaml file
+    # task_cfg = 'llmuses/examples/tasks/default_eval_swift_openai_api.yaml'
+
+    # Option 3: Use json file
+    # task_cfg = 'llmuses/examples/tasks/default_eval_swift_openai_api.json'
 
     # Run task
     run_task(task_cfg=task_cfg)
