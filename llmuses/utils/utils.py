@@ -6,6 +6,7 @@ import importlib
 import importlib.util
 import os
 import re
+import json
 import random
 import sys
 from typing import Any, Union, Dict, Tuple, List
@@ -116,6 +117,20 @@ def dict_to_yaml(d: dict, yaml_file: str):
     with open(yaml_file, 'w') as f:
         yaml.dump(d, f, default_flow_style=False)
     logger.info(f'Dump data to {yaml_file} successfully.')
+
+
+def json_to_dict(json_file) -> dict:
+    """
+    Read json file to dict.
+    """
+    with open(json_file, 'r') as f:
+        try:
+            stream = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f'{e}')
+            raise e
+
+    return stream
 
 
 def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:

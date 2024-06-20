@@ -5,13 +5,20 @@ from copy import deepcopy
 
 from llmuses.third_party.toolbench_static.infer import InferArgs, run_infer
 from llmuses.third_party.toolbench_static.eval import EvalArgs, run_eval
-from llmuses.utils.utils import yaml_to_dict
+from llmuses.utils import yaml_to_dict, get_logger, json_to_dict
+
+logger = get_logger()
 
 
 def run_task(task_config: Union[str, dict]):
 
     if isinstance(task_config, str):
-        task_config: dict = yaml_to_dict(task_config)
+        if task_config.endswith('.yaml'):
+            task_config: dict = yaml_to_dict(task_config)
+        elif task_config.endswith('.json'):
+            task_config: dict = json_to_dict(task_config)
+        else:
+            raise ValueError(f'Unsupported file format: {task_config}')
 
     # Run inference for each domain
     infer_args: dict = task_config['infer_args']
@@ -37,6 +44,7 @@ def run_task(task_config: Union[str, dict]):
 
 
 if __name__ == '__main__':
-    task_cfg_file = 'config_default.yaml'
+    # task_cfg_file = 'config_default.yaml'
+    task_cfg_file = 'config_default.json'
 
     run_task(task_config=task_cfg_file)
