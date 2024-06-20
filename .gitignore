@@ -141,3 +141,4 @@ outputs/
 llmuses/outputs/
 llmuses/*_temp.py
 llmuses/data/
+data/
