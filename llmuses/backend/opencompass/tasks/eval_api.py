@@ -17,6 +17,7 @@ for _dataset in datasets:
 
 
 # 2. Get models, only for placeholder, you should fill in the real model information from command line
+# See more templates in `opencompass.cli.arguments.ModelConfig`
 models = []
 
 # 3. Get infer config
