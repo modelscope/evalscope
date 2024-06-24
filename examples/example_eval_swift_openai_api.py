@@ -40,7 +40,7 @@ def run_swift_eval():
     task_cfg = dict(
         eval_backend='OpenCompass',
         eval_config={'datasets': ['gsm8k'],       # ['mmlu', 'ceval', 'ARC_c', 'gsm8k']
-                     'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}, ]
+                     'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 'temperature': 0.0}, ]
                      },
     )
 
