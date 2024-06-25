@@ -7,7 +7,7 @@ from typing import List, Union
 from llmuses.config import TaskConfig
 from llmuses.constants import OutputsStructure
 from llmuses.tools.combine_reports import gen_table
-from llmuses.utils import process_outputs_structure, yaml_to_dict
+from llmuses.utils import process_outputs_structure, yaml_to_dict, EvalBackend
 from llmuses.utils.logger import get_logger
 
 logger = get_logger()
@@ -35,17 +35,20 @@ class Summarizer:
         return res_list
 
     @staticmethod
-    def get_report_from_cfg(task_cfg: Union[str, List[str], TaskConfig, List[TaskConfig]]) -> List[dict]:
+    def get_report_from_cfg(task_cfg: Union[str, List[str], TaskConfig, List[TaskConfig]],
+                            eval_backend: str = EvalBackend.OPEN_COMPASS.value) -> List[dict]:
         """
         Get report from cfg file.
 
         Args:
             task_cfg: task cfg file path. refer to llmuses/tasks/eval_qwen-7b-chat_v100.yaml
+            eval_backend: evaluation backend, default to 'OpenCompass'. Can be 'OpenCompass', 'Native' or 'ThirdParty'.
 
         Returns:
             list: list of report dict.
             A report dict is overall report on a benchmark for specific model.
         """
+        final_res_list: list = []
         candidate_task_cfgs: List[dict] = []
 
         if isinstance(task_cfg, str):
@@ -64,20 +67,28 @@ class Summarizer:
         else:
             raise ValueError(f'Invalid task_cfg: {task_cfg}')
 
-        final_res_list: list = []
-        outputs_dir_list: list = []
-        for candidate_task in candidate_task_cfgs:
-            logger.info(f'**Task cfg: {candidate_task}')
-            outputs_dir: str = candidate_task.get('outputs')
-            outputs_dir: str = os.path.expanduser(outputs_dir)
-            if outputs_dir is None:
-                raise ValueError(f'No outputs_dir in {task_cfg}')
-            outputs_dir_list.append(outputs_dir)
-        outputs_dir_list = list(set(outputs_dir_list))
+        if eval_backend == EvalBackend.NATIVE.value:
+            outputs_dir_list: list = []
+            for candidate_task in candidate_task_cfgs:
+                logger.info(f'**Task cfg: {candidate_task}')
+                outputs_dir: str = candidate_task.get('outputs')
+                outputs_dir: str = os.path.expanduser(outputs_dir)
+                if outputs_dir is None:
+                    raise ValueError(f'No outputs_dir in {task_cfg}')
+                outputs_dir_list.append(outputs_dir)
+            outputs_dir_list = list(set(outputs_dir_list))
 
-        for outputs_dir_item in outputs_dir_list:
-            res_list: list = Summarizer.get_report(outputs_dir=outputs_dir_item)
-            final_res_list.extend(res_list)
+            for outputs_dir_item in outputs_dir_list:
+                res_list: list = Summarizer.get_report(outputs_dir=outputs_dir_item)
+                final_res_list.extend(res_list)
+        elif eval_backend == EvalBackend.OPEN_COMPASS.value:
+            # TODO
+            pass
+
+        elif eval_backend == EvalBackend.THIRD_PARTY.value:
+            raise ValueError(f'*** The summarizer for Third party evaluation backend is not supported yet ***')
+        else:
+            raise ValueError(f'Invalid eval_backend: {eval_backend}')
 
         return final_res_list
 
