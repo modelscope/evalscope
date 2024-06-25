@@ -18,6 +18,7 @@ unzip OpenCompassData-core-20240207.zip
 """
 from llmuses.backend.opencompass import OpenCompassBackendManager
 from llmuses.run import run_task
+from llmuses.summarizer import Summarizer
 
 
 def run_swift_eval():
@@ -52,6 +53,11 @@ def run_swift_eval():
 
     # Run task
     run_task(task_cfg=task_cfg)
+
+    # [Optional] Get the final report with summarizer
+    print('>> Start to get the report with summarizer ...')
+    report_list = Summarizer.get_report_from_cfg(task_cfg)
+    print(f'\n>>The report list: {report_list}')
 
 
 if __name__ == '__main__':
