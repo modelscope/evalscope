@@ -7,5 +7,5 @@ eval_config:
   - gsm8k
   models:
   - openai_api_base: http://127.0.0.1:8000/v1/chat/completions
-    path: qwen-7b-chat
+    path: llama3-8b-instruct
     temperature: 0.0

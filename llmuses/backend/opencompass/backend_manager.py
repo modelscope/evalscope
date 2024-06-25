@@ -237,6 +237,6 @@ if __name__ == '__main__':
     # models: llama3-8b-instruct, qwen-7b-chat
     oc_backend_manager = OpenCompassBackendManager(
         config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-                'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
+                'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
     )
     oc_backend_manager.run()
