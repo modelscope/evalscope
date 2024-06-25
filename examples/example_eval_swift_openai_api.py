@@ -24,6 +24,7 @@ from llmuses.summarizer import Summarizer
 def run_swift_eval():
 
     # List all datasets
+    # e.g.  ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
     print(f'** all datasets: {OpenCompassBackendManager.list_datasets()}')
 
     # Prepare the config
@@ -41,7 +42,8 @@ def run_swift_eval():
     task_cfg = dict(
         eval_backend='OpenCompass',
         eval_config={'datasets': ['gsm8k'],       # ['mmlu', 'ceval', 'ARC_c', 'gsm8k']
-                     'models': [{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 'temperature': 0.0}, ]
+                     'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}, ],
+                     'work_dir': 'outputs/llama3_eval_result',
                      },
     )
 
