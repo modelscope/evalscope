@@ -25,7 +25,7 @@ def run_swift_eval():
 
     # List all datasets
     # e.g.  ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
-    print(f'** all datasets: {OpenCompassBackendManager.list_datasets()}')
+    print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
 
     # Prepare the config
     """
@@ -35,8 +35,9 @@ def run_swift_eval():
         `models`: list of dict, each dict must contain `path` and `openai_api_base` 
                 `path`: reuse the value of '--model_type' in the command line `swift deploy`
                 `openai_api_base`: the base URL of swift model serving
+        `work_dir`: str, the directory to save the evaluation results、logs and summaries. Default to 'outputs/default'
                 
-                Refer to `opencompass.cli.arguments.ModelConfig` for other optional attributes.
+        Refer to `opencompass.cli.arguments.ModelConfig` for other optional attributes.
     """
     # Option 1: Use dict format
     task_cfg = dict(
