@@ -161,7 +161,7 @@ class OpenCompassBackendManager(BackendManager):
         """
         if run_mode == RunMode.FUNCTION:
             from opencompass.cli.main import run_task
-            from opencompass.cli.arguments import ModelConfig
+            from opencompass.cli.arguments import ApiModelConfig
 
             assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
 
@@ -203,7 +203,7 @@ class OpenCompassBackendManager(BackendManager):
                 # set the 'abbr' as the 'path' if 'abbr' is not specified
                 model_d['abbr'] = model_d['path']
 
-                model_config = ModelConfig(**model_d)
+                model_config = ApiModelConfig(**model_d)
                 models.append(asdict(model_config))
 
             # Load the initial task template and override configs
@@ -218,7 +218,7 @@ class OpenCompassBackendManager(BackendManager):
             self.args.config = tmp_file.name
 
             # Submit the task
-            logger.info(f'*** Run task with following config: {self.args.config} \n')
+            logger.info(f'*** Run task with config: {self.args.config} \n')
             run_task(self.args)
 
         # TODO: add more arguments for the command line

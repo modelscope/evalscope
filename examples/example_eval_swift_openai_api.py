@@ -37,7 +37,7 @@ def run_swift_eval():
                 `openai_api_base`: the base URL of swift model serving
         `work_dir`: str, the directory to save the evaluation results、logs and summaries. Default to 'outputs/default'
                 
-        Refer to `opencompass.cli.arguments.ModelConfig` for other optional attributes.
+        Refer to `opencompass.cli.arguments.ApiModelConfig` for other optional attributes.
     """
     # Option 1: Use dict format
     task_cfg = dict(
