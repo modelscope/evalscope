@@ -42,8 +42,11 @@ def run_swift_eval():
     # Option 1: Use dict format
     task_cfg = dict(
         eval_backend='OpenCompass',
-        eval_config={'datasets': ['gsm8k'],       # ['mmlu', 'ceval', 'ARC_c', 'gsm8k']
-                     'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}, ],
+        eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
+                     'models': [
+                         {'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'},
+                         {'path': 'llama3-8b', 'is_chat': False, 'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
+                     ],
                      'work_dir': 'outputs/llama3_eval_result',
                      },
     )
