@@ -40,12 +40,17 @@ def run_swift_eval():
         Refer to `opencompass.cli.arguments.ApiModelConfig` for other optional attributes.
     """
     # Option 1: Use dict format
+    # Args:
+    #   path: The path of the model, it means the `model_type` for swift, e.g. 'llama3-8b-instruct'
+    #   is_chat: True for chat model, False for base model
+    #   key: The OpenAI api-key of the model api, default to 'EMPTY'
+    #   openai_api_base: The base URL of the OpenAI API, it means the swift model serving URL.
     task_cfg = dict(
         eval_backend='OpenCompass',
         eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                      'models': [
                          {'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'},
-                         {'path': 'llama3-8b', 'is_chat': False, 'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
+                         {'path': 'llama3-8b', 'is_chat': False, 'key': 'EMPTY', 'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
                      ],
                      'work_dir': 'outputs/llama3_eval_result',
                      },
