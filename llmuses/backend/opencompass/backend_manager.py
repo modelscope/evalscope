@@ -49,6 +49,8 @@ class OpenCompassBackendManager(BackendManager):
                     debug (Optional): bool, the debug flag. Default to False.
                     reuse (Optional): str, reuse previous outputs & results. Default to None.
                     generation_kwargs (Optional): dict, the generation config. Default to {}.
+                    limit (Optional): int or float or str, the limit of the number of examples. Default to None.
+                        if limit is a string, it should be in the format of '[start:end]'.
 
                 example:
                     # TODO: add demo config
@@ -188,6 +190,7 @@ class OpenCompassBackendManager(BackendManager):
             valid_datasets = [_dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names]
             for _dataset in valid_datasets:
                 _dataset.pop('dataset_name')
+                _dataset['reader_cfg']['test_range'] = self.args.limit
 
             # Get valid models
             models = []
@@ -237,6 +240,8 @@ if __name__ == '__main__':
     # models: llama3-8b-instruct, qwen-7b-chat
     oc_backend_manager = OpenCompassBackendManager(
         config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-                'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}]}
+                'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}],
+                'limit': 5
+                }
     )
     oc_backend_manager.run()
