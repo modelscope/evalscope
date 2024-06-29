@@ -40,11 +40,11 @@ with read_base():
     from opencompass.configs.datasets.gsm8k.gsm8k_gen_1d7fe4 import gsm8k_datasets
     from opencompass.configs.datasets.summedits.summedits_gen_315438 import summedits_datasets
     from opencompass.configs.datasets.math.math_gen_265cce import math_datasets
-    from opencompass.configs.datasets.TheoremQA.TheoremQA_5shot_gen_6f0af8 import TheoremQA_datasets
+    # from opencompass.configs.datasets.TheoremQA.TheoremQA_5shot_gen_6f0af8 import TheoremQA_datasets
     from opencompass.configs.datasets.hellaswag.hellaswag_gen_6faab5 import hellaswag_datasets
     from opencompass.configs.datasets.ARC_e.ARC_e_gen_1e0de5 import ARC_e_datasets
     from opencompass.configs.datasets.ARC_c.ARC_c_gen_1e0de5 import ARC_c_datasets
-    from opencompass.configs.datasets.commonsenseqa.commonsenseqa_gen_c946f2 import commonsenseqa_datasets
+    # from opencompass.configs.datasets.commonsenseqa.commonsenseqa_gen_c946f2 import commonsenseqa_datasets
     from opencompass.configs.datasets.piqa.piqa_gen_1194eb import piqa_datasets
     from opencompass.configs.datasets.siqa.siqa_gen_e78df3 import siqa_datasets
     from opencompass.configs.datasets.strategyqa.strategyqa_gen_1180a7 import strategyqa_datasets
@@ -52,7 +52,7 @@ with read_base():
     from opencompass.configs.datasets.obqa.obqa_gen_9069e4 import obqa_datasets
     from opencompass.configs.datasets.nq.nq_gen_c788f6 import nq_datasets
     from opencompass.configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
-    from opencompass.configs.datasets.flores.flores_gen_806ede import flores_datasets
+    # from opencompass.configs.datasets.flores.flores_gen_806ede import flores_datasets
 
 
 datasets = []
