@@ -53,7 +53,7 @@ def run_swift_eval():
                          {'path': 'llama3-8b', 'is_chat': False, 'key': 'EMPTY', 'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
                      ],
                      'work_dir': 'outputs/llama3_eval_result',
-                     'limit': 5,  # e.g. 5, 5.0, `[:5]`
+                     'limit': 5,  # Could be int/float/str, e.g. 5 or 5.0 or `[10:20]`
                      },
     )
 
