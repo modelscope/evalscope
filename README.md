@@ -89,6 +89,70 @@ from llmuses.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
+### Evaluation Backend
+Eval-Scope支持使用第三方评估框架发起评测任务，我们称之为Evaluation Backend。目前支持的Evaluation Backend有：
+- **Native**: Eval-Scope：Eval-Scope自身的评测框架，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
+- [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
+- **ThirdParty**: 第三方评估任务，如[ToolBench](llmuses/thirdparty/toolbench/README.md)
+
+#### 1. OpenCompass Eval-Backend
+
+为便于使用OpenCompass evaluation backend，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md)支持使用vLLM拉起模型推理服务。
+
+##### 安装
+```shell
+# 安装eval-scope
+pip install llmuses>=0.4.0
+
+# 安装 ms-opencompass
+pip install ms-opencompass
+```
+
+#### 数据准备
+目前支持的数据集有：
+```python
+'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
+```
+数据集的详细信息可以参考[OpenCompass数据集列表](https://hub.opencompass.org.cn/home)
+您可以使用以下方式，来查看数据集的名称列表：
+```python
+from llmuses.backend.opencompass import OpenCompassBackendManager
+print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
+```
+
+数据集下载方式：
+- 方式1：使用ModelScope数据集下载
+    ```shell
+    git clone https://www.modelscope.cn/datasets/swift/evalscope_resource.git
+    ```
+
+- 方式2：使用github链接下载
+    ```shell
+    wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-complete-20240207.zip
+    ```
+总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。后续我们也即将支持托管在ModelScope上的数据集按需加载方式。
+
+
+#### 模型推理服务
+我们使用ModelScope swift部署模型服务，具体可参考：https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md
+```shell
+# 安装ms-swift
+pip install ms-swift
+
+# 部署模型服务
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type llama3-8b-instruct --port 8000
+```
+
+
+#### 模型评估
+
+参考示例文件： [example_eval_swift_openai_api](examples/example_eval_swift_openai_api.py) 来配置评估任务
+执行评估任务：
+```shell
+python examples/example_eval_swift_openai_api.py
+```
+
+
 
 ### 使用本地数据集
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
