@@ -143,9 +143,6 @@ llmuses/*_temp.py
 llmuses/data/
 */output_res/*
 
-# temp
 temp/
 tmp/
-
-# data
 data
