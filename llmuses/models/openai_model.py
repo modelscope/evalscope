@@ -2,6 +2,7 @@
 
 import os
 import time
+from typing import List
 
 from openai import OpenAI
 
@@ -54,6 +55,39 @@ class OpenAIModel(ChatBaseModel):
                             mode=mode)
 
         return res
+
+    def get_logits(self, input_data: List[str]) -> dict:
+        query = input_data[0]
+        logprobs = ""
+        for i in range(self.MAX_RETRIES):
+            try:
+                resp = self.client.chat.completions.create(
+                    model=self.model_id,
+                    messages=[{
+                        "role": "user",
+                        "content": query
+                    }],
+                    logprobs=True,
+                    top_logprobs=100
+                )
+                if resp:
+                    logprobs = resp.choices[0].logprobs.top_logprobs[-1]
+                else:
+                    logger.warning(
+                        f'OpenAI GPT API call failed: got empty response '
+                        f'for input {query}')
+                    logprobs = {}
+
+                return logprobs
+
+            except Exception as e:
+                logger.warning(f'OpenAI API call failed: {e}')
+                time.sleep(3)
+                
+        logger.error(
+            f'OpenAI API call failed after {self.MAX_RETRIES} retries')
+        return logprobs
+
 
     def completion(self, query: str) -> str:
         predictions = ""

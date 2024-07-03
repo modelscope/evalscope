@@ -216,23 +216,34 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
               }
             }
         """
-        infer_cfg = infer_cfg or {}
-        self.model.generation_config.update(**infer_cfg)
-
         input_data = inputs['data']
         multi_choices = inputs['multi_choices']
 
-        output, input_info = self._get_logits(self.tokenizer, self.model, input_data)
-        assert output.shape[0] == 1
-        logits = output.flatten()
+        if type(self.model) is OpenAIModel:
+            logprobs = self.model.get_logits(input_data)
+            lprobs = []
+            for c in multi_choices:
+                try:
+                    lprobs.append(logprobs[c])
+                except:
+                    logger.warning(f"token {c} not found. Artificially adding log prob of -100.")
+                    lprobs.append(-100)
+            pred: str = {i:c for i,c in enumerate(multi_choices)}[np.argmax(lprobs)]
+        else:
+            infer_cfg = infer_cfg or {}
+            self.model.generation_config.update(**infer_cfg)
 
-        choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in multi_choices]
-        softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
+            output, input_info = self._get_logits(self.tokenizer, self.model, input_data)
+            assert output.shape[0] == 1
+            logits = output.flatten()
 
-        if softval.dtype in {torch.bfloat16, torch.float16}:
-            softval = softval.to(dtype=torch.float32)
-        probs = softval.detach().cpu().numpy()
-        pred: str = multi_choices[int(np.argmax(probs))]        # Format: A or B or C or D
+            choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in multi_choices]
+            softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
+
+            if softval.dtype in {torch.bfloat16, torch.float16}:
+                softval = softval.to(dtype=torch.float32)
+            probs = softval.detach().cpu().numpy()
+            pred: str = multi_choices[int(np.argmax(probs))]        # Format: A or B or C or D
 
         res_d = {
             'choices': [
