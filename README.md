@@ -1,197 +1,211 @@
-## 简介
-大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了llmuses框架，该框架主要包括以下几个部分：
-- 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
-- 常用评估指标（metrics）的实现
-- 统一model接入，兼容多个系列模型的generate、chat接口
-- 自动评估（evaluator）：
-    - 客观题自动评估
-    - 使用专家模型实现复杂任务的自动评估
-- 评估报告生成
-- 竞技场模式(Arena）
-- 可视化工具
-- [模型性能评估](llmuses/perf/README.md)
+English | [简体中文](README_zh.md)
 
-特点
-- 轻量化，尽量减少不必要的抽象和配置
-- 易于定制
-  - 仅需实现一个类即可接入新的数据集
-  - 模型可托管在[ModelScope](https://modelscope.cn)上，仅需model id即可一键发起评测
-  - 支持本地模型可部署在本地
-  - 评估报告可视化展现
-- 丰富的评估指标
-- model-based自动评估流程，支持多种评估模式
-  - Single mode: 专家模型对单个模型打分
-  - Pairwise-baseline mode: 与 baseline 模型对比
-  - Pairwise (all) mode: 全部模型两两对比
+## Introduction
+
+Large Language Model (LLMs) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the Eval-Scope framework, which includes the following components and features:
+
+- Pre-configured common benchmark datasets, including: MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc.
+- Implementation of common evaluation metrics
+- Unified model integration, compatible with the generate and chat interfaces of multiple model series
+- Automatic evaluation (evaluator):
+  - Automatic evaluation for objective questions
+  - Implementation of complex task evaluation using expert models
+- Reports of evaluation generating
+- Arena mode
+- Visualization tools
+- Model Inference Performance Evaluation [Tutorial](llmuses/perf/README.md)
+- Support for OpenCompass as an Evaluation Backend, featuring advanced encapsulation and task simplification to easily submit tasks to OpenCompass for evaluation.
+- Full pipeline support: Seamlessly integrate with SWIFT to easily train and deploy model services, initiate evaluation tasks, view evaluation reports, and achieve an end-to-end large model development process.
 
 
-## 环境准备
-### 使用pip安装
-我们推荐使用conda来管理环境，并使用pip安装依赖:
-1. 创建conda环境
+Features
+- Lightweight, minimizing unnecessary abstractions and configurations
+- Easy to customize
+  - New datasets can be integrated by simply implementing a single class
+  - Models can be hosted on ModelScope, and evaluations can be initiated with just a model id
+  - Supports deployment of locally hosted models
+- Visualization of evaluation reports
+- Rich evaluation metrics
+- Model-based automatic evaluation process, supporting multiple evaluation modes
+  - Single mode: Expert models score individual models
+  - Pairwise-baseline mode: Comparison with baseline models
+  - Pairwise (all) mode: Pairwise comparison of all models
+
+## News
+- **\[2024.06.29\]** The OpenCompass evaluation backend has been integrated into Eval-Scope, allowing users to easily submit tasks to OpenCompass for evaluation. 🔥🔥🔥
+- **\[2024.06.13\]** Eval-Scope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
+- **\[2024.06.13\]** We have supported the ToolBench as a third-party evaluation backend for Agents evaluation. 🚀🚀🚀
+
+
+
+## Installation
+### Install with pip
+1. create conda environment
 ```shell
 conda create -n eval-scope python=3.10
 conda activate eval-scope
 ```
-2. 安装依赖
+
+2. Install Eval-Scope
 ```shell
 pip install llmuses
 ```
 
-### 使用源码安装
-1. 下载源码
+### Install from source code
+1. Download source code
 ```shell
 git clone https://github.com/modelscope/eval-scope.git
 ```
-2. 安装依赖
+
+2. Install dependencies
 ```shell
 cd eval-scope/
 pip install -e .
 ```
 
 
-## 快速开始
+## Quick Start
 
-### 简单评估
-在指定的若干数据集上评估某个模型，流程如下：
-如果使用git安装，可在任意路径下执行：
+### Simple Evaluation
+command line with pip installation:
 ```shell
 python -m llmuses.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
 ```
-如果使用源码安装，在eval-scope路径下执行：
+command line with source code:
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
 ```
-其中，--model参数指定了模型的ModelScope model id，模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
+Parameters:
+- --model: ModelScope model id, model link: [ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 
-### 带参数评估
+### Evaluation with Model Arguments
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
 ```
 python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
 ```
-参数说明：
-- --model-args: 模型参数，以逗号分隔，key=value形式
-- --datasets: 数据集名称，支持输入多个数据集，使用空格分开，参考下文`数据集列表`章节
-- --use-cache: 是否使用本地缓存，默认为`false`;如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
-- --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
-  - --few_shot_num: few-shot的数量
-  - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
-- --limit: 每个subset最大评估数据量
-- --template-type: 需要手动指定该参数，使得eval-scope能够正确识别模型的类型，用来设置model generation config。  
+Parameters:
+- --model-args: Parameters of model: revision, precision, device_map, in format of key=value,key=value
+- --datasets: datasets list, separated by space
+- --use-cache: `true` or `false`, whether to use cache, default is `false`
+- --dataset-args: evaluation settings，json format，key is the dataset name，value should be args for the dataset
+  - --few_shot_num: few-shot data number
+  - --few_shot_random: whether to use random few-shot data, default is `true`
+- --limit: maximum number of samples to evaluate for each sub-dataset
+- --template-type: model template type, see [Template Type List](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/Supported-models-datasets.md)
 
-关于--template-type，具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
-在模型列表中的`Default Template`字段中找到合适的template；  
-可以使用以下方式，来查看模型的template type list：
+Note: you can use following command to check the template type list of the model:
 ```shell
 from llmuses.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
 ### Evaluation Backend
-Eval-Scope支持使用第三方评估框架发起评测任务，我们称之为Evaluation Backend。目前支持的Evaluation Backend有：
+Eval-Scope supports using third-party evaluation frameworks to initiate evaluation tasks, which we call Evaluation Backend. Currently supported Evaluation Backend includes:
 - **Native**: Eval-Scope：Eval-Scope自身的评测框架，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
-- [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- **ThirdParty**: 第三方评估任务，如[ToolBench](llmuses/thirdparty/toolbench/README.md)
+- [OpenCompass](https://github.com/open-compass/opencompass)：Which is a popular evaluation framework for large language models, Eval-Scope supports submitting tasks to OpenCompass with `pip install ms-opencompass`.
+- **ThirdParty**: The third-party task, e.g. [ToolBench](llmuses/thirdparty/toolbench/README.md), you can contribute your own evaluation task to Eval-Scope as third-party backend.
 
 #### 1. OpenCompass Eval-Backend
 
-为便于使用OpenCompass evaluation backend，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md)支持使用vLLM拉起模型推理服务。
+To facilitate the OpenCompass as an evaluation backend, we have customized the OpenCompass codebase and named it `ms-opencompass`. This version enhances the configuration and execution of evaluation tasks based on the original version and supports installation via PyPI, allowing users to initiate lightweight OpenCompass evaluation tasks through Eval-Scope.
 
-##### 安装
+
+##### Installation
 ```shell
-# 安装eval-scope
+# Install eval-scope
 pip install llmuses>=0.4.0
 
-# 安装 ms-opencompass
+# Install ms-opencompass
 pip install ms-opencompass
 ```
 
-#### 数据准备
-目前支持的数据集有：
+#### Data Preparation
+Available datasets from OpenCompass backend:
 ```python
 'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
 ```
-数据集的详细信息可以参考[OpenCompass数据集列表](https://hub.opencompass.org.cn/home)
-您可以使用以下方式，来查看数据集的名称列表：
+Refer to [OpenCompass datasets](https://hub.opencompass.org.cn/home)
+
+You can use the following code to list all available datasets:
 ```python
 from llmuses.backend.opencompass import OpenCompassBackendManager
 print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
 ```
 
-数据集下载方式：
-- 方式1：使用ModelScope数据集下载
+Dataset download:
+- Option1: Download from ModelScope
     ```shell
     git clone https://www.modelscope.cn/datasets/swift/evalscope_resource.git
     ```
 
-- 方式2：使用github链接下载
+- Option2: Download from OpenCompass GitHub
     ```shell
     wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-complete-20240207.zip
     ```
-总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。后续我们也即将支持托管在ModelScope上的数据集按需加载方式。
+
+Unzip the file and set the path to the `data` directory in current work directory.
 
 
-#### 模型推理服务
-我们使用ModelScope swift部署模型服务，具体可参考：https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md
+#### Model serving
+We use ModelScope swift to deploy model services, see: [ModelScope swift](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md)
 ```shell
-# 安装ms-swift
+# Install ms-swift
 pip install ms-swift
 
-# 部署模型服务
+# Deploy model
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type llama3-8b-instruct --port 8000
 ```
 
 
-#### 模型评估
+#### Model evaluation
 
-参考示例文件： [example_eval_swift_openai_api](examples/example_eval_swift_openai_api.py) 来配置评估任务
-执行评估任务：
+Refer to example: [example_eval_swift_openai_api](examples/example_eval_swift_openai_api.py) to configure and execute the evaluation task:
 ```shell
 python examples/example_eval_swift_openai_api.py
 ```
 
 
 
-### 使用本地数据集
-数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
-#### 1. 下载数据集到本地
+### Local Dataset
+You can use local dataset to evaluate the model without internet connection.
+#### 1. Download and unzip the dataset
 ```shell
-# 假如当前本地工作路径为 /path/to/workdir
+# set path to /path/to/workdir
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
 ```
-则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
 
-#### 2. 使用本地数据集创建评估任务
+
+#### 2. Use local dataset to evaluate the model
 ```shell
 python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 
-# 参数说明
-# --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
-# --dataset-dir: 当--dataset-hub为`Local`时，该参数指本地数据集路径; 如果--dataset-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
+# Parameters:
+# --dataset-hub: dataset sources: `ModelScope`, `Local`, `HuggingFace` (TO-DO)  default to `ModelScope`
+# --dataset-dir: when ``--dataset-hub` is `Local`, the parameter means the local dataset path. If the ``--dataset-hub` is `ModelScope` or `HuggingFace`, then the parameter means the cache path.
 ```
 
-#### 3. (可选)在离线环境加载模型和评测
-模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
-```shell
-# 1. 准备模型本地文件夹，文件夹结构参考chatglm3-6b，链接：https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files
-# 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
+#### 3. (Optional) Use local mode to submit evaluation task
 
-# 2. 执行离线评估任务
+```shell
+# 1. Prepare the model local folder, the folder structure refers to chatglm3-6b, link: https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files
+# For example, download the model folder to the local path /path/to/ZhipuAI/chatglm3-6b
+
+# 2. Execute the offline evaluation task
 python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
 ```
 
 
-### 使用run_task函数提交评估任务
+### Use run_task function
 
-#### 1. 配置任务
+#### 1. Configuration
 ```python
 import torch
 from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
 
-# 示例
+# Example configuration
 your_task_cfg = {
         'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
         'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
@@ -212,7 +226,7 @@ your_task_cfg = {
 
 ```
 
-#### 2. 执行任务
+#### 2. Execute the task
 ```python
 from llmuses.run import run_task
 
@@ -220,38 +234,38 @@ run_task(task_cfg=your_task_cfg)
 ```
 
 
-### 竞技场模式（Arena）
-竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
-#### 1. 环境准备
+### Arena Mode
+The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. The process is as follows:
+#### 1. Env preparation
 ```text
-a. 数据准备，questions data格式参考：llmuses/registry/data/question.jsonl
-b. 如果需要使用自动评估流程（AAR），则需要配置相关环境变量，我们以GPT-4 based auto-reviewer流程为例，需要配置以下环境变量：
-> export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+a. Data preparation, the question data format refers to: llmuses/registry/data/question.jsonl
+b. If you need to use the automatic evaluation process (AAR), you need to configure the relevant environment variables. Taking the GPT-4 based auto-reviewer process as an example, you need to configure the following environment variables:
+    > export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
-#### 2. 配置文件
+#### 2. Configuration files
 ```text
-arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    elo_rating: ELO rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+Refer to : llmuses/registry/config/cfg_arena.yaml
+Parameters:
+    questions_file: question data path
+    answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
+    reviews_gen: evaluation result generation, currently defaults to using GPT-4 as the Auto-reviewer, can control whether to enable this step through the enable parameter
+    elo_rating: ELO rating algorithm, can control whether to enable this step through the enable parameter, note that this step depends on the review_file must exist
 ```
 
-#### 3. 执行脚本
+#### 3. Execute the script
 ```shell
 #Usage:
 cd llmuses
 
-# dry-run模式 (模型answer正常生成，但专家模型，如GPT-4，不会被调用，评估结果会随机生成)
+# dry-run mode
 python llmuses/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
 
-# 执行评估流程
+# Execute the script
 python llmuses/run_arena.py --c registry/config/cfg_arena.yaml
 ```
 
-#### 4. 结果可视化
+#### 4. Visualization
 
 ```shell
 # Usage:
@@ -259,44 +273,45 @@ streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.js
 ```
 
 
-### 单模型打分模式（Single mode）
+### Single Model Evaluation Mode
 
-这个模式下，我们只对单个模型输出做打分，不做两两对比。
-#### 1. 配置文件
+In this mode, we only score the output of a single model, without pairwise comparison.
+#### 1. Configuration file
 ```text
-评估流程的配置文件参考： llmuses/registry/config/cfg_single.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+Refer to: llmuses/registry/config/cfg_single.yaml
+Parameters:
+    questions_file: question data path
+    answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
+    reviews_gen: evaluation result generation, currently defaults to using GPT-4 as the Auto-reviewer, can control whether to enable this step through the enable parameter
+    rating_gen: rating algorithm, can control whether to enable this step through the enable parameter, note that this step depends on the review_file must exist
 ```
-#### 2. 执行脚本
+#### 2. Execute the script
 ```shell
 #Example:
 python llmuses/run_arena.py --c registry/config/cfg_single.yaml
 ```
 
-### Baseline模型对比模式（Pairwise-baseline mode）
+### Baseline Model Comparison Mode
 
-这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
-#### 1. 配置文件
+In this mode, we select the baseline model, and compare other models with the baseline model for scoring. This mode can easily add new models to the Leaderboard (just need to run the scoring with the new model and the baseline model).
+
+#### 1. Configuration file
 ```text
-评估流程的配置文件参考： llmuses/registry/config/cfg_pairwise_baseline.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
+Refer to: llmuses/registry/config/cfg_pairwise_baseline.yaml
+Parameters:
+    questions_file: question data path
+    answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
+    reviews_gen: evaluation result generation, currently defaults to using GPT-4 as the Auto-reviewer, can control whether to enable this step through the enable parameter
+    rating_gen: rating algorithm, can control whether to enable this step through the enable parameter, note that this step depends on the review_file must exist
 ```
-#### 2. 执行脚本
+#### 2. Execute the script
 ```shell
 # Example:
 python llmuses/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 ```
 
 
-## 数据集列表
+## Datasets list
 
 | DatasetName        | Link                                                                                   | Status | Note |
 |--------------------|----------------------------------------------------------------------------------------|--------|------|
@@ -313,18 +328,18 @@ python llmuses/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 | `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
 
 
-## Leaderboard 榜单
-ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面的评估标准和平台，帮助研究人员和开发者了解和比较ModelScope上的模型在各种任务上的性能表现。
+## Leaderboard
+The LLM Leaderboard aims to provide an objective and comprehensive evaluation standard and platform to help researchers and developers understand and compare the performance of models on various tasks on ModelScope.
 
 [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 
 
-## 实验和报告
-参考： [Experiments](./resources/experiments.md)
+## Experiments and Results
+[Experiments](./resources/experiments.md)
 
-## 性能评测工具
-参考： [性能测试](llmuses/perf/README.md)
+## Model Serving Performance Evaluation
+[Perf](llmuses/perf/README.md)
 
 ## TO-DO List
 - [ ] Agents evaluation
@@ -337,5 +352,4 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
   - [ ] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
-
 
