@@ -15,6 +15,7 @@ import base64
 import pickle
 import importlib.util
 import sys
+import platform
 from typing import List, Dict, Optional
 from datetime import datetime, timezone
 import aiohttp
@@ -576,13 +577,15 @@ def signal_handler(signal_name, loop):
     
 
 async def benchmark(args) -> None:
-    # add SIGINT and SIGTERM handler
-    loop = asyncio.get_running_loop()
-    for signal_name in {'SIGINT', 'SIGTERM'}:
-        loop.add_signal_handler(
-            getattr(signal, signal_name),
-            functools.partial(signal_handler, signal_name, loop))
-        
+    # Check if the current platform is Windows
+    if platform.system() != 'Windows':
+        # add SIGINT and SIGTERM handler
+        loop = asyncio.get_running_loop()
+        for signal_name in {'SIGINT', 'SIGTERM'}:
+            loop.add_signal_handler(
+                getattr(signal, signal_name),
+                functools.partial(signal_handler, signal_name, loop))
+
     request_tasks: List[asyncio.Task] = []
     # Queues can be used to distribute workload between several concurrent tasks
     # Create a queue that we will use to store our "workload".
