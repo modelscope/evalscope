@@ -40,7 +40,7 @@ class TestRun(unittest.TestCase):
         logger.info(f'>>test_run_simple_eval stdout: {run_res.stdout}')
         logger.error(f'>>test_run_simple_eval stderr: {run_res.stderr}')
 
-    @unittest.skipUnless(2 in test_level_list(), 'skip test in current test level')
+    @unittest.skipUnless(1 in test_level_list(), 'skip test in current test level')
     def test_run_eval_with_args(self):
         model = 'ZhipuAI/chatglm3-6b'
         template_type = 'chatglm3'
@@ -54,7 +54,7 @@ class TestRun(unittest.TestCase):
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \
                         f'--generation-config do_sample=false,temperature=0.0 ' \
-                        f'--dataset-args {dataset_args}'
+                        f"""--dataset-args {dataset_args}"""
 
         run_res = subprocess.run(cmd_with_args, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info(f'>>test_run_eval_with_args stdout: {run_res.stdout}')
