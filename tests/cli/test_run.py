@@ -44,7 +44,7 @@ class TestRun(unittest.TestCase):
     def test_run_eval_with_args(self):
         model = 'ZhipuAI/chatglm3-6b'
         template_type = 'chatglm3'
-        datasets = 'arc, ceval'  # arc ceval
+        datasets = 'arc ceval'  # arc ceval
         limit = 5
         dataset_args = '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}'
 
