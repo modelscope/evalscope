@@ -129,9 +129,9 @@ def parse_args():
     parser.add_argument('--eval-backend',
                         help='The evaluation backend to use. Default to None.'
                              'can be `Native`, `OpenCompass` and `ThirdParty`. '
-                             'Default to `OpenCompass`.',
+                             'Default to `Native`.',
                         type=str,
-                        default=EvalBackend.OPEN_COMPASS.value,
+                        default=EvalBackend.NATIVE.value,
                         required=False)
 
     parser.add_argument('--eval-config',
@@ -188,16 +188,19 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         raise ValueError('** Args: Please provide a valid task config. **')
 
     # Check and run evaluation backend
-    if task_cfg.get('eval_backend'):
+    if task_cfg.get('eval_backend') != EvalBackend.NATIVE.value:
         eval_backend = task_cfg.get('eval_backend')
         eval_config: Union[str, dict] = task_cfg.get('eval_config')
 
-        assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
+        assert eval_config, f'Please provide the eval task config for evaluation backend {eval_backend}'
 
         if eval_backend == EvalBackend.OPEN_COMPASS.value:
             from llmuses.backend.opencompass import OpenCompassBackendManager
             oc_backend_manager = OpenCompassBackendManager(config=eval_config)
             oc_backend_manager.run()
+        # TODO: Add other evaluation backends
+        elif eval_backend == EvalBackend.THIRD_PARTY.value:
+            raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
         return dict()
 
