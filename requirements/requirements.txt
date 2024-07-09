@@ -2,12 +2,13 @@
 torch
 absl-py
 #auto-gptq
+accelerate
 cachetools
-datasets>=2.14.5
+# datasets>=2.14.5
 editdistance
 jsonlines
 matplotlib
-modelscope>=1.9.5,!=1.12.0
+modelscope[framework]
 nltk
 openai
 pandas
