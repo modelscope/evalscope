@@ -131,7 +131,7 @@ def parse_args():
                              'can be `Native`, `OpenCompass` and `ThirdParty`. '
                              'Default to `OpenCompass`.',
                         type=str,
-                        default=EvalBackend.OPEN_COMPASS.value,
+                        default=EvalBackend.NATIVE.value,
                         required=False)
 
     parser.add_argument('--eval-config',
@@ -191,8 +191,6 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     if task_cfg.get('eval_backend'):
         eval_backend = task_cfg.get('eval_backend')
         eval_config: Union[str, dict] = task_cfg.get('eval_config')
-
-        assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
 
         if eval_backend == EvalBackend.OPEN_COMPASS.value:
             from llmuses.backend.opencompass import OpenCompassBackendManager
