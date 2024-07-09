@@ -37,6 +37,8 @@ class TestRun(unittest.TestCase):
                      f'--limit {limit}'
 
         run_res = subprocess.run(cmd_simple, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        assert run_res.returncode == 0, f'Failed to run command: {cmd_simple}'
         logger.info(f'>>test_run_simple_eval stdout: {run_res.stdout}')
         logger.error(f'>>test_run_simple_eval stderr: {run_res.stderr}')
 
@@ -57,8 +59,14 @@ class TestRun(unittest.TestCase):
                         f"""--dataset-args \'{dataset_args}\' """
 
         run_res = subprocess.run(cmd_with_args, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        assert run_res.returncode == 0, f'Failed to run command: {cmd_with_args}'
         logger.info(f'>>test_run_eval_with_args stdout: {run_res.stdout}')
         logger.error(f'>>test_run_eval_with_args stderr: {run_res.stderr}')
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_eval_local(self):
+        ...
 
 
 if __name__ == '__main__':

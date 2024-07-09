@@ -56,7 +56,7 @@ class DataAdapter(ABC):
         dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         if datasets_hub == 'Local':
             # Try to load dataset from local disk
-            if os.path.isdir(dataset_name_or_path) and not os.path.exists(dataset_name_or_path):
+            if not os.path.exists(dataset_name_or_path):
                 raise FileNotFoundError(f'Dataset path not found: {dataset_name_or_path}')
 
             logger.info(f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
