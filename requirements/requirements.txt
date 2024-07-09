@@ -2,6 +2,7 @@
 torch
 absl-py
 #auto-gptq
+accelerate
 cachetools
 datasets>=2.14.5
 editdistance
