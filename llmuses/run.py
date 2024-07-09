@@ -198,6 +198,9 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             from llmuses.backend.opencompass import OpenCompassBackendManager
             oc_backend_manager = OpenCompassBackendManager(config=eval_config)
             oc_backend_manager.run()
+        # TODO: Add other evaluation backends
+        elif eval_backend == EvalBackend.THIRD_PARTY.value:
+            raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
         return dict()
 
