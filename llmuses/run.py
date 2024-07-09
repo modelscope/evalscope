@@ -192,7 +192,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         eval_backend = task_cfg.get('eval_backend')
         eval_config: Union[str, dict] = task_cfg.get('eval_config')
 
-        assert eval_config, f'Please provide the eval task config file path for evaluation backend {eval_backend}'
+        assert eval_config, f'Please provide the eval task config for evaluation backend {eval_backend}'
 
         if eval_backend == EvalBackend.OPEN_COMPASS.value:
             from llmuses.backend.opencompass import OpenCompassBackendManager
