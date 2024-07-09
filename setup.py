@@ -127,7 +127,7 @@ def pack_resource():
     proj_dir = root_dir + 'llmuses/'
     shutil.copytree('llmuses', proj_dir)
     shutil.copy('requirements/requirements.txt', 'package/requirements.txt')
-    shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
+    # shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
     shutil.copy('./README.md', 'package/README.md')
 
 
