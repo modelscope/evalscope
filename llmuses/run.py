@@ -201,12 +201,14 @@ def main():
                                 base_url=base_url,
                                 api_key=api_key)
         else:
+            model_type = "text-to-image" if "coco_2014_caption" in datasets_list else "causallm"
             model, tokenizer, model_cfg = load_model(model_id=model_id,
                                                     device_map=model_args.get("device_map", "auto"),
                                                     torch_dtype=model_precision,
                                                     model_revision=model_revision,
                                                     cache_dir=args.work_dir,
                                                     template_type=template_type,
+                                                    model_type=model_type,
                                                     )
             qwen_model, qwen_tokenizer, qwen_model_cfg = load_model(model_id=qwen_model_id,
                                                                     device_map=model_args.get("device_map", "auto"),

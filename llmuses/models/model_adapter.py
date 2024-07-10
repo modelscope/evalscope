@@ -7,6 +7,7 @@ from typing import List, Any, Union
 import numpy as np
 import time
 import gc
+import cv2
 from abc import ABC, abstractmethod
 
 import torch
@@ -17,6 +18,8 @@ from llmuses.models.template import get_template, StopWordsCriteria, TemplateTyp
 from llmuses.utils.logger import get_logger
 from transformers import StoppingCriteriaList
 from llmuses.models.openai_model import OpenAIModel
+from modelscope.pipelines import pipeline
+from modelscope.utils.constant import Tasks
 
 logger = get_logger()
 
@@ -38,7 +41,14 @@ def load_model(
     model_revision: str = None,
     cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
     template_type: str = '',
+    model_type: str = "causallm"
 ):
+    if model_type == "text-to-image":
+        task = Tasks.text_to_image_synthesis
+        pipe = pipeline(task=task, model=model_id, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
+        tokenizer, model_cfg = None, {"model_id": model_id}
+        return pipe, tokenizer, model_cfg
+
     logger.info(f'>Load template_type: {template_type}')
     model_cache_dir = get_model_cache_dir(cache_dir)
 
@@ -216,34 +226,23 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
               }
             }
         """
+        infer_cfg = infer_cfg or {}
+        self.model.generation_config.update(**infer_cfg)
+
         input_data = inputs['data']
         multi_choices = inputs['multi_choices']
 
-        if type(self.model) is OpenAIModel:
-            logprobs = self.model.get_logits(input_data)
-            lprobs = []
-            for c in multi_choices:
-                try:
-                    lprobs.append(logprobs[c])
-                except:
-                    logger.warning(f"token {c} not found. Artificially adding log prob of -100.")
-                    lprobs.append(-100)
-            pred: str = {i:c for i,c in enumerate(multi_choices)}[np.argmax(lprobs)]
-        else:
-            infer_cfg = infer_cfg or {}
-            self.model.generation_config.update(**infer_cfg)
+        output, input_info = self._get_logits(self.tokenizer, self.model, input_data)
+        assert output.shape[0] == 1
+        logits = output.flatten()
 
-            output, input_info = self._get_logits(self.tokenizer, self.model, input_data)
-            assert output.shape[0] == 1
-            logits = output.flatten()
+        choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in multi_choices]
+        softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
 
-            choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in multi_choices]
-            softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
-
-            if softval.dtype in {torch.bfloat16, torch.float16}:
-                softval = softval.to(dtype=torch.float32)
-            probs = softval.detach().cpu().numpy()
-            pred: str = multi_choices[int(np.argmax(probs))]        # Format: A or B or C or D
+        if softval.dtype in {torch.bfloat16, torch.float16}:
+            softval = softval.to(dtype=torch.float32)
+        probs = softval.detach().cpu().numpy()
+        pred: str = multi_choices[int(np.argmax(probs))]        # Format: A or B or C or D
 
         res_d = {
             'choices': [
@@ -496,6 +495,70 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
              'message': {'content': response,
                          'role': 'assistant'}
              }
+        ]
+
+        res_d = {
+            'choices': choices_list,
+            'created': time.time(),
+            'model': self.model_id,
+            'object': 'chat.completion',
+            'usage': {}
+        }
+
+        return res_d
+
+
+class ImageGenerationModelAdapter(BaseModelAdapter):
+
+    def __init__(self,
+                 model_id: str,
+                 model,
+                 tokenizer,
+                 model_cfg,
+                 model_revision: str = None,
+                 **kwargs):
+        self.model_id: str = model_id
+        self.model_revision: str = model_revision
+
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.warning(f'**Device: {self.device}')
+
+        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
+
+    def _model_generate(self, query: str, infer_cfg: dict, uniq_id: str = "default_id") -> str:
+        imgs_path = []
+        for i in range(2):
+            output = self.model({'text': query, 'num_inference_steps': 50, 'guidance_scale': 7.5, 'negative_prompt':'模糊的'})
+            img = output['output_imgs'][0]
+
+            img_path = f'{uniq_id}_{i+1}.jpg'
+            cv2.imwrite(img_path, output['output_imgs'][0])
+            imgs_path.append(img_path)
+        
+        return imgs_path
+
+    @torch.no_grad()
+    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = dict({})) -> dict:
+        print(type(inputs))
+
+        # Process inputs
+        if isinstance(inputs, str):
+            query = inputs
+        elif isinstance(inputs, dict):
+            query = inputs['data'][0]
+            uniq_id = inputs['id']
+        elif isinstance(inputs, list):
+            query = '\n'.join(inputs)
+        else:
+            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+
+        imgs_path = self._model_generate(query, infer_cfg, uniq_id)
+
+        choices_list = [
+            {'index': 0,
+             'message': {'content': [img_path for img_path in imgs_path],
+                         'role': 'assistant'}
+            }
         ]
 
         res_d = {
