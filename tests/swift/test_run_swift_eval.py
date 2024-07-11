@@ -16,22 +16,22 @@ logger = get_logger(__name__)
 class TestRunSwiftEval(unittest.TestCase):
 
     def setUp(self) -> None:
+        logger.info(f'Init env for swift-eval UTs ...\n')
 
         self.model_name = 'llama3-8b-instruct'
-
         assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
 
         if not is_module_installed('opencompass'):
             logger.warning('Note: ms-opencompass is not installed, installing it now...')
-            subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
+            subprocess.run('pip3 install ms-opencompass -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
         if not is_module_installed('swift'):
             logger.warning('Note: modelscope swift is not installed, installing it now...')
-            subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+            subprocess.run('pip3 install ms-swift -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
         if not is_module_installed('vllm'):
             logger.warning('Note: vllm is not installed, installing it now...')
-            subprocess.run('pip3 install vllm -U', shell=True, check=True)
+            subprocess.run('pip3 install vllm -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
         logger.info(f'Staring run swift deploy ...')
         subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
@@ -41,6 +41,7 @@ class TestRunSwiftEval(unittest.TestCase):
 
     def tearDown(self) -> None:
         # Stop the swift deploy model service
+        logger.warning(f'Stopping swift deploy ...')
         self.find_and_kill_service(self.model_name)
 
     @staticmethod
@@ -68,7 +69,7 @@ class TestRunSwiftEval(unittest.TestCase):
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    @unittest.skipUnless(1 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
         # Prepare the config
         task_cfg = dict(
@@ -90,11 +91,14 @@ class TestRunSwiftEval(unittest.TestCase):
         )
 
         # Submit the task
+        logger.info(f'Start to run UT with cfg: {task_cfg}')
         run_task(task_cfg=task_cfg)
 
         # Get the final report with summarizer
         report_list = Summarizer.get_report_from_cfg(task_cfg)
         logger.info(f'\n>>The report list:\n{report_list}')
+
+        assert len(report_list) > 0, f'Failed to get report list: {report_list}'
 
 
 if __name__ == '__main__':
