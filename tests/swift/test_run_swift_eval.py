@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import json
 import time
 import requests
 import subprocess
@@ -44,7 +45,6 @@ class TestRunSwiftEval(unittest.TestCase):
         swift_deploy_res = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
                                             text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.swift_deploy_pid = swift_deploy_res.pid
-        print(f'swift logs: {swift_deploy_res.stdout}')
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
@@ -89,11 +89,14 @@ class TestRunSwiftEval(unittest.TestCase):
             logger.error(f"An error occurred: {e}")
 
     @staticmethod
-    def check_service_status(url: str, params: dict, retries: int = 20, delay: int = 5):
+    def check_service_status(url: str, data: dict, retries: int = 20, delay: int = 5):
         for i in range(retries):
             try:
                 logger.info(f"Attempt {i + 1}: Checking service at {url} ...")
-                response = requests.get(url, params=params, headers={'Content-Type': 'application/json'}, timeout=30)
+                response = requests.post(url,
+                                         data=json.dumps(data),
+                                         headers={'Content-Type': 'application/json'},
+                                         timeout=30)
                 if response.status_code == 200:
                     print(f"Service at {url} is available.")
                     return True
@@ -129,8 +132,8 @@ class TestRunSwiftEval(unittest.TestCase):
         )
 
         # Check the service status
-        params = {'model': self.model_name, 'messages': {'role': 'user', 'content': 'Who are you ?'}}
-        assert self.check_service_status(DEFAULT_CHAT_MODEL_URL, params=params), f'Failed to check service status: {DEFAULT_CHAT_MODEL_URL}'
+        data = {'model': self.model_name, 'messages': [{'role': 'user', 'content': 'who are you?'}]}
+        assert self.check_service_status(DEFAULT_CHAT_MODEL_URL, data=data), f'Failed to check service status: {DEFAULT_CHAT_MODEL_URL}'
 
         # Submit the task
         logger.info(f'Start to run UT with cfg: {task_cfg}')
