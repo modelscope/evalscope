@@ -42,9 +42,9 @@ class TestRunSwiftEval(unittest.TestCase):
 
         logger.info(f'\nStaring run swift deploy ...')
         # subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
-        swift_deploy_res = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
-                                            text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.swift_deploy_pid = swift_deploy_res.pid
+        self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
+                                                     text=True, shell=True,
+                                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
@@ -52,7 +52,9 @@ class TestRunSwiftEval(unittest.TestCase):
     def tearDown(self) -> None:
         # Stop the swift deploy model service
         logger.warning(f'\nStopping swift deploy ...')
-        self.find_and_kill_pid([self.swift_deploy_pid])
+        self.process_swift_deploy.terminate()
+        self.process_swift_deploy.wait()
+        logger.info(f'Process swift-deploy terminated successfully.')
 
     @staticmethod
     def find_and_kill_pid(pids: list):
@@ -89,7 +91,7 @@ class TestRunSwiftEval(unittest.TestCase):
             logger.error(f"An error occurred: {e}")
 
     @staticmethod
-    def check_service_status(url: str, data: dict, retries: int = 20, delay: int = 5):
+    def check_service_status(url: str, data: dict, retries: int = 20, delay: int = 10):
         for i in range(retries):
             try:
                 logger.info(f"Attempt {i + 1}: Checking service at {url} ...")
