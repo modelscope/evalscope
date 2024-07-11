@@ -23,15 +23,19 @@ class TestRunSwiftEval(unittest.TestCase):
 
         if not is_module_installed('opencompass'):
             logger.warning('\nNote: ms-opencompass is not installed, installing it now...')
-            subprocess.run('pip3 install ms-opencompass -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
+            subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
         if not is_module_installed('swift'):
             logger.warning('\nNote: modelscope swift is not installed, installing it now...')
-            subprocess.run('pip3 install ms-swift -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
+            subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
 
         if not is_module_installed('vllm'):
             logger.warning('\nNote: vllm is not installed, installing it now...')
-            subprocess.run('pip3 install vllm -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
+            try:
+                subprocess.run('pip3 install vllm -U', shell=True, check=True)
+            except Exception as e:
+                logger.warning(e)
+                logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
 
         logger.info(f'\nStaring run swift deploy ...')
         subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
