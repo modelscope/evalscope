@@ -22,18 +22,18 @@ class TestRunSwiftEval(unittest.TestCase):
         assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
 
         if not is_module_installed('opencompass'):
-            logger.warning('Note: ms-opencompass is not installed, installing it now...')
+            logger.warning('\nNote: ms-opencompass is not installed, installing it now...')
             subprocess.run('pip3 install ms-opencompass -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
         if not is_module_installed('swift'):
-            logger.warning('Note: modelscope swift is not installed, installing it now...')
+            logger.warning('\nNote: modelscope swift is not installed, installing it now...')
             subprocess.run('pip3 install ms-swift -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
         if not is_module_installed('vllm'):
-            logger.warning('Note: vllm is not installed, installing it now...')
+            logger.warning('\nNote: vllm is not installed, installing it now...')
             subprocess.run('pip3 install vllm -U -i https://pypi.tuna.tsinghua.edu.cn/simple', shell=True, check=True)
 
-        logger.info(f'Staring run swift deploy ...')
+        logger.info(f'\nStaring run swift deploy ...')
         subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
@@ -41,7 +41,7 @@ class TestRunSwiftEval(unittest.TestCase):
 
     def tearDown(self) -> None:
         # Stop the swift deploy model service
-        logger.warning(f'Stopping swift deploy ...')
+        logger.warning(f'\nStopping swift deploy ...')
         self.find_and_kill_service(self.model_name)
 
     @staticmethod
@@ -91,7 +91,7 @@ class TestRunSwiftEval(unittest.TestCase):
         )
 
         # Submit the task
-        logger.info(f'Start to run UT with cfg: {task_cfg}')
+        logger.info(f'\n\nStart to run UT with cfg: {task_cfg}')
         run_task(task_cfg=task_cfg)
 
         # Get the final report with summarizer
