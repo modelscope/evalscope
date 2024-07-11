@@ -92,7 +92,8 @@ class TestRunSwiftEval(unittest.TestCase):
     def check_service_status(url: str, params: dict, retries: int = 20, delay: int = 5):
         for i in range(retries):
             try:
-                response = requests.get(url, params=params, headers={'Content-Type': 'application/json'})
+                logger.info(f"Attempt {i + 1}: Checking service at {url} ...")
+                response = requests.get(url, params=params, headers={'Content-Type': 'application/json'}, timeout=30)
                 if response.status_code == 200:
                     print(f"Service at {url} is available.")
                     return True
