@@ -92,6 +92,7 @@ Parameters:
 - --dataset-args: evaluation settings，json format，key is the dataset name，value should be args for the dataset
   - --few_shot_num: few-shot data number
   - --few_shot_random: whether to use random few-shot data, default is `true`
+  - --local_path: local dataset path
 - --limit: maximum number of samples to evaluate for each sub-dataset
 - --template-type: model template type, see [Template Type List](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/Supported-models-datasets.md)
 
@@ -180,11 +181,11 @@ unzip data.zip
 
 #### 2. Use local dataset to evaluate the model
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}'  --limit 10
 
 # Parameters:
 # --dataset-hub: dataset sources: `ModelScope`, `Local`, `HuggingFace` (TO-DO)  default to `ModelScope`
-# --dataset-dir: when ``--dataset-hub` is `Local`, the parameter means the local dataset path. If the ``--dataset-hub` is `ModelScope` or `HuggingFace`, then the parameter means the cache path.
+# --dataset-args: json format, key is the dataset name, value should be args for the dataset
 ```
 
 #### 3. (Optional) Use local mode to submit evaluation task
@@ -194,7 +195,7 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --dat
 # For example, download the model folder to the local path /path/to/ZhipuAI/chatglm3-6b
 
 # 2. Execute the offline evaluation task
-python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 ```
 
 
@@ -342,7 +343,7 @@ The LLM Leaderboard aims to provide an objective and comprehensive evaluation st
 [Perf](llmuses/perf/README.md)
 
 ## TO-DO List
-- [ ] Agents evaluation
+- ✅Agents evaluation
 - [ ] vLLM
 - [ ] Distributed evaluating
 - [ ] Multi-modal evaluation

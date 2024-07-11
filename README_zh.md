@@ -176,7 +176,7 @@ unzip data.zip
 
 #### 2. 使用本地数据集创建评估任务
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 
 # 参数说明
 # --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
@@ -190,7 +190,7 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --dat
 # 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
 
 # 2. 执行离线评估任务
-python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-dir /path/to/workdir/data --limit 10
+python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 ```
 
 
