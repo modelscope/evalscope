@@ -41,7 +41,7 @@ class TestRunSwiftEval(unittest.TestCase):
 
         logger.info(f'\nStaring run swift deploy ...')
         # subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
-        swift_deploy_res = subprocess.Popen(f'swift run --model_type {self.model_name}',
+        swift_deploy_res = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
                                             text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.swift_deploy_pid = swift_deploy_res.pid
         print(f'swift logs: {swift_deploy_res.stdout}')
