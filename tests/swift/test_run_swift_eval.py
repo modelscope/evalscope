@@ -54,7 +54,7 @@ class TestRunSwiftEval(unittest.TestCase):
     def find_and_kill_pid(pids: list):
         if len(pids) > 0:
             for pid in pids:
-                subprocess.run(["kill", pid])
+                subprocess.run(["kill", str(pid)])
                 logger.warning(f"Killed process {pid}.")
         else:
             logger.info(f"No pids found.")
