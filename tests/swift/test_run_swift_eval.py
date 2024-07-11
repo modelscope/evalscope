@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import time
+import requests
 import subprocess
 import unittest
 
@@ -12,6 +14,8 @@ from llmuses.utils import test_level_list, is_module_installed
 from llmuses.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+DEFAULT_CHAT_MODEL_URL = 'http://127.0.0.1:8000/v1/chat/completions'
 
 
 class TestRunSwiftEval(unittest.TestCase):
@@ -84,6 +88,24 @@ class TestRunSwiftEval(unittest.TestCase):
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
+    @staticmethod
+    def check_service_status(url: str, params: dict, retries: int = 20, delay: int = 5):
+        for i in range(retries):
+            try:
+                response = requests.get(url, params=params, headers={'Content-Type': 'application/json'})
+                if response.status_code == 200:
+                    print(f"Service at {url} is available.")
+                    return True
+                else:
+                    print(f"Service at {url} returned status code {response.status_code}.")
+            except requests.exceptions.RequestException as e:
+                print(f"Attempt {i + 1}: An error occurred: {e}")
+
+            time.sleep(delay)
+
+        print(f"Service at {url} is not available after {retries} retries.")
+        return False
+
     @unittest.skipUnless(1 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
         # Prepare the config
@@ -92,7 +114,7 @@ class TestRunSwiftEval(unittest.TestCase):
             eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                          'models': [
                              {'path': 'llama3-8b-instruct',
-                              'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
+                              'openai_api_base': DEFAULT_CHAT_MODEL_URL,
                               'batch_size': 8},
                              # {'path': 'llama3-8b',
                              #  'is_chat': False,
@@ -104,6 +126,10 @@ class TestRunSwiftEval(unittest.TestCase):
                          'limit': '[2:5]',   # string or int or float, e.g. `[2:5]`, 5, 5.0, default to None, it means run all examples
                          },
         )
+
+        # Check the service status
+        params = {'model': self.model_name, 'messages': {'role': 'user', 'content': 'Who are you ?'}}
+        assert self.check_service_status(DEFAULT_CHAT_MODEL_URL, params=params), f'Failed to check service status: {DEFAULT_CHAT_MODEL_URL}'
 
         # Submit the task
         logger.info(f'Start to run UT with cfg: {task_cfg}')
