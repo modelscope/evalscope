@@ -100,7 +100,7 @@ class TestRunSwiftEval(unittest.TestCase):
                                          headers={'Content-Type': 'application/json'},
                                          timeout=30)
                 if response.status_code == 200:
-                    print(f"Service at {url} is available.")
+                    print(f"Service at {url} is available !\n\n")
                     return True
                 else:
                     print(f"Service at {url} returned status code {response.status_code}.")
@@ -139,13 +139,13 @@ class TestRunSwiftEval(unittest.TestCase):
 
         # Submit the task
         logger.info(f'Start to run UT with cfg: {task_cfg}')
-        # run_task(task_cfg=task_cfg)
+        run_task(task_cfg=task_cfg)
 
         # Get the final report with summarizer
-        # report_list = Summarizer.get_report_from_cfg(task_cfg)
-        # logger.info(f'>>The report list:\n{report_list}')
-        #
-        # assert len(report_list) > 0, f'Failed to get report list: {report_list}'
+        report_list = Summarizer.get_report_from_cfg(task_cfg)
+        logger.info(f'>>The report list:\n{report_list}')
+
+        assert len(report_list) > 0, f'Failed to get report list: {report_list}'
 
 
 if __name__ == '__main__':
