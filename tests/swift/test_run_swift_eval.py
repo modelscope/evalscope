@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import os
 import subprocess
 import unittest
 
@@ -22,15 +23,17 @@ class TestRunSwiftEval(unittest.TestCase):
         assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
 
         if not is_module_installed('opencompass'):
-            logger.warning('\nNote: ms-opencompass is not installed, installing it now...')
+            logger.warning('Note: ms-opencompass is not installed, installing it now...')
             subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
+        logger.info(f'>> Check swift installation: {is_module_installed("swift")}')
         if not is_module_installed('swift'):
-            logger.warning('\nNote: modelscope swift is not installed, installing it now...')
-            subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+            logger.warning('Note: modelscope swift is not installed, installing it now...')
+            # subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+            os.system('pip3 install ms-swift -U')
 
         if not is_module_installed('vllm'):
-            logger.warning('\nNote: vllm is not installed, installing it now...')
+            logger.warning('Note: vllm is not installed, installing it now...\n')
             try:
                 subprocess.run('pip3 install vllm -U', shell=True, check=True)
             except Exception as e:
@@ -95,12 +98,12 @@ class TestRunSwiftEval(unittest.TestCase):
         )
 
         # Submit the task
-        logger.info(f'\n\nStart to run UT with cfg: {task_cfg}')
+        logger.info(f'Start to run UT with cfg: {task_cfg}')
         run_task(task_cfg=task_cfg)
 
         # Get the final report with summarizer
         report_list = Summarizer.get_report_from_cfg(task_cfg)
-        logger.info(f'\n>>The report list:\n{report_list}')
+        logger.info(f'>>The report list:\n{report_list}')
 
         assert len(report_list) > 0, f'Failed to get report list: {report_list}'
 
