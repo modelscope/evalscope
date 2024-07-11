@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import subprocess
 import unittest
 
 from llmuses.backend.opencompass import OpenCompassBackendManager
@@ -9,20 +10,63 @@ from llmuses.utils import test_level_list, is_module_installed
 
 from llmuses.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 class TestRunSwiftEval(unittest.TestCase):
 
     def setUp(self) -> None:
-        assert is_module_installed('llmuses'), 'run: pip install llmuses -U'
-        assert is_module_installed('ms-opencompass'), 'run: pip install ms-opencompass -U'
+
+        self.model_name = 'llama3-8b-instruct'
+
+        assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
+
+        if not is_module_installed('opencompass'):
+            logger.warning('Note: ms-opencompass is not installed, installing it now...')
+            subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
+
+        if not is_module_installed('swift'):
+            logger.warning('Note: modelscope swift is not installed, installing it now...')
+            subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+
+        if not is_module_installed('vllm'):
+            logger.warning('Note: vllm is not installed, installing it now...')
+            subprocess.run('pip3 install vllm -U', shell=True, check=True)
+
+        logger.info(f'Staring run swift deploy ...')
+        subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
 
     def tearDown(self) -> None:
-        pass
+        # Stop the swift deploy model service
+        self.find_and_kill_service(self.model_name)
+
+    @staticmethod
+    def find_and_kill_service(service_name):
+        try:
+            # find pid
+            result = subprocess.run(
+                ["ps", "-ef"], stdout=subprocess.PIPE, text=True
+            )
+
+            lines = result.stdout.splitlines()
+            pids = []
+            for line in lines:
+                if service_name in line and "grep" not in line:
+                    parts = line.split()
+                    pid = parts[1]
+                    pids.append(pid)
+
+            if not pids:
+                logger.info(f"No process found for {service_name}.")
+            else:
+                for pid in pids:
+                    subprocess.run(["kill", pid])
+                    logger.warning(f"Killed process {pid} for service {service_name}.")
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
@@ -34,10 +78,10 @@ class TestRunSwiftEval(unittest.TestCase):
                              {'path': 'llama3-8b-instruct',
                               'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                               'batch_size': 8},
-                             {'path': 'llama3-8b',
-                              'is_chat': False,
-                              'key': 'EMPTY',  # default to 'EMPTY', not available yet
-                              'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
+                             # {'path': 'llama3-8b',
+                             #  'is_chat': False,
+                             #  'key': 'EMPTY',  # default to 'EMPTY', not available yet
+                             #  'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
                          ],
                          'work_dir': 'outputs/llama3_eval_result',
                          'reuse': None,      # string, `latest` or timestamp, e.g. `20230516_144254`, default to None
