@@ -22,23 +22,18 @@ class TestRunSwiftEval(unittest.TestCase):
         self.model_name = 'llama3-8b-instruct'
         assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
 
-        if not is_module_installed('opencompass'):
-            logger.warning('Note: ms-opencompass is not installed, installing it now...')
-            subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
+        logger.warning('Note: installing ms-opencompass ...')
+        subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
-        logger.info(f'>> Check swift installation: {is_module_installed("swift")}')
-        if not is_module_installed('swift'):
-            logger.warning('Note: modelscope swift is not installed, installing it now...')
-            # subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
-            os.system('pip3 install ms-swift -U')
+        logger.warning('Note: installing ms-swift ...')
+        subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
 
-        if not is_module_installed('vllm'):
-            logger.warning('Note: vllm is not installed, installing it now...\n')
-            try:
-                subprocess.run('pip3 install vllm -U', shell=True, check=True)
-            except Exception as e:
-                logger.warning(e)
-                logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
+        logger.warning('Note: try to install vllm ...\n')
+        try:
+            subprocess.run('pip3 install vllm -U', shell=True, check=True)
+        except Exception as e:
+            logger.warning(e)
+            logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
 
         logger.info(f'\nStaring run swift deploy ...')
         subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
