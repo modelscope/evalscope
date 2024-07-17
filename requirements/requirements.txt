@@ -1,6 +1,6 @@
 # pip3 install --no-dependencies -r requirements.txt
 absl-py
-# auto-gptq==0.4.2
+auto-gptq==0.4.2
 cachetools
 datasets>=2.14.5
 editdistance
@@ -34,3 +34,6 @@ jieba
 rouge-chinese
 fuzzywuzzy
 python-Levenshtein
+diffusers==0.20.0
+torchmetrics
+torch-fidelity
