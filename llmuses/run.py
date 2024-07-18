@@ -1,8 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa
-import sys
-sys.path.extend(['.', '..'])
-
 import copy
 import json
 import argparse
