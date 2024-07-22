@@ -82,7 +82,7 @@ class VLMEvalKitBackendManager(BackendManager):
         
         return cmd_str
 
-    def run(self, run_mode: str = RunMode.CMD):
+    def run(self, run_mode: str = RunMode.FUNCTION):
         if run_mode == RunMode.CMD:
             logger.info(f'** Run command: {self.cmd}')
             try:
