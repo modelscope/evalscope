@@ -81,16 +81,7 @@ class Summarizer:
                 final_res_list.extend(res_list)
 
             elif eval_backend == EvalBackend.OPEN_COMPASS.value:
-                eval_config: Union[str, dict] = candidate_task.get('eval_config')
-                assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
-
-                if isinstance(eval_config, str):
-                    if eval_config.endswith('.yaml'):
-                        eval_config: dict = yaml_to_dict(eval_config)
-                    elif eval_config.endswith('.json'):
-                        eval_config: dict = json_to_dict(eval_config)
-                    else:
-                        raise ValueError(f'Invalid eval_config: {eval_config}')
+                eval_config = Summarizer.parse_eval_config(candidate_task)
 
                 work_dir = eval_config.get('work_dir') or 'outputs/default'
                 if not os.path.exists(work_dir):
@@ -105,13 +96,39 @@ class Summarizer:
                 # Example: [{'dataset': 'gsm8k', 'version': '1d7fe4', 'metric': 'accuracy', 'mode': 'gen', 'qwen-7b-chat': '53.98'}
                 summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
                 final_res_list.extend(summary_res)
+            elif eval_backend == EvalBackend.VLM_EVAL_KIT.value:
+                eval_config = Summarizer.parse_eval_config(candidate_task)
 
+                work_dir = eval_config.get('work_dir') or 'outputs/default'
+                if not os.path.exists(work_dir):
+                    raise ValueError(f'work_dir {work_dir} does not exist.')
+                
+                # TODO: parse summary files: acc.csv, score.csv, score.json for different models
+                summary_files = glob.glob(os.path.join(work_dir, '*', '*.csv'))
+                summary_file_path = summary_files[0]
+                summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
+                final_res_list.extend(summary_res)
+                
             elif eval_backend == EvalBackend.THIRD_PARTY.value:
                 raise ValueError(f'*** The summarizer for Third party evaluation backend is not supported yet ***')
             else:
                 raise ValueError(f'Invalid eval_backend: {eval_backend}')
 
         return final_res_list
+
+    @staticmethod
+    def parse_eval_config(candidate_task):
+        eval_config: Union[str, dict] = candidate_task.get('eval_config')
+        assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
+
+        if isinstance(eval_config, str):
+            if eval_config.endswith('.yaml'):
+                eval_config: dict = yaml_to_dict(eval_config)
+            elif eval_config.endswith('.json'):
+                eval_config: dict = json_to_dict(eval_config)
+            else:
+                raise ValueError(f'Invalid eval_config: {eval_config}')
+        return eval_config
 
 
 if __name__ == '__main__':

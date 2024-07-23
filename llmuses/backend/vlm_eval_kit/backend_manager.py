@@ -4,7 +4,6 @@ from llmuses.backend.base import BackendManager
 from llmuses.utils.logger import get_logger
 import subprocess
 from dataclasses import dataclass
-from os import environ
 
 logger = get_logger()
 
@@ -31,16 +30,15 @@ class VLMEvalKitBackendManager(BackendManager):
         from vlmeval.utils.arguments import Arguments as VLMEvalArguments
         self.args = VLMEvalArguments(**self.config_d)
         
-        # judge model configuration
-        environ.update({
-            'OPENAI_API_KEY': self.args.OPENAI_API_KEY,
-            'OPENAI_API_BASE': self.args.OPENAI_API_BASE,
-            'LOCAL_LLM': self.args.LOCAL_LLM
-        })
 
     @property
     def cmd(self):
         return self.get_cmd()
+    
+    @staticmethod
+    def list_supported_VLMs():
+        from vlmeval.config import supported_VLM
+        return supported_VLM.keys()
 
     @staticmethod
     def _check_env():
@@ -90,7 +88,6 @@ class VLMEvalKitBackendManager(BackendManager):
                                check=True, 
                                text=True,
                                shell=True,
-                               env={**environ}
                                )
             except subprocess.CalledProcessError as e:
                 logger.error(f'** Run command failed: {e.stderr}')
@@ -98,7 +95,7 @@ class VLMEvalKitBackendManager(BackendManager):
 
         elif run_mode == RunMode.FUNCTION:
             from vlmeval.run import run_task
-            logger.info(f'** Run task with function')
+            logger.info(f'*** Run task with config: {self.args} \n')
             run_task(self.args)
             
         else:

@@ -5,6 +5,7 @@ data:
 mode: all
 limit: 5
 rerun: true
-OPENAI_API_KEY: sk-123456
-OPENAI_API_BASE: http://localhost:8866/v1/chat/completions
-LOCAL_LLM: /mnt/workspace/maoyunlin.myl/models/Qwen2-7B-Instruct
+work_dir: output
+OPENAI_API_KEY: EMPTY
+OPENAI_API_BASE: http://localhost:8000/v1/chat/completions
+LOCAL_LLM: models/Qwen2-7B-Instruct
