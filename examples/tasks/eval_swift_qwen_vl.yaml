@@ -1,13 +1,19 @@
 eval_backend: VLMEvalKit
 eval_config:
   model: 
-    - QwenVLPlus
+    - type: qwen-vl-chat # for swift model type
+      name: qwen_chat    # for vlm eval kit model name
+      path: models/Qwen2-7B-Instruct
+    - type: cogvlm-chat
+      name: cogvlm-chat
+      path: models/cogvlm-chat
   data:
     - SEEDBench_IMG
   mode: all
   limit: 5
   rerun: true
   work_dir: output
+  # judge model server config
   OPENAI_API_KEY: EMPTY
   OPENAI_API_BASE: http://localhost:8000/v1/chat/completions
   LOCAL_LLM: models/Qwen2-7B-Instruct
