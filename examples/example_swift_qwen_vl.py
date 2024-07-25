@@ -2,8 +2,7 @@
 
 """
 1. Installation
-eval-scope: pip install llmuses>=0.4.0
-ms-vlmeval: pip install ms-vlmeval
+eval-scope: pip install llmuses[vlmeval]>=0.4.0
 
 2. Deploy judge model
 
@@ -25,17 +24,17 @@ def run_swift_eval():
     # Option 1: Use dict format
     # task_cfg = {'eval_backend': 'VLMEvalKit',
     #             'eval_config': {'LOCAL_LLM': 'models/Qwen2-7B-Instruct',
-    #                             'OPENAI_API_BASE': 'http://localhost:8866/v1/chat/completions',
+    #                             'OPENAI_API_BASE': 'http://localhost:8866/v1/chat/completions', # judge model api
     #                             'OPENAI_API_KEY': 'EMPTY',
     #                             'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
-    #                             'limit': 100,
+    #                             'limit': 20,
     #                             'mode': 'all',
-    #                             'model': [{'name': 'qwen_chat',
+    #                             'model': [{'api_base': 'http://localhost:8000/v1/chat/completions',
+    #                                         'key': 'EMPTY',
+    #                                         'name': 'CustomAPIModel',
     #                                         'path': '../models/Qwen-VL-Chat',
-    #                                         'type': 'qwen-vl-chat'},
-    #                                     {'name': 'cogvlm-chat',
-    #                                         'path': '../models/cogvlm-chat',
-    #                                         'type': 'cogvlm-chat'}],
+    #                                         'temperature': 0.0,
+    #                                         'type': 'qwen-vl-chat'}],
     #                             'rerun': True,
     #                             'work_dir': 'output'}}
 

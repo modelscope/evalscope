@@ -12,6 +12,7 @@ eval_config:
       path: ../models/Qwen-VL-Chat
       api_base: http://localhost:8000/v1/chat/completions
       key: EMPTY
+      temperature: 0.0
   data:
     - SEEDBench_IMG
     - ChartQA_TEST
