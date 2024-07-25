@@ -23,10 +23,24 @@ def run_swift_eval():
     # Prepare the config
 
     # Option 1: Use dict format
-    task_cfg = "examples/tasks/eval_swift_qwen_vl.yaml"
+    # task_cfg = {'eval_backend': 'VLMEvalKit',
+    #             'eval_config': {'LOCAL_LLM': 'models/Qwen2-7B-Instruct',
+    #                             'OPENAI_API_BASE': 'http://localhost:8866/v1/chat/completions',
+    #                             'OPENAI_API_KEY': 'EMPTY',
+    #                             'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
+    #                             'limit': 100,
+    #                             'mode': 'all',
+    #                             'model': [{'name': 'qwen_chat',
+    #                                         'path': '../models/Qwen-VL-Chat',
+    #                                         'type': 'qwen-vl-chat'},
+    #                                     {'name': 'cogvlm-chat',
+    #                                         'path': '../models/cogvlm-chat',
+    #                                         'type': 'cogvlm-chat'}],
+    #                             'rerun': True,
+    #                             'work_dir': 'output'}}
 
     # Option 2: Use yaml file
-    # task_cfg = 'examples/tasks/default_eval_swift_openai_api.yaml'
+    task_cfg = "examples/tasks/eval_swift_qwen_vl.yaml"
 
     # Option 3: Use json file
     # task_cfg = 'examples/tasks/default_eval_swift_openai_api.json'
