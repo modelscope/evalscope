@@ -44,14 +44,14 @@ def run_swift_eval():
     #   openai_api_base: The base URL of the OpenAI API, it means the swift model serving URL.
     task_cfg = dict(
         eval_backend='OpenCompass',
-        eval_config={'datasets': ['ARC_c'],     # 'mmlu', 'ceval', 'ARC_c', 'gsm8k'
+        eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                      'models': [
-                         {'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'},
-                         # {'path': 'llama3-8b', 'is_chat': False, 'key': 'EMPTY', 'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
+                         {'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 'batch_size': 100},
+                         {'path': 'llama3-8b', 'is_chat': False, 'key': 'EMPTY', 'openai_api_base': 'http://127.0.0.1:8001/v1/completions', 'batch_size': 100}
                      ],
                      'work_dir': 'outputs/llama3_eval_result',
                      # Could be int/float/str, e.g. 5 or 5.0 or `[10:20]`, default to None, it means run all examples
-                     # 'limit': 10,
+                     'limit': 10,
                      },
     )
 
