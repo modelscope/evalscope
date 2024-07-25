@@ -52,17 +52,28 @@ class VLMEvalKitBackendManager(BackendManager):
             valid_model_names, invalid_model_names = get_valid_list(model_names, self.valid_model_names)
             assert len(invalid_model_names) == 0, f'Invalid models: {invalid_model_names}, ' \
                 f'refer to the following list to get proper model name: {self.valid_model_names}'
+            
+            new_model_names = []
             for model_cfg in self.args.model:
                 model_name = model_cfg['name']
-                if 'path' in model_cfg:
-                    model_class = self.valid_models[model_name]
-                    self.valid_models[model_name] = partial(model_class, model_path=model_cfg['path'])
+                model_class = self.valid_models[model_name]
+                if model_name == 'CustomAPIModel':
+                    model_type = model_cfg['type']
+                    self.valid_models.update({
+                                model_type: partial(model_class, 
+                                                   model=model_type,
+                                                   **model_cfg)
+                                })
+                    new_model_names.append(model_type)
+                else:
+                    if 'path' in model_cfg:
+                        self.valid_models[model_name] = partial(model_class, model_path=model_cfg['path'])
 
-                if 'tokenizer_path' in model_cfg:
-                    model_class = self.valid_models[model_name]
-                    self.valid_models[model_name] = partial(model_class, tokenizer_path=model_cfg['path'])
+                    if 'tokenizer_path' in model_cfg:
+                        self.valid_models[model_name] = partial(model_class, tokenizer_path=model_cfg['path'])
+                    new_model_names.append(model_name)
 
-            self.args.model = valid_model_names
+            self.args.model = new_model_names
 
         elif isinstance(self.args.model[0], str):
             valid_model_names, invalid_model_names = get_valid_list(self.args.model, self.valid_model_names)

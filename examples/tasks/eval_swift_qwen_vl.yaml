@@ -1,17 +1,22 @@
 eval_backend: VLMEvalKit
 eval_config:
   model: 
-    - type: qwen-vl-chat # for swift model type
-      name: qwen_chat    # for vlm eval kit model name
+    # - type: qwen-vl-chat # for swift model type
+    #   name: qwen_chat    # for vlm eval kit model name
+    #   path: ../models/Qwen-VL-Chat
+    # - type: internlm-xcomposer2d5-7b
+    #   name: XComposer2d5
+    #   path: ../models/internlm-xcomposer2d5-7b
+    - type: qwen-vl-chat
+      name: CustomAPIModel
       path: ../models/Qwen-VL-Chat
-    - type: cogvlm-chat
-      name: cogvlm-chat
-      path: ../models/cogvlm-chat
+      api_base: http://localhost:8000/v1/chat/completions
+      key: EMPTY
   data:
     - SEEDBench_IMG
     - ChartQA_TEST
   mode: all
-  limit: 100
+  limit: 20
   rerun: true
   work_dir: output
   # judge model server config
