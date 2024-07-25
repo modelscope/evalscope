@@ -58,7 +58,7 @@ class OpenAIModel(ChatBaseModel):
 
     def get_logits(self, input_data: List[str]) -> dict:
         query = input_data[0]
-        logprobs = ""
+        logprobs = {}
         for i in range(self.MAX_RETRIES):
             try:
                 resp = self.client.chat.completions.create(
@@ -68,10 +68,13 @@ class OpenAIModel(ChatBaseModel):
                         "content": query
                     }],
                     logprobs=True,
-                    top_logprobs=100
+                    top_logprobs=20
                 )
                 if resp:
-                    logprobs = resp.choices[0].logprobs.top_logprobs[-1]
+                    # logprobs = resp.choices[0].logprobs.top_logprobs[-1]
+                    logprob_list = resp.choices[0].logprobs.content[-1].top_logprobs
+                    for logprob in logprob_list:
+                        logprobs[logprob.token] = logprob.logprob
                 else:
                     logger.warning(
                         f'OpenAI GPT API call failed: got empty response '
