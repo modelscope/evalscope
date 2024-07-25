@@ -105,9 +105,9 @@ class Summarizer:
                 
                 # TODO: parse summary files: acc.csv, score.csv, score.json for different models
                 summary_files = glob.glob(os.path.join(work_dir, '*', '*.csv'))
-                summary_file_path = summary_files[0]
-                summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
-                final_res_list.extend(summary_res)
+                for summary_file_path in summary_files:
+                    summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
+                    final_res_list.extend(summary_res)
                 
             elif eval_backend == EvalBackend.THIRD_PARTY.value:
                 raise ValueError(f'*** The summarizer for Third party evaluation backend is not supported yet ***')
