@@ -23,26 +23,20 @@ def run_swift_eval():
 
     # Option 1: Use dict format
     # task_cfg = {'eval_backend': 'VLMEvalKit',
-    #             'eval_config': {'LOCAL_LLM': 'models/Qwen2-7B-Instruct',
-    #                             'OPENAI_API_BASE': 'http://localhost:8866/v1/chat/completions', # judge model api
+    #             'eval_config': {'LOCAL_LLM': 'qwen2-7b-instruct',
+    #                             'OPENAI_API_BASE': 'http://localhost:8866/v1/chat/completions',
     #                             'OPENAI_API_KEY': 'EMPTY',
     #                             'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
     #                             'limit': 20,
     #                             'mode': 'all',
-    #                             'model': [{'api_base': 'http://localhost:8000/v1/chat/completions',
-    #                                         'key': 'EMPTY',
-    #                                         'name': 'CustomAPIModel',
-    #                                         'path': '../models/Qwen-VL-Chat',
-    #                                         'temperature': 0.0,
-    #                                         'type': 'qwen-vl-chat'}],
+    #                             'model': [{'model_path': '../models/internlm-xcomposer2d5-7b', # path/to/model_dir
+    #                                         'name': 'XComposer2d5'}],                          # model name for VLMEval config
+    #                             'nproc': 1,
     #                             'rerun': True,
     #                             'work_dir': 'output'}}
 
     # Option 2: Use yaml file
-    task_cfg = "examples/tasks/eval_swift_vlm.yaml"
-
-    # Option 3: Use json file
-    # task_cfg = 'examples/tasks/default_eval_swift_openai_api.json'
+    task_cfg = "examples/tasks/eval_vlm_local.yaml"
 
     # Run task
     run_task(task_cfg=task_cfg)

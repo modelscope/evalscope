@@ -1,4 +1,23 @@
-## 简介
+[English](README.md) | 简体中文
+
+<p align="center">
+<a href="https://pypi.org/project/llmuses"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/llmuses">
+</a>
+<a href="https://github.com/modelscope/eval-scope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<p>
+
+## 📖 目录
+- [简介](#简介)
+- [新闻](#新闻)
+- [环境准备](#环境准备)
+- [快速开始](#快速开始)
+- [数据集列表](#数据集列表)
+- [Leaderboard榜单](#leaderboard-榜单)
+- [实验和报告](#实验和报告)
+- [性能评测工具](#性能评测工具)
+
+
+## 📝 简介
 大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了Eval-Scope框架，该框架主要包括以下几个部分：
 - 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
 - 常用评估指标（metrics）的实现
@@ -7,13 +26,14 @@
     - 客观题自动评估
     - 使用专家模型实现复杂任务的自动评估
 - 评估报告生成
-- 竞技场模式(Arena）
+- 竞技场模式(Arena)
 - 可视化工具
 - [模型性能评估](llmuses/perf/README.md)
-- 支持OpenCompass作为Evaluation Backend，对其进行了高级封装和任务简化，您可以更轻松地提交任务到OpenCompass进行评估。
+- 支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务到OpenCompass进行评估。
+- 支持VLMEvalKit作为评测后端，通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集。
 - 全链路支持：通过与SWIFT的无缝集成，您可以轻松地训练和部署模型服务，发起评测任务，查看评测报告，实现一站式大模型开发流程。
 
-特点
+**特点**
 - 轻量化，尽量减少不必要的抽象和配置
 - 易于定制
   - 仅需实现一个类即可接入新的数据集
@@ -27,15 +47,15 @@
   - Pairwise (all) mode: 全部模型两两对比
 
 
-## News
+## 🎉 新闻
+- **[2024.07.26]:** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务，[使用指南](#vlmevalkit-评测后端) 🔥🔥🔥
+- **[2024.06.29]:** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置，[使用指南](#opencompass-评测后端) 🔥🔥🔥
+- **[2024.06.13]:** Eval-Scope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
+- **[2024.06.13]:** 接入Agent评测集ToolBench 🚀🚀🚀
 
-- **\[2024.06.29\]** 支持OpenCompass作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置。 🔥🔥🔥
-- **\[2024.06.13\]** Eval-Scope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持。 🚀🚀🚀
-- **\[2024.06.13\]** 接入Agent评测集ToolBench 🚀🚀🚀
 
 
-
-## 环境准备
+## 🛠️ 环境准备
 ### 使用pip安装
 我们推荐使用conda来管理环境，并使用pip安装依赖:
 1. 创建conda环境
@@ -60,7 +80,7 @@ pip install -e .
 ```
 
 
-## 快速开始
+## 🚀 快速开始
 
 ### 简单评估
 在指定的若干数据集上评估某个模型，流程如下：
@@ -99,26 +119,24 @@ from llmuses.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
-### Evaluation Backend
-Eval-Scope支持使用第三方评估框架发起评测任务，我们称之为Evaluation Backend。目前支持的Evaluation Backend有：
-- **Native**: Eval-Scope：Eval-Scope自身的评测框架，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
+### 使用评测后端 (Evaluation Backend)
+Eval-Scope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
+- **Native**：Eval-Scope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
 - [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- **ThirdParty**: 第三方评估任务，如[ToolBench](llmuses/thirdparty/toolbench/README.md)
+- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
+- **ThirdParty**: 第三方评估任务，如[ToolBench](llmuses/thirdparty/toolbench/README.md)。
 
-#### 1. OpenCompass Eval-Backend
+#### OpenCompass 评测后端
 
-为便于使用OpenCompass evaluation backend，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md)支持使用vLLM拉起模型推理服务。
+为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ModelScope Swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用vLLM拉起模型推理服务。
 
 ##### 安装
 ```shell
-# 安装eval-scope
-pip install llmuses>=0.4.0
-
-# 安装 ms-opencompass
-pip install ms-opencompass
+# 安装额外选项
+pip install llmuses[opencompass]
 ```
 
-#### 数据准备
+##### 数据准备
 目前支持的数据集有：
 ```python
 'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
@@ -143,8 +161,8 @@ print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.lis
 总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。后续我们也即将支持托管在ModelScope上的数据集按需加载方式。
 
 
-#### 模型推理服务
-我们使用ModelScope swift部署模型服务，具体可参考：https://github.com/modelscope/swift/blob/main/docs/source_en/LLM/VLLM-inference-acceleration-and-deployment.md
+##### 模型推理服务
+我们使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)
 ```shell
 # 安装ms-swift
 pip install ms-swift
@@ -154,7 +172,7 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type llama3-8b-instruct --port 8000
 ```
 
 
-#### 模型评估
+##### 模型评估
 
 参考示例文件： [example_eval_swift_openai_api](examples/example_eval_swift_openai_api.py) 来配置评估任务
 执行评估任务：
@@ -162,6 +180,78 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type llama3-8b-instruct --port 8000
 python examples/example_eval_swift_openai_api.py
 ```
 
+
+#### VLMEvalKit 评测后端
+
+为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署多模态模型服务。
+
+##### 安装
+```shell
+# 安装额外选项
+pip install llmuses[vlmeval]
+```
+
+##### 数据准备
+目前支持的数据集有：
+```python
+'COCO_VAL', 'MME', 'HallusionBench', 'POPE', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK', 'OCRVQA_TEST', 'OCRVQA_TESTCORE', 'TextVQA_VAL', 'DocVQA_VAL', 'DocVQA_TEST', 'InfoVQA_VAL', 'InfoVQA_TEST', 'ChartQA_TEST', 'MathVision', 'MathVision_MINI', 'MMMU_DEV_VAL', 'MMMU_TEST', 'OCRBench', 'MathVista_MINI', 'LLaVABench', 'MMVet', 'MTVQA_TEST', 'MMLongBench_DOC', 'VCR_EN_EASY_500', 'VCR_EN_EASY_100', 'VCR_EN_EASY_ALL', 'VCR_EN_HARD_500', 'VCR_EN_HARD_100', 'VCR_EN_HARD_ALL', 'VCR_ZH_EASY_500', 'VCR_ZH_EASY_100', 'VCR_ZH_EASY_ALL', 'VCR_ZH_HARD_500', 'VCR_ZH_HARD_100', 'VCR_ZH_HARD_ALL', 'MMBench-Video', 'Video-MME', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK'
+```
+数据集的详细信息可以参考[VLMEvalKit支持的图文多模态评测集](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)
+您可以使用以下方式，来查看数据集的名称列表：
+```python
+from llmuses.backend.vlm_eval_kit import VLMEvalKitBackendManager
+print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list(list_supported_VLMs().keys())}')
+```
+
+在加载数据集时，若本地不存在该数据集文件，将会自动下载数据集到 `~/LMUData/` 目录下。
+
+
+##### 模型评估
+模型评估有两种方式可以选择：
+
+###### 1. ModelScope Swift部署模型服务评估
+
+**模型部署**
+使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift MLLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)
+```shell
+# 安装ms-swift
+pip install ms-swift
+
+# 部署qwen-vl-chat多模态模型服务
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --model_id_or_path models/Qwen-VL-Chat
+```
+
+**模型评估**
+
+参考示例文件： [example_eval_vlm_swift](examples/example_eval_vlm_swift.py) 来配置评估任务
+执行评估任务：
+```shell
+python examples/example_eval_vlm_swift.py
+```
+
+###### 2. 本地模型推理评估
+
+**模型推理评估**
+不启动模型服务，直接在本地进行推理，参考示例文件： [example_eval_vlm_local](examples/example_eval_vlm_local.py) 来配置评估任务
+执行评估任务：
+```shell
+python examples/example_eval_vlm_local.py
+```
+
+
+##### (可选) 部署裁判员模型
+部署本地语言模型作为评判 / 选择提取器，同样使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift LLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html)
+。在未部署裁判员模型模型时，将使用精确匹配。
+```shell
+# 部署qwen2-7b作为裁判员
+CUDA_VISIBLE_DEVICES=1 swift deploy --model_type qwen2-7b-instruct --model_id_or_path models/Qwen2-7B-Instruct --port 8866
+```
+**必须配置裁判员模型环境变量才能正确调用模型**，需要配置的环境变量如下：
+```
+OPENAI_API_KEY=EMPTY
+OPENAI_API_BASE=http://127.0.0.1:8866/v1/chat/completions # 裁判员模型的api_base
+LOCAL_LLM=qwen2-7b-instruct #裁判员模型的 model_id
+```
 
 
 ### 使用本地数据集

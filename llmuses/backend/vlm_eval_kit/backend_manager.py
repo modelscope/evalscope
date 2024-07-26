@@ -5,6 +5,7 @@ from llmuses.utils.logger import get_logger
 from functools import partial
 import subprocess
 from dataclasses import dataclass
+import copy
 
 logger = get_logger()
 
@@ -67,7 +68,10 @@ class VLMEvalKitBackendManager(BackendManager):
                                 })
                     new_model_names.append(model_type)
                 else:
-                    self.valid_models[model_name] = partial(model_class, **model_cfg)
+                    remain_cfg = copy.deepcopy(model_cfg)
+                    del remain_cfg['name'] # remove not used args
+                    
+                    self.valid_models[model_name] = partial(model_class, **remain_cfg)
                     new_model_names.append(model_name)
 
             self.args.model = new_model_names

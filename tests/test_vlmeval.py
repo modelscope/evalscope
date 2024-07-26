@@ -35,8 +35,8 @@ class TestVLMEval(unittest.TestCase):
                                     'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
                                     'limit': 20,
                                     'mode': 'all',
-                                    'model': [{'model_path': '../models/internlm-xcomposer2d5-7b',
-                                                'name': 'XComposer2d5'}],
+                                    'model': [{'model_path': '../models/internlm-xcomposer2d5-7b', # path/to/model_dir
+                                                'name': 'XComposer2d5'}],                          # model name for VLMEval config
                                     'nproc': 1,
                                     'rerun': True,
                                     'work_dir': 'output'}}
@@ -76,4 +76,8 @@ class TestVLMEval(unittest.TestCase):
         
         logger.info('>> Start to get the report with summarizer ...')
         report_list = Summarizer.get_report_from_cfg(task_cfg)
-        logger.info(f'\n>>The report list: {report_list}')
+        logger.info(f'\n>> The report list: {report_list}')
+        
+        
+if __name__ == '__main__':
+    unittest.main(buffer=False)
