@@ -2,8 +2,7 @@
 
 """
 1. Installation
-eval-scope: pip install llmuses>=0.4.0
-ms-opencompass: pip install ms-opencompass
+eval-scope: pip install llmuses[opencompass]
 
 2. Download dataset to data/ folder
 wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-core-20240207.zip
