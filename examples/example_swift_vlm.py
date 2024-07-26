@@ -39,7 +39,7 @@ def run_swift_eval():
     #                             'work_dir': 'output'}}
 
     # Option 2: Use yaml file
-    task_cfg = "examples/tasks/eval_swift_qwen_vl.yaml"
+    task_cfg = "examples/tasks/eval_swift_vlm.yaml"
 
     # Option 3: Use json file
     # task_cfg = 'examples/tasks/default_eval_swift_openai_api.json'

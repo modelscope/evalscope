@@ -53,6 +53,7 @@ class VLMEvalKitBackendManager(BackendManager):
             assert len(invalid_model_names) == 0, f'Invalid models: {invalid_model_names}, ' \
                 f'refer to the following list to get proper model name: {self.valid_model_names}'
             
+            # set model_cfg
             new_model_names = []
             for model_cfg in self.args.model:
                 model_name = model_cfg['name']
@@ -66,11 +67,7 @@ class VLMEvalKitBackendManager(BackendManager):
                                 })
                     new_model_names.append(model_type)
                 else:
-                    if 'path' in model_cfg:
-                        self.valid_models[model_name] = partial(model_class, model_path=model_cfg['path'])
-
-                    if 'tokenizer_path' in model_cfg:
-                        self.valid_models[model_name] = partial(model_class, tokenizer_path=model_cfg['path'])
+                    self.valid_models[model_name] = partial(model_class, **model_cfg)
                     new_model_names.append(model_name)
 
             self.args.model = new_model_names

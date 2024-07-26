@@ -3,13 +3,13 @@ eval_config:
   model: 
     # - type: qwen-vl-chat # for swift model type
     #   name: qwen_chat    # for vlm eval kit model name
-    #   path: ../models/Qwen-VL-Chat
-    # - type: internlm-xcomposer2d5-7b
-    #   name: XComposer2d5
-    #   path: ../models/internlm-xcomposer2d5-7b
+    #   model_path: ../models/Qwen-VL-Chat
+    - type: internlm-xcomposer2d5-7b # for swift model type
+      name: XComposer2d5             # for vlm eval kit model name
+      model_path: ../models/internlm-xcomposer2d5-7b
     - type: qwen-vl-chat
-      name: CustomAPIModel
-      path: ../models/Qwen-VL-Chat
+      name: CustomAPIModel # must be CustomAPIModel for swift deploy evaluation
+      # model_path: ../models/Qwen-VL-Chat
       api_base: http://localhost:8000/v1/chat/completions
       key: EMPTY
       temperature: 0.0
@@ -20,6 +20,7 @@ eval_config:
   limit: 20
   rerun: true
   work_dir: output
+  nproc: 1
   # judge model server config
   OPENAI_API_KEY: EMPTY
   OPENAI_API_BASE: http://localhost:8866/v1/chat/completions

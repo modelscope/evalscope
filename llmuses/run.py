@@ -203,7 +203,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             vlm_eval_kit_backend_manager = VLMEvalKitBackendManager(config=eval_config)
             vlm_eval_kit_backend_manager.run()
         # TODO: Add other evaluation backends
-        else:
+        elif eval_backend == EvalBackend.THIRD_PARTY.value:
             raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
         return dict()
