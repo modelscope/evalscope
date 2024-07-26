@@ -33,12 +33,13 @@ class TestRunSwiftEval(unittest.TestCase):
         logger.warning('Note: installing ms-swift ...')
         subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
 
-        logger.warning('Note: try to install vllm ...\n')
-        try:
-            subprocess.run('pip3 install vllm -U', shell=True, check=True)
-        except Exception as e:
-            logger.warning(e)
-            logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
+        # logger.warning('Note: try to install vllm ...\n')
+        # try:
+        #     subprocess.run('pip3 install vllm -U', shell=True, check=True)
+        # except Exception as e:
+        #     logger.warning(e)
+        #     logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
+        logger.warning('vllm not installed, use native swift deploy service instead.')
 
         logger.info(f'\nStaring run swift deploy ...')
         # subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
