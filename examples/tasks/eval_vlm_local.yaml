@@ -14,4 +14,4 @@ eval_config:
   # judge model server config
   OPENAI_API_KEY: EMPTY 
   OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
-  LOCAL_LLM: qwen2-7b-instruct                        # judge model id
+  LOCAL_LLM: qwen2-7b-instruct                               # judge model id

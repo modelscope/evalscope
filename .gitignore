@@ -1,7 +1,7 @@
 # Byte-compiled / optimized / DLL files
 output/
 test*.sh
-*.ipynb
+test.ipynb
 *.ttf
 __pycache__/
 *.py[cod]

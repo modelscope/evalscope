@@ -11,7 +11,9 @@ eval-scope: pip install llmuses[vlmeval]>=0.4.0
 from llmuses.backend.vlm_eval_kit import VLMEvalKitBackendManager
 from llmuses.run import run_task
 from llmuses.summarizer import Summarizer
+from llmuses.utils.logger import get_logger
 
+logger = get_logger()
 
 def run_swift_eval():
 
@@ -42,9 +44,9 @@ def run_swift_eval():
     run_task(task_cfg=task_cfg)
 
     # [Optional] Get the final report with summarizer
-    print('>> Start to get the report with summarizer ...')
+    logger.info('>> Start to get the report with summarizer ...')
     report_list = Summarizer.get_report_from_cfg(task_cfg)
-    print(f'\n>>The report list: {report_list}')
+    logger.info(f'\n>> The report list: {report_list}')
 
 
 if __name__ == '__main__':
