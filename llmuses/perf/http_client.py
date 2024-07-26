@@ -317,7 +317,14 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     if args.name:
         result_db_path = os.path.join('./', args.name)
     else:
-        result_db_path = "./%s_benchmark_%s.db" % (args.model, current_time)
+        result_db_path = os.path.join('./', "%s_benchmark_%s.db" % (args.model, current_time))
+    result_db_path_split = result_db_path.split('/')[1:]
+    if len(result_db_path_split) > 2:
+        result_db_path_split = result_db_path_split[-2:]
+    result_db_path = os.path.join(os.getcwd(), "/".join(result_db_path_split))
+    result_db_dir = os.path.split(result_db_path)[0]
+    if not os.path.exists(result_db_dir):
+        os.makedirs(result_db_dir, exist_ok=True)
     print('Save the result to : %s'%result_db_path)
     if os.path.exists(result_db_path):
         print('The db file exist, delete it and start again!.')
