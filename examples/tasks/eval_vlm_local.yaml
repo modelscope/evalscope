@@ -1,0 +1,17 @@
+eval_backend: VLMEvalKit
+eval_config:
+  model: 
+    - name: qwen_chat    # vlmeval model name, refer to https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py
+      model_path: ../models/Qwen-VL-Chat # /path/to/model_dir
+  data:
+    - SEEDBench_IMG
+    - ChartQA_TEST
+  mode: all
+  limit: 20
+  rerun: true
+  work_dir: output
+  nproc: 1
+  # judge model server config
+  OPENAI_API_KEY: EMPTY 
+  OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
+  LOCAL_LLM: qwen2-7b-instruct                               # judge model id

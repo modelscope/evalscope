@@ -138,6 +138,10 @@ if __name__ == '__main__':
     os.chdir('package')
     install_requires, deps_link = parse_requirements('requirements.txt')
 
+    extras_requires={}
+    extras_requires['opencompass']='ms-opencompass'
+    extras_requires['vlmeval']='ms-vlmeval'
+    
     setup(
         name='llmuses',
         version=get_version(),
@@ -169,4 +173,5 @@ if __name__ == '__main__':
             'console_scripts': ['llmuses=llmuses.cli.cli:run_cmd']
         },
         dependency_links=deps_link,
+        extras_require=extras_requires
     )
