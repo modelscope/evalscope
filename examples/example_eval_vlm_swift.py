@@ -2,7 +2,7 @@
 
 """
 1. Installation
-eval-scope: pip install llmuses[vlmeval]>=0.4.0
+eval-scope: pip install llmuses[vlmeval]>=0.4.3
 
 2. Deploy judge model
 
