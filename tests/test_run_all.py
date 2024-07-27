@@ -10,5 +10,3 @@ if __name__ == '__main__':
         print(f'>>test_run_all stdout: {run_res.stdout}')
     else:
         print(f'>>test_run_all stderr: {run_res.stderr}')
-
-# TEST_LEVEL_LIST=0,1 python3 -m unittest discover tests

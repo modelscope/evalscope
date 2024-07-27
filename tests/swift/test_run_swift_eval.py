@@ -17,6 +17,7 @@ from llmuses.utils.logger import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_CHAT_MODEL_URL = 'http://127.0.0.1:8000/v1/chat/completions'
+DEFAULT_BASE_MODEL_URL = 'http://127.0.0.1:8001/v1/completions'
 
 
 class TestRunSwiftEval(unittest.TestCase):
@@ -33,16 +34,9 @@ class TestRunSwiftEval(unittest.TestCase):
         logger.warning('Note: installing ms-swift ...')
         subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
 
-        # logger.warning('Note: try to install vllm ...\n')
-        # try:
-        #     subprocess.run('pip3 install vllm -U', shell=True, check=True)
-        # except Exception as e:
-        #     logger.warning(e)
-        #     logger.warning(f'Failed to install vllm, use native swift deploy service instead.')
         logger.warning('vllm not installed, use native swift deploy service instead.')
 
         logger.info(f'\nStaring run swift deploy ...')
-        # subprocess.run(f'swift deploy --model_type {self.model_name}', shell=True, check=True)
         self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -101,16 +95,16 @@ class TestRunSwiftEval(unittest.TestCase):
                                          headers={'Content-Type': 'application/json'},
                                          timeout=30)
                 if response.status_code == 200:
-                    print(f"Service at {url} is available !\n\n")
+                    logger.info(f"Service at {url} is available !\n\n")
                     return True
                 else:
-                    print(f"Service at {url} returned status code {response.status_code}.")
+                    logger.info(f"Service at {url} returned status code {response.status_code}.")
             except requests.exceptions.RequestException as e:
-                print(f"Attempt {i + 1}: An error occurred: {e}")
+                logger.info(f"Attempt {i + 1}: An error occurred: {e}")
 
             time.sleep(delay)
 
-        print(f"Service at {url} is not available after {retries} retries.")
+        logger.info(f"Service at {url} is not available after {retries} retries.")
         return False
 
     @unittest.skipUnless(1 in test_level_list(), 'skip test in current test level')
@@ -123,10 +117,6 @@ class TestRunSwiftEval(unittest.TestCase):
                              {'path': 'llama3-8b-instruct',
                               'openai_api_base': DEFAULT_CHAT_MODEL_URL,
                               'batch_size': 8},
-                             # {'path': 'llama3-8b',
-                             #  'is_chat': False,
-                             #  'key': 'EMPTY',  # default to 'EMPTY', not available yet
-                             #  'openai_api_base': 'http://127.0.0.1:8001/v1/completions'}
                          ],
                          'work_dir': 'outputs/llama3_eval_result',
                          'reuse': None,      # string, `latest` or timestamp, e.g. `20230516_144254`, default to None
