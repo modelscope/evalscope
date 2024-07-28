@@ -1,4 +1,4 @@
-# pip3 install --no-dependencies -r requirements.txt
+# pip3 install --no-dependencies -r requirements/framework.txt
 torch
 absl-py
 #auto-gptq
@@ -29,7 +29,7 @@ simple-ddl-parser
 tabulate
 tiktoken
 tqdm
-transformers
+transformers>=4.33,<4.43
 transformers_stream_generator
 jieba
 rouge-chinese

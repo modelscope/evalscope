@@ -126,22 +126,30 @@ def pack_resource():
 
     proj_dir = root_dir + 'llmuses/'
     shutil.copytree('llmuses', proj_dir)
-    shutil.copy('requirements/requirements.txt', 'package/requirements.txt')
+    shutil.copytree('requirements', root_dir + 'requirements')
+    shutil.copy('requirements.txt', root_dir + 'requirements.txt')
     # shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
-    shutil.copy('./README.md', 'package/README.md')
+    shutil.copy('./README.md', root_dir + 'README.md')
 
 
 if __name__ == '__main__':
-    print('Usage: python3 setup.py bdist_wheel')
+    print('Usage: python3 setup.py bdist_wheel or pip3 install .[opencompass] for test')
 
     pack_resource()
     os.chdir('package')
-    install_requires, deps_link = parse_requirements('requirements.txt')
+    install_requires, deps_link = parse_requirements('requirements/framework.txt')
 
-    extras_requires={}
-    extras_requires['opencompass']='ms-opencompass'
-    extras_requires['vlmeval']='ms-vlmeval'
-    
+    extra_requires = {}
+    all_requires = []
+    extra_requires['opencompass'], _ = parse_requirements('requirements/opencompass.txt')
+    extra_requires['vlmeval'], _ = parse_requirements('requirements/vlmeval.txt')
+    extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
+
+    all_requires.extend(install_requires)
+    all_requires.extend(extra_requires['opencompass'])
+    all_requires.extend(extra_requires['vlmeval'])
+    extra_requires['all'] = all_requires
+
     setup(
         name='llmuses',
         version=get_version(),
@@ -161,17 +169,16 @@ if __name__ == '__main__':
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
         ],
-        python_requires='>=3.7',
+        python_requires='>=3.8',
         zip_safe=False,
         install_requires=install_requires,
         entry_points={  
             'console_scripts': ['llmuses=llmuses.cli.cli:run_cmd']
         },
         dependency_links=deps_link,
-        extras_require=extras_requires
+        extras_require=extra_requires,
     )

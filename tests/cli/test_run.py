@@ -11,6 +11,7 @@ logger = get_logger()
 class TestRun(unittest.TestCase):
 
     def setUp(self) -> None:
+        logger.info(f'Init env for llmuses native run UTs ...\n')
         self._check_env('llmuses')
 
     def tearDown(self) -> None:
@@ -36,6 +37,7 @@ class TestRun(unittest.TestCase):
                      f'--datasets {datasets} ' \
                      f'--limit {limit}'
 
+        logger.info(f'Start to run command: {cmd_simple}')
         run_res = subprocess.run(cmd_simple, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         assert run_res.returncode == 0, f'Failed to run command: {cmd_simple}'
@@ -58,6 +60,7 @@ class TestRun(unittest.TestCase):
                         f'--generation-config do_sample=false,temperature=0.0 ' \
                         f"""--dataset-args \'{dataset_args}\' """
 
+        logger.info(f'Start to run command: {cmd_with_args}')
         run_res = subprocess.run(cmd_with_args, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         assert run_res.returncode == 0, f'Failed to run command: {cmd_with_args}'
