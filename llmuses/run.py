@@ -188,11 +188,16 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         raise ValueError('** Args: Please provide a valid task config. **')
 
     # Check and run evaluation backend
-    if task_cfg.get('eval_backend') != EvalBackend.NATIVE.value:
-        eval_backend = task_cfg.get('eval_backend')
-        eval_config: Union[str, dict] = task_cfg.get('eval_config')
+    if task_cfg.get('eval_backend') is None:
+        task_cfg['eval_backend'] = EvalBackend.NATIVE.value
 
-        assert eval_config, f'Please provide the eval task config for evaluation backend {eval_backend}'
+    eval_backend = task_cfg.get('eval_backend')
+    eval_config: Union[str, dict] = task_cfg.get('eval_config')
+
+    if eval_backend != EvalBackend.NATIVE.value:
+
+        if eval_config is None:
+            logger.warning(f'Got eval_backend {eval_backend}, but eval_config is not provided.')
 
         if eval_backend == EvalBackend.OPEN_COMPASS.value:
             from llmuses.backend.opencompass import OpenCompassBackendManager

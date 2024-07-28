@@ -22,5 +22,5 @@ seaborn
 simple-ddl-parser
 streamlit
 tqdm
-transformers
+transformers>=4.33,<4.43
 transformers_stream_generator

@@ -47,6 +47,8 @@ class TaskConfig:
     dataset_hub: str = 'ModelScope'
     dataset_dir: str = DEFAULT_ROOT_CACHE_DIR
     limit: int = None
+    eval_backend: str = 'Native'
+    eval_config: dict = field(default_factory=dict)
 
     # def __post_init__(self):
     #     self.registry_tasks = {
