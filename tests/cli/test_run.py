@@ -2,8 +2,8 @@
 
 import subprocess
 import unittest
-from llmuses.utils import test_level_list, is_module_installed
-from llmuses.utils.logger import get_logger
+from evalscope.utils import test_level_list, is_module_installed
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -11,8 +11,8 @@ logger = get_logger()
 class TestRun(unittest.TestCase):
 
     def setUp(self) -> None:
-        logger.info(f'Init env for llmuses native run UTs ...\n')
-        self._check_env('llmuses')
+        logger.info(f'Init env for evalscope native run UTs ...\n')
+        self._check_env('evalscope')
 
     def tearDown(self) -> None:
         pass
@@ -31,7 +31,7 @@ class TestRun(unittest.TestCase):
         datasets = 'arc'  # arc ceval
         limit = 100
 
-        cmd_simple = f'python3 -m llmuses.run ' \
+        cmd_simple = f'python3 -m evalscope.run ' \
                      f'--model {model} ' \
                      f'--template-type {template_type} ' \
                      f'--datasets {datasets} ' \
@@ -52,7 +52,7 @@ class TestRun(unittest.TestCase):
         limit = 5
         dataset_args = '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}'
 
-        cmd_with_args = f'python3 -m llmuses.run ' \
+        cmd_with_args = f'python3 -m evalscope.run ' \
                         f'--model {model} ' \
                         f'--template-type {template_type} ' \
                         f'--datasets {datasets} ' \
