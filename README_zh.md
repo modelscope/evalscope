@@ -1,7 +1,7 @@
 [English](README.md) | 简体中文
 
 <p align="center">
-<a href="https://pypi.org/project/llmuses"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/llmuses">
+<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
 <a href="https://github.com/modelscope/eval-scope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
@@ -28,7 +28,7 @@
 - 评估报告生成
 - 竞技场模式(Arena)
 - 可视化工具
-- [模型性能评估](llmuses/perf/README.md)
+- [模型性能评估](evalscope/perf/README.md)
 - 支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务到OpenCompass进行评估。
 - 支持VLMEvalKit作为评测后端，通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集。
 - 全链路支持：通过与SWIFT的无缝集成，您可以轻松地训练和部署模型服务，发起评测任务，查看评测报告，实现一站式大模型开发流程。
@@ -48,10 +48,11 @@
 
 
 ## 🎉 新闻
-- **[2024.07.26]:** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务，[使用指南](#vlmevalkit-评测后端) 🔥🔥🔥
-- **[2024.06.29]:** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置，[使用指南](#opencompass-评测后端) 🔥🔥🔥
-- **[2024.06.13]:** Eval-Scope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
-- **[2024.06.13]:** 接入Agent评测集ToolBench 🚀🚀🚀
+- **[2024.07.31]** 重要修改：`llmuses`包名修改为`evalscope`，请同步修改您的代码
+- **[2024.07.26]** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务，[使用指南](#vlmevalkit-评测后端) 🔥🔥🔥
+- **[2024.06.29]** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置，[使用指南](#opencompass-评测后端) 🔥🔥🔥
+- **[2024.06.13]** Eval-Scope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
+- **[2024.06.13]** 接入Agent评测集ToolBench 🚀🚀🚀
 
 
 
@@ -65,7 +66,7 @@ conda activate eval-scope
 ```
 2. 安装依赖
 ```shell
-pip install llmuses
+pip install evalscope
 ```
 
 ### 使用源码安装
@@ -86,20 +87,20 @@ pip install -e .
 在指定的若干数据集上评估某个模型，流程如下：
 如果使用git安装，可在任意路径下执行：
 ```shell
-python -m llmuses.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
+python -m evalscope.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
 ```
 如果使用源码安装，在eval-scope路径下执行：
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
 ```
 其中，--model参数指定了模型的ModelScope model id，模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 
 ### 带参数评估
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
 ```shell
-python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
+python evalscope/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
 ```
 参数说明：
 - --model-args: 模型参数，以逗号分隔，key=value形式
@@ -115,7 +116,7 @@ python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false
 在模型列表中的`Default Template`字段中找到合适的template；  
 可以使用以下方式，来查看模型的template type list：
 ```shell
-from llmuses.models.template import TemplateType
+from evalscope.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
@@ -124,7 +125,7 @@ Eval-Scope支持使用第三方评测框架发起评测任务，我们称之为�
 - **Native**：Eval-Scope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
 - [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
 - [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- **ThirdParty**: 第三方评估任务，如[ToolBench](llmuses/thirdparty/toolbench/README.md)。
+- **ThirdParty**: 第三方评估任务，如[ToolBench](evalscope/thirdparty/toolbench/README.md)。
 
 #### OpenCompass 评测后端
 
@@ -133,7 +134,7 @@ Eval-Scope支持使用第三方评测框架发起评测任务，我们称之为�
 ##### 安装
 ```shell
 # 安装额外选项
-pip install llmuses[opencompass]
+pip install evalscope[opencompass]
 ```
 
 ##### 数据准备
@@ -144,7 +145,7 @@ pip install llmuses[opencompass]
 数据集的详细信息可以参考[OpenCompass数据集列表](https://hub.opencompass.org.cn/home)
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
-from llmuses.backend.opencompass import OpenCompassBackendManager
+from evalscope.backend.opencompass import OpenCompassBackendManager
 print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
 ```
 
@@ -188,7 +189,7 @@ python examples/example_eval_swift_openai_api.py
 ##### 安装
 ```shell
 # 安装额外选项
-pip install llmuses[vlmeval]
+pip install evalscope[vlmeval]
 ```
 
 ##### 数据准备
@@ -199,7 +200,7 @@ pip install llmuses[vlmeval]
 数据集的详细信息可以参考[VLMEvalKit支持的图文多模态评测集](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
-from llmuses.backend.vlm_eval_kit import VLMEvalKitBackendManager
+from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list(list_supported_VLMs().keys())}')
 ```
 
@@ -266,7 +267,7 @@ unzip data.zip
 
 #### 2. 使用本地数据集创建评估任务
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 
 # 参数说明
 # --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
@@ -280,7 +281,7 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --dat
 # 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
 
 # 2. 执行离线评估任务
-python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
+python evalscope/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 ```
 
 
@@ -289,7 +290,7 @@ python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatg
 #### 1. 配置任务
 ```python
 import torch
-from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
 
 # 示例
 your_task_cfg = {
@@ -314,7 +315,7 @@ your_task_cfg = {
 
 #### 2. 执行任务
 ```python
-from llmuses.run import run_task
+from evalscope.run import run_task
 
 run_task(task_cfg=your_task_cfg)
 ```
@@ -324,14 +325,14 @@ run_task(task_cfg=your_task_cfg)
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
 #### 1. 环境准备
 ```text
-a. 数据准备，questions data格式参考：llmuses/registry/data/question.jsonl
+a. 数据准备，questions data格式参考：evalscope/registry/data/question.jsonl
 b. 如果需要使用自动评估流程（AAR），则需要配置相关环境变量，我们以GPT-4 based auto-reviewer流程为例，需要配置以下环境变量：
 > export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 #### 2. 配置文件
 ```text
-arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
+arena评估流程的配置文件参考： evalscope/registry/config/cfg_arena.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -342,20 +343,20 @@ arena评估流程的配置文件参考： llmuses/registry/config/cfg_arena.yaml
 #### 3. 执行脚本
 ```shell
 #Usage:
-cd llmuses
+cd evalscope
 
 # dry-run模式 (模型answer正常生成，但专家模型，如GPT-4，不会被调用，评估结果会随机生成)
-python llmuses/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
+python evalscope/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
 
 # 执行评估流程
-python llmuses/run_arena.py --c registry/config/cfg_arena.yaml
+python evalscope/run_arena.py --c registry/config/cfg_arena.yaml
 ```
 
 #### 4. 结果可视化
 
 ```shell
 # Usage:
-streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
+streamlit run viz.py -- --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml
 ```
 
 
@@ -364,7 +365,7 @@ streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.js
 这个模式下，我们只对单个模型输出做打分，不做两两对比。
 #### 1. 配置文件
 ```text
-评估流程的配置文件参考： llmuses/registry/config/cfg_single.yaml
+评估流程的配置文件参考： evalscope/registry/config/cfg_single.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -374,7 +375,7 @@ streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.js
 #### 2. 执行脚本
 ```shell
 #Example:
-python llmuses/run_arena.py --c registry/config/cfg_single.yaml
+python evalscope/run_arena.py --c registry/config/cfg_single.yaml
 ```
 
 ### Baseline模型对比模式（Pairwise-baseline mode）
@@ -382,7 +383,7 @@ python llmuses/run_arena.py --c registry/config/cfg_single.yaml
 这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
 #### 1. 配置文件
 ```text
-评估流程的配置文件参考： llmuses/registry/config/cfg_pairwise_baseline.yaml
+评估流程的配置文件参考： evalscope/registry/config/cfg_pairwise_baseline.yaml
 字段说明：
     questions_file: question data的路径
     answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
@@ -392,7 +393,7 @@ python llmuses/run_arena.py --c registry/config/cfg_single.yaml
 #### 2. 执行脚本
 ```shell
 # Example:
-python llmuses/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
+python evalscope/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 ```
 
 
@@ -424,7 +425,7 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
 参考： [Experiments](./resources/experiments.md)
 
 ## 性能评测工具
-参考： [性能测试](llmuses/perf/README.md)
+参考： [性能测试](evalscope/perf/README.md)
 
 ## TO-DO List
 - [ ] Agents evaluation

@@ -2,7 +2,7 @@
 
 """
 1. Installation
-eval-scope: pip install llmuses[opencompass]
+eval-scope: pip install evalscope[opencompass]
 
 2. Download dataset to data/ folder
 wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-core-20240207.zip
@@ -12,9 +12,9 @@ unzip OpenCompassData-core-20240207.zip
 
 4. Run eval task
 """
-from llmuses.backend.opencompass import OpenCompassBackendManager
-from llmuses.run import run_task
-from llmuses.summarizer import Summarizer
+from evalscope.backend.opencompass import OpenCompassBackendManager
+from evalscope.run import run_task
+from evalscope.summarizer import Summarizer
 
 
 def run_swift_eval():

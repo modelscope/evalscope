@@ -2,16 +2,16 @@
 
 """
 1. Installation
-eval-scope: pip install llmuses[vlmeval]>=0.4.3
+eval-scope: pip install evalscope[vlmeval]>=0.4.3
 
 2. Deploy judge model
 
 3. Run eval task
 """
-from llmuses.backend.vlm_eval_kit import VLMEvalKitBackendManager
-from llmuses.run import run_task
-from llmuses.summarizer import Summarizer
-from llmuses.utils.logger import get_logger
+from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
+from evalscope.run import run_task
+from evalscope.summarizer import Summarizer
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 

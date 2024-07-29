@@ -2,10 +2,10 @@
 
 import subprocess
 import unittest
-from llmuses.utils import test_level_list, is_module_installed
-from llmuses.utils.logger import get_logger
-from llmuses.run import run_task
-from llmuses.summarizer import Summarizer
+from evalscope.utils import test_level_list, is_module_installed
+from evalscope.utils.logger import get_logger
+from evalscope.run import run_task
+from evalscope.summarizer import Summarizer
 
 logger = get_logger()
 
