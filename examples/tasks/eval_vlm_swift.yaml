@@ -12,7 +12,7 @@ eval_config:
   mode: all
   limit: 20
   rerun: true
-  work_dir: output
+  work_dir: outputs
   nproc: 1
   # judge model server config
   OPENAI_API_KEY: EMPTY
