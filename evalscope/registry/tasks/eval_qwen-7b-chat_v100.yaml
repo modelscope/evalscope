@@ -1,0 +1,28 @@
+model_args:    # model args should be followed by benchmark requirements
+  revision: v1.0.0
+  precision: torch.float16
+  device_map: auto
+#  model_name_or_path: qwen/qwen-7b-chat
+generation_config:
+  temperature: 0.3
+  max_length: 2048
+  max_new_tokens: 512
+  top_k: 50
+  top_p: 0.85
+  do_sample: false
+  num_beams: 1
+  repetition_penalty: 1.0
+#  eos_token_id: null
+#  pad_token_id: null
+dataset_args: {}
+dry_run: false
+model: null   # Note: to be implemented as CustomModel
+eval_type: custom
+datasets:
+  - arc
+  - gsm8k
+outputs: ./outputs/eval_qwen-7b-chat_v100    # Directory to save the outputs, structure: logs, predictions, reviews, reports
+use_cache: false
+stage: all
+dataset_hub: ModelScope    # `Local` or `ModelScope`
+limit: 10

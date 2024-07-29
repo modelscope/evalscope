@@ -11,7 +11,7 @@ def readme():
     return content
 
 
-VERSION_FILE = os.path.abspath('llmuses/version.py')
+VERSION_FILE = os.path.abspath('evalscope/version.py')
 
 
 def get_version():
@@ -124,8 +124,8 @@ def pack_resource():
         shutil.rmtree(root_dir)
     os.makedirs(root_dir)
 
-    proj_dir = root_dir + 'llmuses/'
-    shutil.copytree('llmuses', proj_dir)
+    proj_dir = root_dir + 'evalscope/'
+    shutil.copytree('evalscope', proj_dir)
     shutil.copytree('requirements', root_dir + 'requirements')
     shutil.copy('requirements.txt', root_dir + 'requirements.txt')
     # shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     extra_requires['all'] = all_requires
 
     setup(
-        name='llmuses',
+        name='evalscope',
         version=get_version(),
         author='ModelScope team',
         author_email='contact@modelscope.cn',
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         # github url to be added
         url='https://github.com/modelscope/eval-scope',
         include_package_data=True,
-        package_data={'llmuses': ['registry/tasks/*.yaml', 'benchmarks/bbh/cot_prompts/*.txt']},
+        package_data={'evalscope': ['registry/tasks/*.yaml', 'benchmarks/bbh/cot_prompts/*.txt']},
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         zip_safe=False,
         install_requires=install_requires,
         entry_points={  
-            'console_scripts': ['llmuses=llmuses.cli.cli:run_cmd']
+            'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']
         },
         dependency_links=deps_link,
         extras_require=extra_requires,

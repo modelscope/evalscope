@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from llmuses.third_party.toolbench_static import run_task
+from evalscope.third_party.toolbench_static import run_task
 
 
 def main():
