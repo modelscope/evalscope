@@ -1,0 +1,78 @@
+# input raw data
+question_file: registry/data/question.jsonl
+
+# candidate models to be battled
+answers_gen:
+    chatglm3-6b:
+        # model_id_or_path could be local absolute path, e.g. /to/path/.cache/modelscope/ZhipuAI/chatglm3-6b
+        model_id_or_path: ZhipuAI/chatglm3-6b       # model_id on modelscope
+        revision: v1.0.2        # revision of model, default is NULL
+        precision: torch.float16
+        enable: true            # enable or disable this model
+        template_type: chatglm3
+        generation_config:
+            do_sample: true
+            max_new_tokens: 256
+            top_k: 20
+            top_p: 0.75
+            temperature: 0.3
+        # output predicted answer file name
+        output_file: registry/data/arena/answers/answer_chatglm3-6b.jsonl
+    Baichuan2-7B-Base:
+        model_id_or_path: baichuan-inc/Baichuan2-7B-Base
+        revision: v1.0.2       # revision of model, default is NULL
+        precision: torch.float16
+        enable: false           # enable or disable this model
+        template_type: default-generation
+        generation_config:
+            do_sample: true
+            max_new_tokens: 256
+            top_k: 20
+            top_p: 0.75
+            temperature: 0.3
+        output_file: registry/data/arena/answers/answer_Baichuan2-7B-Base.jsonl
+    Qwen-7B:
+        model_id_or_path: qwen/Qwen-7B
+        revision: v1.1.8       # revision of model, default is NULL
+        precision: torch.float16
+        enable: true           # enable or disable this model      # TODO: tokenizer issue
+        template_type: default-generation
+        generation_config:
+            do_sample: true
+            max_new_tokens: 256
+            top_k: 20
+            top_p: 0.75
+            temperature: 0.3
+        output_file: registry/data/arena/answers/answer_Qwen-7B.jsonl
+
+# model of auto-reviewer
+reviews_gen:
+    enable: true
+    reviewer:
+        ref: evalscope.evaluator.reviewer.auto_reviewer:AutoReviewerGpt4
+        args:
+            model: gpt-4
+            max_tokens: 1024
+            temperature: 0
+            # pairwise comparison against baseline
+            mode: single
+            # completion parser config, default is lmsys_parser
+            fn_completion_parser: lmsys_parser
+    # target answers list to be reviewed, could be replaced by your own path: /path/to/answers.jsonl
+    target_answers: [registry/data/arena/answers/answer_chatglm3-6b.jsonl,
+                     registry/data/arena/answers/answer_Baichuan2-7B-Base.jsonl]
+    # the path to the reference answers
+    reference_file:
+    # prompt templates for auto reviewer(GPT-4)
+    prompt_file: registry/data/prompt_template/lmsys_v2.jsonl
+    # output file of auto reviewer
+    review_file: registry/data/arena/reviews/review_gpt4_single.jsonl
+    # cache file of auto reviewer
+    cache_file: registry/data/arena/reviews/review_gpt4_single.jsonl
+
+# rating results
+rating_gen:
+    enable: true
+    metrics: ['score']
+    # elo rating report file
+    report_file: registry/data/arena/reports/rating_single.csv

@@ -378,8 +378,8 @@ def run_app(review_file, category_file):
 def parse_args():
     parser = argparse.ArgumentParser(description='Run visualization on a evaluation.')
 
-    parser.add_argument('--review-file', type=str, default='llmuses/registry/data/qa_browser/battle.jsonl', required=True)
-    parser.add_argument('--category-file', type=str, default='llmuses/registry/data/qa_browser/category_mapping.yaml', required=True)
+    parser.add_argument('--review-file', type=str, default='evalscope/registry/data/qa_browser/battle.jsonl', required=True)
+    parser.add_argument('--category-file', type=str, default='evalscope/registry/data/qa_browser/category_mapping.yaml', required=True)
 
     args = parser.parse_args()
 
@@ -394,5 +394,5 @@ def main():
 
 if __name__ == '__main__':
 
-    print('**Usage:\n streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml')
+    print('**Usage:\n streamlit run viz.py -- --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml')
     main()

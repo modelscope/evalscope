@@ -142,9 +142,9 @@ private/
 
 # outputs
 outputs/
-llmuses/outputs/
-llmuses/*_temp.py
-llmuses/data/
+evalscope/outputs/
+evalscope/*_temp.py
+evalscope/data/
 */output_res/*
 
 temp/

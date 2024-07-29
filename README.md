@@ -1,7 +1,7 @@
 English | [简体中文](README_zh.md)
 
 <p align="center">
-<a href="https://pypi.org/project/llmuses"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/llmuses">
+<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
 <a href="https://github.com/modelscope/eval-scope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
@@ -29,7 +29,7 @@ Large Language Model (LLMs) evaluation has become a critical process for assessi
 - Reports of evaluation generating
 - Arena mode
 - Visualization tools
-- Model Inference Performance Evaluation [Tutorial](llmuses/perf/README.md)
+- Model Inference Performance Evaluation [Tutorial](evalscope/perf/README.md)
 - Support for OpenCompass as an Evaluation Backend, featuring advanced encapsulation and task simplification to easily submit tasks to OpenCompass for evaluation.
 - Supports VLMEvalKit as the evaluation backend. It initiates VLMEvalKit's multimodal evaluation tasks through Eval-Scope, supporting various multimodal models and datasets.
 - Full pipeline support: Seamlessly integrate with SWIFT to easily train and deploy model services, initiate evaluation tasks, view evaluation reports, and achieve an end-to-end large model development process.
@@ -66,7 +66,7 @@ conda activate eval-scope
 
 2. Install Eval-Scope
 ```shell
-pip install llmuses
+pip install evalscope
 ```
 
 ### Install from source code
@@ -87,21 +87,21 @@ pip install -e .
 ### Simple Evaluation
 command line with pip installation:
 ```shell
-python -m llmuses.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
+python -m evalscope.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
 ```
 command line with source code:
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
 ```
 Parameters:
 - --model: ModelScope model id, model link: [ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 
 ### Evaluation with Model Arguments
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
 ```
 ```shell
-python llmuses/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
+python evalscope/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
 ```
 Parameters:
 - --model-args: Parameters of model: revision, precision, device_map, in format of key=value,key=value
@@ -116,7 +116,7 @@ Parameters:
 
 Note: you can use following command to check the template type list of the model:
 ```shell
-from llmuses.models.template import TemplateType
+from evalscope.models.template import TemplateType
 print(TemplateType.get_template_name_list())
 ```
 
@@ -125,7 +125,7 @@ Eval-Scope supports using third-party evaluation frameworks to initiate evaluati
 - **Native**: Eval-Scope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode.
 - [OpenCompass](https://github.com/open-compass/opencompass): Initiate OpenCompass evaluation tasks through Eval-Scope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
 - [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through Eval-Scope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
-- **ThirdParty**: The third-party task, e.g. [ToolBench](llmuses/thirdparty/toolbench/README.md), you can contribute your own evaluation task to Eval-Scope as third-party backend.
+- **ThirdParty**: The third-party task, e.g. [ToolBench](evalscope/thirdparty/toolbench/README.md), you can contribute your own evaluation task to Eval-Scope as third-party backend.
 
 #### OpenCompass Eval-Backend
 
@@ -135,7 +135,7 @@ To facilitate the use of the OpenCompass evaluation backend, we have customized 
 ##### Installation
 ```shell
 # Install with extra option
-pip install llmuses[opencompass]
+pip install evalscope[opencompass]
 ```
 
 ##### Data Preparation
@@ -147,7 +147,7 @@ Refer to [OpenCompass datasets](https://hub.opencompass.org.cn/home)
 
 You can use the following code to list all available datasets:
 ```python
-from llmuses.backend.opencompass import OpenCompassBackendManager
+from evalscope.backend.opencompass import OpenCompassBackendManager
 print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
 ```
 
@@ -190,7 +190,7 @@ To facilitate the use of the VLMEvalKit evaluation backend, we have customized t
 ##### Installation
 ```shell
 # Install with additional options
-pip install llmuses[vlmeval]
+pip install evalscope[vlmeval]
 ```
 
 ##### Data Preparation
@@ -202,7 +202,7 @@ For detailed information about the datasets, please refer to [VLMEvalKit Support
 
 You can use the following to view the list of dataset names:
 ```python
-from llmuses.backend.vlm_eval_kit import VLMEvalKitBackendManager
+from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list(list_supported_VLMs().keys())}')
 ```
 If the dataset file does not exist locally when loading the dataset, it will be automatically downloaded to the `~/LMUData/` directory.
@@ -273,7 +273,7 @@ unzip data.zip
 
 #### 2. Use local dataset to evaluate the model
 ```shell
-python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}'  --limit 10
+python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}'  --limit 10
 
 # Parameters:
 # --dataset-hub: dataset sources: `ModelScope`, `Local`, `HuggingFace` (TO-DO)  default to `ModelScope`
@@ -287,7 +287,7 @@ python llmuses/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --dat
 # For example, download the model folder to the local path /path/to/ZhipuAI/chatglm3-6b
 
 # 2. Execute the offline evaluation task
-python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
+python evalscope/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
 ```
 
 
@@ -296,7 +296,7 @@ python llmuses/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatg
 #### 1. Configuration
 ```python
 import torch
-from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
 
 # Example configuration
 your_task_cfg = {
@@ -321,7 +321,7 @@ your_task_cfg = {
 
 #### 2. Execute the task
 ```python
-from llmuses.run import run_task
+from evalscope.run import run_task
 
 run_task(task_cfg=your_task_cfg)
 ```
@@ -331,14 +331,14 @@ run_task(task_cfg=your_task_cfg)
 The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. The process is as follows:
 #### 1. Env preparation
 ```text
-a. Data preparation, the question data format refers to: llmuses/registry/data/question.jsonl
+a. Data preparation, the question data format refers to: evalscope/registry/data/question.jsonl
 b. If you need to use the automatic evaluation process (AAR), you need to configure the relevant environment variables. Taking the GPT-4 based auto-reviewer process as an example, you need to configure the following environment variables:
     > export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 #### 2. Configuration files
 ```text
-Refer to : llmuses/registry/config/cfg_arena.yaml
+Refer to : evalscope/registry/config/cfg_arena.yaml
 Parameters:
     questions_file: question data path
     answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
@@ -349,20 +349,20 @@ Parameters:
 #### 3. Execute the script
 ```shell
 #Usage:
-cd llmuses
+cd evalscope
 
 # dry-run mode
-python llmuses/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
+python evalscope/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
 
 # Execute the script
-python llmuses/run_arena.py --c registry/config/cfg_arena.yaml
+python evalscope/run_arena.py --c registry/config/cfg_arena.yaml
 ```
 
 #### 4. Visualization
 
 ```shell
 # Usage:
-streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.jsonl --category-file llmuses/registry/data/qa_browser/category_mapping.yaml
+streamlit run viz.py -- --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml
 ```
 
 
@@ -371,7 +371,7 @@ streamlit run viz.py -- --review-file llmuses/registry/data/qa_browser/battle.js
 In this mode, we only score the output of a single model, without pairwise comparison.
 #### 1. Configuration file
 ```text
-Refer to: llmuses/registry/config/cfg_single.yaml
+Refer to: evalscope/registry/config/cfg_single.yaml
 Parameters:
     questions_file: question data path
     answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
@@ -381,7 +381,7 @@ Parameters:
 #### 2. Execute the script
 ```shell
 #Example:
-python llmuses/run_arena.py --c registry/config/cfg_single.yaml
+python evalscope/run_arena.py --c registry/config/cfg_single.yaml
 ```
 
 ### Baseline Model Comparison Mode
@@ -390,7 +390,7 @@ In this mode, we select the baseline model, and compare other models with the ba
 
 #### 1. Configuration file
 ```text
-Refer to: llmuses/registry/config/cfg_pairwise_baseline.yaml
+Refer to: evalscope/registry/config/cfg_pairwise_baseline.yaml
 Parameters:
     questions_file: question data path
     answers_gen: candidate model prediction result generation, supports multiple models, can control whether to enable the model through the enable parameter
@@ -400,7 +400,7 @@ Parameters:
 #### 2. Execute the script
 ```shell
 # Example:
-python llmuses/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
+python evalscope/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 ```
 
 
@@ -432,17 +432,17 @@ The LLM Leaderboard aims to provide an objective and comprehensive evaluation st
 [Experiments](./resources/experiments.md)
 
 ## Model Serving Performance Evaluation
-[Perf](llmuses/perf/README.md)
+[Perf](evalscope/perf/README.md)
 
 ## TO-DO List
 - ✅Agents evaluation
 - [ ] vLLM
 - [ ] Distributed evaluating
-- [ ] Multi-modal evaluation
+- ✅ Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
   - [ ] GPQA
-  - [ ] MBPP
+  - ✅ MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
 

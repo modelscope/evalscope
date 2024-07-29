@@ -4,12 +4,12 @@ import os
 import time
 from typing import List
 
-from llmuses.models.custom import CustomModel
-from llmuses.run import run_task
-from llmuses.constants import DEFAULT_ROOT_CACHE_DIR
-from llmuses.utils import yaml_to_dict
-from llmuses.summarizer import Summarizer
-from llmuses.utils.logger import get_logger
+from evalscope.models.custom import CustomModel
+from evalscope.run import run_task
+from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.utils import yaml_to_dict
+from evalscope.summarizer import Summarizer
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # report_list: list = Summarizer.get_report_from_cfg(task_cfg=task_cfg_file)
     # print(f'*** Final report ***\n {report_list}\n')
 
-    from llmuses.config import TaskConfig
+    from evalscope.config import TaskConfig
 
     swift_model = SwiftModel(config={'model_id': 'swift_grok-base-dummy'})
     print(TaskConfig.list())    # ['arc', 'gsm8k']   # 'arc', 'gsm8k', 'bbh_mini', 'mmlu_mini', 'ceval_mini'

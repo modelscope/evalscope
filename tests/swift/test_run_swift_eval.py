@@ -7,12 +7,12 @@ import requests
 import subprocess
 import unittest
 
-from llmuses.backend.opencompass import OpenCompassBackendManager
-from llmuses.run import run_task
-from llmuses.summarizer import Summarizer
-from llmuses.utils import test_level_list, is_module_installed
+from evalscope.backend.opencompass import OpenCompassBackendManager
+from evalscope.run import run_task
+from evalscope.summarizer import Summarizer
+from evalscope.utils import test_level_list, is_module_installed
 
-from llmuses.utils.logger import get_logger
+from evalscope.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,7 +26,7 @@ class TestRunSwiftEval(unittest.TestCase):
         logger.info(f'Init env for swift-eval UTs ...\n')
 
         self.model_name = 'llama3-8b-instruct'
-        assert is_module_installed('llmuses'), 'Please install `llmuses` from pypi or source code.'
+        assert is_module_installed('evalscope'), 'Please install `evalscope` from pypi or source code.'
 
         logger.warning('Note: installing ms-opencompass ...')
         subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)

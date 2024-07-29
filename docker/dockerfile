@@ -2,7 +2,7 @@ from registry.cn-hangzhou.aliyuncs.com/modelscope-repo/modelscope:ubuntu22.04-cu
 
 workdir /home/workspace
 
-copy llmuses /home/workspace/llmuses
+copy evalscope /home/workspace/evalscope
 copy requirements /home/workspace/requirements
 copy resources /home/workspace/resources
 copy setup.py /home/workspace/setup.py
