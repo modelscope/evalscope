@@ -49,8 +49,9 @@ Large Language Model (LLMs) evaluation has become a critical process for assessi
   - Pairwise (all) mode: Pairwise comparison of all models
 
 ## 🎉 News
-- **[2024.07.26]:** Supports **VLMEvalKit** as a third-party evaluation framework, initiating multimodal model evaluation tasks. [User Guide](#vlmevalkit-evaluation-backend) 🔥🔥🔥
-- **[2024.06.29]:** Supports **OpenCompass** as a third-party evaluation framework. We have provided a high-level wrapper, supporting installation via pip and simplifying the evaluation task configuration. [User Guide](#opencompass-evaluation-backend) 🔥🔥🔥
+- **[2024.07.31]** Breaking change: The sdk name has been changed from `llmuses` to `evalscope`, please update the sdk name in your code.
+- **[2024.07.26]** Supports **VLMEvalKit** as a third-party evaluation framework, initiating multimodal model evaluation tasks. [User Guide](#vlmevalkit-evaluation-backend) 🔥🔥🔥
+- **[2024.06.29]** Supports **OpenCompass** as a third-party evaluation framework. We have provided a high-level wrapper, supporting installation via pip and simplifying the evaluation task configuration. [User Guide](#opencompass-evaluation-backend) 🔥🔥🔥
 - **[2024.06.13]** Eval-Scope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
 - **[2024.06.13]** We have supported the ToolBench as a third-party evaluation backend for Agents evaluation. 🚀🚀🚀
 
