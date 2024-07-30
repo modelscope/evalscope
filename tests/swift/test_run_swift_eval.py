@@ -32,7 +32,7 @@ class TestRunSwiftEval(unittest.TestCase):
         subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
         logger.warning('Note: installing ms-swift ...')
-        subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+        subprocess.run('pip3 install ms-swift[llm]', shell=True, check=True)
 
         logger.warning('vllm not installed, use native swift deploy service instead.')
 
