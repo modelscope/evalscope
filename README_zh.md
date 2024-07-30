@@ -3,7 +3,7 @@
 <p align="center">
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
-<a href="https://github.com/modelscope/eval-scope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
 
 ## 📖 目录
@@ -18,7 +18,7 @@
 
 
 ## 📝 简介
-大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了Eval-Scope框架，该框架主要包括以下几个部分：
+大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了EvalScope框架，该框架主要包括以下几个部分：
 - 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
 - 常用评估指标（metrics）的实现
 - 统一model接入，兼容多个系列模型的generate、chat接口
@@ -30,7 +30,7 @@
 - 可视化工具
 - [模型性能评估](evalscope/perf/README.md)
 - 支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务到OpenCompass进行评估。
-- 支持VLMEvalKit作为评测后端，通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集。
+- 支持VLMEvalKit作为评测后端，通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集。
 - 全链路支持：通过与SWIFT的无缝集成，您可以轻松地训练和部署模型服务，发起评测任务，查看评测报告，实现一站式大模型开发流程。
 
 **特点**
@@ -51,7 +51,7 @@
 - **[2024.07.31]** 重要修改：`llmuses`包名修改为`evalscope`，请同步修改您的代码
 - **[2024.07.26]** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务，[使用指南](#vlmevalkit-评测后端) 🔥🔥🔥
 - **[2024.06.29]** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置，[使用指南](#opencompass-评测后端) 🔥🔥🔥
-- **[2024.06.13]** Eval-Scope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
+- **[2024.06.13]** EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
 - **[2024.06.13]** 接入Agent评测集ToolBench 🚀🚀🚀
 
 
@@ -59,24 +59,38 @@
 ## 🛠️ 环境准备
 ### 使用pip安装
 我们推荐使用conda来管理环境，并使用pip安装依赖:
-1. 创建conda环境
+1. 创建conda环境 (可选)
 ```shell
-conda create -n eval-scope python=3.10
-conda activate eval-scope
+conda create -n evalscope python=3.10
+conda activate evalscope
 ```
 2. 安装依赖
 ```shell
-pip install evalscope
+pip install evalscope                # Installation with Native backend (by default)
+
+pip install evalscope[opencompass]   # Installation with OpenCompass backend
+pip install evalscope[vlmeval]       # Installation with VLMEvalKit backend
+pip install evalscope[all]           # Installation with all backends (Native, OpenCompass, VLMEvalKit)
+```
+
+版本废弃说明: 对于v0.4.3或更早版本，您可以使用以下命令安装：
+```shell
+pip install llmuses<=0.4.3
+
+# Usage:
+from llmuses.run import run_task
+...
+
 ```
 
 ### 使用源码安装
 1. 下载源码
 ```shell
-git clone https://github.com/modelscope/eval-scope.git
+git clone https://github.com/modelscope/evalscope.git
 ```
 2. 安装依赖
 ```shell
-cd eval-scope/
+cd evalscope/
 pip install -e .
 ```
 
@@ -89,7 +103,7 @@ pip install -e .
 ```shell
 python -m evalscope.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
 ```
-如果使用源码安装，在eval-scope路径下执行：
+如果使用源码安装，在evalscope路径下执行：
 ```shell
 python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
 ```
@@ -110,7 +124,7 @@ python evalscope/run.py --model qwen/Qwen-1_8B --generation-config do_sample=fal
   - --few_shot_num: few-shot的数量
   - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
 - --limit: 每个subset最大评估数据量
-- --template-type: 需要手动指定该参数，使得eval-scope能够正确识别模型的类型，用来设置model generation config。  
+- --template-type: 需要手动指定该参数，使得evalscope能够正确识别模型的类型，用来设置model generation config。
 
 关于--template-type，具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
 在模型列表中的`Default Template`字段中找到合适的template；  
@@ -121,15 +135,15 @@ print(TemplateType.get_template_name_list())
 ```
 
 ### 使用评测后端 (Evaluation Backend)
-Eval-Scope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
-- **Native**：Eval-Scope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
-- [OpenCompass](https://github.com/open-compass/opencompass)：通过Eval-Scope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过Eval-Scope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
+EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
+- **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
+- [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
+- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
 - **ThirdParty**: 第三方评估任务，如[ToolBench](evalscope/thirdparty/toolbench/README.md)。
 
 #### OpenCompass 评测后端
 
-为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ModelScope Swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用vLLM拉起模型推理服务。
+为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ModelScope Swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用vLLM拉起模型推理服务。
 
 ##### 安装
 ```shell
@@ -184,7 +198,7 @@ python examples/example_eval_swift_openai_api.py
 
 #### VLMEvalKit 评测后端
 
-为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过Eval-Scope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署多模态模型服务。
+为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署多模态模型服务。
 
 ##### 安装
 ```shell
@@ -201,7 +215,8 @@ pip install evalscope[vlmeval]
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
-print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list(list_supported_VLMs().keys())}')
+print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_models().keys()}')
+
 ```
 
 在加载数据集时，若本地不存在该数据集文件，将会自动下载数据集到 `~/LMUData/` 目录下。

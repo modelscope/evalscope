@@ -3,7 +3,7 @@
 import subprocess
 
 if __name__ == '__main__':
-    cmd = f'TEST_LEVEL_LIST=0,1 python3 -m unittest discover .'
+    cmd = f'TEST_LEVEL_LIST=0,1 python3 -m unittest discover tests'
     run_res = subprocess.run(cmd, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if run_res.returncode == 0:
