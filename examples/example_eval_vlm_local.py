@@ -2,7 +2,7 @@
 
 """
 1. Installation
-EvalScope: pip install evalscope[vlmeval]>=0.4.3
+EvalScope: pip install evalscope[vlmeval]
 
 2. Deploy judge model
 
