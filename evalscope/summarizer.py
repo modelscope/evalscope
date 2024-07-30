@@ -99,7 +99,7 @@ class Summarizer:
             elif eval_backend == EvalBackend.VLM_EVAL_KIT.value:
                 eval_config = Summarizer.parse_eval_config(candidate_task)
 
-                work_dir = eval_config.get('work_dir') or 'outputs/default'
+                work_dir = eval_config.get('work_dir') or 'outputs'
                 if not os.path.exists(work_dir):
                     raise ValueError(f'work_dir {work_dir} does not exist.')
                 
@@ -109,9 +109,16 @@ class Summarizer:
                         model_name = model['type']
                     else:
                         model_name = model['name']
-                    summary_files = glob.glob(os.path.join(work_dir, model_name, '*.csv'))
+                    
+                    csv_files = glob.glob(os.path.join(work_dir, model_name, '*.csv'))
+                    json_files = glob.glob(os.path.join(work_dir, model_name, '*.json'))
+                    
+                    summary_files = csv_files + json_files
                     for summary_file_path in summary_files:
-                        summary_res: dict = csv_to_list(file_path=summary_file_path)[0]
+                        if summary_file_path.endswith('csv'):
+                            summary_res: dict = csv_to_list(summary_file_path)[0]
+                        elif summary_file_path.endswith('json'):
+                            summary_res: dict = json_to_dict(summary_file_path)
                         file_name = os.path.basename(summary_file_path).split('.')[0]
                         final_res_list.append({file_name: summary_res})
                 

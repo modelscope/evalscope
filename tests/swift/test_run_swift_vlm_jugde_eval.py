@@ -45,6 +45,7 @@ class TestRunSwiftVLMEval(unittest.TestCase):
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
+        
         logger.info(f'\nStaring run swift deploy judge ...')
         self.judge_model_name = 'qwen2-7b-instruct'
         self.process_swift_deploy_judge = subprocess.Popen(f'swift deploy --model_type {self.judge_model_name} \
