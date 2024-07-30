@@ -40,6 +40,8 @@ class TestRunSwiftEval(unittest.TestCase):
         self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self.process_swift_deploy.stderr:
+            logger.error(f'Failed to start swift deploy: {self.process_swift_deploy.stderr}')
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
