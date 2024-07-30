@@ -90,7 +90,7 @@ class TestRunSwiftEval(unittest.TestCase):
             logger.error(f"An error occurred: {e}")
 
     @staticmethod
-    def check_service_status(url: str, data: dict, retries: int = 20, delay: int = 10):
+    def check_service_status(url: str, data: dict, retries: int = 30, delay: int = 10):
         for i in range(retries):
             try:
                 logger.info(f"Attempt {i + 1}: Checking service at {url} ...")
