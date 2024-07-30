@@ -28,12 +28,12 @@ class TestRunSwiftEval(unittest.TestCase):
         self.model_name = 'llama3-8b-instruct'
         assert is_module_installed('evalscope'), 'Please install `evalscope` from pypi or source code.'
 
-        logger.warning('Note: installing ms-opencompass ...')
-        if not is_module_installed('ms-opencompass'):
+        if not is_module_installed('opencompass'):
+            logger.warning('Note: installing ms-opencompass ...')
             subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
-        logger.warning('Note: installing ms-swift ...')
-        if not is_module_installed('ms-swift'):
+        if not is_module_installed('swift'):
+            logger.warning('Note: installing ms-swift ...')
             subprocess.run('pip3 install ms-swift[llm]', shell=True, check=True)
 
         logger.warning('vllm not installed, use native swift deploy service instead.')
