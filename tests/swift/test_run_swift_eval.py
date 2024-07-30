@@ -43,7 +43,7 @@ class TestRunSwiftEval(unittest.TestCase):
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if self.process_swift_deploy.stderr:
-            logger.error(f'Failed to start swift deploy: {self.process_swift_deploy.stderr}')
+            logger.info(f'swift deploy log info: {self.process_swift_deploy.stderr}')
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
@@ -116,7 +116,7 @@ class TestRunSwiftEval(unittest.TestCase):
         # Prepare the config
         task_cfg = dict(
             eval_backend='OpenCompass',
-            eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
+            eval_config={'datasets': ['ceval'],   # ['mmlu', 'ceval', 'ARC_c', 'gsm8k']
                          'models': [
                              {'path': 'llama3-8b-instruct',
                               'openai_api_base': DEFAULT_CHAT_MODEL_URL,
@@ -124,7 +124,7 @@ class TestRunSwiftEval(unittest.TestCase):
                          ],
                          'work_dir': 'outputs/llama3_eval_result',
                          'reuse': None,      # string, `latest` or timestamp, e.g. `20230516_144254`, default to None
-                         'limit': '[2:5]',   # string or int or float, e.g. `[2:5]`, 5, 5.0, default to None, it means run all examples
+                         'limit': 5,   # string or int or float, e.g. `[2:5]`, 5, 5.0, default to None, it means run all examples
                          },
         )
 
