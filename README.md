@@ -3,7 +3,7 @@ English | [简体中文](README_zh.md)
 <p align="center">
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
-<a href="https://github.com/modelscope/eval-scope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
 
 ## 📖 Table of Content
@@ -18,7 +18,7 @@ English | [简体中文](README_zh.md)
 
 ## 📝 Introduction
 
-Large Language Model (LLMs) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the Eval-Scope framework, which includes the following components and features:
+Large Language Model (LLMs) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the EvalScope framework, which includes the following components and features:
 
 - Pre-configured common benchmark datasets, including: MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc.
 - Implementation of common evaluation metrics
@@ -31,7 +31,7 @@ Large Language Model (LLMs) evaluation has become a critical process for assessi
 - Visualization tools
 - Model Inference Performance Evaluation [Tutorial](evalscope/perf/README.md)
 - Support for OpenCompass as an Evaluation Backend, featuring advanced encapsulation and task simplification to easily submit tasks to OpenCompass for evaluation.
-- Supports VLMEvalKit as the evaluation backend. It initiates VLMEvalKit's multimodal evaluation tasks through Eval-Scope, supporting various multimodal models and datasets.
+- Supports VLMEvalKit as the evaluation backend. It initiates VLMEvalKit's multimodal evaluation tasks through EvalScope, supporting various multimodal models and datasets.
 - Full pipeline support: Seamlessly integrate with SWIFT to easily train and deploy model services, initiate evaluation tasks, view evaluation reports, and achieve an end-to-end large model development process.
 
 
@@ -52,33 +52,48 @@ Large Language Model (LLMs) evaluation has become a critical process for assessi
 - **[2024.07.31]** Breaking change: The sdk name has been changed from `llmuses` to `evalscope`, please update the sdk name in your code.
 - **[2024.07.26]** Supports **VLMEvalKit** as a third-party evaluation framework, initiating multimodal model evaluation tasks. [User Guide](#vlmevalkit-evaluation-backend) 🔥🔥🔥
 - **[2024.06.29]** Supports **OpenCompass** as a third-party evaluation framework. We have provided a high-level wrapper, supporting installation via pip and simplifying the evaluation task configuration. [User Guide](#opencompass-evaluation-backend) 🔥🔥🔥
-- **[2024.06.13]** Eval-Scope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
+- **[2024.06.13]** EvalScope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
 - **[2024.06.13]** We have supported the ToolBench as a third-party evaluation backend for Agents evaluation. 🚀🚀🚀
 
 
 
 ## 🛠️ Installation
 ### Install with pip
-1. create conda environment
+1. create conda environment [Optional]
 ```shell
-conda create -n eval-scope python=3.10
-conda activate eval-scope
+conda create -n evalscope python=3.10
+conda activate evalscope
 ```
 
-2. Install Eval-Scope
+2. Install EvalScope
 ```shell
-pip install evalscope
+pip install evalscope                # Installation with Native backend (by default)
+
+pip install evalscope[opencompass]   # Installation with OpenCompass backend
+pip install evalscope[vlmeval]       # Installation with VLMEvalKit backend
+pip install evalscope[all]           # Installation with all backends (Native, OpenCompass, VLMEvalKit)
 ```
+
+DEPRECATION WARNING: For 0.4.3 or older versions, please use the following command to install:
+```shell
+pip install llmuses<=0.4.3
+
+# Usage:
+from llmuses.run import run_task
+...
+
+```
+
 
 ### Install from source code
 1. Download source code
 ```shell
-git clone https://github.com/modelscope/eval-scope.git
+git clone https://github.com/modelscope/evalscope.git
 ```
 
 2. Install dependencies
 ```shell
-cd eval-scope/
+cd evalscope/
 pip install -e .
 ```
 
@@ -122,15 +137,15 @@ print(TemplateType.get_template_name_list())
 ```
 
 ### Evaluation Backend
-Eval-Scope supports using third-party evaluation frameworks to initiate evaluation tasks, which we call Evaluation Backend. Currently supported Evaluation Backend includes:
-- **Native**: Eval-Scope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode.
-- [OpenCompass](https://github.com/open-compass/opencompass): Initiate OpenCompass evaluation tasks through Eval-Scope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
-- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through Eval-Scope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
-- **ThirdParty**: The third-party task, e.g. [ToolBench](evalscope/thirdparty/toolbench/README.md), you can contribute your own evaluation task to Eval-Scope as third-party backend.
+EvalScope supports using third-party evaluation frameworks to initiate evaluation tasks, which we call Evaluation Backend. Currently supported Evaluation Backend includes:
+- **Native**: EvalScope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode.
+- [OpenCompass](https://github.com/open-compass/opencompass): Initiate OpenCompass evaluation tasks through EvalScope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
+- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through EvalScope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework [ModelScope Swift](https://github.com/modelscope/swift).
+- **ThirdParty**: The third-party task, e.g. [ToolBench](evalscope/thirdparty/toolbench/README.md), you can contribute your own evaluation task to EvalScope as third-party backend.
 
 #### OpenCompass Eval-Backend
 
-To facilitate the use of the OpenCompass evaluation backend, we have customized the OpenCompass source code and named it `ms-opencompass`. This version includes optimizations for evaluation task configuration and execution based on the original version, and it supports installation via PyPI. This allows users to initiate lightweight OpenCompass evaluation tasks through Eval-Scope. Additionally, we have initially opened up API-based evaluation tasks in the OpenAI API format. You can deploy model services using [ModelScope Swift](https://github.com/modelscope/swift), where [swift deploy](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html) supports using vLLM to launch model inference services.
+To facilitate the use of the OpenCompass evaluation backend, we have customized the OpenCompass source code and named it `ms-opencompass`. This version includes optimizations for evaluation task configuration and execution based on the original version, and it supports installation via PyPI. This allows users to initiate lightweight OpenCompass evaluation tasks through EvalScope. Additionally, we have initially opened up API-based evaluation tasks in the OpenAI API format. You can deploy model services using [ModelScope Swift](https://github.com/modelscope/swift), where [swift deploy](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html) supports using vLLM to launch model inference services.
 
 
 ##### Installation
@@ -186,7 +201,7 @@ python examples/example_eval_swift_openai_api.py
 
 #### VLMEvalKit Evaluation Backend
 
-To facilitate the use of the VLMEvalKit evaluation backend, we have customized the VLMEvalKit source code and named it `ms-vlmeval`. This version encapsulates the configuration and execution of evaluation tasks based on the original version and supports installation via PyPI, allowing users to initiate lightweight VLMEvalKit evaluation tasks through Eval-Scope. Additionally, we support API-based evaluation tasks in the OpenAI API format. You can deploy multimodal model services using ModelScope [swift](https://github.com/modelscope/swift).
+To facilitate the use of the VLMEvalKit evaluation backend, we have customized the VLMEvalKit source code and named it `ms-vlmeval`. This version encapsulates the configuration and execution of evaluation tasks based on the original version and supports installation via PyPI, allowing users to initiate lightweight VLMEvalKit evaluation tasks through EvalScope. Additionally, we support API-based evaluation tasks in the OpenAI API format. You can deploy multimodal model services using ModelScope [swift](https://github.com/modelscope/swift).
 
 ##### Installation
 ```shell
@@ -204,7 +219,8 @@ For detailed information about the datasets, please refer to [VLMEvalKit Support
 You can use the following to view the list of dataset names:
 ```python
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
-print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list(list_supported_VLMs().keys())}')
+print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_models().keys()}')
+
 ```
 If the dataset file does not exist locally when loading the dataset, it will be automatically downloaded to the `~/LMUData/` directory.
 

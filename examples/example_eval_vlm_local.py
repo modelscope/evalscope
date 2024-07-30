@@ -2,7 +2,7 @@
 
 """
 1. Installation
-eval-scope: pip install evalscope[vlmeval]>=0.4.3
+EvalScope: pip install evalscope[vlmeval]
 
 2. Deploy judge model
 
@@ -19,7 +19,7 @@ logger = get_logger()
 def run_swift_eval():
 
     # List all datasets
-    print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_VLMs().keys()}')
+    print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_models().keys()}')
     print(f'** All datasets from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_datasets()}')
 
     # Prepare the config

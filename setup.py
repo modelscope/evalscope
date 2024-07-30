@@ -156,11 +156,11 @@ if __name__ == '__main__':
         author='ModelScope team',
         author_email='contact@modelscope.cn',
         keywords='python,llm,evaluation',
-        description='Eval-Scope: Lightweight LLMs Evaluation Framework',
+        description='EvalScope: Lightweight LLMs Evaluation Framework',
         long_description=readme(),
         long_description_content_type='text/markdown',
         # github url to be added
-        url='https://github.com/modelscope/eval-scope',
+        url='https://github.com/modelscope/evalscope',
         include_package_data=True,
         package_data={'evalscope': ['registry/tasks/*.yaml', 'benchmarks/bbh/cot_prompts/*.txt']},
         packages=find_packages(exclude=('configs', 'demo')),

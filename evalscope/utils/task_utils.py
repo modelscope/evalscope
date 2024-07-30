@@ -3,7 +3,7 @@ from enum import Enum
 
 
 class EvalBackend(Enum):
-    # Use native evaluation pipeline of Eval-Scope
+    # Use native evaluation pipeline of EvalScope
     NATIVE = 'Native'
 
     # Use OpenCompass framework as the evaluation backend
