@@ -31,7 +31,7 @@ class VLMEvalKitBackendManager(BackendManager):
         from vlmeval.utils.arguments import Arguments as VLMEvalArguments
         self.args = VLMEvalArguments(**self.config_d)
 
-        self.valid_models = self.list_supported_VLMs()
+        self.valid_models = self.list_supported_models()
         self.valid_model_names = list(self.valid_models.keys())
         self.valid_datasets = self.list_supported_datasets()
 
@@ -86,7 +86,7 @@ class VLMEvalKitBackendManager(BackendManager):
         return self.get_cmd()
 
     @staticmethod
-    def list_supported_VLMs():
+    def list_supported_models():
         from vlmeval.config import supported_VLM
         return supported_VLM
 
