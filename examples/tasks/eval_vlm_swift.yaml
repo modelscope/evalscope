@@ -1,20 +1,22 @@
 eval_backend: VLMEvalKit
 eval_config:
   model: 
-    - type: qwen-vl-chat   # swift model type
-      name: CustomAPIModel # Don't change, must be CustomAPIModel for swift deploy evaluation
-      api_base: http://localhost:8000/v1/chat/completions # swfit deploy model api
+    - type: qwen-vl-chat   # model id of the model
+      name: CustomAPIModel # Don't change, must be CustomAPIModel for deploy evaluation
+      api_base: http://localhost:8000/v1/chat/completions # deployed model api
       key: EMPTY
       temperature: 0.0
+      img_size: -1
   data:
     - SEEDBench_IMG
     - ChartQA_TEST
-  mode: all
-  limit: 20
-  rerun: true
-  work_dir: outputs
-  nproc: 1
-  # judge model server config
-  OPENAI_API_KEY: EMPTY
-  OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
-  LOCAL_LLM: qwen2-7b-instruct                               # judge model type
+  mode: all     # all, infer
+  limit: 20     # limit number of data to evaluate
+  rerun: true   # whether to rerun the evaluation
+  work_dir: outputs # output dir
+  nproc: 1      # number of processes to run in parallel
+
+  ######## judge model server config ##########
+  # OPENAI_API_KEY: EMPTY
+  # OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
+  # LOCAL_LLM: qwen2-7b-instruct                               # judge model type
