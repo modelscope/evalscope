@@ -98,9 +98,7 @@ class VLMEvalKitBackendManager(BackendManager):
     @staticmethod
     def _check_env():
         if is_module_installed('vlmeval'):
-            logger.info('Please make sure you have installed the `ms-vlmeval`: `pip install ms-vlmeval`')
-        else:
-            raise ModuleNotFoundError('Please install the `ms-vlmeval` first: `pip install ms-vlmeval`')
+            logger.info('Check VLM Evaluation Kit: Installed')
 
     @staticmethod
     def get_restore_arg(arg_name: str, arg_val: bool):
