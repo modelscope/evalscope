@@ -38,7 +38,7 @@ class TestRunSwiftVLMEval(unittest.TestCase):
         
         logger.info(f'\nStaring run swift deploy ...')
         self.model_name = 'qwen-vl-chat'
-        self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
+        self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name} --infer_backend pt',
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -48,7 +48,7 @@ class TestRunSwiftVLMEval(unittest.TestCase):
     def tearDown(self) -> None:
         # Stop the swift deploy model service
         logger.warning(f'\nStopping swift deploy ...')
-        self.process_swift_deploy.terminate()
+        self.process_swift_deploy.kill()
         self.process_swift_deploy.wait()
         logger.info(f'Process swift-deploy terminated successfully.')
 
