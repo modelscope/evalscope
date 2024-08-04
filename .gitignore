@@ -1,8 +1,4 @@
 # Byte-compiled / optimized / DLL files
-output/
-test*.sh
-test.ipynb
-*.ttf
 __pycache__/
 *.py[cod]
 *$py.class
@@ -150,3 +146,7 @@ evalscope/data/
 temp/
 tmp/
 data
+output/
+test*.sh
+test.ipynb
+*.ttf
