@@ -1,1 +1,1 @@
-ms-vlmeval
+ms-vlmeval>=0.0.5

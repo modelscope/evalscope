@@ -1,1 +1,1 @@
-ms-opencompass
+ms-opencompass>=0.0.5
