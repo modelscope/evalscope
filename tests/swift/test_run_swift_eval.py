@@ -116,7 +116,7 @@ class TestRunSwiftEval(unittest.TestCase):
         # Prepare the config
         task_cfg = dict(
             eval_backend='OpenCompass',
-            eval_config={'datasets': ['ceval'],   # ['mmlu', 'ceval', 'ARC_c', 'gsm8k']
+            eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
                          'models': [
                              {'path': 'llama3-8b-instruct',
                               'openai_api_base': DEFAULT_CHAT_MODEL_URL,
