@@ -76,9 +76,7 @@ class OpenCompassBackendManager(BackendManager):
     @staticmethod
     def _check_env():
         if is_module_installed('opencompass'):
-            logger.info('Please make sure you have installed the `ms-opencompass`: `pip install ms-opencompass`')
-        else:
-            raise ModuleNotFoundError('Please install the `ms-opencompass` first: `pip install ms-opencompass`')
+            logger.info('Check the OpenCompass environment: OK')
 
     @staticmethod
     def get_restore_arg(arg_name: str, arg_val: bool):

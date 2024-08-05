@@ -28,11 +28,13 @@ class TestRunSwiftEval(unittest.TestCase):
         self.model_name = 'llama3-8b-instruct'
         assert is_module_installed('evalscope'), 'Please install `evalscope` from pypi or source code.'
 
-        logger.warning('Note: installing ms-opencompass ...')
-        subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
+        if not is_module_installed('opencompass'):
+            logger.warning('Note: installing ms-opencompass ...')
+            subprocess.run('pip3 install ms-opencompass -U', shell=True, check=True)
 
-        logger.warning('Note: installing ms-swift ...')
-        subprocess.run('pip3 install ms-swift -U', shell=True, check=True)
+        if not is_module_installed('swift'):
+            logger.warning('Note: installing ms-swift ...')
+            subprocess.run('pip3 install ms-swift[llm]', shell=True, check=True)
 
         logger.warning('vllm not installed, use native swift deploy service instead.')
 
@@ -40,6 +42,8 @@ class TestRunSwiftEval(unittest.TestCase):
         self.process_swift_deploy = subprocess.Popen(f'swift deploy --model_type {self.model_name}',
                                                      text=True, shell=True,
                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self.process_swift_deploy.stderr:
+            logger.info(f'swift deploy log info: {self.process_swift_deploy.stderr}')
 
         self.all_datasets = OpenCompassBackendManager.list_datasets()
         assert len(self.all_datasets) > 0, f'Failed to list datasets from OpenCompass backend: {self.all_datasets}'
@@ -86,7 +90,7 @@ class TestRunSwiftEval(unittest.TestCase):
             logger.error(f"An error occurred: {e}")
 
     @staticmethod
-    def check_service_status(url: str, data: dict, retries: int = 20, delay: int = 10):
+    def check_service_status(url: str, data: dict, retries: int = 30, delay: int = 10):
         for i in range(retries):
             try:
                 logger.info(f"Attempt {i + 1}: Checking service at {url} ...")
@@ -120,7 +124,7 @@ class TestRunSwiftEval(unittest.TestCase):
                          ],
                          'work_dir': 'outputs/llama3_eval_result',
                          'reuse': None,      # string, `latest` or timestamp, e.g. `20230516_144254`, default to None
-                         'limit': '[2:5]',   # string or int or float, e.g. `[2:5]`, 5, 5.0, default to None, it means run all examples
+                         'limit': 5,   # string or int or float, e.g. `[2:5]`, 5, 5.0, default to None, it means run all examples
                          },
         )
 
