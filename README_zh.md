@@ -1,5 +1,7 @@
 [English](README.md) | 简体中文
 
+![](resources/evalscope.jpeg?raw=true)
+
 <p align="center">
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
@@ -19,6 +21,10 @@
 
 ## 📝 简介
 大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了EvalScope框架，该框架主要包括以下几个部分：
+
+![](resources/evalscope_framework.png?raw=true)
+*EvalScope 架构图.*
+
 - 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
 - 常用评估指标（metrics）的实现
 - 统一model接入，兼容多个系列模型的generate、chat接口
@@ -443,14 +449,14 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
 参考： [性能测试](evalscope/perf/README.md)
 
 ## TO-DO List
-- [ ] Agents evaluation
+- [x] Agents evaluation
 - [ ] vLLM
 - [ ] Distributed evaluating
-- [ ] Multi-modal evaluation
+- [x] Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
   - [ ] GPQA
-  - [ ] MBPP
+  - [x] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
 
