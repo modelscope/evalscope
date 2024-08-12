@@ -145,7 +145,7 @@ evalscope/data/
 
 temp/
 tmp/
-data
+data/*
 output/
 test*.sh
 test.ipynb
