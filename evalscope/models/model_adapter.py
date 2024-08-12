@@ -416,7 +416,9 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.origin_tokenizer = deepcopy(tokenizer)
 
         self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
-        self.generation_config.update(**generation_config)
+        if generation_config:
+            logger.info('**Updating generation config ...')
+            self.generation_config.update(**generation_config.to_dict())
         logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
         super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
