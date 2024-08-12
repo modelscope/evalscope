@@ -418,9 +418,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
 
-        print(f'\n>> config from model: {self.generation_config.to_dict()}')
-        print(f'>> custom_generation_config: {custom_generation_config}\n')
-
         if custom_generation_config:
             logger.info('**Updating generation config ...')
             self.generation_config.update(**custom_generation_config.to_dict())

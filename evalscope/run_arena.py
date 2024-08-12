@@ -101,7 +101,6 @@ class ArenaWorkflow:
             precision = cfg_d.get(EvalConfigKeys.PRECISION, torch.float16)
             precision = eval(precision) if isinstance(precision, str) else precision
             custom_generation_config = cfg_d.get(EvalConfigKeys.GENERATION_CONFIG, {})
-            print(f'>>> origin config: {custom_generation_config}')
             custom_generation_config = GenerationConfig(**custom_generation_config)
             ans_output_file = os.path.join(WORK_DIR, cfg_d.get(EvalConfigKeys.OUTPUT_FILE))
             template_type = cfg_d.get(EvalConfigKeys.TEMPLATE_TYPE)
@@ -170,6 +169,7 @@ class ArenaWorkflow:
             res_list = ae.run(self.review_file)
             rating_df = res_list[0]
             logger.info(f'Rating results:\n{rating_df.to_csv()}')
+            os.makedirs(os.path.dirname(report_file), exist_ok=True)
             rating_df.to_csv(report_file, index=True)
             logger.info(f'Rating results are saved to {report_file}')
         else:
