@@ -15,7 +15,7 @@ answers_gen:
             max_new_tokens: 256
             top_k: 20
             top_p: 0.75
-            temperature: 0.3
+            temperature: 0.333
         # output predicted answer file name
         output_file: registry/data/arena/answers/answer_chatglm3-6b.jsonl
     Baichuan2-7B-Base:
