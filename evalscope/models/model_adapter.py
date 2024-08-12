@@ -351,7 +351,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                  device_map: str = 'auto',
                  torch_dtype: dtype = torch.float16,
                  cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
-                 generation_config=None,
                  **kwargs):
         """
         Chat completion model adapter. Tasks of chat and generation are supported.
@@ -365,7 +364,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             **kwargs: Other args.
         """
 
-        print(f'>>>> generation_config in ChatGenerationModelAdapter: {generation_config}')
+        custom_generation_config = kwargs.pop('generation_config', None)
         model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
 
         self.model_id: str = model_id
@@ -418,9 +417,13 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.origin_tokenizer = deepcopy(tokenizer)
 
         self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
-        if generation_config:
+
+        print(f'\n>> config from model: {self.generation_config.to_dict()}')
+        print(f'>> custom_generation_config: {custom_generation_config}\n')
+
+        if custom_generation_config:
             logger.info('**Updating generation config ...')
-            self.generation_config.update(**generation_config.to_dict())
+            self.generation_config.update(**custom_generation_config.to_dict())
         logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
         super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
