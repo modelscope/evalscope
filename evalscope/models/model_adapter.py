@@ -351,6 +351,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                  device_map: str = 'auto',
                  torch_dtype: dtype = torch.float16,
                  cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 generation_config=None,
                  **kwargs):
         """
         Chat completion model adapter. Tasks of chat and generation are supported.
@@ -360,6 +361,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             model_revision: The model revision on ModelScope. Default: None.
             device_map: The device map for model inference.
             torch_dtype: The torch dtype for model inference. Default: torch.float16.
+            generation_config: The generation config for model inference.
             **kwargs: Other args.
         """
         model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
@@ -414,6 +416,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.origin_tokenizer = deepcopy(tokenizer)
 
         self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
+        self.generation_config.update(**generation_config)
         logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
         super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
