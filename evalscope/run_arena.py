@@ -101,6 +101,7 @@ class ArenaWorkflow:
             precision = cfg_d.get(EvalConfigKeys.PRECISION, torch.float16)
             precision = eval(precision) if isinstance(precision, str) else precision
             generation_config = cfg_d.get(EvalConfigKeys.GENERATION_CONFIG, {})
+            print(f'>>> origin config: {generation_config}')
             generation_config = GenerationConfig(**generation_config)
             ans_output_file = os.path.join(WORK_DIR, cfg_d.get(EvalConfigKeys.OUTPUT_FILE))
             template_type = cfg_d.get(EvalConfigKeys.TEMPLATE_TYPE)
