@@ -360,7 +360,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             model_revision: The model revision on ModelScope. Default: None.
             device_map: The device map for model inference.
             torch_dtype: The torch dtype for model inference. Default: torch.float16.
-            generation_config: The generation config for model inference.
             **kwargs: Other args.
         """
 
