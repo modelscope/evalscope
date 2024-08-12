@@ -100,16 +100,16 @@ class ArenaWorkflow:
             model_revision = cfg_d.get(EvalConfigKeys.MODEL_REVISION, None)
             precision = cfg_d.get(EvalConfigKeys.PRECISION, torch.float16)
             precision = eval(precision) if isinstance(precision, str) else precision
-            generation_config = cfg_d.get(EvalConfigKeys.GENERATION_CONFIG, {})
-            print(f'>>> origin config: {generation_config}')
-            generation_config = GenerationConfig(**generation_config)
+            custom_generation_config = cfg_d.get(EvalConfigKeys.GENERATION_CONFIG, {})
+            print(f'>>> origin config: {custom_generation_config}')
+            custom_generation_config = GenerationConfig(**custom_generation_config)
             ans_output_file = os.path.join(WORK_DIR, cfg_d.get(EvalConfigKeys.OUTPUT_FILE))
             template_type = cfg_d.get(EvalConfigKeys.TEMPLATE_TYPE)
 
             answers_list = self._predict_answers(model_id_or_path=model_id_or_path,
                                                  model_revision=model_revision,
                                                  precision=precision,
-                                                 generation_config=generation_config,
+                                                 generation_config=custom_generation_config,
                                                  template_type=template_type)
 
             os.makedirs(os.path.dirname(ans_output_file), exist_ok=True)

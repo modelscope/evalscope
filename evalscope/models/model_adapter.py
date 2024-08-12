@@ -364,6 +364,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             generation_config: The generation config for model inference.
             **kwargs: Other args.
         """
+
+        print(f'>>>> generation_config in ChatGenerationModelAdapter: {generation_config}')
         model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
 
         self.model_id: str = model_id
