@@ -7,6 +7,7 @@ eval_config:
       key: EMPTY
       temperature: 0.0
       img_size: -1
+      img_size: -1
   data:
     - MMStar
     # - COCO_VAL
