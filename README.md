@@ -1,12 +1,15 @@
 English | [简体中文](README_zh.md)
 
+
+![](resources/evalscope.jpeg)
+
 <p align="center">
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
 
-## 📖 Table of Content
+## 📖 Table of Contents
 - [Introduction](#introduction)
 - [News](#News)
 - [Installation](#installation)
@@ -19,6 +22,10 @@ English | [简体中文](README_zh.md)
 ## 📝 Introduction
 
 Large Language Model (LLMs) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the EvalScope framework, which includes the following components and features:
+
+
+![](resources/evalscope_framework.png?raw=true)
+*EvalScope Framework.*
 
 - Pre-configured common benchmark datasets, including: MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc.
 - Implementation of common evaluation metrics
@@ -441,25 +448,25 @@ python evalscope/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 ## Leaderboard
 The LLM Leaderboard aims to provide an objective and comprehensive evaluation standard and platform to help researchers and developers understand and compare the performance of models on various tasks on ModelScope.
 
-[Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
+Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 
 
 ## Experiments and Results
-[Experiments](./resources/experiments.md)
+Refer to : [Experiments](./resources/experiments.md)
 
 ## Model Serving Performance Evaluation
-[Perf](evalscope/perf/README.md)
+Refer to : [Perf](evalscope/perf/README.md)
 
 ## TO-DO List
-- ✅Agents evaluation
+- [x] Agents evaluation
 - [ ] vLLM
 - [ ] Distributed evaluating
-- ✅ Multi-modal evaluation
+- [x] Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
   - [ ] GPQA
-  - ✅ MBPP
+  - [x] MBPP
 - [ ] Auto-reviewer
   - [ ] Qwen-max
 
