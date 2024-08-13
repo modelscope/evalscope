@@ -8,15 +8,18 @@ eval_config:
       temperature: 0.0
       img_size: -1
   data:
-    - SEEDBench_IMG
-    - ChartQA_TEST
-  mode: all     # all, infer
-  limit: 20     # limit number of data to evaluate
-  rerun: true   # whether to rerun the evaluation
-  work_dir: outputs # output dir
-  nproc: 1      # number of processes to run in parallel
-
-  ######## judge model server config ##########
+    - MMStar
+    # - COCO_VAL
+    # - AI2D_TEST
+    # - POPE
+    # - RealWorldQA
+    # - SEEDBench2_Plus
+  mode: all
+  limit: 10
+  rerun: false
+  work_dir: outputs
+  nproc: 1
+  # judge model server config
   # OPENAI_API_KEY: EMPTY
   # OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
   # LOCAL_LLM: qwen2-7b-instruct                               # judge model type
