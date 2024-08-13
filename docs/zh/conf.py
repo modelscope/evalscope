@@ -30,6 +30,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx_markdown_tables',
     'sphinx_copybutton',
+    'sphinx_tabs.tabs',
     'myst_parser',
 ]
 

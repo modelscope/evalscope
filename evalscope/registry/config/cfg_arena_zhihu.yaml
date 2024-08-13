@@ -1,0 +1,63 @@
+# input raw data
+question_file: registry/data/question.jsonl
+
+# candidate models to be battled
+answers_gen:
+    Qwen2-7B-Instruct:
+        model_id_or_path: /mnt/data/data/user/maoyunlin.myl/models/Qwen2-7B-Instruct       # model_id on modelscope
+        revision: NULL        # revision of model, default is NULL
+        precision: torch.float16
+        enable: true            # enable or disable this model
+        template_type: default-generation  # see: https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md
+        generation_config:
+            do_sample: true
+            max_new_tokens: 512
+            top_k: 20
+            top_p: 0.9
+            temperature: 0.7
+        # output predicted answer file name
+        output_file: registry/data/arena/answers/answer_qwen2.jsonl
+    Qwen-7B:
+        model_id_or_path: /mnt/data/data/user/maoyunlin.myl/output/qwen2-7b-instruct/v25-20240809-113533/checkpoint-309-merged
+        revision: NULL       # revision of model, default is NULL
+        precision: torch.float16
+        enable: true           # enable or disable this model     
+        template_type: default-generation
+        generation_config:
+            do_sample: true
+            max_new_tokens: 512
+            top_k: 20
+            top_p: 0.9
+            temperature: 0.7
+        output_file: registry/data/arena/answers/answer_Qwen-7B.jsonl
+
+# Auto-reviewer(GPT-4) config
+reviews_gen:
+    enable: true
+    reviewer:
+        # class reference of auto reviewer(GPT-4)
+        ref: evalscope.evaluator.reviewer.auto_reviewer:AutoReviewerGpt4
+        args:
+            max_tokens: 1024
+            temperature: 0.2
+            # options: pairwise, pairwise_baseline, single (default is pairwise)
+            mode: pairwise
+            # position bias mitigation strategy, options: swap_position, randomize_order, NULL. default is NULL
+            position_bias_mitigation: NULL
+            # completion parser config, default is lmsys_parser
+            fn_completion_parser: lmsys_parser
+    # prompt templates for auto reviewer(GPT-4)
+    prompt_file: registry/data/prompt_template/prompt_templates.jsonl
+    # target answer files list to be reviewed,
+    # could be replaced by your own path: ['/path/to/answers_model_1.jsonl', '/path/to/answers_model_2.jsonl', ...]
+    # Default is NULL, which means all answers in answers_gen will be reviewed
+    target_answers: NULL
+    # output file name of auto reviewer
+    review_file: registry/data/arena/reviews/review_gpt4.jsonl
+
+# rating results
+rating_gen:
+    enable: true
+    metrics: ['elo']
+    # elo rating report file name
+    report_file: registry/data/arena/reports/elo_rating_origin.csv
