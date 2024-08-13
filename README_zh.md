@@ -6,6 +6,9 @@
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
 </a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
+</a>
 <p>
 
 ## 📖 目录

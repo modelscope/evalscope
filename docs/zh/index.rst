@@ -11,6 +11,9 @@
    </a>
    <a href="`_github_pr`">
    <img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+   <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
+   </a>
    </p>
 
 
@@ -34,39 +37,37 @@ EvalScope 上手路线
 
 .. _快速开始:
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 快速开始
    
-   README_zh.md
+   get_started/introduction.md
+   get_started/installation.md
+   get_started/quick_start.md
 
 .. _教程:
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 教程
    
-   README_zh.md
 
 
 .. _进阶教程:
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 进阶教程
    
-   README_zh.md
 
 
 .. _性能监控:
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 性能监控
    
-   README_zh.md
 
 
 
-Indices and tables
+索引与表格
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
