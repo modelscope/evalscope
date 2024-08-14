@@ -1,4 +1,4 @@
-# 快速开始
+# 基本使用
 
 ## 简单评估
 在指定的若干数据集上使用默认配置评估某个模型，流程如下：
@@ -58,7 +58,8 @@ python evalscope/run.py \
 ```shell
 python evalscope/run.py \ 
  --model qwen/Qwen-1_8B \
- --generation-config do_sample=false,temperature=0.0 --datasets ceval \
+ --generation-config do_sample=false,temperature=0.0 \
+ --datasets ceval \
  --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
  --limit 10
 ```
@@ -81,7 +82,7 @@ python evalscope/run.py \
 
 ## 支持的数据集列表
 ```{note}
-目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](../advanced_guides/opencompass_backend.md)进行评估；或使用[OpenCompass backend](../advanced_guides/vlmevalkit_backend.md)进行多模态模型评估
+目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](../user_guides/opencompass_backend.md)进行评估；或使用[VLMEvalKit backend](../user_guides/vlmevalkit_backend.md)进行多模态模型评估
 ```
 
 | DatasetName        | Link                                                                                   | Status | Note |
