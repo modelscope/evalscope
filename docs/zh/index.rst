@@ -42,29 +42,40 @@ EvalScope 上手路线
    
    get_started/introduction.md
    get_started/installation.md
-   get_started/quick_start.md
+   get_started/basic_usage.md
 
 .. _教程:
 .. toctree::
    :maxdepth: 1
    :caption: 教程
    
-
+   user_guides/offline_evaluation.md
+   user_guides/arena.md
+   user_guides/opencompass_backend.md
+   user_guides/vlmevalkit_backend.md
+   user_guides/toolbench.md
 
 .. _进阶教程:
 .. toctree::
    :maxdepth: 1
    :caption: 进阶教程
    
-
+   advanced_guides/custom_dataset.md
+   advanced_guides/custom_model.md
 
 .. _性能监控:
 .. toctree::
    :maxdepth: 1
    :caption: 性能监控
    
+   stress_test/quick_start.md
 
-
+.. _最佳实践:
+.. toctree::
+   :maxdepth: 1
+   :caption: 最佳实践
+   
+   best_practice/swift_integration.md
 
 索引与表格
 ==================

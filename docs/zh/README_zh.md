@@ -8,15 +8,6 @@
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
 <p>
 
-## 📖 目录
-- [简介](#简介)
-- [新闻](#新闻)
-- [环境准备](#环境准备)
-- [快速开始](#快速开始)
-- [数据集列表](#数据集列表)
-- [Leaderboard榜单](#leaderboard-榜单)
-- [实验和报告](#实验和报告)
-- [性能评测工具](#性能评测工具)
 
 
 ## 📝 简介

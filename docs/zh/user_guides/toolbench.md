@@ -1,3 +1,4 @@
+# ToolBench
 
 ## Description
 We evaluate the effectiveness of tool learning benchmark: [ToolBench](https://arxiv.org/pdf/2307.16789) (Qin et al.,2023b). The task involve integrating API calls to accomplish tasks, where the agent must accurately select the appropriate API and compose necessary API requests.
@@ -95,8 +96,6 @@ refer to [config_default.yaml](config_default.yaml) for more details.
 
 ### Run the task
 
-```python
-```python
 ```python
 from evalscope.third_party.toolbench_static import run_task
 
