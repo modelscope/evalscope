@@ -42,16 +42,18 @@ def run_swift_eval():
     #   key: The OpenAI api-key of the model api, default to 'EMPTY'
     #   openai_api_base: The base URL of the OpenAI API, it means the swift model serving URL.
     task_cfg = dict(
-        eval_backend='OpenCompass',
-        eval_config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-                     'models': [
-                         {'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 'batch_size': 8},
-                         # {'path': 'llama3-8b', 'is_chat': False, 'key': 'EMPTY', 'openai_api_base': 'http://127.0.0.1:8001/v1/completions', 'batch_size': 100}
-                     ],
-                     'work_dir': 'outputs/llama3_eval_result',
-                     # Could be int/float/str, e.g. 5 or 5.0 or `[10:20]`, default to None, it means run all examples
-                     'limit': 10,
-                     },
+    eval_backend='OpenCompass',
+    eval_config={
+        'datasets': ["mmlu", "ceval",'ARC_c', 'gsm8k'],
+        'models': [
+            {'path': 'qwen2-0_5b-instruct', 
+            'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 
+            'is_chat': True,
+            'batch_size': 16},
+        ],
+        'work_dir': 'outputs/qwen2_eval_result',
+        'limit': 10,
+        },
     )
 
     # Option 2: Use yaml file

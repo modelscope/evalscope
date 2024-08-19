@@ -9,10 +9,11 @@
 可在任意路径下执行：
 ```bash
 python -m evalscope.run \
- --model ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
- --datasets mmlu ceval 
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --datasets arc 
 ```
+如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
 ````
 
 ````{tab} 使用源码安装
@@ -20,15 +21,15 @@ python -m evalscope.run \
 在`evalscope`路径下执行：
 ```bash
 python evalscope/run.py \
- --model ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
- --datasets mmlu ceval 
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --datasets arc
 ```
-
+如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
 ````
 `````
 ### 基本参数说明
-- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如chatglm3-6b模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)；也可使用模型的本地路径，例如`/path/to/model`
+- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
 - `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写
     ````{note}
     也可以使用以下方式，来查看模型的`template_type`列表: 
@@ -46,8 +47,8 @@ python evalscope/run.py \
 **示例1：**
 ```shell
 python evalscope/run.py \
- --model ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
  --model-args revision=v1.0.2,precision=torch.float16,device_map=auto \
  --datasets mmlu ceval \
  --use-cache true \
@@ -57,7 +58,8 @@ python evalscope/run.py \
 **示例2：**
 ```shell
 python evalscope/run.py \ 
- --model qwen/Qwen-1_8B \
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
  --datasets ceval \
  --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
