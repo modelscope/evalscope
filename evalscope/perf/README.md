@@ -94,6 +94,26 @@ options:
      p98: 7.7003
      p99: 7.7003
 ```
+
+#### Metrics Description
+| **Metrics**                                     | **Description**                       | **Values**        |
+|------------------------------------------|-----------------------------|-----------------|
+| Total requests                          | Total requests                     | 10              |
+| Succeed requests                        | Succeed requests                 | 10              |
+| Failed requests                         | Failed requests                  | 0               |
+| Average QPS                            | Average queries per second             | 0.256           |
+| Average latency                         | Average latency for total requests                    | 3.859           |
+| Throughput                              | Output tokens per second        | 23.317          |
+| Average time to first token            | Average time to first token            | 0.007           |
+| Average input tokens per request        | Average input tokens per request    | 21.800          |
+| Average output tokens per request       | Average output tokens per request    | 91.100          |
+| Average time per output token           | Average time per output token      | 0.04289         |
+| Average package per request             | Average package per request         | 93.100          |
+| Average package latency                  | Average package latency                   | 0.042           |
+| Percentile of time to first token (p50, ..., p99)     | Percentile of time to first token      |   p50=0.0021, ..., p99=0.0526         |
+| Percentile of request latency (p50, ..., p99)          | Percentile of request latency          |  p50=3.9317, ..., p99=7.7003         |
+
+
 ### Request parameter  
 You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
 #### request with parameters
