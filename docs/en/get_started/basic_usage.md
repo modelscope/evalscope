@@ -1,50 +1,47 @@
-# 基本使用
+# Basic Usage
 
-## 简单评估
-在指定的若干数据集上使用默认配置评估某个模型，流程如下：
+## Simple Evaluation
+To evaluate a model using default settings on specified datasets, follow the process below:
 
 `````{tabs}
-````{tab} 使用pip安装
-
-可在任意路径下执行：
+````{tab} Install using pip
+You can execute this command from any directory:
 ```bash
 python -m evalscope.run \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
  --datasets arc 
 ```
-如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
+If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 ````
-
-````{tab} 使用源码安装
-
-在`evalscope`路径下执行：
+````{tab} Install from source
+Execute this command in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
  --datasets arc
 ```
-如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
+If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 ````
 `````
-### 基本参数说明
-- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
-- `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写
+
+### Basic Parameter Descriptions
+- `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
+- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4) for filling in this field.
     ````{note}
-    也可以使用以下方式，来查看模型的`template_type`列表: 
+    You can also view the list of `template_type` for models using the following code:
     ``` python
     from evalscope.models.template import TemplateType
     print(TemplateType.get_template_name_list())
     ```
     ````
-- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](#支持的数据集列表)
+- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](#supported-datasets-list) for available options.
 
+## Parameterized Evaluation
+If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
 
-## 带参数评估
-若想进行更加自定义的评估，例如自定义模型参数，或者数据集参数，可以使用以下命令：
-
-**示例1：**
+**Example 1:**
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
@@ -55,9 +52,9 @@ python evalscope/run.py \
  --limit 10
 ```
 
-**示例2：**
+**Example 2:**
 ```shell
-python evalscope/run.py \ 
+python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
@@ -66,41 +63,37 @@ python evalscope/run.py \
  --limit 10
 ```
 
-### 参数说明
-除开上述三个[基本参数](#基本参数说明)，其他参数如下：
-- `--model-args`: 模型加载参数，以逗号分隔，key=value形式
-- `--generation-config`: 生成参数，以逗号分隔，key=value形式
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_new_tokens`: 生成最大长度，默认为1024
-  - `temperature`: 采样温度
-  - `top_p`: 采样阈值
-  - `top_k`: 采样阈值
-- `--use-cache`: 是否使用本地缓存，默认为`false`；如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
-- `--dataset-args`: 评估数据集的设置参数，以json格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应
-  - `--few_shot_num`: few-shot的数量
-  - `--few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
-- `--limit`: 每个数据集最大评估数据量，不填写则默认为全部评估，可用于快速验证
+### Parameter Descriptions
+In addition to the three [basic parameters](#basic-parameter-descriptions), the other parameters are as follows:
+- `--model-args`: Model loading parameters, separated by commas, in `key=value` format.
+- `--generation-config`: Generation parameters, separated by commas, in `key=value` format.
+  - `do_sample`: Whether to use sampling, default is `false`.
+  - `max_new_tokens`: Maximum generation length, default is 1024.
+  - `temperature`: Sampling temperature.
+  - `top_p`: Sampling threshold.
+  - `top_k`: Sampling threshold.
+- `--use-cache`: Whether to use local cache, default is `false`. If set to `true`, previously evaluated model and dataset combinations will not be evaluated again, and will be read directly from the local cache.
+- `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`.
+  - `--few_shot_num`: Number of few-shot examples.
+  - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`.
+- `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
 
+## Use the run_task Function to Submit an Evaluation Task
+Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
 
-## 使用run_task函数提交评估任务
-
-使用run_task函数提交评估任务所需参数与命令行启动评估任务相同。
-
-需要传入一个字典作为参数，字典中包含以下字段：
-
-### 1. 配置任务字典参数
+### 1. Configuration Task Dictionary Parameters
 ```python
 import torch
 from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
 
-# 示例
+# Example
 your_task_cfg = {
         'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
         'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
         'dataset_args': {},
         'dry_run': False,
         'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen', 
+        'template_type': 'qwen',
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
@@ -111,21 +104,19 @@ your_task_cfg = {
         'debug': False
     }
 ```
-其中`DEFAULT_ROOT_CACHE_DIR` 为 `'~/.cache/evalscope'`
+Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~/.cache/evalscope'`.
 
-### 2. run_task执行任务
+### 2. Execute Task with run_task
 ```python
 from evalscope.run import run_task
-
 run_task(task_cfg=your_task_cfg)
 ```
 
-## 支持的数据集列表
+## Supported Datasets List
 ```{note}
-目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](../user_guides/opencompass_backend.md)进行评估；或使用[VLMEvalKit backend](../user_guides/vlmevalkit_backend.md)进行多模态模型评估
+The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
 ```
-
-| DatasetName        | Link                                                                                   | Status | Note |
+| Dataset Name       | Link                                                                                   | Status | Note |
 |--------------------|----------------------------------------------------------------------------------------|--------|------|
 | `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
 | `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
@@ -137,5 +128,4 @@ run_task(task_cfg=your_task_cfg)
 | `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
 | `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
 | `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
-
+| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be integrated |      |

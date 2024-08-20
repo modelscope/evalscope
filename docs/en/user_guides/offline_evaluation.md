@@ -1,16 +1,16 @@
-# 离线环境评估
+# Offline Environment Evaluation
 
-数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
+By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets), which requires an internet connection to load. However, if you find yourself in an environment without internet access, you can use local datasets. Follow the steps below:
 
-## 1. 下载数据集到本地
-假如当前本地工作路径为 `/path/to/workdir`，执行以下命令：
+## 1. Download the Dataset Locally
+Assuming your current local working path is `/path/to/workdir`, execute the following commands:
 ```shell
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
 ```
-则解压后的数据集在：`/path/to/workdir/data` 目录下，该目录在后续步骤将会作为`--dataset-dir`参数的值传入
+This will unzip the dataset into the `/path/to/workdir/data` directory, which will be used as the value for the `--dataset-dir` parameter in subsequent steps.
 
-## 2. 使用本地数据集创建评估任务
+## 2. Create an Evaluation Task Using the Local Dataset
 ```shell
 python evalscope/run.py \
  --model ZhipuAI/chatglm3-6b \
@@ -20,20 +20,18 @@ python evalscope/run.py \
  --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
  --limit 10
 ```
-### 参数说明
-- `--dataset-hub`: 数据集来源，枚举值： `ModelScope` 或 `Local`, 默认为`ModelScope`
-- `--dataset-dir`: 当`--dataset-hub`为`Local`时，该参数指本地数据集路径； 如果`--dataset-hub` 为`ModelScope`，则该参数的含义是数据集缓存路径。
 
-## 3. 使用本地模型进行评估
-模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
+### Parameter Descriptions
+- `--dataset-hub`: Source of the dataset, with possible values: `ModelScope` or `Local`. The default is `ModelScope`.
+- `--dataset-dir`: When `--dataset-hub` is set to `Local`, this parameter refers to the local dataset path. If `--dataset-hub` is set to `ModelScope`, this parameter refers to the dataset cache path.
 
-### 3.1 准备模型本地文件
+## 3. Evaluate Using a Local Model
+Model files are hosted on the ModelScope Hub, requiring internet access for loading. To create an evaluation task in an offline environment, refer to the steps below:
 
-文件夹结构参考chatglm3-6b，链接：https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files
+### 3.1 Prepare Local Model Files
+Structure your model files similar to the `chatglm3-6b` directory, link: https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files. For example, you can download the entire model folder to the local path `/path/to/ZhipuAI/chatglm3-6b`.
 
-例如，将模型文件夹整体下载到本地路径 `/path/to/ZhipuAI/chatglm3-6b`
-
-### 3.2 执行离线评估任务
+### 3.2 Execute the Offline Evaluation Task
 ```shell
 python evalscope/run.py \
  --model /path/to/ZhipuAI/chatglm3-6b \

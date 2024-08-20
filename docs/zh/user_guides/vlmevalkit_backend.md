@@ -160,6 +160,7 @@ task_cfg_dict = {
 `````
 
 #### 参数说明
+
 [基本参数](#基本参数)都与上面部署模型服务评估方式一致，不一样的是模型参数：
 - `model`：字典列表，每种模型需要的字段不同
   - `name`：模型名称，参考[VLMEvalKit支持的模型](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)。
