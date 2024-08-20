@@ -27,11 +27,13 @@ EvalScope 上手路线
 
 - 对于想要使用 EvalScope 的用户，我们推荐先阅读 快速开始_ 部分来设置环境，并启动一个迷你实验熟悉流程。
 
-- 对于一些基础使用，我们建议用户阅读 教程_ 。
+- 对于一些基础使用，我们建议用户阅读 教程_ ，包括 如何使用 EvalScope 进行离线评测、如何使用 竞技场模型 进行评测、如何使用其他评测后端、如何使用模型服务压测工具。
 
 - 若您想进行更多模块的自定义，例如增加数据集和模型，我们提供了 进阶教程_ 。
 
-- 若您想监控模型服务的推理性能，我们提供了 性能监控_ 。
+- 此外，我们提供了第三方工具_ 来帮助用户快速评测模型，例如使用 ToolBench 进行评测。
+
+- 最后，我们提供了 最佳实践_ 来帮助用户进行评测，例如如何使用 Swift 进行评测。
 
 我们始终非常欢迎用户的 PRs 和 Issues 来完善 EvalScope
 
@@ -53,7 +55,7 @@ EvalScope 上手路线
    user_guides/arena.md
    user_guides/opencompass_backend.md
    user_guides/vlmevalkit_backend.md
-   user_guides/toolbench.md
+   user_guides/stress_test.md
 
 .. _进阶教程:
 .. toctree::
@@ -63,12 +65,12 @@ EvalScope 上手路线
    advanced_guides/custom_dataset.md
    advanced_guides/custom_model.md
 
-.. _性能监控:
+.. _第三方工具:
 .. toctree::
    :maxdepth: 1
-   :caption: 性能监控
+   :caption: 第三方工具
    
-   stress_test/quick_start.md
+   third_party/toolbench.md
 
 .. _最佳实践:
 .. toctree::

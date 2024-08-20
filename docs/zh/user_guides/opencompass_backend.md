@@ -2,13 +2,13 @@
 
 为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用[vLLM](https://github.com/vllm-project/vllm)拉起模型推理服务。
 
-## 环境准备
+## 1. 环境准备
 ```shell
 # 安装opencompass依赖
 pip install evalscope[opencompass] -U
 ```
 
-## 数据准备
+## 2. 数据准备
 
 <!-- ````{note}
 您可以使用以下方式，来查看数据集的名称列表：
@@ -75,7 +75,7 @@ unzip eval_data.zip
 `````
 
 
-## 模型推理服务
+## 3. 模型推理服务
 OpenCompass 评测后端使用统一的OpenAI API调用来进行评估，因此我们需要进行模型部署。下面我们使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)
 
 ### 安装ms-swift
@@ -92,7 +92,7 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 ```
 
 
-## 模型评估
+## 4. 模型评估
 
 ### 配置文件
 有如下三种方式编写配置文件：
@@ -160,15 +160,16 @@ eval_swift_openai_api.json
 `````
 #### 参数说明
 
-- `eval_backend`：默认值为 `OpenCompass`
-- `datasets`：列表，参考[目前支持的数据集](#目前支持的数据集)
-- `models`：字典列表，每个字典必须包含以下字段：
-  - `path`：重用命令行 `swift deploy` 中的 `--model_type` 的值
-  - `openai_api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL
-  - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型
-  - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`
-- `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs/default`
-- `limit`： - 可以是 `int`、`float` 或 `str`，例如 5、5.0 或 `'[10:20]'`。默认值为 `None`，表示运行所有示例。
+- `eval_backend`：默认值为 `OpenCompass`，表示使用 OpenCompass 评测后端
+- `eval_config`：字典，包含以下字段：
+  - `datasets`：列表，参考[目前支持的数据集](#2-数据准备)
+  - `models`：字典列表，每个字典必须包含以下字段：
+    - `path`：重用命令行 `swift deploy` 中的 `--model_type` 的值
+    - `openai_api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL
+    - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型
+    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`
+  - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs/default`
+  - `limit`： 可以是 `int`、`float` 或 `str`，例如 5、5.0 或 `'[10:20]'`。默认值为 `None`，表示运行所有示例。
 
 有关其他可选属性，请参考 `opencompass.cli.arguments.ApiModelConfig`。
 

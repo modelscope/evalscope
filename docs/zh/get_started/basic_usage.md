@@ -82,6 +82,44 @@ python evalscope/run.py \
 - `--limit`: 每个数据集最大评估数据量，不填写则默认为全部评估，可用于快速验证
 
 
+## 使用run_task函数提交评估任务
+
+使用run_task函数提交评估任务所需参数与命令行启动评估任务相同。
+
+需要传入一个字典作为参数，字典中包含以下字段：
+
+### 1. 配置任务字典参数
+```python
+import torch
+from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+
+# 示例
+your_task_cfg = {
+        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
+        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
+        'dataset_args': {},
+        'dry_run': False,
+        'model': 'qwen/Qwen2-0.5B-Instruct',
+        'template_type': 'qwen', 
+        'datasets': ['arc', 'hellaswag'],
+        'work_dir': DEFAULT_ROOT_CACHE_DIR,
+        'outputs': DEFAULT_ROOT_CACHE_DIR,
+        'mem_cache': False,
+        'dataset_hub': 'ModelScope',
+        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
+        'limit': 10,
+        'debug': False
+    }
+```
+其中`DEFAULT_ROOT_CACHE_DIR` 为 `'~/.cache/evalscope'`
+
+### 2. run_task执行任务
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg=your_task_cfg)
+```
+
 ## 支持的数据集列表
 ```{note}
 目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](../user_guides/opencompass_backend.md)进行评估；或使用[VLMEvalKit backend](../user_guides/vlmevalkit_backend.md)进行多模态模型评估
