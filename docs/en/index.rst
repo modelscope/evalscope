@@ -17,39 +17,37 @@
    </p>
 
 
-欢迎来到 EvalScope 中文教程！
+Welcome to the EvalScope Tutorial!
 ==========================================
-
-EvalScope 上手路线
+Getting Started with EvalScope
 -------------------------------
+To help users quickly get started, we recommend the following flow:
 
-为了用户能够快速上手，我们推荐以下流程：
+- For those who want to use EvalScope, we recommend first reading the QuickStart_ section to set up the environment and initiate a mini-experiment to familiarize yourself with the process.
 
-- 对于想要使用 EvalScope 的用户，我们推荐先阅读 快速开始_ 部分来设置环境，并启动一个迷你实验熟悉流程。
+- For some basic usages, we suggest users read the Tutorials_, which include how to perform offline evaluations with EvalScope, how to use Arena models for evaluations, how to utilize other evaluation backends, and how to use the model service stress testing tool.
 
-- 对于一些基础使用，我们建议用户阅读 教程_ ，包括 如何使用 EvalScope 进行离线评测、如何使用 竞技场模型 进行评测、如何使用其他评测后端、如何使用模型服务压测工具。
+- If you wish to customize more modules, such as adding datasets and models, we provide the AdvancedTutorials_.
 
-- 若您想进行更多模块的自定义，例如增加数据集和模型，我们提供了 进阶教程_ 。
+- Additionally, we offer Third-PartyTools_ to help users quickly evaluate models, such as using ToolBench for evaluations.
 
-- 此外，我们提供了 第三方工具_ 来帮助用户快速评测模型，例如使用 ToolBench 进行评测。
+- Finally, we provide BestPractices_ to assist users with evaluations, such as how to use Swift for evaluations.
 
-- 最后，我们提供了 最佳实践_ 来帮助用户进行评测，例如如何使用 Swift 进行评测。
+We always welcome users' PRs and Issues to improve EvalScope.
 
-我们始终非常欢迎用户的 PRs 和 Issues 来完善 EvalScope
-
-.. _快速开始:
+.. _QuickStart:
 .. toctree::
    :maxdepth: 1
-   :caption: 快速开始
+   :caption: Quick Start
    
    get_started/introduction.md
    get_started/installation.md
    get_started/basic_usage.md
 
-.. _教程:
+.. _Tutorials:
 .. toctree::
    :maxdepth: 1
-   :caption: 教程
+   :caption: Tutorials
    
    user_guides/offline_evaluation.md
    user_guides/arena.md
@@ -57,30 +55,29 @@ EvalScope 上手路线
    user_guides/vlmevalkit_backend.md
    user_guides/stress_test.md
 
-.. _进阶教程:
+.. _AdvancedTutorials:
 .. toctree::
    :maxdepth: 1
-   :caption: 进阶教程
+   :caption: Advanced Tutorials
    
    advanced_guides/custom_dataset.md
    advanced_guides/custom_model.md
 
-.. _第三方工具:
+.. _Third-PartyTools:
 .. toctree::
    :maxdepth: 1
-   :caption: 第三方工具
+   :caption: Third-Party Tools
    
    third_party/toolbench.md
 
-.. _最佳实践:
+.. _BestPractices:
 .. toctree::
    :maxdepth: 1
-   :caption: 最佳实践
+   :caption: Best Practices
    
    best_practice/swift_integration.md
 
-索引与表格
+Index and Tables
 ==================
-
 * :ref:`genindex`
 * :ref:`search`

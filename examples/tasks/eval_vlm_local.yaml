@@ -10,7 +10,7 @@ eval_config:
   limit: 20
   rerun: true
   work_dir: outputs
-  nproc: 1
+  nproc: 16
   # judge model server config
   OPENAI_API_KEY: EMPTY 
   OPENAI_API_BASE: http://localhost:8866/v1/chat/completions # judge model api
