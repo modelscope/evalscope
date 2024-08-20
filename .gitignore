@@ -151,3 +151,4 @@ test*.sh
 test.ipynb
 *.ttf
 _build/
+data

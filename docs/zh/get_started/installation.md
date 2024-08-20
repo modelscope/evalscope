@@ -19,15 +19,17 @@ pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
 pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
 ```
 
-```{warning}
-版本废弃说明: 对于`v0.4.3`或更早版本，您可以使用以下命令安装：
+````{warning}
+由于项目更名为`evalscope`，对于`v0.4.3`或更早版本，您可以使用以下命令安装：
 ```shell
 pip install llmuses<=0.4.3
-
-# Usage:
-from llmuses.run import run_task
-...
 ```
+
+使用`llmuses`导入相关依赖：
+``` python
+from llmuses import ...
+```
+````
 
 
 ## 使用源码安装

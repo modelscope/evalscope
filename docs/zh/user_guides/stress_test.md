@@ -1,8 +1,9 @@
-# Quick Start
-A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats.
-## Usage
+# 模型推理性能压测
+一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
 
-### Command line  
+## 使用方法
+
+### 命令行
 ```bash
 evalscope perf --help
 usage: evalscope <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
@@ -10,58 +11,55 @@ usage: evalscope <command> [<args>] perf [-h] --model MODEL [--url URL] [--conne
                                        [--api API] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH] [--prompt PROMPT] [--query-template QUERY_TEMPLATE] [--dataset DATASET]
                                        [--dataset-path DATASET_PATH] [--frequency-penalty FREQUENCY_PENALTY] [--logprobs] [--max-tokens MAX_TOKENS] [--n-choices N_CHOICES] [--seed SEED] [--stop STOP] [--stream]
                                        [--temperature TEMPERATURE] [--top-p TOP_P]
-
 options:
-  -h, --help            show this help message and exit
-  --model MODEL         The test model name.
+  -h, --help            显示此帮助信息并退出
+  --model MODEL         测试模型名称。
   --url URL
   --connect-timeout CONNECT_TIMEOUT
-                        The network connection timeout
+                        网络连接超时
   --read-timeout READ_TIMEOUT
-                        The network read timeout
+                        网络读取超时
   -n NUMBER, --number NUMBER
-                        How many requests to be made, if None, will will send request base dataset or prompt.
-  --parallel PARALLEL   Set number of concurrency request, default 1
-  --rate RATE           Number of requests per second. default None, if it set to -1,then all the requests are sent at time 0. Otherwise, we use Poisson process to synthesize the request arrival times. Mutual exclusion
-                        with parallel
+                        发出的请求数量，如果为None，则将基于数据集或提示发送请求。
+  --parallel PARALLEL   设置并发请求的数量，默认为1
+  --rate RATE           每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥
   --log-every-n-query LOG_EVERY_N_QUERY
-                        Logging every n query.
+                        每n个查询记录日志。
   --headers KEY1=VALUE1 [KEY1=VALUE1 ...]
-                        Extra http headers accepts by key1=value1 key2=value2. The headers will be use for each query.You can use this parameter to specify http authorization and other header.
+                        额外的HTTP头，格式为key1=value1 key2=value2。该头将用于每个查询。您可以使用此参数指定HTTP授权和其他头信息。
   --wandb-api-key WANDB_API_KEY
-                        The wandb api key, if set the metric will be saved to wandb.
-  --name NAME           The wandb db result name and result db name, default: {model_name}_{current_time}
-  --debug               Debug request send.
+                        wandb API密钥，如果设置，则度量将保存到wandb。
+  --name NAME           wandb数据库结果名称和结果数据库名称，默认为: {model_name}_{current_time}
+  --debug               调试请求发送。
   --tokenizer-path TOKENIZER_PATH
-                        Specify the tokenizer weight path, used to calculate the number of input and output tokens,usually in the same directory as the model weight.
-  --api API             Specify the service api, current support [openai|dashscope]you can define your custom parser with python, and specify the python file path, reference api_plugin_base.py,
+                        指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
+  --api API             指定服务API，目前支持[openai|dashscope]，您可以使用python定义自定义解析器，并指定python文件路径，参考api_plugin_base.py。
   --max-prompt-length MAX_PROMPT_LENGTH
-                        Maximum input prompt length
+                        最大输入prompt长度
   --min-prompt-length MIN_PROMPT_LENGTH
-                        Minimum input prompt length.
-  --prompt PROMPT       Specified the request prompt, all the query will use this prompt, You can specify local file via @file_path, the prompt will be the file content.
+                        最小输入prompt长度。
+  --prompt PROMPT       指定请求prompt，所有查询将使用此prompt。您可以通过@file_path指定本地文件，prompt将为文件内容。
   --query-template QUERY_TEMPLATE
-                        Specify the query template, should be a json string, or local file,with local file, specified with @local_file_path,will will replace model and prompt in the template.
-  --dataset DATASET     Specify the dataset [openqa|longalpaca|line_by_line]you can define your custom dataset parser with python, and specify the python file path, reference dataset_plugin_base.py,
+                        指定查询模板，应该是一个JSON字符串或本地文件，使用本地文件时，通过@local_file_path指定，将在模板中替换模型和prompt。
+  --dataset DATASET     指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考dataset_plugin_base.py。
   --dataset-path DATASET_PATH
-                        Path to the dataset file, Used in conjunction with dataset. If dataset is None, each line defaults to a prompt.
+                        数据集文件的路径，与数据集结合使用。如果数据集为None，则每一行默认为一个prompt。
   --frequency-penalty FREQUENCY_PENALTY
-                        The frequency_penalty value.
-  --logprobs            The logprobs.
+                        frequency_penalty值。
+  --logprobs            对数概率。
   --max-tokens MAX_TOKENS
-                        The maximum number of tokens can be generated.
+                        可以生成的最大token数量。
   --n-choices N_CHOICES
-                        How may chmpletion choices to generate.
-  --seed SEED           The random seed.
-  --stop STOP           The stop generating tokens.
-  --stop-token-ids      Set the stop token ids.
-  --stream              Stream output with SSE.
+                        生成的补全选择数量。
+  --seed SEED           随机种子。
+  --stop STOP           停止生成的tokens。
+  --stop-token-ids      设置停止生成的token的ID。
+  --stream              使用SSE流输出。
   --temperature TEMPERATURE
-                        The sample temperature.
-  --top-p TOP_P         Sampling top p.
-
+                        采样温度。
+  --top-p TOP_P         top_p采样。
 ```
-### The result:
+### 结果
 ```bash
  Total requests: 10
  Succeed requests: 10
@@ -94,27 +92,50 @@ options:
      p98: 7.7003
      p99: 7.7003
 ```
-### Request parameter  
-You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
-#### request with parameters
-Sample request llama3 vllm openai compatible interface.
+
+#### 指标说明
+
+| **指标**                                     | **说明**                       | **数值**        |
+|------------------------------------------|-----------------------------|-----------------|
+| Total requests                          | 总请求数                     | 10              |
+| Succeeded requests                      | 成功请求                     | 10              |
+| Failed requests                         | 失败请求                      | 0               |
+| Average QPS                            | 每秒平均查询                 | 0.256           |
+| Average latency                         | 所有请求的平均延迟          | 3.859           |
+| Throughput                              | 每秒输出tokens              | 23.317          |
+| Average time to first token            | 第一次token的平均时间       | 0.007           |
+| Average input tokens per request        | 每个请求的平均输入tokens    | 21.800          |
+| Average output tokens per request       | 每个请求的平均输出tokens    | 91.100          |
+| Average time per output token           | 每个输出token的平均时间     | 0.04289         |
+| Average package per request             | 每个请求的平均包数          | 93.100          |
+| Average package latency                  | 每个包的平均延迟            | 0.042           |
+| Percentile of time to first token (p50, ..., p99) | 第一次token的时间百分位     |   p50=0.0021, ..., p99=0.0526         |
+| Percentile of request latency (p50, ..., p99)          | 请求延迟的百分位          |  p50=3.9317, ..., p99=7.7003         |
+
+
+### 请求参数  
+您可以在`query-template`中设置请求参数，也可以使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。
+#### 带参数的请求
+示例请求 llama3 
 ```bash
 evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 --dataset-path './datasets/open_qa.jsonl' -n 1 --max-prompt-length 128000 --api openai --stream --stop '<|im_end|>' --dataset openqa --debug
 ```
-evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
 
-#### query-template usage.
-When you need to process more complex requests, you can use templates to simplify the command line.
-If both the template and the parameter are present, the value in the parameter will prevail.
-Query-template example:
+```bash
+evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+```
+
+#### query-template 使用说明
+当你需要处理更复杂的请求时，可以使用模板来简化命令行。如果同时存在模板和参数，则参数中的值将优先使用。
+query-template 示例：
 ```bash
 evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 12 --model 'llama3' --log-every-n-query 10 --read-timeout=120 -n 1 --max-prompt-length 128000 --api openai --query-template '{"model": "%m", "messages": [], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}' --dataset openqa --dataset-path './datasets/open_qa.jsonl'
 ```
-For messages, the dataset processor message will replace messages in the query-template.
+对于 `messages` 字段, 数据集处理器的 message 将替换 query-template 中的 messages.
 
-#### Start the client
+#### 启动客户端
 ```bash
-# test openai service
+# 测试 openai 服务
 evalscope perf --url 'https://api.openai.com/v1/chat/completions' --parallel 1 --headers 'Authorization=Bearer YOUR_OPENAI_API_KEY' --model 'gpt-4o' --dataset-path 'THE_DATA_TO/open_qa.jsonl'  --log-every-n-query 10 --read-timeout=120  -n 100 --max-prompt-length 128000 --api openai --stream --dataset openqa
 ```
 
@@ -124,17 +145,20 @@ evalscope perf --url 'https://api.openai.com/v1/chat/completions' --parallel 1 -
 evalscope perf --url 'http://IP:PORT/v1/chat/completions' --parallel 1 --model 'qwen' --log-every-n-query 1 --read-timeout=120 -n 1000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
 ```
 
-#### How to log metrics to wandb
+### FAQ
+
+#### 如何使用wandb记录测试结果
 --wandb-api-key 'your_wandb_api_key'  --name 'name_of_wandb_and_result_db'  
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-#### How to debug
---debug 
-with --debug option, we will output the request and response.
+#### 如何调试
+使用 --debug 选项，我们将输出请求和响应。
 
-#### How to analysis result.
-The tool will save all data during the test to the sqlite3 database, including requests and responses. You can analyze the test data after the test.
+
+#### 如何分析结果
+该工具在测试期间会将所有数据保存到 sqlite3 数据库中，包括请求和响应。您可以在测试后分析测试数据。
+
 ```python
 import sqlite3
 import base64
@@ -162,17 +186,24 @@ with con:
             print('prompt: %s, tokens: %s, completion: %s, tokens: %s' % (request['messages'][0]['content'], row[2], response_content, row[3]))
 ```
 
-#### Api supported
-Currently supports openai, dashscope, zhipu API request. You can specify api with --api.
-You can custom your request with --query-template, you can specify a json string as:
-'{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}'
-or a local file with @to_query_template_path. We will replace %m with model and %p with prompt.
+#### 支持的 API 有哪些
+目前支持的 API 请求有 openai、dashscope 和 zhipu。您可以通过 --api 指定 API。
 
-#### How to extend API
-To extend api you can create sub class of `ApiPluginBase`, annotation with @register_api("name_of_api")
-with build_request build request via model, prompt, and
-query_template. you can reference opanai_api.py
-parse_responses return number_of_prompt_tokens and number_of_completion_tokens.
+您可以使用 --query-template 自定义您的请求，您可以指定一个 JSON 字符串如下：
+```json
+{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}
+```
+
+或使用本地文件 `@to_query_template_path`。我们将用 `model` 替换 `%m`，用 `prompt` 替换 `%p`。
+
+
+#### 如何扩展 API
+要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
+
+通过 model、prompt 和 query_template 来构建请求的 build_request。您可以参考 opanai_api.py。
+
+`parse_responses` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量。
+
 ```python
 class ApiPluginBase:
     def __init__(self, model_path: str) -> None:
@@ -212,15 +243,20 @@ class ApiPluginBase:
         raise NotImplementedError  
 ```
 
-#### Dataset supported
-Currently supports line by line, longalpaca and openqa data set.
-line by line with each line as a prompt.
-longalpaca will get item['instruction'] as prompt.
-openqa will get item['question'] as prompt.
+#### 支持的数据集
+目前支持逐行（line by line）、longalpaca 和 openqa 数据集。
 
-#### How to extension dataset.
-To extend api you can create sub class of `DatasetPluginBase`, annotation with @register_dataset('name_of_dataset')
-implement build_prompt api return a prompt.
+- 逐行方法将每一行作为一个提示。
+
+- longalpaca 将获取 item['instruction'] 作为提示。
+
+- openqa 将获取 item['question'] 作为提示。
+
+#### 如何扩展数据集
+要扩展数据集，您可以创建 `DatasetPluginBase` 的子类，并使用 `@register_dataset('数据集名称')` 进行注解，
+
+然后实现 `build_prompt` 方法以返回一个prompt。
+
 ```python
 class DatasetPluginBase:
     def __init__(self, query_parameters: QueryParameters):

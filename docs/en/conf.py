@@ -57,7 +57,7 @@ autodoc_default_options = {
 templates_path = ['_templates']
 exclude_patterns = []
 
-language = 'zh'
+language = 'en'
 
 # The master toctree document.
 root_doc = 'index'
