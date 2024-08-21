@@ -96,7 +96,8 @@ pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
 pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
 ```
 
-> ![WARNING]
+
+> [!WARNING]
 > 由于项目更名为`evalscope`，对于`v0.4.3`或更早版本，您可以使用以下命令安装：
 > ```shell
 >  pip install llmuses<=0.4.3
@@ -105,6 +106,7 @@ pip install evalscope[all]           # 安装所有 backends (Native, OpenCompas
 > ``` python
 > from llmuses import ...
 > ```
+
 
 
 ### 方式2. 使用源码安装
@@ -155,12 +157,12 @@ python evalscope/run.py \
 #### 基本参数说明
 - `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
 - `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写
-    >![note]
-    >也可以使用以下方式，来查看模型的`template_type`列表: 
-    >``` python
-    >from evalscope.models.template import TemplateType
-    >print(TemplateType.get_template_name_list())
-    >```
+  > [!NOTE]
+  >也可以使用以下方式，来查看模型的`template_type`列表: 
+  >``` python
+  >from evalscope.models.template import TemplateType
+  >print(TemplateType.get_template_name_list())
+  >```
     
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](#支持的数据集列表)
 
@@ -245,7 +247,7 @@ run_task(task_cfg=your_task_cfg)
 ```
 
 ### 支持的数据集列表
-> ![NOTE]
+> [!NOTE]
 > 目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)进行评估；或使用[VLMEvalKit backend](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)进行多模态模型评估.
 
 

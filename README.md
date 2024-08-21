@@ -90,7 +90,7 @@ We recommend using conda to manage your environment and installing dependencies 
    pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit)
    ```
 
->![warning]
+> [!WARNING]
 > As the project has been renamed to `evalscope`, for versions `v0.4.3` or earlier, you can install using the following command:
 > ```shell
 > pip install llmuses<=0.4.3
@@ -146,7 +146,7 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 #### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
 - `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/LLM/Supported-models-datasets.html) for filling in this field.
-    > ![note]
+    > [!NOTE]
     > You can also view the list of `template_type` for models using the > following code:
     > ``` python
     > from evalscope.models.template import TemplateType
@@ -230,7 +230,7 @@ run_task(task_cfg=your_task_cfg)
 ```
 
 ### Supported Datasets List
-> ![note]
+> [!NOTE]
 > The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
 
 | Dataset Name       | Link                                                                                   | Status | Note |
