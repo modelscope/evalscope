@@ -1,4 +1,4 @@
-# Offline Environment Evaluation
+# Offline Evaluation
 
 By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets), which requires an internet connection to load. However, if you find yourself in an environment without internet access, you can use local datasets. Follow the steps below:
 

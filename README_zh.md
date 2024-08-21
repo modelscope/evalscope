@@ -1,99 +1,113 @@
 [English](README.md) | 简体中文
 
-![](resources/evalscope.jpeg?raw=true)
+![](docs/en/_static/images/evalscope_logo.png)
 
 <p align="center">
-<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
-</a>
-<a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
-<a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
-</a>
+  <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
+  <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
+  </a>
+  <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+  <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
+      <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
+  </a>
+  <br><br>
+  推荐阅读：<a href="https://evalscope.readthedocs.io/zh-cn/latest/">📖 EvalScope中文官方文档</a>
 <p>
+
 
 ## 📖 目录
 - [简介](#简介)
 - [新闻](#新闻)
 - [环境准备](#环境准备)
 - [快速开始](#快速开始)
-- [数据集列表](#数据集列表)
-- [Leaderboard榜单](#leaderboard-榜单)
-- [实验和报告](#实验和报告)
 - [性能评测工具](#性能评测工具)
+- [Leaderboard榜单](#leaderboard-榜单)
+
 
 
 ## 📝 简介
-大型语言模型评估（LLMs evaluation）已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了EvalScope框架，该框架主要包括以下几个部分：
+大模型（包括大语言模型和多模态模型）评估，已成为评价和改进大模型的重要流程和手段，为了更好地支持大模型的评测，我们提出了EvalScope框架。
 
-![](resources/evalscope_framework.png?raw=true)
+### 框架特点
+- **基准数据集**：预置了多个常用测试基准，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等。
+- **评估指标**：实现了多种常用评估指标。
+- **模型接入**：统一的模型接入机制，兼容多个系列模型的Generate、Chat接口。
+- **自动评估**：包括客观题自动评估和使用专家模型进行的复杂任务评估。
+- **评估报告**：自动生成评估报告。
+- **竞技场(Arena)模式**：用于模型间的比较以及模型的客观评估，支持多种评估模式，包括：
+  - **Single mode**：对单个模型进行评分。
+  - **Pairwise-baseline mode**：与基线模型进行对比。
+  - **Pairwise (all) mode**：所有模型间的两两对比。
+- **可视化工具**：提供直观的评估结果展示。
+- **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](../user_guides/stress_test.md)。
+- **OpenCompass集成**：支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
+- **VLMEvalKit集成**：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
+- **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。
+
+### 框架架构
+![](docs/en/_static/images/evalscope_framework.png)
 *EvalScope 架构图.*
 
-- 预置了多个常用的测试基准数据集，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等
-- 常用评估指标（metrics）的实现
-- 统一model接入，兼容多个系列模型的generate、chat接口
-- 自动评估（evaluator）：
-    - 客观题自动评估
-    - 使用专家模型实现复杂任务的自动评估
-- 评估报告生成
-- 竞技场模式(Arena)
-- 可视化工具
-- [模型性能评估](evalscope/perf/README.md)
-- 支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务到OpenCompass进行评估。
-- 支持VLMEvalKit作为评测后端，通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集。
-- 全链路支持：通过与SWIFT的无缝集成，您可以轻松地训练和部署模型服务，发起评测任务，查看评测报告，实现一站式大模型开发流程。
+包括以下模块：
 
-**特点**
-- 轻量化，尽量减少不必要的抽象和配置
-- 易于定制
-  - 仅需实现一个类即可接入新的数据集
-  - 模型可托管在[ModelScope](https://modelscope.cn)上，仅需model id即可一键发起评测
-  - 支持本地模型可部署在本地
-  - 评估报告可视化展现
-- 丰富的评估指标
-- model-based自动评估流程，支持多种评估模式
-  - Single mode: 专家模型对单个模型打分
-  - Pairwise-baseline mode: 与 baseline 模型对比
-  - Pairwise (all) mode: 全部模型两两对比
+1. **Model Adapter**: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。
+
+2. **Data Adapter**: 数据适配器，负责转换和处理输入数据，以便适应不同的评估需求和格式。
+
+3. **Evaluation Backend**: 
+    - **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
+    - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
+    - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
+    - **ThirdParty**：其他第三方评估任务，如ToolBench。
+
+4. **Performance Evaluator**: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。
+
+5. **Evaluation Report**: 最终生成的评估报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。
+
+6. **Visualization**: 可视化结果，帮助用户更直观地理解评估结果，便于分析和比较不同模型的表现。
 
 
 ## 🎉 新闻
 - **[2024.08.09]** 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评估体验，基于OpenAI API方式的评估链路，最高加速10倍 🚀🚀🚀
 - **[2024.07.31]** 重要修改：`llmuses`包名修改为`evalscope`，请同步修改您的代码
-- **[2024.07.26]** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务，[使用指南](#vlmevalkit-评测后端) 🔥🔥🔥
-- **[2024.06.29]** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置，[使用指南](#opencompass-评测后端) 🔥🔥🔥
+- **[2024.07.26]** 支持**VLMEvalKit**作为第三方评测框架，发起多模态模型评测任务🔥🔥🔥
+- **[2024.06.29]** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置 🔥🔥🔥
 - **[2024.06.13]** EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 🚀🚀🚀
 - **[2024.06.13]** 接入Agent评测集ToolBench 🚀🚀🚀
 
 
-
 ## 🛠️ 环境准备
-### 使用pip安装
+### 方式1. 使用pip安装
 我们推荐使用conda来管理环境，并使用pip安装依赖:
 1. 创建conda环境 (可选)
 ```shell
+# 建议使用 python 3.10
 conda create -n evalscope python=3.10
+
+# 激活conda环境
 conda activate evalscope
 ```
-2. 安装依赖
+2. pip安装依赖
 ```shell
-pip install evalscope                # Installation with Native backend (by default)
-
-pip install evalscope[opencompass]   # Installation with OpenCompass backend
-pip install evalscope[vlmeval]       # Installation with VLMEvalKit backend
-pip install evalscope[all]           # Installation with all backends (Native, OpenCompass, VLMEvalKit)
+pip install evalscope                # 安装 Native backend (默认)
+# 额外选项
+pip install evalscope[opencompass]   # 安装 OpenCompass backend
+pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
+pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
 ```
 
-版本废弃说明: 对于v0.4.3或更早版本，您可以使用以下命令安装：
-```shell
-pip install llmuses<=0.4.3
+> ![WARNING]
+> 由于项目更名为`evalscope`，对于`v0.4.3`或更早版本，您可以使用以下命令安装：
+> ```shell
+>  pip install llmuses<=0.4.3
+> ```
+> 使用`llmuses`导入相关依赖：
+> ``` python
+> from llmuses import ...
+> ```
 
-# Usage:
-from llmuses.run import run_task
-...
 
-```
-
-### 使用源码安装
+### 方式2. 使用源码安装
 1. 下载源码
 ```shell
 git clone https://github.com/modelscope/evalscope.git
@@ -101,218 +115,104 @@ git clone https://github.com/modelscope/evalscope.git
 2. 安装依赖
 ```shell
 cd evalscope/
-pip install -e .
+
+pip install -e .                  # 安装 Native backend
+# 额外选项
+pip install -e '.[opencompass]'   # 安装 OpenCompass backend
+pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
+pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
 ```
 
 
 ## 🚀 快速开始
 
-### 简单评估
-在指定的若干数据集上评估某个模型，流程如下：
-如果使用git安装，可在任意路径下执行：
+### 1. 简单评估
+在指定的若干数据集上使用默认配置评估某个模型，流程如下：
+
+#### 使用pip安装
+
+可在任意路径下执行：
+```bash
+python -m evalscope.run \
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --datasets arc 
+```
+
+#### 使用源码安装
+
+在`evalscope`路径下执行：
+```bash
+python evalscope/run.py \
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --datasets arc
+```
+
+如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
+
+
+#### 基本参数说明
+- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
+- `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写
+    >![note]
+    >也可以使用以下方式，来查看模型的`template_type`列表: 
+    >``` python
+    >from evalscope.models.template import TemplateType
+    >print(TemplateType.get_template_name_list())
+    >```
+    
+- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](#支持的数据集列表)
+
+
+### 2. 带参数评估
+若想进行更加自定义的评估，例如自定义模型参数，或者数据集参数，可以使用以下命令：
+
+**示例1：**
 ```shell
-python -m evalscope.run --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --limit 100
+python evalscope/run.py \
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --model-args revision=v1.0.2,precision=torch.float16,device_map=auto \
+ --datasets mmlu ceval \
+ --use-cache true \
+ --limit 10
 ```
-如果使用源码安装，在evalscope路径下执行：
+
+**示例2：**
 ```shell
-python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets mmlu ceval --limit 10
-```
-其中，--model参数指定了模型的ModelScope model id，模型链接：[ZhipuAI/chatglm3-6b](https://modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
-
-### 带参数评估
-```shell
-python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --model-args revision=v1.0.2,precision=torch.float16,device_map=auto --datasets mmlu ceval --use-cache true --limit 10
-```
-```shell
-python evalscope/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' --limit 10
-```
-参数说明：
-- --model-args: 模型参数，以逗号分隔，key=value形式
-- --datasets: 数据集名称，支持输入多个数据集，使用空格分开，参考下文`数据集列表`章节
-- --use-cache: 是否使用本地缓存，默认为`false`;如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
-- --dataset-args: 数据集的evaluation settings，以json格式传入，key为数据集名称，value为参数，注意需要跟--datasets参数中的值一一对应
-  - --few_shot_num: few-shot的数量
-  - --few_shot_random: 是否随机采样few-shot数据，如果不设置，则默认为true
-- --limit: 每个subset最大评估数据量
-- --template-type: 需要手动指定该参数，使得evalscope能够正确识别模型的类型，用来设置model generation config。
-
-关于--template-type，具体可参考：[模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
-在模型列表中的`Default Template`字段中找到合适的template；  
-可以使用以下方式，来查看模型的template type list：
-```shell
-from evalscope.models.template import TemplateType
-print(TemplateType.get_template_name_list())
+python evalscope/run.py \ 
+ --model qwen/Qwen2-0.5B-Instruct \
+ --template-type qwen \
+ --generation-config do_sample=false,temperature=0.0 \
+ --datasets ceval \
+ --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
+ --limit 10
 ```
 
-### 使用评测后端 (Evaluation Backend)
-EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
-- **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
-- [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ModelScope Swift](https://github.com/modelscope/swift)的无缝集成。
-- **ThirdParty**: 第三方评估任务，如[ToolBench](evalscope/thirdparty/toolbench/README.md)。
-
-#### OpenCompass 评测后端
-
-为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ModelScope Swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用vLLM拉起模型推理服务。
-
-##### 安装
-```shell
-# 安装额外选项
-pip install evalscope[opencompass]
-```
-
-##### 数据准备
-目前支持的数据集有：
-```text
-'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
-```
-数据集的详细信息可以参考[OpenCompass数据集列表](https://hub.opencompass.org.cn/home)
-您可以使用以下方式，来查看数据集的名称列表：
-```python
-from evalscope.backend.opencompass import OpenCompassBackendManager
-print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
-```
-
-数据集下载方式：
-- 方式1：使用ModelScope数据集下载
-    ```shell
-    git clone https://www.modelscope.cn/datasets/swift/evalscope_resource.git
-    ```
-
-- 方式2：使用github链接下载
-    ```shell
-    wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-complete-20240207.zip
-    ```
-总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。后续我们也即将支持托管在ModelScope上的数据集按需加载方式。
+#### 参数说明
+除开上述三个[基本参数](#基本参数说明)，其他参数如下：
+- `--model-args`: 模型加载参数，以逗号分隔，key=value形式
+- `--generation-config`: 生成参数，以逗号分隔，key=value形式
+  - `do_sample`: 是否使用采样，默认为`false`
+  - `max_new_tokens`: 生成最大长度，默认为1024
+  - `temperature`: 采样温度
+  - `top_p`: 采样阈值
+  - `top_k`: 采样阈值
+- `--use-cache`: 是否使用本地缓存，默认为`false`；如果为`true`，则已经评估过的模型和数据集组合将不会再次评估，直接从本地缓存读取
+- `--dataset-args`: 评估数据集的设置参数，以json格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应
+  - `--few_shot_num`: few-shot的数量
+  - `--few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
+- `--limit`: 每个数据集最大评估数据量，不填写则默认为全部评估，可用于快速验证
 
 
-##### 模型推理服务
-我们使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)
-```shell
-# 安装ms-swift
-pip install ms-swift
+### 3. 使用run_task函数提交评估任务
 
-# 部署模型服务
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type llama3-8b-instruct --port 8000
-```
+使用`run_task`函数提交评估任务所需参数与命令行启动评估任务相同。
 
+需要传入一个字典作为参数，字典中包含以下字段：
 
-##### 模型评估
-
-参考示例文件： [example_eval_swift_openai_api](examples/example_eval_swift_openai_api.py) 来配置评估任务
-执行评估任务：
-```shell
-python examples/example_eval_swift_openai_api.py
-```
-
-
-#### VLMEvalKit 评测后端
-
-为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署多模态模型服务。
-
-##### 安装
-```shell
-# 安装额外选项
-pip install evalscope[vlmeval]
-```
-
-##### 数据准备
-目前支持的数据集有：
-```text
-'COCO_VAL', 'MME', 'HallusionBench', 'POPE', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK', 'OCRVQA_TEST', 'OCRVQA_TESTCORE', 'TextVQA_VAL', 'DocVQA_VAL', 'DocVQA_TEST', 'InfoVQA_VAL', 'InfoVQA_TEST', 'ChartQA_TEST', 'MathVision', 'MathVision_MINI', 'MMMU_DEV_VAL', 'MMMU_TEST', 'OCRBench', 'MathVista_MINI', 'LLaVABench', 'MMVet', 'MTVQA_TEST', 'MMLongBench_DOC', 'VCR_EN_EASY_500', 'VCR_EN_EASY_100', 'VCR_EN_EASY_ALL', 'VCR_EN_HARD_500', 'VCR_EN_HARD_100', 'VCR_EN_HARD_ALL', 'VCR_ZH_EASY_500', 'VCR_ZH_EASY_100', 'VCR_ZH_EASY_ALL', 'VCR_ZH_HARD_500', 'VCR_ZH_HARD_100', 'VCR_ZH_HARD_ALL', 'MMBench-Video', 'Video-MME', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK'
-```
-数据集的详细信息可以参考[VLMEvalKit支持的图文多模态评测集](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)
-您可以使用以下方式，来查看数据集的名称列表：
-```python
-from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
-print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_models().keys()}')
-
-```
-
-在加载数据集时，若本地不存在该数据集文件，将会自动下载数据集到 `~/LMUData/` 目录下。
-
-
-##### 模型评估
-模型评估有两种方式可以选择：
-
-###### 1. ModelScope Swift部署模型服务评估
-
-**模型部署**
-使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift MLLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)
-```shell
-# 安装ms-swift
-pip install ms-swift
-
-# 部署qwen-vl-chat多模态模型服务
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --model_id_or_path models/Qwen-VL-Chat
-```
-
-**模型评估**
-
-参考示例文件： [example_eval_vlm_swift](examples/example_eval_vlm_swift.py) 来配置评估任务
-执行评估任务：
-```shell
-python examples/example_eval_vlm_swift.py
-```
-
-###### 2. 本地模型推理评估
-
-**模型推理评估**
-不启动模型服务，直接在本地进行推理，参考示例文件： [example_eval_vlm_local](examples/example_eval_vlm_local.py) 来配置评估任务
-执行评估任务：
-```shell
-python examples/example_eval_vlm_local.py
-```
-
-
-##### (可选) 部署裁判员模型
-部署本地语言模型作为评判 / 选择提取器，同样使用ModelScope swift部署模型服务，具体可参考：[ModelScope Swift LLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html)
-。在未部署裁判员模型模型时，将使用精确匹配。
-```shell
-# 部署qwen2-7b作为裁判员
-CUDA_VISIBLE_DEVICES=1 swift deploy --model_type qwen2-7b-instruct --model_id_or_path models/Qwen2-7B-Instruct --port 8866
-```
-**必须配置裁判员模型环境变量才能正确调用模型**，需要配置的环境变量如下：
-```
-OPENAI_API_KEY=EMPTY
-OPENAI_API_BASE=http://127.0.0.1:8866/v1/chat/completions # 裁判员模型的api_base
-LOCAL_LLM=qwen2-7b-instruct #裁判员模型的 model_id
-```
-
-
-### 使用本地数据集
-数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
-#### 1. 下载数据集到本地
-```shell
-# 假如当前本地工作路径为 /path/to/workdir
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
-unzip data.zip
-```
-则解压后的数据集路径为：/path/to/workdir/data 目录下，该目录在后续步骤将会作为--dataset-dir参数的值传入
-
-#### 2. 使用本地数据集创建评估任务
-```shell
-python evalscope/run.py --model ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
-
-# 参数说明
-# --dataset-hub: 数据集来源，枚举值： `ModelScope`, `Local`, `HuggingFace` (TO-DO)  默认为`ModelScope`
-# --dataset-dir: 当--dataset-hub为`Local`时，该参数指本地数据集路径; 如果--dataset-hub 设置为`ModelScope` or `HuggingFace`，则该参数的含义是数据集缓存路径。
-```
-
-#### 3. (可选)在离线环境加载模型和评测
-模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评估任务时，可参考以下步骤：
-```shell
-# 1. 准备模型本地文件夹，文件夹结构参考chatglm3-6b，链接：https://modelscope.cn/models/ZhipuAI/chatglm3-6b/files
-# 例如，将模型文件夹整体下载到本地路径 /path/to/ZhipuAI/chatglm3-6b
-
-# 2. 执行离线评估任务
-python evalscope/run.py --model /path/to/ZhipuAI/chatglm3-6b --template-type chatglm3 --datasets arc --dataset-hub Local --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' --limit 10
-```
-
-
-### 使用run_task函数提交评估任务
-
-#### 1. 配置任务
+#### 1. 配置任务字典参数
 ```python
 import torch
 from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
@@ -323,108 +223,33 @@ your_task_cfg = {
         'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
         'dataset_args': {},
         'dry_run': False,
-        'model': 'ZhipuAI/chatglm3-6b',
-        'template_type': 'chatglm3', 
+        'model': 'qwen/Qwen2-0.5B-Instruct',
+        'template_type': 'qwen', 
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
         'mem_cache': False,
         'dataset_hub': 'ModelScope',
         'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
-        'stage': 'all',
         'limit': 10,
         'debug': False
     }
-
 ```
+其中`DEFAULT_ROOT_CACHE_DIR` 为 `'~/.cache/evalscope'`
 
-#### 2. 执行任务
+#### 2. run_task执行任务
 ```python
 from evalscope.run import run_task
 
 run_task(task_cfg=your_task_cfg)
 ```
 
-
-### 竞技场模式（Arena）
-竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告，流程示例如下：
-#### 1. 环境准备
-```text
-a. 数据准备，questions data格式参考：evalscope/registry/data/question.jsonl
-b. 如果需要使用自动评估流程（AAR），则需要配置相关环境变量，我们以GPT-4 based auto-reviewer流程为例，需要配置以下环境变量：
-> export OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-```
-
-#### 2. 配置文件
-```text
-arena评估流程的配置文件参考： evalscope/registry/config/cfg_arena.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    elo_rating: ELO rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
-```
-
-#### 3. 执行脚本
-```shell
-#Usage:
-cd evalscope
-
-# dry-run模式 (模型answer正常生成，但专家模型，如GPT-4，不会被调用，评估结果会随机生成)
-python evalscope/run_arena.py -c registry/config/cfg_arena.yaml --dry-run
-
-# 执行评估流程
-python evalscope/run_arena.py --c registry/config/cfg_arena.yaml
-```
-
-#### 4. 结果可视化
-
-```shell
-# Usage:
-streamlit run viz.py --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml
-```
+### 支持的数据集列表
+> ![NOTE]
+> 目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)进行评估；或使用[VLMEvalKit backend](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)进行多模态模型评估.
 
 
-### 单模型打分模式（Single mode）
-
-这个模式下，我们只对单个模型输出做打分，不做两两对比。
-#### 1. 配置文件
-```text
-评估流程的配置文件参考： evalscope/registry/config/cfg_single.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
-```
-#### 2. 执行脚本
-```shell
-#Example:
-python evalscope/run_arena.py --c registry/config/cfg_single.yaml
-```
-
-### Baseline模型对比模式（Pairwise-baseline mode）
-
-这个模式下，我们选定 baseline 模型，其他模型与 baseline 模型做对比评分。这个模式可以方便的把新模型加入到 Leaderboard 中（只需要对新模型跟 baseline 模型跑一遍打分即可）
-#### 1. 配置文件
-```text
-评估流程的配置文件参考： evalscope/registry/config/cfg_pairwise_baseline.yaml
-字段说明：
-    questions_file: question data的路径
-    answers_gen: 候选模型预测结果生成，支持多个模型，可通过enable参数控制是否开启该模型
-    reviews_gen: 评估结果生成，目前默认使用GPT-4作为Auto-reviewer，可通过enable参数控制是否开启该步骤
-    rating_gen: rating 算法，可通过enable参数控制是否开启该步骤，注意该步骤依赖review_file必须存在
-```
-#### 2. 执行脚本
-```shell
-# Example:
-python evalscope/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
-```
-
-
-## 数据集列表
-
-| DatasetName        | Link                                                                                   | Status | Note |
+| 数据集名称        | 链接                                                                                   | 状态 | 备注 |
 |--------------------|----------------------------------------------------------------------------------------|--------|------|
 | `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
 | `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
@@ -439,18 +264,34 @@ python evalscope/run_arena.py --c registry/config/cfg_pairwise_baseline.yaml
 | `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
 
 
+## 使用评测后端
+EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
+- **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
+- [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成，[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)
+- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成，[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/vlmevalkit_backend.html)
+- **ThirdParty**: 第三方评估任务，如[ToolBench](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)。
+
+
+
+## 离线环境评估
+数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，参考：离线环境评估[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/offline_evaluation.html)
+
+
+## 竞技场模式
+竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评估，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评估流程或者人工评估的方式，最终得到评估报告。
+
+参考：竞技场模式[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)
+
+## 性能评测工具
+一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
+
+参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)
+
 ## Leaderboard 榜单
 ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面的评估标准和平台，帮助研究人员和开发者了解和比较ModelScope上的模型在各种任务上的性能表现。
 
 [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
-
-
-## 实验和报告
-参考： [Experiments](./resources/experiments.md)
-
-## 性能评测工具
-参考： [性能测试](evalscope/perf/README.md)
 
 ## TO-DO List
 - [x] Agents evaluation
