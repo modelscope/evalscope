@@ -1,6 +1,6 @@
 # Installation
 
-## Install Using pip
+## Method 1: Install Using pip
 We recommend using conda to manage your environment and installing dependencies with pip:
 
 1. Create a conda environment (optional)
@@ -31,7 +31,7 @@ from llmuses import ...
 ```
 ````
 
-## Install from Source
+## Method 2: Install from Source
 1. Download the source code
    ```shell
    git clone https://github.com/modelscope/evalscope.git
