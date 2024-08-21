@@ -20,8 +20,8 @@ English | [简体中文](README_zh.md)
 - [News](#News)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Leaderboard](#leaderboard)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
+- [Leaderboard](#leaderboard)
 
 ## 📝 Introduction
 
@@ -263,7 +263,7 @@ Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/lates
 ## Model Serving Performance Evaluation
 A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats.
 
-Refer to : [Model Serving Performance Evaluation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
+Refer to : Model Serving Performance Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
 
 
 ## Leaderboard
