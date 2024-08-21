@@ -58,19 +58,51 @@ Total size: approximately 1.7GB. After downloading and unzipping, place the data
 `````
 
 ## 3. Model Inference Service
-The OpenCompass evaluation backend uses a unified OpenAI API call for assessments, so model deployment is necessary. Below, we use ms-swift to deploy the model service, further details can be found in the [ms-swift deployment guide](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm).
+OpenCompass evaluation backend uses a unified OpenAI API call for assessment, so we need to deploy the model. 
 
-### Install ms-swift
+Here are three ways to deploy model services:
+
+`````{tabs}
+````{tab} ms-swift (Recommended)
+Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html), which natively supports three deployment methods: pt, vllm, and lmdeploy.
+
+**Install ms-swift**
 ```shell
 pip install ms-swift -U
 ```
-
-### Deploy Model Service
+**Deploy Model Service**
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
-# Successful startup log
-# INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ```
+````
+
+````{tab} vLLM
+Refer to [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+**Install vLLM**
+```shell
+pip install vllm -U
+```
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
+```
+````
+
+````{tab} LMDeploy
+Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
+
+**Install LMDeploy**
+```shell
+pip install lmdeploy -U
+```
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
+```
+````
+`````
+
 
 ## 4. Model Evaluation
 
@@ -141,7 +173,7 @@ eval_swift_openai_api.json
 - `eval_config`: A dictionary containing the following fields:
   - `datasets`: A list, referring to the [currently supported datasets](#2-data-preparation).
   - `models`: A list of dictionaries, each dictionary must contain the following fields:
-    - `path`: Value reused from the `--model_type` in the `swift deploy` command.
+    - `path`: Value reused from the `--model_type` in the `swift deploy` command; If using `vLLM` or `LMDeploy` to deploy a model, set it to `model_id`.
     - `openai_api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
     - `is_chat`: Boolean value, set to `True` indicates a chat model; set to `False` indicates a base model.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
@@ -177,3 +209,29 @@ Or run the following command:
 python examples/example_eval_swift_openai_api.py
 ```
 You will see the final output as follows:
+
+```text
+dataset                                 version    metric         mode    qwen2-0_5b-instruct
+--------------------------------------  ---------  -------------  ------  ---------------------
+--------- 考试 Exam ---------           -          -              -       -
+ceval                                   -          naive_average  gen     30.00
+agieval                                 -          -              -       -
+mmlu                                    -          naive_average  gen     42.28
+GaokaoBench                             -          -              -       -
+ARC-c                                   1e0de5     accuracy       gen     60.00
+--------- 语言 Language ---------       -          -              -       -
+WiC                                     -          -              -       -
+summedits                               -          -              -       -
+winogrande                              -          -              -       -
+flores_100                              -          -              -       -
+--------- 推理 Reasoning ---------      -          -              -       -
+cmnli                                   -          -              -       -
+ocnli                                   -          -              -       -
+ocnli_fc-dev                            -          -              -       -
+AX_b                                    -          -              -       -
+AX_g                                    -          -              -       -
+strategyqa                              -          -              -       -
+math                                    -          -              -       -
+gsm8k                                   1d7fe4     accuracy       gen     40.00
+...
+```

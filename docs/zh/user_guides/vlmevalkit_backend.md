@@ -34,17 +34,52 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 ### 方式1. 部署模型服务评估
 
 #### 模型部署
-使用ms-swift部署模型服务，具体可参考：[ms-swift MLLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)
+
+下面介绍两种方式部署模型服务：
+`````{tabs}
+````{tab} ms-swift部署 （推荐）
+
+使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)。
+
+**安装ms-swift**
 ```shell
-# 安装 ms-swift
-pip install ms-swift
-
-# 部署qwen-vl-chat多模态模型服务
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
-
-# 启动成功日志
-# INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+pip install ms-swift -U
 ```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
+```
+````
+
+<!-- ````{tab} vLLM 部署模型
+参考[vLLM 教程](https://docs.vllm.ai/en/latest/index.html) for more details.
+**安装vLLM**
+```shell
+pip install vllm -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen-VL-Chat --port 8000
+```
+```` -->
+
+````{tab} LMDeploy 部署模型
+参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).
+
+**安装LMDeploy**
+```shell
+pip install lmdeploy -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
+```
+````
+`````
+
 
 #### 配置模型评估参数
 
@@ -92,7 +127,6 @@ task_cfg_dict = {
             'work_dir': 'output'}}
 ```
 ````
-
 `````
 
 #### 基本参数
@@ -101,13 +135,13 @@ task_cfg_dict = {
 - `eval_config`：字典，包含以下字段：
   - `data`：列表，参考[目前支持的数据集](#2-数据准备)
   - `model`：字典列表，每个字典必须包含以下字段：
-    - `type`：重用命令行 `swift deploy` 中的 `--model_type` 的值。
+    - `type`：重用命令行 `swift deploy` 中的 `--model_type` 的值；如果使用 `LMDeploy` 部署模型，则设置为 `model_id`。
     - `name`：固定值，必须为 `CustomAPIModel`。
     - `api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL。
-    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`
-    - `temperature`：模型推理的温度系数，默认值为 `0.0`
+    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
+    - `temperature`：模型推理的温度系数，默认值为 `0.0`。
     - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
-  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理
+  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理。
   - `limit`：整数，评估的数据数量，默认值为 `None`，表示运行所有示例。
   - `rerun`：布尔值，是否重新运行评估，将删除所有评估临时文件。
   - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs`

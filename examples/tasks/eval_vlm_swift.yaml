@@ -8,8 +8,8 @@ eval_config:
       temperature: 0.0
       img_size: -1
   data:
-    - MMStar
-    # - COCO_VAL
+    # - MMStar
+    - COCO_VAL
     # - AI2D_TEST
     # - POPE
     # - RealWorldQA

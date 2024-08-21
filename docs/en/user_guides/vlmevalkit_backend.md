@@ -29,15 +29,36 @@ Model evaluation can be conducted in two ways: through deployed model services o
 
 ### Method 1: Deployed Model Service Evaluation
 #### Model Deployment
-Use ms-swift to deploy the model service. For more information, refer to the [ms-swift MLLM Deployment Guide](https://swift.readthedocs.io/en/latest/Multi-Modal/mutlimodal-deployment.html).
+Here are two ways to deploy model services:
+
+`````{tabs}
+````{tab} ms-swift (Recommended)
+Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Multi-Modal/mutlimodal-deployment.html).
+
+**Install ms-swift**
 ```shell
-# Install ms-swift
-pip install ms-swift
-# Deploy the qwen-vl-chat multimodal model service
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
-# Successful startup log
-# INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+pip install ms-swift -U
 ```
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
+```
+````
+
+
+````{tab} LMDeploy 
+Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
+
+**Install LMDeploy**
+```shell
+pip install lmdeploy -U
+```
+**Deploy Model Service**s
+```shell
+CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
+```
+````
+`````
 
 #### Configure Model Evaluation Parameters
 Create configuration files:
@@ -88,7 +109,7 @@ task_cfg_dict = {
 - `eval_config`: A dictionary containing the following fields:
   - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
   - `model`: A list of dictionaries; each must contain the following fields:
-    - `type`: Value reused from the `--model_type` in the `swift deploy` command.
+    - `type`: Value reused from the `--model_type` in the `swift deploy` command; If using `LMDeploy` to deploy a model, set it to `model_id`.
     - `name`: Fixed value, must be `CustomAPIModel`.
     - `api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
