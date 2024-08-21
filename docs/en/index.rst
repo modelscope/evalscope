@@ -1,4 +1,4 @@
-.. image:: _static/images/evalscope.jpeg
+.. image:: _static/images/evalscope_logo.png
 
 .. _pypi_downloads: https://pypi.org/project/evalscope
 .. _github_pr: https://github.com/modelscope/evalscope/pulls
@@ -6,13 +6,11 @@
 .. raw:: html
 
    <p align="center">
-   <a href="`_pypi_downloads`"> 
-   <img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/evalscope">
+   <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
+   <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
    </a>
-   <a href="`_github_pr`">
-   <img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
-   <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
+   <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
+      <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
    </a>
    </p>
 
@@ -76,6 +74,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    :caption: Best Practices
    
    best_practice/swift_integration.md
+   best_practice/experiments.md
 
 Index and Tables
 ==================
