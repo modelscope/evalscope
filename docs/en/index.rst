@@ -74,6 +74,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    :caption: Best Practices
    
    best_practice/swift_integration.md
+   best_practice/llm_full_stack.md
    best_practice/experiments.md
 
 Index and Tables
