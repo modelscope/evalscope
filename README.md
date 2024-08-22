@@ -10,12 +10,12 @@ English | [简体中文](README_zh.md)
 <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
 </a>
-<br><br>
-<a href="https://evalscope.readthedocs.io/zh-cn/latest/">📖 EvalScope Documents</a>
+<br>
+ <a href="https://evalscope.readthedocs.io/en/latest/"><span style="font-size: 16px;">📖 Documents</span></a> &nbsp | &nbsp<a href="https://evalscope.readthedocs.io/zh-cn/latest/"><span style="font-size: 16px;"> 📖  中文文档</span></a>
 <p>
 
 
-## 📖 Table of Contents
+## 📋 Table of Contents
 - [Introduction](#introduction)
 - [News](#News)
 - [Installation](#installation)
@@ -44,8 +44,11 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
 
 ### Overall Architecture
-![](docs/en/_static/images/evalscope_framework.png)
-*EvalScope Framework.*
+<div style="text-align: center;">
+    <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
+    <br>
+    Fig 1. EvalScope Framework.
+</div>
 
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.

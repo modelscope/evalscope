@@ -10,12 +10,12 @@
   <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
       <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
   </a>
-  <br><br>
-  推荐阅读：<a href="https://evalscope.readthedocs.io/zh-cn/latest/">📖 EvalScope中文官方文档</a>
+  <br>
+ <a href="https://evalscope.readthedocs.io/en/latest/"><span style="font-size: 16px;">📖 Documents</span></a> &nbsp | &nbsp<a href="https://evalscope.readthedocs.io/zh-cn/latest/"><span style="font-size: 16px;"> 📖  中文文档</span></a>
 <p>
 
 
-## 📖 目录
+## 📋 目录
 - [简介](#简介)
 - [新闻](#新闻)
 - [环境准备](#环境准备)
@@ -45,8 +45,11 @@
 - **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。
 
 ### 框架架构
-![](docs/en/_static/images/evalscope_framework.png)
-*EvalScope 架构图.*
+<div style="text-align: center;">
+    <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
+    <br>
+    图 1. EvalScope 整体架构图.
+</div>
 
 包括以下模块：
 

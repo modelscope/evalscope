@@ -78,6 +78,7 @@ EvalScope 上手路线
    
    best_practice/swift_integration.md
    best_practice/experiments.md
+   best_practice/llm_full_stack.md
 
 索引与表格
 ==================

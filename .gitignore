@@ -152,3 +152,4 @@ test.ipynb
 *.ttf
 _build/
 data
+swift.test*
