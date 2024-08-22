@@ -131,7 +131,7 @@ class EvalQuality:
             self.model_id_path = self.model_id.replace('__', '/')
             self.output_res_path = f'{self.output_dir}/{self.model_id_path}/{self.EVAL_Q}.jsonl'
 
-            self.openai_api_key: str = os.getenv('OPENAI_API_KEY') or openai_api_key
+            self.openai_api_key: str = openai_api_key
             self.openai_gpt_model = openai_gpt_model
             assert self.openai_api_key, 'Please set `OPENAI_API_KEY` in environment variables.'
 
@@ -243,29 +243,36 @@ def run_eval(model_id: str,
              openai_gpt_model: str,
              generation_kwargs: dict,
              proc_num: int,
+             stage: list,
              ):
+    logger.info(f'Got eval stages: {stage}')
 
-    try:
-        logger.info(f'Processing evaluation of length for model: {model_id}')
-        eval_length = EvalLength(model_id=model_id,
-                                 pred_path=pred_path,
-                                 output_dir=output_dir)
-        x, y, _ = eval_length.eval()
-        eval_length.plot(x, y)
-    except Exception as e:
-        logger.error(f'Error occurs during evaluating length: {str(e)}')
+    if 'eval_l' in stage:
+        try:
+            logger.info(f'Processing evaluation of length for model: {model_id}')
+            eval_length = EvalLength(model_id=model_id,
+                                     pred_path=pred_path,
+                                     output_dir=output_dir)
+            x, y, _ = eval_length.eval()
+            eval_length.plot(x, y)
+        except Exception as e:
+            logger.error(f'Error occurs during evaluating length: {str(e)}')
+    else:
+        logger.warning(f'*** Skip `eval_l` stage ***')
 
-    try:
-        logger.info(f'Processing evaluation of quality for model: {model_id}')
-        eval_quality = EvalQuality(model_id=model_id,
-                                   pred_path=pred_path,
-                                   output_dir=output_dir,
-                                   prompt_template_path=prompt_template_path,
-                                   openai_api_key=openai_api_key,
-                                   openai_gpt_model=openai_gpt_model,
-                                   generation_kwargs=generation_kwargs,
-                                   proc_num=proc_num)
-        eval_quality.eval()
-    except Exception as e:
-        logger.error(f'Error occurs during evaluating quality: {str(e)}')
-
+    if 'eval_q' in stage:
+        try:
+            logger.info(f'Processing evaluation of quality for model: {model_id}')
+            eval_quality = EvalQuality(model_id=model_id,
+                                       pred_path=pred_path,
+                                       output_dir=output_dir,
+                                       prompt_template_path=prompt_template_path,
+                                       openai_api_key=openai_api_key,
+                                       openai_gpt_model=openai_gpt_model,
+                                       generation_kwargs=generation_kwargs,
+                                       proc_num=proc_num)
+            eval_quality.eval()
+        except Exception as e:
+            logger.error(f'Error occurs during evaluating quality: {str(e)}')
+    else:
+        logger.warning('*** Skip `eval_q` stage ***')

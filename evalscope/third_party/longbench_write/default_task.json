@@ -1,0 +1,17 @@
+{
+    "stage": ["infer", "eval_l", "eval_q"],
+    "model_id": "ZhipuAI/LongWriter-glm4-9b",
+    "output_dir": "./outputs",
+    "openai_api_key": null,
+    "openai_gpt_model": "gpt-4o-2024-05-13",
+    "infer_generation_kwargs": {
+        "max_new_tokens": 32768,
+        "temperature": 0.5
+    },
+    "eval_generation_kwargs": {
+        "max_new_tokens": 1024,
+        "temperature": 0.5,
+        "stop": null
+    },
+    "proc_num": 8
+}

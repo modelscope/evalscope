@@ -73,7 +73,8 @@ def seed_everything(seed):
 def run_infer(model_id: str,
               data_path: str,
               output_dir: str,
-              generation_kwargs: dict = None):
+              generation_kwargs: dict = None,
+              enable: bool = True,):
     """
     Process inference for LongWriter model.
 
@@ -82,13 +83,17 @@ def run_infer(model_id: str,
         data_path: The path to the data file.
         output_dir: The output directory for the predictions.
         generation_kwargs: The generation arguments for the model.
-            Attributes:
-                max_new_tokens: The maximum number of tokens to generate.
-                temperature: The temperature
+            Attributes: `max_new_tokens`: The maximum number of tokens to generate. `temperature`: The temperature
+        enable: Whether to run infer process.
     """
+    model_id_path: str = os.path.join(output_dir, model_id.replace('__', '/'))
+
+    if not enable:
+        logger.warning('*** Skip `infer` stage ***')
+        return f'{model_id_path}/pred.jsonl'
+
     seed_everything(42)
 
-    model_id_path: str = os.path.join(output_dir, model_id.replace('__', '/'))
     os.makedirs(model_id_path, exist_ok=True)
     fout = open(f'{model_id_path}/pred.jsonl', 'w', encoding='utf-8')
 
