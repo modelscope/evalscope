@@ -39,7 +39,10 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
     device = torch.device(f'cuda:{rank}')
     model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=True, torch_dtype=torch.bfloat16).to(device)
     model = model.eval()
-    for dt in data:
+    for dt in tqdm(data):
+        pass
+
+    for dt in tqdm(data, total=len(data), desc=f'rank-{rank}: '):
         prompt = dt['prompt']
         if "llama" in path.lower():
             prompt = f"[INST]{prompt}[/INST]"
@@ -124,13 +127,13 @@ def run_infer(model_id_or_path: str,
         p.start()
         processes.append(p)
 
-    count = mp.Value('i', 0)    # 一个共享的整数变量
-    with tqdm(total=len(data)) as pbar:
-        while any(p.is_alive() for p in processes):
-            with count.get_lock():
-                pbar.n = count.value
-            pbar.refresh()
-            time.sleep(0.1)
+    # count = mp.Value('i', 0)    # 一个共享的整数变量
+    # with tqdm(total=len(data)) as pbar:
+    #     while any(p.is_alive() for p in processes):
+    #         with count.get_lock():
+    #             pbar.n = count.value
+    #         pbar.refresh()
+    #         time.sleep(0.1)
 
     for p in processes:
         p.join()
