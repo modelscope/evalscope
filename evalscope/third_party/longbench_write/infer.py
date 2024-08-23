@@ -39,8 +39,6 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
     device = torch.device(f'cuda:{rank}')
     model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=True, torch_dtype=torch.bfloat16).to(device)
     model = model.eval()
-    for dt in tqdm(data):
-        pass
 
     for dt in tqdm(data, total=len(data), desc=f'rank-{rank}: '):
         prompt = dt['prompt']

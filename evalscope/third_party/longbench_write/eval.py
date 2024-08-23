@@ -52,7 +52,8 @@ class EvalLength:
     def eval(self):
         predictions = [json.loads(line) for line in open(self.pred_path, encoding='utf-8')]
         x, y, scores = [], [], []
-        for pred in predictions:
+
+        for pred in tqdm(predictions, total=len(predictions), desc=f'eval length: '):
             x.append(pred["length"])
             y.append(pred["response_length"])
             scores.append(self.score(pred["length"], pred["response_length"]))
@@ -66,7 +67,7 @@ class EvalLength:
             f.write(json.dumps({'score_l': avg_score_l, 'scores': scores}, ensure_ascii=False) + '\n')
             logger.info(f'Successfully dumped evaluation results to {output_res_path}')
 
-        return x, y , scores
+        return x, y, scores
 
     def plot(self, x: list, y: list):
 
@@ -182,7 +183,7 @@ class EvalQuality:
                 return None
 
         def process_data(self, items):
-            for item in tqdm(items):
+            for item in tqdm(items, total=len(items), desc=f'process data: '):
                 prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
                 scores = None
                 trys = 0
