@@ -3,7 +3,6 @@
 
 import os
 import json
-import time
 
 import torch
 import numpy as np
@@ -94,7 +93,7 @@ def run_infer(model_id_or_path: str,
             Attributes: `max_new_tokens`: The maximum number of tokens to generate. `temperature`: The temperature
         enable: Whether to run infer process.
     """
-    model_id_path: str = os.path.join(output_dir, model_id_or_path.replace('/', '__'))
+    model_id_path: str = os.path.join(output_dir, model_id_or_path.strip(os.sep).replace(os.sep, '__'))
 
     if not enable:
         logger.warning('*** Skip `infer` stage ***')
