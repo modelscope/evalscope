@@ -58,6 +58,9 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
                                            temperature=temperature)
         dt["response_length"] = count_words(response)
         dt["response"] = response
+
+        logger.info(dt)
+
         fout.write(json.dumps(dt, ensure_ascii=False) + '\n')
         fout.flush()
 
