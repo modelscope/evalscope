@@ -3,12 +3,16 @@
 
 import os
 import json
+import time
+
 import torch
 import numpy as np
 import random
 import re
 import torch.multiprocessing as mp
 from modelscope import AutoTokenizer, AutoModelForCausalLM
+from tqdm import tqdm
+
 from evalscope.utils import get_logger
 
 logger = get_logger()
@@ -116,6 +120,15 @@ def run_infer(model_id_or_path: str,
                        args=(rank, world_size, data_subsets[rank], model_id_or_path, generation_kwargs.get('max_new_tokens'), generation_kwargs.get('temperature'), tokenizer, fout))
         p.start()
         processes.append(p)
+
+    count = mp.Value('i', 0)    # 一个共享的整数变量
+    with tqdm(total=len(data)) as pbar:
+        while any(p.is_alive() for p in processes):
+            with count.get_lock():
+                pbar.n = count.value
+            pbar.refresh()
+            time.sleep(0.1)
+
     for p in processes:
         p.join()
 
@@ -128,7 +141,7 @@ def run_infer(model_id_or_path: str,
 if __name__ == '__main__':
     # ZhipuAI/LongWriter-glm4-9b, ZhipuAI/LongWriter-llama3.1-8b
     run_infer(model_id_or_path='ZhipuAI/LongWriter-glm4-9b',
-              data_path='longbench_write.jsonl',
+              data_path='resources/longbench_write.jsonl',
               output_dir='outputs',
               generation_kwargs=dict({
                       'max_new_tokens': 32768,
