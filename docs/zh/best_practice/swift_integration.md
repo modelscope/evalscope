@@ -1,19 +1,10 @@
 # ms-swift 集成
 
-[ms-swift](https://github.com/modelscope/ms-swift)框架支持了eval（评测）能力，用于对原始模型和训练后的模型给出标准化的评测指标。
-
-## 目录
-
-- [能力介绍](#能力介绍)
-- [环境准备](#环境准备)
-- [评测](#评测)
-- [自定义评测集](#自定义评测集)
-
 ## 能力介绍
 
-ms-swift的eval能力使用了魔搭社区[评测框架EvalScope](https://github.com/modelscope/eval-scope)，并进行了高级封装以支持各类模型的评测需求。目前我们支持了**标准评测集**的评测流程，以及**用户自定义**评测集的评测流程。其中**标准评测集**包含：
+[ms-swift](https://github.com/modelscope/ms-swift)框架支的eval能力使用了魔搭社区[评测框架EvalScope](https://github.com/modelscope/eval-scope)，并进行了高级封装以支持各类模型的评测需求。目前我们支持了**标准评测集**的评测流程，以及**用户自定义**评测集的评测流程。其中**标准评测集**包含：
 
-**纯文本评测：**
+**纯文本评测：**[数据集具体介绍](https://hub.opencompass.org.cn/home)
 ```text
 'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada',
 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze',
@@ -21,9 +12,9 @@ ms-swift的eval能力使用了魔搭社区[评测框架EvalScope](https://github
 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench',
 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
 ```
-数据集的具体介绍可以查看：https://hub.opencompass.org.cn/home
 
-**多模态评测：**
+
+**多模态评测：**[数据集具体介绍](https://github.com/open-compass/VLMEvalKit)
 ```text
 'COCO_VAL', 'MME', 'HallusionBench', 'POPE', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN',
 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11',
@@ -42,9 +33,9 @@ ms-swift的eval能力使用了魔搭社区[评测框架EvalScope](https://github
 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL',
 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK'
 ```
-数据集的具体介绍可以查看：https://github.com/open-compass/VLMEvalKit
 
-```{note}
+
+```{tip}
 首次评测时会自动下载数据集文件 [下载链接](https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip)
 
 如果下载失败可以手动下载放置本地路径, 具体可以查看eval的日志输出.
@@ -66,17 +57,26 @@ pip install -e '.[eval]'
 
 ## 评测
 
-评测支持使用vLLM加速. 这里展示对原始模型和LoRA微调后的qwen2-7b-instruct进行评测.
+这里展示对原始模型和LoRA微调后的qwen2-7b-instruct进行评测，评测支持使用vLLM加速。
 
+**原始模型评测**
 ```shell
-# 原始模型 (单卡A100大约需要半小时)
-CUDA_VISIBLE_DEVCIES=0 swift eval --model_type qwen2-7b-instruct \
-    --eval_dataset ARC_e --infer_backend vllm
+CUDA_VISIBLE_DEVCIES=0 swift eval \
+  --model_type qwen2-7b-instruct \
+  --model_id_or_path /path/to/qwen2-7b-instruct \
+  --eval_dataset ARC_e \
+  --infer_backend vllm \ # 可选项 [pt, vllm, lmdeploy]
+  --eval_backend Native  # 可选项 [Native, OpenCompass]
+```
 
-# LoRA微调后
-CUDA_VISIBLE_DEVICES=0 swift eval --ckpt_dir qwen2-7b-instruct/vx-xxx/checkpoint-xxx \
-    --eval_dataset ARC_e --infer_backend vllm \
-    --merge_lora true \
+**LoRA微调模型评测**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift eval \
+  --ckpt_dir qwen2-7b-instruct/vx-xxx/checkpoint-xxx \ # LoRA 权重路径
+  --eval_dataset ARC_e \
+  --infer_backend vllm \
+  --eval_backend Native \
+  --merge_lora true 
 ```
 
 ````{note}
@@ -84,23 +84,38 @@ CUDA_VISIBLE_DEVICES=0 swift eval --ckpt_dir qwen2-7b-instruct/vx-xxx/checkpoint
 
 评测结果会存储在`{--eval_output_dir}/{--name}/{时间戳}`下, 如果用户没有改变存储配置，则默认路径在:
 ```text
-当前目录(`pwd`路径)/eval_outputs/default/20240628_190000/xxx
+{当前目录(`pwd`路径)}/eval_outputs/default/20240628_190000/xxx
 ```
 ````
 
 
 ### 使用部署的方式评测
-
-```shell
-# 使用OpenAI API方式启动部署
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct
-
-# 使用API进行评测
-# 如果是非swift部署, 则需要额外传入`--eval_is_chat_model true --model_type qwen2-7b-instruct`
-swift eval --eval_url http://127.0.0.1:8000/v1 --eval_dataset ARC_e
-
-# LoRA微调后的模型同理
+```{note}
+`eval_backend`指定为`OpenCompass`将自动使用部署的方式进行评测；以下评测方式适用原始模型及LoRA微调后的模型。
 ```
+
+ms-swift启动启动部署：
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct
+```
+
+ms-swift启动评估评估：
+```shell
+swift eval --eval_url http://127.0.0.1:8000/v1 --eval_dataset ARC_e
+```
+````{tip}
+使用API进行评测如果是非swift部署, 则需要额外传入`--eval_is_chat_model` 和`--model_type`参数
+
+例如：
+```shell
+swift eval \
+  --eval_url http://127.0.0.1:8000/v1 \
+  --eval_dataset ARC_e \
+  --eval_is_chat_model true \
+  --model_type qwen2-7b-instruct
+```
+````
+
 
 ## 自定义评测集
 

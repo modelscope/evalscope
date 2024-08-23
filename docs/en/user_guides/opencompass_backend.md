@@ -1,6 +1,6 @@
 # OpenCompass Backend
 
-To facilitate the use of the OpenCompass evaluation backend, we have customized the OpenCompass source code and named it `ms-opencompass`. This version optimizes task configuration and execution and supports installation via PyPI, enabling users to initiate lightweight OpenCompass evaluation tasks through EvalScope. Additionally, we initially provide an interface for evaluation tasks based on the OpenAI API format. You can deploy model services using [ms-swift](https://github.com/modelscope/swift), where [swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm) supports using [vLLM](https://github.com/vllm-project/vllm) to launch model inference services.
+To facilitate the use of the OpenCompass evaluation backend, we have customized the OpenCompass source code and named it `ms-opencompass`. This version optimizes task configuration and execution and supports installation via PyPI, enabling users to initiate lightweight OpenCompass evaluation tasks through EvalScope. Additionally, we initially provide an interface for evaluation tasks based on the OpenAI API format. You can deploy model services using [ms-swift](https://github.com/modelscope/swift) , [vLLM](https://github.com/vllm-project/vllm) , [LMDeploy](https://github.com/InternLM/lmdeploy) , [Ollama](https://ollama.ai/), etc., to launch model inference services.
 
 ## 1. Environment Setup
 ```shell

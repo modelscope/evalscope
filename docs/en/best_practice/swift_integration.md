@@ -1,17 +1,8 @@
 # ms-swift Integration
 
-[ms-swift](https://github.com/modelscope/ms-swift) supports the eval (evaluation) capability to provide standardized evaluation metrics for the original model and the fine-tuned model.
-
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Environment Setup](#environment-setup)
-- [Evaluation](#evaluation)
-- [Custom Evaluation Set](#custom-evaluation-sets)
-
 ## Introduction
 
-SWIFT's eval capability utilizes the [EvalScope evaluation framework](https://github.com/modelscope/eval-scope) from the ModelScope community and [Open-Compass](https://hub.opencompass.org.cn/home) and provides advanced encapsulation to support evaluation needs for various models. Currently, we support the evaluation process for **standard evaluation sets** and **user-defined evaluation sets**. The **standard evaluation sets** include:
+[ms-swift](https://github.com/modelscope/ms-swift)'s eval capability utilizes the [EvalScope evaluation framework](https://github.com/modelscope/eval-scope) from the ModelScope community and [Open-Compass](https://hub.opencompass.org.cn/home) and provides advanced encapsulation to support evaluation needs for various models. Currently, we support the evaluation process for **standard evaluation sets** and **user-defined evaluation sets**. The **standard evaluation sets** include:
 
 NLP eval datasets：
 ```text
@@ -44,7 +35,7 @@ Multi Modal eval datasets：
 ```
 Check out the detail descriptions of these datasets: https://github.com/open-compass/VLMEvalKit
 
-```{note}
+```{tip}
 At the first time of running eval, a resource dataset will be downloaded: [link](https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip)
 
 If downloading fails, you can manually download the dataset to your local disk, please pay attention to the log of the `eval` command.
@@ -65,41 +56,64 @@ pip install -e '.[eval]'
 ```
 
 ## Evaluation
+This section presents the evaluation of the original model and the LoRA fine-tuned qwen2-7b-instruct model. The evaluation supports accelerated inference using vLLM.
 
-Evaluation supports the use of vLLM for acceleration. Here we demonstrate the evaluation of the original model and the LoRA fine-tuned qwen2-7b-instruct.
-
+**Original Model Evaluation**
 ```shell
-# Original model (approximately half an hour on a single A100)
-CUDA_VISIBLE_DEVCIES=0 swift eval --model_type qwen2-7b-instruct \
-    --eval_dataset ARC_e --infer_backend vllm
-
-# After LoRA fine-tuning
-CUDA_VISIBLE_DEVICES=0 swift eval --ckpt_dir qwen2-7b-instruct/vx-xxx/checkpoint-xxx \
-    --eval_dataset ARC_e --infer_backend vllm \
-    --merge_lora true \
+CUDA_VISIBLE_DEVICES=0 swift eval \
+  --model_type qwen2-7b-instruct \
+  --model_id_or_path /path/to/qwen2-7b-instruct \
+  --eval_dataset ARC_e \
+  --infer_backend vllm \ # Options: [pt, vllm, lmdeploy]
+  --eval_backend Native  # Options: [Native, OpenCompass]
 ```
 
-You can refer to [here](https://swift.readthedocs.io/en/latest/LLM/Command-line-parameters.html#eval-parameters) for the list of evaluation parameters.
-
+**LoRA Fine-Tuned Model Evaluation**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift eval \
+  --ckpt_dir qwen2-7b-instruct/vx-xxx/checkpoint-xxx \ # Path to LoRA weights
+  --eval_dataset ARC_e \
+  --infer_backend vllm \
+  --eval_backend Native \
+  --merge_lora true 
+```
 ````{note}
-The eval result will be saved in `{--eval_output_dir}/{--name}/{some-timestamp}`, if you changed nothing, the default dir will be:
+For a list of evaluation parameters, refer to [eval parameters](https://swift.readthedocs.io/en/latest/LLM/Command-line-parameters.html#eval-parameters).
+
+The evaluation results will be stored in `{--eval_output_dir}/{--name}/{timestamp}`, and if the user hasn't changed the storage configuration, the default path is:
 ```text
-{the current folder(`pwd` folder)}/eval_outputs/default/20240628_190000/xxx
+{current directory (`pwd` path)}/eval_outputs/default/20240628_190000/xxx
 ```
 ````
 
-### Evaluation using the deployed method
-
-```shell
-# Start deployment using the OpenAI API method
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct
-
-# Evaluate using the API
-# If it is not a Swift deployment, you need to additionally pass in `--eval_is_chat_model true --model_type qwen2-7b-instruct`.
-swift eval --eval_url http://127.0.0.1:8000/v1 --eval_dataset ARC_e
-
-# The same applies to the model after LoRA fine-tuning.
+### Evaluation Using Deployment
+```{note}
+Specifying `eval_backend` as `OpenCompass` will automatically use the deployment method for evaluation. The following evaluation method applies to both the original and the LoRA fine-tuned models.
 ```
+
+Launch the deployment using ms-swift:
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct
+```
+
+Launch the evaluation using ms-swift:
+```shell
+swift eval --eval_url http://127.0.0.1:8000/v1 --eval_dataset ARC_e
+```
+
+````{tip}
+When using API for evaluation, if it's not deployed using swift, you need to additionally pass `--eval_is_chat_model` and `--model_type` parameters.
+
+For example:
+```shell
+swift eval \
+  --eval_url http://127.0.0.1:8000/v1 \
+  --eval_dataset ARC_e \
+  --eval_is_chat_model true \
+  --model_type qwen2-7b-instruct
+```
+````
+
 
 ## Custom Evaluation Sets
 
