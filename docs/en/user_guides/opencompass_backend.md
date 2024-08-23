@@ -60,11 +60,11 @@ Total size: approximately 1.7GB. After downloading and unzipping, place the data
 ## 3. Model Inference Service
 OpenCompass evaluation backend uses a unified OpenAI API call for assessment, so we need to deploy the model. 
 
-Here are three ways to deploy model services:
+Here are four ways to deploy model services:
 
 `````{tabs}
 ````{tab} ms-swift (Recommended)
-Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html), which natively supports three deployment methods: pt, vllm, and lmdeploy.
+Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html).
 
 **Install ms-swift**
 ```shell
@@ -78,6 +78,8 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 
 ````{tab} vLLM
 Refer to [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+[Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html)
 
 **Install vLLM**
 ```shell
@@ -96,11 +98,61 @@ Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs
 ```shell
 pip install lmdeploy -U
 ```
+
 **Deploy Model Service**
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
 ```
 ````
+
+````{tab} Ollama
+```{note}
+Support for OpenAI API by Ollama is currently in an experimental state. This tutorial provides an example only; please modify it according to your actual situation.
+```
+
+Reference [Ollama Tutorial](https://github.com/ollama/ollama/blob/main/README.md#quickstart).
+
+**Install Ollama**
+
+```shell
+# For Linux systems
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**Start Ollama**
+
+```shell
+# Default port is 11434
+ollama server
+```
+
+```{tip}
+If using `ollama pull` to fetch a model, you can skip the following steps for creating a model; if using `ollama import` to import a model, you will need to manually create a model configuration file.
+```
+
+**Create Model Configuration File `Modelfile`**
+
+[Supported Model Formats](https://github.com/ollama/ollama/blob/main/docs/import.md)
+```text
+# Model path
+FROM models/Meta-Llama-3-8B-Instruct
+
+# Temperature coefficient
+PARAMETER temperature 1
+
+# System prompt
+SYSTEM """
+You are a helpful assistant.
+"""
+```
+**Create Model**
+
+The model will be automatically converted to a format supported by Ollama and supports multiple quantization methods.
+```shell
+ollama create llama3 -f ./Modelfile
+```
+````
+
 `````
 
 
@@ -173,8 +225,11 @@ eval_swift_openai_api.json
 - `eval_config`: A dictionary containing the following fields:
   - `datasets`: A list, referring to the [currently supported datasets](#2-data-preparation).
   - `models`: A list of dictionaries, each dictionary must contain the following fields:
-    - `path`: Value reused from the `--model_type` in the `swift deploy` command; If using `vLLM` or `LMDeploy` to deploy a model, set it to `model_id`.
-    - `openai_api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
+    - `path`: The model name for OpenAI API requests.
+      - If deploying with `ms-swift`, set to the value of `--model_type`;
+      - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
+      - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
+    - `openai_api_base`: The URL for the OpenAI API.
     - `is_chat`: Boolean value, set to `True` indicates a chat model; set to `False` indicates a base model.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
   - `work_dir`: A string specifying the directory to save evaluation results, logs, and summaries. Default value is `outputs/default`.

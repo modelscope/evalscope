@@ -4,10 +4,10 @@
 
 ## Table of Contents
 
-- [Introduction](#Introduction)
-- [Environment Setup](#Environment-setup)
-- [Evaluation](#Evaluation)
-- [Custom Evaluation Set](#Custom-Evaluation-Set)
+- [Introduction](#introduction)
+- [Environment Setup](#environment-setup)
+- [Evaluation](#evaluation)
+- [Custom Evaluation Set](#custom-evaluation-sets)
 
 ## Introduction
 

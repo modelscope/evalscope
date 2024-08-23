@@ -29,7 +29,7 @@ Model evaluation can be conducted in two ways: through deployed model services o
 
 ### Method 1: Deployed Model Service Evaluation
 #### Model Deployment
-Here are two ways to deploy model services:
+Here are four ways to deploy model services:
 
 `````{tabs}
 ````{tab} ms-swift (Recommended)
@@ -45,6 +45,21 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
 ```
 ````
 
+````{tab} vLLM 
+Refer to the [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+[List of Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
+
+**Install vLLM**
+```shell
+pip install vllm -U
+```
+
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
+```
+````
 
 ````{tab} LMDeploy 
 Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
@@ -58,6 +73,56 @@ pip install lmdeploy -U
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
 ```
 ````
+
+````{tab} Ollama
+```{note}
+Support for OpenAI API by Ollama is currently in an experimental state. This tutorial provides an example only; please modify it according to your actual situation.
+```
+
+Refer to the [Ollama Tutorial](https://github.com/ollama/ollama/blob/main/README.md#quickstart).
+
+**Install Ollama**
+
+```shell
+# For Linux
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**Start Ollama**
+```shell
+# Default port is 11434
+ollama serve
+```
+
+```{tip}
+If using `ollama pull` to fetch a model, you can skip the following steps for creating a model; if using `ollama import` to import a model, you will need to manually create a model configuration file.
+```
+
+**Create Model Configuration File `Modelfile`**
+
+[Supported Model Formats](https://github.com/ollama/ollama/blob/main/docs/import.md)
+
+```text
+# Model path
+FROM models/LLaVA
+
+# Temperature coefficient
+PARAMETER temperature 1
+
+# System prompt
+SYSTEM """
+You are a helpful assistant.
+"""
+```
+
+**Create Model**
+
+This command will automatically convert the model to a format supported by Ollama, with support for various quantization methods.
+```shell
+ollama create llava -f ./Modelfile
+```
+````
+
 `````
 
 #### Configure Model Evaluation Parameters
@@ -109,7 +174,10 @@ task_cfg_dict = {
 - `eval_config`: A dictionary containing the following fields:
   - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
   - `model`: A list of dictionaries; each must contain the following fields:
-    - `type`: Value reused from the `--model_type` in the `swift deploy` command; If using `LMDeploy` to deploy a model, set it to `model_id`.
+    - `type`: The model name for OpenAI API requests.
+      - If deploying with `ms-swift`, set to the value of `--model_type`;
+      - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
+      - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
     - `name`: Fixed value, must be `CustomAPIModel`.
     - `api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
