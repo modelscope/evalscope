@@ -40,7 +40,7 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
     model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=True, torch_dtype=torch.bfloat16).to(device)
     model = model.eval()
 
-    for dt in tqdm(data, total=len(data), desc=f'rank-{rank}: '):
+    for dt in tqdm(data, total=len(data), desc=f'Infer on rank-{rank}: '):
         prompt = dt['prompt']
         if "llama" in path.lower():
             prompt = f"[INST]{prompt}[/INST]"
