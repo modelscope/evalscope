@@ -77,7 +77,7 @@ def seed_everything(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-def run_infer(model_id_or_path: str,
+def run_infer(model: str,
               data_path: str,
               output_dir: str,
               generation_kwargs: dict = None,
@@ -86,14 +86,14 @@ def run_infer(model_id_or_path: str,
     Process inference for LongWriter model.
 
     Args:
-        model_id_or_path: The model id of the LongWriter model on ModelScope.
+        model: The model id of the LongWriter model on ModelScope, or local model path.
         data_path: The path to the data file.
         output_dir: The output directory for the predictions.
         generation_kwargs: The generation arguments for the model.
             Attributes: `max_new_tokens`: The maximum number of tokens to generate. `temperature`: The temperature
         enable: Whether to run infer process.
     """
-    model_id_path: str = os.path.join(output_dir, model_id_or_path.strip(os.sep).replace(os.sep, '__'))
+    model_id_path: str = os.path.join(output_dir, model.strip(os.sep).replace(os.sep, '__'))
 
     if not enable:
         logger.warning('*** Skip `infer` stage ***')
@@ -110,7 +110,7 @@ def run_infer(model_id_or_path: str,
             'temperature': 0.5
         })
 
-    tokenizer = AutoTokenizer.from_pretrained(model_id_or_path, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
     world_size = torch.cuda.device_count()
 
     logger.info(f'>>Input data path: {data_path}')
@@ -121,7 +121,7 @@ def run_infer(model_id_or_path: str,
     processes = []
     for rank in range(world_size):
         p = mp.Process(target=get_pred,
-                       args=(rank, world_size, data_subsets[rank], model_id_or_path, generation_kwargs.get('max_new_tokens'), generation_kwargs.get('temperature'), tokenizer, fout))
+                       args=(rank, world_size, data_subsets[rank], model, generation_kwargs.get('max_new_tokens'), generation_kwargs.get('temperature'), tokenizer, fout))
         p.start()
         processes.append(p)
 
@@ -136,7 +136,7 @@ def run_infer(model_id_or_path: str,
     for p in processes:
         p.join()
 
-    logger.info(f'Finish generating predictions for {model_id_or_path}.')
+    logger.info(f'Finish generating predictions for {model}.')
     logger.info(f'Predictions are saved in {model_id_path}/pred.jsonl.')
 
     return f'{model_id_path}/pred.jsonl'
@@ -144,7 +144,7 @@ def run_infer(model_id_or_path: str,
 
 if __name__ == '__main__':
     # ZhipuAI/LongWriter-glm4-9b, ZhipuAI/LongWriter-llama3.1-8b
-    run_infer(model_id_or_path='ZhipuAI/LongWriter-glm4-9b',
+    run_infer(model='ZhipuAI/LongWriter-glm4-9b',
               data_path='resources/longbench_write.jsonl',
               output_dir='outputs',
               generation_kwargs=dict({

@@ -36,12 +36,12 @@ class EvalLength:
 
     EVAL_L = 'eval_length'
 
-    def __init__(self, model_id_or_path: str, pred_path: str, output_dir: str):
-        self.model_id_or_path = model_id_or_path
+    def __init__(self, model: str, pred_path: str, output_dir: str):
+        self.model = model
         self.pred_path = pred_path
         self.output_dir = output_dir
 
-        self.model_id_path = self.model_id_or_path.strip(os.sep).replace(os.sep, '__')
+        self.model_id_path = self.model.strip(os.sep).replace(os.sep, '__')
 
     def score(self, x, y):
         if y > x:
@@ -100,7 +100,7 @@ class EvalQuality:
         DIMS = ["Relevance", "Accuracy", "Coherence", "Clarity", "Breadth and Depth", "Reading Experience"]
 
         def __init__(self,
-                     model_id_or_path: str,
+                     model: str,
                      pred_path: str,
                      output_dir: str,
                      prompt_template_path: str,
@@ -109,7 +109,7 @@ class EvalQuality:
                      generation_kwargs: dict = None,
                      proc_num: int = 8):
 
-            self.model_id_or_path = model_id_or_path
+            self.model = model
             self.pred_path = pred_path
             self.output_dir = output_dir
             self.proc_num = proc_num
@@ -129,7 +129,7 @@ class EvalQuality:
 
             self.prompt_template: str = open(prompt_template_path, 'r', encoding='utf-8').read()
 
-            self.model_id_path = self.model_id_or_path.strip(os.sep).replace(os.sep, '__')
+            self.model_id_path = self.model.strip(os.sep).replace(os.sep, '__')
             self.output_res_path = f'{self.output_dir}/{self.model_id_path}/{self.EVAL_Q}.jsonl'
 
             self.openai_api_key: str = openai_api_key
@@ -236,7 +236,7 @@ class EvalQuality:
                 fout.write(json.dumps(total_score, ensure_ascii=False) + '\n')
 
 
-def run_eval(model_id_or_path: str,
+def run_eval(model: str,
              pred_path: str,
              output_dir: str,
              prompt_template_path: str,
@@ -250,8 +250,8 @@ def run_eval(model_id_or_path: str,
 
     if 'eval_l' in stage:
         try:
-            logger.info(f'Processing evaluation of length for model: {model_id_or_path}')
-            eval_length = EvalLength(model_id_or_path=model_id_or_path,
+            logger.info(f'Processing evaluation of length for model: {model}')
+            eval_length = EvalLength(model=model,
                                      pred_path=pred_path,
                                      output_dir=output_dir)
             x, y, _ = eval_length.eval()
@@ -263,8 +263,8 @@ def run_eval(model_id_or_path: str,
 
     if 'eval_q' in stage:
         try:
-            logger.info(f'Processing evaluation of quality for model: {model_id_or_path}')
-            eval_quality = EvalQuality(model_id_or_path=model_id_or_path,
+            logger.info(f'Processing evaluation of quality for model: {model}')
+            eval_quality = EvalQuality(model=model,
                                        pred_path=pred_path,
                                        output_dir=output_dir,
                                        prompt_template_path=prompt_template_path,
