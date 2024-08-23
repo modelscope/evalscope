@@ -41,7 +41,7 @@ class EvalLength:
         self.pred_path = pred_path
         self.output_dir = output_dir
 
-        self.model_id_path = self.model_id_or_path.replace('__', '/')
+        self.model_id_path = self.model_id_or_path.replace('/', '__')
 
     def score(self, x, y):
         if y > x:
