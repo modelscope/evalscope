@@ -26,7 +26,7 @@ def run_task(task_cfg: Union[str, dict]):
 
     # Parse task configuration
     stage: list = task_cfg.get('stage', ['infer', 'eval_l', 'eval_q'])
-    model_id: str = task_cfg.get('model_id')
+    model_id_or_path: str = task_cfg.get('model_id_or_path')
     output_dir: str = task_cfg.get('output_dir')
     openai_api_key: str = os.getenv('OPENAI_API_KEY') or task_cfg.get('openai_api_key')
     openai_gpt_model: str = task_cfg.get('openai_gpt_model')
@@ -35,14 +35,14 @@ def run_task(task_cfg: Union[str, dict]):
     proc_num: int = task_cfg.get('proc_num', 8)
 
     # Run inference process
-    pred_res_path = run_infer(model_id=model_id,
+    pred_res_path = run_infer(model_id_or_path=model_id_or_path,
                               data_path=os.path.join(os.path.dirname(__file__), 'resources/longbench_write.jsonl'),
                               output_dir=output_dir,
                               generation_kwargs=infer_generation_kwargs,
                               enable='infer' in stage)
 
     # Run eval process
-    run_eval(model_id=model_id,
+    run_eval(model_id_or_path=model_id_or_path,
              pred_path=pred_res_path,
              output_dir=output_dir,
              prompt_template_path=os.path.join(os.path.dirname(__file__), 'resources/judge.txt'),
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     # task_cfg = os.path.join(os.path.dirname(__file__), 'default_task.json')
 
     task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
-                    model_id='ZhipuAI/LongWriter-glm4-9b',
+                    model_id_or_path='ZhipuAI/LongWriter-glm4-9b',  # or /path/to/your_model_dir
                     output_dir='./outputs',
                     openai_api_key=None,
                     openai_gpt_model='gpt-4o-2024-05-13',

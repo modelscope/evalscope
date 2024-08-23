@@ -21,7 +21,7 @@ There are few ways to configure the task: dict, json and yaml.
 
 ```python
 task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
-                model_id='ZhipuAI/LongWriter-glm4-9b',
+                model_id_or_path='ZhipuAI/LongWriter-glm4-9b',
                 output_dir='./outputs',
                 openai_api_key=None,
                 openai_gpt_model='gpt-4o-2024-05-13',
@@ -39,7 +39,7 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
 ```
 - Arguments:
   - `stage`: To run multiple stages, `infer`--run the inference process. `eval_l`--run eval length process. `eval_q`--run eval quality process.
-  - `model_id`: model id on the ModelScope hub.
+  - `model_id_or_path`: model id on the ModelScope hub, or local model dir.
   - `output_dir`: output root directory.
   - `openai_api_key`: openai_api_key when enabling the stage `eval_q` to use `Model-as-Judge`. Default to None if not needed.
   - `openai_gpt_model`: Judge model name from OpenAI. Default to `gpt-4o-2024-05-13`
@@ -53,7 +53,7 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
 ```json
 {
     "stage": ["infer", "eval_l", "eval_q"],
-    "model_id": "ZhipuAI/LongWriter-glm4-9b",
+    "model_id_or_path": "ZhipuAI/LongWriter-glm4-9b",
     "output_dir": "./outputs",
     "openai_api_key": null,
     "openai_gpt_model": "gpt-4o-2024-05-13",
@@ -79,7 +79,7 @@ stage:
   - infer
   - eval_l
   - eval_q
-model_id: ZhipuAI/LongWriter-glm4-9b
+model_id_or_path: ZhipuAI/LongWriter-glm4-9b
 output_dir: ./outputs
 openai_api_key: null
 openai_gpt_model: gpt-4o-2024-05-13
