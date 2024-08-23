@@ -20,6 +20,9 @@ English | [简体中文](README_zh.md)
 - [News](#News)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Evaluation Backend](#evaluation-backend)
+- [Offline Evaluation](#offline-evaluation)
+- [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
 - [Leaderboard](#leaderboard)
 
@@ -44,11 +47,10 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
 
 ### Overall Architecture
-<div style="text-align: center;">
-    <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
-    <br>
-    Fig 1. EvalScope Framework.
-</div>
+<p align="center">
+  <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
+  <br>Fig 1. EvalScope Framework.
+</p>
 
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
@@ -277,7 +279,7 @@ Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 ## TO-DO List
 - [x] Agents evaluation
-- [ ] vLLM
+- [x] vLLM
 - [ ] Distributed evaluating
 - [x] Multi-modal evaluation
 - [ ] Benchmarks
