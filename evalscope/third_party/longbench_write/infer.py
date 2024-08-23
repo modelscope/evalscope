@@ -114,6 +114,7 @@ def run_infer(model_id_or_path: str,
     tokenizer = AutoTokenizer.from_pretrained(model_id_or_path, trust_remote_code=True)
     world_size = torch.cuda.device_count()
 
+    logger.info(f'>>Input data path: {data_path}')
     with open(data_path, encoding='utf-8') as f:
         data = [json.loads(line) for line in f]
 
