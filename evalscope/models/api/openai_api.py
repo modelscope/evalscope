@@ -26,7 +26,7 @@ class OpenaiApi:
                  is_chat: bool = True,
                  verbose: bool = False,
                  retry: int = 3,
-                 query_per_second: int = 1,     # TODO
+                 query_per_second: int = 10,     # TODO
                  **kwargs):
 
         self.temperature = temperature
@@ -56,16 +56,11 @@ class OpenaiApi:
             kwargs: The optional arguments for the model.
         """
         results = []
-        with ThreadPoolExecutor() as executor:
-            # results = list(executor.map(self._generate, inputs))
+        # with ThreadPoolExecutor() as executor:
+        #     results = list(executor.map(self._generate, inputs))
 
-            futures = [executor.submit(self._generate, one_input) for one_input in inputs]
-            try:
-                for future in as_completed(futures, timeout=5):
-                    print(f'>>>future res: {future.result()}')
-                    results.append(future.result())
-            except TimeoutError:
-                print("Not all tasks completed within the timeout period")
+        for input in inputs:
+            results.append(self._generate(input))
 
         return results
 
