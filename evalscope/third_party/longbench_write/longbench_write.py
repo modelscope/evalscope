@@ -53,6 +53,7 @@ def run_task(task_cfg: Union[str, dict]):
              output_dir=output_dir,
              prompt_template_path=os.path.join(os.path.dirname(__file__), 'resources/judge.txt'),
              openai_api_key=eval_config.get('openai_api_key'),
+             openai_api_base=eval_config.get('openai_api_base'),
              openai_gpt_model=eval_config.get('openai_gpt_model'),
              generation_kwargs=eval_config.get('generation_kwargs'),
              proc_num=eval_config.get('proc_num', 16),

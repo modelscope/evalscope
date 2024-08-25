@@ -105,11 +105,13 @@ class EvalQuality:
                      output_dir: str,
                      prompt_template_path: str,
                      openai_api_key: str = None,
+                     openai_api_base: str = OPENAI_BASE_URL,
                      openai_gpt_model: str = 'gpt-4o-2024-05-13',
                      generation_kwargs: dict = None,
                      proc_num: int = 8):
 
             self.model = model
+            self.openai_api_base = openai_api_base
             self.pred_path = pred_path
             self.output_dir = output_dir
             self.proc_num = proc_num
@@ -138,7 +140,7 @@ class EvalQuality:
 
         def get_response_gpt4(self, prompt, temperature=0.5, max_new_tokens=1024, stop=None):
             tries = 0
-            while tries < 10:
+            while tries < 3:
                 tries += 1
                 try:
                     headers = {
@@ -147,7 +149,7 @@ class EvalQuality:
                     messages = [
                         {'role': 'user', 'content': prompt},
                     ]
-                    resp = requests.post(self.OPENAI_BASE_URL, json={
+                    resp = requests.post(self.openai_api_base, json={
                         "model": self.openai_gpt_model,
                         "messages": messages,
                         "temperature": temperature,
@@ -187,7 +189,7 @@ class EvalQuality:
                 prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
                 scores = None
                 trys = 0
-                while scores is None and trys < 5:
+                while scores is None and trys < 3:
                     output = self.get_response_gpt4(prompt, **self.generation_kwargs)
                     try:
                         if '```json' in output:
@@ -241,6 +243,7 @@ def run_eval(model: str,
              output_dir: str,
              prompt_template_path: str,
              openai_api_key: str,
+             openai_api_base: str,
              openai_gpt_model: str,
              generation_kwargs: dict,
              proc_num: int,
@@ -269,6 +272,7 @@ def run_eval(model: str,
                                        output_dir=output_dir,
                                        prompt_template_path=prompt_template_path,
                                        openai_api_key=openai_api_key,
+                                       openai_api_base=openai_api_base,
                                        openai_gpt_model=openai_gpt_model,
                                        generation_kwargs=generation_kwargs,
                                        proc_num=proc_num)
