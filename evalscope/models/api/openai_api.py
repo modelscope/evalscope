@@ -106,56 +106,49 @@ class OpenaiApi:
                 raw_response = requests.post(self.url,
                                              headers=header,
                                              data=json.dumps(data))
-                resp = raw_response.json()
 
-                if self.verbose:
-                    logger.debug(f'>>raw_resp: {resp}')
+            except requests.ConnectionError:
+                logger.error('Got connection error, retrying...')
+                continue
+            try:
+                response = raw_response.json()
+                # print(f'>> raw_resp: {raw_response.json()}')
+            except requests.JSONDecodeError:
+                logger.error('JsonDecode error, got', str(raw_response.content))
+                continue
 
+            if self.verbose:
+                logger.debug(str(response))
+            try:
                 if self.logprobs:
-                    return resp['choices']
+                    return response['choices']
                 else:
                     if self.is_chat:
-                        return resp['choices'][0]['message']['content'].strip()
+                        return response['choices'][0]['message']['content'].strip()
                     else:
-                        return resp['choices'][0]['text'].strip()
+                        return response['choices'][0]['text'].strip()
+            except KeyError:
+                if 'error' in response:
+                    if response['error']['code'] == 'rate_limit_exceeded':
+                        time.sleep(10)
+                        logger.warn('Rate limit exceeded, retrying...')
+                        continue
+                    elif response['error']['code'] == 'insufficient_quota':
+                        logger.warning(f'insufficient_quota key: {self.openai_api_key}')
+                        continue
+                    elif response['error']['code'] == 'invalid_prompt':
+                        logger.warning(f'Invalid prompt: {messages}')
+                        return ''
+                    elif response['error']['type'] == 'invalid_prompt':
+                        logger.warning(f'Invalid prompt: {messages}')
+                        return ''
 
-            except Exception as e:
-                logger.error(e)
-                max_num_retries += 1
-                continue
-            #
-            # except requests.ConnectionError:
-            #     logger.error('Got connection error, retrying...')
-            #     max_num_retries += 1
-            #     continue
-            # try:
-            #     response = raw_response.json()
-            #
-            # except requests.JSONDecodeError:
-            #     logger.error('JsonDecode error, got', str(raw_response.content))
-            #     max_num_retries += 1
-            #     continue
-            # logger.debug(str(response))
-            # try:
-            #     if self.logprobs:
-            #         return response['choices']
-            #     else:
-            #         if self.is_chat:
-            #             return response['choices'][0]['message']['content'].strip()
-            #         else:
-            #             return response['choices'][0]['text'].strip()
-            # except KeyError:
-            #     if 'error' in response:
-            #         if response['error']['code'] == 'rate_limit_exceeded':
-            #             time.sleep(10)
-            #             logger.warning('Rate limit exceeded, retrying...')
-            #             max_num_retries += 1
-            #             continue
-            #         elif response['error']['code'] == 'invalid_prompt':
-            #             logger.error('Invalid inputs:', messages)
-            #             return ''
+                    logger.error('Find error message in response: ', str(response['error']))
+            max_num_retries += 1
 
-        raise RuntimeError(f'Calling OpenAI failed after retrying for {max_num_retries} times.')
+        raise RuntimeError('Calling OpenAI failed after retrying for '
+                           f'{max_num_retries} times. Check the logs for '
+                           'details.')
 
     def wait(self):
         return self.token_bucket.get_token()
