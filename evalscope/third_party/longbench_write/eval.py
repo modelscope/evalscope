@@ -140,7 +140,7 @@ class EvalQuality:
 
         def get_response_gpt4(self, prompt, temperature=0.5, max_new_tokens=1024, stop=None):
             tries = 0
-            while tries < 3:
+            while tries < 1:
                 tries += 1
                 try:
                     headers = {
@@ -159,6 +159,7 @@ class EvalQuality:
                     if resp.status_code != 200:
                         raise Exception(resp.text)
                     resp = resp.json()
+                    logger.info(f'>>gpt resp: {resp}')
                     break
                 except KeyboardInterrupt as e:
                     raise e
@@ -188,23 +189,20 @@ class EvalQuality:
             for item in tqdm(items, total=len(items), desc=f'Process of eval_q: '):
                 prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
                 scores = None
-                trys = 0
-                while scores is None and trys < 3:
-                    output = self.get_response_gpt4(prompt, **self.generation_kwargs)
-                    logger.info(f'>>judge output: {output}')
-                    try:
-                        if '```json' in output:
-                            output = self.extract_info(r'```json\n(.*?)\n```', output)
-                        output = output.replace('\n', '')
-                        logger.info(f'>>extract output: {output}')
-                        scores = json.loads(output)
-                        for dim in self.DIMS:
-                            if dim not in scores:
-                                scores = None
-                                trys += 1
-                    except Exception as e:
-                        trys += 1
-                        logger.error(f'Error occurs: {str(e)} Retry ...')
+                logger.info(f'>>judge input: {prompt}')
+                output = self.get_response_gpt4(prompt, **self.generation_kwargs)
+                logger.info(f'>>judge output: {output}')
+                try:
+                    if '```json' in output:
+                        output = self.extract_info(r'```json\n(.*?)\n```', output)
+                    output = output.replace('\n', '')
+                    logger.info(f'>>extract output: {output}')
+                    scores = json.loads(output)
+                    for dim in self.DIMS:
+                        if dim not in scores:
+                            scores = None
+                except Exception as e:
+                    logger.error(f'Error occurs: {str(e)} Retry ...')
                 if scores is None:
                     logger.error(f'Failed to extract scores for item: {item}')
                 else:
