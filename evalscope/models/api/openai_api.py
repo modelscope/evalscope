@@ -7,7 +7,7 @@ from asyncio import Queue
 
 import requests
 from typing import Union, List, Optional, Dict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from modelscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -55,9 +55,18 @@ class OpenaiApi:
                 e.g. [[{'role': 'user', 'content': 'who are you ?'}], ...]
             kwargs: The optional arguments for the model.
         """
-
+        results = []
         with ThreadPoolExecutor() as executor:
-            results = list(executor.map(self._generate, inputs))
+            # results = list(executor.map(self._generate, inputs))
+
+            futures = [executor.submit(self._generate, one_input) for one_input in inputs]
+            try:
+                for future in as_completed(futures, timeout=5):
+                    print(f'>>>future res: {future.result()}')
+                    results.append(future.result())
+            except TimeoutError:
+                print("Not all tasks completed within the timeout period")
+
         return results
 
     def _generate(self, messages: Union[str, List[Dict]]) -> str:
