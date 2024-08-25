@@ -200,6 +200,7 @@ class EvalQuality:
                     scores = json.loads(output)
                     for dim in self.DIMS:
                         if dim not in scores:
+                            logger.warning(f'Cannot find score for dimension: {dim} in scores {scores}.')
                             scores = None
                 except Exception as e:
                     logger.error(f'Error occurs: {str(e)} Retry ...')
@@ -225,6 +226,8 @@ class EvalQuality:
 
             pool.close()
             pool.join()
+
+            logger.info(f'>>self.eval_scores: {self.eval_scores}')
 
             total_score = dict()
             for dim in self.DIMS:
@@ -252,32 +255,26 @@ def run_eval(model: str,
     logger.info(f'Got eval stages: {stage}')
 
     if 'eval_l' in stage:
-        try:
-            logger.info(f'Processing evaluation of length for model: {model}')
-            eval_length = EvalLength(model=model,
-                                     pred_path=pred_path,
-                                     output_dir=output_dir)
-            x, y, _ = eval_length.eval()
-            eval_length.plot(x, y)
-        except Exception as e:
-            logger.error(f'Error occurs during evaluating length: {str(e)}')
+        logger.info(f'Processing evaluation of length for model: {model}')
+        eval_length = EvalLength(model=model,
+                                 pred_path=pred_path,
+                                 output_dir=output_dir)
+        x, y, _ = eval_length.eval()
+        eval_length.plot(x, y)
     else:
         logger.warning(f'*** Skip `eval_l` stage ***')
 
     if 'eval_q' in stage:
-        try:
-            logger.info(f'Processing evaluation of quality for model: {model}')
-            eval_quality = EvalQuality(model=model,
-                                       pred_path=pred_path,
-                                       output_dir=output_dir,
-                                       prompt_template_path=prompt_template_path,
-                                       openai_api_key=openai_api_key,
-                                       openai_api_base=openai_api_base,
-                                       openai_gpt_model=openai_gpt_model,
-                                       generation_kwargs=generation_kwargs,
-                                       proc_num=proc_num)
-            eval_quality.eval()
-        except Exception as e:
-            logger.error(f'Error occurs during evaluating quality: {str(e)}')
+        logger.info(f'Processing evaluation of quality for model: {model}')
+        eval_quality = EvalQuality(model=model,
+                                   pred_path=pred_path,
+                                   output_dir=output_dir,
+                                   prompt_template_path=prompt_template_path,
+                                   openai_api_key=openai_api_key,
+                                   openai_api_base=openai_api_base,
+                                   openai_gpt_model=openai_gpt_model,
+                                   generation_kwargs=generation_kwargs,
+                                   proc_num=proc_num)
+        eval_quality.eval()
     else:
         logger.warning('*** Skip `eval_q` stage ***')
