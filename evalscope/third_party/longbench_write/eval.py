@@ -190,14 +190,11 @@ class EvalQuality:
             # for item in tqdm(items, total=len(items), desc=f'Process of eval_q: '):
             prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
             scores = None
-            logger.info(f'>>judge input: {prompt}')
             output = self.get_response_gpt4(prompt, **self.generation_kwargs)
-            logger.info(f'>>judge output: {output}')
             try:
                 if '```json' in output:
                     output = self.extract_info(r'```json\n(.*?)\n```', output)
                 output = output.replace('\n', '')
-                logger.info(f'>>extract output: {output}')
                 scores = json.loads(output)
                 for dim in self.DIMS:
                     if dim not in scores:
@@ -234,7 +231,6 @@ class EvalQuality:
                 self.eval_scores = list(executor.map(self.process_data, data_all))
 
             # self.process_data(items=data)
-
             logger.info(f'>>self.eval_scores: {self.eval_scores}')
 
             total_score = dict()
