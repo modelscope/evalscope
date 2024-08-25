@@ -50,7 +50,7 @@ class OpenaiApi:
             kwargs: The optional arguments for the model.
         """
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             results = list(executor.map(self._generate, inputs))
         return results
 

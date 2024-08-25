@@ -192,7 +192,7 @@ def run_infer(model: str,
 
     results: List[str] = api_client.generate(inputs=[example['prompt'] for example in data_list])
     assert len(results) == len(data_list), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
-    logger.info(f'Finish generating predictions for {len(data_list)} samples.')
+    logger.info(f'Finish generating predictions with {len(data_list)} samples for {model}')
 
     # Outputs
     os.makedirs(model_id_path, exist_ok=True)
@@ -203,7 +203,6 @@ def run_infer(model: str,
             dt["response"] = res
             f.write(json.dumps(dt, ensure_ascii=False) + '\n')
 
-    logger.info(f'Finish generating predictions for {model}.')
     logger.info(f'Predictions are saved in {output_pred_file}')
 
     return output_pred_file
