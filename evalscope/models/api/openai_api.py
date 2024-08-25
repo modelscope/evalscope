@@ -1,7 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
+import threading
 import time
+from asyncio import Queue
+
 import requests
 from typing import Union, List, Optional, Dict
 from concurrent.futures import ThreadPoolExecutor
@@ -23,6 +26,7 @@ class OpenaiApi:
                  is_chat: bool = True,
                  verbose: bool = False,
                  retry: int = 3,
+                 query_per_second: int = 1,     # TODO
                  **kwargs):
 
         self.temperature = temperature
@@ -37,6 +41,8 @@ class OpenaiApi:
         self.retry = retry
         self.verbose = verbose
 
+        self.token_bucket = TokenBucket(query_per_second, verbose)
+
     def generate(self,
                  inputs: Union[List[str], List[List]],
                  **kwargs) -> List[str]:
@@ -50,7 +56,7 @@ class OpenaiApi:
             kwargs: The optional arguments for the model.
         """
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor() as executor:
             results = list(executor.map(self._generate, inputs))
         return results
 
@@ -61,6 +67,8 @@ class OpenaiApi:
 
         max_num_retries = 0
         while max_num_retries < self.retry:
+            self.wait()
+
             header = {
                 'Authorization': f'Bearer {self.openai_api_key}',
                 'content-type': 'application/json',
@@ -148,3 +156,45 @@ class OpenaiApi:
             #             return ''
 
         raise RuntimeError(f'Calling OpenAI failed after retrying for {max_num_retries} times.')
+
+    def wait(self):
+        return self.token_bucket.get_token()
+
+
+class TokenBucket:
+    """A token bucket for rate limiting.
+
+    Args:
+        query_per_second (float): The rate of the token bucket.
+    """
+
+    def __init__(self, rate, verbose=False):
+        self._rate = rate
+        self._tokens = threading.Semaphore(0)
+        self.started = False
+        self._request_queue = Queue()
+        self.logger = get_logger()
+        self.verbose = verbose
+
+    def _add_tokens(self):
+        """Add tokens to the bucket."""
+        while True:
+            if self._tokens._value < self._rate:
+                self._tokens.release()
+            time.sleep(1 / self._rate)
+
+    def get_token(self):
+        """Get a token from the bucket."""
+        if not self.started:
+            self.started = True
+            threading.Thread(target=self._add_tokens, daemon=True).start()
+        self._tokens.acquire()
+        if self.verbose:
+            cur_time = time.time()
+            while not self._request_queue.empty():
+                if cur_time - self._request_queue.queue[0] > 60:
+                    self._request_queue.get()
+                else:
+                    break
+            self._request_queue.put(cur_time)
+            self.logger.info(f'Current RPM {self._request_queue.qsize()}.')
