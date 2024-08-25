@@ -5,6 +5,7 @@ import os
 import json
 import random
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -185,39 +186,40 @@ class EvalQuality:
             else:
                 return None
 
-        def process_data(self, items):
-            for item in tqdm(items, total=len(items), desc=f'Process of eval_q: '):
-                prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
-                scores = None
-                logger.info(f'>>judge input: {prompt}')
-                output = self.get_response_gpt4(prompt, **self.generation_kwargs)
-                logger.info(f'>>judge output: {output}')
-                try:
-                    if '```json' in output:
-                        output = self.extract_info(r'```json\n(.*?)\n```', output)
-                    output = output.replace('\n', '')
-                    logger.info(f'>>extract output: {output}')
-                    scores = json.loads(output)
-                    for dim in self.DIMS:
-                        if dim not in scores:
-                            logger.warning(f'Cannot find score for dimension: {dim} in scores {scores}.')
-                            scores = None
-                except Exception as e:
-                    logger.error(f'Error occurs: {str(e)} Retry ...')
-                if scores is None:
-                    logger.error(f'Failed to extract scores for item: {item}')
-                else:
-                    logger.info(f'>>scores: {scores}')
-                    item['scores'] = scores
-                    self.eval_scores.append(item)
+        def process_data(self, item):
+            # for item in tqdm(items, total=len(items), desc=f'Process of eval_q: '):
+            prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
+            scores = None
+            logger.info(f'>>judge input: {prompt}')
+            output = self.get_response_gpt4(prompt, **self.generation_kwargs)
+            logger.info(f'>>judge output: {output}')
+            try:
+                if '```json' in output:
+                    output = self.extract_info(r'```json\n(.*?)\n```', output)
+                output = output.replace('\n', '')
+                logger.info(f'>>extract output: {output}')
+                scores = json.loads(output)
+                for dim in self.DIMS:
+                    if dim not in scores:
+                        logger.warning(f'Cannot find score for dimension: {dim} in scores {scores}.')
+                        scores = None
+            except Exception as e:
+                logger.error(f'Error occurs: {str(e)} Retry ...')
+            if scores is None:
+                logger.error(f'Failed to extract scores for item: {item}')
+            else:
+                logger.info(f'>>scores: {scores}')
+                item['scores'] = scores
+
+            return item
 
         def eval(self):
 
-            data = jsonl_to_list(self.pred_path)
-            total = len(data)
+            data_all = jsonl_to_list(self.pred_path)
+            total = len(data_all)
             assert total > 0, f'No data found in prediction file: {self.pred_path}'
 
-            random.shuffle(data)
+            random.shuffle(data_all)
             # pool = multiprocessing.Pool(processes=self.proc_num)
             #
             # for i in range(self.proc_num):
@@ -227,7 +229,11 @@ class EvalQuality:
             #
             # pool.close()
             # pool.join()
-            self.process_data(items=data)
+
+            with ThreadPoolExecutor() as executor:
+                self.eval_scores = list(executor.map(self.process_data, data_all))
+
+            # self.process_data(items=data)
 
             logger.info(f'>>self.eval_scores: {self.eval_scores}')
 
