@@ -207,6 +207,7 @@ class EvalQuality:
                 if scores is None:
                     logger.error(f'Failed to extract scores for item: {item}')
                 else:
+                    logger.info(f'>>scores: {scores}')
                     item['scores'] = scores
                     self.eval_scores.append(item)
 
@@ -217,15 +218,16 @@ class EvalQuality:
             assert total > 0, f'No data found in prediction file: {self.pred_path}'
 
             random.shuffle(data)
-            pool = multiprocessing.Pool(processes=self.proc_num)
-
-            for i in range(self.proc_num):
-                start = (i * total) // self.proc_num
-                end = None if i == self.proc_num - 1 else ((i + 1) * total) // self.proc_num
-                pool.apply_async(self.process_data, args=(data[start:end],))
-
-            pool.close()
-            pool.join()
+            # pool = multiprocessing.Pool(processes=self.proc_num)
+            #
+            # for i in range(self.proc_num):
+            #     start = (i * total) // self.proc_num
+            #     end = None if i == self.proc_num - 1 else ((i + 1) * total) // self.proc_num
+            #     pool.apply_async(self.process_data, args=(data[start:end],))
+            #
+            # pool.close()
+            # pool.join()
+            self.process_data(items=data)
 
             logger.info(f'>>self.eval_scores: {self.eval_scores}')
 
