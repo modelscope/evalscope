@@ -71,7 +71,7 @@ class OpenaiApi:
 
         max_num_retries = 0
         while max_num_retries < self.retry:
-            self.wait()
+            # self.wait()
 
             header = {
                 'Authorization': f'Bearer {self.openai_api_key}',
