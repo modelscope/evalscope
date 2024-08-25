@@ -55,12 +55,12 @@ class OpenaiApi:
                 e.g. [[{'role': 'user', 'content': 'who are you ?'}], ...]
             kwargs: The optional arguments for the model.
         """
-        results = []
-        # with ThreadPoolExecutor() as executor:
-        #     results = list(executor.map(self._generate, inputs))
+        # results = []
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(self._generate, inputs))
 
-        for input in inputs:
-            results.append(self._generate(input))
+        # for input in inputs:
+        #     results.append(self._generate(input))
 
         return results
 
@@ -71,7 +71,7 @@ class OpenaiApi:
 
         max_num_retries = 0
         while max_num_retries < self.retry:
-            # self.wait()
+            self.wait()
 
             header = {
                 'Authorization': f'Bearer {self.openai_api_key}',
