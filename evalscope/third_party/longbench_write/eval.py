@@ -191,10 +191,12 @@ class EvalQuality:
                 trys = 0
                 while scores is None and trys < 3:
                     output = self.get_response_gpt4(prompt, **self.generation_kwargs)
+                    logger.info(f'>>judge output: {output}')
                     try:
                         if '```json' in output:
                             output = self.extract_info(r'```json\n(.*?)\n```', output)
                         output = output.replace('\n', '')
+                        logger.info(f'>>extract output: {output}')
                         scores = json.loads(output)
                         for dim in self.DIMS:
                             if dim not in scores:
