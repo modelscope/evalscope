@@ -10,16 +10,19 @@ English | [简体中文](README_zh.md)
 <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
 </a>
-<br><br>
-<a href="https://evalscope.readthedocs.io/zh-cn/latest/">📖 EvalScope Documents</a>
+<br>
+ <a href="https://evalscope.readthedocs.io/en/latest/"><span style="font-size: 16px;">📖 Documents</span></a> &nbsp | &nbsp<a href="https://evalscope.readthedocs.io/zh-cn/latest/"><span style="font-size: 16px;"> 📖  中文文档</span></a>
 <p>
 
 
-## 📖 Table of Contents
+## 📋 Table of Contents
 - [Introduction](#introduction)
 - [News](#News)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Evaluation Backend](#evaluation-backend)
+- [Offline Evaluation](#offline-evaluation)
+- [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
 - [Leaderboard](#leaderboard)
 
@@ -38,14 +41,16 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
   - **Pairwise-baseline mode**: Comparing against a baseline model.
   - **Pairwise (all) mode**: Pairwise comparison among all models.
 - **Visualization Tools**: Provides intuitive displays of evaluation results.
-- **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](../user_guides/stress_test.md).
+- **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html).
 - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation.
 - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
 
 ### Overall Architecture
-![](docs/en/_static/images/evalscope_framework.png)
-*EvalScope Framework.*
+<p align="center">
+  <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
+  <br>Fig 1. EvalScope Framework.
+</p>
 
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
@@ -274,7 +279,7 @@ Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 ## TO-DO List
 - [x] Agents evaluation
-- [ ] vLLM
+- [x] vLLM
 - [ ] Distributed evaluating
 - [x] Multi-modal evaluation
 - [ ] Benchmarks
