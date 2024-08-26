@@ -107,14 +107,11 @@ class OpenaiApi:
                     return {k: v for k, v in input_d.items() if v is not None}
                 data = remove_none_val(data)
 
-                # TODO: only for test
-                data = {'model': 'longwriter-llama3_1-8b', 'messages': [{'role': 'user', 'content': 'Write an outline for a short 100-word blog post about why Christmas Cactus are a great buy.'}], 'max_tokens': 32768, 'n': 1, 'logprobs': False, 'temperature': 0.5}
-
                 if self.verbose:
                     logger.info(f'>> Post data: {json.dumps(data, ensure_ascii=False)}')
                 raw_response = requests.post(self.url,
                                              headers=header,
-                                             data=json.dumps(data))
+                                             data=json.dumps(data, ensure_ascii=False))
 
                 response = raw_response.json()
                 if self.verbose:
