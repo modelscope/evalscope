@@ -24,7 +24,7 @@ class OpenaiApi:
                  max_new_tokens: int = 4096,
                  temperature: Optional[float] = 0.0,
                  is_chat: bool = True,
-                 verbose: bool = False,
+                 verbose: bool = True,
                  retry: int = 3,
                  query_per_second: int = 10,     # TODO
                  **kwargs):

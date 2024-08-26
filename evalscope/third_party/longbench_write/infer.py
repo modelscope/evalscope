@@ -213,7 +213,7 @@ if __name__ == '__main__':
     api_config = dict(openai_api_key=None,
                       openai_api_base='http://127.0.0.1:8000/v1/chat/completions',
                       is_chat=True,
-                      verbose=False,)
+                      verbose=True,)
 
     run_infer(model='ZhipuAI/LongWriter-glm4-9b',
               data_path='resources/longbench_write.jsonl',
