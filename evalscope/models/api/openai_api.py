@@ -7,7 +7,7 @@ from asyncio import Queue
 
 import requests
 from typing import Union, List, Optional, Dict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from modelscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -71,7 +71,7 @@ class OpenaiApi:
 
         max_num_retries = 0
         while max_num_retries < self.retry:
-            self.wait()
+            # self.wait()
 
             header = {
                 'Authorization': f'Bearer {self.openai_api_key}',
@@ -108,14 +108,14 @@ class OpenaiApi:
                 data = remove_none_val(data)
 
                 if self.verbose:
-                    logger.debug(f'>> Post data: {data}')
+                    logger.info(f'>> Post data: {data}')
                 raw_response = requests.post(self.url,
                                              headers=header,
                                              data=json.dumps(data))
 
                 response = raw_response.json()
                 if self.verbose:
-                    logger.debug(f'>> response: {response}')
+                    logger.info(f'>> response: {response}')
 
                 if self.logprobs:
                     return response['choices']
