@@ -43,28 +43,30 @@ class OpenaiApi:
 
         self.token_bucket = TokenBucket(query_per_second, verbose)
 
-    def generate_simple(self, inputs: Union[List[str], List[List]]):
+    def generate_simple(self, inputs: Union[List[str]]):
 
-        print(f'>>>inputs: {inputs}')
         results = []
         for in_data in inputs:
 
             # longwriter-llama3_1-8b longwriter-glm4-9b
-            data = {'model': 'qwen2-7b-instruct',
-                    'messages': [{'role': 'user', 'content': 'Write an outline for a short 100-word blog post about why Christmas Cactus are a great buy.'}],
-                    'max_tokens': 4096,
+            data = {'model': self.model,
+                    'messages': [{'role': 'user', 'content': in_data}],
+                    'max_tokens': self.max_tokens,
                     'n': 1,
                     'logprobs': False,
-                    'temperature': 0.5}
+                    'temperature': self.temperature}
 
-            header = {'Authorization': f'Bearer ', 'content-type': 'application/json', }
+            openai_api_key = self.openai_api_key or ''
+            header = {'Authorization': f'Bearer {openai_api_key}', 'content-type': 'application/json', }
+            data = json.dumps(data, ensure_ascii=False)
 
-            data = json.dumps(data)
-            url = 'http://127.0.0.1:8000/v1/chat/completions'
+            if self.verbose:
+                print(f'>>data in generate_simple: {data}')
 
-            resp = requests.post(url, headers=header, data=data)
+            resp = requests.post(self.url, headers=header, data=data)
             resp = resp.json()
-            print(f'>>test post: {resp}')
+            if self.verbose:
+                print(f'>>resp in generate_simple: {resp}')
 
             results.append(resp['choices'][0]['message']['content'].strip())
         return results
