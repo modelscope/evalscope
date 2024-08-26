@@ -2,6 +2,22 @@
 
 ## LLM 数据集
 
+### 使用Native 评测
+
+本框架预定义了多种数据集格式，主要包括：
+- `ceval`：选择题格式，包含`question`、`answer`、`options`字段
+- `general_qa`：问答题格式，包含`question`、`answer`字段
+
+
+#### 1. 数据准备
+
+
+#### 2. 配置文件
+
+
+#### 3. 运行评测
+
+### 使用ms-swift评估自定义评测集
 支持两种pattern的评测集：选择题格式的`CEval`和问答题格式的`General-QA`
 
 ```{seealso}
@@ -11,7 +27,7 @@
 
 ## VLM 数据集
 
-````{seealso}
+````{note}
 自定义数据集的评测需要使用`VLMEvalKit`，需要安装额外依赖：
 ```shell
 pip install evalscope[vlmeval]

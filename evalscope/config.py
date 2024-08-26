@@ -33,6 +33,7 @@ registry_tasks = {
 @dataclass
 class TaskConfig:
     model_args: Optional[dict] = field(default_factory=dict)
+    template_type: Optional[str] = 'default-generation'
     generation_config: Optional[dict] = field(default_factory=dict)
     dataset_args: Optional[dict] = field(default_factory=dict)
     dry_run: bool = False
