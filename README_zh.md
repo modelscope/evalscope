@@ -42,7 +42,7 @@
   - **Pairwise-baseline mode**：与基线模型进行对比。
   - **Pairwise (all) mode**：所有模型间的两两对比。
 - **可视化工具**：提供直观的评估结果展示。
-- **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](../user_guides/stress_test.md)。
+- **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)。
 - **OpenCompass集成**：支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
 - **VLMEvalKit集成**：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
 - **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。

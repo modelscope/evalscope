@@ -37,6 +37,7 @@ class VLMEvalKitBackendManager(BackendManager):
 
         self._check_valid()
 
+    
     def _check_valid(self):
         # Ensure not both model and datasets are empty
         if not self.args.data or not self.args.model:
@@ -44,9 +45,9 @@ class VLMEvalKitBackendManager(BackendManager):
 
         # Check datasets
         valid_datasets, invalid_datasets = get_valid_list(self.args.data, self.valid_datasets)
-        assert len(invalid_datasets) == 0, f'Invalid datasets: {invalid_datasets}, ' \
-            f'refer to the following list to get proper dataset name: {self.valid_datasets}'
-
+        if len(invalid_datasets) != 0:
+            logger.warning(f"Using custom dataset: {invalid_datasets}, ")
+            
         # Check model
         if isinstance(self.args.model[0], dict):
             model_names = [model['name'] for model in self.args.model]
@@ -82,8 +83,8 @@ class VLMEvalKitBackendManager(BackendManager):
 
         elif isinstance(self.args.model[0], str):
             valid_model_names, invalid_model_names = get_valid_list(self.args.model, self.valid_model_names)
-            assert len(invalid_model_names) == 0, f'Invalid models: {invalid_model_names}, ' \
-                f'refer to the following list to get proper model name: {self.valid_model_names}'
+            if len(invalid_datasets) != 0:
+                logger.warning(f"Using custom dataset: {invalid_datasets}, ")
 
     @property
     def cmd(self):

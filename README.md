@@ -41,7 +41,7 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
   - **Pairwise-baseline mode**: Comparing against a baseline model.
   - **Pairwise (all) mode**: Pairwise comparison among all models.
 - **Visualization Tools**: Provides intuitive displays of evaluation results.
-- **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](../user_guides/stress_test.md).
+- **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html).
 - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation.
 - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
