@@ -48,16 +48,28 @@ class OpenaiApi:
         results = []
         for in_data in inputs:
 
-            # longwriter-llama3_1-8b longwriter-glm4-9b
-            data = {'model': self.model,
-                    'messages': [{'role': 'user', 'content': in_data}],
-                    'max_tokens': self.max_tokens,
-                    'n': 1,
-                    'logprobs': False,
-                    'temperature': self.temperature}
+            if self.is_chat:
+                data = dict(
+                    model=self.model,
+                    messages=[{'role': 'user', 'content': in_data}],
+                    max_tokens=self.max_tokens,
+                    n=1,
+                    logprobs=self.logprobs,
+                    top_logprobs=self.top_logprobs,
+                    stop=None,
+                    temperature=self.temperature,
+                )
+            else:
+                data = dict(
+                    model=self.model,
+                    prompt=in_data,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                )
 
+            # todo
             openai_api_key = self.openai_api_key or ''
-            header = {'Authorization': f'Bearer {openai_api_key}', 'content-type': 'application/json', }
+            header = {'Authorization': f'Bearer ', 'content-type': 'application/json', }
             data = json.dumps(data, ensure_ascii=False)
 
             if self.verbose:
@@ -68,7 +80,14 @@ class OpenaiApi:
             if self.verbose:
                 print(f'>>resp in generate_simple: {resp}')
 
-            results.append(resp['choices'][0]['message']['content'].strip())
+            if self.logprobs:
+                results.append(resp['choices'])
+            else:
+                if self.is_chat:
+                    results.append(resp['choices'][0]['message']['content'].strip())
+                else:
+                    results.append(resp['choices'][0]['text'].strip())
+
         return results
 
     def generate(self,
