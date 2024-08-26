@@ -46,25 +46,28 @@ class OpenaiApi:
     def generate_simple(self, inputs: Union[List[str], List[List]]):
 
         print(f'>>>inputs: {inputs}')
+        results = []
+        for in_data in inputs:
 
-        # longwriter-llama3_1-8b longwriter-glm4-9b
-        data = {'model': 'qwen2-7b-instruct',
-                'messages': [{'role': 'user', 'content': 'Write an outline for a short 100-word blog post about why Christmas Cactus are a great buy.'}],
-                'max_tokens': 4096,
-                'n': 1,
-                'logprobs': False,
-                'temperature': 0.5}
+            # longwriter-llama3_1-8b longwriter-glm4-9b
+            data = {'model': 'qwen2-7b-instruct',
+                    'messages': [{'role': 'user', 'content': 'Write an outline for a short 100-word blog post about why Christmas Cactus are a great buy.'}],
+                    'max_tokens': 4096,
+                    'n': 1,
+                    'logprobs': False,
+                    'temperature': 0.5}
 
-        header = {'Authorization': f'Bearer ', 'content-type': 'application/json', }
+            header = {'Authorization': f'Bearer ', 'content-type': 'application/json', }
 
-        data = json.dumps(data)
-        url = 'http://127.0.0.1:8000/v1/chat/completions'
+            data = json.dumps(data)
+            url = 'http://127.0.0.1:8000/v1/chat/completions'
 
-        resp = requests.post(url, headers=header, data=data)
-        resp = resp.json()
-        print(f'>>test post: {resp}')
+            resp = requests.post(url, headers=header, data=data)
+            resp = resp.json()
+            print(f'>>test post: {resp}')
 
-        return resp['choices'][0]['message']['content'].strip()
+            results.append(resp['choices'][0]['message']['content'].strip())
+        return results
 
     def generate(self,
                  inputs: Union[List[str], List[List]],
