@@ -1,6 +1,6 @@
 # OpenCompass 评测后端
 
-为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift) 部署模型服务，其中，[swift deploy](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)支持使用[vLLM](https://github.com/vllm-project/vllm)拉起模型推理服务。
+为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，来拉起模型推理服务。
 
 ## 1. 环境准备
 ```shell
@@ -10,13 +10,6 @@ pip install evalscope[opencompass] -U
 
 ## 2. 数据准备
 
-<!-- ````{note}
-您可以使用以下方式，来查看数据集的名称列表：
-```python
-from evalscope.backend.opencompass import OpenCompassBackendManager
-print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
-```
-```` -->
 
 ````{note}
 有以下三种方式下载数据集，其中自动下载数据集方式支持的数据集少于手动下载数据集方式，请按需使用。
@@ -75,21 +68,104 @@ unzip eval_data.zip
 `````
 
 
-## 3. 模型推理服务
-OpenCompass 评测后端使用统一的OpenAI API调用来进行评估，因此我们需要进行模型部署。下面我们使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)
+## 3. 部署模型服务
+OpenCompass 评测后端使用统一的OpenAI API调用来进行评估，因此我们需要进行模型部署。
 
-### 安装ms-swift
+下面介绍四种方式部署模型服务：
+`````{tabs}
+````{tab} ms-swift部署 （推荐）
+
+使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)。
+
+**安装ms-swift**
 ```shell
 pip install ms-swift -U
 ```
 
-### 部署模型服务
+**部署模型服务**
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
-
-# 启动成功日志
-# INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ```
+````
+
+````{tab} vLLM 部署
+参考 [vLLM 教程](https://docs.vllm.ai/en/latest/index.html)。 
+
+[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html)
+
+**安装vLLM**
+```shell
+pip install vllm -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
+```
+````
+
+````{tab} LMDeploy 部署
+参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md)。
+
+**安装LMDeploy**
+```shell
+pip install lmdeploy -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
+```
+````
+
+````{tab} Ollama 部署
+
+```{note}
+Ollama 对于 OpenAI API 的支持目前处于实验性状态，本教程仅提供示例，请根据实际情况修改。
+```
+
+参考 [Ollama 教程](https://github.com/ollama/ollama/blob/main/README.md#quickstart)。
+
+**安装Ollama**
+```shell
+# Linux 系统
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**启动Ollama**
+```shell
+# 默认端口为 11434
+ollama serve
+```
+
+```{tip}
+若使用`ollama pull`拉取模型，可跳过以下创建模型的步骤；若使用`ollama import`导入模型，则需要手动创建模型配置文件。
+```
+
+**创建模型配置文件 `Modelfile`**
+
+[支持的模型格式](https://github.com/ollama/ollama/blob/main/docs/import.md)
+```text
+# 模型路径
+FROM models/Meta-Llama-3-8B-Instruct
+
+# 温度系数
+PARAMETER temperature 1
+
+# system prompt
+SYSTEM """
+You are a helpful assistant.
+"""
+```
+
+**创建模型**
+
+会将模型自动转为ollama支持的格式，同时支持多种量化方式。
+```shell
+ollama create llama3 -f ./Modelfile
+```
+````
+`````
 
 
 ## 4. 模型评估
@@ -164,11 +240,14 @@ eval_swift_openai_api.json
 - `eval_config`：字典，包含以下字段：
   - `datasets`：列表，参考[目前支持的数据集](#2-数据准备)
   - `models`：字典列表，每个字典必须包含以下字段：
-    - `path`：重用命令行 `swift deploy` 中的 `--model_type` 的值
-    - `openai_api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL
-    - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型
-    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`
-  - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs/default`
+    - `path`：OpenAI API 请求模型名称。
+      - 若使用`ms-swift`部署，设置为 `--model_type` 的值；
+      - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为 `model_id`；
+      - 若使用 `Ollama` 部署模型，则设置为 `model_name`，使用`ollama list`命令查看。
+    - `openai_api_base`：OpenAI API 的URL。
+    - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型。
+    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
+  - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs/default`。
   - `limit`： 可以是 `int`、`float` 或 `str`，例如 5、5.0 或 `'[10:20]'`。默认值为 `None`，表示运行所有示例。
 
 有关其他可选属性，请参考 `opencompass.cli.arguments.ApiModelConfig`。
@@ -205,3 +284,29 @@ python examples/example_eval_swift_openai_api.py
 
 
 可以看到最终输出如下：
+
+```text
+dataset                                 version    metric         mode    qwen2-0_5b-instruct
+--------------------------------------  ---------  -------------  ------  ---------------------
+--------- 考试 Exam ---------           -          -              -       -
+ceval                                   -          naive_average  gen     30.00
+agieval                                 -          -              -       -
+mmlu                                    -          naive_average  gen     42.28
+GaokaoBench                             -          -              -       -
+ARC-c                                   1e0de5     accuracy       gen     60.00
+--------- 语言 Language ---------       -          -              -       -
+WiC                                     -          -              -       -
+summedits                               -          -              -       -
+winogrande                              -          -              -       -
+flores_100                              -          -              -       -
+--------- 推理 Reasoning ---------      -          -              -       -
+cmnli                                   -          -              -       -
+ocnli                                   -          -              -       -
+ocnli_fc-dev                            -          -              -       -
+AX_b                                    -          -              -       -
+AX_g                                    -          -              -       -
+strategyqa                              -          -              -       -
+math                                    -          -              -       -
+gsm8k                                   1d7fe4     accuracy       gen     40.00
+...
+```

@@ -10,16 +10,19 @@
   <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
       <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
   </a>
-  <br><br>
-  推荐阅读：<a href="https://evalscope.readthedocs.io/zh-cn/latest/">📖 EvalScope中文官方文档</a>
+  <br>
+ <a href="https://evalscope.readthedocs.io/en/latest/"><span style="font-size: 16px;">📖 Documents</span></a> &nbsp | &nbsp<a href="https://evalscope.readthedocs.io/zh-cn/latest/"><span style="font-size: 16px;"> 📖  中文文档</span></a>
 <p>
 
 
-## 📖 目录
+## 📋 目录
 - [简介](#简介)
 - [新闻](#新闻)
 - [环境准备](#环境准备)
 - [快速开始](#快速开始)
+- [使用其他评测后端](#使用其他评测后端)
+- [离线环境评测](#离线环境评测)
+- [竞技场模式](#竞技场模式)
 - [性能评测工具](#性能评测工具)
 - [Leaderboard榜单](#leaderboard-榜单)
 
@@ -39,14 +42,16 @@
   - **Pairwise-baseline mode**：与基线模型进行对比。
   - **Pairwise (all) mode**：所有模型间的两两对比。
 - **可视化工具**：提供直观的评估结果展示。
-- **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](../user_guides/stress_test.md)。
+- **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)。
 - **OpenCompass集成**：支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
 - **VLMEvalKit集成**：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
 - **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。
 
 ### 框架架构
-![](docs/en/_static/images/evalscope_framework.png)
-*EvalScope 架构图.*
+<p align="center">
+    <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
+    <br>图 1. EvalScope 整体架构图.
+</p>
 
 包括以下模块：
 
@@ -259,7 +264,7 @@ run_task(task_cfg=your_task_cfg)
 | `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
 
 
-## 使用评测后端
+## 使用其他评测后端
 EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
 - **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
 - [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成，[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/opencompass_backend.html)
@@ -268,7 +273,7 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 
 
 
-## 离线环境评估
+## 离线环境评测
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，参考：离线环境评估[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/offline_evaluation.html)
 
 
@@ -290,7 +295,7 @@ ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面
 
 ## TO-DO List
 - [x] Agents evaluation
-- [ ] vLLM
+- [x] vLLM
 - [ ] Distributed evaluating
 - [x] Multi-modal evaluation
 - [ ] Benchmarks

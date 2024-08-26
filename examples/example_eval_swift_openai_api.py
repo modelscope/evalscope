@@ -46,7 +46,7 @@ def run_swift_eval():
     eval_config={
         'datasets': ["mmlu", "ceval",'ARC_c', 'gsm8k'],
         'models': [
-            {'path': 'qwen2-0_5b-instruct', 
+            {'path': 'Qwen2-1.5B-Instruct', 
             'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 
             'is_chat': True,
             'batch_size': 16},

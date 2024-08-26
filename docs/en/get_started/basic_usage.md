@@ -1,6 +1,6 @@
 # Basic Usage
 
-## Simple Evaluation
+## 1. Simple Evaluation
 To evaluate a model using default settings on specified datasets, follow the process below:
 
 `````{tabs}
@@ -38,7 +38,7 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
     ````
 - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](#supported-datasets-list) for available options.
 
-## Parameterized Evaluation
+## 2. Parameterized Evaluation
 If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
 
 **Example 1:**
@@ -78,8 +78,8 @@ In addition to the three [basic parameters](#basic-parameter-descriptions), the 
   - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`.
 - `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
 
-## Use the run_task Function to Submit an Evaluation Task
-Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
+## 3. Use the run_task Function to Submit an Evaluation Task
+Using the `run_task` function to submit an evaluation task requires the [same parameters](#parameter-descriptions) as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
 
 ### 1. Configuration Task Dictionary Parameters
 ```python
