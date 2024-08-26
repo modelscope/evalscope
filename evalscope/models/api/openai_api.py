@@ -45,9 +45,7 @@ class OpenaiApi:
 
     def generate_simple(self, inputs: Union[List[str]]):
 
-        results = []
-        for in_data in inputs:
-
+        def process_one(in_data: str):
             if self.is_chat:
                 data = dict(
                     model=self.model,
@@ -81,12 +79,15 @@ class OpenaiApi:
                 print(f'>>resp in generate_simple: {resp}')
 
             if self.logprobs:
-                results.append(resp['choices'])
+                return resp['choices']
             else:
                 if self.is_chat:
-                    results.append(resp['choices'][0]['message']['content'].strip())
+                    return resp['choices'][0]['message']['content'].strip()
                 else:
-                    results.append(resp['choices'][0]['text'].strip())
+                    return resp['choices'][0]['text'].strip()
+
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(process_one, inputs))
 
         return results
 
