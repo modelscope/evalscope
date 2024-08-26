@@ -70,7 +70,7 @@ class OpenaiApi:
             messages = [{'role': 'user', 'content': messages}]
 
         max_num_retries = 0
-        while max_num_retries < self.retry:     # TODO: add more err logs
+        while max_num_retries < self.retry:
             self.wait()
 
             header = {
@@ -113,19 +113,10 @@ class OpenaiApi:
                                              headers=header,
                                              data=json.dumps(data))
 
-            except requests.ConnectionError:
-                logger.error('Got connection error, retrying...')
-                continue
-            try:
                 response = raw_response.json()
-                # print(f'>> raw_resp: {raw_response.json()}')
-            except requests.JSONDecodeError:
-                logger.error('JsonDecode error, got', str(raw_response.content))
-                continue
+                if self.verbose:
+                    logger.debug(f'>> response: {response}')
 
-            if self.verbose:
-                logger.debug(str(response))
-            try:
                 if self.logprobs:
                     return response['choices']
                 else:
@@ -133,28 +124,11 @@ class OpenaiApi:
                         return response['choices'][0]['message']['content'].strip()
                     else:
                         return response['choices'][0]['text'].strip()
-            except KeyError:
-                if 'error' in response:
-                    if response['error']['code'] == 'rate_limit_exceeded':
-                        time.sleep(10)
-                        logger.warn('Rate limit exceeded, retrying...')
-                        continue
-                    elif response['error']['code'] == 'insufficient_quota':
-                        logger.warning(f'insufficient_quota key: {self.openai_api_key}')
-                        continue
-                    elif response['error']['code'] == 'invalid_prompt':
-                        logger.warning(f'Invalid prompt: {messages}')
-                        return ''
-                    elif response['error']['type'] == 'invalid_prompt':
-                        logger.warning(f'Invalid prompt: {messages}')
-                        return ''
 
-                    logger.error('Find error message in response: ', str(response['error']))
-            max_num_retries += 1
-
-        raise RuntimeError('Calling OpenAI failed after retrying for '
-                           f'{max_num_retries} times. Check the logs for '
-                           'details.')
+            except Exception as e:
+                logger.error(f'Error occurs: {str(e)}')
+                max_num_retries += 1
+                continue
 
     def wait(self):
         return self.token_bucket.get_token()
