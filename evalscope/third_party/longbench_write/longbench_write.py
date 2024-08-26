@@ -41,8 +41,8 @@ def run_task(task_cfg: Union[str, dict]):
                               api_config=dict(
                                   openai_api_key=infer_config.get('openai_api_key'),
                                   openai_api_base=infer_config.get('openai_api_base'),
-                                  is_chat=infer_config.get('is_chat'),
-                                  verbose=infer_config.get('verbose'),
+                                  is_chat=infer_config.get('is_chat', True),
+                                  verbose=infer_config.get('verbose', False),
                               ),
                               generation_kwargs=infer_config.get('generation_kwargs'),
                               enable='infer' in stage)

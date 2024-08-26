@@ -70,7 +70,7 @@ class OpenaiApi:
             messages = [{'role': 'user', 'content': messages}]
 
         max_num_retries = 0
-        while max_num_retries < self.retry:
+        while max_num_retries < self.retry:     # TODO: add more err logs
             self.wait()
 
             header = {
@@ -107,6 +107,8 @@ class OpenaiApi:
                     return {k: v for k, v in input_d.items() if v is not None}
                 data = remove_none_val(data)
 
+                if self.verbose:
+                    logger.debug(f'>> Post data: {data}')
                 raw_response = requests.post(self.url,
                                              headers=header,
                                              data=json.dumps(data))
