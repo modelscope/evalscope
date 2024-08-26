@@ -235,7 +235,8 @@ class EvalQuality:
 
             total_score = dict()
             for dim in self.DIMS:
-                scores = [float(score[dim]) if dim in score else 3 for score in self.eval_scores]
+                # scores = [float(score[dim]) if dim in score else 3 for score in self.eval_scores]
+                scores = [float(item['scores'][dim]) if dim in item['scores'] else 3 for item in self.eval_scores]
                 total_score[dim] = ((sum(scores) / len(scores)) - 1) * 25
             total_score['total'] = sum(total_score.values()) / len(total_score)
             logger.info(f'Total score of quality evaluation: {total_score["total"]:.2f}')
