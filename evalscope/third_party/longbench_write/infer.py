@@ -190,7 +190,8 @@ def run_infer(model: str,
                            verbose=api_config.get('verbose', False),
                            )
 
-    results: List[str] = api_client.generate(inputs=[example['prompt'] for example in data_list])
+    # TODO: ONLY FOR TEST
+    results: List[str] = api_client.generate_simple(inputs=[example['prompt'] for example in data_list])
     assert len(results) == len(data_list), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
     logger.info(f'Finish generating predictions with {len(data_list)} samples for {model}')
 
