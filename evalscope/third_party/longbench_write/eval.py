@@ -201,7 +201,8 @@ class EvalQuality:
                         logger.warning(f'Cannot find score for dimension: {dim} in scores {scores}.')
                         scores = None
             except Exception as e:
-                logger.error(f'Error occurs: {str(e)} Retry ...')
+                logger.error(f'Error occurs during process data: {str(e)}')
+
             if scores is None:
                 logger.error(f'Failed to extract scores for item: {item}')
             else:
