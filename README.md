@@ -229,7 +229,7 @@ run_task(task_cfg=your_task_cfg)
 
 ### Supported Datasets List
 > [!NOTE]
-> The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
+> The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](https://evalscope.readthedocs.io/en/latest/user_guides/opencompass_backend.html) for evaluation, or use the [VLMEvalKit backend](https://evalscope.readthedocs.io/en/latest/user_guides/vlmevalkit_backend.html) for multi-modal model evaluation.
 
 | Dataset Name       | Link                                                                                   | Status | Note |
 |--------------------|----------------------------------------------------------------------------------------|--------|------|

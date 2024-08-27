@@ -2,30 +2,160 @@
 
 ## LLM 数据集
 
-### 使用Native 评测
+本框架支持选择题和问答题，两种预定义的数据集格式，使用流程如下：
 
-本框架预定义了多种数据集格式，主要包括：
-- `ceval`：选择题格式，包含`question`、`answer`、`options`字段
-- `general_qa`：问答题格式，包含`question`、`answer`字段
-
+### 选择题格式（MCQ）
+适合用户是选择题的场景，评测指标为准确率（accuracy）。
 
 #### 1. 数据准备
+准备选择题格式的csv文件，该目录包含了两个文件：
+```text
+custom/
+├── example_dev.csv  # 名称需为*_dev.csv，用于fewshot评测，如果是0-shot评测，该csv可以为空
+└── example_val.csv  # 名称需为*_val.csv，用于实际评测的数据
+```
 
+其中csv文件需要为下面的格式：
+
+```text
+id,question,A,B,C,D,answer,explanation
+1,通常来说，组成动物蛋白质的氨基酸有____,4种,22种,20种,19种,C,1. 目前已知构成动物蛋白质的的氨基酸有20种。
+2,血液内存在的下列物质中，不属于代谢终产物的是____。,尿素,尿酸,丙酮酸,二氧化碳,C,"代谢终产物是指在生物体内代谢过程中产生的无法再被利用的物质，需要通过排泄等方式从体内排出。丙酮酸是糖类代谢的产物，可以被进一步代谢为能量或者合成其他物质，并非代谢终产物。"
+```
+其中：
+- `id`是评测序号
+- `question`是问题
+- `A` `B` `C` `D`是可选项（如果选项少于四个则对应留空）
+- `answer`是正确选项
+- `explanation`是解释（可选）
 
 #### 2. 配置文件
+```python
+# 1. 配置自定义数据集文件
+TaskConfig.registry(
+    name='custom_dataset',      # 任务名称，可自定义
+    data_pattern='ceval',       # 数据格式，选择题格式固定为 'ceval'
+    dataset_dir='custom',       # 数据集路径
+    subset_list=['example']     # 评测数据集名称，上述 *_dev.csv 中的 *
+)
 
+# 2. 配置任务，通过任务名称获取配置
+task_cfg = registry_tasks['custom_dataset']
+
+# 3. 配置模型和其他配置
+task_cfg.update({
+    'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
+    'eval_type': 'checkpoint',                 # 评测类型，需保留，固定为checkpoint
+    'model': '../models/Qwen2-0.5B-Instruct',  # 模型路径
+    'template_type': 'qwen',                   # 模型模板类型
+    'outputs': 'outputs',
+    'mem_cache': False,
+    'limit': 10,
+})
+```
 
 #### 3. 运行评测
+```python
+from evalscope.run import run_task
+run_task(task_cfg=task_cfg)
+```
 
-### 使用ms-swift评估自定义评测集
-支持两种pattern的评测集：选择题格式的`CEval`和问答题格式的`General-QA`
+运行结果：
+```text
+2024-08-27 11:33:58,917 - evalscope - INFO - ** Report table: 
+ +---------+------------------+
+| Model   | custom           |
++=========+==================+
+|         | (custom/acc) 0.6 |
++---------+------------------+
+```
+
+### 问答题格式（QA）
+适合用户是问答题的场景，评测指标是`ROUGE`和`BLEU`。
+
+#### 1. 数据准备
+准备一个问答题格式的jsonline文件，该目录包含了一个文件：
+
+```text
+custom_qa/
+└── example.jsonl
+```
+
+该jsonline文件需要为下面的格式：
+
+```json
+{"query": "中国的首都是哪里？", "response": "中国的首都是北京"}
+{"query": "世界上最高的山是哪座山？", "response": "是珠穆朗玛峰"}
+{"query": "为什么北极见不到企鹅？", "response": "因为企鹅大多生活在南极"}
+```
+
+#### 2. 配置文件
+```python
+# 1. 配置自定义数据集文件
+TaskConfig.registry(
+    name='custom_dataset',      # 任务名称，可自定义
+    data_pattern='general_qa',  # 数据格式，问答题格式固定为 'general_qa'
+    dataset_dir='custom_qa',    # 数据集路径
+    subset_list=['example']     # 评测数据集名称，上述 example.jsonl
+)
+
+# 2. 配置任务，通过任务名称获取配置
+task_cfg = registry_tasks['custom_dataset']
+
+# 3. 配置模型和其他配置
+task_cfg.update({
+    'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
+    'eval_type': 'checkpoint',                 # 评测类型，需保留，固定为checkpoint
+    'model': '../models/Qwen2-0.5B-Instruct',  # 模型路径
+    'template_type': 'qwen',                   # 模型模板类型
+    'outputs': 'outputs',
+    'mem_cache': False,
+    'limit': 10,
+})
+```
+
+#### 3. 运行评测
+```python
+from evalscope.run import run_task
+run_task(task_cfg=task_cfg)
+```
+
+运行结果：
+```text
+2024-08-27 14:14:20,556 - evalscope - INFO - ** Report table: 
+ +----------------------------------+-------------------------------------------+
+| Model                            | custom_qa                                 |
++==================================+===========================================+
+| 7aeeebf3d029ba4207e53c759be833e2 | (custom_qa/rouge-1-r) 0.8166666666666668  |
+|                                  | (custom_qa/rouge-1-p) 0.22123015873015875 |
+|                                  | (custom_qa/rouge-1-f) 0.31796037032374336 |
+|                                  | (custom_qa/rouge-2-r) 0.54                |
+|                                  | (custom_qa/rouge-2-p) 0.13554945054945053 |
+|                                  | (custom_qa/rouge-2-f) 0.187063490583231   |
+|                                  | (custom_qa/rouge-l-r) 0.8166666666666668  |
+|                                  | (custom_qa/rouge-l-p) 0.21021876271876275 |
+|                                  | (custom_qa/rouge-l-f) 0.30170995423739666 |
+|                                  | (custom_qa/bleu-1) 0.21021876271876275    |
+|                                  | (custom_qa/bleu-2) 0.1343230354551109     |
+|                                  | (custom_qa/bleu-3) 0.075                  |
+|                                  | (custom_qa/bleu-4) 0.06666666666666667    |
++----------------------------------+-------------------------------------------+ 
+```
+
+### (可选) 使用ms-swift框架自定义评估
 
 ```{seealso}
+支持两种pattern的评测集：选择题格式的`CEval`和问答题格式的`General-QA`
+
 参考：[ms-swift评估自定义评测集](../best_practice/swift_integration.md#自定义评测集)
 ```
 
+--------------
+
 
 ## VLM 数据集
+
+本框架支持选择题和问答题，两种预定义的数据集格式，使用流程如下：
 
 ````{note}
 自定义数据集的评测需要使用`VLMEvalKit`，需要安装额外依赖：
@@ -124,7 +254,6 @@ index	answer	question	image_path
 
 以下是一个自定义数据集的示例，该示例实现了一个自定义的问答题格式的评测脚本，该脚本会自动加载数据集，并使用默认的提示进行问答，最后计算准确率作为评测指标。
 
-参考文件`custom_dataset.py`
 
 ```python
 import os
