@@ -21,6 +21,7 @@
 - [环境准备](#环境准备)
 - [快速开始](#快速开始)
 - [使用其他评测后端](#使用其他评测后端)
+- [自定义数据集评测](#自定义数据集评测)
 - [离线环境评测](#离线环境评测)
 - [竞技场模式](#竞技场模式)
 - [性能评测工具](#性能评测工具)
@@ -271,7 +272,8 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 - [VLMEvalKit](https://github.com/open-compass/VLMEvalKit)：通过EvalScope作为入口，发起VLMEvalKit的多模态评测任务，支持多种多模态模型和数据集，支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成，[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/vlmevalkit_backend.html)
 - **ThirdParty**: 第三方评估任务，如[ToolBench](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)。
 
-
+## 自定义数据集评测
+EvalScope支持自定义数据集评测，具体请参考：自定义数据集评测[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset.html)
 
 ## 离线环境评测
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，参考：离线环境评估[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/offline_evaluation.html)

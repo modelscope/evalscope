@@ -21,6 +21,7 @@ English | [简体中文](README_zh.md)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Evaluation Backend](#evaluation-backend)
+- [Custom Dataset Evaluation](#custom-dataset-evaluation)
 - [Offline Evaluation](#offline-evaluation)
 - [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
@@ -229,7 +230,7 @@ run_task(task_cfg=your_task_cfg)
 
 ### Supported Datasets List
 > [!NOTE]
-> The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
+> The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](https://evalscope.readthedocs.io/en/latest/user_guides/opencompass_backend.html) for evaluation, or use the [VLMEvalKit backend](https://evalscope.readthedocs.io/en/latest/user_guides/vlmevalkit_backend.html) for multi-modal model evaluation.
 
 | Dataset Name       | Link                                                                                   | Status | Note |
 |--------------------|----------------------------------------------------------------------------------------|--------|------|
@@ -253,6 +254,8 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 - [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through EvalScope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework ms-swift. [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/vlmevalkit_backend.html)
 - **ThirdParty**: The third-party task, e.g. [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html), you can contribute your own evaluation task to EvalScope as third-party backend.
 
+## Custom Dataset Evaluation
+EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
 
 ## Offline Evaluation
 You can use local dataset to evaluate the model without internet connection. 
