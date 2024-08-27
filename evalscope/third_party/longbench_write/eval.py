@@ -218,15 +218,6 @@ class EvalQuality:
             assert total > 0, f'No data found in prediction file: {self.pred_path}'
 
             random.shuffle(data_all)
-            # pool = multiprocessing.Pool(processes=self.proc_num)
-            #
-            # for i in range(self.proc_num):
-            #     start = (i * total) // self.proc_num
-            #     end = None if i == self.proc_num - 1 else ((i + 1) * total) // self.proc_num
-            #     pool.apply_async(self.process_data, args=(data[start:end],))
-            #
-            # pool.close()
-            # pool.join()
 
             with ThreadPoolExecutor() as executor:
                 self.eval_scores = list(executor.map(self.process_data, data_all))

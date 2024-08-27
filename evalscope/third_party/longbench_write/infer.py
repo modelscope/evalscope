@@ -171,7 +171,8 @@ def run_infer(model: str,
     if generation_kwargs is None:
         generation_kwargs = dict({
             'max_new_tokens': 32768,
-            'temperature': 0.5
+            'temperature': 0.5,
+            'repetition_penalty': 1.0,
         })
 
     # Prepare inputs
@@ -186,6 +187,7 @@ def run_infer(model: str,
                            openai_api_base=api_config.get('openai_api_base', 'http://127.0.0.1:8000/v1/chat/completions'),
                            max_new_tokens=generation_kwargs.get('max_new_tokens', 4096),
                            temperature=generation_kwargs.get('temperature', 0.0),
+                           repetition_penalty=generation_kwargs.get('repetition_penalty', 1.0),
                            is_chat=api_config.get('is_chat', True),
                            verbose=api_config.get('verbose', False),
                            )

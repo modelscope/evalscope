@@ -23,6 +23,7 @@ class OpenaiApi:
                  top_logprobs: Optional[int] = None,
                  max_new_tokens: int = 4096,
                  temperature: Optional[float] = 0.0,
+                 repetition_penalty: Optional[float] = 1.0,
                  is_chat: bool = True,
                  verbose: bool = True,
                  retry: int = 3,
@@ -30,6 +31,7 @@ class OpenaiApi:
                  **kwargs):
 
         self.temperature = temperature
+        self.repetition_penalty = repetition_penalty
         self.max_tokens = max_new_tokens
         self.logprobs = logprobs
         self.top_logprobs = top_logprobs
@@ -56,6 +58,7 @@ class OpenaiApi:
                     top_logprobs=self.top_logprobs,
                     stop=None,
                     temperature=self.temperature,
+                    repetition_penalty=self.repetition_penalty,
                 )
             else:
                 data = dict(
@@ -63,6 +66,7 @@ class OpenaiApi:
                     prompt=in_data,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
+                    repetition_penalty=self.repetition_penalty,
                 )
 
             # todo
@@ -137,6 +141,7 @@ class OpenaiApi:
                         top_logprobs=self.top_logprobs,
                         stop=None,
                         temperature=self.temperature,
+                        repetition_penalty=self.repetition_penalty,
                     )
                 else:
                     # TODO: This is a temporary solution for non-chat models.
@@ -149,6 +154,7 @@ class OpenaiApi:
                         prompt='\n'.join(input_prompts),
                         max_tokens=self.max_tokens,
                         temperature=self.temperature,
+                        repetition_penalty=self.repetition_penalty,
                     )
 
                 def remove_none_val(input_d: dict):

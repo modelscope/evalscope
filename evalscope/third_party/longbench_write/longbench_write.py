@@ -73,7 +73,7 @@ if __name__ == '__main__':
                         'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                         'is_chat': True,
                         'verbose': False,
-                        'generation_kwargs': {'max_new_tokens': 32768, 'temperature': 0.5},
+                        'generation_kwargs': {'max_new_tokens': 32768, 'temperature': 0.5, 'repetition_penalty': 1.0},
                     },
 
                     eval_config={

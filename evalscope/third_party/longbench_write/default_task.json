@@ -9,7 +9,8 @@
     "verbose": false,
     "generation_kwargs": {
       "max_new_tokens": 32768,
-      "temperature": 0.5
+      "temperature": 0.5,
+      "repetition_penalty": 1.0
     }
   },
   "eval_config": {
