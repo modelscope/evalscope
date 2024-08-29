@@ -49,7 +49,7 @@ with read_base():
     from opencompass.configs.datasets.obqa.obqa_gen_9069e4 import obqa_datasets
     from opencompass.configs.datasets.nq.nq_gen_c788f6 import nq_datasets
     from opencompass.configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
-    from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import bbh_datasets_xx
+    from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import bbh_datasets
     from opencompass.configs.datasets.cmb.cmb_gen_dfb5c4 import cmb_datasets
 
     # Note: to be supported
