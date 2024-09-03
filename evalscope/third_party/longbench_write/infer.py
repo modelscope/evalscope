@@ -8,10 +8,10 @@ from typing import List
 import torch
 import numpy as np
 import random
-import re
 from modelscope import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
+from evalscope.third_party.longbench_write.utils import count_words
 from evalscope.models.api import OpenaiApi
 from evalscope.utils import get_logger
 
@@ -23,18 +23,6 @@ DEFAULT_PROC_NUM = 8
 This script is used to generate predictions for the LongWriter model.
 Refer to https://github.com/THUDM/LongWriter for more details.
 """
-
-
-def count_words(text):
-    chinese_characters = re.findall(r'[\u4e00-\u9fff]', text)
-    english_words = re.findall(r'\b[a-zA-Z]+\b', text)
-
-    chinese_char_count = len(chinese_characters)
-    english_word_count = len(english_words)
-
-    total_count = chinese_char_count + english_word_count
-
-    return total_count
 
 
 def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenizer, fout):
@@ -192,7 +180,7 @@ def run_infer(model: str,
                            verbose=api_config.get('verbose', False),
                            )
 
-    # TODO: ONLY FOR TEST
+    # TODO: ONLY FOR TEST  generate_simple
     results: List[str] = api_client.generate_simple(inputs=[example['prompt'] for example in data_list])
     assert len(results) == len(data_list), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
     logger.info(f'Finish generating predictions with {len(data_list)} samples for {model}')

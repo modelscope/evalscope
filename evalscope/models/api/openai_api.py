@@ -48,6 +48,10 @@ class OpenaiApi:
     def generate_simple(self, inputs: Union[List[str]]):
 
         def process_one(in_data: str):
+
+            # TODO: ONLY FOR TEST -- RE-2
+            in_data = in_data + '\nRead the question again: ' + in_data
+
             if self.is_chat:
                 data = dict(
                     model=self.model,

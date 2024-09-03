@@ -44,13 +44,15 @@ class EvalLength:
 
         self.model_id_path = self.model.strip(os.sep).replace(os.sep, '__')
 
-    def score(self, x, y):
+    @staticmethod
+    def score(x, y):
         if y > x:
             return 100 * max(0, 1. - (y / x - 1) / 3)
         else:
             return 100 * max(0, 1. - (x / y - 1) / 2)
 
-    def eval(self):
+    def eval(self, dump_res: bool = True):
+        # example = {"prompt": "Write an outline for a short 100-word blog post about xxx", "type": "Community Forum", "length": 100, "response_length": 103, "response": "I. Introduction A. xxx"}
         predictions = [json.loads(line) for line in open(self.pred_path, encoding='utf-8')]
         x, y, scores = [], [], []
 
@@ -63,15 +65,22 @@ class EvalLength:
         logger.info(f'Average score of length evaluation: {avg_score_l:.2f}')
 
         # Dump to output file
-        output_res_path = f'{self.output_dir}/{self.model_id_path}/{self.EVAL_L}.jsonl'
-        with open(output_res_path, 'w') as f:
-            f.write(json.dumps({'score_l': avg_score_l, 'scores': scores}, ensure_ascii=False) + '\n')
-            logger.info(f'Successfully dumped evaluation results to {output_res_path}')
+        if dump_res:
+            output_res_path = f'{self.output_dir}/{self.model_id_path}/{self.EVAL_L}.jsonl'
+            with open(output_res_path, 'w') as f:
+                f.write(json.dumps({'score_l': avg_score_l, 'scores': scores}, ensure_ascii=False) + '\n')
+                logger.info(f'Successfully dumped evaluation results to {output_res_path}')
 
         return x, y, scores
 
     def plot(self, x: list, y: list):
+        plt = self.plot_img(x, y)
+        output_pic_path = f'{self.output_dir}/{self.model_id_path}/eval_length_scatter.png'
+        plt.savefig(output_pic_path)
+        logger.info(f'Successfully saved scatter plot to {output_pic_path}')
 
+    @staticmethod
+    def plot_img(x: list, y: list):
         # set plt size 6x6
         plt.figure(figsize=(6, 6))
         lmt = 25000
@@ -89,9 +98,7 @@ class EvalLength:
         plt.yticks(fontsize=24)
         plt.tight_layout()
 
-        output_pic_path = f'{self.output_dir}/{self.model_id_path}/eval_length_scatter.png'
-        plt.savefig(output_pic_path)
-        logger.info(f'Successfully saved scatter plot to {output_pic_path}')
+        return plt
 
 
 class EvalQuality:
