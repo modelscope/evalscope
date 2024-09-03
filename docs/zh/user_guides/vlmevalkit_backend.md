@@ -1,6 +1,6 @@
 # VLMEvalKit 评测后端
 
-为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用ModelScope [swift](https://github.com/modelscope/swift) 部署多模态模型服务。
+为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，部署多模态模型服务。
 
 ## 1. 环境准备
 ```shell
@@ -34,17 +34,104 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 ### 方式1. 部署模型服务评估
 
 #### 模型部署
-使用ms-swift部署模型服务，具体可参考：[ms-swift MLLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)
+
+下面介绍四种方式部署模型服务：
+`````{tabs}
+````{tab} ms-swift部署 （推荐）
+
+使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)。
+
+**安装ms-swift**
 ```shell
-# 安装 ms-swift
-pip install ms-swift
-
-# 部署qwen-vl-chat多模态模型服务
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
-
-# 启动成功日志
-# INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+pip install ms-swift -U
 ```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
+```
+````
+
+````{tab} vLLM 部署
+
+参考[vLLM 教程](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
+
+**安装vLLM**
+```shell
+pip install vllm -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
+```
+````
+
+````{tab} LMDeploy 部署
+参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).
+
+**安装LMDeploy**
+```shell
+pip install lmdeploy -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
+```
+````
+
+````{tab} Ollama 部署
+
+```{note}
+Ollama 对于 OpenAI API 的支持目前处于实验性状态，本教程仅提供示例，请根据实际情况修改。
+```
+
+参考 [Ollama 教程](https://github.com/ollama/ollama/blob/main/README.md#quickstart)。
+
+**安装Ollama**
+```shell
+# Linux 系统
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**启动Ollama**
+```shell
+# 默认端口为 11434
+ollama serve
+```
+
+```{tip}
+若使用`ollama pull`拉取模型，可跳过以下创建模型的步骤；若使用`ollama import`导入模型，则需要手动创建模型配置文件。
+```
+
+**创建模型配置文件 `Modelfile`**
+
+[支持的模型格式](https://github.com/ollama/ollama/blob/main/docs/import.md)
+```text
+# 模型路径
+FROM models/LLaVA
+
+# 温度系数
+PARAMETER temperature 1
+
+# system prompt
+SYSTEM """
+You are a helpful assistant.
+"""
+```
+
+**创建模型**
+
+会将模型自动转为ollama支持的格式，同时支持多种量化方式。
+```shell
+ollama create llava -f ./Modelfile
+```
+````
+`````
+
 
 #### 配置模型评估参数
 
@@ -92,7 +179,6 @@ task_cfg_dict = {
             'work_dir': 'output'}}
 ```
 ````
-
 `````
 
 #### 基本参数
@@ -101,13 +187,16 @@ task_cfg_dict = {
 - `eval_config`：字典，包含以下字段：
   - `data`：列表，参考[目前支持的数据集](#2-数据准备)
   - `model`：字典列表，每个字典必须包含以下字段：
-    - `type`：重用命令行 `swift deploy` 中的 `--model_type` 的值。
+    - `type`：OpenAI API 请求模型名称。
+      - 若使用`ms-swift`部署，设置为 `--model_type` 的值；
+      - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为 `model_id`；
+      - 若使用 `Ollama` 部署模型，则设置为 `model_name`，使用`ollama list`命令查看。
     - `name`：固定值，必须为 `CustomAPIModel`。
     - `api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL。
-    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`
-    - `temperature`：模型推理的温度系数，默认值为 `0.0`
+    - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
+    - `temperature`：模型推理的温度系数，默认值为 `0.0`。
     - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
-  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理
+  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理。
   - `limit`：整数，评估的数据数量，默认值为 `None`，表示运行所有示例。
   - `rerun`：布尔值，是否重新运行评估，将删除所有评估临时文件。
   - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs`

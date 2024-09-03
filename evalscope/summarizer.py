@@ -103,7 +103,6 @@ class Summarizer:
                 if not os.path.exists(work_dir):
                     raise ValueError(f'work_dir {work_dir} does not exist.')
                 
-                # TODO: parse summary files: acc.csv, score.csv, score.json for different models
                 for model in eval_config['model']:
                     if model['name'] == 'CustomAPIModel':
                         model_name = model['type']

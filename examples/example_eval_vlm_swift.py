@@ -12,6 +12,7 @@ from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
+from evalscope.backend.vlm_eval_kit.custom_dataset import CustomDataset
 
 logger = get_logger()
 
