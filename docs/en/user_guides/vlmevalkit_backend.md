@@ -12,7 +12,6 @@ pip install evalscope[vlmeval]
 When loading a dataset, if the local dataset file does not exist, it will be automatically downloaded to the `~/LMUData/` directory.
 
 The currently supported datasets include:
-Here is the translation:
 
 | Name                                                               | Notes                                                      |
 |--------------------------------------------------------------------|--------------------------------------------------------------|

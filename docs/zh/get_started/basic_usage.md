@@ -38,7 +38,7 @@ python evalscope/run.py \
     print(TemplateType.get_template_name_list())
     ```
     ````
-- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](#支持的数据集列表)
+- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
 
 
 ## 2. 带参数评估
@@ -117,23 +117,3 @@ from evalscope.run import run_task
 
 run_task(task_cfg=your_task_cfg)
 ```
-
-## 支持的数据集列表
-```{note}
-目前框架支持如下数据集，若您需要的数据集不在列表中，请提交issue，或者使用[OpenCompass backend](../user_guides/opencompass_backend.md)进行评估；或使用[VLMEvalKit backend](../user_guides/vlmevalkit_backend.md)进行多模态模型评估
-```
-
-| DatasetName        | Link                                                                                   | Status | Note |
-|--------------------|----------------------------------------------------------------------------------------|--------|------|
-| `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
-| `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
-| `gsm8k`            | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       | Active |      |
-| `arc`              | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       | Active |      |
-| `hellaswag`        | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               | Active |      |
-| `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | Active |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Active |      |
-| `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
-| `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
-| `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
-

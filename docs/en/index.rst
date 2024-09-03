@@ -41,6 +41,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    get_started/introduction.md
    get_started/installation.md
    get_started/basic_usage.md
+   get_started/supported_dataset.md
 
 .. _Tutorials:
 .. toctree::

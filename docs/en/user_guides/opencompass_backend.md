@@ -26,36 +26,23 @@ Support for automatically downloading datasets from ModelScope. To enable this f
 export DATASET_SOURCE=ModelScope
 ```
 The following datasets will be downloaded automatically when used:
-| Name               |
-|--------------------|
-| humaneval          |
-| triviaqa           |
-| commonsenseqa      |
-| tydiqa             |
-| strategyqa         |
-| cmmlu              |
-| lambada            |
-| piqa               |
-| ceval              |
-| math               |
-| LCSTS              |
-| Xsum               |
-| winogrande         |
-| openbookqa         |
-| AGIEval            |
-| gsm8k              |
-| nq                 |
-| race               |
-| siqa               |
-| mbpp               |
-| hellaswag          |
-| ARC                |
-| BBH                |
-| xstory_cloze       |
-| summedits          |
-| GAOKAO-BENCH      |
-| OCNLI              |
-| cmnli              |
+| Name               | Name               |
+|--------------------|--------------------|
+| humaneval          | AGIEval            |
+| triviaqa           | gsm8k              |
+| commonsenseqa      | nq                 |
+| tydiqa             | race               |
+| strategyqa         | siqa               |
+| cmmlu              | mbpp               |
+| lambada            | hellaswag          |
+| piqa               | ARC                |
+| ceval              | BBH                |
+| math               | xstory_cloze       |
+| LCSTS              | summedits          |
+| Xsum               | GAOKAO-BENCH      |
+| winogrande         | OCNLI              |
+| openbookqa         | cmnli              |
+
 ````
 
 ````{tab} Download Using Links
@@ -68,56 +55,25 @@ wget -O eval_data.zip https://github.com/open-compass/opencompass/releases/downl
 unzip eval_data.zip
 ```
 The included datasets are:
-| Name                       |
-|----------------------------|
-| obqa                       |
-| AX_b                       |
-| siqa                       |
-| nq                         |
-| mbpp                       |
-| winogrande                 |
-| mmlu                       |
-| BoolQ                      |
-| cluewsc                    |
-| ocnli                      |
-| lambada                    |
-| CMRC                       |
-| ceval                      |
-| csl                        |
-| cmnli                      |
-| bbh                        |
-| ReCoRD                     |
-| math                       |
-| humaneval                  |
-| eprstmt                    |
-| WSC                        |
-| storycloze                 |
-| MultiRC                    |
-| RTE                        |
-| chid                       |
-| gsm8k                      |
-| AX_g                       |
-| bustm                      |
-| afqmc                      |
-| piqa                       |
-| lcsts                      |
-| strategyqa                 |
-| Xsum                       |
-| agieval                    |
-| ocnli_fc                   |
-| C3                         |
-| tnews                      |
-| race                       |
-| triviaqa                   |
-| CB                         |
-| WiC                        |
-| hellaswag                  |
-| summedits                  |
-| GaokaoBench                |
-| ARC_e                      |
-| COPA                       |
-| ARC_c                      |
-| DRCD                       |
+
+| Name                       | Name                       | Name                       |
+|----------------------------|----------------------------|----------------------------|
+| obqa                       | AX_b                       | siqa                       |
+| nq                         | mbpp                       | winogrande                 |
+| mmlu                       | BoolQ                      | cluewsc                    |
+| ocnli                      | lambada                    | CMRC                       |
+| ceval                      | csl                        | cmnli                      |
+| bbh                        | ReCoRD                     | math                       |
+| humaneval                  | eprstmt                    | WSC                        |
+| storycloze                 | MultiRC                    | RTE                        |
+| chid                       | gsm8k                      | AX_g                       |
+| bustm                      | afqmc                      | piqa                       |
+| lcsts                      | strategyqa                 | Xsum                       |
+| agieval                    | ocnli_fc                   | C3                         |
+| tnews                      | race                       | triviaqa                   |
+| CB                         | WiC                        | hellaswag                  |
+| summedits                  | GaokaoBench                | ARC_e                      |
+| COPA                       | ARC_c                      | DRCD                       |
 
 The total size is approximately 1.7GB. After downloading and unzipping, place the dataset folder (i.e., the data folder) in the current working directory.
 ````
