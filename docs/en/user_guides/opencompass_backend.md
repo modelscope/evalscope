@@ -19,41 +19,63 @@ print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_d
 ````
 
 `````{tabs}
-````{tab} Automatic Download (Recommended)
-You can automatically download datasets from ModelScope. To enable this feature, set the following environment variable:
+````{tab} Automatically Download (Recommended)
+
+Support for automatically downloading datasets from ModelScope. To enable this feature, please set the environment variable:
 ```shell
 export DATASET_SOURCE=ModelScope
 ```
-The following datasets will be automatically downloaded during usage:
-```text
-humaneval, triviaqa, commonsenseqa, tydiqa, strategyqa, cmmlu, lambada, piqa, ceval, math, LCSTS, Xsum, winogrande, openbookqa, AGIEval, gsm8k, nq, race, siqa, mbpp, mmlu, hellaswag, ARC, BBH, xstory_cloze, summedits, GAOKAO-BENCH, OCNLI, cmnli
-```
+The following datasets will be downloaded automatically when used:
+| Name               | Name               |
+|--------------------|--------------------|
+| humaneval          | AGIEval            |
+| triviaqa           | gsm8k              |
+| commonsenseqa      | nq                 |
+| tydiqa             | race               |
+| strategyqa         | siqa               |
+| cmmlu              | mbpp               |
+| lambada            | hellaswag          |
+| piqa               | ARC                |
+| ceval              | BBH                |
+| math               | xstory_cloze       |
+| LCSTS              | summedits          |
+| Xsum               | GAOKAO-BENCH      |
+| winogrande         | OCNLI              |
+| openbookqa         | cmnli              |
+
 ````
-````{tab} Using ModelScope
+
+````{tab} Download Using Links
 ```shell
-# Download
+# Download from ModelScope
 wget -O eval_data.zip https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip
-# Unzip
-unzip eval_data.zip
-```
-Included datasets:
-```text
-'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
-```
-Total size: approximately 1.7GB. After downloading and unzipping, place the dataset folder (i.e., the data folder) in your current working directory.
-````
-````{tab} Using GitHub
-```shell
-# Download
+# Or download from GitHub
 wget -O eval_data.zip https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-complete-20240207.zip
 # Unzip
 unzip eval_data.zip
 ```
-Included datasets:
-```text
-'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
-```
-Total size: approximately 1.7GB. After downloading and unzipping, place the dataset folder (i.e., the data folder) in your current working directory.
+The included datasets are:
+
+| Name                       | Name                       | Name                       |
+|----------------------------|----------------------------|----------------------------|
+| obqa                       | AX_b                       | siqa                       |
+| nq                         | mbpp                       | winogrande                 |
+| mmlu                       | BoolQ                      | cluewsc                    |
+| ocnli                      | lambada                    | CMRC                       |
+| ceval                      | csl                        | cmnli                      |
+| bbh                        | ReCoRD                     | math                       |
+| humaneval                  | eprstmt                    | WSC                        |
+| storycloze                 | MultiRC                    | RTE                        |
+| chid                       | gsm8k                      | AX_g                       |
+| bustm                      | afqmc                      | piqa                       |
+| lcsts                      | strategyqa                 | Xsum                       |
+| agieval                    | ocnli_fc                   | C3                         |
+| tnews                      | race                       | triviaqa                   |
+| CB                         | WiC                        | hellaswag                  |
+| summedits                  | GaokaoBench                | ARC_e                      |
+| COPA                       | ARC_c                      | DRCD                       |
+
+The total size is approximately 1.7GB. After downloading and unzipping, place the dataset folder (i.e., the data folder) in the current working directory.
 ````
 `````
 

@@ -44,6 +44,7 @@ EvalScope 上手路线
    get_started/introduction.md
    get_started/installation.md
    get_started/basic_usage.md
+   get_started/supported_dataset.md
 
 .. _教程:
 .. toctree::
