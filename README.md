@@ -47,7 +47,9 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
 - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
 
-### Overall Architecture
+
+<details><summary>Overall Architecture</summary>
+
 <p align="center">
   <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
   <br>Fig 1. EvalScope Framework.
@@ -64,14 +66,19 @@ The architecture includes the following modules:
 4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
 5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
 6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+</details>
+
 
 ## 🎉 News
-- **[2024.08.09]** Simplified installation process, supporting PyPI installation for vlmeval dependencies; Optimized multi-modal models evaluation experience with pipeline that based on OpenAI API, achieving up to 10x acceleration 🚀🚀🚀
-- **[2024.07.31]** Breaking change: The sdk name has been changed from `llmuses` to `evalscope`, please update the sdk name in your code.
-- **[2024.07.26]** Supports **VLMEvalKit** as a third-party evaluation framework, initiating multimodal model evaluation tasks. 🔥🔥🔥
-- **[2024.06.29]** Supports **OpenCompass** as a third-party evaluation framework. We have provided a high-level wrapper, supporting installation via pip and simplifying the evaluation task configuration. 🔥🔥🔥
-- **[2024.06.13]** EvalScope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
-- **[2024.06.13]** We have supported the ToolBench as a third-party evaluation backend for Agents evaluation. 🚀🚀🚀
+
+- 🔥 **[2024.08.30]** Support for custom dataset evaluations, including text datasets and multimodal image-text datasets.
+- 🔥 **[2024.08.20]** Updated the official documentation, including getting started guides, best practices, and FAQs. Feel free to [📖read it here](https://evalscope.readthedocs.io/zh-cn/latest/)!
+- 🔥 **[2024.08.09]** Simplified the installation process, allowing for pypi installation of vlmeval dependencies; optimized the multimodal model evaluation experience, achieving up to 10x acceleration based on the OpenAI API evaluation chain.
+- 🔥 **[2024.07.31]** Important change: The package name `llmuses` has been changed to `evalscope`. Please update your code accordingly.
+- 🔥 **[2024.07.26]** Support for **VLMEvalKit** as a third-party evaluation framework to initiate multimodal model evaluation tasks.
+- 🔥 **[2024.06.29]** Support for **OpenCompass** as a third-party evaluation framework, which we have encapsulated at a higher level, supporting pip installation and simplifying evaluation task configuration.
+- 🔥 **[2024.06.13]** EvalScope seamlessly integrates with the fine-tuning framework SWIFT, providing full-chain support from LLM training to evaluation.
+- 🔥 **[2024.06.13]** Integrated the Agent evaluation dataset ToolBench.
 
 
 
