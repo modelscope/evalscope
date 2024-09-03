@@ -12,9 +12,9 @@ pip install evalscope[opencompass] -U
 
 
 ````{note}
-有以下三种方式下载数据集，其中自动下载数据集方式支持的数据集少于手动下载数据集方式，请按需使用。
+有以下两种方式下载数据集
 
-数据集的详细信息可以参考[OpenCompass数据集列表](https://hub.opencompass.org.cn/home)
+数据集的详细信息可以参考[OpenCompass数据集列表](../get_started/supported_dataset.md#opencompass支持的数据集)
 
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
@@ -31,40 +31,60 @@ export DATASET_SOURCE=ModelScope
 ```
 以下数据集在使用时将自动下载：
 
-```text
-humaneval, triviaqa, commonsenseqa, tydiqa, strategyqa, cmmlu, lambada, piqa, ceval, math, LCSTS, Xsum, winogrande, openbookqa, AGIEval, gsm8k, nq, race, siqa, mbpp, mmlu, hellaswag, ARC, BBH, xstory_cloze, summedits, GAOKAO-BENCH, OCNLI, cmnli
-```
+| 名称               | 名称               |
+|--------------------|--------------------|
+| humaneval          | AGIEval            |
+| triviaqa           | gsm8k              |
+| commonsenseqa      | nq                 |
+| tydiqa             | race               |
+| strategyqa         | siqa               |
+| cmmlu              | mbpp               |
+| lambada            | hellaswag          |
+| piqa               | ARC                |
+| ceval              | BBH                |
+| math               | xstory_cloze       |
+| LCSTS              | summedits          |
+| Xsum               | GAOKAO-BENCH      |
+| winogrande         | OCNLI              |
+| openbookqa         | cmnli              |
+
+
 ````
 
-````{tab} 使用ModelScope链接下载
+````{tab} 使用链接下载
 ```shell
-# 下载
+# ModelScope下载
 wget -O eval_data.zip https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip
-# 解压
-unzip eval_data.zip
-```
-包含的数据集有：
-```text
-'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
-```
 
-总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。
-````
-
-````{tab} 使用github链接下载
-```shell
-# 下载
+# 或使用github下载
 wget -O eval_data.zip https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/OpenCompassData-complete-20240207.zip
+
 # 解压
 unzip eval_data.zip
 ```
 包含的数据集有：
-```text
-'obqa', 'AX_b', 'siqa', 'nq', 'mbpp', 'winogrande', 'mmlu', 'BoolQ', 'cluewsc', 'ocnli', 'lambada', 'CMRC', 'ceval', 'csl', 'cmnli', 'bbh', 'ReCoRD', 'math', 'humaneval', 'eprstmt', 'WSC', 'storycloze', 'MultiRC', 'RTE', 'chid', 'gsm8k', 'AX_g', 'bustm', 'afqmc', 'piqa', 'lcsts', 'strategyqa', 'Xsum', 'agieval', 'ocnli_fc', 'C3', 'tnews', 'race', 'triviaqa', 'CB', 'WiC', 'hellaswag', 'summedits', 'GaokaoBench', 'ARC_e', 'COPA', 'ARC_c', 'DRCD'
-```
+
+| 名称                       | 名称                       | 名称                       |
+|----------------------------|----------------------------|----------------------------|
+| obqa                       | AX_b                       | siqa                       |
+| nq                         | mbpp                       | winogrande                 |
+| mmlu                       | BoolQ                      | cluewsc                    |
+| ocnli                      | lambada                    | CMRC                       |
+| ceval                      | csl                        | cmnli                      |
+| bbh                        | ReCoRD                     | math                       |
+| humaneval                  | eprstmt                    | WSC                        |
+| storycloze                 | MultiRC                    | RTE                        |
+| chid                       | gsm8k                      | AX_g                       |
+| bustm                      | afqmc                      | piqa                       |
+| lcsts                      | strategyqa                 | Xsum                       |
+| agieval                    | ocnli_fc                   | C3                         |
+| tnews                      | race                       | triviaqa                   |
+| CB                         | WiC                        | hellaswag                  |
+| summedits                  | GaokaoBench                | ARC_e                      |
+| COPA                       | ARC_c                      | DRCD                       |
+
 总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。
 ````
-
 `````
 
 

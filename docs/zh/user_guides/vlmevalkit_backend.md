@@ -9,19 +9,74 @@ pip install evalscope[vlmeval]
 ```
 
 ## 2. 数据准备
+在加载数据集时，若本地不存在该数据集文件，将会自动下载数据集到 `~/LMUData/` 目录下。
+
 目前支持的数据集有：
-```text
-'COCO_VAL', 'MME', 'HallusionBench', 'POPE', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK', 'OCRVQA_TEST', 'OCRVQA_TESTCORE', 'TextVQA_VAL', 'DocVQA_VAL', 'DocVQA_TEST', 'InfoVQA_VAL', 'InfoVQA_TEST', 'ChartQA_TEST', 'MathVision', 'MathVision_MINI', 'MMMU_DEV_VAL', 'MMMU_TEST', 'OCRBench', 'MathVista_MINI', 'LLaVABench', 'MMVet', 'MTVQA_TEST', 'MMLongBench_DOC', 'VCR_EN_EASY_500', 'VCR_EN_EASY_100', 'VCR_EN_EASY_ALL', 'VCR_EN_HARD_500', 'VCR_EN_HARD_100', 'VCR_EN_HARD_ALL', 'VCR_ZH_EASY_500', 'VCR_ZH_EASY_100', 'VCR_ZH_EASY_ALL', 'VCR_ZH_HARD_500', 'VCR_ZH_HARD_100', 'VCR_ZH_HARD_ALL', 'MMBench-Video', 'Video-MME', 'MMBench_DEV_EN', 'MMBench_TEST_EN', 'MMBench_DEV_CN', 'MMBench_TEST_CN', 'MMBench', 'MMBench_CN', 'MMBench_DEV_EN_V11', 'MMBench_TEST_EN_V11', 'MMBench_DEV_CN_V11', 'MMBench_TEST_CN_V11', 'MMBench_V11', 'MMBench_CN_V11', 'SEEDBench_IMG', 'SEEDBench2', 'SEEDBench2_Plus', 'ScienceQA_VAL', 'ScienceQA_TEST', 'MMT-Bench_ALL_MI', 'MMT-Bench_ALL', 'MMT-Bench_VAL_MI', 'MMT-Bench_VAL', 'AesBench_VAL', 'AesBench_TEST', 'CCBench', 'AI2D_TEST', 'MMStar', 'RealWorldQA', 'MLLMGuard_DS', 'BLINK'
-```
-数据集的详细信息可以参考[VLMEvalKit支持的图文多模态评测集](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)
+
+| 名称                                                               | 备注   |
+|--------------------------------------------------------------------|--------|
+| A-Bench_TEST, A-Bench_VAL                                          |        |
+| AI2D_TEST, AI2D_TEST_NO_MASK                                       |        |
+| AesBench_TEST, AesBench_VAL                                        |        |
+| BLINK                                                              |        |
+| CCBench                                                            |        |
+| COCO_VAL                                                           |        |
+| ChartQA_TEST                                                       |        |
+| DUDE, DUDE_MINI                                                   |        |
+| DocVQA_TEST, DocVQA_VAL                                            |DocVQA_TEST没有提供答案，使用DocVQA_VAL进行自动评估        |
+| GMAI_mm_bench_VAL                                                  |        |
+| HallusionBench                                                     |        |
+| InfoVQA_TEST, InfoVQA_VAL                                          |InfoVQA_TEST没有提供答案，使用InfoVQA_VAL进行自动评估        |
+| LLaVABench                                                         |        |
+| MLLMGuard_DS                                                       |        |
+| MMBench, MMBench-Video                                             |        |
+| MMBench_CN, MMBench_CN_V11                                         |        |
+| MMBench_DEV_CN, MMBench_DEV_CN_V11                                 |        |
+| MMBench_DEV_EN, MMBench_DEV_EN_V11                                 |        |
+| MMBench_TEST_CN, MMBench_TEST_CN_V11                               | MMBench_TEST_CN没有提供答案       |
+| MMBench_TEST_EN, MMBench_TEST_EN_V11                               | MMBench_TEST_EN没有提供答案       |
+| MMBench_V11                                                        |        |
+| MMBench_dev_ar, MMBench_dev_cn, MMBench_dev_en,                   |        |
+| MMBench_dev_pt, MMBench_dev_ru, MMBench_dev_tr                     |        |
+| MMDU                                                              |        |
+| MME                                                               |        |
+| MMLongBench_DOC                                                    |        |
+| MMMB, MMMB_ar, MMMB_cn, MMMB_en,                                   |        |
+| MMMB_pt, MMMB_ru, MMMB_tr                                          |        |
+| MMMU_DEV_VAL, MMMU_TEST                                            |        |
+| MMStar                                                            |        |
+| MMT-Bench_ALL, MMT-Bench_ALL_MI,                                   |        |
+| MMT-Bench_VAL, MMT-Bench_VAL_MI                                    |        |
+| MMVet                                                             |        |
+| MTL_MMBench_DEV                                                   |        |
+| MTVQA_TEST                                                         |        |
+| MVBench, MVBench_MP4                                               |        |
+| MathVision, MathVision_MINI, MathVista_MINI                       |        |
+| OCRBench                                                          |        |
+| OCRVQA_TEST, OCRVQA_TESTCORE                                      |        |
+| POPE                                                              |        |
+| Q-Bench1_TEST, Q-Bench1_VAL                                        |        |
+| RealWorldQA                                                       |        |
+| SEEDBench2, SEEDBench2_Plus, SEEDBench_IMG                        |        |
+| SLIDEVQA, SLIDEVQA_MINI                                           |        |
+| ScienceQA_TEST, ScienceQA_VAL                                      |        |
+| TaskMeAnything_v1_imageqa_random                                   |        |
+| TextVQA_VAL                                                        |        |
+| VCR_EN_EASY_100, VCR_EN_EASY_500, VCR_EN_EASY_ALL                |        |
+| VCR_EN_HARD_100, VCR_EN_HARD_500, VCR_EN_HARD_ALL                |        |
+| VCR_ZH_EASY_100, VCR_ZH_EASY_500, VCR_ZH_EASY_ALL                |        |
+| VCR_ZH_HARD_100, VCR_ZH_HARD_500, VCR_ZH_HARD_ALL                |        |
+| Video-MME                                                         |        |
+
+
 
 ````{note}
-在加载数据集时，若本地不存在该数据集文件，将会自动下载数据集到 `~/LMUData/` 目录下。
+数据集的详细信息可以参考[VLMEvalKit支持的图文多模态评测集](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)。
 
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
-print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_models().keys()}')
+print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_supported_datasets()}')
 
 ```
 ````

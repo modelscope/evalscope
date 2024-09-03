@@ -7,7 +7,7 @@ def run_swift_eval():
     # Prepare the config
     data_pattern = 'general_qa'
 
-    # 2. 配置自定义数据集文件
+    # 1. 配置自定义数据集文件
     TaskConfig.registry(
         name='custom_dataset',      # 任务名称
         data_pattern=data_pattern,  # 数据格式
@@ -15,10 +15,10 @@ def run_swift_eval():
         subset_list=['example']     # 评测数据集名称，上述 example.jsonl
     )
 
-    # 3. 配置任务，通过任务名称获取配置
+    # 2. 配置任务，通过任务名称获取配置
     task_cfg = registry_tasks['custom_dataset']
 
-    # 4. 配置模型和其他配置
+    # 3. 配置模型和其他配置
     task_cfg.update({
         'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
         'eval_type': 'checkpoint',                 # 评测类型，需保留，固定为checkpoint
