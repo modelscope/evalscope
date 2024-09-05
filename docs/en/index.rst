@@ -78,7 +78,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    best_practice/llm_full_stack.md
    best_practice/experiments.md
 
-Index and Tables
-==================
-* :ref:`genindex`
-* :ref:`search`
+.. Index and Tables
+.. ==================
+.. * :ref:`genindex`
+.. * :ref:`search`

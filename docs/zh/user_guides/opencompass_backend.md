@@ -14,7 +14,7 @@ pip install evalscope[opencompass] -U
 ````{note}
 有以下两种方式下载数据集
 
-数据集的详细信息可以参考[OpenCompass数据集列表](../get_started/supported_dataset.md#opencompass支持的数据集)
+数据集的详细信息可以参考[OpenCompass数据集列表](../get_started/supported_dataset.md#2-opencompass支持的数据集)
 
 您可以使用以下方式，来查看数据集的名称列表：
 ```python
@@ -23,8 +23,8 @@ print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_d
 ```
 ````
 
-`````{tabs}
-````{tab} 设置环境变量自动下载（推荐）
+::::{tab-set}
+:::{tab-item} 设置环境变量自动下载（推荐）
 支持从 ModelScope 自动下载数据集，要启用此功能，请设置环境变量：
 ```shell
 export DATASET_SOURCE=ModelScope
@@ -49,9 +49,9 @@ export DATASET_SOURCE=ModelScope
 | openbookqa         | cmnli              |
 
 
-````
+:::
 
-````{tab} 使用链接下载
+:::{tab-item} 使用链接下载
 ```shell
 # ModelScope下载
 wget -O eval_data.zip https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip
@@ -84,16 +84,16 @@ unzip eval_data.zip
 | COPA                       | ARC_c                      | DRCD                       |
 
 总大小约1.7GB，下载并解压后，将数据集文件夹（即data文件夹）放置在当前工作路径下。
-````
-`````
+:::
+::::
 
 
 ## 3. 部署模型服务
 OpenCompass 评测后端使用统一的OpenAI API调用来进行评估，因此我们需要进行模型部署。
 
 下面介绍四种方式部署模型服务：
-`````{tabs}
-````{tab} ms-swift部署 （推荐）
+::::{tab-set}
+:::{tab-item} ms-swift部署 （推荐）
 
 使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)。
 
@@ -106,9 +106,9 @@ pip install ms-swift -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 ```
-````
+:::
 
-````{tab} vLLM 部署
+:::{tab-item} vLLM 部署
 参考 [vLLM 教程](https://docs.vllm.ai/en/latest/index.html)。 
 
 [支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html)
@@ -122,9 +122,9 @@ pip install vllm -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
 ```
-````
+:::
 
-````{tab} LMDeploy 部署
+:::{tab-item} LMDeploy 部署
 参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md)。
 
 **安装LMDeploy**
@@ -136,9 +136,9 @@ pip install lmdeploy -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
 ```
-````
+:::
 
-````{tab} Ollama 部署
+:::{tab-item} Ollama 部署
 
 ```{note}
 Ollama 对于 OpenAI API 的支持目前处于实验性状态，本教程仅提供示例，请根据实际情况修改。
@@ -184,16 +184,17 @@ You are a helpful assistant.
 ```shell
 ollama create llama3 -f ./Modelfile
 ```
-````
-`````
+:::
+
+::::
 
 
 ## 4. 模型评估
 
 ### 配置文件
 有如下三种方式编写配置文件：
-`````{tabs}
-````{tab} Python 字典
+::::{tab-set}
+:::{tab-item} Python 字典
 ```python
 task_cfg_dict = dict(
     eval_backend='OpenCompass',
@@ -210,9 +211,9 @@ task_cfg_dict = dict(
         },
     )
 ```
-````
+:::
 
-````{tab} yaml 配置文件
+:::{tab-item} yaml 配置文件
 eval_swift_openai_api.yaml
 ```yaml
 eval_backend: OpenCompass
@@ -227,9 +228,9 @@ eval_config:
       path: qwen2-0_5b-instruct                                   
       temperature: 0.0
 ```
-````
+:::
 
-````{tab} json 配置文件
+:::{tab-item} json 配置文件
 eval_swift_openai_api.json
 ```json
 {
@@ -252,8 +253,9 @@ eval_swift_openai_api.json
 }
 
 ```
-````
-`````
+:::
+::::
+
 #### 参数说明
 
 - `eval_backend`：默认值为 `OpenCompass`，表示使用 OpenCompass 评测后端

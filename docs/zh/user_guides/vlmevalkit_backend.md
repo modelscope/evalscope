@@ -91,8 +91,8 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 #### 模型部署
 
 下面介绍四种方式部署模型服务：
-`````{tabs}
-````{tab} ms-swift部署 （推荐）
+::::{tab-set}
+:::{tab-item} ms-swift部署 （推荐）
 
 使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)。
 
@@ -105,9 +105,9 @@ pip install ms-swift -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
 ```
-````
+:::
 
-````{tab} vLLM 部署
+:::{tab-item} vLLM 部署
 
 参考[vLLM 教程](https://docs.vllm.ai/en/latest/index.html) for more details.
 
@@ -122,9 +122,9 @@ pip install vllm -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
 ```
-````
+:::
 
-````{tab} LMDeploy 部署
+:::{tab-item} LMDeploy 部署
 参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).
 
 **安装LMDeploy**
@@ -136,9 +136,9 @@ pip install lmdeploy -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
 ```
-````
+:::
 
-````{tab} Ollama 部署
+:::{tab-item} Ollama 部署
 
 ```{note}
 Ollama 对于 OpenAI API 的支持目前处于实验性状态，本教程仅提供示例，请根据实际情况修改。
@@ -184,15 +184,15 @@ You are a helpful assistant.
 ```shell
 ollama create llava -f ./Modelfile
 ```
-````
-`````
+:::
+::::
 
 
 #### 配置模型评估参数
 
 编写配置
-`````{tabs}
-````{tab} yaml 配置文件
+::::{tab-set}
+:::{tab-item} yaml 配置文件
 ```yaml
 eval_backend: VLMEvalKit
 eval_config:
@@ -212,9 +212,9 @@ eval_config:
   work_dir: outputs
   nproc: 16
 ```
-````
+:::
 
-````{tab} Python 字典
+:::{tab-item} Python 字典
 
 ```python
 task_cfg_dict = {
@@ -233,8 +233,8 @@ task_cfg_dict = {
             'rerun': True,
             'work_dir': 'output'}}
 ```
-````
-`````
+:::
+::::
 
 #### 基本参数
 
@@ -264,8 +264,8 @@ task_cfg_dict = {
 不启动模型服务，直接配置模型评估参数，在本地进行推理
 
 #### 配置模型评估参数
-`````{tabs}
-````{tab} yaml 配置文件
+::::{tab-set}
+:::{tab-item} yaml 配置文件
 ```yaml
 eval_backend: VLMEvalKit
 eval_config:
@@ -281,9 +281,9 @@ eval_config:
   work_dir: outputs
   nproc: 16
 ```
-````
+:::
 
-````{tab} Python 字典
+:::{tab-item} Python 字典
 
 ```python
 task_cfg_dict = {
@@ -299,9 +299,8 @@ task_cfg_dict = {
             'rerun': True,
             'work_dir': 'output'}}
 ```
-````
-
-`````
+:::
+::::
 
 #### 参数说明
 
