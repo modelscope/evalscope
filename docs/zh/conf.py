@@ -80,7 +80,7 @@ source_suffix = ['.rst', '.md']
 html_title = "EvalScope"
 html_theme = 'sphinxawesome_theme'
 html_static_path = ['_static']
-html_favicon = "./_static/images/evalscope_icon.png"
+html_favicon = "./_static/images/evalscope_icon_dark.png"
 html_permalinks_icon = "<span>#</span>"
 
 pygments_style = "default"
@@ -92,6 +92,7 @@ myst_heading_anchors = 3
 # Enable "colon_fence" extension of myst.
 myst_enable_extensions = ['colon_fence', 'dollarmath']
 
+# myst_number_code_blocks = ["python"]
 
 napoleon_custom_sections = [
     # Custom sections for data elements.
@@ -101,7 +102,7 @@ napoleon_custom_sections = [
 
 theme_options = ThemeOptions(
     logo_light="./_static/images/evalscope_icon.png",
-    logo_dark="./_static/images/evalscope_icon.png",
+    logo_dark="./_static/images/evalscope_icon_dark.png",
     extra_header_link_icons={
         "github": {
             "link": "https://github.com/modelscope/evalscope",

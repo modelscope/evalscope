@@ -214,8 +214,9 @@ task_cfg_dict = dict(
 :::
 
 :::{tab-item} yaml 配置文件
-eval_swift_openai_api.yaml
-```yaml
+```{code-block} yaml
+:caption: eval_openai_api.yaml
+
 eval_backend: OpenCompass
 eval_config:
   datasets:
@@ -231,8 +232,8 @@ eval_config:
 :::
 
 :::{tab-item} json 配置文件
-eval_swift_openai_api.json
-```json
+```{code-block} json
+:caption: eval_openai_api.json
 {
   "eval_backend": "OpenCompass",
   "eval_config": {
@@ -277,19 +278,21 @@ eval_swift_openai_api.json
 ### 运行脚本
 配置好配置文件后，运行以下脚本即可
 
-```python
+```{code-block} python
+:caption: example_eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # 选项 1: python 字典
     task_cfg = task_cfg_dict
 
     # 选项 2: yaml 配置文件
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
 
     # 选项 3: json 配置文件
-    # task_cfg = 'eval_swift_openai_api.json'
+    # task_cfg = 'eval_openai_api.json'
 
     run_task(task_cfg=task_cfg)
 
@@ -297,11 +300,11 @@ def run_swift_eval():
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
 ```
-或者运行以下命令：
+运行以下命令：
 ```shell
-python examples/example_eval_swift_openai_api.py
+python eval_openai_api.py
 ```
 
 

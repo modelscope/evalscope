@@ -236,7 +236,7 @@ task_cfg_dict = {
       - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
       - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
     - `name`: Fixed value, must be `CustomAPIModel`.
-    - `api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
+    - `api_base`: The URL for the OpenAI API, which is the URL for the model service.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
     - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
     - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
@@ -283,7 +283,7 @@ task_cfg_dict = {
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
             'rerun': True,
-            'work_dir': 'output'}}
+            'work_dir': 'outputs'}}
 ```
 :::
 ::::
@@ -317,20 +317,27 @@ LOCAL_LLM: qwen2-7b-instruct # Judge model's model_id
 
 ## 4. Execute Evaluation Task
 After configuring the configuration file, run the following script:
-```python
+```{code-block} python
+:caption: example_eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # Option 1: Python dictionary
     task_cfg = task_cfg_dict
     # Option 2: YAML configuration file
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
     
     run_task(task_cfg=task_cfg)
     print('>> Start to get the report with summarizer ...')
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
+```
+
+Run the following command:
+```shell
+python example_eval_openai_api.py
 ```

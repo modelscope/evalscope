@@ -203,7 +203,9 @@ task_cfg_dict = dict(
 :::
 
 :::{tab-item} YAML
-```yaml
+```{code-block} yaml
+:caption: eval_openai_api.yaml
+
 eval_backend: OpenCompass
 eval_config:
   datasets:
@@ -219,7 +221,8 @@ eval_config:
 :::
 
 :::{tab-item} JSON
-```json
+```{code-block} json
+:caption: eval_openai_api.json
 {
   "eval_backend": "OpenCompass",
   "eval_config": {
@@ -260,30 +263,32 @@ For other optional attributes, refer to `opencompass.cli.arguments.ApiModelConfi
 
 ### Run Script
 After configuring the configuration file, run the following script:
-```python
+```{code-block} python
+:caption: example_eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # Option 1: Python dictionary
     task_cfg = task_cfg_dict
 
     # Option 2: YAML configuration file
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
 
     # Option 3: JSON configuration file
-    # task_cfg = 'eval_swift_openai_api.json'
+    # task_cfg = 'eval_openai_api.json'
     
     run_task(task_cfg=task_cfg)
     print('>> Start to get the report with summarizer ...')
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
 ```
-Or run the following command:
+Run the following command:
 ```shell
-python examples/example_eval_swift_openai_api.py
+python example_eval_openai_api.py
 ```
 You will see the final output as follows:
 

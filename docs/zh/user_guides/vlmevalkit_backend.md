@@ -247,7 +247,7 @@ task_cfg_dict = {
       - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为 `model_id`；
       - 若使用 `Ollama` 部署模型，则设置为 `model_name`，使用`ollama list`命令查看。
     - `name`：固定值，必须为 `CustomAPIModel`。
-    - `api_base`：OpenAI API 的URL，即 Swift 模型服务的 URL。
+    - `api_base`：OpenAI API 的URL，即模型服务的 URL。
     - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
     - `temperature`：模型推理的温度系数，默认值为 `0.0`。
     - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
@@ -266,7 +266,10 @@ task_cfg_dict = {
 #### 配置模型评估参数
 ::::{tab-set}
 :::{tab-item} yaml 配置文件
-```yaml
+
+```{code-block} yaml 
+:caption: eval_openai_api.json
+
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -297,7 +300,7 @@ task_cfg_dict = {
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
             'rerun': True,
-            'work_dir': 'output'}}
+            'work_dir': 'outputs'}}
 ```
 :::
 ::::
@@ -334,16 +337,18 @@ LOCAL_LLM: qwen2-7b-instruct #裁判员模型的 model_id
 ## 4. 执行评估任务
 配置好配置文件后，运行以下脚本即可
 
-```python
+```{code-block} python
+:caption: eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # 选项 1: python 字典
     task_cfg = task_cfg_dict
 
     # 选项 2: yaml 配置文件
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
 
     run_task(task_cfg=task_cfg)
 
@@ -351,5 +356,9 @@ def run_swift_eval():
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
+```
+运行以下命令：
+```shell
+python eval_openai_api.py
 ```
