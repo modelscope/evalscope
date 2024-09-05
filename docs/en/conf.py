@@ -81,10 +81,10 @@ html_title = "EvalScope"
 html_theme = 'sphinxawesome_theme'
 html_static_path = ['_static']
 html_favicon = "./_static/images/evalscope_icon.png"
-html_css_files = [
-    "css/pygments-dark.css"
-]
-pygments_style = "xcode"
+html_permalinks_icon = "<span>#</span>"
+
+pygments_style = "default"
+pygments_style_dark = "one-dark"
 # -- Extension configuration -------------------------------------------------
 
 # Auto-generated header anchors
