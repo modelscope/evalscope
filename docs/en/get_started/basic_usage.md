@@ -48,8 +48,8 @@ If you wish to conduct a more customized evaluation, such as modifying model par
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
- --model-args revision=v1.0.2,precision=torch.float16,device_map=auto \
- --datasets mmlu ceval \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --datasets gsm8k ceval \
  --use-cache true \
  --limit 10
 ```
