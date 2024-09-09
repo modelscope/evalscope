@@ -3,8 +3,8 @@
 ## 1. 简单评估
 在指定的若干数据集上使用默认配置评估某个模型，流程如下：
 
-`````{tabs}
-````{tab} 使用pip安装
+::::{tab-set}
+:::{tab-item} 使用pip安装
 
 可在任意路径下执行：
 ```bash
@@ -14,9 +14,9 @@ python -m evalscope.run \
  --datasets arc 
 ```
 如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
-````
+:::
 
-````{tab} 使用源码安装
+:::{tab-item} 使用源码安装
 
 在`evalscope`路径下执行：
 ```bash
@@ -26,8 +26,9 @@ python evalscope/run.py \
  --datasets arc
 ```
 如遇到 `Do you wish to run the custom code? [y/N]` 请键入 `y`
-````
-`````
+:::
+::::
+
 ### 基本参数说明
 - `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
 - `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写

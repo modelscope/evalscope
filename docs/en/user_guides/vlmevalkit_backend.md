@@ -86,8 +86,8 @@ Model evaluation can be conducted in two ways: through deployed model services o
 #### Model Deployment
 Here are four ways to deploy model services:
 
-`````{tabs}
-````{tab} ms-swift (Recommended)
+::::{tab-set}
+:::{tab-item} ms-swift (Recommended)
 Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Multi-Modal/mutlimodal-deployment.html).
 
 **Install ms-swift**
@@ -98,9 +98,9 @@ pip install ms-swift -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
 ```
-````
+:::
 
-````{tab} vLLM 
+:::{tab-item} vLLM 
 Refer to the [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
 
 [List of Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
@@ -114,9 +114,9 @@ pip install vllm -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
 ```
-````
+:::
 
-````{tab} LMDeploy 
+:::{tab-item} LMDeploy 
 Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
 
 **Install LMDeploy**
@@ -127,9 +127,9 @@ pip install lmdeploy -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
 ```
-````
+:::
 
-````{tab} Ollama
+:::{tab-item} Ollama
 ```{note}
 Support for OpenAI API by Ollama is currently in an experimental state. This tutorial provides an example only; please modify it according to your actual situation.
 ```
@@ -176,14 +176,14 @@ This command will automatically convert the model to a format supported by Ollam
 ```shell
 ollama create llava -f ./Modelfile
 ```
-````
+:::
 
-`````
+::::
 
 #### Configure Model Evaluation Parameters
 Create configuration files:
-`````{tabs}
-````{tab} YAML Configuration File
+::::{tab-set}
+:::{tab-item} YAML Configuration File
 ```yaml
 eval_backend: VLMEvalKit
 eval_config:
@@ -203,8 +203,9 @@ eval_config:
   work_dir: outputs
   nproc: 16
 ```
-````
-````{tab} Python Dictionary
+:::
+
+:::{tab-item} Python Dictionary
 ```python
 task_cfg_dict = {
     'eval_backend': 'VLMEvalKit',
@@ -222,8 +223,9 @@ task_cfg_dict = {
             'rerun': True,
             'work_dir': 'output'}}
 ```
-````
-`````
+:::
+::::
+
 #### Basic Parameters
 - `eval_backend`: Default value is `VLMEvalKit`, indicating the use of the VLMEvalKit evaluation backend.
 - `eval_config`: A dictionary containing the following fields:
@@ -234,7 +236,7 @@ task_cfg_dict = {
       - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
       - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
     - `name`: Fixed value, must be `CustomAPIModel`.
-    - `api_base`: The URL for the OpenAI API, which is the URL for the Swift model service.
+    - `api_base`: The URL for the OpenAI API, which is the URL for the model service.
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
     - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
     - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
@@ -249,8 +251,8 @@ For other optional parameters, refer to `vlmeval.utils.arguments`.
 This method does not involve starting a model service; instead, it directly configures model evaluation parameters for local inference.
 
 #### Configure Model Evaluation Parameters
-`````{tabs}
-````{tab} YAML Configuration File
+::::{tab-set}
+:::{tab-item} YAML Configuration File
 ```yaml
 eval_backend: VLMEvalKit
 eval_config:
@@ -266,8 +268,9 @@ eval_config:
   work_dir: outputs
   nproc: 16
 ```
-````
-````{tab} Python Dictionary
+:::
+
+:::{tab-item} Python Dictionary
 ```python
 task_cfg_dict = {
     'eval_backend': 'VLMEvalKit',
@@ -280,10 +283,11 @@ task_cfg_dict = {
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
             'rerun': True,
-            'work_dir': 'output'}}
+            'work_dir': 'outputs'}}
 ```
-````
-`````
+:::
+::::
+
 #### Parameter Descriptions
 The [basic parameters](#basic-parameters) are consistent with the deployed model service evaluation method, but the model parameters differ:
 - `model`: A list of dictionaries where each model requires different fields:
@@ -313,20 +317,27 @@ LOCAL_LLM: qwen2-7b-instruct # Judge model's model_id
 
 ## 4. Execute Evaluation Task
 After configuring the configuration file, run the following script:
-```python
+```{code-block} python
+:caption: example_eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # Option 1: Python dictionary
     task_cfg = task_cfg_dict
     # Option 2: YAML configuration file
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
     
     run_task(task_cfg=task_cfg)
     print('>> Start to get the report with summarizer ...')
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
+```
+
+Run the following command:
+```shell
+python example_eval_openai_api.py
 ```

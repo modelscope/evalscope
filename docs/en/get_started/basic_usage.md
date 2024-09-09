@@ -3,8 +3,9 @@
 ## 1. Simple Evaluation
 To evaluate a model using default settings on specified datasets, follow the process below:
 
-`````{tabs}
-````{tab} Install using pip
+::::{tab-set}
+
+:::{tab-item} Install using pip
 You can execute this command from any directory:
 ```bash
 python -m evalscope.run \
@@ -13,8 +14,9 @@ python -m evalscope.run \
  --datasets arc 
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
-````
-````{tab} Install from source
+:::
+
+:::{tab-item} Install from source
 Execute this command in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
@@ -23,8 +25,8 @@ python evalscope/run.py \
  --datasets arc
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
-````
-`````
+:::
+::::
 
 ### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.

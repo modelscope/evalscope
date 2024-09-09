@@ -18,8 +18,8 @@ print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_d
 ```
 ````
 
-`````{tabs}
-````{tab} Automatically Download (Recommended)
+::::{tab-set}
+:::{tab-item} Automatically Download (Recommended)
 
 Support for automatically downloading datasets from ModelScope. To enable this feature, please set the environment variable:
 ```shell
@@ -43,9 +43,9 @@ The following datasets will be downloaded automatically when used:
 | winogrande         | OCNLI              |
 | openbookqa         | cmnli              |
 
-````
+:::
 
-````{tab} Download Using Links
+:::{tab-item} Download Using Links
 ```shell
 # Download from ModelScope
 wget -O eval_data.zip https://www.modelscope.cn/datasets/swift/evalscope_resource/resolve/master/eval.zip
@@ -76,16 +76,16 @@ The included datasets are:
 | COPA                       | ARC_c                      | DRCD                       |
 
 The total size is approximately 1.7GB. After downloading and unzipping, place the dataset folder (i.e., the data folder) in the current working directory.
-````
-`````
+:::
+::::
 
 ## 3. Model Inference Service
 OpenCompass evaluation backend uses a unified OpenAI API call for assessment, so we need to deploy the model. 
 
 Here are four ways to deploy model services:
 
-`````{tabs}
-````{tab} ms-swift (Recommended)
+::::{tab-set}
+:::{tab-item} ms-swift (Recommended)
 Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html).
 
 **Install ms-swift**
@@ -96,9 +96,9 @@ pip install ms-swift -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 ```
-````
+:::
 
-````{tab} vLLM
+:::{tab-item} vLLM
 Refer to [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
 
 [Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html)
@@ -111,9 +111,9 @@ pip install vllm -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
 ```
-````
+:::
 
-````{tab} LMDeploy
+:::{tab-item} LMDeploy
 Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
 
 **Install LMDeploy**
@@ -125,9 +125,9 @@ pip install lmdeploy -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
 ```
-````
+:::
 
-````{tab} Ollama
+:::{tab-item} Ollama
 ```{note}
 Support for OpenAI API by Ollama is currently in an experimental state. This tutorial provides an example only; please modify it according to your actual situation.
 ```
@@ -173,17 +173,17 @@ The model will be automatically converted to a format supported by Ollama and su
 ```shell
 ollama create llama3 -f ./Modelfile
 ```
-````
+:::
 
-`````
+::::
 
 
 ## 4. Model Evaluation
 
 ### Configuration File
 There are three ways to write the configuration file:
-`````{tabs}
-````{tab} Python Dictionary
+::::{tab-set}
+:::{tab-item} Python Dictionary
 ```python
 task_cfg_dict = dict(
     eval_backend='OpenCompass',
@@ -200,10 +200,12 @@ task_cfg_dict = dict(
         },
     )
 ```
-````
-````{tab} YAML Configuration File
-eval_swift_openai_api.yaml
-```yaml
+:::
+
+:::{tab-item} YAML
+```{code-block} yaml
+:caption: eval_openai_api.yaml
+
 eval_backend: OpenCompass
 eval_config:
   datasets:
@@ -216,10 +218,11 @@ eval_config:
       path: qwen2-0_5b-instruct                                   
       temperature: 0.0
 ```
-````
-````{tab} JSON Configuration File
-eval_swift_openai_api.json
-```json
+:::
+
+:::{tab-item} JSON
+```{code-block} json
+:caption: eval_openai_api.json
 {
   "eval_backend": "OpenCompass",
   "eval_config": {
@@ -239,8 +242,8 @@ eval_swift_openai_api.json
   }
 }
 ```
-````
-`````
+:::
+::::
 
 #### Parameter Descriptions
 - `eval_backend`: Default value is `OpenCompass`, indicating the use of the OpenCompass evaluation backend.
@@ -260,30 +263,32 @@ For other optional attributes, refer to `opencompass.cli.arguments.ApiModelConfi
 
 ### Run Script
 After configuring the configuration file, run the following script:
-```python
+```{code-block} python
+:caption: example_eval_openai_api.py
+
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-def run_swift_eval():
+def run_eval():
     # Option 1: Python dictionary
     task_cfg = task_cfg_dict
 
     # Option 2: YAML configuration file
-    # task_cfg = 'eval_swift_openai_api.yaml'
+    # task_cfg = 'eval_openai_api.yaml'
 
     # Option 3: JSON configuration file
-    # task_cfg = 'eval_swift_openai_api.json'
+    # task_cfg = 'eval_openai_api.json'
     
     run_task(task_cfg=task_cfg)
     print('>> Start to get the report with summarizer ...')
     report_list = Summarizer.get_report_from_cfg(task_cfg)
     print(f'\n>> The report list: {report_list}')
 
-run_swift_eval()
+run_eval()
 ```
-Or run the following command:
+Run the following command:
 ```shell
-python examples/example_eval_swift_openai_api.py
+python example_eval_openai_api.py
 ```
 You will see the final output as follows:
 
