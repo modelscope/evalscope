@@ -200,11 +200,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             logger.warning(f'Got eval_backend {eval_backend}, but eval_config is not provided.')
 
         if eval_backend == EvalBackend.OPEN_COMPASS.value:
-            from evalscope.backend.opencompass import OpenCompassBackendManager
+            from evalscope.backend import OpenCompassBackendManager
             oc_backend_manager = OpenCompassBackendManager(config=eval_config)
             oc_backend_manager.run()
         elif eval_backend == EvalBackend.VLM_EVAL_KIT.value:
-            from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
+            from evalscope.backend import VLMEvalKitBackendManager
             vlm_eval_kit_backend_manager = VLMEvalKitBackendManager(config=eval_config)
             vlm_eval_kit_backend_manager.run()
         # TODO: Add other evaluation backends

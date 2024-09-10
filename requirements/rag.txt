@@ -1,0 +1,4 @@
+sentence-transformers
+langchain
+ragas
+mteb

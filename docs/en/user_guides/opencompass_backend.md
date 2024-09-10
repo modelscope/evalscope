@@ -10,7 +10,7 @@ pip install evalscope[opencompass] -U
 
 ## 2. Data Preparation
 ````{note}
-There are three ways to download datasets. The automatic download method supports fewer datasets than the manual download method. Please use as needed. For detailed dataset information, refer to the [OpenCompass Dataset List](https://hub.opencompass.org.cn/home).
+There are two ways to download datasets. The automatic download method supports fewer datasets than the manual download method. Please use as needed. For detailed dataset information, refer to the [OpenCompass Dataset List](https://hub.opencompass.org.cn/home).
 You can view the dataset name list using the following code:
 ```python
 from evalscope.backend.opencompass import OpenCompassBackendManager

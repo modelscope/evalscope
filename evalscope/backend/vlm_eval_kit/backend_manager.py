@@ -4,7 +4,6 @@ from evalscope.backend.base import BackendManager
 from evalscope.utils.logger import get_logger
 from functools import partial
 import subprocess
-from dataclasses import dataclass
 import copy
 
 logger = get_logger()

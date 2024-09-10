@@ -11,6 +11,9 @@ class EvalBackend(Enum):
     
     # Use VLM Eval Kit as the multi-modal model evaluation backend
     VLM_EVAL_KIT = 'VLMEvalKit'
+    
+    # Use RagEval as the RAG evaluation backend
+    RAG_EVAL = 'RagEval'
 
     # Use third-party evaluation backend/modules
     THIRD_PARTY = 'ThirdParty'
