@@ -5,7 +5,6 @@ from modelscope import MsDataset
 from mteb import AbsTaskRetrieval
 from mteb.abstasks.TaskMetadata import TaskMetadata
 
-
 def load_retrieval_data(dataset_name, eval_splits):
     eval_split = eval_splits[0]
     dataset = MsDataset.load(dataset_name)

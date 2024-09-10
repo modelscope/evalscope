@@ -1,9 +1,10 @@
 import logging
-
+from typing import Any
 import numpy as np
 from mteb import RerankingEvaluator, AbsTaskReranking
 from mteb.abstasks.TaskMetadata import TaskMetadata
 from tqdm import tqdm
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ChineseRerankingEvaluator(RerankingEvaluator):
         all documents together
         """
 
-        if hasattr(model, 'compute_score'):
+        if hasattr(model, "compute_score"):
             return self.compute_metrics_batched_from_crossencoder(model)
         else:
             return self.compute_metrics_batched_from_biencoder(model)
@@ -37,17 +38,19 @@ class ChineseRerankingEvaluator(RerankingEvaluator):
 
         pairs = []
         for sample in tqdm(self.samples, desc="Evaluating"):
-            for p in sample['positive']:
-                pairs.append([sample['query'], p])
-            for n in sample['negative']:
-                pairs.append([sample['query'], n])
+            for p in sample["positive"]:
+                pairs.append([sample["query"], p])
+            for n in sample["negative"]:
+                pairs.append([sample["query"], n])
         all_scores = model.compute_score(pairs)
         all_scores = np.array(all_scores)
 
         start_inx = 0
         for sample in tqdm(self.samples, desc="Evaluating"):
-            is_relevant = [True] * len(sample['positive']) + [False] * len(sample['negative'])
-            pred_scores = all_scores[start_inx:start_inx + len(is_relevant)]
+            is_relevant = [True] * len(sample["positive"]) + [False] * len(
+                sample["negative"]
+            )
+            pred_scores = all_scores[start_inx : start_inx + len(is_relevant)]
             start_inx += len(is_relevant)
 
             pred_scores_argsort = np.argsort(-pred_scores)  # Sort in decreasing order
@@ -60,35 +63,38 @@ class ChineseRerankingEvaluator(RerankingEvaluator):
         mean_ap = np.mean(all_ap_scores)
         mean_mrr = np.mean(all_mrr_scores)
 
-        return {"map": mean_ap, "mrr": mean_mrr}
+        return {"main_score": mean_ap, "map": mean_ap, "mrr": mean_mrr}
 
     def compute_metrics_batched_from_biencoder(self, model):
         all_mrr_scores = []
         all_ap_scores = []
         logger.info("Encoding queries...")
         if isinstance(self.samples[0]["query"], str):
-            if hasattr(model, 'encode_queries'):
+            if hasattr(model, "encode_queries"):
                 all_query_embs = model.encode_queries(
                     [sample["query"] for sample in self.samples],
-                    convert_to_tensor=True,
-                    batch_size=self.batch_size,
+                    **self.encode_kwargs,
                 )
             else:
                 all_query_embs = model.encode(
                     [sample["query"] for sample in self.samples],
-                    convert_to_tensor=True,
-                    batch_size=self.batch_size,
+                    **self.encode_kwargs,
                 )
         elif isinstance(self.samples[0]["query"], list):
             # In case the query is a list of strings, we get the most similar embedding to any of the queries
-            all_query_flattened = [q for sample in self.samples for q in sample["query"]]
-            if hasattr(model, 'encode_queries'):
-                all_query_embs = model.encode_queries(all_query_flattened, convert_to_tensor=True,
-                                                      batch_size=self.batch_size)
+            all_query_flattened = [
+                q for sample in self.samples for q in sample["query"]
+            ]
+            if hasattr(model, "encode_queries"):
+                all_query_embs = model.encode_queries(
+                    all_query_flattened, **self.encode_kwargs
+                )
             else:
-                all_query_embs = model.encode(all_query_flattened, convert_to_tensor=True, batch_size=self.batch_size)
+                all_query_embs = model.encode(all_query_flattened, **self.encode_kwargs)
         else:
-            raise ValueError(f"Query must be a string or a list of strings but is {type(self.samples[0]['query'])}")
+            raise ValueError(
+                f"Query must be a string or a list of strings but is {type(self.samples[0]['query'])}"
+            )
 
         logger.info("Encoding candidates...")
         all_docs = []
@@ -96,19 +102,21 @@ class ChineseRerankingEvaluator(RerankingEvaluator):
             all_docs.extend(sample["positive"])
             all_docs.extend(sample["negative"])
 
-        all_docs_embs = model.encode(all_docs, convert_to_tensor=True, batch_size=self.batch_size)
+        all_docs_embs = model.encode(all_docs, **self.encode_kwargs)
 
         # Compute scores
         logger.info("Evaluating...")
         query_idx, docs_idx = 0, 0
         for instance in self.samples:
-            num_subqueries = len(instance["query"]) if isinstance(instance["query"], list) else 1
-            query_emb = all_query_embs[query_idx: query_idx + num_subqueries]
+            num_subqueries = (
+                len(instance["query"]) if isinstance(instance["query"], list) else 1
+            )
+            query_emb = all_query_embs[query_idx : query_idx + num_subqueries]
             query_idx += num_subqueries
 
             num_pos = len(instance["positive"])
             num_neg = len(instance["negative"])
-            docs_emb = all_docs_embs[docs_idx: docs_idx + num_pos + num_neg]
+            docs_emb = all_docs_embs[docs_idx : docs_idx + num_pos + num_neg]
             docs_idx += num_pos + num_neg
 
             if num_pos == 0 or num_neg == 0:
@@ -116,26 +124,29 @@ class ChineseRerankingEvaluator(RerankingEvaluator):
 
             is_relevant = [True] * num_pos + [False] * num_neg
 
-            scores = self._compute_metrics_instance(query_emb, docs_emb, is_relevant)
+            sim_scores = self._compute_sim_scores_instance(query_emb, docs_emb)
+            scores = self._compute_metrics_instance(sim_scores, is_relevant)
             all_mrr_scores.append(scores["mrr"])
             all_ap_scores.append(scores["ap"])
 
         mean_ap = np.mean(all_ap_scores)
         mean_mrr = np.mean(all_mrr_scores)
 
-        return {"map": mean_ap, "mrr": mean_mrr}
+        return {"main_score": mean_ap, "map": mean_ap, "mrr": mean_mrr}
 
 
-def evaluate(self, model, split="test", **kwargs):
+def evaluate(self, model, split="test", encode_kwargs: dict[str, Any] = {}, **kwargs):
     if not self.data_loaded:
         self.load_data()
 
     data_split = self.dataset[split]
 
-    evaluator = ChineseRerankingEvaluator(data_split, **kwargs)
+    evaluator = ChineseRerankingEvaluator(
+        data_split, limit=100, encode_kwargs=encode_kwargs, **kwargs
+    )
     scores = evaluator(model)
 
-    return dict(scores)
+    return dict(default=scores)
 
 
 AbsTaskReranking.evaluate = evaluate
@@ -154,8 +165,9 @@ class T2Reranking(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/T2Reranking",
             "revision": None,
-        }
+        },
     )
+
 
 class T2RerankingZh2En(AbsTaskReranking):
     metadata = TaskMetadata(
@@ -170,8 +182,9 @@ class T2RerankingZh2En(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/T2Reranking_zh2en",
             "revision": None,
-        }
+        },
     )
+
 
 class T2RerankingEn2Zh(AbsTaskReranking):
     metadata = TaskMetadata(
@@ -186,8 +199,9 @@ class T2RerankingEn2Zh(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/T2Reranking_en2zh",
             "revision": None,
-        }
+        },
     )
+
 
 class MMarcoReranking(AbsTaskReranking):
     metadata = TaskMetadata(
@@ -202,8 +216,9 @@ class MMarcoReranking(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/Mmarco-reranking",
             "revision": None,
-        }
+        },
     )
+
 
 class CMedQAv1(AbsTaskReranking):
     metadata = TaskMetadata(
@@ -218,8 +233,9 @@ class CMedQAv1(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/CMedQAv1-reranking",
             "revision": None,
-        }
+        },
     )
+
 
 class CMedQAv2(AbsTaskReranking):
     metadata = TaskMetadata(
@@ -234,5 +250,5 @@ class CMedQAv2(AbsTaskReranking):
         dataset={
             "path": "C-MTEB/CMedQAv2-reranking",
             "revision": None,
-        }
+        },
     )

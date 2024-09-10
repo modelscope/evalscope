@@ -1,0 +1,20 @@
+{
+  "dataset_revision": "76631901a18387f85eaa53e5450019b87ad58ef9",
+  "evaluation_time": 10.727813720703125,
+  "kg_co2_emissions": null,
+  "mteb_version": "1.14.15",
+  "scores": {
+    "dev": [
+      {
+        "hf_subset": "default",
+        "languages": [
+          "cmn-Hans"
+        ],
+        "main_score": 0.6689706145503941,
+        "map": 0.6689706145503941,
+        "mrr": 0.8076512896825396
+      }
+    ]
+  },
+  "task_name": "T2Reranking"
+}
