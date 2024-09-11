@@ -18,26 +18,34 @@ class EmbeddingModel(Embeddings):
         model_name_or_path: str = "",
         is_cross_encoder: bool = False,
         pooling_mode: Optional[str] = None,
-        model_kwargs: Dict[str, Any] = None,
-        encode_kwargs: Dict[str, Any] = None,
+        max_seq_length: int = 512,
+        model_kwargs: Dict[str, Any] = {},
+        config_kwargs: Dict[str, Any] = {},
+        encode_kwargs: Dict[str, Any] = {},
         hub: str = "modelscope",
+        **kwargs,
     ):
         # Initialize model name or path
         self.model_name_or_path = model_name_or_path
         # Initialize whether it is a cross encoder
         self.is_cross_encoder = is_cross_encoder
         # Initialize pooling mode for sentence embeddings
+        # Either “cls”, “lasttoken”, “max”, “mean”, “mean_sqrt_len_tokens”, or “weightedmean”.
         self.pooling_mode = pooling_mode
         # Initialize model keyword arguments
-        self.model_kwargs = model_kwargs if model_kwargs is not None else {}
+        self.model_kwargs = model_kwargs
         self.model_kwargs["trust_remote_code"] = True
-
+        # Initialize model configuration keyword arguments
+        self.config_kwargs = config_kwargs
+        self.config_kwargs["trust_remote_code"] = True
         # Initialize encoding keyword arguments
-        self.encode_kwargs = encode_kwargs if encode_kwargs is not None else {}
+        self.encode_kwargs = encode_kwargs
         self.encode_kwargs["convert_to_tensor"] = True
 
         # Get and initialize the model
-        self.model = self._get_model(hub=hub)
+        self.model = self._get_model(hub=hub, **kwargs)
+
+        self.model.max_seq_length = max_seq_length
 
         # Update model information
         self.update_model_info()
@@ -67,7 +75,7 @@ class EmbeddingModel(Embeddings):
         # Update model revision
         self.model_revision = model_card.base_model_revision or "v1"
 
-    def _get_model(self, hub):
+    def _get_model(self, hub, **kwargs):
         """Load model based on model name or path
 
         Args:
@@ -85,19 +93,28 @@ class EmbeddingModel(Embeddings):
 
         # Return different model instances based on whether it is a cross encoder and pooling mode
         if self.is_cross_encoder:
-            return CrossEncoder(self.model_name_or_path, **self.model_kwargs)
+            return CrossEncoder(self.model_name_or_path, **kwargs)
 
         if not self.pooling_mode:
-            return SentenceTransformer(self.model_name_or_path, **self.model_kwargs)
+            return SentenceTransformer(
+                self.model_name_or_path,
+                config_kwargs=self.config_kwargs,
+                model_kwargs=self.model_kwargs,
+                **kwargs,
+            )
         else:
-            word_embedding_model = models.Transformer(self.model_name_or_path)
+            word_embedding_model = models.Transformer(
+                self.model_name_or_path,
+                config_args=self.config_kwargs,
+                model_args=self.model_kwargs,
+            )
             pooling_model = models.Pooling(
                 word_embedding_model.get_word_embedding_dimension(),
                 pooling_mode=self.pooling_mode,
             )
 
             return SentenceTransformer(
-                modules=[word_embedding_model, pooling_model], **self.model_kwargs
+                modules=[word_embedding_model, pooling_model], **kwargs
             )
 
     def embed_query(self, text: str) -> List[float]:
@@ -142,7 +159,6 @@ class EmbeddingModel(Embeddings):
         if isinstance(self.model, SentenceTransformer):
             embeddings = self.model.encode(
                 texts,
-                normalize_embeddings=True,
                 **self.encode_kwargs,
             )
         elif isinstance(self.model, CrossEncoder):
