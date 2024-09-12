@@ -82,6 +82,9 @@ html_theme = 'sphinxawesome_theme'
 html_static_path = ['_static']
 html_favicon = "./_static/images/evalscope_icon_dark.png"
 html_permalinks_icon = "<span>#</span>"
+html_sidebars: dict[str, list[str]] = {
+    "blog/**": ["sidebar_main_nav_links.html"],
+}
 
 pygments_style = "default"
 pygments_style_dark = "one-dark"
@@ -100,6 +103,9 @@ napoleon_custom_sections = [
 ]
 
 theme_options = ThemeOptions(
+    awesome_external_links=True,
+    show_scrolltop=True,
+    main_nav_links={"Docs": "index", "Blogs": "blog/index"},
     logo_light="./_static/images/evalscope_icon.png",
     logo_dark="./_static/images/evalscope_icon_dark.png",
     extra_header_link_icons={
