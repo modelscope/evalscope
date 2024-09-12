@@ -46,7 +46,7 @@ class Benchmark(object):
 
             dataset.dataset_name = dataset_name.split('/')[-1]
             dataset.subset_name = subset
-            dataset.split = split
+            # dataset.split = split
             return dataset
         elif hub == 'HuggingFace':
             # TODO: implement this by xingjun.wxj@alibaba-inc.com

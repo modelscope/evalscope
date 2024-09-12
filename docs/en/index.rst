@@ -1,23 +1,13 @@
 .. image:: _static/images/evalscope_logo.png
 
-.. _pypi_downloads: https://pypi.org/project/evalscope
-.. _github_pr: https://github.com/modelscope/evalscope/pulls
-
 .. raw:: html
 
-   <p align="center">
-   <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
-   <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
-   </a>
-   <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
-      <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
-   </a>
-   </p>
+    <br>
 
 
 Welcome to the EvalScope Tutorial!
 ==========================================
-Getting Started with EvalScope
+Getting Started
 -------------------------------
 To help users quickly get started, we recommend the following flow:
 
@@ -33,6 +23,8 @@ To help users quickly get started, we recommend the following flow:
 
 We always welcome users' PRs and Issues to improve EvalScope.
 
+Contents
+---------------
 .. _QuickStart:
 .. toctree::
    :maxdepth: 1
@@ -41,6 +33,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    get_started/introduction.md
    get_started/installation.md
    get_started/basic_usage.md
+   get_started/supported_dataset.md
 
 .. _Tutorials:
 .. toctree::
@@ -77,7 +70,7 @@ We always welcome users' PRs and Issues to improve EvalScope.
    best_practice/llm_full_stack.md
    best_practice/experiments.md
 
-Index and Tables
-==================
-* :ref:`genindex`
-* :ref:`search`
+.. Index and Tables
+.. ==================
+.. * :ref:`genindex`
+.. * :ref:`search`

@@ -1,5 +1,5 @@
 from typing import Optional, Union
-from evalscope.utils import is_module_installed, get_module_path, get_valid_list, yaml_to_dict, json_to_dict
+from evalscope.utils import is_module_installed, get_valid_list
 from evalscope.backend.base import BackendManager
 from evalscope.utils.logger import get_logger
 from functools import partial

@@ -47,7 +47,9 @@ Large Model (including Large Language Models, Multi-modal Large Language Models)
 - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
 - **Full-Link Support**: Through seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency.
 
-### Overall Architecture
+
+<details><summary>Overall Architecture</summary>
+
 <p align="center">
   <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
   <br>Fig 1. EvalScope Framework.
@@ -64,14 +66,19 @@ The architecture includes the following modules:
 4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
 5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
 6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+</details>
+
 
 ## 🎉 News
-- **[2024.08.09]** Simplified installation process, supporting PyPI installation for vlmeval dependencies; Optimized multi-modal models evaluation experience with pipeline that based on OpenAI API, achieving up to 10x acceleration 🚀🚀🚀
-- **[2024.07.31]** Breaking change: The sdk name has been changed from `llmuses` to `evalscope`, please update the sdk name in your code.
-- **[2024.07.26]** Supports **VLMEvalKit** as a third-party evaluation framework, initiating multimodal model evaluation tasks. 🔥🔥🔥
-- **[2024.06.29]** Supports **OpenCompass** as a third-party evaluation framework. We have provided a high-level wrapper, supporting installation via pip and simplifying the evaluation task configuration. 🔥🔥🔥
-- **[2024.06.13]** EvalScope has been updated to version 0.3.x, which supports the ModelScope SWIFT framework for LLMs evaluation. 🚀🚀🚀
-- **[2024.06.13]** We have supported the ToolBench as a third-party evaluation backend for Agents evaluation. 🚀🚀🚀
+
+- 🔥 **[2024.08.30]** Support for custom dataset evaluations, including text datasets and multimodal image-text datasets.
+- 🔥 **[2024.08.20]** Updated the official documentation, including getting started guides, best practices, and FAQs. Feel free to [📖read it here](https://evalscope.readthedocs.io/en/latest/)!
+- 🔥 **[2024.08.09]** Simplified the installation process, allowing for pypi installation of vlmeval dependencies; optimized the multimodal model evaluation experience, achieving up to 10x acceleration based on the OpenAI API evaluation chain.
+- 🔥 **[2024.07.31]** Important change: The package name `llmuses` has been changed to `evalscope`. Please update your code accordingly.
+- 🔥 **[2024.07.26]** Support for **VLMEvalKit** as a third-party evaluation framework to initiate multimodal model evaluation tasks.
+- 🔥 **[2024.06.29]** Support for **OpenCompass** as a third-party evaluation framework, which we have encapsulated at a higher level, supporting pip installation and simplifying evaluation task configuration.
+- 🔥 **[2024.06.13]** EvalScope seamlessly integrates with the fine-tuning framework SWIFT, providing full-chain support from LLM training to evaluation.
+- 🔥 **[2024.06.13]** Integrated the Agent evaluation dataset ToolBench.
 
 
 
@@ -152,7 +159,7 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 #### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
 - `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/LLM/Supported-models-datasets.html) for filling in this field.
-- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](#supported-datasets-list) for available options.
+- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html) for available options.
 
 ### 2. Parameterized Evaluation
 If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
@@ -162,8 +169,8 @@ If you wish to conduct a more customized evaluation, such as modifying model par
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
- --model-args revision=v1.0.2,precision=torch.float16,device_map=auto \
- --datasets mmlu ceval \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --datasets gsm8k ceval \
  --use-cache true \
  --limit 10
 ```
@@ -227,24 +234,6 @@ Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~/.cache/evalscope'`.
 from evalscope.run import run_task
 run_task(task_cfg=your_task_cfg)
 ```
-
-### Supported Datasets List
-> [!NOTE]
-> The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](https://evalscope.readthedocs.io/en/latest/user_guides/opencompass_backend.html) for evaluation, or use the [VLMEvalKit backend](https://evalscope.readthedocs.io/en/latest/user_guides/vlmevalkit_backend.html) for multi-modal model evaluation.
-
-| Dataset Name       | Link                                                                                   | Status | Note |
-|--------------------|----------------------------------------------------------------------------------------|--------|------|
-| `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
-| `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
-| `gsm8k`            | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       | Active |      |
-| `arc`              | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       | Active |      |
-| `hellaswag`        | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               | Active |      |
-| `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | Active |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Active |      |
-| `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
-| `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
-| `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be integrated |      |
 
 
 ## Evaluation Backend

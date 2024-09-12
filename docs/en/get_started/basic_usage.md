@@ -3,8 +3,9 @@
 ## 1. Simple Evaluation
 To evaluate a model using default settings on specified datasets, follow the process below:
 
-`````{tabs}
-````{tab} Install using pip
+::::{tab-set}
+
+:::{tab-item} Install using pip
 You can execute this command from any directory:
 ```bash
 python -m evalscope.run \
@@ -13,8 +14,9 @@ python -m evalscope.run \
  --datasets arc 
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
-````
-````{tab} Install from source
+:::
+
+:::{tab-item} Install from source
 Execute this command in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
@@ -23,8 +25,8 @@ python evalscope/run.py \
  --datasets arc
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
-````
-`````
+:::
+::::
 
 ### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
@@ -36,7 +38,7 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
     print(TemplateType.get_template_name_list())
     ```
     ````
-- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](#supported-datasets-list) for available options.
+- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](./supported_dataset.md#1-native-supported-datasets) for available options.
 
 ## 2. Parameterized Evaluation
 If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
@@ -46,8 +48,8 @@ If you wish to conduct a more customized evaluation, such as modifying model par
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
- --model-args revision=v1.0.2,precision=torch.float16,device_map=auto \
- --datasets mmlu ceval \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --datasets gsm8k ceval \
  --use-cache true \
  --limit 10
 ```
@@ -111,21 +113,3 @@ Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~/.cache/evalscope'`.
 from evalscope.run import run_task
 run_task(task_cfg=your_task_cfg)
 ```
-
-## Supported Datasets List
-```{note}
-The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
-```
-| Dataset Name       | Link                                                                                   | Status | Note |
-|--------------------|----------------------------------------------------------------------------------------|--------|------|
-| `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
-| `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
-| `gsm8k`            | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       | Active |      |
-| `arc`              | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       | Active |      |
-| `hellaswag`        | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               | Active |      |
-| `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | Active |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Active |      |
-| `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
-| `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
-| `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be integrated |      |

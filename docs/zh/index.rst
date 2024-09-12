@@ -1,25 +1,13 @@
 .. image:: _static/images/evalscope_logo.png
 
-.. _pypi_downloads: https://pypi.org/project/evalscope
-.. _github_pr: https://github.com/modelscope/evalscope/pulls
-
 .. raw:: html
 
-   <p align="center">
-   <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
-   <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
-   </a>
-   <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
-   <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
-      <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
-   </a>
-   </p>
-
+    <br>
 
 欢迎来到 EvalScope 中文教程！
 ==========================================
 
-EvalScope 上手路线
+上手路线
 -------------------------------
 
 为了用户能够快速上手，我们推荐以下流程：
@@ -36,6 +24,8 @@ EvalScope 上手路线
 
 我们始终非常欢迎用户的 PRs 和 Issues 来完善 EvalScope
 
+目录
+-------------
 .. _快速开始:
 .. toctree::
    :maxdepth: 1
@@ -44,6 +34,7 @@ EvalScope 上手路线
    get_started/introduction.md
    get_started/installation.md
    get_started/basic_usage.md
+   get_started/supported_dataset.md
 
 .. _教程:
 .. toctree::
@@ -79,9 +70,3 @@ EvalScope 上手路线
    best_practice/swift_integration.md
    best_practice/llm_full_stack.md
    best_practice/experiments.md
-
-索引与表格
-==================
-
-* :ref:`genindex`
-* :ref:`search`

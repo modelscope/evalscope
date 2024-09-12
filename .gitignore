@@ -148,7 +148,7 @@ tmp/
 data/*
 output/
 test*.sh
-test.ipynb
+test*.ipynb
 *.ttf
 _build/
 data

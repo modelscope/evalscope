@@ -189,7 +189,6 @@ You can then pass this configuration file for evaluation:
 swift eval \
     --model_type "qwen-7b-chat" \
     --eval_dataset no \ # eval_dataset can also be set, running both official and custom datasets together
-    --```shell
     --infer_backend pt \
     --custom_eval_config eval_example/custom_config.json
 ```
