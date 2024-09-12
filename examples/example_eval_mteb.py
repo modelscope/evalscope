@@ -7,7 +7,6 @@ EvalScope: pip install mteb
 2. Run eval task
 """
 from evalscope.run import run_task
-from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
 import torch
 
@@ -18,11 +17,12 @@ def run_eval():
 
     # Prepare the config
     model_name1 = "Jerry0/m3e-base"
-    model_name2 = "OpenBMB/MiniCPM-Reranker"
-    # model_name = "../models/embedding/MiniCPM-Embedding"
-    # model_name = "Xorbits/bge-reranker-base"
 
-    # # Option 1: Use dict format
+    # model_name = "OpenBMB//embedding/MiniCPM-Embedding"
+    # model_name = "Xorbits/bge-reranker-base"
+    # model_name2 = "OpenBMB/MiniCPM-Reranker"
+    model_name2 = "jinaai/jina-reranker-v2-base-multilingual"
+
     one_stage_task_cfg = {
         "eval_backend": "RAGEval",
         "eval_config": {
@@ -85,16 +85,9 @@ def run_eval():
         },
     }
 
-    # Option 2: Use yaml file
-    # task_cfg = "examples/tasks/eval_vlm_swift.yaml"
 
     # Run task
     run_task(task_cfg=two_stage_task_cfg)
-
-    # [Optional] Get the final report with summarizer
-    # logger.info(">> Start to get the report with summarizer ...")
-    # report_list = Summarizer.get_report_from_cfg(task_cfg)
-    # logger.info(f"\n>> The report list: {report_list}")
 
 
 if __name__ == "__main__":
