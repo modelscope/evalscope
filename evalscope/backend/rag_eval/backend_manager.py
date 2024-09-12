@@ -26,55 +26,24 @@ class RAGEvalBackendManager(BackendManager):
             logger.error("Please install `mteb` and `ragas` first")
 
     def run_mteb(self):
-        import mteb
-        from evalscope.backend.rag_eval import EmbeddingModel
-        from evalscope.backend.rag_eval import cmteb
-        from mteb.task_selection import results_to_dataframe
-
-        # load task first to update instructions
-        tasks = cmteb.TaskBase.get_tasks(
-            task_names=self.args.tasks, instructions=self.args.instructions
-        )
-
-        evaluation = mteb.MTEB(tasks=tasks)
-
-        model = EmbeddingModel.from_pretrained(
-            model_name_or_path=self.args.model_name_or_path,
-            is_cross_encoder=self.args.is_cross_encoder,
-            pooling_mode=self.args.pooling_mode,
-            max_seq_length=self.args.max_seq_length,
-            model_kwargs=self.args.model_kwargs,
-            config_kwargs=self.args.config_kwargs,
-            prompts=cmteb.INSTRUCTIONS,
-            hub=self.args.hub,
-        )
-
-        results = evaluation.run(
-            model,
-            verbosity=self.args.verbosity,
-            output_folder=self.args.output_folder,
-            overwrite_results=self.args.overwrite_results,
-            encode_kwargs=self.args.encode_kwargs,
-            limits=self.args.limits,
-        )
-
-        model_name = model.mteb_model_meta.model_name_as_path()
-        revision = model.mteb_model_meta.revision
-
-        results_df = results_to_dataframe({model_name: {revision: results}})
-
-        save_path = os.path.join(
-            self.args.output_folder,
-            model_name,
-            revision,
-        )
-        logger.info(f"Evaluation results:\n{results_df.to_markdown()}")
-        logger.info(f"Evaluation results saved in {os.path.abspath(save_path)}")
+        from evalscope.backend.rag_eval.cmteb import ModelArguments, EvalArguments
+        from evalscope.backend.rag_eval.cmteb import one_stage_eval, two_stage_eval
+        if len(self.model_args) == 1:
+            model_args = ModelArguments(**self.model_args[0]).to_dict()
+            eval_args = EvalArguments(**self.eval_args).to_dict()
+            one_stage_eval(model_args, eval_args)
+        elif len(self.model_args) == 2:
+            model1_args = ModelArguments(**self.model_args[0]).to_dict()
+            model2_args = ModelArguments(**self.model_args[1]).to_dict()
+            eval_args = EvalArguments(**self.eval_args).to_dict()
+            two_stage_eval(model1_args, model2_args, eval_args)
+        else:
+            raise ValueError("Not support multiple models yet")
+        
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")
         if tool.upper() == "MTEB":
-            from evalscope.backend.rag_eval.cmteb import MTEBArguments
-
-            self.args = MTEBArguments(**self.config_d)
+            self.model_args =self.config_d['model']
+            self.eval_args = self.config_d['eval']
             self.run_mteb()

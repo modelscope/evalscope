@@ -10,7 +10,13 @@ logger = get_logger()
 
 
 class BaseModel:
-    def __init__(self, model_name_or_path: str, max_seq_length: int, **kwargs):
+    def __init__(
+        self,
+        model_name_or_path: str,
+        max_seq_length: int = 512,
+        prompt: str = "",
+        **kwargs,
+    ):
         self.model_name_or_path = model_name_or_path
         self.max_seq_length = max_seq_length
         self.model_kwargs = kwargs.pop("model_kwargs", {})
@@ -21,6 +27,8 @@ class BaseModel:
 
         self.encode_kwargs = kwargs.pop("encode_kwargs", {})
         self.encode_kwargs["convert_to_tensor"] = True
+
+        self.prompt = prompt
 
     @property
     def mteb_model_meta(self):
@@ -46,7 +54,6 @@ class SentenceTransformerModel(BaseModel):
                 self.model_name_or_path,
                 config_kwargs=self.config_kwargs,
                 model_kwargs=self.model_kwargs,
-                prompts=kwargs.pop("prompts", None),
             )
         else:
             word_embedding_model = models.Transformer(
@@ -60,15 +67,15 @@ class SentenceTransformerModel(BaseModel):
             )
             self.model = SentenceTransformer(
                 modules=[word_embedding_model, pooling_model],
-                prompts=kwargs.pop("prompts", None),
             )
 
         self.model.max_seq_length = self.max_seq_length
         self.update_model_info()
 
     def encode(self, texts: List[str], **kwargs) -> List[List[float]]:
+        kwargs.pop("prompt_name")  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
-        embeddings = self.model.encode(texts, **self.encode_kwargs)
+        embeddings = self.model.encode(texts, prompt=self.prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
 
@@ -95,15 +102,12 @@ class CrossEncoderModel(BaseModel):
         self.model_name = os.path.basename(self.model_name_or_path)
         self.model_revision = "v1"
 
-    def encode(self, texts: List[str], **kwargs) -> List[List[float]]:
-        self.encode_kwargs.update(kwargs)
-        embeddings = self.model.predict(texts, **self.encode_kwargs)
-        assert isinstance(embeddings, Tensor)
-        return embeddings
-
     def predict(self, sentences: List[str], **kwargs) -> List[List[float]]:
         self.encode_kwargs.update(kwargs)
-        embeddings = self.model.predict(sentences, **self.encode_kwargs)
+        updated_sentences = [
+            (self.prompt + query, docs) for query, docs, instruction in sentences
+        ]
+        embeddings = self.model.predict(updated_sentences, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
 
