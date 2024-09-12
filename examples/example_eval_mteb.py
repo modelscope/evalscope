@@ -35,16 +35,22 @@ def run_eval():
                     "prompt": "为这个问题生成一个检索用的表示",
                     "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
-                        "batch_size": 32,
+                        "batch_size": 128,
                     },
                 }
             ],
             "eval": {
-                "tasks": ["T2Retrieval"],
+                "tasks": [
+                    "TNews",
+                    "CLSClusteringS2S",
+                    "T2Reranking",
+                    "T2Retrieval",
+                    "ATEC",
+                ],
                 "verbosity": 2,
                 "output_folder": "outputs",
                 "overwrite_results": True,
-                "limits": 100,
+                "limits": 500,
             },
         },
     }
@@ -61,15 +67,15 @@ def run_eval():
                     "prompt": "",
                     "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
-                        "batch_size": 32,
+                        "batch_size": 64,
                     },
                 },
                 {
                     "model_name_or_path": model_name2,
                     "is_cross_encoder": True,
                     "max_seq_length": 512,
-                    "prompt": "请根据问题生成一个检索用的表示",
-                    "model_kwargs": {"torch_dtype": torch.float16},
+                    "prompt": "",
+                    "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
                         "batch_size": 32,
                     },
@@ -80,11 +86,9 @@ def run_eval():
                 "verbosity": 2,
                 "output_folder": "outputs",
                 "overwrite_results": True,
-                "limits": 100,
             },
         },
     }
-
 
     # Run task
     run_task(task_cfg=two_stage_task_cfg)
