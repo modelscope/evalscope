@@ -19,7 +19,7 @@
 * Multi-modal RAG
 ![Multi-modal RAG](../_static/MM_RAG_LangChain_1.png)
 
-3. **Ragas**
+### 3. **Ragas**
 * [GitHub](https://github.com/explodinggradients/ragas) 
 * [Docs](https://docs.ragas.io/en/latest/getstarted/index.html) 
 * Tutorial: [Evaluating RAG Applications with RAGAs](https://towardsdatascience.com/evaluating-rag-applications-with-ragas-81d67b0ee31a) 
@@ -42,22 +42,22 @@
     * Component-Level Evaluation: RAGAs allows for separate evaluation of the two main components of the RAG pipeline—the retriever and the generator. This separated evaluation approach helps to precisely identify performance bottlenecks in the pipeline.
     * Comprehensive Evaluation Metrics: RAGAs provides a range of evaluation metrics, including Context Precision, Context Recall, Faithfulness, and Answer Relevancy. These metrics together form the RAGAs score, used to comprehensively assess the performance of the RAG pipeline.
 
-4. **RAGChecker**
+### 4. **RAGChecker**
 * [GitHub](https://github.com/amazon-science/RAGChecker) 
 > Introduction: RAGChecker is an advanced automatic evaluation framework designed to evaluate and diagnose retrieval-augmented generation (RAG) systems. It offers a comprehensive set of metrics and tools for in-depth analysis of RAG performance. The framework includes overall evaluation, diagnostic metrics, fine-grained evaluation, benchmark datasets, and meta-evaluation.
 
-5. **TruLens**
+### 5. **TruLens**
 * [GitHub](https://github.com/truera/trulens) 
 * [Docs](https://www.trulens.org/trulens/getting_started/quickstarts/quickstart/) 
 > Introduction: After developers build a prototype, they can monitor and record with TruLens, specify the desired feedback, and iterate and compare application versions in the user interface, supporting Langchain and Llama-Index.
 
-6. **FlagEmbedding**
+### 6. **FlagEmbedding**
 * [GitHub](https://github.com/FlagOpen/FlagEmbedding) 
 * Tutorial: [Evaluation Tutorial](https://github.com/FlagOpen/FlagEmbedding/blob/master/Tutorials/4_Evaluation).
 > Introduction: FlagEmbedding is a project focused on retrieval-augmented large language models (LLMs), including several sub-projects such as long-text LLM, fine-tuned LM, embedding models, re-ranking models, and benchmarking. However, it does not provide an evaluation framework. 
 
 
-7. **Continuous Eval**
+### 7. **Continuous Eval**
 * [GitHub](https://github.com/relari-ai/continuous-eval) 
 > Introduction: continuous-eval is an open-source software package designed to provide data-driven evaluation for applications based on large language models (LLMs). It supports fine-grained evaluation of LLM applications through modular evaluation, comprehensive metric libraries, leveraging user feedback, synthetic dataset generation, and more. The tool also supports custom metrics and batch processing optimization, as well as synthetic dataset generation through Relari Cloud.
 
