@@ -1,9 +1,8 @@
+import os
 from typing import Optional, Union
 from evalscope.utils import is_module_installed, get_valid_list
 from evalscope.backend.base import BackendManager
 from evalscope.utils.logger import get_logger
-from functools import partial
-import copy
 
 
 logger = get_logger()
@@ -37,7 +36,7 @@ class RAGEvalBackendManager(BackendManager):
         )
 
         evaluation = mteb.MTEB(tasks=tasks)
-        
+
         model = EmbeddingModel(
             model_name_or_path=self.args.model_name_or_path,
             is_cross_encoder=self.args.is_cross_encoder,
@@ -45,7 +44,6 @@ class RAGEvalBackendManager(BackendManager):
             max_seq_length=self.args.max_seq_length,
             model_kwargs=self.args.model_kwargs,
             config_kwargs=self.args.config_kwargs,
-            encode_kwargs=self.args.encode_kwargs,
             prompts=cmteb.INSTRUCTIONS,
             hub=self.args.hub,
         )
@@ -55,11 +53,17 @@ class RAGEvalBackendManager(BackendManager):
             verbosity=self.args.verbosity,
             output_folder=self.args.output_folder,
             overwrite_results=self.args.overwrite_results,
-            encode_kwargs=model.encode_kwargs,
+            encode_kwargs=self.args.encode_kwargs,
             limits=self.args.limits,
         )
+        results = [item.to_dict() for item in results]
 
-        logger.info(f"Evaluation Results: \n{results}")
+        save_path = os.path.join(
+            self.args.output_folder,
+            model.mteb_model_meta.model_name_as_path(),
+            model.mteb_model_meta.revision,
+        )
+        logger.info(f"Evaluation results saved in {os.path.abspath(save_path)}")
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")

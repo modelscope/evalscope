@@ -9,7 +9,7 @@ class Arguments:
     model_name_or_path: str = ""  # model name or path
     is_cross_encoder: bool = False  # whether the model is a cross encoder
     # pooling mode: Either “cls”, “lasttoken”, “max”, “mean”, “mean_sqrt_len_tokens”, or “weightedmean”.
-    pooling_mode: str = "cls"
+    pooling_mode: Optional[str] = None
     max_seq_length: int = 512  # max sequence length
     # model kwargs
     model_kwargs: dict = field(default_factory=lambda: {"torch_dtype": torch.bfloat16})

@@ -10,21 +10,24 @@ from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
 
-logger = get_logger()
 
+logger = get_logger()
 
 def run_eval():
 
     # Prepare the config
-
+    # model_name = "Jerry0/m3e-base"
+    # model_name = "../models/embedding/MiniCPM-Embedding"
+    # model_name = "Xorbits/bge-reranker-base"
+    model_name = "OpenBMB/MiniCPM-Reranker"
+    
     # # Option 1: Use dict format
     task_cfg = {
         "eval_backend": "RAGEval",
         "eval_config": {
             "tool": "MTEB",
-            "model_name_or_path": "Jerry0/m3e-base",
-            "is_cross_encoder": False,
-            "pooling_mode": "cls",
+            "model_name_or_path": model_name,
+            "pooling_mode": None,  # load from model config
             "max_seq_length": 512,
             "model_kwargs": {"torch_dtype": "auto"},
             "encode_kwargs": {
