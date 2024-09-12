@@ -29,6 +29,7 @@ class RAGEvalBackendManager(BackendManager):
         import mteb
         from evalscope.backend.rag_eval import EmbeddingModel
         from evalscope.backend.rag_eval import cmteb
+        from mteb.task_selection import results_to_dataframe
 
         # load task first to update instructions
         tasks = cmteb.TaskBase.get_tasks(
@@ -37,7 +38,7 @@ class RAGEvalBackendManager(BackendManager):
 
         evaluation = mteb.MTEB(tasks=tasks)
 
-        model = EmbeddingModel(
+        model = EmbeddingModel.from_pretrained(
             model_name_or_path=self.args.model_name_or_path,
             is_cross_encoder=self.args.is_cross_encoder,
             pooling_mode=self.args.pooling_mode,
@@ -56,13 +57,18 @@ class RAGEvalBackendManager(BackendManager):
             encode_kwargs=self.args.encode_kwargs,
             limits=self.args.limits,
         )
-        results = [item.to_dict() for item in results]
+
+        model_name = model.mteb_model_meta.model_name_as_path()
+        revision = model.mteb_model_meta.revision
+
+        results_df = results_to_dataframe({model_name: {revision: results}})
 
         save_path = os.path.join(
             self.args.output_folder,
-            model.mteb_model_meta.model_name_as_path(),
-            model.mteb_model_meta.revision,
+            model_name,
+            revision,
         )
+        logger.info(f"Evaluation results:\n{results_df.to_markdown()}")
         logger.info(f"Evaluation results saved in {os.path.abspath(save_path)}")
 
     def run(self, *args, **kwargs):

@@ -7,30 +7,7 @@ from .tasks import CLS_DICT, CLS_RETRIEVAL
 
 __all__ = ["TaskBase", "INSTRUCTIONS"]
 
-INSTRUCTIONS = {
-    "fiqa": "Instruction: Given a financial question, retrieve user replies that best answer the question. Query: ",
-    "dbpedia": "Instruction: Given a query, retrieve relevant entity descriptions from DBPedia. Query: ",
-    "CmedqaRetrieval": "Instruction: 为这个医疗问题检索相关回答。 Query: ",
-    "nfcorpus": "Instruction: Given a question, retrieve relevant documents that best answer the question. Query: ",
-    "touche2020": "Instruction: Given a question, retrieve detailed and persuasive arguments that answer the question. Query: ",
-    "CovidRetrieval": "Instruction: 为这个问题检索相关政策回答。 Query: ",
-    "scifact": "Instruction: Given a scientific claim, retrieve documents that support or refute the claim. Query: ",
-    "scidocs": "Instruction: Given a scientific paper title, retrieve paper abstracts that are cited by the given paper. Query: ",
-    "nq": "Instruction: Given a question, retrieve Wikipedia passages that answer the question. Query: ",
-    "T2Retrieval": "Instruction: 为这个问题检索相关段落。 Query: ",
-    "VideoRetrieval": "Instruction: 为这个电影标题检索相关段落。 Query: ",
-    "DuRetrieval": "Instruction: 为这个问题检索相关百度知道回答。 Query: ",
-    "MMarcoRetrieval": "Instruction: 为这个查询检索相关段落。 Query: ",
-    "hotpotqa": "Instruction: Given a multi-hop question, retrieve documents that can help answer the question. Query: ",
-    "quora": "Instruction: Given a question, retrieve questions that are semantically equivalent to the given question. Query: ",
-    "climate-fever": "Instruction: Given a claim about climate change, retrieve documents that support or refute the claim. Query: ",
-    "arguana": "Instruction: Given a claim, find documents that refute the claim. Query: ",
-    "fever": "Instruction: Given a claim, retrieve documents that support or refute the claim. Query: ",
-    "trec-covid": "Instruction: Given a query on COVID-19, retrieve documents that answer the query. Query: ",
-    "msmarco": "Instruction: Given a web search query, retrieve relevant passages that answer the query. Query: ",
-    "EcomRetrieval": "Instruction: 为这个查询检索相关商品标题。 Query: ",
-    "MedicalRetrieval": "Instruction: 为这个医学问题检索相关回答。 Query: ",
-}
+INSTRUCTIONS = {}
 
 
 class TaskBase:

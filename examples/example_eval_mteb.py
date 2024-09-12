@@ -27,6 +27,7 @@ def run_eval():
         "eval_config": {
             "tool": "MTEB",
             "model_name_or_path": model_name,
+            "is_cross_encoder": False,
             "pooling_mode": None,  # load from model config
             "max_seq_length": 512,
             "model_kwargs": {"torch_dtype": "auto"},
@@ -42,6 +43,7 @@ def run_eval():
             "overwrite_results": True,
             "limits": 100,
             "hub": "modelscope",
+            "save_pred_results": True,
         },
     }
 
