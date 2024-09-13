@@ -4,7 +4,12 @@
 
 # 欢迎阅读 EvalScope 博客！
 
-:::{card} RAG评测
+:::{toctree}
+:hidden:
+RAG/RAG_Evaluation.md
+:::
+
+:::{card} RAG 评估调研：框架、指标和方法
 :link: rag-evaluation
 :link-type: ref
 

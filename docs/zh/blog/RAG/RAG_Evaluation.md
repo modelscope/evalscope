@@ -1,6 +1,6 @@
 (rag-evaluation)=
 
-# RAG 评估调查：框架、指标和方法
+# RAG 评估调研：框架、指标和方法
 
 ## RAG（检索增强生成）流程
 ![RAG Pipeline](../_static/RAG_Pipeline_1.png)
