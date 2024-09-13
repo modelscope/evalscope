@@ -3,7 +3,7 @@
 # RAG 评估调研：框架、指标和方法
 
 ## RAG（检索增强生成）流程
-![RAG Pipeline](../_static/RAG_Pipeline_1.png)
+![RAG Pipeline](images/RAG_Pipeline_1.png)
 
 
 ## 框架
@@ -21,7 +21,7 @@
 * [半结构化(图文表)多模态RAG教程](https://github.com/langchain-ai/langchain/blob/master/cookbook/Semi_structured_and_multi_modal_RAG.ipynb)
 
 * Multi-modal RAG
-![Multi-modal RAG](../_static/MM_RAG_LangChain_1.png)
+![Multi-modal RAG](images/MM_RAG_LangChain_1.png)
 
 ### 3. **Ragas**
 * [GitHub](https://github.com/explodinggradients/ragas)
