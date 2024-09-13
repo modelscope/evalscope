@@ -3,7 +3,7 @@
 # RAG Evaluation Survey: Framework, Metrics, and Methods
 
 ## RAG (Retrieval-Augmented Generation) Process
-![RAG Pipeline](../_static/RAG_Pipeline_1.png)
+![RAG Pipeline](images/RAG_Pipeline_1.png)
 
 ## Framework
 ### 1. **LlamaIndex**
@@ -17,7 +17,7 @@
 * [Semi-structured (Image-Text-Table) Multimodal RAG Tutorial](https://github.com/langchain-ai/langchain/blob/master/cookbook/Semi_structured_and_multi_modal_RAG.ipynb) 
 
 * Multi-modal RAG
-![Multi-modal RAG](../_static/MM_RAG_LangChain_1.png)
+![Multi-modal RAG](images/MM_RAG_LangChain_1.png)
 
 ### 3. **Ragas**
 * [GitHub](https://github.com/explodinggradients/ragas) 

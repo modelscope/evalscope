@@ -9,6 +9,13 @@
 RAG/RAG_Evaluation.md
 :::
 
+:::{card} OpenAI o1模型评测概述
+:link: openai-o1-evaluation
+:link-type: ref
+
+介绍了OpenAI o1模型效果评测，包括官方评测结果以及用户使用体验。
+:::
+
 :::{card} RAG 评估调研：框架、指标和方法
 :link: rag-evaluation
 :link-type: ref
