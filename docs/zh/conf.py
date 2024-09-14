@@ -80,7 +80,7 @@ source_suffix = ['.rst', '.md']
 html_title = "EvalScope"
 html_theme = 'sphinxawesome_theme'
 html_static_path = ['_static']
-html_favicon = "./_static/images/evalscope_icon_dark.png"
+html_favicon = "./_static/images/evalscope_icon.svg"
 html_permalinks_icon = "<span>#</span>"
 html_sidebars: dict[str, list[str]] = {
     "blog/**": ["sidebar_main_nav_links.html"],
@@ -93,7 +93,7 @@ pygments_style_dark = "one-dark"
 # Auto-generated header anchors
 myst_heading_anchors = 3
 # Enable "colon_fence" extension of myst.
-myst_enable_extensions = ['colon_fence', 'dollarmath']
+myst_enable_extensions = ['colon_fence', 'dollarmath', "amsmath", "tasklist"]
 
 # myst_number_code_blocks = ["python"]
 

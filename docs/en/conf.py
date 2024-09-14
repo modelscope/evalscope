@@ -80,7 +80,7 @@ source_suffix = ['.rst', '.md']
 html_title = "EvalScope"
 html_theme = 'sphinxawesome_theme'
 html_static_path = ['_static']
-html_favicon = "./_static/images/evalscope_icon_dark.png"
+html_favicon = "./_static/images/evalscope_icon.svg"
 html_permalinks_icon = "<span>#</span>"
 html_sidebars: dict[str, list[str]] = {
     "blog/**": ["sidebar_main_nav_links.html"],
