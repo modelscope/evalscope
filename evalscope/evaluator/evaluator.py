@@ -244,8 +244,8 @@ class Evaluator(object):
                 answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
 
                 if debug:
-                    logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                    logger.debug(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+                    logger.info(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
+                    logger.info(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
 
                 answers_list.append(answer_d)
 
@@ -349,7 +349,7 @@ class Evaluator(object):
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
 
             if debug:
-                logger.debug(review_d)
+                logger.info(review_d)
 
             reviews_list.append(review_d)
 

@@ -162,7 +162,9 @@ if __name__ == '__main__':
         # github url to be added
         url='https://github.com/modelscope/evalscope',
         include_package_data=True,
-        package_data={'evalscope': ['registry/tasks/*.yaml', 'benchmarks/bbh/cot_prompts/*.txt']},
+        package_data={'evalscope': ['registry/tasks/*.yaml',
+                                    'benchmarks/bbh/cot_prompts/*.txt',
+                                    'third_party/longbench_write/resources/*',]},
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',

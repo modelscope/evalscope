@@ -29,7 +29,7 @@ simple-ddl-parser
 tabulate
 tiktoken
 tqdm
-transformers>=4.33,<4.43
+transformers>=4.33
 transformers_stream_generator
 jieba
 rouge-chinese
