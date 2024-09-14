@@ -42,8 +42,12 @@ class RAGEvalBackendManager(BackendManager):
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")
-        if tool.upper() == "MTEB":
+        if tool.lower() == "MTEB":
             self._check_env("mteb")
             self.model_args = self.config_d["model"]
             self.eval_args = self.config_d["eval"]
             self.run_mteb()
+        elif tool.lower() == "ragas":
+            pass
+        else:
+            raise ValueError(f"Unknown tool: {tool}")

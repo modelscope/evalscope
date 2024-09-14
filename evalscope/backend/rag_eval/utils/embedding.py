@@ -55,7 +55,7 @@ class BaseModel(Embeddings):
         Returns:
             List of embeddings.
         """
-        return self.encode(texts)
+        return self.encode(texts).tolist()
 
     def embed_query(self, text: str) -> List[float]:
         """Embed query text.
@@ -66,7 +66,7 @@ class BaseModel(Embeddings):
         Returns:
             Embedding.
         """
-        return self.encode(text)
+        return self.encode(text).tolist()
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
         """Embed query text."""
@@ -102,7 +102,7 @@ class SentenceTransformerModel(BaseModel):
         self.model.max_seq_length = self.max_seq_length
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
-        kwargs.pop("prompt_name")  # remove prompt name, use prompt
+        kwargs.pop("prompt_name", "")  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
         embeddings = self.model.encode(texts, prompt=self.prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
@@ -138,12 +138,12 @@ class EmbeddingModel:
         model_name_or_path: str = "",
         is_cross_encoder: bool = False,
         hub: str = "modelscope",
-        revision: Optional[str] = None,
+        revision: Optional[str] = "master",
         **kwargs,
     ):
         # If model path does not exist and hub is 'modelscope', download the model
         if not os.path.exists(model_name_or_path) and hub == "modelscope":
-            model_name_or_path, revision = download_model(model_name_or_path, revision)
+            model_name_or_path = download_model(model_name_or_path, revision)
 
         # Return different model instances based on whether it is a cross-encoder and pooling mode
         if is_cross_encoder:
