@@ -302,7 +302,9 @@ CustomVQADataset.evaluate = CustomDataset.evaluate
 
 #### 3. 配置文件
 配置文件，可以为`python dict`、`yaml`或`json`格式，例如如下`config.yaml`文件：
-```yaml
+```{code-block} yaml 
+:caption: config.yaml
+
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -322,16 +324,20 @@ eval_config:
 ```
 
 #### 4. 运行评测
-````{note}
-此处需导入自定义数据集，评测脚本如下：
+````{important}
+脚本中需导入自定义数据集，
 ```python
 # 导入自定义数据集
+from custom_dataset import CustomDataset
+```
+````
+完整评测脚本如下：
+```python
 from custom_dataset import CustomDataset
 from evalscope.run import run_task
 
 run_task(task_cfg='config.yaml')
 ```
-````
 
 评测结果如下：
 ```text

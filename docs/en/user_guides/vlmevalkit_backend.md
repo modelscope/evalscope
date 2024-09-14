@@ -316,6 +316,11 @@ LOCAL_LLM: qwen2-7b-instruct # Judge model's model_id
 ```
 
 ## 4. Execute Evaluation Task
+
+```{caution}
+If you want the model to perform inference again, you need to clear the model prediction results in the `outputs` folder before running the script. Previous prediction results will not be automatically cleared, and **if they exist, the inference phase will be skipped** and the results will be evaluated directly.
+```
+
 After configuring the configuration file, run the following script:
 ```{code-block} python
 :caption: example_eval_openai_api.py

@@ -276,7 +276,9 @@ CustomVQADataset.evaluate = CustomDataset.evaluate
 ```
 #### 3. Configuration File
 The configuration file can be in `python dict`, `yaml`, or `json` format, for example, the `config.yaml` file below:
-```yaml
+```{code-block} yaml 
+:caption: config.yaml
+
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -295,17 +297,21 @@ eval_config:
   nproc: 1
 ```
 #### 4. Run Evaluation
-````{note}
-To import the custom dataset, the evaluation script is as follows:
+````{important}
+Remember to import the custom dataset first before running the evaluation.
 ```python
 # Import the custom dataset
+from custom_dataset import CustomDataset
+```
+````
+
+The complete evaluation script is as follows:
+```python
 from custom_dataset import CustomDataset
 from evalscope.run import run_task
 
 run_task(task_cfg='config.yaml')
 ```
-````
-
 The evaluation result is as follows:
 ```text
 {'qwen-vl-chat_custom_vqa_acc': {'Overall': '1.0'}}
