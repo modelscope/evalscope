@@ -4,7 +4,7 @@ absl-py
 #auto-gptq
 accelerate
 cachetools
-# datasets>=2.14.5
+datasets>=2.18.0,<3.0.0
 editdistance
 jsonlines
 matplotlib
@@ -29,7 +29,7 @@ simple-ddl-parser
 tabulate
 tiktoken
 tqdm
-transformers>=4.33,<4.43
+transformers>=4.33
 transformers_stream_generator
 jieba
 rouge-chinese

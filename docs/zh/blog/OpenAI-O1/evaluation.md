@@ -65,9 +65,7 @@ OpenAI O1模型系列包括两个主要模型：o1-preview和o1-mini。这两�
   - **GPT-4o**获得了**808的Elo积分**，超过了**11%**的人类选手。
   - 这次训练的新模型表现更为优异，其Elo积分高达**1807**，超越了**93%**的人类竞争者，远远甩开了**GPT-4o**和**o1**。
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/35b0aad3-be39-4c5a-bd4c-dbbb7a717ecb.png
-
-:alt: Further fine-tuning on programming competitions improves o1. The improved ranked in the 49th percentile in the 2024 International Olympiad in Informatics.
+```{figure} images/codeforces.png
 
 进一步对编程竞赛进行微调提升了 o1 性能。在 2024 年国际信息学奥林匹克竞赛中遵循竞赛规则的情况下，改进后的排名为第 49 百分位。
 ```
@@ -116,16 +114,12 @@ OpenAI O1模型系列包括两个主要模型：o1-preview和o1-mini。这两�
 
 通过这些测试和评估，o1 显示出了强大的推理能力和学术竞争力，标志着 AI 领域的新进展。
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/4c566b70-b417-4111-a57f-f8b92ef31b07.png
-
-:alt: o1与GPT-4o在具有挑战性的推理基准测试中的显著提高。实心条表示通过率（pass@1）准确度，阴影区域显示使用64个样本的多数投票（共识）性能。
+```{figure} images/AIME.png
 
 o1 在具有挑战性的推理基准测试中相比 GPT-4o 有显著提高。实心条表示每题通过率，而阴影区域显示用 64 次采样的多数投票（共识）性能。
 ```
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/02d59b92-87a8-4094-82b1-fa3e0cb973a2.png
-
-:alt: o1在包括54/57个MMLU子类别的广泛基准测试中相较于GPT-4o有所改善。为便于说明，展示了七个子类别。
+```{figure} images/MMLU.png
 
 o1 在广泛的基准测试中相比 GPT-4o 有所改善，包括 54/57 个 MMLU 子类别。为了说明，展示了七个子类别。
 ```
@@ -134,16 +128,11 @@ o1 在广泛的基准测试中相比 GPT-4o 有所改善，包括 54/57 个 MMLU
 
 OpenAI强调了o1模型在安全性方面的进步。o1-preview在OpenAI最严格的越狱测试中得分为84，远高于GPT-4o的22分。这表明o1模型在处理不安全提示和避免生成不当内容方面的能力有了显著提升。
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/96a632a8-afe1-4f9a-b2b8-fab10840cc34.png
-
-:alt: People prefer o1-preview in domains that benefit from better reasoning.
+```{figure} images/human_preference.png
 
 人们在需要更好推理的领域中更倾向于使用 o1-preview。
 ```
 
-### 用户体验
-
-尽管o1模型在性能上取得了显著进步，但用户反馈也指出了一些潜在的问题。例如，模型的响应时间较长，这可能会影响用户体验。此外，o1模型目前不支持图像生成和文件上传，这限制了其在某些应用场景中的实用性。
 
 ### 性能指标附录
 
@@ -173,8 +162,9 @@ OpenAI强调了o1模型在安全性方面的进步。o1-preview在OpenAI最严�
 ### 汉语新解 prompt 测试
 参考：[实际例子上手体验 OpenAI o1-preview，比预期差一点？](https://selfboot.cn/2024/09/13/gpto1_hands_on/)
 
-prompt: 
-
+<details>
+<summary>prompt</summary>
+ 
 ```lisp
 ;; 作者: 李继刚
 ;; 版本: 0.1
@@ -222,21 +212,19 @@ design-principles '(干净 简洁 纯色 典雅))
 ;; 2. 之后调用主函数 (汉语新解 用户输入)
 ```
 </details>
-每次必须在词语前面明确提示”生成 svg 源码” ，才能输出想要的 SVG 格式。
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/2ff99b89-308b-43dc-b54d-7ef0d7ffd13c.webp
 
+```{figure} images/claude3_5.png
 
 Claude3.5 汉语新解的示例
 ```
 
-```{figure} https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/4EZlwAeyLBbWqxAY/img/18a7fd6a-dfd9-4ca4-a7b2-1fadc9dbd8be.webp
-
+```{figure} images/o1_preview.png
 
 o1-preview 汉语新解的示例
 ```
 
-感觉 Claude3.5 生成的图更简洁美观些，o1-preview 生成的图有点粗糙。并且文字内容上，Claude3.5 的也更有深意，gpto1 的有点直白。
+> 每次必须在词语前面明确提示”生成 svg 源码” ，gpto1才能输出想要的 SVG 格式。 感觉 Claude3.5 生成的图更简洁美观些，o1-preview 生成的图有点粗糙。并且文字内容上，Claude3.5 的也更有深意，gpto1 的有点直白 😂
 
 ### 逻辑/数学推理
 
@@ -259,6 +247,7 @@ Q：农夫需要把狼、羊和白菜都带过河，但每次只能带一样物�
 这样，所有物品都能安全过河，并且避免了狼和羊单独相处，也避免了羊和白菜单独相处。
 </details>
 
+> 做对了👍
 
 #### **示例2:**
 
@@ -318,6 +307,8 @@ $$
 \boxed{6}
 $$
 </details>
+
+> 做对了👍 x2
 
 #### **示例3:**
 Q: 能给我讲一下抽象代数群环域的概念，并讲明白什么应用场景，举例
@@ -394,10 +385,26 @@ Q: 能给我讲一下抽象代数群环域的概念，并讲明白什么应用�
 通过理解群、环、域的概念及其应用，我们能够更深入地掌握数学的抽象思维方式，并将其应用于科学和工程的各个领域。
 </details>
 
+> 看不懂，不明觉厉 👍 x3
+
+#### **示例4:**
+
+Q: 未来的某天，李同学在实验室制作超导磁悬浮材料时，意外发现实验室的老鼠在空中飞，分析发现，是因为老鼠不小心吃了磁悬浮材料;第二天，李同学又发现实验室蛇也在空中飞，分析发现，是因为蛇吃了老鼠:第三天;李同学又发现实验室老鹰也在空中飞，你认为其原因是
+
+A: 李同学发现老鹰在空中飞的原因是老鹰吃了那些吃过老鼠的蛇，而这些老鼠曾经吃因此，老鹰在空中飞是因为它们摄入了含有磁悬浮材料的蛇。
+
+> 陷入逻辑陷阱了🤦
+
+## 用户体验总结
+
+OpenAI的o1在各个方面展现出了卓越的性能，尤其是在逻辑推理能力方面的明显提升。然而，尽管如此，它在处理一些简单的问题时，如“9.11和9.8谁大”，仍然会出现错误，并可能会陷入逻辑陷阱。这表明，尽管o1模型已经取得了显著的进展，但在特定情况下，它的逻辑判断能力仍然有待加强。
+
+与此同时，用户反馈也揭示了一些潜在的问题。例如，o1模型的响应时间相对较长，这可能会对用户体验产生负面影响。此外，目前o1并不支持图像生成和文件上传，这限制了它在某些特定应用场景中的实用性。随着技术的不断改进和用户需求的日益增长，如何优化这些不足，提升用户体验，将是未来发展的关键。
+
 ## 参考文章
 1.  [刚刚，OpenAI震撼发布o1大模型！强化学习突破LLM推理极限](https://www.jiqizhixin.com/articles/2024-09-13-4 )
 2.  [OpenAI 发布“草莓”模型，不卷训练卷推理了，理科能力评测达到“博士级”](https://www.36kr.com/p/2947769882909321) 
 4. [OpenAI o1模型官方介绍](https://openai.com/index/introducing-openai-o1-preview/)
 5. [实际体验GPT-O1模型](https://selfboot.cn/2024/09/13/gpto1_hands_on/)
 6. [OpenAI发布o1推理模型](https://www.thepaper.cn/newsDetail_forward_28729012)
-7. [https://mp.weixin.qq.com/s/-DeHD6vjf0Tt5bwmeeQuXA](https://mp.weixin.qq.com/s/-DeHD6vjf0Tt5bwmeeQuXA)
+7. [「草莓」实测：可能只是工程 Trick，且有扣费陷阱！](https://mp.weixin.qq.com/s/-DeHD6vjf0Tt5bwmeeQuXA)

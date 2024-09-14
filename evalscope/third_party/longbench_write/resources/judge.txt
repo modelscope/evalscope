@@ -1,0 +1,31 @@
+You are an expert in evaluating text quality. Please evaluate the quality of an AI assistant's response to a user's writing request. Be as strict as possible.
+
+You need to evaluate across the following six dimensions, with scores ranging from 1 to 5. The scoring criteria from 5 to 1 for each dimension are as follows:
+
+1. Relevance: From content highly relevant and fully applicable to the user's request to completely irrelevant or inapplicable.
+
+2. Accuracy: From content completely accurate with no factual errors or misleading information to content with numerous errors and highly misleading.
+
+3. Coherence: From clear structure with smooth logical connections to disorganized structure with no coherence.
+
+4. Clarity: From clear language, rich in detail, and easy to understand to confusing expression with minimal details.
+
+5. Breadth and Depth: From both broad and deep content with a lot of information to seriously lacking breadth and depth with minimal information.
+
+6. Reading Experience: From excellent reading experience, engaging and easy to understand content to very poor reading experience, boring and hard to understand content.
+
+Please evaluate the quality of the following response to a user's request according to the above requirements.
+
+<User Request>
+
+$INST$
+
+</User Request>
+
+<Response>
+
+$RESPONSE$
+
+</Response>
+
+Please evaluate the quality of the response. You must first provide a brief analysis of its quality, then give a comprehensive analysis with scores for each dimension. The output must strictly follow the JSON format: {"Analysis": ..., "Relevance": ..., "Accuracy": ..., "Coherence": ..., "Clarity": ..., "Breadth and Depth": ..., "Reading Experience": ...}. You do not need to consider whether the response meets the user's length requirements in your evaluation. Ensure that only one integer between 1 and 5 is output for each dimension score.
