@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os.path
-from typing import List, Dict
+from typing import List
 import re
 import json
 
@@ -97,7 +97,7 @@ class DataETL:
 
         return out_file
 
-    def process_eval_length(self, in_file: str, threshold: float = 75):
+    def process_eval_length(self, in_file: str, threshold: float = 80):
         data_list = jsonl_to_list(in_file)
 
         res_list = []
@@ -110,6 +110,10 @@ class DataETL:
             y = ex['response_length']
             if x == 0 or y == 0:
                 continue
+
+            if x / y > 3:
+                print(f'\n>>ex: {json.dumps(ex, ensure_ascii=False)}')
+                print(f'>>length: {x}, response_length: {y}\n')
 
             x_list.append(x)
             y_list.append(y)
@@ -140,10 +144,9 @@ class DataETL:
 if __name__ == "__main__":
     # run `no_required_length`: got 1748 exampels left
 
-    # TODO: /path/to/long.jsonl
     # Refer to: https://modelscope.cn/datasets/ZhipuAI/LongWriter-6k/files
-    longbench_write_file = '/Users/jason/workspace/work/maas/github/longwriter_work/data/long.jsonl'
-    out_dir = '/Users/jason/workspace/work/maas/github/longwriter_work/data'
+    longbench_write_file = '/path/to/long.jsonl'
+    out_dir = '/path/to/your_output_dir'
 
     data_etl = DataETL(in_file=longbench_write_file, out_dir=out_dir)
     filtered_file_path = data_etl.process_filter()
