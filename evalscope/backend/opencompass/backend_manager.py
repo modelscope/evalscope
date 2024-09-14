@@ -242,4 +242,6 @@ if __name__ == '__main__':
                 'limit': 5
                 }
     )
+    all_datasets = OpenCompassBackendManager.list_datasets()
+    print(f'all_datasets: {all_datasets}')
     oc_backend_manager.run()

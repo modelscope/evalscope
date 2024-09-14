@@ -51,15 +51,15 @@ UNLIMITED_RATE = -1
 
 
 async def on_request_start(session, context, params):
-    logger.debug(f'Starting request: <{params}>')
+    logger.info(f'Starting request: <{params}>')
 
 
 async def on_request_chunk_sent(session, context, params):
-    logger.debug(f'Request body: {params}')
+    logger.info(f'Request body: {params}')
 
 
 async def on_response_chunk_received(session, context, params):
-    logger.debug(f'Response info: <{params}>')
+    logger.info(f'Response info: <{params}>')
 
 
 class AioHttpClient:
@@ -116,7 +116,7 @@ class AioHttpClient:
                 line = line.decode("utf8")
                 line = line.rstrip("\n").rstrip("\r")
                 if self.debug:
-                    logger.debug(line)
+                    logger.info(line)
                 sse_msg = ServerSentEvent.decode(line)
                 if not sse_msg:
                     continue
@@ -567,7 +567,7 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue, benchmark_
                     else:
                         if response_data:
                             collected_messages.append(response_data)  # save the message
-                            logger.debug(response_data)
+                            logger.info(response_data)
                             benchmark_data["chunk_times"].append(time.perf_counter())
 
                 benchmark_data["response_messages"] = collected_messages
