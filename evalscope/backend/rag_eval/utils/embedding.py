@@ -1,20 +1,23 @@
 import os
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Union
 from sentence_transformers import models
 from sentence_transformers.SentenceTransformer import SentenceTransformer
 from sentence_transformers.cross_encoder import CrossEncoder
 from torch import Tensor
+from evalscope.backend.rag_eval.utils.tools import download_model
 from evalscope.utils.logger import get_logger
+from langchain_core.embeddings import Embeddings
 
 logger = get_logger()
 
 
-class BaseModel:
+class BaseModel(Embeddings):
     def __init__(
         self,
         model_name_or_path: str,
         max_seq_length: int = 512,
         prompt: str = "",
+        revision: Optional[str] = None,
         **kwargs,
     ):
         self.model_name_or_path = model_name_or_path
@@ -29,6 +32,7 @@ class BaseModel:
         self.encode_kwargs["convert_to_tensor"] = True
 
         self.prompt = prompt
+        self.revision = revision
 
     @property
     def mteb_model_meta(self):
@@ -36,11 +40,37 @@ class BaseModel:
         from mteb import ModelMeta
 
         return ModelMeta(
-            name=self.model_name,
-            revision=self.model_revision,
+            name=os.path.basename(self.model_name_or_path),
+            revision=self.revision,
             languages=None,
             release_date=None,
         )
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Embed search docs.
+
+        Args:
+            texts: List of text to embed.
+
+        Returns:
+            List of embeddings.
+        """
+        return self.encode(texts)
+
+    def embed_query(self, text: str) -> List[float]:
+        """Embed query text.
+
+        Args:
+            text: Text to embed.
+
+        Returns:
+            Embedding.
+        """
+        return self.encode(text)
+
+    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
+        """Embed query text."""
+        raise NotImplementedError
 
 
 class SentenceTransformerModel(BaseModel):
@@ -70,22 +100,13 @@ class SentenceTransformerModel(BaseModel):
             )
 
         self.model.max_seq_length = self.max_seq_length
-        self.update_model_info()
 
-    def encode(self, texts: List[str], **kwargs) -> List[List[float]]:
+    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
         kwargs.pop("prompt_name")  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
         embeddings = self.model.encode(texts, prompt=self.prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
-
-    def update_model_info(self):
-        """Update model information from model card"""
-        model_card = self.model.model_card_data
-        self.model_name = model_card.model_name or os.path.basename(
-            self.model_name_or_path
-        )
-        self.model_revision = model_card.base_model_revision or "v1"
 
 
 class CrossEncoderModel(BaseModel):
@@ -96,18 +117,15 @@ class CrossEncoderModel(BaseModel):
             trust_remote_code=True,
             max_length=self.max_seq_length,
         )
-        self.update_model_info()
 
-    def update_model_info(self):
-        self.model_name = os.path.basename(self.model_name_or_path)
-        self.model_revision = "v1"
-
-    def predict(self, sentences: List[str], **kwargs) -> List[List[float]]:
+    def predict(self, sentences: List[List[str]], **kwargs) -> List[List[float]]:
         self.encode_kwargs.update(kwargs)
-        updated_sentences = [
-            (self.prompt + query, docs) for query, docs, instruction in sentences
-        ]
-        embeddings = self.model.predict(updated_sentences, **self.encode_kwargs)
+
+        if len(sentences[0]) == 3:  # Note: For mteb retrieval task
+            sentences = [
+                (self.prompt + query, docs) for query, docs, instruction in sentences
+            ]
+        embeddings = self.model.predict(sentences, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
 
@@ -120,23 +138,23 @@ class EmbeddingModel:
         model_name_or_path: str = "",
         is_cross_encoder: bool = False,
         hub: str = "modelscope",
+        revision: Optional[str] = None,
         **kwargs,
     ):
         # If model path does not exist and hub is 'modelscope', download the model
         if not os.path.exists(model_name_or_path) and hub == "modelscope":
-            from modelscope import snapshot_download
-
-            logger.info(f"Loading model {model_name_or_path} from modelscope")
-            model_name_or_path = snapshot_download(model_name_or_path)
+            model_name_or_path, revision = download_model(model_name_or_path, revision)
 
         # Return different model instances based on whether it is a cross-encoder and pooling mode
         if is_cross_encoder:
             return CrossEncoderModel(
                 model_name_or_path,
+                revision=revision,
                 **kwargs,
             )
         else:
             return SentenceTransformerModel(
                 model_name_or_path,
+                revision=revision,
                 **kwargs,
             )

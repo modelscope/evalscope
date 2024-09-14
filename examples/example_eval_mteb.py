@@ -86,6 +86,7 @@ def run_eval():
                 "verbosity": 2,
                 "output_folder": "outputs",
                 "overwrite_results": True,
+                "limits": 100,
             },
         },
     }

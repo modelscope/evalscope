@@ -15,35 +15,35 @@ class RAGEvalBackendManager(BackendManager):
         Args:
             config (Union[str, dict]): the configuration yaml-file or the configuration dictionary
         """
-        self._check_env()
         super().__init__(config, **kwargs)
 
     @staticmethod
-    def _check_env():
-        if is_module_installed("mteb"):
-            logger.info("Check `mteb` Installed")
+    def _check_env(module_name: str):
+        if is_module_installed(module_name):
+            logger.info(f"Check `{module_name}` Installed")
         else:
-            logger.error("Please install `mteb` and `ragas` first")
+            logger.error(f"Please install `{module_name}` first")
 
     def run_mteb(self):
         from evalscope.backend.rag_eval.cmteb import ModelArguments, EvalArguments
         from evalscope.backend.rag_eval.cmteb import one_stage_eval, two_stage_eval
-        if len(self.model_args) == 1:
-            model_args = ModelArguments(**self.model_args[0]).to_dict()
-            eval_args = EvalArguments(**self.eval_args).to_dict()
-            one_stage_eval(model_args, eval_args)
-        elif len(self.model_args) == 2:
-            model1_args = ModelArguments(**self.model_args[0]).to_dict()
-            model2_args = ModelArguments(**self.model_args[1]).to_dict()
-            eval_args = EvalArguments(**self.eval_args).to_dict()
-            two_stage_eval(model1_args, model2_args, eval_args)
-        else:
+
+        if len(self.model_args) > 2:
             raise ValueError("Not support multiple models yet")
-        
+
+        # Convert arguments to dictionary
+        model_args_list = [ModelArguments(**args).to_dict() for args in self.model_args]
+        eval_args = EvalArguments(**self.eval_args).to_dict()
+
+        if len(model_args_list) == 1:
+            one_stage_eval(model_args_list[0], eval_args)
+        else:  # len(model_args_list) == 2
+            two_stage_eval(model_args_list[0], model_args_list[1], eval_args)
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")
         if tool.upper() == "MTEB":
-            self.model_args =self.config_d['model']
-            self.eval_args = self.config_d['eval']
+            self._check_env("mteb")
+            self.model_args = self.config_d["model"]
+            self.eval_args = self.config_d["eval"]
             self.run_mteb()
