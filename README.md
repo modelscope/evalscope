@@ -158,7 +158,7 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 
 #### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
-- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/LLM/Supported-models-datasets.html) for filling in this field.
+- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html) for filling in this field.
 - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html) for available options.
 
 ### 2. Parameterized Evaluation
