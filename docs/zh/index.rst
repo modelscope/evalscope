@@ -61,6 +61,7 @@
    :caption: 第三方工具
    
    third_party/toolbench.md
+   third_party/longwriter.md
 
 .. _最佳实践:
 .. toctree::
