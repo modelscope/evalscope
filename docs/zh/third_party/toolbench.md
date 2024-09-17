@@ -91,7 +91,7 @@ eval_args:
   input_path: output_res
   output_path: output_res
 ```
-refer to [config_default.yaml](../../../evalscope/third_party/toolbench_static/config_default.yaml) for more details.
+refer to [config_default.yaml](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/toolbench_static/config_default.yaml) for more details.
 
 
 ### Run the task

@@ -1,10 +1,10 @@
-# LongWriter
+# LongBench-Write
 
 ## Description
 The LongWriter supports 10,000+ Word Generation From Long Context LLMs.
-We can use the benchmark LongBench-Write focuses more on measuring the long output quality as well as the output length.
+We can use the benchmark **LongBench-Write** focuses more on measuring the long output quality as well as the output length.
 
-Refer to https://github.com/THUDM/LongWriter
+Refer to [LongWriter](https://github.com/THUDM/LongWriter)
 
 ## Usage
 
@@ -42,7 +42,7 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
 - Arguments:
   - `stage`: To run multiple stages, `infer`--run the inference process. `eval_l`--run eval length process. `eval_q`--run eval quality process.
   - `model`: model id on the ModelScope hub, or local model dir.
-  - `input_data_path`: input data path, default to `None`, it means to use [longbench_write](../../../evalscope/third_party/longbench_write/resources/longbench_write.jsonl)
+  - `input_data_path`: input data path, default to `None`, it means to use [longbench_write](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/resources/longbench_write.jsonl)
   - `output_dir`: output root directory.
   - `openai_api_key`: openai_api_key when enabling the stage `eval_q` to use `Model-as-Judge`. Default to None if not needed.
   - `openai_gpt_model`: Judge model name from OpenAI. Default to `gpt-4o-2024-05-13`
@@ -73,7 +73,7 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
     "proc_num": 8
 }
 ```
-Refer to [default_task.json](../../../evalscope/third_party/longbench_write/resources/longbench_write.jsonl) for more details.
+Refer to [default_task.json](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/default_task.json) for more details.
 
 
 2. Configuration with yaml (Optional):
@@ -98,7 +98,7 @@ eval_generation_kwargs:
 proc_num: 8
 
 ```
-Refer to [default_task.yaml](../../../evalscope/third_party/longbench_write/resources/longbench_write.jsonl) for more details.
+Refer to [default_task.yaml](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/default_task.yaml) for more details.
 
 
 
