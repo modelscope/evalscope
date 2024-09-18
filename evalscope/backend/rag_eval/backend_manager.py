@@ -40,14 +40,29 @@ class RAGEvalBackendManager(BackendManager):
         else:  # len(model_args_list) == 2
             two_stage_eval(model_args_list[0], model_args_list[1], eval_args)
 
+    def run_ragas(self):
+        from evalscope.backend.rag_eval.ragas import rag_eval, testset_generation
+        from evalscope.backend.rag_eval.ragas import (
+            TestsetGenerationArguments,
+            EvaluationArguments,
+        )
+
+        if self.testset_args is not None:
+            testset_generation(TestsetGenerationArguments(**self.testset_args))
+        if self.eval_args is not None:
+            rag_eval(EvaluationArguments(**self.eval_args))
+
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")
-        if tool.lower() == "MTEB":
+        if tool.lower() == "mteb":
             self._check_env("mteb")
             self.model_args = self.config_d["model"]
             self.eval_args = self.config_d["eval"]
             self.run_mteb()
         elif tool.lower() == "ragas":
-            pass
+            self._check_env("ragas")
+            self.testset_args = self.config_d.get("testset_generation", None)
+            self.eval_args = self.config_d.get("eval", None)
+            self.run_ragas()
         else:
             raise ValueError(f"Unknown tool: {tool}")

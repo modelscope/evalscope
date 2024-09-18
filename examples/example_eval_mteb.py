@@ -16,12 +16,6 @@ logger = get_logger()
 def run_eval():
 
     # Prepare the config
-    model_name1 = "Jerry0/m3e-base"
-
-    # model_name = "OpenBMB//embedding/MiniCPM-Embedding"
-    # model_name = "Xorbits/bge-reranker-base"
-    # model_name2 = "OpenBMB/MiniCPM-Reranker"
-    model_name2 = "jinaai/jina-reranker-v2-base-multilingual"
 
     one_stage_task_cfg = {
         "eval_backend": "RAGEval",
@@ -29,10 +23,10 @@ def run_eval():
             "tool": "MTEB",
             "model": [
                 {
-                    "model_name_or_path": model_name1,
+                    "model_name_or_path": "AI-ModelScope/m3e-base",
                     "pooling_mode": None,  # load from model config
                     "max_seq_length": 512,
-                    "prompt": "为这个问题生成一个检索用的表示",
+                    "prompt": "",
                     "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
                         "batch_size": 128,
@@ -61,7 +55,7 @@ def run_eval():
             "tool": "MTEB",
             "model": [
                 {
-                    "model_name_or_path": model_name1,
+                    "model_name_or_path": "AI-ModelScope/m3e-base",
                     "is_cross_encoder": False,
                     "max_seq_length": 512,
                     "prompt": "",
@@ -71,10 +65,10 @@ def run_eval():
                     },
                 },
                 {
-                    "model_name_or_path": model_name2,
+                    "model_name_or_path": "OpenBMB/MiniCPM-Reranker",
                     "is_cross_encoder": True,
                     "max_seq_length": 512,
-                    "prompt": "",
+                    "prompt": "为这个问题生成一个检索用的表示",
                     "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
                         "batch_size": 32,

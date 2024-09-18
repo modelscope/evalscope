@@ -4,7 +4,8 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from evalscope.models.model_adapter import ChatGenerationModelAdapter
-
+from langchain_openai import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
 
 class LLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""
@@ -55,3 +56,4 @@ class LLM(BaseLLM):
     def _llm_type(self) -> str:
         """Get the type of language model used by this chat model. Used for logging purposes only."""
         return self.model_name
+
