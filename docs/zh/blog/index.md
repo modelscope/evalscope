@@ -7,6 +7,7 @@
 :::{toctree}
 :hidden:
 RAG/RAG_Evaluation.md
+OpenAI-O1/evaluation.md
 :::
 
 :::{card} OpenAI o1模型评测概述

@@ -96,8 +96,6 @@ refer to [config_default.yaml](config_default.yaml) for more details.
 ### Run the task
 
 ```python
-```python
-```python
 from evalscope.third_party.toolbench_static import run_task
 
 # Run the task with dict configuration
