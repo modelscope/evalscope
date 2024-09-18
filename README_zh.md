@@ -44,7 +44,7 @@
   - **Pairwise (all) mode**：所有模型间的两两对比。
 - **可视化工具**：提供直观的评估结果展示。
 - **模型性能评估**：提供模型推理服务压测工具和详细统计，详见[模型性能评估文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)。
-- **OpenCompass集成**：支持OpenCompass作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
+- **OpenCompass集成**：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
 - **VLMEvalKit集成**：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
 - **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。
 
@@ -63,7 +63,7 @@
 
 3. **Evaluation Backend**: 
     - **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
-    - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后段，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
+    - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
     - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
     - **ThirdParty**：其他第三方评估任务，如ToolBench。
 
@@ -76,6 +76,8 @@
 </details>
 
 ## 🎉 新闻
+- 🔥 **[2024.09.18]** 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎[📖阅读](https://evalscope.readthedocs.io/zh-cn/latest/blog/index.html)
+- 🔥 **[2024.09.12]** 支持 LongWriter 评估，您可以使用基准测试 [LongBench-Write](evalscope/third_party/longbench_write/README.md) 来评测长输出的质量以及输出长度。
 - 🔥 **[2024.08.30]** 支持自定义数据集评测，包括文本数据集和多模态图文数据集。
 - 🔥 **[2024.08.20]** 更新了官方文档，包括快速上手、最佳实践和常见问题等，欢迎[📖阅读](https://evalscope.readthedocs.io/zh-cn/latest/)。
 - 🔥 **[2024.08.09]** 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评估体验，基于OpenAI API方式的评估链路，最高加速10倍。
