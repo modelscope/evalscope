@@ -44,6 +44,7 @@ Contents
    user_guides/arena.md
    user_guides/opencompass_backend.md
    user_guides/vlmevalkit_backend.md
+   user_guides/rageval_backend/index.md
    user_guides/stress_test.md
 
 .. _AdvancedTutorials:

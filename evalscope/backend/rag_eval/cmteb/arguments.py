@@ -21,8 +21,7 @@ class ModelArguments:
     encode_kwargs: dict = field(
         default_factory=lambda: {
             "show_progress_bar": True,
-            "batch_size": 32,
-            "normalize_embeddings": True,
+            "batch_size": 32
         }
     )
     hub: str = "modelscope"  # modelscope or huggingface
