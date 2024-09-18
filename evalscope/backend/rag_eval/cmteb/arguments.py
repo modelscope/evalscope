@@ -5,7 +5,7 @@ import torch
 
 @dataclass
 class ModelArguments:
-    # Model
+    # Arguments for embeding model: sentence transformer or cross encoder
     model_name_or_path: str = ""  # model name or path
     is_cross_encoder: bool = False  # whether the model is a cross encoder
     # pooling mode: Either “cls”, “lasttoken”, “max”, “mean”, “mean_sqrt_len_tokens”, or “weightedmean”.

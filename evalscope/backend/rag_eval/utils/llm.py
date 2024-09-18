@@ -9,7 +9,7 @@ from evalscope.models.model_adapter import ChatGenerationModelAdapter
 class LLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""
 
-    model_id: str
+    model_name_or_path: str
     model_revision: str = "master"
     template_type: str = "default"
     model_name: Optional[str]
@@ -18,9 +18,9 @@ class LLM(BaseLLM):
 
     def __init__(self, **kw):
         super().__init__(**kw)
-        self.model_name = os.path.basename(self.model_id)
+        self.model_name = os.path.basename(self.model_name_or_path)
         self.model = ChatGenerationModelAdapter(
-            self.model_id,
+            model_id=self.model_name_or_path,
             model_revision=self.model_revision,
             template_type=self.template_type,
             generation_config=self.generation_config,
