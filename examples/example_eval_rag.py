@@ -1,11 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-"""
-1. Installation
-EvalScope: pip install mteb
-
-2. Run eval task
-"""
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
 
@@ -13,13 +7,13 @@ logger = get_logger()
 
 
 def run_eval():
-    task_cfg = {
+    generate_testset_task_cfg = {
         "eval_backend": "RAGEval",
         "eval_config": {
             "tool": "RAGAS",
             "testset_generation": {
                 "docs": ["README.md"],
-                "test_size": 10,
+                "test_size": 5,
                 "output_file": "outputs/testset.json",
                 "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
                 # The generator_llm is the component that generates the questions, and evolves the question to make it more relevant.
@@ -35,7 +29,14 @@ def run_eval():
                 "embeddings": {
                     "model_name_or_path": "AI-ModelScope/m3e-base",
                 },
-            },
+            }
+        },
+    }
+    
+    eval_task_cfg = {
+        "eval_backend": "RAGEval",
+        "eval_config": {
+            "tool": "RAGAS",
             "eval": {
                 "testset_file": "outputs/testset.json",
                 "critic_llm": {
@@ -46,8 +47,8 @@ def run_eval():
                     "model_name_or_path": "AI-ModelScope/m3e-base",
                 },
                 "metrics": [
-                    "answer_relevancy",
                     "faithfulness",
+                    "answer_relevancy",
                     "context_precision",
                     "answer_correctness",
                 ],
@@ -56,7 +57,7 @@ def run_eval():
     }
 
     # Run task
-    run_task(task_cfg=task_cfg)
+    run_task(task_cfg=eval_task_cfg) # or run_task(task_cfg=generate_testset_task_cfg)
 
 
 if __name__ == "__main__":

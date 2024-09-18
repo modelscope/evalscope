@@ -14,7 +14,7 @@ def testset_generation(args: TestsetGenerationArguments) -> None:
 
     # load data
     file_path = args.docs
-    loader = UnstructuredFileLoader(file_path)
+    loader = UnstructuredFileLoader(file_path, mode="elements")
     data = loader.load()
 
     # generator with models
@@ -43,8 +43,40 @@ def testset_generation(args: TestsetGenerationArguments) -> None:
 
     # save file
     testset_df = testset.to_pandas()
-    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+    output_path = os.path.dirname(args.output_file)
+    os.makedirs(output_path, exist_ok=True)
     testset_df.to_json(args.output_file, indent=4, index=False, orient="records")
+
+    # get answer
+    testset_with_answer = get_answer(testset_df, generator_llm)
+    testset_with_answer.to_json(
+        args.output_file, indent=4, index=False, orient="records"
+    )
+
+
+def get_answer(testset_df, generator_llm):
+    template = """You are an assistant for question-answering tasks. 
+Use the following pieces of retrieved context to answer the question. 
+If you don't know the answer, just say that you don't know. 
+Use two sentences maximum and keep the answer concise.
+Question: {question} 
+Context: {contexts} 
+Answer:
+"""
+    answers = []
+    for index, row in testset_df.iterrows():
+        question = row["question"]
+        contexts = "\n".join(row["contexts"])
+
+        # Combine question and contexts as input for the LLM
+        input_text = template.format(question=question, contexts=contexts)
+
+        # Generate the answer using the generator LLM
+        answer = generator_llm.invoke(input_text)
+        answers.append(answer)
+
+    testset_df["answer"] = answers
+    return testset_df
 
 
 def rag_eval(
@@ -53,6 +85,7 @@ def rag_eval(
     from datasets import Dataset
     from ragas import evaluate
     from evalscope.backend.rag_eval import EmbeddingModel, LLM
+    from ragas import RunConfig
     import importlib
 
     def dynamic_import(module_name, *function_names):
@@ -67,15 +100,18 @@ def rag_eval(
 
     dataset = Dataset.from_json(args.testset_file)
 
+    runconfig = RunConfig(timeout=30, max_retries=1, max_wait=30, max_workers=1)
     score = evaluate(
         dataset,
         metrics=dynamic_import("ragas.metrics", *args.metrics),
         llm=llm,
         embeddings=embedding,
+        run_config=runconfig,
     )
     score_df = score.to_pandas()
+    logger.info(score_df.to_string())
 
-    output_path = os.path.dirname(args.testset_file)
+    output_path = args.testset_file.split(".")[0] + "_score.json"
     score_df.to_json(output_path, indent=4, index=False, orient="records")
 
-    logger.info(score_df.to_markdown())
+    logger.info(f"Score saved to {output_path}")
