@@ -43,8 +43,14 @@ def run_eval():
                     "template_type": "qwen",
                 },
                 "embeddings": {
-                    "model_name_or_path": "Jerry0/m3e-base",
+                    "model_name_or_path": "AI-ModelScope/m3e-base",
                 },
+                "metrics": [
+                    "answer_relevancy",
+                    "faithfulness",
+                    "context_precision",
+                    "answer_correctness",
+                ],
             },
         },
     }

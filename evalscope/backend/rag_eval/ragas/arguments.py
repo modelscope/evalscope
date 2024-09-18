@@ -20,3 +20,6 @@ class EvaluationArguments:
     testset_file: str
     critic_llm: Dict = field(default_factory=dict)
     embeddings: Dict = field(default_factory=dict)
+    metrics: List[str] = field(
+        default_factory=lambda: ["answer_relevancy", "faithfulness"]
+    )
