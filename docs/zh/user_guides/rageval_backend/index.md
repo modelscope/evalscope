@@ -11,7 +11,7 @@ ragas.md
 
 - 端到端评估方法：评估RAG模型对给定输入生成的最终响应，包括模型生成答案与输入查询的相关性和对齐程度。从内容生成目标视角来评估可以将评估划分为未标记内容和已标记内容。未标记内容评估指标包括 **答案忠实度(Answer Fidelity)、答案相关性(Answer Relevance)、无害性(Harmlessness)** 等，而已标记内容评估指标包括准确率(Accuracy)和精确匹配(Exact Match, EM)。
 
-本框架支持使用[MTEB](mteb.md)进行检索模块的独立评测，以及使用[RAGAS](ragas.md)进行端到端评测。
+本框架支持使用[MTEB/CMTEB](mteb.md)进行检索模块的独立评测，以及使用[RAGAS](ragas.md)进行端到端评测。
 
 ::::{grid} 2
 :::{grid-item-card}  MTEB
