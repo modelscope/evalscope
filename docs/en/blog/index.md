@@ -6,6 +6,7 @@
 :::{toctree}
 :hidden:
 RAG/RAG_Evaluation.md
+OpenAI-O1/evaluation.md
 :::
 
 :::{card} RAG Evaluation Survey: Framework, Metrics, and Methods

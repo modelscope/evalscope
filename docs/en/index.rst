@@ -60,6 +60,7 @@ Contents
    :caption: Third-Party Tools
    
    third_party/toolbench.md
+   third_party/longwriter.md
 
 .. _BestPractices:
 .. toctree::
