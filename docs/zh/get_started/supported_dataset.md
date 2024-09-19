@@ -339,7 +339,7 @@
 | [**TableVQABench**](https://arxiv.org/abs/2404.19205)+     | TableVQABench                                        | VQA                      |
 
 ```{note}
-**\*** 只提供了部分模型上的[测试结果]((https://huggingface.co/spaces/opencompass/open_vlm_leaderboard))，剩余模型无法在 zero-shot 设定下测试出合理的精度
+**\*** 只提供了部分模型上的[测试结果](https://huggingface.co/spaces/opencompass/open_vlm_leaderboard)，剩余模型无法在 zero-shot 设定下测试出合理的精度
 
 **\+** 尚未提供这个评测集的测试结果
 

@@ -1,8 +1,15 @@
 ![EvalScope Logo](../_static/images/evalscope_logo.png)
 <br>
-# Welcome to the EvalScope Blog!
 
-:::{card} RAG Evaluation
+# Welcome to the EvalScope Blogs!
+
+:::{toctree}
+:hidden:
+RAG/RAG_Evaluation.md
+OpenAI-O1/evaluation.md
+:::
+
+:::{card} RAG Evaluation Survey: Framework, Metrics, and Methods
 :link: rag-evaluation
 :link-type: ref
 
