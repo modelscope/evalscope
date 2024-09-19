@@ -243,7 +243,8 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 - **Native**: EvalScope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode.
 - [OpenCompass](https://github.com/open-compass/opencompass): Initiate OpenCompass evaluation tasks through EvalScope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework ms-swift. [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/opencompass_backend.html)
 - [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through EvalScope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework ms-swift. [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/vlmevalkit_backend.html)
-- **ThirdParty**: The third-party task, e.g. [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html), you can contribute your own evaluation task to EvalScope as third-party backend.
+- **RAGEval**: Initiate RAG evaluation tasks through EvalScope, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/rageval_backend/ragas.html): [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/rageval_backend/index.html)
+- **ThirdParty**: Third-party evaluation tasks, such as [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) and [LongBench-Write](https://evalscope.readthedocs.io/en/latest/third_party/longwriter.html).
 
 ## Custom Dataset Evaluation
 EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
@@ -272,6 +273,8 @@ Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 
 ## TO-DO List
+- [x] RAG evaluation
+- [x] VLM evaluation
 - [x] Agents evaluation
 - [x] vLLM
 - [ ] Distributed evaluating
@@ -283,3 +286,7 @@ Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 - [ ] Auto-reviewer
   - [ ] Qwen-max
 
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)

@@ -1,4 +1,4 @@
-# RAGEval Evaluation Backend
+# RAGEval Backend
 :::{toctree}
 :hidden:
 mteb.md
