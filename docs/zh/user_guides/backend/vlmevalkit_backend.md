@@ -7,7 +7,7 @@
 ## 1. 环境准备
 ```shell
 # 安装额外依赖
-pip install evalscope[vlmeval]
+pip install evalscope[vlmeval] -U
 ```
 
 ## 2. 数据准备

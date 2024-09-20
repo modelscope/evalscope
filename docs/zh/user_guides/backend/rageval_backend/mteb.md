@@ -51,7 +51,7 @@
 ## 环境准备
 安装依赖包
 ```bash
-pip install mteb
+pip install evalscope[rag] -U
 ```
 
 ## 配置评测参数

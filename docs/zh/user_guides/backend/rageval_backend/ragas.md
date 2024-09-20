@@ -15,7 +15,7 @@
 ## 环境准备
 安装依赖
 ```shell
-pip install ragas
+pip install evalscope[rag] -U
 ```
 
 ## 数据集准备
