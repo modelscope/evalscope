@@ -2,7 +2,7 @@
 
 ## 1. Native Supported Datasets
 ```{tip}
-The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/vlmevalkit_backend.md) for multi-modal model evaluation.
+The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/backend/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md) for multi-modal model evaluation.
 ```
 
 | Dataset Name       | Link                                                                                   | Status | Note |

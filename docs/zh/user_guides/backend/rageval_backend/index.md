@@ -1,11 +1,15 @@
-# RAGEval 评测后端
+(rageval)=
+
+# RAGEval
 :::{toctree}
 :hidden:
+:maxdepth: 1
+
 mteb.md
 ragas.md
 :::
 
-经过RAG评测相关的[调研](../../blog/RAG/RAG_Evaluation.md)，本项目现支持两种评估RAG的方法：独立评估(Independent Evaluation)和端到端评估(End-to-End Evaluation)：
+经过RAG评测相关的[调研](../../../blog/RAG/RAG_Evaluation.md)，本项目现支持两种评估RAG的方法：独立评估(Independent Evaluation)和端到端评估(End-to-End Evaluation)：
 
 - 独立评估方法：单独评估检索模块(Retrieval Module)和生成模块(Generation Module)，其中检索模块评估指标包括指标包括 **命中率(Hit Rate)、平均排名倒数(Mean Reciprocal Rank, MRR)、归一化折扣累积增益(Normalized Discounted Cumulative Gain, NDCG)、准确率(Precision)** 等，这些指标用于测量系统在根据查询或任务排名项目方面的有效性。而生成模块评估通常在端到端评估中进行。评估指标主要关注上下文相关性，测量检索到的文档与查询问题的相关性​​。
 

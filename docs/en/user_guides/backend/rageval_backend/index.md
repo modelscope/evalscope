@@ -1,11 +1,12 @@
-# RAGEval Backend
+(rageval)=
+# RAGEval
 :::{toctree}
 :hidden:
 mteb.md
 ragas.md
 :::
 
-After the research on RAG evaluation-related topics [investigated](../../blog/RAG/RAG_Evaluation.md), this project now supports two methods for evaluating RAG: Independent Evaluation and End-to-End Evaluation:
+After the research on RAG evaluation-related topics [investigated](../../../blog/RAG/RAG_Evaluation.md), this project now supports two methods for evaluating RAG: Independent Evaluation and End-to-End Evaluation:
 
 - **Independent Evaluation Method**: Evaluates the Retrieval Module and Generation Module separately. The evaluation metrics for the Retrieval Module include **Hit Rate, Mean Reciprocal Rank (MRR), Normalized Discounted Cumulative Gain (NDCG), Precision**, etc. These metrics are used to measure the effectiveness of the system in ranking items based on queries or tasks. The evaluation for the Generation Module is usually conducted during the End-to-End Evaluation. The metrics focus primarily on contextual relevance, measuring the relevance of retrieved documents to the query.
 
