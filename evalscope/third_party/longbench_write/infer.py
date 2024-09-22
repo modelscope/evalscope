@@ -173,7 +173,7 @@ def run_infer(model: str,
     for item in data_list_temp:
         _, is_chinese = count_words(item['prompt'])
         required_length = item['length']
-        re_2_suffix = f'再强调一遍，要求输出严格控制在{required_length}字。' if is_chinese else 'Read the question again, please make sure the output is exactly {required_length} words.'
+        re_2_suffix = f'再强调一遍，要求输出严格控制在{required_length}字。' if is_chinese else f'Read the question again, please make sure the output is exactly {required_length} words.'
         item['prompt'] = item['prompt'] + '\n' + re_2_suffix
         data_list.append(item)
 
