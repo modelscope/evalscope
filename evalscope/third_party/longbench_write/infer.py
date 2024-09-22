@@ -174,8 +174,8 @@ def run_infer(model: str,
         _, is_chinese = count_words(item['prompt'])
         required_length = item['length']
         raw_prompt = item['prompt']
-        re_2_suffix = f"再读一遍问题：{raw_prompt}" if is_chinese else f'Read the question again: {raw_prompt}'
-        # re_2_suffix = f'再读一遍问题，请严格确保输出{required_length}字。' if is_chinese else f'Read the question again, please make sure the output is exactly {required_length} words.'
+        # re_2_suffix = f"再读一遍问题：{raw_prompt}" if is_chinese else f'Read the question again: {raw_prompt}'
+        re_2_suffix = f'再读一遍问题，请严格确保输出{required_length}字。' if is_chinese else f'Read the question again, please make sure the length of output is exactly {required_length} words.'
         item['prompt'] = raw_prompt + '\n' + re_2_suffix
         data_list.append(item)
 
