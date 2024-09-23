@@ -12,7 +12,9 @@ def count_words(text):
 
     total_count = chinese_char_count + english_word_count
 
-    return total_count
+    is_chinese = chinese_char_count > english_word_count
+
+    return total_count, is_chinese
 
 
 def chinese_to_arabic(chinese_number: str) -> int:
