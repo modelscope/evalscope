@@ -85,7 +85,7 @@ class DataETL:
         for example in filtered_data:
             assistant_messages = example['messages'][1]
             assert assistant_messages['role'] == 'assistant'
-            response_length = count_words(assistant_messages['content'])
+            response_length, _ = count_words(assistant_messages['content'])
             example['response_length'] = response_length
 
         # Dump the filtered data to the output file

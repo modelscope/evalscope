@@ -47,7 +47,7 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
         else:
             response, history = model.chat(tokenizer, prompt, history=[], max_new_tokens=max_new_tokens,
                                            temperature=temperature)
-        dt["response_length"] = count_words(response)
+        dt["response_length"], _ = count_words(response)
         dt["response"] = response
 
         logger.info(dt)
@@ -168,6 +168,7 @@ def run_infer(model: str,
     # TODO: add load data from ms
     with open(data_path, encoding='utf-8') as f:
         data_list = [json.loads(line) for line in f]
+
     logger.info(f'Input example: {data_list[0]}')
 
     api_client = OpenaiApi(model=model,
@@ -190,7 +191,7 @@ def run_infer(model: str,
     output_pred_file: str = f'{model_id_path}/pred.jsonl'
     with open(output_pred_file, 'w', encoding='utf-8') as f:
         for dt, res in zip(data_list, results):
-            dt["response_length"] = count_words(res)
+            dt["response_length"], _ = count_words(res)
             dt["response"] = res
             f.write(json.dumps(dt, ensure_ascii=False) + '\n')
 
