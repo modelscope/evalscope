@@ -46,7 +46,7 @@ def run_swift_eval():
         eval_backend='OpenCompass',
         eval_config={'datasets': ['cmb', 'ARC_e'],
                      'models': [
-                         {'path': 'qwen2-1_5b-instruct',
+                         {'path': 'qwen2-1_5b-instruct',  # Please make sure the model is deployed
                           'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                           'is_chat': True,
                           'batch_size': 16},
