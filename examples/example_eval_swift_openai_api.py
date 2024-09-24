@@ -9,6 +9,7 @@ wget https://github.com/open-compass/opencompass/releases/download/0.2.2.rc1/Ope
 unzip OpenCompassData-core-20240207.zip
 
 3. Deploy model serving
+    swift deploy --model_type qwen2-1_5b-instruct
 
 4. Run eval task
 """
@@ -45,7 +46,7 @@ def run_swift_eval():
         eval_backend='OpenCompass',
         eval_config={'datasets': ['cmb', 'ARC_e'],
                      'models': [
-                         {'path': 'Qwen2-1.5B-Instruct',
+                         {'path': 'qwen2-1_5b-instruct',  # Please make sure the model is deployed
                           'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                           'is_chat': True,
                           'batch_size': 16},
