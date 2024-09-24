@@ -7,7 +7,7 @@ with read_base():
     from opencompass.configs.datasets.agieval.agieval_gen_64afd3 import agieval_datasets
     from opencompass.configs.datasets.GaokaoBench.GaokaoBench_gen_5cfe9e import GaokaoBench_datasets
     from opencompass.configs.datasets.humaneval.humaneval_gen_8e312c import humaneval_datasets
-    from opencompass.configs.datasets.mbpp.deprecated_mbpp_gen_1e1056 import mbpp_datasets
+    from opencompass.configs.datasets.mbpp.mbpp_gen_830460 import mbpp_datasets
     from opencompass.configs.datasets.CLUE_C3.CLUE_C3_gen_8c358f import C3_datasets
     from opencompass.configs.datasets.CLUE_CMRC.CLUE_CMRC_gen_1bd3c8 import CMRC_datasets
     from opencompass.configs.datasets.CLUE_DRCD.CLUE_DRCD_gen_1bd3c8 import DRCD_datasets
@@ -45,7 +45,7 @@ with read_base():
     from opencompass.configs.datasets.piqa.piqa_gen_1194eb import piqa_datasets
     from opencompass.configs.datasets.siqa.siqa_gen_e78df3 import siqa_datasets
     from opencompass.configs.datasets.strategyqa.strategyqa_gen_1180a7 import strategyqa_datasets
-    from opencompass.configs.datasets.winogrande.deprecated_winogrande_gen_a9ede5 import winogrande_datasets
+    from opencompass.configs.datasets.winogrande.winogrande_gen_458220 import winogrande_datasets
     from opencompass.configs.datasets.obqa.obqa_gen_9069e4 import obqa_datasets
     from opencompass.configs.datasets.nq.nq_gen_c788f6 import nq_datasets
     from opencompass.configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
