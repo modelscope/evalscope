@@ -1,6 +1,6 @@
 # 简介
 
-大型语言模型评估（LLMs Evaluation）是评价和改进大型模型的关键流程。为了提升这一评估过程的效率和效果，我们设计了**EvalScope**框架。
+EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评估与性能基准测试框架，内置多个常用测试基准和评估指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持。
 
 ## 整体架构
 ![EvalScope 架构图](../_static/images/evalscope_framework.png)

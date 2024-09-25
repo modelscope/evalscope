@@ -1,5 +1,5 @@
 # Introduction
-Large Language Model Evaluation (LLMs Evaluation) is a key process for assessing and improving large models. To enhance the efficiency and effectiveness of this evaluation process, we have designed the **EvalScope** framework.
+EvalScope is the official model evaluation and performance benchmarking framework launched by the [ModelScope](https://modelscope.cn/) community. It comes with built-in common benchmarks and evaluation metrics, such as MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, and HumanEval. EvalScope supports various types of model evaluations, including LLMs, multimodal LLMs, embedding models, and reranker models. It is also applicable to multiple evaluation scenarios, such as end-to-end RAG evaluation, arena mode, and model inference performance stress testing. Moreover, with the seamless integration of the ms-swift training framework, evaluations can be initiated with a single click, providing full end-to-end support from model training to evaluation.
 
 ## Overall Architecture
 ![EvalScope Architecture Diagram](../_static/images/evalscope_framework.png)
