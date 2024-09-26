@@ -17,7 +17,7 @@ EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评估与
     - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
     - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
     - **ThirdParty**：其他第三方评估任务，如[ToolBench](../third_party/toolbench.md)。
-
+    - **RAGEval**：支持RAG评估，支持使用[MTEB/CMTEB](../user_guides/backend/rageval_backend/mteb.md)进行embedding模型和reranker的独立评测，以及使用[RAGAS](../user_guides/backend/rageval_backend/ragas.md)进行端到端评测。
 4. **Performance Evaluator**: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。
 
 5. **Evaluation Report**: 最终生成的评估报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。
