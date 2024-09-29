@@ -19,7 +19,7 @@ pyyaml
 regex
 requests
 requests-toolbelt
-rouge-score
+rouge-score>=0.1.0
 sacrebleu
 scikit-learn
 seaborn
