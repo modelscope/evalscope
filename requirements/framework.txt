@@ -9,7 +9,7 @@ editdistance
 jsonlines
 matplotlib
 modelscope[framework]
-nltk
+nltk>=3.9
 openai
 pandas
 plotly
