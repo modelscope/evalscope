@@ -31,6 +31,7 @@ In these examples settings.xml lists input files and formats.
 from __future__ import absolute_import, division, print_function
 import collections
 import re
+import os
 
 import nltk
 import numpy as np
@@ -38,6 +39,24 @@ import six
 from absl import logging
 from rouge_score import scoring, tokenizers
 from six.moves import map, range
+from evalscope.utils import get_logger
+
+logger = get_logger()
+
+# Deal with nltk punkt_tab.zip tokenizer file to avoid downloading issue
+try:
+    nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data/tokenizers')
+    os.makedirs(nltk_dir, exist_ok=True)
+    punkt_path = os.path.join(nltk_dir, 'punkt_tab.zip')
+    punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
+
+    if not os.path.exists(punkt_path):
+        os.system(f'wget -P {nltk_dir} {punkt_tab_url}')
+        os.system(f'unzip {punkt_path} -d {nltk_dir}')
+    else:
+        logger.info(f'{punkt_path} already exists, skipping download')
+except Exception as e:
+    logger.error(f'Try to download punkt_tab.zip for nltk failed: {e}')
 
 
 class RougeScorer(scoring.BaseScorer):
