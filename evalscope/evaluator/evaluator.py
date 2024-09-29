@@ -174,6 +174,7 @@ class Evaluator(object):
         """
         assert self.data_adapter is not None, 'data_adapter must be provided when calling func get_answers() !'
         assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
+        assert len(prompts_list) > 0, 'prompts_list must not be empty when calling func get_answers() !'
 
         answers_list = []
         pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
