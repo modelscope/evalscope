@@ -20,6 +20,7 @@ from transformers import StoppingCriteriaList
 from llmuses.models.openai_model import OpenAIModel
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
+from modelscope.outputs import OutputKeys
 
 logger = get_logger()
 
@@ -46,6 +47,11 @@ def load_model(
     if model_type == "text-to-image":
         task = Tasks.text_to_image_synthesis
         pipe = pipeline(task=task, model=model_id, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
+        tokenizer, model_cfg = None, {"model_id": model_id}
+        return pipe, tokenizer, model_cfg
+
+    if model_type == "text-to-video":
+        p = pipeline('text-to-video-synthesis', model_id)
         tokenizer, model_cfg = None, {"model_id": model_id}
         return pipe, tokenizer, model_cfg
 
@@ -557,6 +563,68 @@ class ImageGenerationModelAdapter(BaseModelAdapter):
         choices_list = [
             {'index': 0,
              'message': {'content': [img_path for img_path in imgs_path],
+                         'role': 'assistant'}
+            }
+        ]
+
+        res_d = {
+            'choices': choices_list,
+            'created': time.time(),
+            'model': self.model_id,
+            'object': 'chat.completion',
+            'usage': {}
+        }
+
+        return res_d
+
+
+class VideoGenerationModelAdapter(BaseModelAdapter):
+
+    def __init__(self,
+                 model_id: str,
+                 model,
+                 tokenizer,
+                 model_cfg,
+                 model_revision: str = None,
+                 **kwargs):
+        self.model_id: str = model_id
+        self.model_revision: str = model_revision
+
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.warning(f'**Device: {self.device}')
+
+        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
+
+    def _model_generate(self, query: str, infer_cfg: dict, dimension: str = "temporal_flickering") -> str:
+        imgs_path = []
+        test_text = {
+            "text": query
+        }
+        video_path = f"./{dimension}.mp4"
+        output_video_path = self.model(test_text, output_video=video_path)[OutputKeys.OUTPUT_VIDEO]
+        
+        return output_video_path
+
+    @torch.no_grad()
+    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = dict({})) -> dict:
+        print(type(inputs))
+
+        # Process inputs
+        if isinstance(inputs, str):
+            query = inputs
+        elif isinstance(inputs, dict):
+            query = inputs['data'][0]
+            dimension = inputs['dimension']
+        elif isinstance(inputs, list):
+            query = '\n'.join(inputs)
+        else:
+            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+
+        video_path = self._model_generate(query, infer_cfg, uniq_id)
+
+        choices_list = [
+            {'index': 0,
+             'message': {'content': video_path,
                          'role': 'assistant'}
             }
         ]
