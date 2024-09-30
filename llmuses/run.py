@@ -201,6 +201,7 @@ def main():
                                 base_url=base_url,
                                 api_key=api_key)
         else:
+            model_type = "text-to-video" if "vbench" in datasets_list else "causallm"
             model_type = "text-to-image" if "coco_2014_caption" in datasets_list else "causallm"
             model, tokenizer, model_cfg = load_model(model_id=model_id,
                                                     device_map=model_args.get("device_map", "auto"),
