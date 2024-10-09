@@ -28,7 +28,7 @@ def one_stage_eval(
     eval_args,
 ) -> None:
     # load model
-    model = EmbeddingModel.from_pretrained(**model_args)
+    model = EmbeddingModel.load(**model_args)
 
     # load task first to update instructions
     tasks = cmteb.TaskBase.get_tasks(task_names=eval_args["tasks"])
@@ -48,8 +48,8 @@ def two_stage_eval(
 ) -> None:
     """a two-stage run with the second stage reading results saved from the first stage."""
     # load model
-    dual_encoder = EmbeddingModel.from_pretrained(**model1_args)
-    cross_encoder = EmbeddingModel.from_pretrained(**model2_args)
+    dual_encoder = EmbeddingModel.load(**model1_args)
+    cross_encoder = EmbeddingModel.load(**model2_args)
 
     first_stage_path = f"{eval_args['output_folder']}/stage1"
     second_stage_path = f"{eval_args['output_folder']}/stage2"

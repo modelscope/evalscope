@@ -18,9 +18,9 @@ def testset_generation(args: TestsetGenerationArguments) -> None:
     data = loader.load()
 
     # generator with models
-    generator_llm = LLM(**args.generator_llm)
-    critic_llm = LLM(**args.critic_llm)
-    embeddings = EmbeddingModel.from_pretrained(**args.embeddings)
+    generator_llm = LLM.load(**args.generator_llm)
+    critic_llm = LLM.load(**args.critic_llm)
+    embeddings = EmbeddingModel.load(**args.embeddings)
 
     # Change resulting question type distribution
     distributions = {
@@ -95,8 +95,8 @@ def rag_eval(
         functions = [getattr(module, name) for name in function_names]
         return functions
 
-    llm = LLM(**args.critic_llm)
-    embedding = EmbeddingModel.from_pretrained(**args.embeddings)
+    llm = LLM.load(**args.critic_llm)
+    embedding = EmbeddingModel.load(**args.embeddings)
 
     dataset = Dataset.from_json(args.testset_file)
 

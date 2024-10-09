@@ -90,7 +90,7 @@ Configuration file description:
 - `eval_backend`: string, description: The name of the evaluation backend, e.g., "RAGEval".
 - `eval_config`: dictionary, description: Contains detailed information about the evaluation configuration.
   - `tool`: string, description: The name of the evaluation tool, e.g., "RAGAS".
-  - `testset_generation`: dictionary, description: Configuration for test set generation.
+  - `testset_generation`: dictionary, description: Configuration for test set generation:
     - `docs`: list, description: A list of documents needed for test set generation, e.g., ["README.md"].
     - `test_size`: integer, description: The size of the generated test set, e.g., 5.
     - `output_file`: string, description: The path for the generated output file, e.g., "outputs/testset.json".
@@ -98,14 +98,17 @@ Configuration file description:
       - `simple`: float, description: The distribution proportion of simple content, e.g., 0.5.
       - `multi_context`: float, description: The distribution proportion of multi-context content, e.g., 0.4.
       - `reasoning`: float, description: The distribution proportion of reasoning content, e.g., 0.1.
-    - `generator_llm`: dictionary, description: Configuration for the generator LLM (large language model).
-      - `model_name_or_path`: string, description: The name or path of the generator model, e.g., "qwen/Qwen2-7B-Instruct".
-      - `template_type`: string, description: The template type, e.g., "qwen".
-      - `generation_config`: dictionary, description: Generation configuration, e.g., `{"temperature": 0.7}`.
-    - `critic_llm`: dictionary, description: Configuration for the evaluator LLM.
-      - `model_name_or_path`: string, description: The name or path of the evaluator model, e.g., "QwenCollection/Ragas-critic-llm-Qwen1.5-GPTQ".
-      - `template_type`: string, description: The template type, e.g., "qwen".
-      - `generation_config`: dictionary, description: Generation configuration, e.g., `{"temperature": 0.7}`.
+
+    - `generator_llm`: dictionary, description: Configuration for the generator LLM (Large Language Model):
+        - If using a local model, the following parameters are supported:
+            - `model_name_or_path`: string, description: The name or path of the generator model. Enter a name, e.g., "qwen/Qwen2-7B-Instruct" to automatically download the model from ModelScope; enter a path to load the model locally.
+            - `template_type`: string, description: Template type, e.g., "qwen".
+            - `generation_config`: dictionary, description: Generation configuration, e.g., `{"temperature": 0.7}`.
+        - If using an API model, the following parameters are supported:
+            - `model_name`: string, custom name for the model.
+            - `api_base`: string, custom base URL.
+            - `api_key`: optional, your API key.
+    - `critic_llm`: dictionary, description: Configuration for the evaluator LLM, same as above.
     - `embeddings`: dictionary, description: Configuration for the embedding model.
       - `model_name_or_path`: string, description: The name or path of the embedding model, e.g., "AI-ModelScope/m3e-base".
 

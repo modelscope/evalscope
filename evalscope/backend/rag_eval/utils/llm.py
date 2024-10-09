@@ -4,9 +4,24 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from evalscope.models.model_adapter import ChatGenerationModelAdapter
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 
-class LLM(BaseLLM):
+class LLM:
+    @staticmethod
+    def load(**kw):
+        api_base = kw.get("api_base", None)
+        if api_base:
+            return ChatOpenAI(
+                model_name=kw.get("model_name", ""),
+                openai_api_base=api_base,
+                openai_api_key=kw.get("api_key", ""),
+            )
+        else:
+            return LocalLLM(**kw)
+
+
+class LocalLLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""
 
     model_name_or_path: str

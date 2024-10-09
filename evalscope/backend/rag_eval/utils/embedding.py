@@ -134,7 +134,7 @@ class EmbeddingModel:
     """Custom embeddings"""
 
     @staticmethod
-    def from_pretrained(
+    def load(
         model_name_or_path: str = "",
         is_cross_encoder: bool = False,
         hub: str = "modelscope",

@@ -90,6 +90,36 @@ class TestRAGAS(unittest.TestCase):
 
         run_task(task_cfg)
 
+    @unittest.skipUnless(0 in test_level_list(), "skip test in current test level")
+    def test_run_rag_eval_api(self):
+        task_cfg = {
+            "eval_backend": "RAGEval",
+            "eval_config": {
+                "tool": "RAGAS",
+                "eval": {
+                    "testset_file": "outputs/testset.json",
+                    "critic_llm": {
+                        "model_name": "gpt-4o-mini",  # 自定义聊天模型名称
+                        "api_base": "http://127.0.0.1:8088/v1",  # 自定义基础URL
+                        "api_key": "xxxx",  # 你的API密钥
+                    },
+                    "embeddings": {
+                        "model_name_or_path": "AI-ModelScope/m3e-base",
+                    },
+                    "metrics": [
+                        "faithfulness",
+                        "answer_relevancy",
+                        "context_precision",
+                        "answer_correctness",
+                    ],
+                },
+            },
+        }
+
+        logger.info(f">> Start to run task: {task_cfg}")
+
+        run_task(task_cfg)
+
 
 if __name__ == "__main__":
     unittest.main(buffer=False)
