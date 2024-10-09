@@ -1,4 +1,5 @@
-# OpenCompass Backend
+(opencompass)=
+# OpenCompass
 
 To facilitate the use of the OpenCompass evaluation backend, we have customized the OpenCompass source code and named it `ms-opencompass`. This version optimizes task configuration and execution and supports installation via PyPI, enabling users to initiate lightweight OpenCompass evaluation tasks through EvalScope. Additionally, we initially provide an interface for evaluation tasks based on the OpenAI API format. You can deploy model services using [ms-swift](https://github.com/modelscope/swift) , [vLLM](https://github.com/vllm-project/vllm) , [LMDeploy](https://github.com/InternLM/lmdeploy) , [Ollama](https://ollama.ai/), etc., to launch model inference services.
 
@@ -10,7 +11,7 @@ pip install evalscope[opencompass] -U
 
 ## 2. Data Preparation
 ````{note}
-There are three ways to download datasets. The automatic download method supports fewer datasets than the manual download method. Please use as needed. For detailed dataset information, refer to the [OpenCompass Dataset List](https://hub.opencompass.org.cn/home).
+There are two ways to download datasets. The automatic download method supports fewer datasets than the manual download method. Please use as needed. For detailed dataset information, refer to the [OpenCompass Dataset List](https://hub.opencompass.org.cn/home).
 You can view the dataset name list using the following code:
 ```python
 from evalscope.backend.opencompass import OpenCompassBackendManager

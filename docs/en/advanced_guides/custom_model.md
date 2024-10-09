@@ -10,7 +10,7 @@ See [Basic Usage Guide: Submitting Evaluation Tasks with run_task](../get_starte
 
 ### Method 2: Using OpenCompass Evaluation
 ```{seealso}
-See [OpenCompass Usage Guide](../user_guides/opencompass_backend.md)
+See [OpenCompass Usage Guide](../user_guides/backend/opencompass_backend.md)
 ```
 -----
 ## VLM Model Evaluation
@@ -18,5 +18,5 @@ Currently, evaluation of multimodal models only supports the VLMEvalKit backend.
 
 ### Using VLMEvalKit Backend
 ```{seealso}
-See [VLMEvalKit Usage Guide](../user_guides/vlmevalkit_backend.md)
+See [VLMEvalKit Usage Guide](../user_guides/backend/vlmevalkit_backend.md)
 ```

@@ -8,7 +8,7 @@ class CustomDataset:
 
     def load_data(self, dataset):
         # customize the loading of the dataset
-        data_path = os.path.join("~/LMUData", f'{dataset}.tsv')
+        data_path = os.path.join(os.path.expanduser("~/LMUData"), f'{dataset}.tsv')
         return load(data_path)
 
 

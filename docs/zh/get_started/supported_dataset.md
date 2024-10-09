@@ -3,7 +3,7 @@
 ## 1. 原生支持的数据集
 
 ```{tip}
-目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/opencompass_backend.md)进行语言模型评估；或使用[VLMEvalKit backend](../user_guides/vlmevalkit_backend.md)进行多模态模型评估。
+目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/backend/opencompass_backend.md)进行语言模型评估；或使用[VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评估。
 ```
 
 | 名称        | 链接                                                                                   | 状态 | 备注 |

@@ -145,7 +145,7 @@ Custom dataset evaluation requires the use of `VLMEvalKit` and requires the inst
 ```shell
 pip install evalscope[vlmeval]
 ```
-Reference: [Using VLMEvalKit for Evaluation Backend](../user_guides/vlmevalkit_backend.md)
+Reference: [Using VLMEvalKit for Evaluation Backend](../user_guides/backend/vlmevalkit_backend.md)
 ````
 
 ### Multiple-Choice Question Format (MCQ)

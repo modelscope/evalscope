@@ -207,6 +207,10 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
             vlm_eval_kit_backend_manager = VLMEvalKitBackendManager(config=eval_config)
             vlm_eval_kit_backend_manager.run()
+        elif eval_backend == EvalBackend.RAG_EVAL.value:
+            from evalscope.backend.rag_eval import RAGEvalBackendManager
+            rag_eval_backend_manager = RAGEvalBackendManager(config=eval_config)
+            rag_eval_backend_manager.run()
         # TODO: Add other evaluation backends
         elif eval_backend == EvalBackend.THIRD_PARTY.value:
             raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
