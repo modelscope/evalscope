@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import unittest
 from evalscope.utils import test_level_list, is_module_installed
 from evalscope.utils.logger import get_logger
