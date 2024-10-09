@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict, Any
-import torch
 
 
 @dataclass
@@ -19,10 +18,7 @@ class ModelArguments:
     config_kwargs: Dict[str, Any] = field(default_factory=dict)
     # encode kwargs
     encode_kwargs: dict = field(
-        default_factory=lambda: {
-            "show_progress_bar": True,
-            "batch_size": 32
-        }
+        default_factory=lambda: {"show_progress_bar": True, "batch_size": 32}
     )
     hub: str = "modelscope"  # modelscope or huggingface
 

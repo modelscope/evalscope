@@ -4,7 +4,7 @@ from mteb import AbsTask
 from datasets import DatasetDict
 from modelscope import MsDataset
 import datasets
-from .tasks import CLS_DICT, CLS_RETRIEVAL
+from evalscope.backend.rag_eval.cmteb.tasks import CLS_DICT, CLS_RETRIEVAL
 
 __all__ = ["TaskBase"]
 

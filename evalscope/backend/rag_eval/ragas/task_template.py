@@ -109,9 +109,9 @@ def rag_eval(
         run_config=runconfig,
     )
     score_df = score.to_pandas()
-    logger.info(score_df.to_string())
+    # logger.info(score_df.to_string())
 
     output_path = args.testset_file.split(".")[0] + "_score.json"
     score_df.to_json(output_path, indent=4, index=False, orient="records")
 
-    logger.info(f"Score saved to {output_path}")
+    logger.info(f"Eval score saved to {output_path}")
