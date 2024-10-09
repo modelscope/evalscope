@@ -143,11 +143,13 @@ if __name__ == '__main__':
     all_requires = []
     extra_requires['opencompass'], _ = parse_requirements('requirements/opencompass.txt')
     extra_requires['vlmeval'], _ = parse_requirements('requirements/vlmeval.txt')
+    extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
     extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])
     all_requires.extend(extra_requires['vlmeval'])
+    all_requires.extend(extra_requires['rag'])
     extra_requires['all'] = all_requires
 
     setup(

@@ -162,7 +162,7 @@ run_task(task_cfg=task_cfg)
 ```shell
 pip install evalscope[vlmeval]
 ```
-参考：[使用VLMEvalKit评测后端](../user_guides/vlmevalkit_backend.md)
+参考：[使用VLMEvalKit评测后端](../user_guides/backend/vlmevalkit_backend.md)
 ````
 
 ### 选择题格式（MCQ）

@@ -1,4 +1,6 @@
-# OpenCompass 评测后端
+(opencompass)=
+
+# OpenCompass
 
 为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，来拉起模型推理服务。
 
@@ -14,7 +16,7 @@ pip install evalscope[opencompass] -U
 ````{note}
 有以下两种方式下载数据集
 
-数据集的详细信息可以参考[OpenCompass数据集列表](../get_started/supported_dataset.md#2-opencompass支持的数据集)
+数据集的详细信息可以参考[OpenCompass数据集列表](../../get_started/supported_dataset.md#2-opencompass支持的数据集)
 
 您可以使用以下方式，来查看数据集的名称列表：
 ```python

@@ -12,7 +12,7 @@
 
 ### 方式2. 使用 OpenCompass 评估
 ```{seealso}
-参考 [OpenCompass使用指南](../user_guides/opencompass_backend.md)
+参考 [OpenCompass使用指南](../user_guides/backend/opencompass_backend.md)
 ```
 
 -----
@@ -24,5 +24,5 @@
 ### 使用 VLMEvalKit 评估后端
 
 ```{seealso}
-参考 [VLMEvalKit使用指南](../user_guides/vlmevalkit_backend.md)
+参考 [VLMEvalKit使用指南](../user_guides/backend/vlmevalkit_backend.md)
 ```
