@@ -1,7 +1,7 @@
 (mteb)=
 
 # MTEB
-This framework supports [MTEB](https://github.com/embeddings-benchmark/mteb) and [CMTEB](https://github.com/embeddings-benchmark/mteb), with the following details:
+This framework supports [MTEB](https://github.com/embeddings-benchmark/mteb) and [CMTEB](https://github.com/FlagOpen/FlagEmbedding/blob/master/C_MTEB/README.md), with the following details:
 
 - MTEB (Massive Text Embedding Benchmark) is a large-scale benchmark designed to measure the performance of text embedding models across diverse embedding tasks. MTEB includes 56 datasets covering 8 tasks and supports over 112 different languages. The goal of this benchmark is to assist developers in finding the best text embedding models suitable for various tasks.
 

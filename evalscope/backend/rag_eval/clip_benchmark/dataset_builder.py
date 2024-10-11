@@ -9,7 +9,7 @@ logger = get_logger()
 
 def build_dataset(
     dataset_name,
-    root="root",
+    root=None,
     transform=None,
     split="test",
     wds_cache_dir=None,
@@ -39,6 +39,8 @@ def build_dataset(
         where keys are classnames and values are class-specific prompts.
 
     """
+    if root:
+        root = os.path.join(root, dataset_name)
 
     if dataset_name == "dummy":
         ds = Dummy()
@@ -155,7 +157,9 @@ def build_wds_dataset(
                 value = file.read()
         return value
 
-    # Special handling for Huggingface datasets
+    if not data_dir:
+        data_dir = f"https://modelscope.cn/datasets/clip-benchmark/wds_{dataset_name}/resolve/master"
+
     # Git LFS files have a different file path to access the raw data than other files
     if data_dir.startswith("https://modelscope.cn/datasets"):
         # Format: https://modelscope.cn/datasets/<USERNAME>/<REPO>/resolve/<BRANCH>
