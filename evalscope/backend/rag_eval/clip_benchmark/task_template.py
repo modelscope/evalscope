@@ -29,6 +29,7 @@ def evaluate(args: Arguments):
     output_dir = args.output_dir
     cache_dir = args.cache_dir
     skip_existing = args.skip_existing
+    limit = args.limit
 
     # Iterate over model and dataset combinations
     for model_name_or_path, dataset_name in product(model_name_or_paths, dataset_names):
@@ -86,10 +87,11 @@ def evaluate(args: Arguments):
                 zeroshot_templates,
                 device=device,
                 verbose=verbose,
+                limit=limit,
             )
         elif task == "zeroshot_retrieval":
             metrics = zeroshot_retrieval.evaluate(
-                model, dataloader, recall_k_list=[5], device=device
+                model, dataloader, recall_k_list=[5], device=device, limit=limit
             )
 
         # Prepare dump data

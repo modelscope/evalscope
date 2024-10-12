@@ -9,7 +9,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def evaluate(model, dataloader, device, amp=True, recall_k_list=[5]):
+def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None):
     """
     Evaluate the model on the given dataset
 
@@ -32,6 +32,9 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5]):
     recall_k_list: list of int
         recall@k k's to use
 
+    limit: int
+        maximum number of samples to evaluate
+
     Returns
     -------
 
@@ -43,6 +46,7 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5]):
     batch_texts_emb_list = []
     # for each text, we collect the corresponding image index, as each image can have multiple corresponding texts
     texts_image_index = []
+    sample_count = 0
     dataloader = dataloader_with_indices(dataloader)
     autocast = torch.amp.autocast if amp else suppress
     for batch_images, batch_texts, inds in tqdm(dataloader):
@@ -60,6 +64,14 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5]):
         batch_images_emb_list.append(batch_images_emb.cpu())
         batch_texts_emb_list.append(batch_texts_emb.cpu())
         texts_image_index.extend(batch_texts_image_index)
+
+        if limit is not None:
+            # Update sample counter
+            sample_count += len(batch_images)
+
+            # Stop if limit is reached
+            if sample_count >= limit:
+                break
 
     batch_size = len(batch_images_emb_list[0])
 

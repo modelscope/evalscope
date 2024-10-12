@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List
 
+
 @dataclass
 class Arguments:
+    # fmt: off
     """
     A dataclass to store and manage the arguments for the model configuration and data processing.
     """
@@ -16,3 +18,4 @@ class Arguments:
     output_dir: str = "outputs"  # Directory where the outputs (e.g., predictions, logs) will be saved
     cache_dir: str = "cache"  # Directory where the dataset cache will be stored
     skip_existing: bool = False  # Flag to skip processing if outputs already exist
+    limit: int = None # Limit the number of samples to be processed

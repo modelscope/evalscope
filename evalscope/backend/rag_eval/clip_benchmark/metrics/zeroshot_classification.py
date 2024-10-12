@@ -166,7 +166,16 @@ def average_precision_per_class(scores, targets):
     return ap
 
 
-def evaluate(model, dataloader, classnames, templates, device, amp=True, verbose=False):
+def evaluate(
+    model,
+    dataloader,
+    classnames,
+    templates,
+    device,
+    amp=True,
+    verbose=False,
+    limit=None,
+):
     """
     Run zero-shot classification and evaluate the metrics
 

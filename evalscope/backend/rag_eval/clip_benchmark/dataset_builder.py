@@ -77,6 +77,7 @@ class Dummy:
 
 def get_dataset_default_task(dataset):
     if dataset in (
+        "muge",
         "flickr30k",
         "flickr8k",
         "mscoco_captions",
@@ -231,11 +232,3 @@ def build_wds_dataset(
             dataset.templates = None
 
     return dataset
-
-
-if __name__ == "__main__":
-    build_dataset(
-        "wds/flickr8k",
-        root="https://modelscope.cn/datasets/clip-benchmark/wds_flickr8k/resolve/master",
-        wds_cache_dir="data",
-    )

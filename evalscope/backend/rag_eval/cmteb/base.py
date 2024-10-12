@@ -9,7 +9,6 @@ from evalscope.backend.rag_eval.cmteb.tasks import CLS_DICT, CLS_RETRIEVAL
 __all__ = ["TaskBase"]
 
 
-
 class TaskBase:
 
     @staticmethod
