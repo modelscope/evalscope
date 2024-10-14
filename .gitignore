@@ -152,6 +152,4 @@ test*.ipynb
 *.ttf
 _build/
 swift.test*
-/custom
-/custom_qa
 /cache

@@ -25,7 +25,9 @@ def run_eval():
                 "model_name_or_path": [
                     "AI-ModelScope/chinese-clip-vit-large-patch14-336px"
                 ],
-                "dataset_name": ["muge", "flickr8k"],
+                # "dataset_name": ["muge", "flickr8k"],
+                "dataset_name": ["custom"],
+                "data_dir": "custom_eval/multimodal/text-image-retrieval",
                 "split": "test",
                 "batch_size": 128,
                 "num_workers": 1,

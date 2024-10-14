@@ -4,6 +4,8 @@ from .PairClassification import *
 from .Reranking import *
 from .Retrieval import *
 from .STS import *
+from .CustomTask import *
+
 
 CLS_CLASSIFICATION = {
     "TNews": TNews,
@@ -52,6 +54,10 @@ CLS_STS = {
     "STSB": STSB,
     "AFQMC": AFQMC,
     "QBQTC": QBQTC,
+}
+
+CLS_CUSTOM = {
+    "CustomRetrieval": CustomRetrieval,
 }
 
 CLS_DICT = {

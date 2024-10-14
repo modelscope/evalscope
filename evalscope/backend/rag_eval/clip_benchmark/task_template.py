@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (
     build_dataset,
     get_dataset_default_task,
+    image_captions_collate_fn,
 )
 from evalscope.backend.rag_eval.clip_benchmark.metrics import (
     zeroshot_classification,
@@ -62,12 +63,21 @@ def evaluate(args: Arguments):
         )
 
         # Create the dataloader
-        dataloader = DataLoader(
-            dataset.batched(batch_size),
-            batch_size=None,
-            shuffle=False,
-            num_workers=num_workers,
-        )
+        if dataset_name == "custom":
+            dataloader = DataLoader(
+                dataset,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers,
+                collate_fn=image_captions_collate_fn,
+            )
+        else:
+            dataloader = DataLoader(
+                dataset.batched(batch_size),
+                batch_size=None,
+                shuffle=False,
+                num_workers=num_workers,
+            )
 
         # Evaluate based on the task
         if task == "zeroshot_classification":

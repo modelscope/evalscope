@@ -69,7 +69,6 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
             # Update sample counter
             sample_count += len(batch_images)
 
-            # Stop if limit is reached
             if sample_count >= limit:
                 break
 

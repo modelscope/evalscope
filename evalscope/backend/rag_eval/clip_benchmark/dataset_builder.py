@@ -1,7 +1,7 @@
 import os
-import json
 import torch
 from torch.utils.data import default_collate
+from torch.utils.data import Dataset as TorchDataset
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -39,11 +39,11 @@ def build_dataset(
         where keys are classnames and values are class-specific prompts.
 
     """
-    if root:
-        root = os.path.join(root, dataset_name)
 
     if dataset_name == "dummy":
         ds = Dummy()
+    elif dataset_name == "custom":
+        ds = build_custom_dataset(dataset_name, data_dir=root, transform=transform)
     else:
         # WebDataset support using `webdataset` library
         ds = build_wds_dataset(
@@ -55,12 +55,6 @@ def build_dataset(
         )
 
     return ds
-
-
-def value_from_first_key_found(dic, keys):
-    for k in keys:
-        if k in dic:
-            return dic[k]
 
 
 class Dummy:
@@ -77,6 +71,7 @@ class Dummy:
 
 def get_dataset_default_task(dataset):
     if dataset in (
+        "custom",
         "muge",
         "flickr30k",
         "flickr8k",
@@ -94,25 +89,46 @@ def get_dataset_default_task(dataset):
 
 def image_captions_collate_fn(batch):
     transposed = list(zip(*batch))
-    imgs = default_collate(transposed[0])
+    imgs = transposed[0]
     texts = transposed[1]
     return imgs, texts
 
 
-def get_dataset_collate_fn(dataset_name):
-    if dataset_name in (
-        "mscoco_captions",
-        "multilingual_mscoco_captions",
-        "flickr30k",
-        "flickr8k",
-        "flickr30k-200",
-        "crossmodal3600",
-        "xtd200",
-        "winoground",
-    ) or dataset_name.startswith("sugar_crepe"):
-        return image_captions_collate_fn
-    else:
-        return default_collate
+class CustomDataset(TorchDataset):
+    def __init__(self, dataset, transform):
+        self.dataset = dataset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        item = self.dataset[idx]
+
+        # 加载图像
+        image = item["image_path"]
+        image = self.transform(image, return_tensors="pt")
+
+        # 获取查询列表
+        query = item["query"]
+
+        return image, query
+
+
+def build_custom_dataset(dataset_name, data_dir, transform=None):
+    from datasets import load_dataset, Features, Image, Sequence, Value
+
+    qrels_ds = load_dataset(
+        "json",
+        data_files=os.path.join(data_dir, "image_queries.jsonl"),
+        features=Features(
+            {"image_path": Image(decode=True), "query": Sequence(Value("string"))}
+        ),
+        split="train",
+    )
+
+    dataset = CustomDataset(qrels_ds, transform)
+    return dataset
 
 
 def build_wds_dataset(

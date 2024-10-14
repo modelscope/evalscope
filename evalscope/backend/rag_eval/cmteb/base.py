@@ -4,7 +4,7 @@ from mteb import AbsTask
 from datasets import DatasetDict
 from modelscope import MsDataset
 import datasets
-from evalscope.backend.rag_eval.cmteb.tasks import CLS_DICT, CLS_RETRIEVAL
+from evalscope.backend.rag_eval.cmteb.tasks import CLS_DICT, CLS_RETRIEVAL, CLS_CUSTOM
 
 __all__ = ["TaskBase"]
 
@@ -19,15 +19,18 @@ class TaskBase:
     @staticmethod
     def get_task(task_name, **kwargs) -> AbsTask:
 
-        if task_name not in CLS_DICT:
+        if task_name in CLS_CUSTOM:
+            task_cls = CLS_CUSTOM[task_name]
+        elif task_name in CLS_DICT:
+            task_cls = CLS_DICT[task_name]
+            task_cls.load_data = load_data
+        else:
             from mteb.overview import TASKS_REGISTRY
 
             task_cls = TASKS_REGISTRY[task_name]
             if task_cls.metadata.type != "Retrieval":
                 task_cls.load_data = load_data
-        else:
-            task_cls = CLS_DICT[task_name]
-            task_cls.load_data = load_data
+
         # init task instance
         task_instance = task_cls()
         return task_instance
