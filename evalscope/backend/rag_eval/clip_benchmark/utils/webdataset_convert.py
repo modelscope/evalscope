@@ -1,33 +1,14 @@
 # Convert datasets to webdataset format
-
-import io
 import os
-
 from tqdm import tqdm
 import torch
 import torch.utils.data
 import webdataset
-from .custom_dataset import DatasetWrapper
+from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import DatasetWrapper
+from evalscope.backend.rag_eval.utils.tools import path_to_bytes, PIL_to_bytes
+from evalscope.utils.logger import get_logger
 
-
-def PIL_to_bytes(image_format):
-    OPTIONS = {
-        "webp": dict(format="webp", lossless=True),
-        "png": dict(format="png"),
-        "jpg": dict(format="jpeg"),
-    }
-
-    def transform(image):
-        bytestream = io.BytesIO()
-        image.save(bytestream, **OPTIONS[image_format])
-        return bytestream.getvalue()
-
-    return transform
-
-
-def path_to_bytes(filepath):
-    with open(filepath, "rb") as fp:
-        return fp.read()
+logger = get_logger()
 
 
 def convert_dataset(
@@ -71,36 +52,36 @@ def convert_dataset(
     )
     if verbose:
         try:
-            print(f"Dataset size: {len(dataset)}")
+            logger.info(f"Dataset size: {len(dataset)}")
         except TypeError:
-            print("IterableDataset has no len()")
+            logger.info("IterableDataset has no len()")
     # Save classnames
     if hasattr(dataset, "classes") and dataset.classes:
         classnames_fname = os.path.join(output_folder, "classnames.txt")
         with open(classnames_fname, "w") as classnames_file:
-            print(*dataset.classes, sep="\n", end="\n", file=classnames_file)
+            logger.info(*dataset.classes, sep="\n", end="\n", file=classnames_file)
         if verbose:
-            print("Saved class names to '%s'" % classnames_fname)
+            logger.info("Saved class names to '%s'" % classnames_fname)
     elif verbose:
-        print("WARNING: No class names found")
+        logger.info("WARNING: No class names found")
     # Save zeroshot templates
     if hasattr(dataset, "templates") and dataset.templates:
         templates_fname = os.path.join(
             output_folder, "zeroshot_classification_templates.txt"
         )
         with open(templates_fname, "w") as templates_file:
-            print(*dataset.templates, sep="\n", end="\n", file=templates_file)
+            logger.info(*dataset.templates, sep="\n", end="\n", file=templates_file)
         if verbose:
-            print("Saved class names to '%s'" % templates_fname)
+            logger.info("Saved class names to '%s'" % templates_fname)
     elif verbose:
-        print("WARNING: No zeroshot classification templates found")
+        logger.info("WARNING: No zeroshot classification templates found")
     # Save dataset type
     if multilabel:
         type_fname = os.path.join(output_folder, "dataset_type.txt")
         with open(type_fname, "w") as type_file:
-            print("multilabel", end="\n", file=type_file)
+            logger.info("multilabel", end="\n", file=type_file)
             if verbose:
-                print("Saved dataset type to '%s'" % type_fname)
+                logger.info("Saved dataset type to '%s'" % type_fname)
     # Write to TAR files
     data_fname = os.path.join(output_folder, split, r"%d.tar")
     sink = webdataset.ShardWriter(data_fname, maxcount=max_count, maxsize=max_size)
@@ -136,17 +117,17 @@ def convert_dataset(
     num_shards = sink.shard
     sink.close()
     if verbose:
-        print(
+        logger.info(
             "Saved dataset to '%s'"
             % data_fname.replace(r"%d", "{0..%d}" % (num_shards - 1))
         )
     # Save number of shards
     nshards_fname = os.path.join(output_folder, split, "nshards.txt")
     with open(nshards_fname, "w") as nshards_file:
-        print(num_shards, end="\n", file=nshards_file)
+        logger.info(num_shards, end="\n", file=nshards_file)
     if verbose:
-        print("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
-    print("Final dataset size:", nsamples)
+        logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
+    logger.info("Final dataset size:", nsamples)
 
 
 def convert_retrieval_dataset(
@@ -178,17 +159,17 @@ def convert_retrieval_dataset(
     )
     if verbose:
         try:
-            print(f"Dataset size: {len(dataset)}")
+            logger.info(f"Dataset size: {len(dataset)}")
         except TypeError:
-            print("IterableDataset has no len()")
+            logger.info("IterableDataset has no len()")
     # No classnames
     # No zeroshot templates
     # Save dataset type
     type_fname = os.path.join(output_folder, "dataset_type.txt")
     with open(type_fname, "w") as type_file:
-        print("retrieval", end="\n", file=type_file)
+        logger.info("retrieval", end="\n", file=type_file)
     if verbose:
-        print("Saved dataset type to '%s'" % type_fname)
+        logger.info("Saved dataset type to '%s'" % type_fname)
     # Write to TAR files
     data_fname = os.path.join(output_folder, split, r"%d.tar")
     sink = webdataset.ShardWriter(data_fname, maxcount=max_count, maxsize=max_size)
@@ -216,17 +197,17 @@ def convert_retrieval_dataset(
     num_shards = sink.shard
     sink.close()
     if verbose:
-        print(
+        logger.info(
             "Saved dataset to '%s'"
             % data_fname.replace(r"%d", "{0..%d}" % (num_shards - 1))
         )
     # Save number of shards
     nshards_fname = os.path.join(output_folder, split, "nshards.txt")
     with open(nshards_fname, "w") as nshards_file:
-        print(num_shards, end="\n", file=nshards_file)
+        logger.info(num_shards, end="\n", file=nshards_file)
     if verbose:
-        print("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
-    print("Final dataset size:", nsamples)
+        logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
+    logger.info("Final dataset size:", nsamples)
 
 
 if __name__ == "__main__":

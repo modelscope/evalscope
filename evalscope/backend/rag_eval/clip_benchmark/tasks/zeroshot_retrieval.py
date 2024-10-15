@@ -16,7 +16,7 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
     Parameters
     ----------
 
-    model: torch.nn,Module
+    model: torch.nn.Module
         CLIP-like model with `encode_image` and `encode_text`
 
     dataloader: torch.utils.data.Dataloader

@@ -2,40 +2,43 @@ import os
 import torch
 import json
 from itertools import product
-from torch.utils.data import DataLoader
+
 from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (
     build_dataset,
     get_dataset_default_task,
-    image_captions_collate_fn,
+    get_dataloader,
 )
-from evalscope.backend.rag_eval.clip_benchmark.metrics import (
+from evalscope.backend.rag_eval.clip_benchmark.tasks import (
     zeroshot_classification,
     zeroshot_retrieval,
+    image_caption,
 )
 from evalscope.backend.rag_eval.clip_benchmark.arguments import Arguments
-from evalscope.backend.rag_eval.utils.clip import CLIPModel
+from evalscope.backend.rag_eval.utils.clip import VisionModel
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
 def evaluate(args: Arguments):
-    model_name_or_paths = args.model_name_or_path
+    models = args.models
     dataset_names = args.dataset_name
     data_dir = args.data_dir
     split = args.split
     batch_size = args.batch_size
     num_workers = args.num_workers
     verbose = args.verbose
+    task = args.task
     output_dir = args.output_dir
     cache_dir = args.cache_dir
     skip_existing = args.skip_existing
     limit = args.limit
 
     # Iterate over model and dataset combinations
-    for model_name_or_path, dataset_name in product(model_name_or_paths, dataset_names):
-        task = get_dataset_default_task(dataset_name)
-        model_name = os.path.basename(model_name_or_path)
+    for model_cfg, dataset_name in product(models, dataset_names):
+        if not task:
+            task = get_dataset_default_task(dataset_name)
+        model_name = os.path.basename(model_cfg["model_name"])
 
         output_path = os.path.join(output_dir, model_name)
         os.makedirs(output_path, exist_ok=True)
@@ -49,9 +52,9 @@ def evaluate(args: Arguments):
 
         # Determine device (CPU or GPU)
         device = "cuda" if torch.cuda.is_available() else "cpu"
-
+        model_cfg["device"] = device
         # Initialize the model
-        model = CLIPModel(model_name_or_path, device=device)
+        model = VisionModel.load(**model_cfg)
 
         # Build the dataset
         dataset = build_dataset(
@@ -63,21 +66,7 @@ def evaluate(args: Arguments):
         )
 
         # Create the dataloader
-        if dataset_name == "custom":
-            dataloader = DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=False,
-                num_workers=num_workers,
-                collate_fn=image_captions_collate_fn,
-            )
-        else:
-            dataloader = DataLoader(
-                dataset.batched(batch_size),
-                batch_size=None,
-                shuffle=False,
-                num_workers=num_workers,
-            )
+        dataloader = get_dataloader(dataset_name, dataset, batch_size, num_workers)
 
         # Evaluate based on the task
         if task == "zeroshot_classification":
@@ -103,11 +92,16 @@ def evaluate(args: Arguments):
             metrics = zeroshot_retrieval.evaluate(
                 model, dataloader, recall_k_list=[5], device=device, limit=limit
             )
+        elif task == "image_caption":
+            output_path = os.path.join(output_path, "retrieval_data")
+            metrics = image_caption.evaluate(
+                model, dataloader, limit=limit, output_path=output_path
+            )
 
         # Prepare dump data
         dump = {
             "dataset": dataset_name,
-            "model": model_name_or_path,
+            "model": model_name,
             "task": task,
             "metrics": metrics,
         }

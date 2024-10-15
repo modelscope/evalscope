@@ -1,35 +1,41 @@
+from typing import Optional
 from mteb import AbsTaskRetrieval
 from mteb import HFDataLoader as CustomDataLoader
 from mteb.abstasks.TaskMetadata import TaskMetadata
 
 
 class CustomRetrieval(AbsTaskRetrieval):
-    ignore_identical_ids = True
+    metadata: TaskMetadata
+    ignore_identical_ids: bool = True
 
-    metadata = TaskMetadata(
-        name="CustomRetrieval",
-        description="CustomRetrieval Task",
-        reference=None,
-        dataset={
-            "path": "custom_eval/text/retrieval",
-            "revision": "v1",
-        },
-        type="Retrieval",
-        category="s2p",
-        modalities=["text"],
-        eval_splits=["test"],
-        eval_langs=["cmn-Hans"],
-        main_score="recall_at_5",
-        date=None,
-        domains=None,
-        task_subtypes=None,
-        license=None,
-        annotations_creators=None,
-        dialect=None,
-        sample_creation=None,
-        bibtex_citation="",
-        descriptive_stats={},
-    )
+    def __init__(
+        self, dataset_path: Optional[str] = "custom_eval/text/retrieval", **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.metadata = TaskMetadata(
+            name="CustomRetrieval",
+            description="CustomRetrieval Task",
+            reference=None,
+            dataset={
+                "path": dataset_path,
+                "revision": "v1",
+            },
+            type="Retrieval",
+            category="s2p",
+            modalities=["text"],
+            eval_splits=["test"],
+            eval_langs=["cmn-Hans"],
+            main_score="recall_at_5",
+            date=None,
+            domains=None,
+            task_subtypes=None,
+            license=None,
+            annotations_creators=None,
+            dialect=None,
+            sample_creation=None,
+            bibtex_citation="",
+            descriptive_stats={},
+        )
 
     def load_data(self, **kwargs):
         if self.data_loaded:

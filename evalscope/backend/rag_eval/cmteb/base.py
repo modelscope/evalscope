@@ -32,7 +32,7 @@ class TaskBase:
                 task_cls.load_data = load_data
 
         # init task instance
-        task_instance = task_cls()
+        task_instance = task_cls(**kwargs)
         return task_instance
 
 

@@ -1,9 +1,8 @@
 import os
 import torch
+from torch.utils.data import DataLoader, Dataset as TorchDataset
 from evalscope.utils.logger import get_logger
-from evalscope.backend.rag_eval.clip_benchmark.utils.custom_dataset import (
-    DatasetWrapper,
-)
+
 
 logger = get_logger()
 
@@ -70,6 +69,32 @@ class Dummy:
         return 1
 
 
+class DatasetWrapper(TorchDataset):
+    def __init__(self, dataset, transform=None, image_key="image", text_key="query"):
+        self.dataset = dataset
+        self.transform = transform
+        self.image_key = image_key
+        self.text_key = text_key
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        item = self.dataset[idx]
+
+        # 加载图像
+        image = item[self.image_key]
+        if self.transform is not None:
+            image = self.transform(image, return_tensors="pt")
+
+        # 获取查询列表
+        query = item[self.text_key]
+        if isinstance(query, str):
+            query = [query]
+
+        return image, query
+
+
 def get_dataset_default_task(dataset):
     if dataset in (
         "custom",
@@ -86,6 +111,25 @@ def get_dataset_default_task(dataset):
         return "zeroshot_retrieval"
     else:
         return "zeroshot_classification"
+
+
+def get_dataloader(dataset_name, dataset, batch_size, num_workers):
+    if dataset_name == "custom":
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            collate_fn=image_captions_collate_fn,
+        )
+    else:
+        dataloader = DataLoader(
+            dataset.batched(batch_size),
+            batch_size=None,
+            shuffle=False,
+            num_workers=num_workers,
+        )
+    return dataloader
 
 
 def image_captions_collate_fn(batch):
@@ -161,7 +205,6 @@ def build_wds_dataset(
 
     # Git LFS files have a different file path to access the raw data than other files
     if data_dir.startswith("https://modelscope.cn/datasets"):
-        # Format: https://modelscope.cn/datasets/<USERNAME>/<REPO>/resolve/<BRANCH>
         *split_url_head, _, url_path = data_dir.split("/", 7)
         url_head = "/".join(split_url_head)
         metadata_dir = "/".join([url_head, "resolve", url_path])
@@ -173,13 +216,14 @@ def build_wds_dataset(
     nshards = int(
         read_txt(nshards_fname)
     )  # Do not catch FileNotFound, nshards.txt should be mandatory
+    
     # Get dataset type (classification or retrieval)
     type_fname = os.path.join(metadata_dir, "dataset_type.txt")
     try:
         dataset_type = read_txt(type_fname).strip().lower()
     except FileNotFoundError:
         dataset_type = "classification"
-    #
+    
     filepattern = os.path.join(tardata_dir, split, "{0..%d}.tar" % (nshards - 1))
     # Load webdataset (support WEBP, PNG, and JPG for now)
     if not cache_dir or not isinstance(cache_dir, str):
@@ -195,6 +239,7 @@ def build_wds_dataset(
     ).decode(
         wds.autodecode.ImageHandler("pil", extensions=["webp", "png", "jpg", "jpeg"])
     )
+    
     # Load based on classification or retrieval task
     if dataset_type == "retrieval":
         dataset = dataset.to_tuple(["webp", "png", "jpg", "jpeg"], "txt").map_tuple(

@@ -22,13 +22,20 @@ def run_eval():
         "eval_config": {
             "tool": "clip_benchmark",
             "eval": {
-                "model_name_or_path": [
-                    "AI-ModelScope/chinese-clip-vit-large-patch14-336px"
+                "models": [
+                    # {
+                    #     "model_name": "AI-ModelScope/chinese-clip-vit-large-patch14-336px",
+                    # }
+                    {
+                        "model_name": "internvl2-8b",
+                        "api_base": "http://localhost:8000/v1",
+                    }
                 ],
                 # "dataset_name": ["muge", "flickr8k"],
                 "dataset_name": ["custom"],
                 "data_dir": "custom_eval/multimodal/text-image-retrieval",
                 "split": "test",
+                "task": "image_caption",
                 "batch_size": 128,
                 "num_workers": 1,
                 "verbose": True,
