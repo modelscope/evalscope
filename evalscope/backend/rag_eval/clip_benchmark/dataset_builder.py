@@ -1,8 +1,9 @@
 import os
 import torch
-from torch.utils.data import default_collate
-from torch.utils.data import Dataset as TorchDataset
 from evalscope.utils.logger import get_logger
+from evalscope.backend.rag_eval.clip_benchmark.utils.custom_dataset import (
+    DatasetWrapper,
+)
 
 logger = get_logger()
 
@@ -94,27 +95,6 @@ def image_captions_collate_fn(batch):
     return imgs, texts
 
 
-class CustomDataset(TorchDataset):
-    def __init__(self, dataset, transform):
-        self.dataset = dataset
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, idx):
-        item = self.dataset[idx]
-
-        # 加载图像
-        image = item["image_path"]
-        image = self.transform(image, return_tensors="pt")
-
-        # 获取查询列表
-        query = item["query"]
-
-        return image, query
-
-
 def build_custom_dataset(dataset_name, data_dir, transform=None):
     from datasets import load_dataset, Features, Image, Sequence, Value
 
@@ -127,7 +107,9 @@ def build_custom_dataset(dataset_name, data_dir, transform=None):
         split="train",
     )
 
-    dataset = CustomDataset(qrels_ds, transform)
+    dataset = DatasetWrapper(
+        qrels_ds, transform, image_key="image_path", text_key="query"
+    )
     return dataset
 
 

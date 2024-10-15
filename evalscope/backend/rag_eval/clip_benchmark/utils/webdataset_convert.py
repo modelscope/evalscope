@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch
 import torch.utils.data
 import webdataset
+from .custom_dataset import DatasetWrapper
 
 
 def PIL_to_bytes(image_format):
@@ -228,23 +229,6 @@ def convert_retrieval_dataset(
     print("Final dataset size:", nsamples)
 
 
-class HFDatasetWrapper(torch.utils.data.Dataset):
-    def __init__(self, hf_dataset):
-        self.dataset = hf_dataset
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __getitem__(self, idx):
-        item = self.dataset[idx]
-        # 如果需要，可以在这里进行进一步处理或转换
-        image = item["image"]
-        query = item["query"]
-        if isinstance(query, str):
-            query = [query]
-        return image, query
-
-
 if __name__ == "__main__":
     from modelscope.msdatasets import MsDataset
 
@@ -252,7 +236,9 @@ if __name__ == "__main__":
     for split in splits:
         ds = MsDataset.load("modelscope/muge", split=split)
         hf_dataset = ds.to_hf_dataset()
-        pytorch_dataset = HFDatasetWrapper(hf_dataset)
+        pytorch_dataset = DatasetWrapper(
+            hf_dataset, image_key="image", text_key="query"
+        )
         convert_retrieval_dataset(
             pytorch_dataset,
             split,
