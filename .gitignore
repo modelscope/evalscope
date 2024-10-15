@@ -143,14 +143,13 @@ evalscope/*_temp.py
 evalscope/data/
 */output_res/*
 
-temp/
-tmp/
-data/*
+
+/tmp
+/data
 output/
 test*.sh
 test*.ipynb
 *.ttf
 _build/
-data
 swift.test*
-custom*
+/cache
