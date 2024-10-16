@@ -23,44 +23,38 @@ class VisionModel:
 
 class VLMAPI:
     def __init__(self, model_name, openai_api_base, openai_api_key, prompt=None):
-        from openai import OpenAI
+        from langchain_openai import ChatOpenAI
+        from langchain_core.prompts import ChatPromptTemplate
 
         self.model_name = model_name
-        self.client = OpenAI(
-            base_url=openai_api_base,
-            api_key=openai_api_key,
+        self.model = ChatOpenAI(
+            model_name=model_name,
+            openai_api_base=openai_api_base,
+            openai_api_key=openai_api_key,
         )
         self.default_prompt = "Please describe this image in general. Directly provide the description, do not include prefix like 'This image depicts'"
-        self.prompt = prompt if prompt else self.default_prompt
-
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", prompt if prompt else self.default_prompt),
+                (
+                    "user",
+                    [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": "data:image/jpeg;base64,{image_data}"},
+                        }
+                    ],
+                ),
+            ]
+        )
+        self.chain = self.prompt | self.model
         self.transform = PIL_to_base64
 
     def encode_image(self, images):
         captions = []
         for image in images:
-            message = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": self.prompt,
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{image}"},
-                        },
-                    ],
-                }
-            ]
-            result = (
-                self.client.chat.completions.create(
-                    messages=message, model=self.model_name, temperature=0
-                )
-                .choices[0]
-                .message.content
-            )
-            captions.append(result)
+            response = self.chain.invoke({"image_data": image})
+            captions.append(response.content)
         return captions
 
 

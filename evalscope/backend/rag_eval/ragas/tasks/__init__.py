@@ -1,0 +1,1 @@
+from evalscope.backend.rag_eval.ragas.tasks.testset_generation import generate_testset

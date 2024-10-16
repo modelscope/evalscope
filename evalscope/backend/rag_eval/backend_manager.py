@@ -43,14 +43,15 @@ class RAGEvalBackendManager(BackendManager):
 
     @staticmethod
     def run_ragas(testset_args, eval_args):
-        from evalscope.backend.rag_eval.ragas import rag_eval, testset_generation
+        from evalscope.backend.rag_eval.ragas import rag_eval
+        from evalscope.backend.rag_eval.ragas.tasks import generate_testset
         from evalscope.backend.rag_eval.ragas import (
             TestsetGenerationArguments,
             EvaluationArguments,
         )
 
         if testset_args is not None:
-            testset_generation(TestsetGenerationArguments(**testset_args))
+            generate_testset(TestsetGenerationArguments(**testset_args))
         if eval_args is not None:
             rag_eval(EvaluationArguments(**eval_args))
 
