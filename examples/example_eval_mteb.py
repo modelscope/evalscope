@@ -23,30 +23,35 @@ def run_eval():
             "tool": "MTEB",
             "model": [
                 {   
-                    # use `cls` for bge series model
-                    "model_name_or_path": "Xorbits/bge-large-zh",
-                    "pooling_mode": "cls",  # load from model config
+                    "model_name_or_path": "AI-ModelScope/bge-large-zh",
+                    "pooling_mode": "cls",  # if not set, load from model config; use `cls` for bge series model
                     "max_seq_length": 512,
                     "prompt": "为这个句子生成表示以用于检索相关文章：",
-                    "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
-                        "batch_size": 128,
+                        "batch_size": 512,
                     },
                 }
             ],
             "eval": {
                 "tasks": [
-                    # "TNews",
-                    # "CLSClusteringS2S",
-                    # "T2Reranking",
-                    # "T2Retrieval",
-                    "EcomRetrieval"
-                    # "ATEC",
+                    "TNews",
+                    "CLSClusteringS2S",
+                    "T2Reranking",
+                    "ATEC",
+                    "T2Retrieval",
+                    "MMarcoRetrieval",
+                    "DuRetrieval",
+                    "CovidRetrieval",
+                    "CmedqaRetrieval",
+                    "EcomRetrieval",
+                    "MedicalRetrieval",
+                    "VideoRetrieval"
                 ],
                 "verbosity": 2,
                 "output_folder": "outputs",
                 "overwrite_results": True,
-                # "limits": 500,
+                "top_k" : 10,
+                "limits": 1000, # don't limit for retrieval task
             },
         },
     }

@@ -48,7 +48,7 @@ class BaseModel(Embeddings):
         )
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Embed search docs.
+        """Embed search docs. Compact langchain.
 
         Args:
             texts: List of text to embed.
@@ -56,10 +56,10 @@ class BaseModel(Embeddings):
         Returns:
             List of embeddings.
         """
-        return self.encode(texts).tolist()
+        return self.encode_corpus(texts).tolist()
 
     def embed_query(self, text: str) -> List[float]:
-        """Embed query text.
+        """Embed query text. Compact langchain.
 
         Args:
             text: Text to embed.
@@ -67,13 +67,21 @@ class BaseModel(Embeddings):
         Returns:
             Embedding.
         """
-        return self.encode(text).tolist()
+        return self.encode_queries(text).tolist()
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
-        """Embed query text."""
+        """Embed text."""
         raise NotImplementedError
 
 
+    def encode_queries(self, queries: List[str], **kwargs) -> list[torch.Tensor]:
+        """Embed query text. Compact mteb."""
+        raise NotImplementedError
+
+    def encode_corpus(self, corpus: List[str] | List[Dict[str, str]], **kwargs) -> list[torch.Tensor]:
+        """Embed search docs . Compact mteb."""
+        raise NotImplementedError
+    
 class SentenceTransformerModel(BaseModel):
     def __init__(
         self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs
@@ -102,14 +110,23 @@ class SentenceTransformerModel(BaseModel):
 
         self.model.max_seq_length = self.max_seq_length
 
-    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[torch.Tensor]:
+    def encode(self, texts: Union[str, List[str]], prompt=None, **kwargs) -> List[torch.Tensor]:
         kwargs.pop("prompt_name", "")  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
-        embeddings = self.model.encode(texts, prompt=self.prompt, **self.encode_kwargs)
+        
+        embeddings = self.model.encode(texts, prompt=prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
-        return embeddings
+        return embeddings.cpu().detach()
     
-
+    def encode_queries(self, queries, **kwargs):
+        return self.encode(queries, prompt=self.prompt)
+    
+    def encode_corpus(self, corpus, **kwargs):
+        if isinstance(corpus[0], dict):
+            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
+        else:
+            input_texts = corpus
+        return self.encode(input_texts)
 
 class CrossEncoderModel(BaseModel):
     def __init__(self, model_name_or_path: str, **kwargs):
