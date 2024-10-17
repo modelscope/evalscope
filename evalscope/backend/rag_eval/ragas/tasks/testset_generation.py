@@ -1,10 +1,16 @@
 import os
+
 os.environ["DO_NOT_TRACK"] = "true"
+import pandas as pd
 from evalscope.backend.rag_eval import EmbeddingModel, LLM
 from ..arguments import TestsetGenerationArguments
 from evalscope.utils.logger import get_logger
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+
 
 logger = get_logger()
+
 
 def get_transform(llm, embedding):
     """
@@ -43,12 +49,7 @@ def get_transform(llm, embedding):
     )
     from ragas.testset.transforms.splitters import HeadlineSplitter
     from ragas.testset.graph import NodeType
-    from ragas.llms import LangchainLLMWrapper
-    from ragas.embeddings import LangchainEmbeddingsWrapper
 
-    llm = LangchainLLMWrapper(llm)
-    embedding = LangchainEmbeddingsWrapper(embedding)
-    
     # define the transforms
     summary_extractor = SummaryExtractor(llm=llm)
     keyphrase_extractor = KeyphrasesExtractor(llm=llm)
@@ -62,7 +63,7 @@ def get_transform(llm, embedding):
         filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
         property_name="summary_embedding",
         embed_property_name="summary",
-        embedding_model=embedding
+        embedding_model=embedding,
     )
     summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
 
@@ -77,13 +78,14 @@ def get_transform(llm, embedding):
     ]
     return transforms
 
+
 def get_distribution(llm, distribution):
     from ragas.testset.synthesizers.abstract_query import (
         AbstractQuerySynthesizer,
         ComparativeAbstractQuerySynthesizer,
     )
     from ragas.testset.synthesizers.specific_query import SpecificQuerySynthesizer
-    
+
     return [
         (AbstractQuerySynthesizer(llm=llm), distribution["simple"]),
         (
@@ -93,12 +95,14 @@ def get_distribution(llm, distribution):
         (SpecificQuerySynthesizer(llm=llm), distribution["reasoning"]),
     ]
 
+
 def load_data(file_path):
     from langchain_community.document_loaders import UnstructuredFileLoader
-    
-    loader = UnstructuredFileLoader(file_path)
+
+    loader = UnstructuredFileLoader(file_path, mode="elements")
     data = loader.load()
     return data
+
 
 def generate_testset(args: TestsetGenerationArguments) -> None:
     # from langchain_community.document_loaders
@@ -114,21 +118,27 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     embeddings = EmbeddingModel.load(**args.embeddings)
 
     # Change resulting question type distribution
-    distributions = get_distribution(generator_llm, args.distribution)
+    distributions = get_distribution(
+        LangchainLLMWrapper(generator_llm), args.distribution
+    )
 
     # get transforms
-    transforms = get_transform(generator_llm, embeddings)
-    
+    transforms = get_transform(
+        LangchainLLMWrapper(generator_llm), LangchainEmbeddingsWrapper(embeddings)
+    )
+
     generator = TestsetGenerator.from_langchain(generator_llm)
 
-    runconfig = RunConfig(timeout=30, max_retries=3, max_wait=30, max_workers=2)
+    runconfig = RunConfig(
+        timeout=30, max_retries=3, max_wait=30, max_workers=2, log_tenacity=True
+    )
     testset = generator.generate_with_langchain_docs(
         documents=data,
         testset_size=args.test_size,
         transforms=transforms,
         query_distribution=distributions,
-        with_debugging_logs=True,
         run_config=runconfig,
+        with_debugging_logs=True,
     )
 
     # save file
@@ -140,7 +150,10 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     # get answer
     testset_with_answer = get_answer(testset_df, generator_llm)
     testset_with_answer.to_json(
-        args.output_file, indent=4, index=False, orient="records"
+        args.output_file.replace(".json", "_with_answer.json"),
+        indent=4,
+        index=False,
+        orient="records",
     )
 
 
@@ -153,17 +166,24 @@ Question: {question}
 Context: {contexts} 
 Answer:
 """
-    answers = []
-    for index, row in testset_df.iterrows():
-        question = row["question"]
-        contexts = "\n".join(row["contexts"])
+
+    items = []
+    for row in testset_df["eval_sample"]:
+        question = row["user_input"]
+        contexts = "\n".join(row["reference_contexts"])
 
         # Combine question and contexts as input for the LLM
         input_text = template.format(question=question, contexts=contexts)
 
         # Generate the answer using the generator LLM
-        answer = generator_llm.invoke(input_text)
-        answers.append(answer)
+        answer = generator_llm.invoke(input_text).content
+        items.append(
+            {
+                "user_input": question,
+                "retrieved_contexts": row["reference_contexts"],
+                "response": answer,
+                "reference": row["reference"],
+            }
+        )
 
-    testset_df["answer"] = answers
-    return testset_df
+    return pd.DataFrame.from_dict(items)
