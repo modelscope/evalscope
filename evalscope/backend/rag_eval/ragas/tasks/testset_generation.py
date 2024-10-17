@@ -121,7 +121,7 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     
     generator = TestsetGenerator.from_langchain(generator_llm)
 
-    runconfig = RunConfig(timeout=30, max_retries=1, max_wait=30, max_workers=1)
+    runconfig = RunConfig(timeout=30, max_retries=3, max_wait=30, max_workers=2)
     testset = generator.generate_with_langchain_docs(
         documents=data,
         testset_size=args.test_size,

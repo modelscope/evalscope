@@ -22,11 +22,12 @@ def run_eval():
         "eval_config": {
             "tool": "MTEB",
             "model": [
-                {
-                    "model_name_or_path": "AI-ModelScope/m3e-base",
-                    "pooling_mode": None,  # load from model config
+                {   
+                    # use `cls` for bge series model
+                    "model_name_or_path": "Xorbits/bge-large-zh",
+                    "pooling_mode": "cls",  # load from model config
                     "max_seq_length": 512,
-                    "prompt": "",
+                    "prompt": "为这个句子生成表示以用于检索相关文章：",
                     "model_kwargs": {"torch_dtype": "auto"},
                     "encode_kwargs": {
                         "batch_size": 128,
@@ -35,16 +36,17 @@ def run_eval():
             ],
             "eval": {
                 "tasks": [
-                    "TNews",
-                    "CLSClusteringS2S",
-                    "T2Reranking",
-                    "T2Retrieval",
-                    "ATEC",
+                    # "TNews",
+                    # "CLSClusteringS2S",
+                    # "T2Reranking",
+                    # "T2Retrieval",
+                    "EcomRetrieval"
+                    # "ATEC",
                 ],
                 "verbosity": 2,
                 "output_folder": "outputs",
                 "overwrite_results": True,
-                "limits": 500,
+                # "limits": 500,
             },
         },
     }
@@ -86,7 +88,7 @@ def run_eval():
     }
 
     # Run task
-    run_task(task_cfg=two_stage_task_cfg)
+    run_task(task_cfg=one_stage_task_cfg)
 
 
 if __name__ == "__main__":

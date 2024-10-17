@@ -1,5 +1,6 @@
 import os
-from typing import List, Optional, Union
+import torch
+from typing import List, Optional, Union, Dict
 from sentence_transformers import models
 from sentence_transformers.SentenceTransformer import SentenceTransformer
 from sentence_transformers.cross_encoder import CrossEncoder
@@ -101,12 +102,13 @@ class SentenceTransformerModel(BaseModel):
 
         self.model.max_seq_length = self.max_seq_length
 
-    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
+    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[torch.Tensor]:
         kwargs.pop("prompt_name", "")  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
         embeddings = self.model.encode(texts, prompt=self.prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
+    
 
 
 class CrossEncoderModel(BaseModel):

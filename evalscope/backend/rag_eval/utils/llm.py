@@ -15,7 +15,7 @@ class LLM:
             return ChatOpenAI(
                 model_name=kw.get("model_name", ""),
                 openai_api_base=api_base,
-                openai_api_key=kw.get("api_key", ""),
+                openai_api_key=kw.get("api_key", "EMPTY"),
             )
         else:
             return LocalLLM(**kw)
