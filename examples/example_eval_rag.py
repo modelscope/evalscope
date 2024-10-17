@@ -57,7 +57,9 @@ def run_eval():
     }
 
     # Run task
-    run_task(task_cfg=eval_task_cfg) # or run_task(task_cfg=generate_testset_task_cfg)
+    # run_task(task_cfg=eval_task_cfg) 
+    # or 
+    run_task(task_cfg=generate_testset_task_cfg)
 
 
 if __name__ == "__main__":

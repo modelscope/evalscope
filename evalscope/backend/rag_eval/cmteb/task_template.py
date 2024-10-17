@@ -29,9 +29,11 @@ def one_stage_eval(
 ) -> None:
     # load model
     model = EmbeddingModel.load(**model_args)
-
+    custom_dataset_path = eval_args.pop("dataset_path", None)
     # load task first to update instructions
-    tasks = cmteb.TaskBase.get_tasks(task_names=eval_args["tasks"])
+    tasks = cmteb.TaskBase.get_tasks(
+        task_names=eval_args["tasks"], dataset_path=custom_dataset_path
+    )
     evaluation = mteb.MTEB(tasks=tasks)
 
     # run evaluation

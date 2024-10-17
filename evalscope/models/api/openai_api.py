@@ -76,12 +76,12 @@ class OpenaiApi:
             data = json.dumps(data, ensure_ascii=False)
 
             if self.verbose:
-                print(f'>>data in generate_simple: {data}')
+                logger.info(f'>>data in generate_simple: {data}')
 
             resp = requests.post(self.url, headers=header, data=data)
             resp = resp.json()
             if self.verbose:
-                print(f'>>resp in generate_simple: {resp}')
+                logger.info(f'>>resp in generate_simple: {resp}')
 
             if self.logprobs:
                 return resp['choices']

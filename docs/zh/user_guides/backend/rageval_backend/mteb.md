@@ -2,7 +2,7 @@
 
 # MTEB
 
-本框架支持 [MTEB](https://github.com/embeddings-benchmark/mteb) 和 [CMTEB](https://github.com/embeddings-benchmark/mteb)，具体介绍如下：
+本框架支持 [MTEB](https://github.com/embeddings-benchmark/mteb) 和 [CMTEB](https://github.com/FlagOpen/FlagEmbedding/blob/master/C_MTEB/README.md)，具体介绍如下：
 
 - MTEB（Massive Text Embedding Benchmark）是一个大规模的基准测试，旨在衡量文本嵌入模型在多样化嵌入任务上的性能。MTEB 包括56个数据集，涵盖8个任务，并且支持超过112种不同的语言。这个基准测试的目标是帮助开发者找到适用于多种任务的最佳文本嵌入模型。
 

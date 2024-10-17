@@ -24,45 +24,57 @@ class RAGEvalBackendManager(BackendManager):
         else:
             logger.error(f"Please install `{module_name}` first")
 
-    def run_mteb(self):
+    @staticmethod
+    def run_mteb(model_args, eval_args):
         from evalscope.backend.rag_eval.cmteb import ModelArguments, EvalArguments
         from evalscope.backend.rag_eval.cmteb import one_stage_eval, two_stage_eval
 
-        if len(self.model_args) > 2:
+        if len(model_args) > 2:
             raise ValueError("Not support multiple models yet")
 
         # Convert arguments to dictionary
-        model_args_list = [ModelArguments(**args).to_dict() for args in self.model_args]
-        eval_args = EvalArguments(**self.eval_args).to_dict()
+        model_args_list = [ModelArguments(**args).to_dict() for args in model_args]
+        eval_args = EvalArguments(**eval_args).to_dict()
 
         if len(model_args_list) == 1:
             one_stage_eval(model_args_list[0], eval_args)
         else:  # len(model_args_list) == 2
             two_stage_eval(model_args_list[0], model_args_list[1], eval_args)
 
-    def run_ragas(self):
-        from evalscope.backend.rag_eval.ragas import rag_eval, testset_generation
+    @staticmethod
+    def run_ragas(testset_args, eval_args):
+        from evalscope.backend.rag_eval.ragas import rag_eval
+        from evalscope.backend.rag_eval.ragas.tasks import generate_testset
         from evalscope.backend.rag_eval.ragas import (
             TestsetGenerationArguments,
             EvaluationArguments,
         )
 
-        if self.testset_args is not None:
-            testset_generation(TestsetGenerationArguments(**self.testset_args))
-        if self.eval_args is not None:
-            rag_eval(EvaluationArguments(**self.eval_args))
+        if testset_args is not None:
+            generate_testset(TestsetGenerationArguments(**testset_args))
+        if eval_args is not None:
+            rag_eval(EvaluationArguments(**eval_args))
+
+    @staticmethod
+    def run_clip_benchmark(args):
+        from evalscope.backend.rag_eval.clip_benchmark import Arguments, evaluate
+
+        evaluate(Arguments(**args))
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop("tool")
         if tool.lower() == "mteb":
             self._check_env("mteb")
-            self.model_args = self.config_d["model"]
-            self.eval_args = self.config_d["eval"]
-            self.run_mteb()
+            model_args = self.config_d["model"]
+            eval_args = self.config_d["eval"]
+            self.run_mteb(model_args, eval_args)
         elif tool.lower() == "ragas":
             self._check_env("ragas")
-            self.testset_args = self.config_d.get("testset_generation", None)
-            self.eval_args = self.config_d.get("eval", None)
-            self.run_ragas()
+            testset_args = self.config_d.get("testset_generation", None)
+            eval_args = self.config_d.get("eval", None)
+            self.run_ragas(testset_args, eval_args)
+        elif tool.lower() == "clip_benchmark":
+            self._check_env("webdataset")
+            self.run_clip_benchmark(self.config_d["eval"])
         else:
             raise ValueError(f"Unknown tool: {tool}")
