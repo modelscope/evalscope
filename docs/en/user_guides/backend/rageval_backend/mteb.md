@@ -114,12 +114,12 @@ one_stage_task_cfg = {
         - `hub`: `str` Model source, can be "modelscope" or "huggingface".  
     - `eval`: Dictionary containing the following fields:
         - `tasks`: `List[str]` Task names  
+        - `top_k`: `int` Select the top K results, used in retrieval tasks  
         - `verbosity`: `int` Level of detail, ranging from 0-3  
         - `output_folder`: `str` Output folder, default is "outputs"  
         - `overwrite_results`: `bool` Indicates whether to overwrite results, default is True  
-        - `limits`: `Optional[int]` Limiting the number of samples, default is None  
+        - `limits`: `Optional[int]` Limiting the number of samples, default is None; not recommended for retrieval tasks
         - `hub`: `str` Model source, can be "modelscope" or "huggingface"  
-        - `top_k`: `int` Select the top K results, used in retrieval tasks  
 
 
 ### Two-stage Evaluation
