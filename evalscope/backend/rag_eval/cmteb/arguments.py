@@ -13,7 +13,7 @@ class ModelArguments:
     # prompt for llm based model
     prompt: str = ""
     # model kwargs
-    model_kwargs: dict = field(default_factory=lambda: {"torch_dtype": "auto"})
+    model_kwargs: dict = field(default_factory=dict)
     # config kwargs
     config_kwargs: Dict[str, Any] = field(default_factory=dict)
     # encode kwargs
@@ -45,7 +45,7 @@ class EvalArguments:
     overwrite_results: bool = True  # overwrite results
     limits: Optional[int] = None  # limit number of samples
     hub: str = "modelscope"  # modelscope or huggingface
-    top_k: int = 5
+    top_k: int = 5 # top k for reranking
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -55,5 +55,5 @@ class EvalArguments:
             "overwrite_results": self.overwrite_results,
             "limits": self.limits,
             "hub": self.hub,
-            "top_k": 5,
+            "top_k": self.top_k,
         }
