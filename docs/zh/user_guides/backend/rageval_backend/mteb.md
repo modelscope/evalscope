@@ -117,12 +117,12 @@ one_stage_task_cfg = {
         - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"。  
     - `eval`：字典，包含以下字段：
         - `tasks`: `List[str]` 任务名称  
+        - `top_k`: `int` 选取前 K 个结果，检索任务使用  
         - `verbosity`: `int` 详细程度，范围为 0-3  
         - `output_folder`: `str` 输出文件夹，默认为 "outputs"  
         - `overwrite_results`: `bool` 是否覆盖结果，默认为 True  
-        - `limits`: `Optional[int]` 限制样本数量，默认为 None  
+        - `limits`: `Optional[int]` 限制样本数量，默认为 None；检索任务不建议设置
         - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"  
-        - `top_k`: `int` 选取前 K 个结果，检索任务使用  
 
 ### 两阶段评测
 配置文件示例如下，先进行检索，再进行reranking：
