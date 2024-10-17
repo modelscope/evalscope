@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-test.py
 # C extensions
 *.so
 
@@ -147,6 +146,7 @@ evalscope/data/
 /tmp
 /data
 output/
+/test*.py
 test*.sh
 test*.ipynb
 *.ttf
