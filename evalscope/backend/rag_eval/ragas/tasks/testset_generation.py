@@ -1,18 +1,20 @@
 import os
 
 os.environ["DO_NOT_TRACK"] = "true"
+import asyncio
 import pandas as pd
+from tqdm import tqdm
+from .translate_prompt import translate_prompts
 from evalscope.backend.rag_eval import EmbeddingModel, LLM
-from ..arguments import TestsetGenerationArguments
-from evalscope.utils.logger import get_logger
+from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def get_transform(llm, embedding):
+def get_transform(llm, embedding, language: None):
     """
     Creates and returns a default set of transforms for processing a knowledge graph.
 
@@ -55,6 +57,20 @@ def get_transform(llm, embedding):
     keyphrase_extractor = KeyphrasesExtractor(llm=llm)
     title_extractor = TitleExtractor(llm=llm)
     headline_extractor = HeadlinesExtractor(llm=llm)
+
+    asyncio.run(
+        translate_prompts(
+            prompts=[
+                summary_extractor,
+                keyphrase_extractor,
+                title_extractor,
+                headline_extractor,
+            ],
+            target_lang=language,
+            llm=llm,
+        )
+    )
+
     embedding_extractor = EmbeddingExtractor(embedding_model=embedding)
     headline_splitter = HeadlineSplitter()
     cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
@@ -79,20 +95,32 @@ def get_transform(llm, embedding):
     return transforms
 
 
-def get_distribution(llm, distribution):
+def get_distribution(llm, distribution, language: None):
     from ragas.testset.synthesizers.abstract_query import (
         AbstractQuerySynthesizer,
         ComparativeAbstractQuerySynthesizer,
     )
     from ragas.testset.synthesizers.specific_query import SpecificQuerySynthesizer
 
+    abstract = AbstractQuerySynthesizer(llm=llm)
+    comparative = ComparativeAbstractQuerySynthesizer(llm=llm)
+    specific = SpecificQuerySynthesizer(llm=llm)
+
+    asyncio.run(
+        translate_prompts(
+            prompts=[
+                abstract,
+                comparative,
+                specific,
+            ],
+            target_lang=language,
+            llm=llm,
+        )
+    )
     return [
-        (AbstractQuerySynthesizer(llm=llm), distribution["simple"]),
-        (
-            ComparativeAbstractQuerySynthesizer(llm=llm),
-            distribution["multi_context"],
-        ),
-        (SpecificQuerySynthesizer(llm=llm), distribution["reasoning"]),
+        (abstract, distribution["simple"]),
+        (comparative, distribution["multi_context"]),
+        (specific, distribution["reasoning"]),
     ]
 
 
@@ -119,18 +147,20 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
 
     # Change resulting question type distribution
     distributions = get_distribution(
-        LangchainLLMWrapper(generator_llm), args.distribution
+        LangchainLLMWrapper(generator_llm), args.distribution, args.language
     )
 
     # get transforms
     transforms = get_transform(
-        LangchainLLMWrapper(generator_llm), LangchainEmbeddingsWrapper(embeddings)
+        LangchainLLMWrapper(generator_llm),
+        LangchainEmbeddingsWrapper(embeddings),
+        args.language,
     )
 
     generator = TestsetGenerator.from_langchain(generator_llm)
 
     runconfig = RunConfig(
-        timeout=30, max_retries=3, max_wait=30, max_workers=2, log_tenacity=True
+        timeout=600, max_retries=5, max_wait=120, max_workers=1, log_tenacity=True
     )
     testset = generator.generate_with_langchain_docs(
         documents=data,
@@ -139,41 +169,47 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
         query_distribution=distributions,
         run_config=runconfig,
         with_debugging_logs=True,
+        raise_exceptions=True,
     )
 
     # save file
     testset_df = testset.to_pandas()
     output_path = os.path.dirname(args.output_file)
     os.makedirs(output_path, exist_ok=True)
-    testset_df.to_json(args.output_file, indent=4, index=False, orient="records")
+    testset_df.to_json(
+        args.output_file, indent=4, index=False, orient="records", force_ascii=False
+    )
 
     # get answer
-    testset_with_answer = get_answer(testset_df, generator_llm)
+    testset_with_answer = get_answer(testset_df, generator_llm, args.language)
     testset_with_answer.to_json(
         args.output_file.replace(".json", "_with_answer.json"),
         indent=4,
         index=False,
         orient="records",
+        force_ascii=False,
     )
 
 
-def get_answer(testset_df, generator_llm):
+def get_answer(testset_df, generator_llm, language: None):
     template = """You are an assistant for question-answering tasks. 
 Use the following pieces of retrieved context to answer the question. 
 If you don't know the answer, just say that you don't know. 
-Use two sentences maximum and keep the answer concise.
+Use two sentences maximum and keep the answer concise. Answer in {language}.
 Question: {question} 
 Context: {contexts} 
 Answer:
 """
 
     items = []
-    for row in testset_df["eval_sample"]:
+    for row in tqdm(testset_df["eval_sample"]):
         question = row["user_input"]
         contexts = "\n".join(row["reference_contexts"])
 
         # Combine question and contexts as input for the LLM
-        input_text = template.format(question=question, contexts=contexts)
+        input_text = template.format(
+            language=language, question=question, contexts=contexts
+        )
 
         # Generate the answer using the generator LLM
         answer = generator_llm.invoke(input_text).content

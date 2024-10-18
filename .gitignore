@@ -147,9 +147,7 @@ evalscope/data/
 /tmp
 /data
 output/
-/test*.py
-test*.sh
-test*.ipynb
+/test*.*
 *.ttf
 _build/
 swift.test*

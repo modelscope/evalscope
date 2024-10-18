@@ -1,0 +1,47 @@
+{
+  "ragas_version": "0.2.1",
+  "original_hash": -4668698023410734221,
+  "language": "chinese",
+  "instruction": "从给定的关键短语列表中识别出用于跨报告比较给定主题的常见概念列表。",
+  "examples": [
+    {
+      "input": {
+        "keyphrases": [
+          "快速充电",
+          "长电池寿命",
+          "OLED显示屏",
+          "防水"
+        ],
+        "num_concepts": 4
+      },
+      "output": {
+        "concepts": {
+          "Charging": [
+            "快速充电",
+            "长电池寿命",
+            "OLED显示屏",
+            "防水"
+          ],
+          "Battery Life": [
+            "长电池寿命",
+            "延长电池",
+            "耐用电池",
+            "持久电池"
+          ],
+          "Display": [
+            "OLED显示屏",
+            "高清显示屏",
+            "AMOLED显示屏",
+            "视网膜显示屏"
+          ],
+          "Water/Dust Resistance": [
+            "防水",
+            "防尘",
+            "防溅",
+            "防水"
+          ]
+        }
+      }
+    }
+  ]
+}

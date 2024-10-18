@@ -1,6 +1,8 @@
 import os
+import asyncio
 from datasets import Dataset
 from evalscope.backend.rag_eval import EmbeddingModel, LLM
+from evalscope.backend.rag_eval.ragas.tasks.translate_prompt import translate_prompts
 from evalscope.utils.logger import get_logger
 from .arguments import EvaluationArguments
 
@@ -27,10 +29,21 @@ def rag_eval(
     # load dataset
     dataset = Dataset.from_json(args.testset_file)
 
+    # load metrics
+    metrics = dynamic_import("ragas.metrics", *args.metrics)
+    asyncio.run(
+        translate_prompts(
+            prompts=metrics,
+            target_lang=args.language,
+            llm=llm,
+        )
+    )
+
+    # evaluate
     runconfig = RunConfig(timeout=30, max_retries=1, max_wait=30, max_workers=1)
     score = evaluate(
         dataset,
-        metrics=dynamic_import("ragas.metrics", *args.metrics),
+        metrics=metrics,
         llm=llm,
         embeddings=embedding,
         run_config=runconfig,
