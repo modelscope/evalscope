@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.1",
-  "original_hash": 2448519199273170840,
+  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
+  "original_hash": -800989296329424606,
   "language": "chinese",
   "instruction": "根据给定文本中提供的信息回答以下问题。",
   "examples": [

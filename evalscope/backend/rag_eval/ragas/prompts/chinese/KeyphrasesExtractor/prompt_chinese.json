@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.1",
-  "original_hash": -1309142409126446387,
+  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
+  "original_hash": 5758001203665521499,
   "language": "chinese",
   "instruction": "从给定的文本中提取前5个关键词。",
   "examples": [

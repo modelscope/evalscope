@@ -14,6 +14,7 @@ def rag_eval(
 ) -> None:
 
     from ragas import evaluate, RunConfig
+    from ragas.llms import LangchainLLMWrapper
     import importlib
 
     def dynamic_import(module_name, *function_names):
@@ -35,7 +36,8 @@ def rag_eval(
         translate_prompts(
             prompts=metrics,
             target_lang=args.language,
-            llm=llm,
+            llm=LangchainLLMWrapper(llm),
+            adapt_instruction=True,
         )
     )
 
@@ -52,6 +54,8 @@ def rag_eval(
     # logger.info(score_df.to_string())
 
     output_path = args.testset_file.split(".")[0] + "_score.json"
-    score_df.to_json(output_path, indent=4, index=False, orient="records")
+    score_df.to_json(
+        output_path, indent=4, index=False, orient="records", force_ascii=False
+    )
 
     logger.info(f"Eval score saved to {output_path}")

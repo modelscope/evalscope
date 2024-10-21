@@ -11,7 +11,10 @@ logger = get_logger()
 
 
 async def translate_prompt(
-    prompt_user: PromptMixin, target_lang: str, llm: BaseRagasLLM
+    prompt_user: PromptMixin,
+    target_lang: str,
+    llm: BaseRagasLLM,
+    adapt_instruction: bool = False,
 ):
     if not target_lang in RAGAS_SUPPORTED_LANGUAGE_CODES:
         logger.warning(
@@ -39,7 +42,9 @@ async def translate_prompt(
         logger.info(f"Not find existing prompts {class_name}, generate new prompts.")
 
     logger.info(f"Translating prompts to {target_lang}")
-    adapted_prompts = await prompt_user.adapt_prompts(language=target_lang, llm=llm)
+    adapted_prompts = await prompt_user.adapt_prompts(
+        language=target_lang, llm=llm, adapt_instruction=adapt_instruction
+    )
     prompt_user.set_prompts(**adapted_prompts)
     try:
         prompt_user.save_prompts(prompt_dir)
@@ -51,11 +56,17 @@ async def translate_prompt(
 
 
 async def translate_prompts(
-    prompts: List[PromptMixin], target_lang: str, llm: BaseRagasLLM
+    prompts: List[PromptMixin],
+    target_lang: str,
+    llm: BaseRagasLLM,
+    adapt_instruction: bool = False,
 ):
     if target_lang and target_lang != "english":
         await asyncio.gather(
-            *[translate_prompt(prompt, target_lang, llm) for prompt in prompts]
+            *[
+                translate_prompt(prompt, target_lang, llm, adapt_instruction)
+                for prompt in prompts
+            ]
         )
 
         logger.info(f"Translate prompts finished")

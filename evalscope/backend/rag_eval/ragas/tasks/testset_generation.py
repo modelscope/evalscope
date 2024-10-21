@@ -4,12 +4,12 @@ os.environ["DO_NOT_TRACK"] = "true"
 import asyncio
 import pandas as pd
 from tqdm import tqdm
-from .translate_prompt import translate_prompts
-from evalscope.backend.rag_eval import EmbeddingModel, LLM
-from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
+from evalscope.backend.rag_eval import EmbeddingModel, LLM
+from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
 from evalscope.utils.logger import get_logger
+from .translate_prompt import translate_prompts
 
 logger = get_logger()
 
@@ -68,6 +68,7 @@ def get_transform(llm, embedding, language: None):
             ],
             target_lang=language,
             llm=llm,
+            adapt_instruction=True,
         )
     )
 
@@ -115,6 +116,7 @@ def get_distribution(llm, distribution, language: None):
             ],
             target_lang=language,
             llm=llm,
+            adapt_instruction=True,
         )
     )
     return [
@@ -127,7 +129,7 @@ def get_distribution(llm, distribution, language: None):
 def load_data(file_path):
     from langchain_community.document_loaders import UnstructuredFileLoader
 
-    loader = UnstructuredFileLoader(file_path, mode="elements")
+    loader = UnstructuredFileLoader(file_path)
     data = loader.load()
     return data
 
@@ -202,7 +204,8 @@ Answer:
 """
 
     items = []
-    for row in tqdm(testset_df["eval_sample"]):
+    for i in tqdm(range(len(testset_df)), desc="Generating Answers"):
+        row = testset_df.iloc[i]
         question = row["user_input"]
         contexts = "\n".join(row["reference_contexts"])
 

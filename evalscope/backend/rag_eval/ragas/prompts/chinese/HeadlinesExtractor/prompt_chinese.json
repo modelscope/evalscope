@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.1",
-  "original_hash": 7919836678895534670,
+  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
+  "original_hash": -2516793524213563754,
   "language": "chinese",
   "instruction": "从给定的文本中提取标题。",
   "examples": [

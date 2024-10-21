@@ -1,8 +1,8 @@
 {
-  "ragas_version": "0.2.1",
-  "original_hash": 8428442658782830773,
+  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
+  "original_hash": 8903202105324427480,
   "language": "chinese",
-  "instruction": "根据给定的主题，生成一个可以从提供的上下文中回答的抽象概念问题。",
+  "instruction": "根据给定的主题生成一个可以从提供的上下文中回答的抽象概念问题。",
   "examples": [
     {
       "input": {

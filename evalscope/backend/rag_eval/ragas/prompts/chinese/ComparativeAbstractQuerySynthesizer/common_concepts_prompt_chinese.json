@@ -1,8 +1,8 @@
 {
-  "ragas_version": "0.2.1",
-  "original_hash": -4668698023410734221,
+  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
+  "original_hash": 523894698462997543,
   "language": "chinese",
-  "instruction": "从给定的关键短语列表中识别出用于跨报告比较给定主题的常见概念列表。",
+  "instruction": "从给定的关键短语列表中识别出用于跨报告比较给定主题的一系列常见概念。",
   "examples": [
     {
       "input": {
@@ -24,7 +24,7 @@
           ],
           "Battery Life": [
             "长电池寿命",
-            "延长电池",
+            "扩展电池",
             "耐用电池",
             "持久电池"
           ],
