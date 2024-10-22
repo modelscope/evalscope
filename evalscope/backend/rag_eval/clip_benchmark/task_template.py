@@ -93,7 +93,7 @@ def evaluate(args: Arguments):
                 model, dataloader, recall_k_list=[5], device=device, limit=limit
             )
         elif task == "image_caption":
-            output_path = os.path.join(output_path, "retrieval_data")
+            output_path = os.path.join(output_path, dataset_name, "retrieval_data")
             metrics = image_caption.evaluate(
                 model, dataloader, limit=limit, output_path=output_path
             )

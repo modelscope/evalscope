@@ -612,3 +612,104 @@ The following is an example of the output:
 ```
 
 </details>
+
+## Custom Dataset Evaluation
+
+### Custom Text Retrieval Evaluation
+
+1. Construct the Dataset with the following format:
+
+```
+retrieval_data
+├── corpus.jsonl
+├── queries.jsonl
+└── qrels
+    └── test.tsv
+```
+
+Where:
+- `corpus.jsonl`: Corpus file, each line is a JSON object formatted as `{"_id": "xxx", "text": "xxx"}`. `_id` is the corpus ID, and `text` is the corpus text. For example:
+  ```json
+  {"_id": "doc1", "text": "Climate change is leading to more extreme weather patterns."}
+  {"_id": "doc2", "text": "The stock market surged today, led by tech stocks."}
+  {"_id": "doc3", "text": "AI is transforming various industries by automating tasks and providing insights."}
+  {"_id": "doc4", "text": "With technological advancements, renewable energy sources like wind and solar are becoming more widespread."}
+  {"_id": "doc5", "text": "Recent studies show that a balanced diet and regular exercise can significantly improve mental health."}
+  {"_id": "doc6", "text": "Virtual reality is creating new opportunities in education, entertainment, and training."}
+  {"_id": "doc7", "text": "Electric vehicles are becoming increasingly popular due to environmental benefits and advances in battery technology."}
+  {"_id": "doc8", "text": "Space exploration missions are revealing new information about our solar system and beyond."}
+  {"_id": "doc9", "text": "Blockchain technology has potential applications beyond cryptocurrency, including supply chain management and secure voting systems."}
+  {"_id": "doc10", "text": "The benefits of remote work include greater flexibility and reduced commuting time."}
+  ```
+
+- `queries.jsonl`: Query file, each line is a JSON object formatted as `{"_id": "xxx", "text": "xxx"}`. `_id` is the query ID, and `text` is the query text. For example:
+  ```json
+  {"_id": "query1", "text": "What are the impacts of climate change?"}
+  {"_id": "query2", "text": "What caused the stock market to rise today?"}
+  {"_id": "query3", "text": "How is AI changing industries?"}
+  {"_id": "query4", "text": "What are the advancements in renewable energy?"}
+  {"_id": "query5", "text": "How does a balanced diet improve mental health?"}
+  {"_id": "query6", "text": "What new opportunities does virtual reality create?"}
+  {"_id": "query7", "text": "Why are electric vehicles becoming more popular?"}
+  {"_id": "query8", "text": "What new information has space exploration revealed?"}
+  {"_id": "query9", "text": "What are the applications of blockchain technology beyond cryptocurrency?"}
+  {"_id": "query10", "text": "What are the benefits of remote work?"}
+  ```
+
+- `qrels`: Evaluation file(s) in TSV format, with columns `query-id`, `doc-id`, and `score`. `query-id` is the query ID, `doc-id` is the corpus ID, and `score` is the relevance score. For example:
+  ```
+  query-id  corpus-id  score
+  query1    doc1       1
+  query2    doc2       1
+  query3    doc3       1
+  query4    doc4       1
+  query5    doc5       1
+  query6    doc6       1
+  query7    doc7       1
+  query8    doc8       1
+  query9    doc9       1
+  query10   doc10      1
+  ```
+
+2. Construct the Configuration File
+```python
+task_cfg = {
+    "eval_backend": "RAGEval",
+    "eval_config": {
+        "tool": "MTEB",
+        "model": [
+            {
+                "model_name_or_path": "AI-ModelScope/m3e-base",
+                "pooling_mode": None,  # load from model config
+                "max_seq_length": 512,
+                "prompt": "",
+                "model_kwargs": {"torch_dtype": "auto"},
+                "encode_kwargs": {
+                    "batch_size": 128,
+                },
+            }
+        ],
+        "eval": {
+            "tasks": ["CustomRetrieval"],
+            "dataset_path": "custom_eval/text/retrieval",
+            "verbosity": 2,
+            "output_folder": "outputs",
+            "overwrite_results": True,
+            "limits": 500,
+        },
+    },
+}
+```
+
+Parameter description, with essential parameters modified from the default configuration:
+- `eval`:
+  - `tasks`: Evaluation task, must be `CustomRetrieval`.
+  - `dataset_path`: Path to the custom dataset.
+
+3. Run the Evaluation
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg=task_cfg)
+```

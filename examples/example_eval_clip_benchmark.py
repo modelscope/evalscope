@@ -28,19 +28,20 @@ def run_eval():
                     # }
                     {
                         "model_name": "internvl2-8b",
-                        "api_base": "http://localhost:8000/v1",
+                        "api_base": "http://localhost:8008/v1",
+                        "prompt": "简要描述这张图片，必须使用中文，描述不要太长",
                     }
                 ],
-                # "dataset_name": ["muge", "flickr8k"],
-                "dataset_name": ["custom"],
-                "data_dir": "custom_eval/multimodal/text-image-retrieval",
+                "dataset_name": ["muge"],
+                # "dataset_name": ["custom"],
+                # "data_dir": "custom_eval/multimodal/text-image-retrieval",
                 "split": "test",
                 "task": "image_caption",
-                "batch_size": 128,
+                "batch_size": 2,
                 "num_workers": 1,
                 "verbose": True,
                 "skip_existing": False,
-                "limit": 1000,
+                "limit": 10,
             },
         },
     }
