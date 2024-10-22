@@ -20,7 +20,6 @@ class TestsetGenerationArguments:
         api_key: Optional[str] = None
     """
     generator_llm: Dict = field(default_factory=dict)
-    critic_llm: Dict = field(default_factory=dict)
     embeddings: Dict = field(default_factory=dict)
     distribution: str = field(
         default_factory=lambda: {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1}

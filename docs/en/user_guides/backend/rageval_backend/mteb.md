@@ -46,6 +46,11 @@ Here is an overview of the available tasks and datasets in C-MTEB:
 
 For retrieval tasks, a sample of 100,000 candidates (including the ground truth) is drawn from the entire corpus to reduce inference costs.
 
+```{seealso}
+- [Datasets Supported by CMTEB](https://github.com/FlagOpen/FlagEmbedding/blob/master/C_MTEB/README.md)
+- [Datasets Supported by MTEB](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
+```
+
 ## Environment Setup
 Install dependencies
 ```bash
@@ -54,8 +59,9 @@ pip install mteb
 
 ## Configure Evaluation Parameters
 The framework supports two evaluation modes: single-stage evaluation and two-stage evaluation:
-- **Single-stage evaluation**: Directly use the model for prediction and calculate metrics.
-- **Two-stage evaluation**: Use the model for prediction, then apply a retrieval model for reranking, and calculate metrics.
+- Single-Stage Evaluation: Directly use the model for prediction and compute metrics. Supports tasks such as retrieval, re-ranking, and classification for embedding models.
+
+- Two-Stage Evaluation: Use the model for retrieval first, then use the model for re-ranking, and compute metrics. Supports re-ranking models.
 
 ### Single-stage Evaluation
 Example configuration file:
@@ -87,39 +93,41 @@ one_stage_task_cfg = {
             "verbosity": 2,
             "output_folder": "outputs",
             "overwrite_results": True,
+            "topk": 10,
             "limits": 500,
         },
     },
 }
 ```
 #### Parameter Explanation
+
 - `eval_backend`: Default value is `RAGEval`, indicating the use of the RAGEval evaluation backend.
 - `eval_config`: A dictionary containing the following fields:
-    - `tool`: Evaluation tool, using `MTEB`.
-    - `model`: List of model configurations, **only one model can be placed here for single-stage evaluation**, containing the following fields:
-        - `model_name_or_path`: `str` Model name or path
-        - `is_cross_encoder`: `bool` Indicates whether the model is a cross-encoder, default is False.  
-        - `pooling_mode`: `Optional[str]` Pooling mode, possible values are: “cls”, “lasttoken”, “max”, “mean”, “mean_sqrt_len_tokens” or “weightedmean”.  
-        - `max_seq_length`: `int` Maximum sequence length, default is 512.  
-        - `prompt`: `str` Prompt for large language model-based assistance.  
-        - `model_kwargs`: `dict` Model keyword arguments, default value is `{"torch_dtype": "auto"}`.  
-        - `config_kwargs`: `Dict[str, Any]` Configuration keyword arguments, default is an empty dictionary.  
-        - `encode_kwargs`: `dict` Encoding keyword arguments, default is:  
-            ```python  
-            {  
-                "show_progress_bar": True,  
+    - `tool`: The evaluation tool, using `MTEB`.
+    - `model`: A list of model configurations. **Only one model can be placed for single-stage evaluation**, containing the following fields:
+        - `model_name_or_path`: `str` The model name or path. Supports automatic downloading from the ModelScope repository.
+        - `is_cross_encoder`: `bool` Whether the model is a cross-encoder. Default is False.
+        - `pooling_mode`: `Optional[str]` Pooling mode. Default is `mean`. Possible values are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For the `bge` series models, please set it to "cls".
+        - `max_seq_length`: `int` Maximum sequence length. Default is 512.
+        - `prompt`: `str` Prompt for the retrieval task in front of the model. Default is an empty string.
+        - `model_kwargs`: `dict` Keyword arguments for the model. Default value is `{"torch_dtype": "auto"}`.
+        - `config_kwargs`: `Dict[str, Any]` Keyword arguments for the configuration. Default is an empty dictionary.
+        - `encode_kwargs`: `dict` Keyword arguments for encoding. Default value is:
+            ```python
+            {
+                "show_progress_bar": True,
                 "batch_size": 32
-            }  
-            ```  
-        - `hub`: `str` Model source, can be "modelscope" or "huggingface".  
-    - `eval`: Dictionary containing the following fields:
-        - `tasks`: `List[str]` Task names  
-        - `top_k`: `int` Select the top K results, used in retrieval tasks  
-        - `verbosity`: `int` Level of detail, ranging from 0-3  
-        - `output_folder`: `str` Output folder, default is "outputs"  
-        - `overwrite_results`: `bool` Indicates whether to overwrite results, default is True  
-        - `limits`: `Optional[int]` Limiting the number of samples, default is None; not recommended for retrieval tasks
-        - `hub`: `str` Model source, can be "modelscope" or "huggingface"  
+            }
+            ```
+        - `hub`: `str` Source of the model, which can be "modelscope" or "huggingface".
+    - `eval`: A dictionary containing the following fields:
+        - `tasks`: `List[str]` Task names. See [Task List](#supported-datasets).
+        - `top_k`: `int` Number of top results to select for retrieval tasks.
+        - `verbosity`: `int` Level of verbosity. Range is 0-3.
+        - `output_folder`: `str` Output folder. Default is "outputs".
+        - `overwrite_results`: `bool` Whether to overwrite results. Default is True.
+        - `limits`: `Optional[int]` Limit the number of samples. Default is None; it is not recommended to set this for retrieval tasks.
+        - `hub`: `str` Source of the dataset, which can be "modelscope" or "huggingface".
 
 
 ### Two-stage Evaluation
@@ -155,13 +163,16 @@ two_stage_task_cfg = {
             "verbosity": 2,
             "output_folder": "outputs",
             "overwrite_results": True,
+            "topk": 5,
             "limits": 100,
         },
     },
 }
 ```
 #### Parameter Explanation
-Basic parameters are the same as in single-stage evaluation, differing in the `model` field, where two models are required: the first model for retrieval and the second model for reranking, with the reranking model needing to be a cross encoder.
+
+The basic parameters are the same as those for single-stage evaluation. The difference lies in the `model` field, where two models need to be provided. The first model is used for retrieval, and the second model is used for reranking. The reranking model needs to be a cross-encoder, i.e., `is_cross_encoder=True`.
+
 
 ## Model Evaluation
 ```python
@@ -174,7 +185,9 @@ one_stage_task_cfg = one_stage_task_cfg
 # two_stage_task_cfg = two_stage_task_cfg
 
 # Run task
-run_task(task_cfg=one_stage_task_cfg) # or run_task(task_cfg=two_stage_task_cfg)
+run_task(task_cfg=one_stage_task_cfg) 
+# or 
+# run_task(task_cfg=two_stage_task_cfg)
 ```
 
 The following is an example of the output:

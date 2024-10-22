@@ -74,10 +74,6 @@ generate_testset_task_cfg = {
                 "model_name_or_path": "qwen/Qwen2-7B-Instruct",
                 "template_type": "qwen",
             },
-            "critic_llm": {
-                "model_name_or_path": "QwenCollection/Ragas-critic-llm-Qwen1.5-GPTQ",
-                "template_type": "qwen",
-            },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
             },
@@ -87,29 +83,28 @@ generate_testset_task_cfg = {
 
 ```
 配置文件说明：
-- `eval_backend`: 字符串, 描述: 评估后端的名称，例如 "RAGEval"。
-- `eval_config`: 字典, 描述: 包含评估配置的详细信息。
-  - `tool`: 字符串, 描述: 评估工具的名称，例如 "RAGAS"。
-  - `testset_generation`: 字典, 描述: 测试集生成的配置。
-    - `docs`: 列表, 描述: 测试集生成所需的文档列表，例如 ["README.md"]。
-    - `test_size`: 整数, 描述: 生成测试集的大小，例如 5。
-    - `output_file`: 字符串, 描述: 生成的输出文件路径，例如 "outputs/testset.json"。
-    - `distribution`: 字典, 描述: 测试集内容的分布配置。
-      - `simple`: 浮点数, 描述: 简单内容的分布比例，例如 0.5。
-      - `multi_context`: 浮点数, 描述: 多上下文内容的分布比例，例如 0.4。
-      - `reasoning`: 浮点数, 描述: 推理内容的分布比例，例如 0.1。
-    - `generator_llm`: 字典, 描述: 生成器 LLM（大语言模型）的配置：
+- `eval_backend`: `str`：评估后端的名称 "RAGEval"。
+- `eval_config`: `dict`：包含评估配置的详细信息。
+  - `tool`: `str`：评估工具的名称"RAGAS"。
+  - `testset_generation`: `dict`：测试集生成的配置。
+    - `docs`: `list`：测试集生成所需的文档列表，例如 ["README.md"]。
+    - `test_size`: `int`：生成测试集的大小，例如 5。
+    - `output_file`: `str`：生成的输出文件路径，例如 "outputs/testset.json"。
+    - `distribution`: `dict`：测试集内容的分布配置。
+      - `simple`: `float`：简单内容的分布比例，例如 0.5。
+      - `multi_context`: `float`：多上下文内容的分布比例，例如 0.4。
+      - `reasoning`: `float`：推理内容的分布比例，例如 0.1。
+    - `generator_llm`: `dict`：生成器 (Large Language Model, LLM) 的配置：
       - 若使用本地模型，支持如下参数：
-        - `model_name_or_path`: 字符串, 描述: 生成器模型的名称或路径，填入名称，例如 "qwen/Qwen2-7B-Instruct"可以从modelscope自动下载模型；填入路径则从本地加载模型。
-        - `template_type`: 字符串, 描述: 模板类型，例如 "qwen"。
-        - `generation_config`: 字典, 描述: 生成配置，例如 `{"temperature": 0.7}`。
-      - 若使用API模型，支持如下参数：
-        - `model_name`: 字符串，自定义模型的名称。
-        - `api_base`: 字符串， 自定义基础URL。
-        - `api_key`: 可选，你的API密钥。
-    - `critic_llm`: 字典, 描述: 评价器 LLM 的配置，支持的配置项同上。
-    - `embeddings`: 字典, 描述: 嵌入模型的配置。
-      - `model_name_or_path`: 字符串, 描述: 嵌入模型的名称或路径，例如 "AI-ModelScope/m3e-base"。
+        - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "qwen/Qwen2-7B-Instruct" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
+        - `template_type`: `str`：模板类型，例如 "qwen"。
+        - `generation_config`: `dict`：生成配置，例如 `{"temperature": 0.7}`。
+      - 若使用 API 模型，支持如下参数：
+        - `model_name`: `str`：自定义模型的名称。
+        - `api_base`: `str`：自定义基础 URL。
+        - `api_key`: `Optional[str]`：你的 API 密钥。
+    - `embeddings`: `dict`：嵌入模型的配置。
+      - `model_name_or_path`: `str`：嵌入模型的名称或路径，例如 "AI-ModelScope/m3e-base"。
 
 
 #### 执行任务

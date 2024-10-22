@@ -6,11 +6,9 @@
 
 - MTEB（Massive Text Embedding Benchmark）是一个大规模的基准测试，旨在衡量文本嵌入模型在多样化嵌入任务上的性能。MTEB 包括56个数据集，涵盖8个任务，并且支持超过112种不同的语言。这个基准测试的目标是帮助开发者找到适用于多种任务的最佳文本嵌入模型。
 
-- C-MTEB（Chinese Massive Text Embedding Benchmark）是一个专门针对中文文本向量的评测基准，它基于MTEB构建，旨在评估中文文本向量模型的性能。C-MTEB收集了35个公共数据集，并分为6类评估任务，包括检索（retrieval）、重排序（re-ranking）、语义文本相似度（STS）、分类（classification）、对分类（pair classification）和聚类（clustering）。
+- CMTEB（Chinese Massive Text Embedding Benchmark）是一个专门针对中文文本向量的评测基准，它基于MTEB构建，旨在评估中文文本向量模型的性能。CMTEB收集了35个公共数据集，并分为6类评估任务，包括检索（retrieval）、重排序（reranking）、语义文本相似度（STS）、分类（classification）、对分类（pair classification）和聚类（clustering）。
 
 ## 支持的数据集
-
-以下是C-MTEB中可用任务和数据集的概述：
 
 | 名称 | Hub链接 | 描述 | 类型 | 类别 | 测试样本数量 |
 |-----|-----|---------------------------|-----|-----|-----|
@@ -48,6 +46,12 @@
 
 对于检索任务，从整个语料库中抽样100,000个候选项（包括真实值），以降低推理成本。
 
+
+```{seealso}
+- [CMTEB支持的数据集](https://github.com/FlagOpen/FlagEmbedding/blob/master/C_MTEB/README.md) 
+- [MTEB支持的数据集](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
+```
+
 ## 环境准备
 安装依赖包
 ```bash
@@ -56,8 +60,8 @@ pip install evalscope[rag] -U
 
 ## 配置评测参数
 框架支持两种评测方式：单阶段评测 和 两阶段评测：
-- 单阶段评测：直接使用模型预测，并计算指标。
-- 两阶段评测：使用模型预测，再使用检索模型进行reranking，并计算指标。
+- 单阶段评测：直接使用模型预测，并计算指标，支持embedding模型的检索、重排序、分类等任务。
+- 两阶段评测：使用模型检索，再使用模型进行重排序，并计算指标，支持reranking模型。
 
 ### 单阶段评测
 配置文件示例如下：
@@ -89,6 +93,7 @@ one_stage_task_cfg = {
             "verbosity": 2,
             "output_folder": "outputs",
             "overwrite_results": True,
+            "top_k": 10,
             "limits": 500,
         },
     },
@@ -100,11 +105,11 @@ one_stage_task_cfg = {
 - `eval_config`：字典，包含以下字段：
     - `tool`：评测工具，使用 `MTEB`。
     - `model`： 模型配置列表，**单阶段评测时只能放置一个模型**，包含以下字段：
-        - `model_name_or_path`: `str` 模型名称或路径
+        - `model_name_or_path`: `str` 模型名称或路径，支持从modelscope仓库自动下载模型。
         - `is_cross_encoder`: `bool` 模型是否为交叉编码器，默认为 False。  
-        - `pooling_mode`: `Optional[str]` 池化模式，可选值为：“cls”、“lasttoken”、“max”、“mean”、“mean_sqrt_len_tokens”或“weightedmean”。  
+        - `pooling_mode`: `Optional[str]` 池化模式，默认为`mean`，可选值为：“cls”、“lasttoken”、“max”、“mean”、“mean_sqrt_len_tokens”或“weightedmean”。`bge`系列模型请设置为“cls”。
         - `max_seq_length`: `int` 最大序列长度，默认为 512。  
-        - `prompt`: `str` 用于基于大语言模型的提示。  
+        - `prompt`: `str` 用于检索任务在模型前的提示，默认为空字符串。  
         - `model_kwargs`: `dict` 模型的关键字参数，默认值为 `{"torch_dtype": "auto"}`。  
         - `config_kwargs`: `Dict[str, Any]` 配置的关键字参数，默认为空字典。  
         - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  
@@ -116,13 +121,13 @@ one_stage_task_cfg = {
             ```  
         - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"。  
     - `eval`：字典，包含以下字段：
-        - `tasks`: `List[str]` 任务名称  
+        - `tasks`: `List[str]` 任务名称，参见[任务列表](#支持的数据集)
         - `top_k`: `int` 选取前 K 个结果，检索任务使用  
         - `verbosity`: `int` 详细程度，范围为 0-3  
         - `output_folder`: `str` 输出文件夹，默认为 "outputs"  
         - `overwrite_results`: `bool` 是否覆盖结果，默认为 True  
         - `limits`: `Optional[int]` 限制样本数量，默认为 None；检索任务不建议设置
-        - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"  
+        - `hub`: `str` 数据集来源，可以是 "modelscope" 或 "huggingface"  
 
 ### 两阶段评测
 配置文件示例如下，先进行检索，再进行reranking：
@@ -157,6 +162,7 @@ two_stage_task_cfg = {
             "verbosity": 2,
             "output_folder": "outputs",
             "overwrite_results": True,
+            "top_k": 5,
             "limits": 100,
         },
     },
@@ -164,7 +170,7 @@ two_stage_task_cfg = {
 ```
 #### 参数说明
 
-基本参数与单阶段相同，不同的地方在于model字段，这里需要传入两个模型，第一个模型用于检索，第二个模型用于reranking，reranking的模型需要使用cross encoder。
+基本参数与单阶段相同，不同的地方在于`model`字段，这里需要传入两个模型，第一个模型用于检索，第二个模型用于reranking，reranking的模型需要使用cross encoder即`is_cross_encoder=True`。
 
 ## 模型评测
 
@@ -178,7 +184,9 @@ one_stage_task_cfg = one_stage_task_cfg
 # two_stage_task_cfg = two_stage_task_cfg
 
 # Run task
-run_task(task_cfg=one_stage_task_cfg) # or run_task(task_cfg=two_stage_task_cfg)
+run_task(task_cfg=one_stage_task_cfg) 
+# or 
+# run_task(task_cfg=two_stage_task_cfg)
 ```
 
 输出结果如下：
