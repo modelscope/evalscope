@@ -1,2 +1,2 @@
-from .multi_modal_faithfulness import multimodal_faithness
-from .multi_modal_relevance import multimodal_relevance
+from .multi_modal_faithfulness import multimodal_faithness, MultiModalFaithfulness
+from .multi_modal_relevance import multimodal_relevance, MultiModalRelevance

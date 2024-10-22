@@ -17,11 +17,16 @@ def rag_eval(
     from ragas.llms import LangchainLLMWrapper
     import importlib
 
-    def dynamic_import(module_name, *function_names):
-        # 动态导入指定模块
-        module = importlib.import_module(module_name)
-
-        functions = [getattr(module, name) for name in function_names]
+    def dynamic_import(*function_names):
+        functions = []
+        for name in function_names:
+            if name.startswith("MultiModal"):
+                module = importlib.import_module(
+                    "evalscope.backend.rag_eval.ragas.metrics"
+                )
+            else:
+                module = importlib.import_module("ragas.metrics")
+            functions.append(getattr(module, name)())
         return functions
 
     llm = LLM.load(**args.critic_llm)
@@ -31,7 +36,7 @@ def rag_eval(
     dataset = Dataset.from_json(args.testset_file)
 
     # load metrics
-    metrics = dynamic_import("ragas.metrics", *args.metrics)
+    metrics = dynamic_import(*args.metrics)
     asyncio.run(
         translate_prompts(
             prompts=metrics,
