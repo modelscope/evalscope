@@ -24,6 +24,7 @@ class FaithfulnessOutput(BaseModel):
 class MultiModalFaithfulnessPrompt(
     ImageTextPrompt[FaithfulnessInput, FaithfulnessOutput]
 ):
+    # refer: https://github.com/run-llama/llama_index/blob/main/llama-index-core/llama_index/core/evaluation/multi_modal/faithfulness.py
     instruction = "Please tell if a given piece of information is supported by the visual as well as textual context information. You need to answer with either True or False. Answer True if any of the image(s) and textual context supports the information"
     input_model = FaithfulnessInput
     output_model = FaithfulnessOutput

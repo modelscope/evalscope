@@ -13,7 +13,8 @@ class RelevanceInput(BaseModel):
     def to_string_list(self):
         return [
             f"Question: {self.user_input}",
-            f"Response: {self.response}" "retrieved_contexts: ",
+            f"Response: {self.response}",
+            "retrieved_contexts: ",
         ] + self.retrieved_contexts
 
 
@@ -22,6 +23,7 @@ class RelevanceOutput(BaseModel):
 
 
 class MultiModalRelevancePrompt(ImageTextPrompt[RelevanceInput, RelevanceOutput]):
+    # refer https://github.com/run-llama/llama_index/blob/main/llama-index-core/llama_index/core/evaluation/multi_modal/relevancy.py
     instruction = """
 Your task is to evaluate if the response for the query is in line with the images and textual context information provided.
 You have two options to answer. Either True / False.
@@ -32,18 +34,24 @@ Answer - True, if the response for the query is in line with context information
     examples = [
         (
             RelevanceInput(
-                user_input="What is the weather like today in the image?",
-                response="The weather is sunny and clear.",
-                retrieved_contexts=["Today's weather is sunny with clear skies."],
+                user_input="What is the primary ingredient in a traditional Margherita pizza?",
+                response="The primary ingredients in a Margherita pizza are tomatoes, mozzarella cheese, and fresh basil.",
+                retrieved_contexts=[
+                    "A traditional Margherita pizza consists of a thin crust.",
+                    "The main toppings include tomatoes, mozzarella cheese, fresh basil, salt, and olive oil.",
+                    "It is one of the simplest and most classic types of pizza."
+                ],
             ),
             RelevanceOutput(relevance=True),
         ),
         (
             RelevanceInput(
-                user_input="Describe the main subject in the image.",
-                response="A cat is sitting on a chair.",
+                user_input="Who won the Best Actor award at the Oscars in 2021?",
+                response="The Best Actor award in 2021 was won by Leonardo DiCaprio.",
                 retrieved_contexts=[
-                    "A dog is running on the grass.",
+                    "The 93rd Academy Awards were held in 2021.",
+                    "Anthony Hopkins won the Best Actor award for his role in 'The Father'.",
+                    "The event was unique due to COVID-19 restrictions.",
                 ],
             ),
             RelevanceOutput(relevance=False),
