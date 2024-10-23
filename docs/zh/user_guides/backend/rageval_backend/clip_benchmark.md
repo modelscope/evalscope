@@ -78,7 +78,7 @@ task_cfg = {
             "verbose": True,
             "skip_existing": False,
             "output_dir": "outputs",
-            "cache_dir", "cache",
+            "cache_dir": "cache",
             "limit": 1000,
         },
     },
