@@ -22,7 +22,9 @@ def run_swift_eval():
 
     # List all datasets
     # e.g.  ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
-    print(f'** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
+    print(
+        f"** All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}"
+    )
 
     # Prepare the config
     """
@@ -43,17 +45,20 @@ def run_swift_eval():
     #   key: The OpenAI api-key of the model api, default to 'EMPTY'
     #   openai_api_base: The base URL of the OpenAI API, it means the swift model serving URL.
     task_cfg = dict(
-        eval_backend='OpenCompass',
-        eval_config={'datasets': ['cmb', 'ARC_e'],
-                     'models': [
-                         {'path': 'qwen2-1_5b-instruct',  # Please make sure the model is deployed
-                          'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
-                          'is_chat': True,
-                          'batch_size': 16},
-                     ],
-                     'work_dir': 'outputs/qwen2_eval_result',
-                     'limit': 10,
-                     },
+        eval_backend="OpenCompass",
+        eval_config={
+            "datasets": ["winogrande"],
+            "models": [
+                {
+                    "path": "qwen2-7b-instruct",  # Please make sure the model is deployed
+                    "openai_api_base": "http://127.0.0.1:8000/v1/chat/completions",
+                    "is_chat": True,
+                    "batch_size": 16,
+                },
+            ],
+            "work_dir": "outputs/qwen2_eval_result",
+            "limit": 10,
+        },
     )
 
     # Option 2: Use yaml file
@@ -66,10 +71,10 @@ def run_swift_eval():
     run_task(task_cfg=task_cfg)
 
     # [Optional] Get the final report with summarizer
-    print('>> Start to get the report with summarizer ...')
+    print(">> Start to get the report with summarizer ...")
     report_list = Summarizer.get_report_from_cfg(task_cfg)
-    print(f'\n>>The report list: {report_list}')
+    print(f"\n>>The report list: {report_list}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_swift_eval()

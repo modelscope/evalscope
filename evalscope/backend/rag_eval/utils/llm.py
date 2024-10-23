@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from evalscope.models.model_adapter import ChatGenerationModelAdapter
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 
 
 class LLM:
@@ -15,7 +15,7 @@ class LLM:
             return ChatOpenAI(
                 model_name=kw.get("model_name", ""),
                 openai_api_base=api_base,
-                openai_api_key=kw.get("api_key", ""),
+                openai_api_key=kw.get("api_key", "EMPTY"),
             )
         else:
             return LocalLLM(**kw)
