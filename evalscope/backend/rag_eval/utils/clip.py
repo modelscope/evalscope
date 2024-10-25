@@ -81,15 +81,26 @@ class CLIPModel(Embeddings):
         self.model = AutoModel.from_pretrained(model_name).to(self.device)
         self.processor = AutoProcessor.from_pretrained(model_name)
         self.transform = self.processor.image_processor
+        self.tokenizer = self.processor.tokenizer
 
     def encode_text(self, batch_texts: List[str] | List[List[str]]):
         if isinstance(batch_texts[0], list):
             batch_texts = [
                 text for _, texts in enumerate(batch_texts) for text in texts
             ]
+        # Ensure that the input texts are within the token limit
+        max_length = self.tokenizer.model_max_length
+        if not max_length or max_length > 0xFFFFFF:
+            max_length = 512
+        encoded_inputs = self.tokenizer(
+            text=batch_texts,
+            max_length=max_length,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+        )
 
-        inputs = self.processor(text=batch_texts, padding=True, return_tensors="pt")
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        inputs = {k: v.to(self.device) for k, v in encoded_inputs.items()}
 
         with torch.no_grad():
             text_features = self.model.get_text_features(**inputs)
@@ -112,9 +123,9 @@ class CLIPModel(Embeddings):
         text_features = self.encode_text([text])
         return text_features.cpu().numpy()
 
-    def embed_image(self, image_paths: List[str]):
+    def embed_image(self, uris: List[str]):
         # read image and transform
-        images = [Image.open(image_path) for image_path in image_paths]
+        images = [Image.open(image_path) for image_path in uris]
         transformed_images = [
             self.transform(
                 image,
@@ -127,11 +138,12 @@ class CLIPModel(Embeddings):
 
 
 if __name__ == "__main__":
-    model = CLIPModel("AI-ModelScope/clip-vit-large-patch14-336")
-    model.embed_image(
-        [
-            "custom_eval/multimodal/images/AMNH.jpg",
-            "custom_eval/multimodal/images/AMNH.jpg",
-        ]
-    )
+    model = CLIPModel("AI-ModelScope/chinese-clip-vit-large-patch14-336px")
+    # model.embed_image(
+    #     [
+    #         "custom_eval/multimodal/images/AMNH.jpg",
+    #         "custom_eval/multimodal/images/AMNH.jpg",
+    #     ]
+    # )
+    model.encode_text(["我喜欢吃饭" * 1000])
     print("done")
