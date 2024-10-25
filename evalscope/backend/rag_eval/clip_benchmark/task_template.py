@@ -28,7 +28,7 @@ def evaluate(args: Arguments):
     batch_size = args.batch_size
     num_workers = args.num_workers
     verbose = args.verbose
-    task = args.task
+    input_task = args.task
     output_dir = args.output_dir
     cache_dir = args.cache_dir
     skip_existing = args.skip_existing
@@ -36,8 +36,7 @@ def evaluate(args: Arguments):
 
     # Iterate over model and dataset combinations
     for model_cfg, dataset_name in product(models, dataset_names):
-        if not task:
-            task = get_dataset_default_task(dataset_name)
+        task = input_task or get_dataset_default_task(dataset_name)
         model_name = os.path.basename(model_cfg["model_name"])
 
         output_path = os.path.join(output_dir, model_name)

@@ -48,7 +48,6 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
     texts_image_index = []
     sample_count = 0
     dataloader = dataloader_with_indices(dataloader)
-    autocast = torch.amp.autocast if amp else suppress
     for batch_images, batch_texts, inds in tqdm(dataloader):
 
         # store the index of image for each text
@@ -57,9 +56,8 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
         ]
 
         # compute the embedding of images and texts
-        with autocast(device):
-            batch_images_emb = F.normalize(model.encode_image(batch_images), dim=-1)
-            batch_texts_emb = F.normalize(model.encode_text(batch_texts), dim=-1)
+        batch_images_emb = model.encode_image(batch_images)
+        batch_texts_emb = model.encode_text(batch_texts)
 
         batch_images_emb_list.append(batch_images_emb.cpu())
         batch_texts_emb_list.append(batch_texts_emb.cpu())

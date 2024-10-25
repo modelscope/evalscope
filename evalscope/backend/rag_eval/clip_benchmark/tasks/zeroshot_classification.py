@@ -50,7 +50,7 @@ def zero_shot_classifier(model, classnames, templates, device, amp=True):
                 texts = [template.format(c=classname) for template in templates]
             else:
                 raise ValueError("templates must be a list or a dict")
-            class_embedding = F.normalize(model.encode_text(texts), dim=-1).mean(dim=0)
+            class_embedding = model.encode_text(texts).mean(dim=0)
             class_embedding = F.normalize(class_embedding, dim=0)
             zeroshot_weights.append(class_embedding)
         zeroshot_weights = torch.stack(zeroshot_weights, dim=1).to(device)
@@ -85,7 +85,7 @@ def accuracy(output, target, topk=(1,)):
     ]
 
 
-def run_classification(model, classifier, dataloader, device, amp=True):
+def run_classification(model, classifier, dataloader, device, amp=True, limit=None):
     """
     Run zero-shot classifcation
 
@@ -106,7 +106,7 @@ def run_classification(model, classifier, dataloader, device, amp=True):
     autocast = torch.amp.autocast if amp else suppress
     pred = []
     true = []
-    nb = 0
+    sample_count = 0
     with torch.no_grad():
         for images, target in tqdm(dataloader):
             target = target.to(device)
@@ -114,8 +114,14 @@ def run_classification(model, classifier, dataloader, device, amp=True):
             with autocast(device):
                 # predict
                 image_features = model.encode_image(images)
-                image_features = F.normalize(image_features, dim=-1)
                 logits = 100.0 * image_features @ classifier
+            
+            if limit is not None:
+                # Update sample counter
+                sample_count += len(images)
+
+                if sample_count >= limit:
+                    break
 
             true.append(target.cpu())
             pred.append(logits.float().cpu())
@@ -206,7 +212,7 @@ def evaluate(
     """
     classifier = zero_shot_classifier(model, classnames, templates, device, amp=amp)
 
-    logits, target = run_classification(model, classifier, dataloader, device, amp=amp)
+    logits, target = run_classification(model, classifier, dataloader, device, amp=amp, limit=limit)
     is_multilabel = len(target.shape) == 2
 
     if is_multilabel:
