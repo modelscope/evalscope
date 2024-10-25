@@ -1,0 +1,5 @@
+{"image_path": "custom_eval/multimodal/images/dog.jpg", "query": ["dog"]}
+{"image_path": "custom_eval/multimodal/images/AMNH.jpg", "query": ["building"]}
+{"image_path": "custom_eval/multimodal/images/tokyo.jpg", "query": ["city", "tokyo"]}
+{"image_path": "custom_eval/multimodal/images/tesla.jpg", "query": ["car", "tesla"]}
+{"image_path": "custom_eval/multimodal/images/running.jpg", "query": ["man", "running"]}

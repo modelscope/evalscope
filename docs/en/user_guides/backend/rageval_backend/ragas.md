@@ -18,49 +18,45 @@ Install dependencies
 pip install ragas
 ```
 
-## Dataset Preparation
+## RAG Evaluation
 
-Example of evaluation dataset is as follows:
+### Dataset Preparation
+An example of the evaluation dataset is as follows:
 ```json
-{
-    "question": [
-        "When was the first super bowl?",
-        "Who won the most super bowls?"
-    ],
-    "answer": [
-        "The first superbowl was held on Jan 15, 1967",
-        "The most super bowls have been won by The New England Patriots"
-    ],
-    "contexts": [
-        [
-            "The First AFL–NFL World Championship Game was an American football game played on January 15, 1967, at the Los Angeles Memorial Coliseum in Los Angeles,"
+[
+    {
+        "user_input": "When was the first Olympic Games held?",
+        "retrieved_contexts": [
+            "The first modern Olympic Games were held from April 6 to April 15, 1896, in Athens, Greece."
         ],
-        [
-            "The Green Bay Packers...Green Bay, Wisconsin.",
-            "The Packers compete...Football Conference"
-        ]
-    ],
-    "ground_truth": [
-        "The first superbowl was held on January 15, 1967",
-        "The New England Patriots have won the Super Bowl a record six times"
-    ]
-}
+        "response": "The first modern Olympic Games were held on April 6, 1896.",
+        "reference": "The first modern Olympic Games opened on April 6, 1896, in Athens, Greece."
+    },
+    {
+        "user_input": "Which athlete has won the most Olympic gold medals?",
+        "retrieved_contexts": [
+            "Michael Phelps is the athlete with the most Olympic gold medals in history, having won a total of 23 gold medals."
+        ],
+        "response": "Michael Phelps has won the most Olympic gold medals.",
+        "reference": "Michael Phelps is the athlete with the most Olympic gold medals, having won a total of 23 gold medals."
+    }
+]
 ```
-Required fields include:
-- question: Question
-- answer: Answer
-- contexts: List of contexts
-- ground_truth: Standard answer
-### Automatic Data Generation
+The required fields include:
+- user_input: User input
+- response: Model generated answer
+- retrieved_contexts: List of retrieved contexts
+- reference: Standard answer
 
-RAGAS offers the capability to automatically generate test data, allowing users to specify parameters such as test set size, data distribution, generator, and LLM, to automatically produce test datasets. The specific steps are as follows:
+#### Automatically Generating Datasets
+RAGAS provides the functionality to automatically generate test datasets. Users can specify parameters such as test set size, data distribution, LLM generators, and so on to automatically generate a test dataset. The specific steps are as follows:
 
 ```{figure} images/generation_process.png
 
 Ragas adopts a novel approach to generating evaluation data. An ideal evaluation dataset should encompass various types of questions encountered in real-world applications, including questions of different difficulty levels. By default, large language models (LLMs) struggle to create diverse samples since they often follow common paths. Inspired by works like [Evol-Instruct](https://arxiv.org/abs/2304.12244), Ragas achieves this goal by adopting an evolutionary generation paradigm, where questions with different characteristics (such as reasoning, conditions, multiple contexts, etc.) are systematically constructed based on the provided document set. This method ensures comprehensive coverage of the various components' performance in your pipeline, making the evaluation process more robust.
 ```
 
-#### Configuration Task
+**Configuration Task**
 ```python
 generate_testset_task_cfg = {
     "eval_backend": "RAGEval",
@@ -68,51 +64,49 @@ generate_testset_task_cfg = {
         "tool": "RAGAS",
         "testset_generation": {
             "docs": ["README.md"],
-            "test_size": 5,
+            "test_size": 10,
             "output_file": "outputs/testset.json",
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "qwen/Qwen2-7B-Instruct",
                 "template_type": "qwen",
             },
-            "critic_llm": {
-                "model_name_or_path": "QwenCollection/Ragas-critic-llm-Qwen1.5-GPTQ",
-                "template_type": "qwen",
-            },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
             },
+            "language": "english"
         }
     },
 }
 ```
 Configuration file description:
-- `eval_backend`: string, description: The name of the evaluation backend, e.g., "RAGEval".
-- `eval_config`: dictionary, description: Contains detailed information about the evaluation configuration.
-  - `tool`: string, description: The name of the evaluation tool, e.g., "RAGAS".
-  - `testset_generation`: dictionary, description: Configuration for test set generation:
-    - `docs`: list, description: A list of documents needed for test set generation, e.g., ["README.md"].
-    - `test_size`: integer, description: The size of the generated test set, e.g., 5.
-    - `output_file`: string, description: The path for the generated output file, e.g., "outputs/testset.json".
-    - `distribution`: dictionary, description: Configuration for the distribution of test set content.
-      - `simple`: float, description: The distribution proportion of simple content, e.g., 0.5.
-      - `multi_context`: float, description: The distribution proportion of multi-context content, e.g., 0.4.
-      - `reasoning`: float, description: The distribution proportion of reasoning content, e.g., 0.1.
 
-    - `generator_llm`: dictionary, description: Configuration for the generator LLM (Large Language Model):
-        - If using a local model, the following parameters are supported:
-            - `model_name_or_path`: string, description: The name or path of the generator model. Enter a name, e.g., "qwen/Qwen2-7B-Instruct" to automatically download the model from ModelScope; enter a path to load the model locally.
-            - `template_type`: string, description: Template type, e.g., "qwen".
-            - `generation_config`: dictionary, description: Generation configuration, e.g., `{"temperature": 0.7}`.
-        - If using an API model, the following parameters are supported:
-            - `model_name`: string, custom name for the model.
-            - `api_base`: string, custom base URL.
-            - `api_key`: optional, your API key.
-    - `critic_llm`: dictionary, description: Configuration for the evaluator LLM, same as above.
-    - `embeddings`: dictionary, description: Configuration for the embedding model.
-      - `model_name_or_path`: string, description: The name or path of the embedding model, e.g., "AI-ModelScope/m3e-base".
+- `eval_backend`: `str`: The name of the evaluation backend, "RAGEval".
+- `eval_config`: `dict`: Detailed information of the evaluation configuration.
+  - `tool`: `str`: The name of the evaluation tool, "RAGAS".
+  - `testset_generation`: `dict`: Configuration for test set generation.
+    - `docs`: `list`: List of documents required for test set generation, e.g., ["README.md"].
+    - `test_size`: `int`: Size of the generated test set, e.g., 5.
+    - `output_file`: `str`: Path of the generated output file, e.g., "outputs/testset.json".
+    - `distribution`: `dict`: Configuration of the content distribution in the test set.
+      - `simple`: `float`: Proportion of simple content, e.g., 0.5.
+      - `multi_context`: `float`: Proportion of multi-context content, e.g., 0.4.
+      - `reasoning`: `float`: Proportion of reasoning content, e.g., 0.1.
+    - `generator_llm`: `dict`: Configuration of the generator LLM:
+      - If using a local model, supports the following parameters:
+        - `model_name_or_path`: `str`: Name or path of the generator model, e.g., "qwen/Qwen2-7B-Instruct" can be automatically downloaded from ModelScope; providing a path will load the model locally.
+        - `template_type`: `str`: Template type, e.g., "qwen".
+        - `generation_config`: `dict`: Generation configuration, e.g., `{"temperature": 0.7}`.
+      - If using an API model, supports the following parameters:
+        - `model_name`: `str`: Name of the custom model.
+        - `api_base`: `str`: Base URL of the custom API, e.g., "http://127.0.0.1:8000".
+        - `api_key`: `Optional[str]`: Your API key, default is "EMPTY".
+    - `embeddings`: `dict`: Configuration of the embedding model.
+      - `model_name_or_path`: `str`: Name or path of the embedding model, e.g., "AI-ModelScope/m3e-base".
+    - `language`: `str`: Language, default is `english`, can be set to another language such as "chinese". The `generator_llm` will automatically translate prompts to the target language. The framework has pre-translated some prompts using `Qwen2.5-72B-Instruct`.
 
-#### Execute Task
+
+**Execute Task**
 ```python
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
@@ -122,66 +116,116 @@ logger = get_logger()
 run_task(task_cfg=generate_testset_task_cfg) 
 ```
 
-Using examples generated from the project's README documentation as follows:
+Using examples generated from the project's `README.md` documentation as follows:
 
 <details><summary>Click to view the automatically generated dataset</summary>
 
 ``` json
 [
     {
-        "question": "What is the purpose of specifying the 'template type' when conducting a more customized evaluation using the evalscope/run.py command?",
-        "contexts": [
-            " to run the custom code? [y\/N]`, please type `y`. #### Basic Parameter Descriptions - `--model`: Specifies the `model_id` of the model on [ModelScope](https:\/\/modelscope.cn\/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https:\/\/modelscope.cn\/models\/qwen\/Qwen2-0.5B-Instruct\/summary); you can also use a local path, such as `\/path\/to\/model`. - `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https:\/\/swift.readthedocs.io\/en\/latest\/Instruction\/Supported-models-datasets.html#llm) for filling in this field. - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https:\/\/evalscope.readthedocs.io\/en\/latest\/get_started\/supported_dataset.html) for available options. ### 2. Parameterized Evaluation If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands: **Example 1:** ```shell python evalscope\/run.py \\ --model qwen\/Qwen2-0.5B-Instruct \\ --template-type qwen \\ --model-args revision=master,precision=torch.float16,device_map=auto \\ --datasets gsm8k ceval \\ --use-cache true \\ --limit 10 ``` **Example 2:** ```shell python evalscope\/run.py \\ --model qwen\/Qwen2-0.5B-Instruct \\ --template-type qwen \\ --generation-config do_sample=false,temperature=0.0 \\ --datasets ceval \\ --dataset-args '{\"ceval\": {\"few_shot_num\": 0, \"few_shot_random\": false}}' \\ --limit 10 ``` #### Parameter Descriptions In addition to the three [basic parameters](#basic-parameter-descriptions), the other parameters are as follows: - `--model-args`: Model loading parameters, separated by commas, in `key=value` format. - `--generation-config`: Generation parameters, separated by commas, in `key=value` format. - `do_sample`: Whether to use sampling, default is `false`. - `max_new_tokens`: Maximum generation length, default is 1024. - `temperature`: Sampling temperature. - `top_p`: Sampling threshold. - `top_k`: Sampling threshold. - `--use-cache`: Whether to use local cache, default is `false`. If set to `true`, previously evaluated model and dataset combinations will not be evaluated again, and will be read directly from the local cache. - `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`. - `--few_shot_num`: Number of few-shot examples. - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`. - `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation. ### 3. Use the run_task Function to Submit an Evaluation Task Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields: #### 1. Configuration Task Dictionary Parameters ```python import torch from evalscope.constants import DEFAULT_ROOT_CACHE_DIR # Example your_task_cfg = { 'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'}, 'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512}, 'dataset_args': {}, 'dry_run': False, 'model': 'qwen\/Qwen2-0.5B-Instruct', 'template_type': 'qwen', 'datasets': ['arc', 'hellasw"
+        "user_input":"What are the key sectoins covered in the documet's table of contens?",
+        "retrieved_contexts":[
+            "## \ud83d\udccb Table of Contents - [Introduction](#introduction) - [News](#News) - [Installation](#installation) - [Quick Start](#quick-start) - [Evaluation Backend](#evaluation-backend) - [Custom Dataset Evaluation](#custom-dataset-evaluation) - [Offline Evaluation](#offline-evaluation) - [Arena Mode](#arena-mode) - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation) - [Leaderboard](#leaderboard) "
         ],
-        "ground_truth": "The purpose of specifying the 'template type' when conducting a more customized evaluation using the evalscope/run.py command is to associate the correct evaluation template with the chosen model. This ensures that the evaluation process uses the appropriate instructions, prompts, and settings tailored for that specific model, enhancing the relevance and effectiveness of the evaluation.",
-        "answer": "Specifying the 'template type' when conducting a more customized evaluation using the evalscope/run.py command is crucial because it corresponds to the specific structure and requirements of the model being used. This ensures that the evaluation process aligns correctly with the model's capabilities and expected input format, leading to accurate and meaningful results."
+        "response":"The document's table of contents covers sections such as Introduction, News, Installation, Quick Start, Evaluation Backend, Custom Dataset Evaluation, Offline Evaluation, Arena Mode, Model Serving Performance Evaluation, and Leaderboard.",
+        "reference":"The key sections covered in the document's table of contents include Introduction, News, Installation, Quick Start, Evaluation Backend, Custom Dataset Evaluation, Offline Evaluation, Arena Mode, Model Serving Performance Evaluation, and Leaderboard."
     },
     {
-        "question": "What automated outputs does the EvalScope framework produce following a model evaluation?",
-        "contexts": [
-            "\ud83d\udcd6 Documents &nbsp | &nbsp \ud83d\udcd6 \u4e2d\u6587\u6587\u6863",
-            "## \ud83d\udccb Table of Contents - [Introduction](#introduction) - [News](#News) - [Installation](#installation) - [Quick Start](#quick-start) - [Evaluation Backend](#evaluation-backend) - [Custom Dataset Evaluation](#custom-dataset-evaluation) - [Offline Evaluation](#offline-evaluation) - [Arena Mode](#arena-mode) - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation) - [Leaderboard](#leaderboard) ## \ud83d\udcdd Introduction Large Model (including Large Language Models, Multi-modal Large Language Models) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the EvalScope framework. ### Framework Features - **Benchmark Datasets**: Preloaded with several commonly used test benchmarks, including MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc. - **Evaluation Metrics**: Implements various commonly used evaluation metrics. - **Model Access**: A unified model access mechanism that is compatible with the Generate and Chat interfaces of multiple model families. - **Automated Evaluation**: Includes automatic evaluation of objective questions and complex task evaluation using expert models. - **Evaluation Reports**: Automatically generates evaluation reports. - **Arena Mode**: Used for comparisons between models and objective evaluation of models, supporting various evaluation modes, including: - **Single mode**: Scoring a single model. - **Pairwise-baseline mode**: Comparing against a baseline model. - **Pairwise (all) mode**: Pairwise comparison among all models. - **Visualization Tools**: Provides intuitive displays of evaluation results. - **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/stress_test.html). - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation. - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets. - **Full-Link Support**: Through seamless integration with the [ms-swift](https:\/\/github.com\/modelscope\/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency."
+        "user_input":"What EvalScope mean for model eval?",
+        "retrieved_contexts":[
+            "## \ud83d\udcdd Introduction EvalScope is the official model evaluation and performance benchmarking framework launched by the [ModelScope](https:\/\/modelscope.cn\/) community. It comes with built-in common benchmarks and evaluation metrics, such as MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, and HumanEval. EvalScope supports various types of model evaluations, including LLMs, multimodal LLMs, embedding models, and reranker models. It is also applicable to multiple evaluation scenarios, such as end-to-end RAG evaluation, arena mode, and model inference performance stress testing. Moreover, with the seamless integration of the ms-swift training framework, evaluations can be initiated with a single click, providing full end-to-end support from model training to evaluation \ud83d\ude80"
         ],
-        "ground_truth": "The EvalScope framework automatically generates evaluation reports following a model evaluation.",
-        "answer": "The EvalScope framework produces automated evaluation reports following a model evaluation. These reports include results from automatic evaluations of objective questions and complex task evaluations using expert models."
+        "response":"EvalScope is a framework by ModelScope for evaluating and benchmarking model performance, supporting a wide range of models and evaluation scenarios. It integrates common benchmarks and metrics, and offers seamless evaluation processes from training to performance testing.",
+        "reference":"EvalScope is a framework for model evaluation and performance benchmarking, supporting various types of models and evaluation scenarios, and providing seamless integration with the ms-swift training framework for easy and comprehensive model evaluation."
     },
     {
-        "question": "How does EvalScope framework create detailed reports for big models using benchmark datasets, metrics, and backends like OpenCompass or VLMEvalKit?",
-        "contexts": [
-            "## \ud83d\udccb Table of Contents - [Introduction](#introduction) - [News](#News) - [Installation](#installation) - [Quick Start](#quick-start) - [Evaluation Backend](#evaluation-backend) - [Custom Dataset Evaluation](#custom-dataset-evaluation) - [Offline Evaluation](#offline-evaluation) - [Arena Mode](#arena-mode) - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation) - [Leaderboard](#leaderboard) ## \ud83d\udcdd Introduction Large Model (including Large Language Models, Multi-modal Large Language Models) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the EvalScope framework. ### Framework Features - **Benchmark Datasets**: Preloaded with several commonly used test benchmarks, including MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc. - **Evaluation Metrics**: Implements various commonly used evaluation metrics. - **Model Access**: A unified model access mechanism that is compatible with the Generate and Chat interfaces of multiple model families. - **Automated Evaluation**: Includes automatic evaluation of objective questions and complex task evaluation using expert models. - **Evaluation Reports**: Automatically generates evaluation reports. - **Arena Mode**: Used for comparisons between models and objective evaluation of models, supporting various evaluation modes, including: - **Single mode**: Scoring a single model. - **Pairwise-baseline mode**: Comparing against a baseline model. - **Pairwise (all) mode**: Pairwise comparison among all models. - **Visualization Tools**: Provides intuitive displays of evaluation results. - **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/stress_test.html). - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation. - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets. - **Full-Link Support**: Through seamless integration with the [ms-swift](https:\/\/github.com\/modelscope\/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency."
+        "user_input":"key components architecture contribution evaluation performance measurement models",
+        "retrieved_contexts":[
+            "The architecture includes the following modules: 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models. 2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats. 3. **Evaluation Backend**: - **Native**: EvalScope\u2019s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc. - **OpenCompass**: Supports [OpenCompass](https:\/\/github.com\/open-compass\/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily. - **VLMEvalKit**: Supports [VLMEvalKit](https:\/\/github.com\/open-compass\/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets. - **RAGEval**: Supports RAG evaluation, supporting independent evaluation of embedding models and rerankers using [MTEB\/CMTEB](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/backend\/rageval_backend\/mteb.html), as well as end-to-end evaluation using [RAGAS](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/backend\/rageval_backend\/ragas.html). - **ThirdParty**: Other third-party evaluation tasks, such as ToolBench. 4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization. 5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization. 6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances. ## "
         ],
-        "ground_truth": "EvalScope framework creates detailed reports for big models by utilizing benchmark datasets, implementing evaluation metrics, and integrating with backends such as OpenCompass or VLMEvalKit. It supports automated evaluation of objective questions and complex tasks, offers a unified model access mechanism compatible with various model families, and includes features like Arena Mode for model comparisons. Additionally, it generates evaluation reports and provides visualization tools for intuitive result displays. Seamless integration with frameworks like ms-swift enhances the development process, offering a comprehensive solution for model training, deployment, evaluation, and reporting.",
-        "answer": "EvalScope framework creates detailed reports for big models by utilizing benchmark datasets, metrics, and backends such as OpenCompass or VLMEvalKit. It automates the evaluation process, generating comprehensive reports that reflect the model's performance across various tasks and metrics. This is achieved through its integrated backend support, which simplifies task submission and enables advanced encapsulation, making it easier to assess model capabilities in both single and comparative evaluations."
+        "response":"The key components of the architecture include the Model Adapter, Data Adapter, Evaluation Backend (with options like Native, OpenCompass, VLMEvalKit, RAGEval, and ThirdParty), Performance Evaluator, Evaluation Report, and Visualization. These components collectively support the conversion of model outputs, data processing, performance measurement, and result visualization.",
+        "reference":"The key components of the architecture include the Model Adapter, Data Adapter, Evaluation Backend, Performance Evaluator, Evaluation Report, and Visualization. The Model Adapter converts model outputs to the required format, the Data Adapter processes input data, the Evaluation Backend supports various evaluation frameworks, the Performance Evaluator measures model performance, the Evaluation Report summarizes the results, and Visualization helps in understanding and comparing model performances."
     },
     {
-        "question": "How can one tailor model assessments in `evalscope`, and which parameters related to model and dataset configurations can be modified for customization, given the tool's capabilities for model-specific loading, generation, and evaluation dataset setup?",
-        "contexts": [
-            " to run the custom code? [y\/N]`, please type `y`. #### Basic Parameter Descriptions - `--model`: Specifies the `model_id` of the model on [ModelScope](https:\/\/modelscope.cn\/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https:\/\/modelscope.cn\/models\/qwen\/Qwen2-0.5B-Instruct\/summary); you can also use a local path, such as `\/path\/to\/model`. - `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https:\/\/swift.readthedocs.io\/en\/latest\/Instruction\/Supported-models-datasets.html#llm) for filling in this field. - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https:\/\/evalscope.readthedocs.io\/en\/latest\/get_started\/supported_dataset.html) for available options. ### 2. Parameterized Evaluation If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands: **Example 1:** ```shell python evalscope\/run.py \\ --model qwen\/Qwen2-0.5B-Instruct \\ --template-type qwen \\ --model-args revision=master,precision=torch.float16,device_map=auto \\ --datasets gsm8k ceval \\ --use-cache true \\ --limit 10 ``` **Example 2:** ```shell python evalscope\/run.py \\ --model qwen\/Qwen2-0.5B-Instruct \\ --template-type qwen \\ --generation-config do_sample=false,temperature=0.0 \\ --datasets ceval \\ --dataset-args '{\"ceval\": {\"few_shot_num\": 0, \"few_shot_random\": false}}' \\ --limit 10 ``` #### Parameter Descriptions In addition to the three [basic parameters](#basic-parameter-descriptions), the other parameters are as follows: - `--model-args`: Model loading parameters, separated by commas, in `key=value` format. - `--generation-config`: Generation parameters, separated by commas, in `key=value` format. - `do_sample`: Whether to use sampling, default is `false`. - `max_new_tokens`: Maximum generation length, default is 1024. - `temperature`: Sampling temperature. - `top_p`: Sampling threshold. - `top_k`: Sampling threshold. - `--use-cache`: Whether to use local cache, default is `false`. If set to `true`, previously evaluated model and dataset combinations will not be evaluated again, and will be read directly from the local cache. - `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`. - `--few_shot_num`: Number of few-shot examples. - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`. - `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation. ### 3. Use the run_task Function to Submit an Evaluation Task Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields: #### 1. Configuration Task Dictionary Parameters ```python import torch from evalscope.constants import DEFAULT_ROOT_CACHE_DIR # Example your_task_cfg = { 'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'}, 'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512}, 'dataset_args': {}, 'dry_run': False, 'model': 'qwen\/Qwen2-0.5B-Instruct', 'template_type': 'qwen', 'datasets': ['arc', 'hellasw",
-            "ag'], 'work_dir': DEFAULT_ROOT_CACHE_DIR, 'outputs': DEFAULT_ROOT_CACHE_DIR, 'mem_cache': False, 'dataset_hub': 'ModelScope', 'dataset_dir': DEFAULT_ROOT_CACHE_DIR, 'limit': 10, 'debug': False } ``` Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~\/.cache\/evalscope'`. #### 2. Execute Task with run_task ```python from evalscope.run import run_task run_task(task_cfg=your_task_cfg) ``` ## Evaluation Backend EvalScope supports using third-party evaluation frameworks to initiate evaluation tasks, which we call Evaluation Backend. Currently supported Evaluation Backend includes: - **Native**: EvalScope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode. - [OpenCompass](https:\/\/github.com\/open-compass\/opencompass): Initiate OpenCompass evaluation tasks through EvalScope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework ms-swift. [\ud83d\udcd6 User Guide](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/opencompass_backend.html) - [VLMEvalKit](https:\/\/github.com\/open-compass\/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through EvalScope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework ms-swift. [\ud83d\udcd6 User Guide](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/vlmevalkit_backend.html) - **ThirdParty**: The third-party task, e.g. [ToolBench](https:\/\/evalscope.readthedocs.io\/en\/latest\/third_party\/toolbench.html), you can contribute your own evaluation task to EvalScope as third-party backend. ## Custom Dataset Evaluation EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [\ud83d\udcd6User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html) ## Offline Evaluation You can use local dataset to evaluate the model without internet connection. Refer to: Offline Evaluation [\ud83d\udcd6 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/offline_evaluation.html) ## Arena Mode The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. Refer to: Arena Mode [\ud83d\udcd6 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) ## Model Serving Performance Evaluation A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats. Refer to: Model Serving Performance Evaluation [\ud83d\udcd6 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html) ## Leaderboard The LLM Leaderboard aims to provide an objective and comprehensive evaluation standard and platform to help researchers and developers understand and compare the performance of models on various tasks on ModelScope. Refer to: [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free) ## TO-DO List - [x] Agents evaluation - [x] vLLM - [ ] Distributed evaluating - [x] Multi-modal evaluation - [ ] Benchmarks - [ ] GAIA - [ ] GPQA - [x] MBPP - [ ] Auto-reviewer - [ ] Qwen-max"
+        "user_input":"How do the features and capabilities of the EvalScope Framework compare across different reports, particularly in terms of model evaluation, performance benchmarking, and support for various evaluation scenarios such as RAG evaluation and custom dataset evaluations?",
+        "retrieved_contexts":[
+            "EvalScope Framework is a tool designed to evaluate and improve the scope and effectiveness of AI models and systems.",
+            "The provided text appears to be a navigation or menu option, offering documents in both English and Chinese.",
+            "EvalScope, launched by the ModelScope community, is a framework for model evaluation and performance benchmarking. It includes common benchmarks and metrics for various models like LLMs, multimodal LLMs, and embedding models. EvalScope supports multiple evaluation scenarios, including RAG evaluation, arena mode, and model inference performance testing. The framework integrates with the ms-swift training framework, allowing for easy one-click evaluations from training to performance testing.",
+            "The text provides language options: English and Simplified Chinese.",
+            "EvalScope is a comprehensive framework for evaluating AI models, featuring modules like Model Adapter, Data Adapter, and Evaluation Backend. It supports various backends such as Native, OpenCompass, VLMEvalKit, RAGEval, and ThirdParty for different evaluation needs. The framework also includes a Performance Evaluator, Evaluation Report, and Visualization tools. Recent updates include support for RAG evaluation, custom dataset evaluations, and long output generation. Installation can be done via pip or from source, and quick start guides are available for simple and parameterized evaluations."
         ],
-        "ground_truth": "To tailor model assessments in `evalscope`, one can modify several parameters related to model and dataset configurations. For model-specific loading, `model-args` allows setting parameters like `revision`, `precision`, and `device_map`. For generation, `generation-config` lets users control aspects such as `do_sample`, `temperature`, `max_new_tokens`, and `top_p`. To customize evaluation datasets, `dataset-args` provides configuration options for each specified dataset. Additionally, parameters like `few_shot_num`, `few_shot_random`, and `limit` enable adjustments for few-shot learning and limiting the number of evaluation samples per dataset.",
-        "answer": "To tailor model assessments in `evalscope`, you can modify parameters related to model and dataset configurations. Key parameters include:\n\n- `--model`: Specifies the model ID or local path.\n- `--template-type`: Corresponds to the model's template type.\n- `--datasets`: Allows specifying multiple datasets to evaluate, which are automatically downloaded.\n- `--model-args`: Model loading parameters, like `revision`, `precision`, and `device_map`.\n- `--generation-config`: Generation parameters, including `do_sample`, `temperature`, and `max_new_tokens`.\n- `--use-cache`: Determines if local cache should be used.\n- `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format.\n- `--few_shot_num`: Number of few-shot examples.\n- `--limit`: Maximum number of evaluation samples per dataset.\n\nThese parameters enable customization for model-specific loading, generation, and evaluation dataset setup."
+        "response":"EvalScope Framework supports a wide range of evaluation scenarios, including RAG evaluation and custom dataset evaluations, with comprehensive features for model evaluation and performance benchmarking. It offers various backends and tools for different needs, ensuring flexibility and ease of use.",
+        "reference":"EvalScope Framework is a comprehensive tool for model evaluation and performance benchmarking, supporting various models and multiple evaluation scenarios. It includes features like RAG evaluation, custom dataset evaluations, and performance testing. The framework is integrated with the ms-swift training framework and supports different backends for diverse evaluation needs, including Native, OpenCompass, VLMEvalKit, RAGEval, and ThirdParty. It also provides Performance Evaluator, Evaluation Report, and Visualization tools, making it a versatile solution for evaluating AI models."
     },
     {
-        "question": "How does the OpenCompass Integration streamline task submission for evaluation compared to EvalScope and VLMEvalKit?",
-        "contexts": [
-            "## \ud83d\udccb Table of Contents - [Introduction](#introduction) - [News](#News) - [Installation](#installation) - [Quick Start](#quick-start) - [Evaluation Backend](#evaluation-backend) - [Custom Dataset Evaluation](#custom-dataset-evaluation) - [Offline Evaluation](#offline-evaluation) - [Arena Mode](#arena-mode) - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation) - [Leaderboard](#leaderboard) ## \ud83d\udcdd Introduction Large Model (including Large Language Models, Multi-modal Large Language Models) evaluation has become a critical process for assessing and improving LLMs. To better support the evaluation of large models, we propose the EvalScope framework. ### Framework Features - **Benchmark Datasets**: Preloaded with several commonly used test benchmarks, including MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc. - **Evaluation Metrics**: Implements various commonly used evaluation metrics. - **Model Access**: A unified model access mechanism that is compatible with the Generate and Chat interfaces of multiple model families. - **Automated Evaluation**: Includes automatic evaluation of objective questions and complex task evaluation using expert models. - **Evaluation Reports**: Automatically generates evaluation reports. - **Arena Mode**: Used for comparisons between models and objective evaluation of models, supporting various evaluation modes, including: - **Single mode**: Scoring a single model. - **Pairwise-baseline mode**: Comparing against a baseline model. - **Pairwise (all) mode**: Pairwise comparison among all models. - **Visualization Tools**: Provides intuitive displays of evaluation results. - **Model Performance Evaluation**: Offers a performance testing tool for model inference services and detailed statistics, see [Model Performance Evaluation Documentation](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/stress_test.html). - **OpenCompass Integration**: Supports OpenCompass as the evaluation backend, providing advanced encapsulation and task simplification, allowing for easier task submission for evaluation. - **VLMEvalKit Integration**: Supports VLMEvalKit as the evaluation backend, facilitating the initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets. - **Full-Link Support**: Through seamless integration with the [ms-swift](https:\/\/github.com\/modelscope\/ms-swift) training framework, provides a one-stop development process for model training, model deployment, model evaluation, and report viewing, enhancing user development efficiency."
+        "user_input":"How do the features and functionalities of EvalScope Framework, as described in the provided summaries, compare in terms of model evaluation, performance benchmarking, and support for different languages and evaluation scenarios?",
+        "retrieved_contexts":[
+            "EvalScope Framework is a tool designed to evaluate and improve the scope and effectiveness of AI models and systems.",
+            "The provided text appears to be a navigation or menu option, offering documents in both English and Chinese.",
+            "EvalScope, launched by the ModelScope community, is a framework for model evaluation and performance benchmarking. It includes common benchmarks and metrics for various models like LLMs, multimodal LLMs, and embedding models. EvalScope supports multiple evaluation scenarios, including RAG evaluation, arena mode, and model inference performance testing. The framework integrates with the ms-swift training framework, allowing for easy one-click evaluations from training to performance testing.",
+            "The text provides language options: English and Simplified Chinese.",
+            "EvalScope is a comprehensive framework for evaluating AI models, featuring modules like Model Adapter, Data Adapter, and Evaluation Backend. It supports various backends such as Native, OpenCompass, VLMEvalKit, RAGEval, and ThirdParty for different evaluation needs. The framework also includes a Performance Evaluator, Evaluation Report, and Visualization tools. Recent updates include support for RAG evaluation, custom dataset evaluations, and long output generation. Installation can be done via pip or from source, and quick start guides are available for simple and parameterized evaluations."
         ],
-        "ground_truth": "The OpenCompass Integration streamlines task submission for evaluation by providing advanced encapsulation and task simplification. This allows for easier task submission for evaluation, making the process more efficient and user-friendly.",
-        "answer": "The OpenCompass Integration in EvalScope streamlines task submission for evaluation by offering advanced encapsulation and simplifying tasks, making it easier to submit tasks for assessment compared to EvalScope's direct use of the Evaluation Backend or VLMEvalKit."
+        "response":"EvalScope Framework offers comprehensive model evaluation and performance benchmarking, supporting a wide range of models and evaluation scenarios, including RAG, arena mode, and performance testing, with multi-language support. It integrates multiple backends and tools for diverse evaluation needs, and recent updates enhance its functionality with RAG evaluation, custom datasets, and long output generation.",
+        "reference":"EvalScope Framework is a comprehensive tool for model evaluation and performance benchmarking, supporting a wide range of models including LLMs, multimodal LLMs, and embedding models. It offers multiple evaluation scenarios such as RAG evaluation, arena mode, and model inference performance testing. The framework supports various backends and includes features like Model Adapter, Data Adapter, and Evaluation Backend. It also provides Performance Evaluator, Evaluation Report, and Visualization tools, with recent updates enhancing support for RAG evaluation, custom dataset evaluations, and long output generation. EvalScope is available in both English and Simplified Chinese, making it accessible for different language users."
+    },
+    {
+        "user_input":"How do the documentation and community support for EvalScope Framework compare in terms of language options, evaluation features, and community contributions, as described in the provided summaries?",
+        "retrieved_contexts":[
+            "EvalScope Framework is a tool designed to evaluate and improve the scope and effectiveness of AI models and systems.",
+            "The provided text appears to be a navigation or menu option, offering documents in both English and Chinese.",
+            "EvalScope, launched by the ModelScope community, is a framework for model evaluation and performance benchmarking. It includes common benchmarks and metrics for various models like LLMs, multimodal LLMs, and embedding models. EvalScope supports multiple evaluation scenarios, including RAG evaluation, arena mode, and model inference performance testing. The framework integrates with the ms-swift training framework, allowing for easy one-click evaluations from training to performance testing.",
+            "The text provides language options: English and Simplified Chinese.",
+            "EvalScope is a comprehensive framework for evaluating AI models, featuring modules like Model Adapter, Data Adapter, and Evaluation Backend. It supports various backends such as Native, OpenCompass, VLMEvalKit, RAGEval, and ThirdParty for different evaluation needs. The framework also includes a Performance Evaluator, Evaluation Report, and Visualization tools. Recent updates include support for RAG evaluation, custom dataset evaluations, and long output generation. Installation can be done via pip or from source, and quick start guides are available for simple and parameterized evaluations."
+        ],
+        "response":"EvalScope Framework offers documentation in English and Simplified Chinese, supports a wide range of evaluation features including RAG evaluation and performance testing, and has community contributions through the ModelScope community, including integrations and updates.",
+        "reference":"EvalScope Framework offers documentation in both English and Chinese, supporting a wide range of evaluation features including common benchmarks, metrics for various models, and multiple evaluation scenarios. The community contributions are evident through the integration with the ms-swift training framework, recent updates, and the availability of quick start guides. This comprehensive framework supports various backends and includes tools for performance evaluation, reporting, and visualization."
+    },
+    {
+        "user_input":"What is the purpose of offline evaluation in the context of using a local dataset?",
+        "retrieved_contexts":[
+            "Offline Evaluation You can use local dataset to evaluate the model without internet connection. Refer to: Offline Evaluation [\ud83d\udcd6 User Guide](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/offline_evaluation.html) ## "
+        ],
+        "response":"The purpose of offline evaluation with a local dataset is to assess model performance without needing internet access. This method allows for testing in environments where connectivity is limited or restricted.",
+        "reference":"The purpose of offline evaluation in the context of using a local dataset is to evaluate the model without an internet connection."
+    },
+    {
+        "user_input":"What is the purpose of Arena mode in evaluating candidate models?",
+        "retrieved_contexts":[
+            "Arena Mode The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. Refer to: Arena Mode [\ud83d\udcd6 User Guide](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/arena.html) ## "
+        ],
+        "response":"The purpose of Arena mode is to evaluate multiple candidate models by setting them against each other in pairwise comparisons, using either automatic or manual evaluation methods to generate reports.",
+        "reference":"The purpose of Arena mode is to evaluate multiple candidate models through pairwise battles, using either the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report."
+    },
+    {
+        "user_input":"What does the LLM Leaderboard aim to evaluate and compare in terms of the performance of models?",
+        "retrieved_contexts":[
+            "Leaderboard The LLM Leaderboard aims to provide an objective and comprehensive evaluation standard and platform to help researchers and developers understand and compare the performance of models on various tasks on ModelScope. Refer to : [Leaderboard](https:\/\/modelscope.cn\/leaderboard\/58\/ranking?type=free) ## "
+        ],
+        "response":"The LLM Leaderboard aims to evaluate and compare the performance of language models on various tasks, providing an objective and comprehensive platform for researchers and developers.",
+        "reference":"The LLM Leaderboard aims to evaluate and compare the performance of models on various tasks on ModelScope."
+    },
+    {
+        "user_input":"What are the different API protocol formats supported by the stress testing tool for model serving performance evaluation?",
+        "retrieved_contexts":[
+            "Model Serving Performance Evaluation A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats. Refer to : Model Serving Performance Evaluation [\ud83d\udcd6 User Guide](https:\/\/evalscope.readthedocs.io\/en\/latest\/user_guides\/stress_test.html) ## "
+        ],
+        "response":"The stress testing tool for model serving performance evaluation supports various API protocol formats, but specific formats are not detailed in the provided context. Refer to the user guide for more detailed information.",
+        "reference":"The stress testing tool for model serving performance evaluation supports various data set formats and different API protocol formats."
     }
 ]
 ```
 </details>
 
-## Configuration for Evaluation Task
+### Configuration for Evaluation Task
 ```python
 eval_task_cfg = {
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "RAGAS",
         "eval": {
-            "testset_file": "outputs/testset.json",
+            "testset_file": "outputs/testset_with_answer.json",
             "critic_llm": {
                 "model_name_or_path": "qwen/Qwen2-7B-Instruct",
                 "template_type": "qwen",
@@ -190,20 +234,22 @@ eval_task_cfg = {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
             },
             "metrics": [
-                "faithfulness",
-                "answer_relevancy",
-                "context_precision",
-                "answer_correctness",
+                "Faithfulness",
+                "AnswerRelevancy",
+                "ContextPrecision",
+                "AnswerCorrectness",
             ],
+            "language": "english"
         },
     },
 }
 ```
 The basic parameters are consistent with those of the automatic evaluation task, with the following differences:
-- `testset_file`: Specifies the path to the evaluation dataset file, defaulting to `outputs/testset.json`.
+- `critic_llm`: Configuration for the evaluation model, parameters are the same as `generator_llm`.
+- `testset_file`: Specifies the path to the evaluation dataset file, default is `outputs/testset_with_answer.json`.
 - `metrics`: Specifies the evaluation metrics, refer to the [metrics list](https://docs.ragas.io/en/latest/concepts/metrics/index.html).
 
-## Execute Evaluation
+### Execute Evaluation
 ```python
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
@@ -218,4 +264,101 @@ The output evaluation results are as follows:
 ```{figure} images/eval_result.png
 
 Evaluation Results
+```
+
+
+## Multi-Modal Text-Image RAG Evaluation
+
+This framework extends RAG evaluation to support multi-modal text-image evaluation, accommodating text-image contexts.
+
+### Dataset Preparation
+
+```json
+[
+    {
+        "user_input": "What is the brand of the car in the image?",
+        "retrieved_contexts": [
+            "custom_eval/multimodal/images/tesla.jpg"
+        ],
+        "response": "Tesla is a car brand.",
+        "reference": "The car brand in the image is Tesla."
+    },
+    {
+        "user_input": "What about Tesla Model X?",
+        "retrieved_contexts": [
+            "custom_eval/multimodal/images/tesla.jpg"
+        ],
+        "response": "Cats are cute.",
+        "reference": "The Tesla Model X is an electric SUV manufactured by Tesla."
+    }
+]
+```
+
+The required fields include:
+- user_input: User input
+- response: Model generated answer
+- retrieved_contexts: List of retrieved contexts, which can be text or image paths (local or URL)
+- reference: Standard answer
+
+### Configuring the Evaluation Task
+```python
+multi_modal_task_cfg = {
+    "eval_backend": "RAGEval",
+    "eval_config": {
+        "tool": "RAGAS",
+        "eval": {
+            "testset_file": "outputs/testset_multi_modal.json",
+            "critic_llm": {
+                "model_name": "gpt-4o",
+                "api_base": "http://127.0.0.1:8088/v1",
+                "api_key": "EMPTY",
+            },
+            "embeddings": {
+                "model_name_or_path": "AI-ModelScope/bge-large-zh",
+            },
+            "metrics": [
+                "MultiModalFaithfulness",
+                "MultiModalRelevance",
+            ],
+        },
+    },
+}
+```
+The basic parameters are consistent with the RAG evaluation task configuration. The differences are as follows:
+- `critic_llm`: Configuration for the evaluation model, parameters are the same as `generator_llm`. The model needs to support multi-modal interleaved text-image input.
+- `metrics`: Specifies the evaluation metrics. Currently supports `MultiModalFaithfulness` and `MultiModalRelevance` for multi-modal text-image evaluation. For other metrics that do not involve multi-modal data, such as `AnswerCorrectness`, please refer to the [metrics list](https://docs.ragas.io/en/latest/concepts/metrics/index.html).
+- `embeddings` is an optional parameter and may be omitted.
+
+### Running the Evaluation
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg=multi_modal_task_cfg)
+```
+
+Output results:
+
+```json
+[
+    {
+        "user_input":"What is the brand of the car in the image?",
+        "retrieved_contexts":[
+            "custom_eval/multimodal/images/tesla.jpg"
+        ],
+        "response":"Tesla is a car brand.",
+        "reference":"The car brand in the image is Tesla.",
+        "faithful_rate":true,
+        "relevance_rate":true
+    },
+    {
+        "user_input":"What about Tesla Model X?",
+        "retrieved_contexts":[
+            "custom_eval/multimodal/images/tesla.jpg"
+        ],
+        "response":"Cats are cute.",
+        "reference":"The Tesla Model X is an electric SUV manufactured by Tesla.",
+        "faithful_rate":false,
+        "relevance_rate":false
+    }
+]
 ```
