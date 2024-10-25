@@ -3,7 +3,7 @@ name: eval issue template
 about: issue about model evaluation
 title: ''
 labels: ''
-assignees: Yunnglin
+assignees: ''
 
 ---
 
@@ -52,14 +52,6 @@ ValueError: An error occurred
 ```
 
 ## 运行环境 / Runtime Environment
-
-markdown
-Copy
-## 问题描述 / Issue Description
-
-请简要描述您遇到的问题。 / Please briefly describe the issue you encountered.
-
-## 使用的工具 / Tools Used
 
 - 操作系统 / Operating System:
   - [ ] Windows
