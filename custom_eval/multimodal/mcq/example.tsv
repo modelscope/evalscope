@@ -1,0 +1,6 @@
+index	category	answer	question	A	B	C	D	image_path
+1	Animals	A	What animal is this?	Dog	Cat	Tiger	Elephant	custom_eval/multimodal/images/dog.jpg
+2	Buildings	D	What building is this?	School	Hospital	Park	Museum	custom_eval/multimodal/images/AMNH.jpg
+3	Cities	B	Which city's skyline is this?	New York	Tokyo	Shanghai	Paris	custom_eval/multimodal/images/tokyo.jpg
+4	Vehicles	C	What is the brand of this car?	BMW	Audi	Tesla	Mercedes	custom_eval/multimodal/images/tesla.jpg
+5	Activities	A	What is the person in the picture doing?	Running	Swimming	Reading	Singing	custom_eval/multimodal/images/running.jpg

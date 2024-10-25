@@ -100,6 +100,37 @@ class TestMTEB(unittest.TestCase):
 
         run_task(task_cfg)
 
+    @unittest.skipUnless(0 in test_level_list(), "skip test in current test level")
+    def test_run_custom(self):
+        task_cfg = {
+            "eval_backend": "RAGEval",
+            "eval_config": {
+                "tool": "MTEB",
+                "model": [
+                    {
+                        "model_name_or_path": "AI-ModelScope/m3e-base",
+                        "pooling_mode": None,  # load from model config
+                        "max_seq_length": 512,
+                        "prompt": "",
+                        "model_kwargs": {"torch_dtype": "auto"},
+                        "encode_kwargs": {
+                            "batch_size": 128,
+                        },
+                    }
+                ],
+                "eval": {
+                    "tasks": ["CustomRetrieval"],
+                    "dataset_path": "custom_eval/text/retrieval",
+                    "verbosity": 2,
+                    "output_folder": "outputs",
+                    "overwrite_results": True,
+                    "limits": 500,
+                },
+            },
+        }
+
+        run_task(task_cfg)
+
 
 if __name__ == "__main__":
     unittest.main(buffer=False)

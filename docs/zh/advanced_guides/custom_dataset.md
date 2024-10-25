@@ -265,7 +265,7 @@ from vlmeval.smp import load, dump, d2df
 class CustomDataset:
     def load_data(self, dataset):
         # 自定义数据集的加载
-        data_path = os.path.join("~/LMUData", f'{dataset}.tsv')
+        data_path = os.path.join(os.path.expanduser("~/LMUData"), f'{dataset}.tsv')
         return load(data_path)
         
     def build_prompt(self, line):

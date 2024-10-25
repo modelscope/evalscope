@@ -1,8 +1,6 @@
-from typing import Any
-from mteb.abstasks.AbsTask import ScoresDict
 from mteb.abstasks.AbsTaskReranking import AbsTaskReranking
 from mteb.abstasks.TaskMetadata import HFSubset, TaskMetadata
-from mteb.encoder_interface import Encoder, EncoderWithQueryCorpusEncode
+
 
 
 class T2Reranking(AbsTaskReranking):

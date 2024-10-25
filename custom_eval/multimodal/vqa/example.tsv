@@ -1,0 +1,6 @@
+index	answer	question	image_path
+1	Dog	What animal is this?	custom_eval/multimodal/images/dog.jpg
+2	Museum	What building is this?	custom_eval/multimodal/images/AMNH.jpg
+3	Tokyo	Which city's skyline is this?	custom_eval/multimodal/images/tokyo.jpg
+4	Tesla	What is the brand of this car?	custom_eval/multimodal/images/tesla.jpg
+5	Running	What is the person in the picture doing?	custom_eval/multimodal/images/running.jpg

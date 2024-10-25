@@ -30,6 +30,6 @@ Initiate lightweight VLMEvalKit evaluation tasks through EvalScope, supporting v
 :link-type: ref
 
 +++
-Supports independent and end-to-end evaluation for RAG: allows independent evaluation of the retrieval module using MTEB/CMTEB, as well as end-to-end evaluation using RAGAS.
+Support for RAG and Multimodal RAG Evaluation: Supports independent evaluation of the retrieval module, as well as end-to-end generation evaluation.
 :::
 ::::
