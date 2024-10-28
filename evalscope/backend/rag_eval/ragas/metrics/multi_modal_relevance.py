@@ -1,5 +1,7 @@
 import typing as t
 from dataclasses import dataclass, field
+import numpy as np
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, MetricType
 from pydantic import BaseModel, Field
 from evalscope.backend.rag_eval.ragas.prompts.multi_modal_prompt import ImageTextPrompt
@@ -39,7 +41,7 @@ Answer - True, if the response for the query is in line with context information
                 retrieved_contexts=[
                     "A traditional Margherita pizza consists of a thin crust.",
                     "The main toppings include tomatoes, mozzarella cheese, fresh basil, salt, and olive oil.",
-                    "It is one of the simplest and most classic types of pizza."
+                    "It is one of the simplest and most classic types of pizza.",
                 ],
             ),
             RelevanceOutput(relevance=True),
@@ -61,7 +63,7 @@ Answer - True, if the response for the query is in line with context information
 
 @dataclass
 class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
-    name: str = "relevance_rate"
+    name: str = "relevance_rate"  # type: ignore
     _required_columns: t.Dict[MetricType, t.Set[str]] = field(
         default_factory=lambda: {
             MetricType.SINGLE_TURN: {
@@ -73,19 +75,25 @@ class MultiModalRelevance(MetricWithLLM, SingleTurnMetric):
     )
     relevance_prompt: ImageTextPrompt = MultiModalRelevancePrompt()
 
-    async def _ascore(self, row):
-        pass
-
-    async def _single_turn_ascore(self, sample, callbacks):
+    async def _ascore(self, row: t.Dict, callbacks) -> float:
         prompt_input = RelevanceInput(
-            user_input=sample.user_input,
-            response=sample.response,
-            retrieved_contexts=sample.retrieved_contexts,
+            user_input=row["user_input"],
+            response=row["response"],
+            retrieved_contexts=row["retrieved_contexts"],
         )
+        assert self.llm is not None, "LLM is not set"
         prompt_response = await self.relevance_prompt.generate(
-            data=prompt_input, llm=self.llm
+            data=prompt_input, llm=self.llm, callbacks=callbacks
         )
-        return prompt_response.relevance
+        if prompt_response is None:
+            return np.nan
+        return float(prompt_response.relevance)
+
+    async def _single_turn_ascore(
+        self, sample: SingleTurnSample, callbacks
+    ) -> float:
+        row = sample.to_dict()
+        return await self._ascore(row, callbacks)
 
 
 multimodal_relevance = MultiModalRelevance()
