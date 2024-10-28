@@ -117,11 +117,11 @@ class CLIPModel(Embeddings):
 
     def embed_documents(self, texts):
         text_features = self.encode_text(texts)
-        return text_features.cpu().numpy()
+        return text_features.cpu().numpy().tolist()
 
     def embed_query(self, text):
         text_features = self.encode_text([text])
-        return text_features.cpu().numpy()
+        return text_features.cpu().numpy().tolist()[0]
 
     def embed_image(self, uris: List[str]):
         # read image and transform
@@ -134,16 +134,16 @@ class CLIPModel(Embeddings):
             for image in images
         ]
         image_features = self.encode_image(transformed_images)
-        return image_features.cpu().numpy()
+        return image_features.cpu().numpy().tolist()
 
 
 if __name__ == "__main__":
     model = CLIPModel("AI-ModelScope/chinese-clip-vit-large-patch14-336px")
-    # model.embed_image(
-    #     [
-    #         "custom_eval/multimodal/images/AMNH.jpg",
-    #         "custom_eval/multimodal/images/AMNH.jpg",
-    #     ]
-    # )
+    model.embed_image(
+        [
+            "custom_eval/multimodal/images/AMNH.jpg",
+            "custom_eval/multimodal/images/AMNH.jpg",
+        ]
+    )
     model.encode_text(["我喜欢吃饭" * 1000])
     print("done")
