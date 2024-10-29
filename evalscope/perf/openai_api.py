@@ -39,6 +39,8 @@ class OpenaiPlugin(ApiPluginBase):
         try:
             if param.query_template is not None:
                 query = json.loads(param.query_template)
+                if 'stream' in query.keys():
+                    param.stream = query['stream']
                 query['messages'] = messages   # replace template messages with input messages.
                 return self.__compose_query_from_parameter(query, param)
             else:

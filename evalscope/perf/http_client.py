@@ -209,7 +209,7 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
                 prompt = f.read()
         else:
             prompt = args.prompt
-        messages = {'role': 'user', 'content': prompt}
+        messages = [{'role': 'user', 'content': prompt}]
         request = query_generator.build_request(messages, query_parameters)
         if args.number is None:
             await request_queue.put(request)
