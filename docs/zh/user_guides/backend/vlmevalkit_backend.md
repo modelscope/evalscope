@@ -31,13 +31,11 @@ pip install evalscope[vlmeval] -U
 | InfoVQA_TEST, InfoVQA_VAL                                          |InfoVQA_TEST没有提供答案，使用InfoVQA_VAL进行自动评估        |
 | LLaVABench                                                         |        |
 | MLLMGuard_DS                                                       |        |
-| MMBench, MMBench-Video                                             |        |
-| MMBench_CN, MMBench_CN_V11                                         |        |
+|MMBench-Video                                             |        |
 | MMBench_DEV_CN, MMBench_DEV_CN_V11                                 |        |
 | MMBench_DEV_EN, MMBench_DEV_EN_V11                                 |        |
 | MMBench_TEST_CN, MMBench_TEST_CN_V11                               | MMBench_TEST_CN没有提供答案       |
 | MMBench_TEST_EN, MMBench_TEST_EN_V11                               | MMBench_TEST_EN没有提供答案       |
-| MMBench_V11                                                        |        |
 | MMBench_dev_ar, MMBench_dev_cn, MMBench_dev_en,                   |        |
 | MMBench_dev_pt, MMBench_dev_ru, MMBench_dev_tr                     |        |
 | MMDU                                                              |        |
