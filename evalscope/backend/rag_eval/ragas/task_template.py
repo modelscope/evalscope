@@ -47,7 +47,7 @@ def rag_eval(
     )
 
     # evaluate
-    runconfig = RunConfig(timeout=30, max_retries=1, max_wait=30, max_workers=1)
+    runconfig = RunConfig(timeout=60, max_retries=2, max_wait=60, max_workers=1)
     score = evaluate(
         dataset,
         metrics=metrics,

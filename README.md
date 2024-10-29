@@ -1,7 +1,10 @@
-English | [简体中文](README_zh.md)
 
 
 ![](docs/en/_static/images/evalscope_logo.png)
+
+<p align="center">
+    English | <a href="README_zh.md">简体中文</a>
+</p>
 
 <p align="center">
 <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
@@ -11,7 +14,7 @@ English | [简体中文](README_zh.md)
     <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
 </a>
 <br>
- <a href="https://evalscope.readthedocs.io/en/latest/"><span style="font-size: 16px;">📖 Documents</span></a> &nbsp | &nbsp<a href="https://evalscope.readthedocs.io/zh-cn/latest/"><span style="font-size: 16px;"> 📖  中文文档</span></a>
+ <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
 <p>
 
 
