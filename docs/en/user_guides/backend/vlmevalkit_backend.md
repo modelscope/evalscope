@@ -30,13 +30,11 @@ The currently supported datasets include:
 | InfoVQA_TEST, InfoVQA_VAL                                          | InfoVQA_TEST does not provide answers; use InfoVQA_VAL for automatic evaluation  |
 | LLaVABench                                                         |                                                              |
 | MLLMGuard_DS                                                       |                                                              |
-| MMBench, MMBench-Video                                             |                                                              |
-| MMBench_CN, MMBench_CN_V11                                         |                                                              |
+| MMBench-Video                                             |                                                              |
 | MMBench_DEV_CN, MMBench_DEV_CN_V11                                 |                                                              |
 | MMBench_DEV_EN, MMBench_DEV_EN_V11                                 |                                                              |
 | MMBench_TEST_CN, MMBench_TEST_CN_V11                               | MMBench_TEST_CN does not provide answers                     |
 | MMBench_TEST_EN, MMBench_TEST_EN_V11                               | MMBench_TEST_EN does not provide answers                     |
-| MMBench_V11                                                        |                                                              |
 | MMBench_dev_ar, MMBench_dev_cn, MMBench_dev_en,                   |                                                              |
 | MMBench_dev_pt, MMBench_dev_ru, MMBench_dev_tr                     |                                                              |
 | MMDU                                                              |                                                              |
