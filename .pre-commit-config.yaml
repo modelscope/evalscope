@@ -25,7 +25,7 @@ repos:
     rev: v3.1.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/
       - id: check-yaml
         exclude: thirdparty/
       - id: end-of-file-fixer

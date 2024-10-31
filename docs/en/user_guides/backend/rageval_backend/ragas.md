@@ -68,7 +68,7 @@ generate_testset_task_cfg = {
             "output_file": "outputs/testset.json",
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
-                "model_name_or_path": "qwen/Qwen2-7B-Instruct",
+                "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
                 "template_type": "qwen",
             },
             "embeddings": {
@@ -105,6 +105,13 @@ Configuration file description:
       - `model_name_or_path`: `str`: Name or path of the embedding model, e.g., "AI-ModelScope/m3e-base".
     - `language`: `str`: Language, default is `english`, can be set to another language such as "chinese". The `generator_llm` will automatically translate prompts to the target language. The framework has pre-translated some prompts using `Qwen2.5-72B-Instruct`.
 
+````{note}
+`generator_llm` requires a model with strong instruction-following capabilities. Models with 7B parameters or fewer may encounter the following error during execution:
+```
+ragas.testset.transforms.engine - ERROR - unable to apply transformation: 'Generation' object has no attribute 'message'
+```
+This is because the model output format is incorrect, leading to parsing errors. In this case, please try using a larger model, such as `Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4`, or proprietary models like `GPT-4o`.
+````
 
 **Execute Task**
 ```python
@@ -113,7 +120,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 # Run task
-run_task(task_cfg=generate_testset_task_cfg) 
+run_task(task_cfg=generate_testset_task_cfg)
 ```
 
 Using examples generated from the project's `README.md` documentation as follows:
@@ -227,7 +234,7 @@ eval_task_cfg = {
         "eval": {
             "testset_file": "outputs/testset_with_answer.json",
             "critic_llm": {
-                "model_name_or_path": "qwen/Qwen2-7B-Instruct",
+                "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
                 "template_type": "qwen",
             },
             "embeddings": {

@@ -8,6 +8,14 @@
 :hidden:
 RAG/RAG_Evaluation.md
 OpenAI-O1/evaluation.md
+RAG/multimodal_RAG.md
+:::
+
+:::{card} 打破文本边界：如何进行多模态RAG评估
+:link: multimodal_rag
+:link-type: ref
+
+以最佳实践的方式介绍了多模态RAG整体流程和评估方式。
 :::
 
 :::{card} OpenAI o1模型评测概述
