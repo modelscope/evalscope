@@ -38,7 +38,7 @@ class LocalLLM(BaseLLM):
             model_id=self.model_name_or_path,
             model_revision=self.model_revision,
             template_type=self.template_type,
-            generation_config=GenerationConfig(**self.generation_config),
+            generation_config=GenerationConfig(**self.generation_config) if self.generation_config else None,
         )
 
     def _call(
