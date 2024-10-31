@@ -50,12 +50,12 @@ with read_base():
     from opencompass.configs.datasets.nq.nq_gen_c788f6 import nq_datasets
     from opencompass.configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
     from opencompass.configs.datasets.cmb.cmb_gen_dfb5c4 import cmb_datasets
-    from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import bbh_datasets
 
     # Note: to be supported
     # from opencompass.configs.datasets.flores.flores_gen_806ede import flores_datasets
     # from opencompass.configs.datasets.TheoremQA.TheoremQA_5shot_gen_6f0af8 import TheoremQA_datasets
     # from opencompass.configs.datasets.commonsenseqa.commonsenseqa_gen_c946f2 import commonsenseqa_datasets
+    # from opencompass.configs.datasets.bbh.bbh_gen_5b92b0 import bbh_datasets
 
 
 datasets = []
