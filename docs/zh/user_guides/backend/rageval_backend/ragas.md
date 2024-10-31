@@ -68,7 +68,7 @@ generate_testset_task_cfg = {
             "output_file": "outputs/testset.json",
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
-                "model_name_or_path": "qwen/Qwen2-7B-Instruct",
+                "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
                 "template_type": "qwen",
             },
             "embeddings": {
@@ -94,7 +94,7 @@ generate_testset_task_cfg = {
       - `reasoning`: `float`：推理内容的分布比例，例如 0.1。
     - `generator_llm`: `dict`：生成器LLM的配置：
       - 若使用本地模型，支持如下参数：
-        - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "qwen/Qwen2-7B-Instruct" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
+        - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
         - `template_type`: `str`：模板类型，例如 "qwen"。
         - `generation_config`: `dict`：生成配置，例如 `{"temperature": 0.7}`。
       - 若使用 API 模型，支持如下参数：
@@ -106,6 +106,14 @@ generate_testset_task_cfg = {
     - `language`: `str`：语言，默认为`english`，可以设置为其他语言例如 "chinese"，会使用`generator_llm`自动将prompt翻译到目标语言，框架已使用`Qwen2.5-72B-Instruct`预先翻译了部分prompt。
 
 
+````{note}
+`generator_llm`需要为指令遵循能力较强的模型，7B及以下规模的模型在运行时可能会有如下报错信息，例如：
+```
+ragas.testset.transforms.engine - ERROR - unable to apply transformation: 'Generation' object has no attribute 'message'
+```
+这是因为模型输出的格式不对，导致解析出错，此时请尝试使用规模更大的模型，例如 `Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4`，或是闭源模型`GPT-4o`等。
+````
+
 **执行任务**
 ```python
 from evalscope.run import run_task
@@ -114,7 +122,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 # Run task
-run_task(task_cfg=generate_testset_task_cfg) 
+run_task(task_cfg=generate_testset_task_cfg)
 ```
 
 
@@ -219,7 +227,7 @@ eval_task_cfg = {
         "eval": {
             "testset_file": "outputs/testset_with_answer.json",
             "critic_llm": {
-                "model_name_or_path": "qwen/Qwen2-7B-Instruct",
+                "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
                 "template_type": "qwen",
             },
             "embeddings": {
