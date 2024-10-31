@@ -7,6 +7,7 @@ class TestsetGenerationArguments:
     docs: List[str] = field(default_factory=list)
     test_size: int = 10
     output_file: str = 'outputs/testset.json'
+    knowledge_graph: str = 'outputs/knowledge_graph.json'
     """
     For local LLM support, you can use the following fields:
         model_name_or_path: str

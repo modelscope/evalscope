@@ -66,6 +66,7 @@ generate_testset_task_cfg = {
             "docs": ["README.md"],
             "test_size": 10,
             "output_file": "outputs/testset.json",
+            "knowledge_graph", "outputs/knowledge_graph.json",
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
@@ -87,7 +88,8 @@ Configuration file description:
   - `testset_generation`: `dict`: Configuration for test set generation.
     - `docs`: `list`: List of documents required for test set generation, e.g., ["README.md"].
     - `test_size`: `int`: Size of the generated test set, e.g., 5.
-    - `output_file`: `str`: Path of the generated output file, e.g., "outputs/testset.json".
+    - `output_file`: `str`: Path of the generated dataset output file, e.g., "outputs/testset.json".
+    - `knowledge_graph`: `str`: The file path of the knowledge graph, e.g., "outputs/knowledge_graph.json". The knowledge graph generated during the document processing will be saved in this path. If a knowledge graph already exists at this path, it will be loaded directly, skipping the generation step of the knowledge graph.
     - `distribution`: `dict`: Configuration of the content distribution in the test set.
       - `simple`: `float`: Proportion of simple content, e.g., 0.5.
       - `multi_context`: `float`: Proportion of multi-context content, e.g., 0.4.
