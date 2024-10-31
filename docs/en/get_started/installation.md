@@ -17,7 +17,8 @@ We recommend using conda to manage your environment and installing dependencies 
    # Additional options
    pip install evalscope[opencompass]   # Install OpenCompass backend
    pip install evalscope[vlmeval]       # Install VLMEvalKit backend
-   pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit)
+   pip install evalscope[rag]           # Install RAGEval backend
+   pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
    ```
 
 ````{warning}
@@ -44,5 +45,6 @@ from llmuses import ...
    # Additional options
    pip install -e '.[opencompass]'   # Install OpenCompass backend
    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-   pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit)
+   pip install -e '.[rag]'           # Install RAGEval backend
+   pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
    ```

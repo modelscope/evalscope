@@ -1,15 +1,15 @@
 import os
-
-os.environ["DO_NOT_TRACK"] = "true"
 import asyncio
 import pandas as pd
 from tqdm import tqdm
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from evalscope.backend.rag_eval import EmbeddingModel, LLM
-from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
-from evalscope.utils.logger import get_logger
 from .translate_prompt import translate_prompts
+from evalscope.utils.logger import get_logger
+from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
+from evalscope.backend.rag_eval import EmbeddingModel, LLM, ChatOpenAI
+
+os.environ['DO_NOT_TRACK'] = 'true'
 
 logger = get_logger()
 
@@ -76,10 +76,10 @@ def get_transform(llm, embedding, language: None):
     headline_splitter = HeadlineSplitter()
     cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
     summary_embedder = EmbeddingExtractor(
-        name="summary_embedder",
+        name='summary_embedder',
         filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
-        property_name="summary_embedding",
-        embed_property_name="summary",
+        property_name='summary_embedding',
+        embed_property_name='summary',
         embedding_model=embedding,
     )
     summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
@@ -120,9 +120,9 @@ def get_distribution(llm, distribution, language: None):
         )
     )
     return [
-        (abstract, distribution["simple"]),
-        (comparative, distribution["multi_context"]),
-        (specific, distribution["reasoning"]),
+        (abstract, distribution['simple']),
+        (comparative, distribution['multi_context']),
+        (specific, distribution['reasoning']),
     ]
 
 
@@ -159,10 +159,10 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
         args.language,
     )
 
-    generator = TestsetGenerator.from_langchain(generator_llm)
+    generator = TestsetGenerator.from_langchain(generator_llm, embeddings)
 
     runconfig = RunConfig(
-        timeout=600, max_retries=5, max_wait=120, max_workers=1, log_tenacity=True
+        timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True
     )
     testset = generator.generate_with_langchain_docs(
         documents=data,
@@ -179,35 +179,34 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     output_path = os.path.dirname(args.output_file)
     os.makedirs(output_path, exist_ok=True)
     testset_df.to_json(
-        args.output_file, indent=4, index=False, orient="records", force_ascii=False
+        args.output_file, indent=4, index=False, orient='records', force_ascii=False
     )
 
     # get answer
     testset_with_answer = get_answer(testset_df, generator_llm, args.language)
     testset_with_answer.to_json(
-        args.output_file.replace(".json", "_with_answer.json"),
+        args.output_file.replace('.json', '_with_answer.json'),
         indent=4,
         index=False,
-        orient="records",
+        orient='records',
         force_ascii=False,
     )
 
 
 def get_answer(testset_df, generator_llm, language: None):
-    template = """You are an assistant for question-answering tasks. 
-Use the following pieces of retrieved context to answer the question. 
-If you don't know the answer, just say that you don't know. 
-Use two sentences maximum and keep the answer concise. Answer in {language}.
-Question: {question} 
-Context: {contexts} 
+    template = """You are an assistant for question-answering tasks.
+Use the following pieces of retrieved context to answer the question.
+If you don't know the answer, just say that you don't know. Answer in {language}.
+Question: {question}
+Context: {contexts}
 Answer:
 """
 
     items = []
-    for i in tqdm(range(len(testset_df)), desc="Generating Answers"):
+    for i in tqdm(range(len(testset_df)), desc='Generating Answers'):
         row = testset_df.iloc[i]
-        question = row["user_input"]
-        contexts = "\n".join(row["reference_contexts"])
+        question = row['user_input']
+        contexts = '\n'.join(row['reference_contexts'])
 
         # Combine question and contexts as input for the LLM
         input_text = template.format(
@@ -215,13 +214,15 @@ Answer:
         )
 
         # Generate the answer using the generator LLM
-        answer = generator_llm.invoke(input_text).content
+        answer = generator_llm.invoke(input_text)
+        if isinstance(generator_llm, ChatOpenAI):
+            answer = answer.content
         items.append(
             {
-                "user_input": question,
-                "retrieved_contexts": row["reference_contexts"],
-                "response": answer,
-                "reference": row["reference"],
+                'user_input': question,
+                'retrieved_contexts': row['reference_contexts'],
+                'response': answer,
+                'reference': row['reference'],
             }
         )
 

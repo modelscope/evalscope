@@ -16,7 +16,8 @@ pip install evalscope                # 安装 Native backend (默认)
 # 额外选项
 pip install evalscope[opencompass]   # 安装 OpenCompass backend
 pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
-pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
+pip install evalscope[rag]           # 安装 RAGEval backend
+pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 ````{warning}
@@ -45,5 +46,6 @@ pip install -e .                  # 安装 Native backend
 # 额外选项
 pip install -e '.[opencompass]'   # 安装 OpenCompass backend
 pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
-pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
+pip install -e '.[rag]'           # 安装 RAGEval backend
+pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
