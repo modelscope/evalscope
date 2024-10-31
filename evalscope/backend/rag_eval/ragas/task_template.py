@@ -20,12 +20,7 @@ def rag_eval(
     def dynamic_import(*function_names):
         functions = []
         for name in function_names:
-            if name.startswith("MultiModal"):
-                module = importlib.import_module(
-                    "evalscope.backend.rag_eval.ragas.metrics"
-                )
-            else:
-                module = importlib.import_module("ragas.metrics")
+            module = importlib.import_module('ragas.metrics')
             functions.append(getattr(module, name)())
         return functions
 
@@ -47,7 +42,7 @@ def rag_eval(
     )
 
     # evaluate
-    runconfig = RunConfig(timeout=60, max_retries=2, max_wait=60, max_workers=1)
+    runconfig = RunConfig(timeout=600, max_retries=2, max_wait=60, max_workers=1)
     score = evaluate(
         dataset,
         metrics=metrics,
@@ -58,9 +53,9 @@ def rag_eval(
     score_df = score.to_pandas()
     logger.info(score_df)
 
-    output_path = args.testset_file.replace(".json", "_score.json")
+    output_path = args.testset_file.replace('.json', '_score.json')
     score_df.to_json(
-        output_path, indent=4, index=False, orient="records", force_ascii=False
+        output_path, indent=4, index=False, orient='records', force_ascii=False
     )
 
-    logger.info(f"Eval score saved to {output_path}")
+    logger.info(f'Eval score saved to {output_path}')

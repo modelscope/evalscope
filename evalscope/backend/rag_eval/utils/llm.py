@@ -1,6 +1,6 @@
 import os
 from typing import Any, Dict, Iterator, List, Mapping, Optional
-
+from modelscope.utils.hf_util import GenerationConfig
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from evalscope.models.model_adapter import ChatGenerationModelAdapter
@@ -10,12 +10,12 @@ from langchain_openai import ChatOpenAI
 class LLM:
     @staticmethod
     def load(**kw):
-        api_base = kw.get("api_base", None)
+        api_base = kw.get('api_base', None)
         if api_base:
             return ChatOpenAI(
-                model_name=kw.get("model_name", ""),
+                model_name=kw.get('model_name', ''),
                 openai_api_base=api_base,
-                openai_api_key=kw.get("api_key", "EMPTY"),
+                openai_api_key=kw.get('api_key', 'EMPTY'),
             )
         else:
             return LocalLLM(**kw)
@@ -25,8 +25,8 @@ class LocalLLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""
 
     model_name_or_path: str
-    model_revision: str = "master"
-    template_type: str = "default"
+    model_revision: str = 'master'
+    template_type: str = 'default'
     model_name: Optional[str]
     model: Optional[ChatGenerationModelAdapter]
     generation_config: Optional[Dict]
@@ -38,7 +38,7 @@ class LocalLLM(BaseLLM):
             model_id=self.model_name_or_path,
             model_revision=self.model_revision,
             template_type=self.template_type,
-            generation_config=self.generation_config,
+            generation_config=GenerationConfig(**self.generation_config),
         )
 
     def _call(
@@ -49,7 +49,7 @@ class LocalLLM(BaseLLM):
         **kwargs: Any,
     ) -> str:
         """Run the LLM on the given input."""
-        infer_cfg = {"stop": stop}
+        infer_cfg = {'stop': stop}
 
         response = self.model._model_generate(prompt, infer_cfg)
         return response
@@ -62,12 +62,11 @@ class LocalLLM(BaseLLM):
             # rules in LLM monitoring applications (e.g., in LangSmith users
             # can provide per token pricing for their model and monitor
             # costs for the given LLM.)
-            "model_name": self.model_name,
-            "revision": self.model_revision,
+            'model_name': self.model_name,
+            'revision': self.model_revision,
         }
 
     @property
     def _llm_type(self) -> str:
         """Get the type of language model used by this chat model. Used for logging purposes only."""
         return self.model_name
-
