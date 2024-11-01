@@ -29,7 +29,7 @@ repos:
       - id: check-yaml
         exclude: thirdparty/
       - id: end-of-file-fixer
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/
       - id: requirements-txt-fixer
         exclude: thirdparty/
       - id: double-quote-string-fixer
