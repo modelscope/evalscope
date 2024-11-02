@@ -16,9 +16,9 @@ async def translate_prompt(
     llm: BaseRagasLLM,
     adapt_instruction: bool = False,
 ):
-    if not target_lang in RAGAS_SUPPORTED_LANGUAGE_CODES:
+    if target_lang not in RAGAS_SUPPORTED_LANGUAGE_CODES:
         logger.warning(
-            f"{target_lang} is not in supported language: {list(RAGAS_SUPPORTED_LANGUAGE_CODES)}"
+            f'{target_lang} is not in supported language: {list(RAGAS_SUPPORTED_LANGUAGE_CODES)}'
         )
         return
 
@@ -29,28 +29,28 @@ async def translate_prompt(
     class_name = prompt_user.__class__.__name__
     current_dir = os.path.dirname(__file__)
     prompt_dir = os.path.abspath(
-        os.path.join(current_dir, f"../prompts/{target_lang}/{class_name}")
+        os.path.join(current_dir, f'../prompts/{target_lang}/{class_name}')
     )
     os.makedirs(prompt_dir, exist_ok=True)
 
     try:
         loader_prompts = prompt_user.load_prompts(prompt_dir, target_lang)
         prompt_user.set_prompts(**loader_prompts)
-        logger.info(f"Load existing prompts from {prompt_dir}")
+        logger.info(f'Load existing prompts from {prompt_dir}')
         return
-    except FileNotFoundError as e:
-        logger.info(f"Not find existing prompts {class_name}, generate new prompts.")
+    except FileNotFoundError:
+        logger.info(f'Not find existing prompts {class_name}, generate new prompts.')
 
-    logger.info(f"Translating prompts to {target_lang}")
+    logger.info(f'Translating prompts to {target_lang}')
     adapted_prompts = await prompt_user.adapt_prompts(
         language=target_lang, llm=llm, adapt_instruction=adapt_instruction
     )
     prompt_user.set_prompts(**adapted_prompts)
     try:
         prompt_user.save_prompts(prompt_dir)
-    except FileExistsError as e:
-        logger.info(f"Find existing prompt {class_name}, skip saving.")
-    logger.info(f"Save new prompts to {prompt_dir}")
+    except FileExistsError:
+        logger.info(f'Find existing prompt {class_name}, skip saving.')
+    logger.info(f'Save new prompts to {prompt_dir}')
 
     return
 
@@ -61,7 +61,7 @@ async def translate_prompts(
     llm: BaseRagasLLM,
     adapt_instruction: bool = False,
 ):
-    if target_lang and target_lang != "english":
+    if target_lang and target_lang != 'english':
         await asyncio.gather(
             *[
                 translate_prompt(prompt, target_lang, llm, adapt_instruction)
@@ -69,4 +69,4 @@ async def translate_prompts(
             ]
         )
 
-        logger.info(f"Translate prompts finished")
+        logger.info('Translate prompts finished')

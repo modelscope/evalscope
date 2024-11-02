@@ -239,6 +239,7 @@ task_cfg_dict = {
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
     - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
     - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
+    - `VIDEO_LLM`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
   - `mode`: Options: `['all', 'infer']`; `all` includes inference and evaluation; `infer` only performs inference.
   - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
   - `rerun`: Boolean indicating whether to rerun the evaluation, which will delete all temporary evaluation files.
