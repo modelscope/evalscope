@@ -14,7 +14,7 @@ os.environ['DO_NOT_TRACK'] = 'true'
 logger = get_logger()
 
 
-def get_transform(llm, embedding, language: None):
+def get_transform(llm, embedding, language):
     """
     Creates and returns a default set of transforms for processing a knowledge graph.
 
@@ -96,7 +96,7 @@ def get_transform(llm, embedding, language: None):
     return transforms
 
 
-def get_distribution(llm, distribution, language: None):
+def get_distribution(llm, distribution, language):
     from ragas.testset.synthesizers.abstract_query import (
         AbstractQuerySynthesizer,
         ComparativeAbstractQuerySynthesizer,
@@ -126,22 +126,53 @@ def get_distribution(llm, distribution, language: None):
     ]
 
 
+def get_knowledge_graph(documents, transforms, local_file):
+    from ragas.testset.graph import KnowledgeGraph, Node, NodeType
+    from ragas.testset.transforms import apply_transforms
+
+    if os.path.exists(local_file):
+        logger.info(f'Loading knowledge graph from {local_file}')
+        return KnowledgeGraph.load(local_file)
+    # convert the documents to Ragas nodes
+    nodes = []
+    for doc in documents:
+        node = Node(
+            type=NodeType.DOCUMENT,
+            properties={
+                'page_content': doc.page_content,
+                'document_metadata': doc.metadata,
+            },
+        )
+        nodes.append(node)
+
+    kg = KnowledgeGraph(nodes=nodes)
+
+    # apply transforms and update the knowledge graph
+    apply_transforms(kg, transforms)
+
+    # save the knowledge graph
+    output_path = os.path.dirname(local_file)
+    os.makedirs(output_path, exist_ok=True)
+    kg.save(local_file)
+    logger.info(f'Knowledge graph saved to {local_file}')
+    return kg
+
+
 def load_data(file_path):
     from langchain_community.document_loaders import UnstructuredFileLoader
 
-    loader = UnstructuredFileLoader(file_path)
+    loader = UnstructuredFileLoader(file_path, mode='elements')
     data = loader.load()
     return data
 
 
 def generate_testset(args: TestsetGenerationArguments) -> None:
-    # from langchain_community.document_loaders
 
     from ragas.testset import TestsetGenerator
     from ragas import RunConfig
 
     # load data
-    data = load_data(args.docs)
+    documents = load_data(args.docs)
 
     # generator with models
     generator_llm = LLM.load(**args.generator_llm)
@@ -159,15 +190,18 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
         args.language,
     )
 
-    generator = TestsetGenerator.from_langchain(generator_llm, embeddings)
+    # get knowledge graph
+    knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph)
+
+    generator = TestsetGenerator.from_langchain(
+        generator_llm, embeddings, knowledge_graph
+    )
 
     runconfig = RunConfig(
         timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True
     )
-    testset = generator.generate_with_langchain_docs(
-        documents=data,
+    testset = generator.generate(
         testset_size=args.test_size,
-        transforms=transforms,
         query_distribution=distributions,
         run_config=runconfig,
         with_debugging_logs=True,

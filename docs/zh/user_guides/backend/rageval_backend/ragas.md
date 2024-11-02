@@ -66,6 +66,7 @@ generate_testset_task_cfg = {
             "docs": ["README_zh.md"],
             "test_size": 10,
             "output_file": "outputs/testset.json",
+            "knowledge_graph", "outputs/knowledge_graph.json",
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
@@ -87,7 +88,8 @@ generate_testset_task_cfg = {
   - `testset_generation`: `dict`：测试集生成的配置。
     - `docs`: `list`：测试集生成所需的文档列表，例如 ["README_zh.md"]。
     - `test_size`: `int`：生成测试集的大小，例如 5。
-    - `output_file`: `str`：生成的输出文件路径，例如 "outputs/testset.json"。
+    - `output_file`: `str`：生成数据集的输出文件路径，例如 "outputs/testset.json"。
+    - `knowledge_graph`: `str`：知识图谱文件路径，例如 "outputs/knowledge_graph.json"，文档处理过程中生成的知识图谱会保存在该路径下；若该路径已有知识图谱，则会直接加载知识图谱，跳过生成知识图谱的步骤。
     - `distribution`: `dict`：测试集内容的分布配置。
       - `simple`: `float`：简单内容的分布比例，例如 0.5。
       - `multi_context`: `float`：多上下文内容的分布比例，例如 0.4。
