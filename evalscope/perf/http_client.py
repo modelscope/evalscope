@@ -3,36 +3,37 @@
 
 import argparse
 import asyncio
-from dataclasses import dataclass
+import base64
 import functools
-import json
+import importlib.util
 import logging
+import os
+import pickle
 import platform
 import signal
 import sqlite3
-import os
-import time
-import base64
-import pickle
-import importlib.util
 import sys
-from typing import List, Dict, Optional
+import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
-import aiohttp
 from http import HTTPStatus
-import numpy as np
-from evalscope.perf.plugin_registry import api_registry, dataset_registry
-from evalscope.perf.query_parameters import QueryParameters
-from evalscope.perf.server_sent_event import ServerSentEvent
+from typing import Dict, List, Optional
 
+import aiohttp
+import json
+import numpy as np
+
+from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.plugin.api.custom_api import CustomPlugin
 # for plugin registry
-from evalscope.perf.dashscope_api import DashScopeApiPlugin
-from evalscope.perf.openai_api import OpenaiPlugin
-from evalscope.perf.datasets.line_by_line import LineByLineDatasetPlugin
-from evalscope.perf.datasets.longalpaca_12k import LongAlpacaDatasetPlugin
-from evalscope.perf.datasets.openqa import OpenqaDatasetPlugin
-from evalscope.perf.custom_api import CustomPlugin
-from evalscope.perf._logging import logger
+from evalscope.perf.plugin.api.dashscope_api import DashScopeApiPlugin
+from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
+from evalscope.perf.plugin.datasets.line_by_line import LineByLineDatasetPlugin
+from evalscope.perf.plugin.datasets.longalpaca import LongAlpacaDatasetPlugin
+from evalscope.perf.plugin.datasets.openqa import OpenqaDatasetPlugin
+from evalscope.perf.plugin.registry import api_registry, dataset_registry
+from evalscope.perf.server_sent_event import ServerSentEvent
+from evalscope.perf.utils._logging import logger
 
 __all__ = [
     DashScopeApiPlugin,
@@ -63,6 +64,7 @@ async def on_response_chunk_received(session, context, params):
 
 
 class AioHttpClient:
+
     def __init__(
         self,
         url: str,
@@ -84,7 +86,8 @@ class AioHttpClient:
             trace_config.on_request_start.append(on_request_start)
             trace_config.on_request_chunk_sent.append(on_request_chunk_sent)
             # not support server sent event(stream=true)
-            trace_config.on_response_chunk_received.append(on_response_chunk_received)
+            trace_config.on_response_chunk_received.append(
+                on_response_chunk_received)
         self.client = aiohttp.ClientSession(
             trace_configs=[trace_config] if debug else [],
             connector=aiohttp.TCPConnector(limit=1),
@@ -130,34 +133,34 @@ class AioHttpClient:
                     is_error = True
 
                 if sse_msg.data:
-                    if sse_msg.data.startswith('[DONE]'):  # openai api completed
+                    if sse_msg.data.startswith(
+                            '[DONE]'):  # openai api completed
                         break
                     yield (is_error, status_code, sse_msg.data)
                     # yield data
 
     async def _handle_response(self, response: aiohttp.ClientResponse):
-        if (
-            response.status == HTTPStatus.OK
-            and 'text/event-stream' in response.content_type
-        ):
-            async for is_error, status_code, data in self._handle_stream(response):
+        if (response.status == HTTPStatus.OK
+                and 'text/event-stream' in response.content_type):
+            async for is_error, status_code, data in self._handle_stream(
+                    response):
                 yield (is_error, status_code, data)
-        elif (
-            response.status == HTTPStatus.OK
-            and 'application/json' in response.content_type
-        ):
+        elif (response.status == HTTPStatus.OK
+              and 'application/json' in response.content_type):
             content = await response.json()
             if 'object' in content and content['object'] == 'error':
                 yield (True, content['code'], content['message'])
             else:
-                yield (False, HTTPStatus.OK, json.dumps(content, ensure_ascii=False))
+                yield (False, HTTPStatus.OK,
+                       json.dumps(content, ensure_ascii=False))
         elif response.status == HTTPStatus.OK:
             content = await response.read()
             yield (False, HTTPStatus.OK, content)
         else:
             if 'application/json' in response.content_type:
                 error = await response.json()
-                yield (True, response.status, json.dumps(error, ensure_ascii=False))
+                yield (True, response.status,
+                       json.dumps(error, ensure_ascii=False))
             elif 'text/event-stream' in response.content_type:
                 async for _, _, data in self._handle_stream(response):
                     error = json.loads(data)
@@ -170,8 +173,7 @@ class AioHttpClient:
         try:
             headers = {'Content-Type': 'application/json', **self.headers}
             response = await self.client.request(
-                'POST', url=self.url, json=body, headers=headers
-            )
+                'POST', url=self.url, json=body, headers=headers)
             async with response:
                 async for rsp in self._handle_response(response):
                     yield rsp
@@ -183,34 +185,6 @@ class AioHttpClient:
             raise e
 
 
-def dynamic_import_module(dynamic_module_file_path: str):
-    """Dynamic import input output process python file.
-
-    Args:
-        dynamic_module_file_path (str): The absolute path of the
-            input output process python path, or name of the format,
-            system support openai, dashscope format.
-    """
-    module_name = 'module_request_response_parser'
-
-    dynamic_module_spec = importlib.util.spec_from_file_location(
-        module_name, dynamic_module_file_path
-    )
-    dynamic_module = importlib.util.module_from_spec(dynamic_module_spec)
-    sys.modules[module_name] = dynamic_module
-    dynamic_module_spec.loader.exec_module(dynamic_module)
-    return dynamic_module
-
-
-def get_query_template(args):
-    if args.query_template.startswith('@'):
-        # read from file
-        with open(args.query_template[1:], 'r') as f:
-            content = f.read()
-            return content.strip()
-    return args.query_template.strip()
-
-
 async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
     query_generator_class = api_registry(args.api)
     if not query_generator_class:
@@ -219,7 +193,8 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
     total_query_counter = 0
     query_parameters = QueryParameters(args)
     if args.prompt is not None:
-        if args.prompt.startswith('@'):  # read local as prompt, same as curl --data
+        if args.prompt.startswith(
+                '@'):  # read local as prompt, same as curl --data
             with open(args.prompt, 'r', encoding='utf-8') as f:
                 prompt = f.read()
         else:
@@ -242,11 +217,13 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
         while True:
             message_generator_class = dataset_registry.get_class(args.dataset)
             if not message_generator_class:
-                logger.info('Can not find dataset: %s plugin.' % (args.dataset))
+                logger.info('Can not find dataset: %s plugin.' %
+                            (args.dataset))
                 sys.exit(1)
             message_generator = message_generator_class(query_parameters)
             for messages in message_generator:
-                request = query_generator.build_request(messages, query_parameters)
+                request = query_generator.build_request(
+                    messages, query_parameters)
                 if request is None:
                     continue
                 await request_queue.put(request)
@@ -287,13 +264,13 @@ class BenchmarkData(dict):
 
 
 def calculate_query_stream_metric(benchmark_data):
-    first_chunk_latency = (
-        benchmark_data['chunk_times'][0] - benchmark_data['start_time']
-    )  # the first chunk latency
-    n_chunks = len(benchmark_data['chunk_times']) - 2  # minus first and last chunk.
-    n_chunks_time = (
-        benchmark_data['chunk_times'][-2] - benchmark_data['chunk_times'][0]
-    )  # -2 to last chunk
+    first_chunk_latency = (benchmark_data['chunk_times'][0]
+                           - benchmark_data['start_time']
+                           )  # the first chunk latency
+    n_chunks = len(
+        benchmark_data['chunk_times']) - 2  # minus first and last chunk.
+    n_chunks_time = (benchmark_data['chunk_times'][-2]
+                     - benchmark_data['chunk_times'][0])  # -2 to last chunk
     return (first_chunk_latency, n_chunks, n_chunks_time)
 
 
@@ -305,8 +282,7 @@ def get_result_db_path(args):
         result_db_path = os.path.join(output_dir, args.name)
     else:
         result_db_path = os.path.join(
-            output_dir, f'{args.model}_benchmark_{current_time}.db'
-        )
+            output_dir, f'{args.model}_benchmark_{current_time}.db')
 
     # Ensure the output directory exists
     result_db_dir = os.path.dirname(result_db_path)
@@ -321,7 +297,8 @@ def get_result_db_path(args):
     return result_db_path
 
 
-async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args):
+async def statistic_benchmark_metric_worker(
+        benchmark_data_queue: asyncio.Queue, args):
     """Statistics of performance metrics based on performance data"""
     n_succeed_queries = 0
     n_failed_queries = 0
@@ -367,20 +344,22 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
         'CREATE TABLE %s(request, start_time, chunk_times, success, \
                    response_messages, completed_time, latency, first_chunk_latency, \
                    n_chunks, chunk_time, prompt_tokens, completion_tokens)'
-        % _table_name
-    )
+        % _table_name)
     if args.wandb_api_key is not None:
         import wandb
 
         current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
         name = (
-            args.name if args.name is not None else '%s_%s' % (args.model, current_time)
-        )
+            args.name if args.name is not None else '%s_%s' %
+            (args.model, current_time))
         wandb.init(
             project='perf_benchmark',
             name=name,
             # track run metadata
-            config={'model': args.model, 'time': current_time},
+            config={
+                'model': args.model,
+                'time': current_time
+            },
         )
         os.environ['WANDB_SILENT'] = 'true'
 
@@ -396,8 +375,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             continue
         if start_time is None:
             start_time = benchmark_data[
-                'start_time'
-            ]  # start time with first request start time
+                'start_time']  # start time with first request start time
         # total requests
         total_time = time.perf_counter() - start_time
 
@@ -405,12 +383,11 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             n_succeed_queries += 1
             n_query_trunks = len(benchmark_data['chunk_times'])
             query_latency = (
-                benchmark_data['completed_time'] - benchmark_data['start_time']
-            )
+                benchmark_data['completed_time']
+                - benchmark_data['start_time'])
             if n_query_trunks > 1:
                 query_first_chunk_latency, query_n_chunks, query_n_chunks_time = (
-                    calculate_query_stream_metric(benchmark_data)
-                )
+                    calculate_query_stream_metric(benchmark_data))
             else:
                 query_first_chunk_latency = query_latency  # not stream mode, query latency is equal total latency
                 query_n_chunks = 1
@@ -420,8 +397,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
                 api_plugin.parse_responses(
                     benchmark_data['response_messages'],
                     request=benchmark_data['request'],
-                )
-            )
+                ))
             n_total_prompt_tokens += n_query_prompt_tokens
             n_total_completion_tokens += n_query_completion_tokens
 
@@ -436,9 +412,8 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             avg_latency = total_latency / n_succeed_queries
             # average generate chunks
             if n_query_trunks > 1:
-                n_avg_chunks = (
-                    n_total_chunks / n_succeed_queries + 2
-                )  # we remove the frist and last chunk.
+                n_avg_chunks = (n_total_chunks / n_succeed_queries + 2
+                                )  # we remove the frist and last chunk.
             else:
                 n_avg_chunks = n_total_chunks / n_succeed_queries
             avg_chunk_time = total_chunks_time / n_total_chunks
@@ -453,15 +428,15 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
                 "INSERT INTO %s VALUES('%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)"
                 % (
                     _table_name,
-                    base64.b64encode(pickle.dumps(benchmark_data['request'])).decode(
-                        'utf-8'
-                    ),
+                    base64.b64encode(pickle.dumps(
+                        benchmark_data['request'])).decode('utf-8'),
                     benchmark_data['start_time'],
-                    json.dumps(benchmark_data['chunk_times'], ensure_ascii=False),
+                    json.dumps(
+                        benchmark_data['chunk_times'], ensure_ascii=False),
                     benchmark_data['success'],
                     base64.b64encode(
-                        pickle.dumps(benchmark_data['response_messages'])
-                    ).decode('utf-8'),
+                        pickle.dumps(benchmark_data['response_messages'])).
+                    decode('utf-8'),
                     benchmark_data['completed_time'],
                     query_latency,
                     query_first_chunk_latency,
@@ -469,51 +444,61 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
                     query_n_chunks_time,
                     n_query_prompt_tokens,
                     n_query_completion_tokens,
-                )
-            )
+                ))
         else:
             n_failed_queries += 1
             # save the benchmark data to database.
             # save data to dist.
             insert_sql = (
                 "INSERT INTO %s(request, start_time, chunk_times, success, response_messages, completed_time)\
-                VALUES('%s', %s, '%s', '%s', '%s', %s)"
-                % (
+                VALUES('%s', %s, '%s', '%s', '%s', %s)" % (
                     _table_name,
-                    base64.b64encode(pickle.dumps(benchmark_data['request'])).decode(
-                        'utf-8'
-                    ),
+                    base64.b64encode(pickle.dumps(
+                        benchmark_data['request'])).decode('utf-8'),
                     benchmark_data['start_time'],
-                    json.dumps(benchmark_data['chunk_times'], ensure_ascii=False),
+                    json.dumps(
+                        benchmark_data['chunk_times'], ensure_ascii=False),
                     benchmark_data['success'],
                     base64.b64encode(
-                        pickle.dumps(benchmark_data['response_messages'])
-                    ).decode('utf-8'),
+                        pickle.dumps(benchmark_data['response_messages'])).
+                    decode('utf-8'),
                     benchmark_data['completed_time'],
-                )
-            )
-        n_total_queries = float(n_succeed_queries + n_failed_queries)  # float for calc
+                ))
+        n_total_queries = float(n_succeed_queries
+                                + n_failed_queries)  # float for calc
         qps = n_succeed_queries / total_time
         db_cur.execute(insert_sql)
         con.commit()
         default_ndigits = 3
         message = {
-            'Time': round(total_time, default_ndigits),
-            'concurrency': concurrency,
-            'completed': int(n_total_queries),
-            'succeed': n_succeed_queries,
-            'failed': n_failed_queries,
-            'qps': round(qps, default_ndigits),
-            'latency': round(avg_latency, default_ndigits),
-            'time to first token': round(avg_first_chunk_latency, default_ndigits),
-            'throughput(output tokens per second)': round(
-                avg_token_per_seconds, default_ndigits
-            ),
-            'time per output token': round(avg_time_per_token, 5),
-            'package per request': round(n_avg_chunks, default_ndigits),
-            'time per package': round(avg_chunk_time, default_ndigits),
-            'input tokens per request': round(avg_prompt_tokens, default_ndigits),
-            'output tokens per request': round(avg_completion_tokens, default_ndigits),
+            'Time':
+            round(total_time, default_ndigits),
+            'concurrency':
+            concurrency,
+            'completed':
+            int(n_total_queries),
+            'succeed':
+            n_succeed_queries,
+            'failed':
+            n_failed_queries,
+            'qps':
+            round(qps, default_ndigits),
+            'latency':
+            round(avg_latency, default_ndigits),
+            'time to first token':
+            round(avg_first_chunk_latency, default_ndigits),
+            'throughput(output tokens per second)':
+            round(avg_token_per_seconds, default_ndigits),
+            'time per output token':
+            round(avg_time_per_token, 5),
+            'package per request':
+            round(n_avg_chunks, default_ndigits),
+            'time per package':
+            round(avg_chunk_time, default_ndigits),
+            'input tokens per request':
+            round(avg_prompt_tokens, default_ndigits),
+            'output tokens per request':
+            round(avg_completion_tokens, default_ndigits),
         }
         if args.wandb_api_key is not None:
             wandb.log(message)
@@ -562,31 +547,30 @@ def summary_result(
 
     logger.info('Benchmarking summary: ')
     logger.info(' Time taken for tests: %.3f seconds' % total_time)
-    logger.info(' Expected number of requests: %s' % expected_number_of_queries)
+    logger.info(' Expected number of requests: %s'
+                % expected_number_of_queries)
     logger.info(' Number of concurrency: %d' % args.parallel)
     logger.info(' Total requests: %d' % n_total_queries)
     logger.info(' Succeed requests: %d' % n_succeed_queries)
     logger.info(' Failed requests: %d' % n_failed_queries)
     logger.info(' Average QPS: %.3f' % qps)
     logger.info(' Average latency: %.3f' % avg_latency)
-    logger.info(
-        ' Throughput(average output tokens per second): %.3f' % avg_token_per_seconds
-    )
+    logger.info(' Throughput(average output tokens per second): %.3f'
+                % avg_token_per_seconds)
     logger.info(' Average time to first token: %.3f' % avg_first_chunk_latency)
     logger.info(' Average input tokens per request: %.3f' % avg_prompt_tokens)
-    logger.info(' Average output tokens per request: %.3f' % avg_completion_tokens)
+    logger.info(' Average output tokens per request: %.3f'
+                % avg_completion_tokens)
     logger.info(' Average time per output token: %.5f' % avg_time_per_token)
     logger.info(' Average package per request: %.3f' % n_avg_chunks)
     logger.info(' Average package latency: %.3f' % avg_chunk_time)
 
     con = sqlite3.connect(result_db_path)
-    query_sql = (
-        "SELECT start_time, chunk_times, success, \
+    query_sql = ("SELECT start_time, chunk_times, success, \
                    completed_time, latency, first_chunk_latency, \
                    n_chunks, chunk_time, prompt_tokens, completion_tokens \
                        FROM %s WHERE success='True' ORDER BY first_chunk_latency ASC"
-        % _table_name
-    )
+                 % _table_name)
 
     percentiles = [50, 66, 75, 80, 90, 95, 98, 99]
     with con:
@@ -597,10 +581,9 @@ def summary_result(
             for percentile in percentiles:
                 idx = (int)(n_success_queries * percentile / 100)
                 row = rows[idx]
-                logger.info(
-                    '     p%s: %.4f'
-                    % (percentile, row[5] if row[5] is not None else float('inf'))
-                )
+                logger.info('     p%s: %.4f' %
+                            (percentile,
+                             row[5] if row[5] is not None else float('inf')))
                 # logger.info(row)
             logger.info(' Percentile of request latency: ')
             latency_index = 4
@@ -608,25 +591,18 @@ def summary_result(
             for percentile in percentiles:
                 idx = (int)(n_success_queries * percentile / 100)
                 row = rows[idx]
-                logger.info(
-                    '     p%s: %.4f'
-                    % (
-                        percentile,
-                        (
-                            row[latency_index]
-                            if row[latency_index] is not None
-                            else float('inf')
-                        ),
-                    )
-                )
+                logger.info('     p%s: %.4f' % (
+                    percentile,
+                    (row[latency_index]
+                     if row[latency_index] is not None else float('inf')),
+                ))
         else:
             logger.info(' Too little data to calculate quantiles!')
     con.close()
 
 
-async def send_requests_worker(
-    task_id, request_queue: asyncio.Queue, benchmark_data_queue: asyncio.Queue, args
-):
+async def send_requests_worker(task_id, request_queue: asyncio.Queue,
+                               benchmark_data_queue: asyncio.Queue, args):
     client = AioHttpClient(
         args.url,
         conn_timeout=args.connect_timeout,
@@ -652,18 +628,20 @@ async def send_requests_worker(
             benchmark_data['success'] = False
             collected_messages = []
             try:
-                async for is_error, state_code, response_data in client.post(request):
+                async for is_error, state_code, response_data in client.post(
+                        request):
                     if is_error or state_code != HTTPStatus.OK:
                         logger.error(
-                            'Request: %s failed, state_code: %s, data: %s'
-                            % (request, state_code, response_data)
-                        )
+                            'Request: %s failed, state_code: %s, data: %s' %
+                            (request, state_code, response_data))
                         break
                     else:
                         if response_data:
-                            collected_messages.append(response_data)  # save the message
+                            collected_messages.append(
+                                response_data)  # save the message
                             logger.info(response_data)
-                            benchmark_data['chunk_times'].append(time.perf_counter())
+                            benchmark_data['chunk_times'].append(
+                                time.perf_counter())
 
                 benchmark_data['response_messages'] = collected_messages
                 benchmark_data['completed_time'] = time.perf_counter()
@@ -671,14 +649,13 @@ async def send_requests_worker(
                 await benchmark_data_queue.put(benchmark_data)
             except BaseException as e:
                 if response_data:
-                    collected_messages.append(response_data)  # save the message
+                    collected_messages.append(
+                        response_data)  # save the message
                 benchmark_data['response_messages'] = collected_messages
                 benchmark_data['completed_time'] = time.perf_counter()
                 await benchmark_data_queue.put(benchmark_data)
-                logger.error(
-                    'Request query: %s exception, response: %s'
-                    % (request, response_data)
-                )
+                logger.error('Request query: %s exception, response: %s' %
+                             (request, response_data))
                 logger.exception(e)
 
 
@@ -703,14 +680,14 @@ async def benchmark(args) -> None:
     # Create a queue that we will use to store our "workload".
     request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
-    dispatch_task = asyncio.create_task(dispatch_requests_worker(request_queue, args))
+    dispatch_task = asyncio.create_task(
+        dispatch_requests_worker(request_queue, args))
     statistic_benchmark_metric_task = asyncio.create_task(
-        statistic_benchmark_metric_worker(benchmark_data_queue, args)
-    )
+        statistic_benchmark_metric_worker(benchmark_data_queue, args))
     for idx, task in enumerate(range(args.parallel)):
         task = asyncio.create_task(
-            send_requests_worker(idx, request_queue, benchmark_data_queue, args)
-        )
+            send_requests_worker(idx, request_queue, benchmark_data_queue,
+                                 args))
         request_tasks.append(task)
 
     expected_number_of_queries = await dispatch_task  # wait for dispatch task complete
@@ -771,6 +748,7 @@ def process_number(input):
 
 # from: https://gist.github.com/vadimkantorov/37518ff88808af840884355c845049ea
 class ParseKVAction(argparse.Action):
+
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, dict())
         for each in values:
@@ -785,7 +763,8 @@ class ParseKVAction(argparse.Action):
                 getattr(namespace, self.dest)[key] = value
             except ValueError as ex:
                 message = '\nTraceback: {}'.format(ex)
-                message += "\nError on '{}' || It should be 'key=value'".format(each)
+                message += "\nError on '{}' || It should be 'key=value'".format(
+                    each)
                 raise argparse.ArgumentError(self, str(message))
 
 
@@ -794,7 +773,8 @@ def run_perf_benchmark(args):
 
 
 def add_argument(parser: argparse.ArgumentParser):
-    parser.add_argument('--model', type=str, required=True, help='The test model name.')
+    parser.add_argument(
+        '--model', type=str, required=True, help='The test model name.')
     parser.add_argument('--url', type=str, default='localhost')
     parser.add_argument(
         '--connect-timeout',
@@ -803,8 +783,10 @@ def add_argument(parser: argparse.ArgumentParser):
         help='The network connection timeout',
     )
     parser.add_argument(
-        '--read-timeout', type=int, default=120, help='The network read timeout'
-    )
+        '--read-timeout',
+        type=int,
+        default=120,
+        help='The network read timeout')
     parser.add_argument(
         '-n',
         '--number',
@@ -829,8 +811,10 @@ def add_argument(parser: argparse.ArgumentParser):
         'the request arrival times.  Mutual exclusion with parallel',
     )
     parser.add_argument(
-        '--log-every-n-query', type=int, default=10, help='Logging every n query.'
-    )
+        '--log-every-n-query',
+        type=int,
+        default=10,
+        help='Logging every n query.')
     parser.add_argument(
         '--headers',
         nargs='+',
@@ -850,17 +834,21 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--name',
         type=str,
-        help='The wandb db result name and result db name, default: {model_name}_{current_time}',
+        help=
+        'The wandb db result name and result db name, default: {model_name}_{current_time}',
     )
     parser.add_argument(
-        '--debug', action='store_true', default=False, help='Debug request send.'
-    )
+        '--debug',
+        action='store_true',
+        default=False,
+        help='Debug request send.')
     parser.add_argument(
         '--tokenizer-path',
         type=str,
         required=False,
         default=None,
-        help='Specify the tokenizer weight path, used to calculate the number of input and output tokens,'
+        help=
+        'Specify the tokenizer weight path, used to calculate the number of input and output tokens,'
         'usually in the same directory as the model weight. If service return usage will use usage info.',
     )
     parser.add_argument(
@@ -878,8 +866,10 @@ def add_argument(parser: argparse.ArgumentParser):
         help='Maximum input prompt length',
     )
     parser.add_argument(
-        '--min-prompt-length', type=int, default=0, help='Minimum input prompt length.'
-    )
+        '--min-prompt-length',
+        type=int,
+        default=0,
+        help='Minimum input prompt length.')
     parser.add_argument(
         '--prompt',
         type=str,
@@ -893,7 +883,8 @@ def add_argument(parser: argparse.ArgumentParser):
         '--query-template',
         type=str,
         default=None,
-        help='Specify the query template, should be a json string, or local file,'
+        help=
+        'Specify the query template, should be a json string, or local file,'
         'with local file, specified with @local_file_path,'
         'will will replace model and prompt in the template.',
     )
@@ -920,8 +911,7 @@ def add_argument(parser: argparse.ArgumentParser):
         default=None,
     )
     parser.add_argument(
-        '--logprobs', action='store_true', help='The logprobs.', default=None
-    )
+        '--logprobs', action='store_true', help='The logprobs.', default=None)
     parser.add_argument(
         '--max-tokens',
         type=int,
@@ -934,28 +924,37 @@ def add_argument(parser: argparse.ArgumentParser):
         help='How may chmpletion choices to generate.',
         default=None,
     )
-    parser.add_argument('--seed', type=int, help='Rhe random seed.', default=None)
-    parser.add_argument('--stop', nargs='*', help='The stop tokens.', default=None)
     parser.add_argument(
-        '--stop-token-ids', nargs='*', help='Set the stop token ids.', default=None
-    )
+        '--seed', type=int, help='Rhe random seed.', default=None)
+    parser.add_argument(
+        '--stop', nargs='*', help='The stop tokens.', default=None)
+    parser.add_argument(
+        '--stop-token-ids',
+        nargs='*',
+        help='Set the stop token ids.',
+        default=None)
     parser.add_argument(
         '--stream',
         action='store_true',
-        help='Stream output with SSE, Automatically add stream_option.include_usage with openai interface.',
+        help=
+        'Stream output with SSE, Automatically add stream_option.include_usage with openai interface.',
         default=None,
     )
     parser.add_argument(
-        '--temperature', type=float, help='The sample temperature.', default=None
-    )
-    parser.add_argument('--top-p', type=float, help='Sampling top p.', default=None)
+        '--temperature',
+        type=float,
+        help='The sample temperature.',
+        default=None)
+    parser.add_argument(
+        '--top-p', type=float, help='Sampling top p.', default=None)
 
 
 if __name__ == '__main__':
     # for windows raise RuntimeError: Event loop is closed
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    parser = argparse.ArgumentParser(description='Benchmark LLM service performance.')
+    parser = argparse.ArgumentParser(
+        description='Benchmark LLM service performance.')
     add_argument(parser)
     args = parser.parse_args()
     run_perf_benchmark(args)

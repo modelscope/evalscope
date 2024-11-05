@@ -133,23 +133,30 @@ def pack_resource():
 
 
 if __name__ == '__main__':
-    print('Usage: python3 setup.py bdist_wheel or pip3 install .[opencompass] for test')
+    print(
+        'Usage: python3 setup.py bdist_wheel or pip3 install .[opencompass] for test'
+    )
 
     pack_resource()
     os.chdir('package')
-    install_requires, deps_link = parse_requirements('requirements/framework.txt')
+    install_requires, deps_link = parse_requirements(
+        'requirements/framework.txt')
 
     extra_requires = {}
     all_requires = []
-    extra_requires['opencompass'], _ = parse_requirements('requirements/opencompass.txt')
-    extra_requires['vlmeval'], _ = parse_requirements('requirements/vlmeval.txt')
+    extra_requires['opencompass'], _ = parse_requirements(
+        'requirements/opencompass.txt')
+    extra_requires['vlmeval'], _ = parse_requirements(
+        'requirements/vlmeval.txt')
     extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
+    extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])
     all_requires.extend(extra_requires['vlmeval'])
     all_requires.extend(extra_requires['rag'])
+    all_requires.extend(extra_requires['perf'])
     extra_requires['all'] = all_requires
 
     setup(
@@ -164,9 +171,13 @@ if __name__ == '__main__':
         # github url to be added
         url='https://github.com/modelscope/evalscope',
         include_package_data=True,
-        package_data={'evalscope': ['registry/tasks/*.yaml',
-                                    'benchmarks/bbh/cot_prompts/*.txt',
-                                    'third_party/longbench_write/resources/*',]},
+        package_data={
+            'evalscope': [
+                'registry/tasks/*.yaml',
+                'benchmarks/bbh/cot_prompts/*.txt',
+                'third_party/longbench_write/resources/*',
+            ]
+        },
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',
@@ -180,7 +191,7 @@ if __name__ == '__main__':
         python_requires='>=3.8',
         zip_safe=False,
         install_requires=install_requires,
-        entry_points={  
+        entry_points={
             'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']
         },
         dependency_links=deps_link,

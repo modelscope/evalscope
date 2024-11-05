@@ -1,11 +1,14 @@
-from abc import abstractmethod
 import sys
+from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Tuple
+
 import json
 
-from evalscope.perf.query_parameters import QueryParameters
+from evalscope.perf.arguments import QueryParameters
+
 
 class DatasetPluginBase:
+
     def __init__(self, query_parameters: QueryParameters):
         """Build data set plugin
 
@@ -21,9 +24,9 @@ class DatasetPluginBase:
 
     def __iter__(self):
         return self.build_messages()
-    
+
     @abstractmethod
-    def build_messages(self)->Iterator[List[Dict]]:
+    def build_messages(self) -> Iterator[List[Dict]]:
         """Build the request.
 
         Raises:
@@ -33,8 +36,8 @@ class DatasetPluginBase:
             Iterator[List[Dict]]: Yield request messages.
         """
         raise NotImplementedError
-    
-    def dataset_line_by_line(self, dataset: str)->Iterator[str]:
+
+    def dataset_line_by_line(self, dataset: str) -> Iterator[str]:
         """Get content line by line of dataset.
 
         Args:
@@ -46,8 +49,8 @@ class DatasetPluginBase:
         with open(dataset, 'r', encoding='utf-8') as f:
             for line in f:
                 yield line
-    
-    def dataset_json_list(self, dataset: str)->Iterator[Dict]:
+
+    def dataset_json_list(self, dataset: str) -> Iterator[Dict]:
         """Read data from file which is list of requests.
            Sample: https://huggingface.co/datasets/Yukang/LongAlpaca-12k
 
@@ -61,4 +64,4 @@ class DatasetPluginBase:
             content = f.read()
         data = json.loads(content)
         for item in data:
-            yield item      
+            yield item

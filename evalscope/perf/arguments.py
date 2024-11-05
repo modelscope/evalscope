@@ -19,9 +19,9 @@ class QueryParameters:
     temperature: Optional[float]
     top_p: Optional[float]
     max_prompt_length: Optional[int]
-    min_prompt_length: Optional[int]    
+    min_prompt_length: Optional[int]
     include_usage: Optional[bool]
-    
+
     def __init__(self, args):
         self.model = args.model
         self.prompt = args.prompt

@@ -1,7 +1,6 @@
 import logging
 import os
 
-
 logger = logging.getLogger('perf')
 
 
@@ -20,9 +19,6 @@ def enable_logging():
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'  # noqa E501
         )
-        #formatter = logging.Formatter(
-        #    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # noqa E501
-        #)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
