@@ -1,9 +1,29 @@
 import os
 import sqlite3
 import sys
+import time
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, List, Tuple
 
 from evalscope.perf.utils._logging import logger
+
+
+@dataclass
+class BenchmarkData:
+    request: Any = None
+    start_time: float = field(default_factory=time.perf_counter)
+    chunk_times: List[float] = field(default_factory=list)
+    success: bool = False
+    response_messages: List[Any] = field(default_factory=list)
+    completed_time: float = 0.0
+
+    def calculate_query_stream_metric(self) -> Tuple[float, int, float]:
+        # firt chunk latency
+        first_chunk_latency = self.chunk_times[0] - self.start_time
+        n_chunks = len(self.chunk_times) - 2
+        n_chunks_time = self.chunk_times[-2] - self.chunk_times[0]
+        return first_chunk_latency, n_chunks, n_chunks_time
 
 
 def get_result_db_path(args):
@@ -25,15 +45,6 @@ def get_result_db_path(args):
         sys.exit(1)
 
     return result_db_path
-
-
-def calculate_query_stream_metric(benchmark_data):
-    first_chunk_latency = (
-        benchmark_data['chunk_times'][0] - benchmark_data['start_time'])
-    n_chunks = len(benchmark_data['chunk_times']) - 2
-    n_chunks_time = (
-        benchmark_data['chunk_times'][-2] - benchmark_data['chunk_times'][0])
-    return first_chunk_latency, n_chunks, n_chunks_time
 
 
 def summary_result(expected_number_of_queries, total_time, n_total_queries,

@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import functools
+import os
 import pickle
 import platform
 import signal
@@ -17,18 +18,13 @@ from evalscope.perf.arguments import QueryParameters
 from evalscope.perf.http_client import AioHttpClient
 from evalscope.perf.plugin.registry import api_registry, dataset_registry
 from evalscope.perf.utils._logging import logger
+from evalscope.perf.utils.benchmark_util import (BenchmarkData,
+                                                 get_result_db_path,
+                                                 summary_result)
 from evalscope.perf.utils.signal_handler import signal_handler
-from evalscope.perf.utils.utils import (calculate_query_stream_metric,
-                                        get_result_db_path, summary_result)
 
 _query_send_completed = False
 _data_process_completed = False
-
-
-class BenchmarkData(dict):
-
-    def __init__(self):
-        super().__init__()
 
 
 async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
@@ -106,11 +102,8 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue,
                     break
                 await asyncio.sleep(0.01)
                 continue
-            benchmark_data = BenchmarkData()
-            benchmark_data['request'] = request
-            benchmark_data['start_time'] = time.perf_counter()
-            benchmark_data['chunk_times'] = []
-            benchmark_data['success'] = False
+            # auto get start_time when initializing
+            benchmark_data = BenchmarkData(request=request)
             collected_messages = []
             try:
                 async for is_error, state_code, response_data in client.post(
@@ -124,19 +117,19 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue,
                         if response_data:
                             collected_messages.append(response_data)
                             logger.info(response_data)
-                            benchmark_data['chunk_times'].append(
+                            benchmark_data.chunk_times.append(
                                 time.perf_counter())
 
-                benchmark_data['response_messages'] = collected_messages
-                benchmark_data['completed_time'] = time.perf_counter()
-                benchmark_data['success'] = not is_error
+                benchmark_data.response_messages = collected_messages
+                benchmark_data.completed_time = time.perf_counter()
+                benchmark_data.success = not is_error
                 await benchmark_data_queue.put(benchmark_data)
             except BaseException as e:
                 logger.exception(e)
                 if response_data:
                     collected_messages.append(response_data)
-                benchmark_data['response_messages'] = collected_messages
-                benchmark_data['completed_time'] = time.perf_counter()
+                benchmark_data.response_messages = collected_messages
+                benchmark_data.completed_time = time.perf_counter()
                 await benchmark_data_queue.put(benchmark_data)
                 logger.error('Request query: %s exception, response: %s' %
                              (request, response_data))
@@ -181,9 +174,28 @@ async def statistic_benchmark_metric_worker(
                    response_messages, completed_time, latency, first_chunk_latency, \
                    n_chunks, chunk_time, prompt_tokens, completion_tokens)')
 
+    if args.wandb_api_key is not None:
+        import wandb
+        import datetime
+
+        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        name = (
+            args.name if args.name is not None else '%s_%s' %
+            (args.model, current_time))
+        wandb.init(
+            project='perf_benchmark',
+            name=name,
+            # track run metadata
+            config={
+                'model': args.model,
+                'time': current_time
+            },
+        )
+        os.environ['WANDB_SILENT'] = 'true'
+
     while True:
         try:
-            benchmark_data = benchmark_data_queue.get_nowait()
+            benchmark_data: BenchmarkData = benchmark_data_queue.get_nowait()
             benchmark_data_queue.task_done()
             n_benchmark_result += 1
         except asyncio.QueueEmpty:
@@ -192,18 +204,18 @@ async def statistic_benchmark_metric_worker(
             await asyncio.sleep(1)
             continue
         if start_time is None:
-            start_time = benchmark_data['start_time']
+            start_time = benchmark_data.start_time
         total_time = time.perf_counter() - start_time
 
-        if benchmark_data['success']:
+        if benchmark_data.success:
             n_succeed_queries += 1
-            n_query_trunks = len(benchmark_data['chunk_times'])
+            n_query_trunks = len(benchmark_data.chunk_times)
             query_latency = (
-                benchmark_data['completed_time']
-                - benchmark_data['start_time'])
+                benchmark_data.completed_time - benchmark_data.start_time)
             if n_query_trunks > 1:
                 query_first_chunk_latency, query_n_chunks, query_n_chunks_time = (
-                    calculate_query_stream_metric(benchmark_data))
+                    benchmark_data.calculate_query_stream_metric()
+                )  # FIXME: Hang when error occurs
             else:
                 query_first_chunk_latency = query_latency
                 query_n_chunks = 1
@@ -211,8 +223,8 @@ async def statistic_benchmark_metric_worker(
 
             n_query_prompt_tokens, n_query_completion_tokens = (
                 api_plugin.parse_responses(
-                    benchmark_data['response_messages'],
-                    request=benchmark_data['request'],
+                    benchmark_data.response_messages,
+                    request=benchmark_data.request,
                 ))
             n_total_prompt_tokens += n_query_prompt_tokens
             n_total_completion_tokens += n_query_completion_tokens
@@ -238,15 +250,14 @@ async def statistic_benchmark_metric_worker(
                 "INSERT INTO result VALUES('%s', %s, '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)"
                 % (
                     base64.b64encode(pickle.dumps(
-                        benchmark_data['request'])).decode('utf-8'),
-                    benchmark_data['start_time'],
-                    json.dumps(
-                        benchmark_data['chunk_times'], ensure_ascii=False),
-                    benchmark_data['success'],
+                        benchmark_data.request)).decode('utf-8'),
+                    benchmark_data.start_time,
+                    json.dumps(benchmark_data.chunk_times, ensure_ascii=False),
+                    benchmark_data.success,
                     base64.b64encode(
-                        pickle.dumps(benchmark_data['response_messages'])).
-                    decode('utf-8'),
-                    benchmark_data['completed_time'],
+                        pickle.dumps(
+                            benchmark_data.response_messages)).decode('utf-8'),
+                    benchmark_data.completed_time,
                     query_latency,
                     query_first_chunk_latency,
                     query_n_chunks,
@@ -260,21 +271,58 @@ async def statistic_benchmark_metric_worker(
                 "INSERT INTO result(request, start_time, chunk_times, success, response_messages, completed_time)\
                 VALUES('%s', %s, '%s', '%s', '%s', %s)" % (
                     base64.b64encode(pickle.dumps(
-                        benchmark_data['request'])).decode('utf-8'),
-                    benchmark_data['start_time'],
-                    json.dumps(
-                        benchmark_data['chunk_times'], ensure_ascii=False),
-                    benchmark_data['success'],
+                        benchmark_data.request)).decode('utf-8'),
+                    benchmark_data.start_time,
+                    json.dumps(benchmark_data.chunk_times, ensure_ascii=False),
+                    benchmark_data.success,
                     base64.b64encode(
-                        pickle.dumps(benchmark_data['response_messages'])).
-                    decode('utf-8'),
-                    benchmark_data['completed_time'],
+                        pickle.dumps(
+                            benchmark_data.response_messages)).decode('utf-8'),
+                    benchmark_data.completed_time,
                 ))
 
         n_total_queries = float(n_succeed_queries + n_failed_queries)
         qps = n_succeed_queries / total_time
         db_cur.execute(insert_sql)
         con.commit()
+
+        default_ndigits = 3
+        message = {
+            'Time':
+            round(total_time, default_ndigits),
+            'concurrency':
+            concurrency,
+            'completed':
+            int(n_total_queries),
+            'succeed':
+            n_succeed_queries,
+            'failed':
+            n_failed_queries,
+            'qps':
+            round(qps, default_ndigits),
+            'latency':
+            round(avg_latency, default_ndigits),
+            'time to first token':
+            round(avg_first_chunk_latency, default_ndigits),
+            'throughput(output tokens per second)':
+            round(avg_token_per_seconds, default_ndigits),
+            'time per output token':
+            round(avg_time_per_token, 5),
+            'package per request':
+            round(n_avg_chunks, default_ndigits),
+            'time per package':
+            round(avg_chunk_time, default_ndigits),
+            'input tokens per request':
+            round(avg_prompt_tokens, default_ndigits),
+            'output tokens per request':
+            round(avg_completion_tokens, default_ndigits),
+        }
+        if args.wandb_api_key is not None:
+            wandb.log(message)
+        if int(n_total_queries) % args.log_every_n_query == 0:
+            msg = json.dumps(message, ensure_ascii=False)
+            msg = msg[1:-1].replace('"', '')
+            logger.info(msg)
 
     con.commit()
     con.close()
