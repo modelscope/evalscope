@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Dict, List
+from typing import AsyncGenerator, Dict, List, Tuple
 
 import aiohttp
 import json
@@ -24,9 +24,7 @@ class AioHttpClient:
         self.headers = {'user-agent': 'modelscope_bench', **(headers or {})}
         self.client = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(
-                total=read_timeout + conn_timeout,
-                connect=conn_timeout,
-                sock_read=read_timeout),
+                total=read_timeout + conn_timeout, connect=conn_timeout, sock_read=read_timeout),
             connector=aiohttp.TCPConnector(limit=1),
             trace_configs=[self._create_trace_config()] if debug else [])
         if debug:
@@ -36,8 +34,7 @@ class AioHttpClient:
         trace_config = aiohttp.TraceConfig()
         trace_config.on_request_start.append(self.on_request_start)
         trace_config.on_request_chunk_sent.append(self.on_request_chunk_sent)
-        trace_config.on_response_chunk_received.append(
-            self.on_response_chunk_received)
+        trace_config.on_response_chunk_received.append(self.on_response_chunk_received)
         return trace_config
 
     async def __aenter__(self):
@@ -61,7 +58,7 @@ class AioHttpClient:
                         break
                     yield is_error, response.status, sse_msg.data
 
-    async def _handle_response(self, response: aiohttp.ClientResponse):
+    async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, str], None]:
         response_status = response.status
         response_content_type = response.content_type
         content_type_json = 'application/json'
@@ -71,33 +68,29 @@ class AioHttpClient:
         if is_success:
             # Handle successful response with 'text/event-stream' content type
             if content_type_event_stream in response_content_type:
-                async for is_error, status_code, data in self._handle_stream(
-                        response):
-                    yield (is_error, status_code, data)
+                async for is_error, response_status, content in self._handle_stream(response):
+                    yield (is_error, response_status, content)
             # Handle successful response with 'application/json' content type
             elif content_type_json in response_content_type:
                 content = await response.json()
                 if content.get('object') == 'error':
-                    yield (True, content.get('code'), content.get('message'))
+                    yield (True, content.get('code'), content.get('message'))  # DashScope
                 else:
-                    yield (False, HTTPStatus.OK,
-                           json.dumps(content, ensure_ascii=False))
+                    yield (False, response_status, json.dumps(content, ensure_ascii=False))
             # Handle other successful responses
             else:
                 content = await response.read()
-                yield (False, HTTPStatus.OK, content)
+                yield (False, response_status, content)
         else:
             # Handle error response with 'application/json' content type
             if content_type_json in response_content_type:
                 error = await response.json()
-                yield (True, response_status,
-                       json.dumps(error, ensure_ascii=False))
+                yield (True, response_status, json.dumps(error, ensure_ascii=False))
             # Handle error response with 'text/event-stream' content type
             elif content_type_event_stream in response_content_type:
                 async for _, _, data in self._handle_stream(response):
                     error = json.loads(data)
-                yield (True, response_status,
-                       json.dumps(error, ensure_ascii=False))
+                    yield (True, response_status, json.dumps(error, ensure_ascii=False))
             # Handle other error responses
             else:
                 msg = await response.read()
@@ -106,9 +99,8 @@ class AioHttpClient:
     async def post(self, body):
         headers = {'Content-Type': 'application/json', **self.headers}
         try:
-            async with self.client.request(
-                    'POST', url=self.url, json=body,
-                    headers=headers) as response:
+            data = json.dumps(body, ensure_ascii=False)  # serialize to JSON
+            async with self.client.request('POST', url=self.url, data=data, headers=headers) as response:
                 async for rsp in self._handle_response(response):
                     yield rsp
         except (aiohttp.ClientConnectorError, Exception) as e:
@@ -117,12 +109,22 @@ class AioHttpClient:
 
     @staticmethod
     async def on_request_start(session, context, params):
-        logger.info(f'Starting request: <{params}>')
+        logger.debug(f'Starting request: <{params}>')
 
     @staticmethod
     async def on_request_chunk_sent(session, context, params):
-        logger.info(f'Request body: {params}')
+        method = params.method
+        url = params.url
+        chunk = params.chunk.decode('utf-8')
+        logger.debug(f'Request method: {method}')
+        logger.debug(f'Request URL: {url}')
+        logger.debug(f'Request chunk: {chunk}')
 
     @staticmethod
     async def on_response_chunk_received(session, context, params):
-        logger.info(f'Response info: <{params}>')
+        method = params.method
+        url = params.url
+        chunk = params.chunk.decode('utf-8')
+        logger.debug(f'Response method: {method}')
+        logger.debug(f'Response URL: {url}')
+        logger.debug(f'Response chunk: {chunk}')

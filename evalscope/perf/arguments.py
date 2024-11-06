@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -20,7 +20,7 @@ class QueryParameters:
     top_p: Optional[float]
     max_prompt_length: Optional[int]
     min_prompt_length: Optional[int]
-    include_usage: Optional[bool]
+    stop_token_ids: Optional[List]
 
     def __init__(self, args):
         self.model = args.model
