@@ -1,7 +1,7 @@
 import sys
 from typing import Any, Dict, Iterator, List
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
 
@@ -12,7 +12,7 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
            Sample: https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/files
     """
 
-    def __init__(self, query_parameters: QueryParameters):
+    def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:

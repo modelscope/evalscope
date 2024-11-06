@@ -3,7 +3,8 @@ import os
 from argparse import ArgumentParser
 
 from evalscope.cli.base import CLICommand
-from evalscope.perf.main import add_argument, run_perf_benchmark
+from evalscope.perf.arguments import add_argument
+from evalscope.perf.main import run_perf_benchmark
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.dirname(current_path)

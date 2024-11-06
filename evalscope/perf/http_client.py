@@ -48,7 +48,7 @@ class AioHttpClient:
         async for line in response.content:
             line = line.decode('utf8').rstrip('\n\r')
             if self.debug:
-                logger.info(line)
+                logger.debug(line)
             sse_msg = ServerSentEvent.decode(line)
             if sse_msg:
                 if sse_msg.event == 'error':

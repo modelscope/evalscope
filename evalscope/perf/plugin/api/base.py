@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Dict, List, Tuple
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 
 
 class ApiPluginBase:
@@ -10,8 +10,7 @@ class ApiPluginBase:
         self.model_path = model_path
 
     @abstractmethod
-    def build_request(self, messages: List[Dict],
-                      param: QueryParameters) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build a api request body.
 
         Args:
@@ -27,10 +26,7 @@ class ApiPluginBase:
         raise NotImplementedError
 
     @abstractmethod
-    def parse_responses(self,
-                        responses: List,
-                        request: Any = None,
-                        **kwargs: Any) -> Tuple[int, int]:
+    def parse_responses(self, responses: List, request: Any = None, **kwargs: Any) -> Tuple[int, int]:
         """Parser responses and return number of request and response tokens.
 
         Args:
@@ -48,15 +44,13 @@ class ApiPluginBase:
         if isinstance(input_json, dict):
             for key, value in input_json.items():
                 if isinstance(value, str):
-                    input_json[key] = value.replace('%m', model).replace(
-                        '%p', prompt)
+                    input_json[key] = value.replace('%m', model).replace('%p', prompt)
                 else:
                     ApiPluginBase.replace_values(value, model, prompt)
         elif isinstance(input_json, list):
             for idx, item in enumerate(input_json):
                 if isinstance(item, str):
-                    input_json[idx] = item.replace('%m', model).replace(
-                        '%p', prompt)
+                    input_json[idx] = item.replace('%m', model).replace('%p', prompt)
                 else:
                     ApiPluginBase.replace_values(item, model, prompt)
         elif isinstance(input_json, str):

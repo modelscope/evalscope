@@ -3,9 +3,10 @@ from typing import Any, Dict, Iterator, List
 import json
 from transformers import AutoTokenizer
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
+from evalscope.perf.utils._logging import logger
 
 
 @register_api('custom')
@@ -27,13 +28,12 @@ class CustomPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict],
-                      param: QueryParameters) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
             message (Dict): The basic message to generator query.
-            param (QueryParameters): The query parameters.
+            param (Arguments): The query parameters.
 
         Raises:
             Exception: NotImplemented
@@ -43,18 +43,14 @@ class CustomPlugin(ApiPluginBase):
         """
         try:
             query = json.loads(param.query_template)
-            ApiPluginBase.replace_values(query, param.model,
-                                         messages[0]['content'])
+            ApiPluginBase.replace_values(query, param.model, messages[0]['content'])
             return query
         except Exception as e:
-            print(e)
-            print('Prompt: %s invalidate!' % messages)
+            logger.exception(e)
+            logger.error('Prompt: %s invalidate!' % messages)
             return None
 
-    def parse_responses(self,
-                        responses,
-                        request: Any = None,
-                        **kwargs) -> Dict:
+    def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.
            sample of the output delta:
            {"id":"4","object":"chat.completion.chunk","created":1714030870,"model":"llama3","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
@@ -72,23 +68,21 @@ class CustomPlugin(ApiPluginBase):
         input_tokens = None
         output_tokens = None
         for response in responses:
-            js = json.loads(response)
+            data = json.loads(response)
             # {"context_logits":0.0,"cum_log_probs":0.0,"generation_logits":0.0,"model_name":"ensemble",
             # "model_version":"1","output_log_probs":[0.0,0.0,0.0,0.0,0.0],"sequence_end":false,"sequence_id":0,"sequence_start":false,"text_output":"性"}
-            if 'text_output' in js:
+            if 'text_output' in data:
                 if 0 in delta_contents:
-                    delta_contents[0].append(js['text_output'])
+                    delta_contents[0].append(data['text_output'])
                 else:
-                    delta_contents[0] = [js['text_output']]
+                    delta_contents[0] = [data['text_output']]
         if input_tokens is None and output_tokens is None and self.tokenizer is not None:
             input_tokens = 0
             output_tokens = 0
             for _, choice_contents in delta_contents.items():
                 full_response_content = ''.join([m for m in choice_contents])
-                input_tokens += len(
-                    self.tokenizer.encode(request['text_input']))
-                output_tokens += len(
-                    self.tokenizer.encode(full_response_content))
+                input_tokens += len(self.tokenizer.encode(request['text_input']))
+                output_tokens += len(self.tokenizer.encode(full_response_content))
         elif input_tokens is None and output_tokens is None:  # no usage info get.
             input_tokens = 0
             output_tokens = 0

@@ -4,9 +4,10 @@ from typing import Any, Dict, Iterator, List
 
 import json
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
+from evalscope.perf.utils._logging import logger
 
 
 @register_api('dashscope')
@@ -22,8 +23,7 @@ class DashScopeApiPlugin(ApiPluginBase):
         """
         super().__init__(model_path=mode_path)
 
-    def build_request(self, messages: List[Dict],
-                      param: QueryParameters) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -39,26 +39,23 @@ class DashScopeApiPlugin(ApiPluginBase):
         try:
             if param.query_template is not None:
                 query = json.loads(param.query_template)
-                query['input'][
-                    'messages'] = messages  # replace template content with message.
+                query['input']['messages'] = messages  # replace template content with message.
                 return self.__compose_query_from_parameter(query, param)
             else:
                 query = {'messages': messages}
                 return self.__compose_query_from_parameter(query, param)
         except Exception as e:
-            print(e)
+            logger.exception(e)
             return None
 
-    def __compose_query_from_parameter(self, payload: Dict,
-                                       param: QueryParameters):
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if 'parameters' not in payload:
             payload['parameters'] = {}
         if param.max_tokens is not None:
             payload['parameters']['max_tokens'] = param.max_tokens
         if param.frequency_penalty is not None:
-            payload['parameters'][
-                'frequency_penalty'] = param.frequency_penalty
+            payload['parameters']['frequency_penalty'] = param.frequency_penalty
         if param.logprobs is not None:
             payload['parameters']['logprobs'] = param.logprobs
         if param.n_choices is not None:

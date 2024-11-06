@@ -4,12 +4,12 @@ from typing import Any, Dict, Iterator, List, Tuple
 
 import json
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 
 
 class DatasetPluginBase:
 
-    def __init__(self, query_parameters: QueryParameters):
+    def __init__(self, query_parameters: Arguments):
         """Build data set plugin
 
         Args:

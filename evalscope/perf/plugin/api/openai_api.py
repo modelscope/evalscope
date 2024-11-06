@@ -3,9 +3,10 @@ from typing import Any, Dict, Iterator, List
 import json
 from transformers import AutoTokenizer
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
+from evalscope.perf.utils._logging import logger
 
 
 @register_api('openai')
@@ -26,8 +27,7 @@ class OpenaiPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict],
-                      param: QueryParameters) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -45,19 +45,17 @@ class OpenaiPlugin(ApiPluginBase):
                 query = json.loads(param.query_template)
                 if 'stream' in query.keys():
                     param.stream = query['stream']
-                query['messages'] = (
-                    messages  # replace template messages with input messages.
-                )
+                # replace template messages with input messages.
+                query['messages'] = messages
                 return self.__compose_query_from_parameter(query, param)
             else:
                 query = {'messages': messages}
                 return self.__compose_query_from_parameter(query, param)
         except Exception as e:
-            print(e)
+            logger.exception(e)
             return None
 
-    def __compose_query_from_parameter(self, payload: Dict,
-                                       param: QueryParameters):
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
             payload['max_tokens'] = param.max_tokens
@@ -82,10 +80,7 @@ class OpenaiPlugin(ApiPluginBase):
             payload['top_p'] = param.top_p
         return payload
 
-    def parse_responses(self,
-                        responses,
-                        request: Any = None,
-                        **kwargs) -> Dict:
+    def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.
            sample of the output delta:
            {"id":"4","object":"chat.completion.chunk","created":1714030870,"model":"llama3","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
@@ -106,9 +101,7 @@ class OpenaiPlugin(ApiPluginBase):
             js = json.loads(response)
             if js['object'] == 'chat.completion':
                 for choice in js['choices']:
-                    delta_contents[choice['index']] = [
-                        choice['message']['content']
-                    ]
+                    delta_contents[choice['index']] = [choice['message']['content']]
                 input_tokens = js['usage']['prompt_tokens']
                 output_tokens = js['usage']['completion_tokens']
             else:  # 'object' == "chat.completion.chunk":
@@ -128,16 +121,13 @@ class OpenaiPlugin(ApiPluginBase):
                 if 'usage' in js and js['usage']:
                     input_tokens = js['usage']['prompt_tokens']
                     output_tokens = js['usage']['completion_tokens']
-        if (input_tokens is None and output_tokens is None
-                and self.tokenizer is not None):
+        if (input_tokens is None and output_tokens is None and self.tokenizer is not None):
             input_tokens = 0
             output_tokens = 0
             for idx, choice_contents in delta_contents.items():
                 full_response_content = ''.join([m for m in choice_contents])
-                input_tokens += len(
-                    self.tokenizer.encode(request['messages'][0]['content']))
-                output_tokens += len(
-                    self.tokenizer.encode(full_response_content))
+                input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
+                output_tokens += len(self.tokenizer.encode(full_response_content))
         elif input_tokens is None and output_tokens is None:  # no usage info get.
             input_tokens = 0
             output_tokens = 0

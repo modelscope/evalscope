@@ -12,7 +12,7 @@ from typing import List
 import json
 import numpy as np
 
-from evalscope.perf.arguments import QueryParameters
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient
 from evalscope.perf.plugin.registry import api_registry, dataset_registry
 from evalscope.perf.utils._logging import logger
@@ -23,13 +23,12 @@ _query_send_completed = False
 _data_process_completed = False
 
 
-async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
+async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments):
     query_generator_class = api_registry(args.api)
     if not query_generator_class:
         logger.info('Can not find query generator: %s' % args.api)
     query_generator = query_generator_class(args.tokenizer_path)
     total_query_counter = 0
-    query_parameters = QueryParameters(args)
     if args.prompt is not None:
         if args.prompt.startswith('@'):
             with open(args.prompt, 'r', encoding='utf-8') as f:
@@ -37,7 +36,7 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
         else:
             prompt = args.prompt
         messages = [{'role': 'user', 'content': prompt}]
-        request = query_generator.build_request(messages, query_parameters)
+        request = query_generator.build_request(messages, args)
         if args.number is None:
             await request_queue.put(request)
         else:
@@ -54,9 +53,9 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
             if not message_generator_class:
                 logger.info('Can not find dataset: %s plugin.' % (args.dataset))
                 sys.exit(1)
-            message_generator = message_generator_class(query_parameters)
+            message_generator = message_generator_class(args)
             for messages in message_generator:
-                request = query_generator.build_request(messages, query_parameters)
+                request = query_generator.build_request(messages, args)
                 if request is None:
                     continue
                 await request_queue.put(request)
@@ -77,7 +76,12 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args):
     return total_query_counter
 
 
-async def send_requests_worker(task_id, request_queue: asyncio.Queue, benchmark_data_queue: asyncio.Queue, args):
+async def send_requests_worker(
+    task_id,
+    request_queue: asyncio.Queue,
+    benchmark_data_queue: asyncio.Queue,
+    args: Arguments,
+):
     client = AioHttpClient(
         args.url,
         conn_timeout=args.connect_timeout,
@@ -87,13 +91,12 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue, benchmark_
     )
     async with client:
         while True:
+            if _query_send_completed and request_queue.empty():
+                break
             try:
-                request = request_queue.get_nowait()
+                request = await asyncio.wait_for(request_queue.get(), timeout=0.01)
                 request_queue.task_done()
-            except asyncio.QueueEmpty:
-                if _query_send_completed:
-                    break
-                await asyncio.sleep(0.01)
+            except asyncio.TimeoutError:
                 continue
             # auto get start_time when initializing
             benchmark_data = BenchmarkData(request=request)
@@ -101,30 +104,25 @@ async def send_requests_worker(task_id, request_queue: asyncio.Queue, benchmark_
             try:
                 async for is_error, state_code, response_data in client.post(request):
                     if is_error or state_code != HTTPStatus.OK:
-                        logger.error('Request: %s failed, state_code: %s, data: %s' %
-                                     (request, state_code, response_data))
+                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {response_data}')
+                        benchmark_data.success = False
                         break
-                    else:
-                        if response_data:
-                            collected_messages.append(response_data)
-                            logger.info(response_data)
-                            benchmark_data.chunk_times.append(time.perf_counter())
-
-                benchmark_data.response_messages = collected_messages
-                benchmark_data.completed_time = time.perf_counter()
-                benchmark_data.success = not is_error
-                await benchmark_data_queue.put(benchmark_data)
+                    if response_data:
+                        logger.info(response_data)
+                        collected_messages.append(response_data)
+                        benchmark_data.chunk_times.append(time.perf_counter())
+                    benchmark_data.success = True
             except Exception as e:
+                benchmark_data.success = False
                 logger.exception(e)
-                if response_data:
-                    collected_messages.append(response_data)
-                benchmark_data.response_messages = collected_messages
+                logger.error(f'Request query: {request} exception')
+            finally:
                 benchmark_data.completed_time = time.perf_counter()
+                benchmark_data.response_messages = collected_messages
                 await benchmark_data_queue.put(benchmark_data)
-                logger.error('Request query: %s exception, response: %s' % (request, response_data))
 
 
-async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args):
+async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
     n_succeed_queries = 0
     n_failed_queries = 0
     total_first_chunk_latency = 0
@@ -195,7 +193,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
         if benchmark_data.success:
             n_succeed_queries += 1
             n_query_trunks = len(benchmark_data.chunk_times)
-            query_latency = (benchmark_data.completed_time - benchmark_data.start_time)
+            query_latency = benchmark_data.completed_time - benchmark_data.start_time
             if n_query_trunks > 1:
                 query_first_chunk_latency, query_n_chunks, query_n_chunks_time = (
                     benchmark_data.calculate_query_stream_metric())  # FIXME: Hang when error occurs
@@ -220,7 +218,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             avg_first_chunk_latency = total_first_chunk_latency / n_succeed_queries
             avg_latency = total_latency / n_succeed_queries
             if n_query_trunks > 1:
-                n_avg_chunks = (n_total_chunks / n_succeed_queries + 2)
+                n_avg_chunks = n_total_chunks / n_succeed_queries + 2
             else:
                 n_avg_chunks = n_total_chunks / n_succeed_queries
             avg_chunk_time = total_chunks_time / n_total_chunks
@@ -306,7 +304,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     )
 
 
-async def benchmark(args) -> None:
+async def benchmark(args: Arguments) -> None:
     if platform.system() != 'Windows':
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
