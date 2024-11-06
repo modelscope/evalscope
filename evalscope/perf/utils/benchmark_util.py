@@ -1,10 +1,6 @@
-import os
-import sqlite3
-import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from evalscope.perf.utils._logging import logger
 
@@ -13,93 +9,115 @@ from evalscope.perf.utils._logging import logger
 class BenchmarkData:
     request: Any = None
     start_time: float = field(default_factory=time.perf_counter)
+    completed_time: float = 0.0
     chunk_times: List[float] = field(default_factory=list)
     success: bool = False
     response_messages: List[Any] = field(default_factory=list)
-    completed_time: float = 0.0
+
+    # late init
+    query_latency: float = 0.0
+    first_chunk_latency: float = 0.0
+    n_chunks: int = 0
+    n_chunks_time: float = 0.0
+
+    query_prompt_tokens = None
+    query_completion_tokens = None
 
     def calculate_query_stream_metric(self) -> Tuple[float, int, float]:
-        # firt chunk latency
-        first_chunk_latency = self.chunk_times[0] - self.start_time
-        n_chunks = len(self.chunk_times) - 2
-        n_chunks_time = self.chunk_times[-2] - self.chunk_times[0]
-        return first_chunk_latency, n_chunks, n_chunks_time
-
-
-def get_result_db_path(args):
-    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_dir = './outputs'
-
-    if args.name:
-        result_db_path = os.path.join(output_dir, args.name)
-    else:
-        result_db_path = os.path.join(
-            output_dir, f'{args.model}_benchmark_{current_time}.db')
-
-    if not os.path.exists(os.path.dirname(result_db_path)):
-        os.makedirs(os.path.dirname(result_db_path), exist_ok=True)
-
-    logger.info('Save the result to : %s' % result_db_path)
-    if os.path.exists(result_db_path):
-        logger.warning('The db file exists, delete it and start again!.')
-        sys.exit(1)
-
-    return result_db_path
-
-
-def summary_result(expected_number_of_queries, total_time, n_total_queries,
-                   n_succeed_queries, n_failed_queries, qps, concurrency,
-                   avg_latency, avg_first_chunk_latency, n_avg_chunks,
-                   avg_chunk_time, avg_prompt_tokens, avg_completion_tokens,
-                   avg_token_per_seconds, avg_time_per_token, result_db_path):
-    logger.info('Benchmarking summary: ')
-    logger.info(' Time taken for tests: %.3f seconds' % total_time)
-    logger.info(' Expected number of requests: %s'
-                % expected_number_of_queries)
-    logger.info(' Number of concurrency: %d' % concurrency)
-    logger.info(' Total requests: %d' % n_total_queries)
-    logger.info(' Succeed requests: %d' % n_succeed_queries)
-    logger.info(' Failed requests: %d' % n_failed_queries)
-    logger.info(' Average QPS: %.3f' % qps)
-    logger.info(' Average latency: %.3f' % avg_latency)
-    logger.info(' Throughput(average output tokens per second): %.3f'
-                % avg_token_per_seconds)
-    logger.info(' Average time to first token: %.3f' % avg_first_chunk_latency)
-    logger.info(' Average input tokens per request: %.3f' % avg_prompt_tokens)
-    logger.info(' Average output tokens per request: %.3f'
-                % avg_completion_tokens)
-    logger.info(' Average time per output token: %.5f' % avg_time_per_token)
-    logger.info(' Average package per request: %.3f' % n_avg_chunks)
-    logger.info(' Average package latency: %.3f' % avg_chunk_time)
-
-    con = sqlite3.connect(result_db_path)
-    query_sql = (
-        "SELECT start_time, chunk_times, success, completed_time, latency, first_chunk_latency, \
-                   n_chunks, chunk_time, prompt_tokens, completion_tokens \
-                   FROM result WHERE success='True' ORDER BY first_chunk_latency ASC"
-    )
-
-    percentiles = [50, 66, 75, 80, 90, 95, 98, 99]
-    with con:
-        rows = con.execute(query_sql).fetchall()
-        n_success_queries = len(rows)
-        if len(rows) > len(percentiles):
-            logger.info(' Percentile of time to first token: ')
-            for percentile in percentiles:
-                idx = (int)(n_success_queries * percentile / 100)
-                row = rows[idx]
-                logger.info('     p%s: %.4f' %
-                            (percentile,
-                             row[5] if row[5] is not None else float('inf')))
-            logger.info(' Percentile of request latency: ')
-            latency_index = 4
-            rows.sort(key=lambda x: x[latency_index])
-            for percentile in percentiles:
-                idx = (int)(n_success_queries * percentile / 100)
-                row = rows[idx]
-                logger.info('     p%s: %.4f' %
-                            (percentile, row[latency_index] if
-                             row[latency_index] is not None else float('inf')))
+        self.query_latency = self.completed_time - self.start_time
+        if len(self.chunk_times) > 1:
+            self.first_chunk_latency = self.chunk_times[0] - self.start_time
+            self.n_chunks = len(self.chunk_times) - 2
+            self.n_chunks_time = self.chunk_times[-2] - self.chunk_times[0]
         else:
-            logger.info(' Too little data to calculate quantiles!')
-    con.close()
+            self.first_chunk_latency = self.query_latency
+            self.n_chunks = 1
+            self.n_chunks_time = self.query_latency
+
+    def calculate_tokens(self, api_plugin):
+        self.query_prompt_tokens, self.query_completion_tokens = \
+            api_plugin.parse_responses(self.response_messages, request=self.request)
+
+
+@dataclass
+class BenchmarkMetrics:
+    concurrency: int = 0
+    n_succeed_queries: int = 0
+    n_failed_queries: int = 0
+    total_first_chunk_latency: float = 0.0
+    total_latency: float = 0.0
+    n_total_chunks: int = 0
+    n_total_prompt_tokens: int = 0
+    n_total_completion_tokens: int = 0
+    total_chunks_time: float = 0.0
+    start_time: Optional[float] = None
+    total_time: float = 1.0
+    n_total_queries: int = 0
+    avg_first_chunk_latency: float = -1
+    avg_latency: float = -1
+    n_avg_chunks: float = -1
+    avg_chunk_time: float = -1
+    avg_prompt_tokens: float = -1
+    avg_completion_tokens: float = -1
+    avg_token_per_seconds: float = -1
+    avg_time_per_token: float = -1
+    qps: float = -1
+
+    def update_metrics(self, benchmark_data: BenchmarkData, api_plugin):
+        self.n_total_queries += 1
+        if self.start_time is None:
+            self.start_time = benchmark_data.start_time
+        self.total_time = time.perf_counter() - self.start_time
+
+        if benchmark_data.success:
+            self.n_succeed_queries += 1
+
+            benchmark_data.calculate_tokens(api_plugin)
+            self.n_total_prompt_tokens += benchmark_data.query_prompt_tokens
+            self.n_total_completion_tokens += benchmark_data.query_completion_tokens
+
+            benchmark_data.calculate_query_stream_metric()
+            self.total_latency += benchmark_data.query_latency
+            self.total_first_chunk_latency += benchmark_data.first_chunk_latency
+            self.n_total_chunks += benchmark_data.n_chunks
+            self.total_chunks_time += benchmark_data.n_chunks_time
+        else:
+            self.n_failed_queries += 1
+
+        self.calculate_averages()
+
+    def calculate_averages(self):
+        if self.n_succeed_queries == 0:
+            return
+        try:
+            self.avg_first_chunk_latency = self.total_first_chunk_latency / self.n_succeed_queries
+            self.avg_latency = self.total_latency / self.n_succeed_queries
+            self.n_avg_chunks = self.n_total_chunks / self.n_succeed_queries
+            self.avg_chunk_time = self.total_chunks_time / self.n_total_chunks
+            self.avg_prompt_tokens = self.n_total_prompt_tokens / self.n_succeed_queries
+            self.avg_completion_tokens = self.n_total_completion_tokens / self.n_succeed_queries
+            self.avg_token_per_seconds = self.n_total_completion_tokens / self.total_time
+            self.avg_time_per_token = self.total_time / self.n_total_completion_tokens
+            self.qps = self.n_succeed_queries / self.total_time
+        except ZeroDivisionError as e:
+            logger.exception(e)
+            return
+
+    def create_message(self, default_ndigits=3):
+        message = {
+            'Time taken for tests (senconds)': round(self.total_time, default_ndigits),
+            'Number of concurrency': self.concurrency,
+            'Total requests': int(self.n_total_queries),
+            'Succeed requests': self.n_succeed_queries,
+            'Failed requests': self.n_failed_queries,
+            'Average QPS': round(self.qps, default_ndigits),
+            'Average latency': round(self.avg_latency, default_ndigits),
+            'Average time to first token': round(self.avg_first_chunk_latency, default_ndigits),
+            'Throughput(average output tokens per second)': round(self.avg_token_per_seconds, default_ndigits),
+            'Average time per output token': round(self.avg_time_per_token, 5),
+            'Average package per request': round(self.n_avg_chunks, default_ndigits),
+            'Average package latency': round(self.avg_chunk_time, default_ndigits),
+            'Average input tokens per request': round(self.avg_prompt_tokens, default_ndigits),
+            'Average output tokens per request': round(self.avg_completion_tokens, default_ndigits),
+        }
+        return message
