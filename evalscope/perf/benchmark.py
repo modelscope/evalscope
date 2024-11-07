@@ -73,7 +73,7 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}]
         total_queries = await dispatch_requests_from_prompt(messages)
-    elif args.dataset_path:
+    elif args.dataset:
         total_queries = await dispatch_requests_from_dataset()
     else:
         raise Exception('Either prompt or dataset is required!')
@@ -136,21 +136,24 @@ async def send_requests_worker(
 
 @exception_handler
 async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
-    # Initialize wandb
-    if args.wandb_api_key:
-        import wandb
-        import datetime
-        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        name = args.name if args.name else f'{args.model}_{current_time}'
-        wandb.init(project='perf_benchmark', name=name, config={'model': args.model, 'time': current_time})
-        os.environ['WANDB_SILENT'] = 'true'
-
     metrics = BenchmarkMetrics(concurrency=args.parallel)
 
     api_plugin_class = ApiRegistry(args.api)
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args.name, args.model)
+    # Initialize wandb
+    if args.wandb_api_key:
+        import wandb
+        import datetime
+        os.environ['WANDB_SILENT'] = 'true'
+        os.environ['WANDB_DIR'] = './outputs'
+
+        wandb.login(key=args.wandb_api_key)
+        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        name = args.name if args.name else f'{args.model}_{current_time}'
+        wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
+
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
         create_result_table(cursor)

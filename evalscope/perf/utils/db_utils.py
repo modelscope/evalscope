@@ -123,4 +123,4 @@ def summary_result(metrics: BenchmarkMetrics, expected_number_of_queries: int, r
         table = tabulate(percentile_result, headers='keys', tablefmt='pretty')
         logger.info('\nPercentile results: \n' + table)
     else:
-        logger.info(' Too little data to calculate quantiles!')
+        logger.info('Too little data to calculate quantiles!')

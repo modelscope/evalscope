@@ -23,7 +23,7 @@ class BenchmarkData:
     query_prompt_tokens = None
     query_completion_tokens = None
 
-    def calculate_query_stream_metric(self) -> Tuple[float, int, float]:
+    def _calculate_query_stream_metric(self) -> Tuple[float, int, float]:
         self.query_latency = self.completed_time - self.start_time
         if len(self.chunk_times) > 1:
             self.first_chunk_latency = self.chunk_times[0] - self.start_time
@@ -34,7 +34,7 @@ class BenchmarkData:
             self.n_chunks = 1
             self.n_chunks_time = self.query_latency
 
-    def calculate_tokens(self, api_plugin):
+    def _calculate_tokens(self, api_plugin):
         self.query_prompt_tokens, self.query_completion_tokens = \
             api_plugin.parse_responses(self.response_messages, request=self.request)
 
@@ -73,11 +73,11 @@ class BenchmarkMetrics:
         if benchmark_data.success:
             self.n_succeed_queries += 1
 
-            benchmark_data.calculate_tokens(api_plugin)
+            benchmark_data._calculate_tokens(api_plugin)
             self.n_total_prompt_tokens += benchmark_data.query_prompt_tokens
             self.n_total_completion_tokens += benchmark_data.query_completion_tokens
 
-            benchmark_data.calculate_query_stream_metric()
+            benchmark_data._calculate_query_stream_metric()
             self.total_latency += benchmark_data.query_latency
             self.total_first_chunk_latency += benchmark_data.first_chunk_latency
             self.n_total_chunks += benchmark_data.n_chunks

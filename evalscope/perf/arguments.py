@@ -15,10 +15,10 @@ class Arguments:
 
     # Connection settings
     url: str = 'localhost'  # URL for the API connection
-    headers: Optional[Dict[str, Any]] = field(default_factory=dict)  # Custom headers
+    headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
     connect_timeout: int = 120  # Connection timeout in seconds
     read_timeout: int = 120  # Read timeout in seconds
-    api_key: Optional[str] = None
+    api_key: str = 'EMPTY'
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -90,18 +90,29 @@ class Arguments:
             top_p=args.top_p)
 
     def __post_init__(self):
+        self.headers = self.headers or {}  # Default to empty dictionary
         if self.api_key:
             # Assuming the API key is used as a Bearer token
             self.headers['Authorization'] = f'Bearer {self.api_key}'
 
     def __str__(self):
-        return json.dumps(self.__dict__, indent=4, default=str, ensure_ascii=False)
+        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.__dict__
 
 
 class ParseKVAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, dict(kv.split('=') for kv in values))
+        if not values:
+            setattr(namespace, self.dest, {})
+        else:
+            try:
+                kv_dict = dict(kv.split('=') for kv in values)
+                setattr(namespace, self.dest, kv_dict)
+            except ValueError as e:
+                parser.error(f'Error parsing key-value pairs: {e}')
 
 
 def add_argument(parser: argparse.ArgumentParser):
@@ -115,7 +126,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Connection settings
     parser.add_argument('--url', type=str, default='localhost')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
-    parser.add_argument('--api-key', type=str, required=False, help='The API key for authentication')
+    parser.add_argument('--api-key', type=str, required=False, default='EMPTY', help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=120, help='The network connection timeout')
     parser.add_argument('--read-timeout', type=int, default=120, help='The network read timeout')
 

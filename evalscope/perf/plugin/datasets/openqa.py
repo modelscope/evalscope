@@ -1,5 +1,4 @@
-import sys
-from sys import maxsize
+import subprocess
 from typing import Any, Dict, Iterator, List
 
 import json
@@ -19,6 +18,18 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
+        if not self.query_parameters.dataset_path:
+            subprocess.call([
+                'modelscope',
+                'download',
+                '--dataset',
+                'AI-ModelScope/HC3-Chinese',
+                'open_qa.jsonl',
+                '--local_dir',
+                './data',
+            ])
+            self.query_parameters.dataset_path = './data/open_qa.jsonl'
+
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)
             prompt = item['question'].strip()
