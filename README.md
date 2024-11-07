@@ -28,7 +28,7 @@
 - [Offline Evaluation](#offline-evaluation)
 - [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
-- [Leaderboard](#leaderboard)
+
 
 ## 📝 Introduction
 
@@ -251,11 +251,6 @@ A stress testing tool that focuses on large language models and can be customize
 
 Refer to : Model Serving Performance Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
 
-
-## Leaderboard
-The LLM Leaderboard aims to provide an objective and comprehensive evaluation standard and platform to help researchers and developers understand and compare the performance of models on various tasks on ModelScope.
-
-Refer to : [Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 
 ## TO-DO List
