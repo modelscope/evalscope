@@ -20,14 +20,10 @@ class PluginRegistry:
         return self.get_class(name)
 
 
-dataset_registry = PluginRegistry()
-api_registry = PluginRegistry()
-
-
 def register_dataset(name: str):
 
     def class_decorator(cls):
-        dataset_registry.register(name, cls)
+        DatasetRegistry.register(name, cls)
         return cls
 
     return class_decorator
@@ -36,7 +32,11 @@ def register_dataset(name: str):
 def register_api(name: str):
 
     def class_decorator(cls):
-        api_registry.register(name, cls)
+        ApiRegistry.register(name, cls)
         return cls
 
     return class_decorator
+
+
+DatasetRegistry = PluginRegistry()
+ApiRegistry = PluginRegistry()

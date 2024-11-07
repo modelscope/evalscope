@@ -12,7 +12,7 @@ import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient
-from evalscope.perf.plugin.registry import api_registry, dataset_registry
+from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_utils import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
@@ -25,56 +25,61 @@ data_process_completed_event = asyncio.Event()
 
 @exception_handler
 async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments):
-    query_generator_class = api_registry(args.api)
-    if not query_generator_class:
-        logger.info('Can not find query generator: %s' % args.api)
+    query_generator_class = ApiRegistry(args.api)
     query_generator = query_generator_class(args.tokenizer_path)
-    total_query_counter = 0
-    if args.prompt is not None:
-        if args.prompt.startswith('@'):
-            with open(args.prompt, 'r', encoding='utf-8') as f:
-                prompt = f.read()
-        else:
-            prompt = args.prompt
-        messages = [{'role': 'user', 'content': prompt}]
+
+    def load_prompt(prompt_path_or_text):
+        """Load the prompt from a file or directly from the input text."""
+        if prompt_path_or_text.startswith('@'):
+            with open(prompt_path_or_text[1:], 'r', encoding='utf-8') as file:
+                return file.read()
+        return prompt_path_or_text
+
+    async def dispatch_request(request):
+        """Dispatch a single request with optional rate limiting."""
+        await request_queue.put(request)
+        if args.rate != -1:
+            interval = np.random.exponential(1.0 / args.rate)
+            await asyncio.sleep(interval)
+
+    async def dispatch_requests_from_prompt(messages):
+        """Generate and dispatch requests based on the given prompt."""
         request = query_generator.build_request(messages, args)
         if args.number is None:
-            await request_queue.put(request)
-        else:
-            for i in range(args.number):
-                if args.rate == -1:
-                    await request_queue.put(request)
-                else:
-                    interval = np.random.exponential(1.0 / args.rate)
-                    await asyncio.sleep(interval)
-                    await request_queue.put(request)
-    elif args.dataset_path is not None:
-        while True:
-            message_generator_class = dataset_registry(args.dataset)
-            if not message_generator_class:
-                logger.info('Can not find dataset: %s plugin.' % (args.dataset))
-                sys.exit(1)
-            message_generator = message_generator_class(args)
-            for messages in message_generator:
-                request = query_generator.build_request(messages, args)
-                if request is None:
-                    continue
-                await request_queue.put(request)
-                total_query_counter += 1
-                if args.number is not None:
-                    if total_query_counter >= args.number:
-                        break
-                if args.rate == -1:
-                    continue
-                interval = np.random.exponential(1.0 / args.rate)
-                await asyncio.sleep(interval)
-            if args.number is None:
+            await dispatch_request(request)
+            return 1
+        for _ in range(args.number):
+            await dispatch_request(request)
+        return args.number
+
+    async def dispatch_requests_from_dataset():
+        """Generate and dispatch requests based on the dataset."""
+        total_query_count = 0
+        message_generator_class = DatasetRegistry(args.dataset)
+        message_generator = message_generator_class(args)
+
+        for messages in message_generator:
+            request = query_generator.build_request(messages, args)
+            if request is None:
+                continue
+            await dispatch_request(request)
+            total_query_count += 1
+            if args.number and total_query_count >= args.number:
                 break
-            elif total_query_counter >= args.number:
-                break
+
+        return total_query_count
+
+    # Load prompt or dataset and dispatch requests accordingly
+    if args.prompt:
+        prompt = load_prompt(args.prompt)
+        messages = [{'role': 'user', 'content': prompt}]
+        total_queries = await dispatch_requests_from_prompt(messages)
+    elif args.dataset_path:
+        total_queries = await dispatch_requests_from_dataset()
     else:
-        raise Exception('Prompt or dataset is required!')
-    return total_query_counter
+        raise Exception('Either prompt or dataset is required!')
+
+    return total_queries
 
 
 @exception_handler
@@ -96,7 +101,7 @@ async def send_requests_worker(
             if query_send_completed_event.is_set() and request_queue.empty():
                 break
             try:
-                request = await asyncio.wait_for(request_queue.get(), timeout=0.1)
+                request = await asyncio.wait_for(request_queue.get(), timeout=0.01)
                 request_queue.task_done()
             except asyncio.TimeoutError:
                 continue
@@ -131,9 +136,7 @@ async def send_requests_worker(
 async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
     metrics = BenchmarkMetrics(concurrency=args.parallel)
 
-    api_plugin_class = api_registry(args.api)
-    if not api_plugin_class:
-        logger.error('Can not find query generator: %s' % args.api)
+    api_plugin_class = ApiRegistry(args.api)
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args.name, args.model)
@@ -153,7 +156,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             if data_process_completed_event.is_set() and benchmark_data_queue.empty():
                 break
             try:
-                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
+                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=1)
                 benchmark_data_queue.task_done()
             except asyncio.TimeoutError:
                 continue
