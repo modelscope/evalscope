@@ -2,7 +2,6 @@ import asyncio
 import os
 import platform
 import sqlite3
-import sys
 import time
 from http import HTTPStatus
 from typing import List
@@ -97,19 +96,21 @@ async def send_requests_worker(
         debug=args.debug,
     )
     async with client:
-        while True:
-            if query_send_completed_event.is_set() and request_queue.empty():
-                break
+        while not (query_send_completed_event.is_set() and request_queue.empty()):
             try:
+                # Attempt to get a request from the queue with a timeout
                 request = await asyncio.wait_for(request_queue.get(), timeout=0.01)
                 request_queue.task_done()
             except asyncio.TimeoutError:
+                # If timeout, continue to the next iteration
                 continue
 
-            # auto get start_time when initializing
+            # Initialize benchmark data for the current request
             benchmark_data = BenchmarkData(request=request)
             collected_messages = []
+
             try:
+                # Send the request and process the response
                 async for is_error, state_code, response_data in client.post(request):
                     if is_error or state_code != HTTPStatus.OK:
                         logger.error(f'Request: {request} failed, state_code: {state_code}, data: {response_data}')
@@ -119,7 +120,7 @@ async def send_requests_worker(
                         logger.info(response_data)
                         collected_messages.append(response_data)
                         benchmark_data.chunk_times.append(time.perf_counter())
-                    benchmark_data.success = True
+                        benchmark_data.success = True
             except Exception as e:
                 if response_data:
                     collected_messages.append(response_data)
@@ -127,6 +128,7 @@ async def send_requests_worker(
                 logger.exception(e)
                 logger.error(f'Request query: {request} exception')
             finally:
+                # Record completion time and collected messages
                 benchmark_data.completed_time = time.perf_counter()
                 benchmark_data.response_messages = collected_messages
                 await benchmark_data_queue.put(benchmark_data)
@@ -134,6 +136,15 @@ async def send_requests_worker(
 
 @exception_handler
 async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
+    # Initialize wandb
+    if args.wandb_api_key:
+        import wandb
+        import datetime
+        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        name = args.name if args.name else f'{args.model}_{current_time}'
+        wandb.init(project='perf_benchmark', name=name, config={'model': args.model, 'time': current_time})
+        os.environ['WANDB_SILENT'] = 'true'
+
     metrics = BenchmarkMetrics(concurrency=args.parallel)
 
     api_plugin_class = ApiRegistry(args.api)
@@ -144,30 +155,30 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
         cursor = con.cursor()
         create_result_table(cursor)
 
-        if args.wandb_api_key:
-            import wandb
-            import datetime
-            current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            name = args.name if args.name else f'{args.model}_{current_time}'
-            wandb.init(project='perf_benchmark', name=name, config={'model': args.model, 'time': current_time})
-            os.environ['WANDB_SILENT'] = 'true'
-
-        while True:
-            if data_process_completed_event.is_set() and benchmark_data_queue.empty():
-                break
+        while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
             try:
+                # Attempt to get benchmark data from the queue with a timeout
                 benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=1)
                 benchmark_data_queue.task_done()
             except asyncio.TimeoutError:
+                # If timeout, continue to the next iteration
                 continue
 
+            # Update metrics based on the benchmark data
             metrics.update_metrics(benchmark_data, api_plugin)
+
+            # Insert benchmark data into the database and commit the transaction
             insert_benchmark_data(cursor, benchmark_data)
             con.commit()
 
+            # Create a message with the updated metrics
             message = metrics.create_message()
+
+            # Log the message to wandb if the api key is provided
             if args.wandb_api_key:
                 wandb.log(message)
+
+            # Log the message to the logger every n queries
             if int(metrics.n_total_queries) % args.log_every_n_query == 0:
                 msg = json.dumps(message, ensure_ascii=False)
                 msg = msg[1:-1].replace('"', '')

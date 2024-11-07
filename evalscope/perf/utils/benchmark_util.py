@@ -53,6 +53,7 @@ class BenchmarkMetrics:
     start_time: Optional[float] = None
     total_time: float = 1.0
     n_total_queries: int = 0
+
     avg_first_chunk_latency: float = -1
     avg_latency: float = -1
     n_avg_chunks: float = -1
