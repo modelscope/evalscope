@@ -3,10 +3,15 @@ import platform
 
 from evalscope.perf.arguments import Arguments, parse_args
 from evalscope.perf.benchmark import benchmark
+from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.signal_handler import add_signal_handlers
 
 
 def run_perf_benchmark(args):
+    if not isinstance(args, Arguments):
+        args = Arguments.from_args(args)
+    logger.info('Starting benchmark...')
+    logger.info(args)
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     loop = asyncio.get_event_loop()

@@ -16,12 +16,14 @@ from evalscope.perf.plugin.registry import api_registry, dataset_registry
 from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_utils import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
+from evalscope.perf.utils.exception_handler import exception_handler
 from evalscope.perf.utils.signal_handler import add_signal_handlers
 
-_query_send_completed = False
-_data_process_completed = False
+query_send_completed_event = asyncio.Event()
+data_process_completed_event = asyncio.Event()
 
 
+@exception_handler
 async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments):
     query_generator_class = api_registry(args.api)
     if not query_generator_class:
@@ -75,6 +77,7 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments
     return total_query_counter
 
 
+@exception_handler
 async def send_requests_worker(
     task_id,
     request_queue: asyncio.Queue,
@@ -90,13 +93,14 @@ async def send_requests_worker(
     )
     async with client:
         while True:
-            if _query_send_completed and request_queue.empty():
+            if query_send_completed_event.is_set() and request_queue.empty():
                 break
             try:
-                request = await asyncio.wait_for(request_queue.get(), timeout=0.01)
+                request = await asyncio.wait_for(request_queue.get(), timeout=0.1)
                 request_queue.task_done()
             except asyncio.TimeoutError:
                 continue
+
             # auto get start_time when initializing
             benchmark_data = BenchmarkData(request=request)
             collected_messages = []
@@ -123,12 +127,13 @@ async def send_requests_worker(
                 await benchmark_data_queue.put(benchmark_data)
 
 
+@exception_handler
 async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
-    metrics = BenchmarkMetrics(concurrency=args.parallel)  # FIXME: hang when error occurs
+    metrics = BenchmarkMetrics(concurrency=args.parallel)
 
     api_plugin_class = api_registry(args.api)
     if not api_plugin_class:
-        logger.info('Can not find query generator: %s' % args.api)
+        logger.error('Can not find query generator: %s' % args.api)
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args.name, args.model)
@@ -145,13 +150,12 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             os.environ['WANDB_SILENT'] = 'true'
 
         while True:
+            if data_process_completed_event.is_set() and benchmark_data_queue.empty():
+                break
             try:
-                benchmark_data: BenchmarkData = benchmark_data_queue.get_nowait()
+                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
                 benchmark_data_queue.task_done()
-            except asyncio.QueueEmpty:
-                if _data_process_completed:
-                    break
-                await asyncio.sleep(1)
+            except asyncio.TimeoutError:
                 continue
 
             metrics.update_metrics(benchmark_data, api_plugin)
@@ -169,33 +173,39 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     return metrics, result_db_path
 
 
+@exception_handler
 async def benchmark(args: Arguments) -> None:
     if platform.system() != 'Windows':
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
 
-    request_tasks: List[asyncio.Task] = []
     request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
 
-    dispatch_task = asyncio.create_task(dispatch_requests_worker(request_queue, args))
-    statistic_benchmark_metric_task = asyncio.create_task(statistic_benchmark_metric_worker(benchmark_data_queue, args))
-    for idx, task in enumerate(range(args.parallel)):
-        task = asyncio.create_task(send_requests_worker(idx, request_queue, benchmark_data_queue, args))
-        request_tasks.append(task)
+    async def create_send_request_tasks():
+        tasks: List[asyncio.Task] = []
+        for idx in range(args.parallel):
+            task = asyncio.create_task(send_requests_worker(idx, request_queue, benchmark_data_queue, args))
+            tasks.append(task)
+        return tasks
 
-    expected_number_of_queries = await dispatch_task
-    await request_queue.join()
+    async def run_tasks():
+        dispatch_task = asyncio.create_task(dispatch_requests_worker(request_queue, args))
+        statistic_benchmark_metric_task = asyncio.create_task(
+            statistic_benchmark_metric_worker(benchmark_data_queue, args))
+        send_request_tasks = await create_send_request_tasks()
 
-    global _query_send_completed
-    _query_send_completed = True
-    await asyncio.gather(*request_tasks, return_exceptions=False)
+        expected_number_of_queries = await dispatch_task
+        await request_queue.join()
+        query_send_completed_event.set()
 
-    await benchmark_data_queue.join()
+        await asyncio.gather(*send_request_tasks, return_exceptions=True)
+        await benchmark_data_queue.join()
+        data_process_completed_event.set()
 
-    global _data_process_completed
-    _data_process_completed = True
-    metrics, result_db_path = await statistic_benchmark_metric_task
+        metrics, result_db_path = await statistic_benchmark_metric_task
+        summary_result(metrics, expected_number_of_queries, result_db_path)
 
-    summary_result(metrics, expected_number_of_queries, result_db_path)
-    await asyncio.sleep(0.250)
+        await asyncio.sleep(0.250)
+
+    await run_tasks()
