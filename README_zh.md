@@ -28,7 +28,6 @@
 - [离线环境评测](#离线环境评测)
 - [竞技场模式](#竞技场模式)
 - [性能评测工具](#性能评测工具)
-- [Leaderboard榜单](#leaderboard-榜单)
 
 
 
@@ -262,11 +261,6 @@ EvalScope支持自定义数据集评测，具体请参考：自定义数据集�
 ## 性能评测工具
 一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)
 
-
-## Leaderboard 榜单
-ModelScope LLM Leaderboard大模型评测榜单旨在提供一个客观、全面的评估标准和平台，帮助研究人员和开发者了解和比较ModelScope上的模型在各种任务上的性能表现。
-
-[Leaderboard](https://modelscope.cn/leaderboard/58/ranking?type=free)
 
 
 ## TO-DO List
