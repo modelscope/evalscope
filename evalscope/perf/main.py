@@ -1,5 +1,6 @@
 import asyncio
 import platform
+from argparse import Namespace
 
 from evalscope.perf.arguments import Arguments, parse_args
 from evalscope.perf.benchmark import benchmark
@@ -8,7 +9,9 @@ from evalscope.perf.utils.signal_handler import add_signal_handlers
 
 
 def run_perf_benchmark(args):
-    if not isinstance(args, Arguments):
+    if isinstance(args, dict):
+        args = Arguments(**args)
+    elif isinstance(args, Namespace):
         args = Arguments.from_args(args)
     logger.info('Starting benchmark...')
     logger.info(args)

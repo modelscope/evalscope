@@ -38,7 +38,7 @@ class Arguments:
     query_template: Optional[str] = None  # Template for the query
 
     # Dataset settings
-    dataset: str = 'line_by_line'  # Dataset type (default: 'line_by_line')
+    dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
     dataset_path: Optional[str] = None  # Path to the dataset
 
     # Response settings
@@ -148,7 +148,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
 
     # Dataset settings
-    parser.add_argument('--dataset', type=str, default='line_by_line', help='Specify the dataset')
+    parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
 
     # Response settings

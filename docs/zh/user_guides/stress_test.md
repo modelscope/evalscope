@@ -1,117 +1,176 @@
 # 模型推理性能压测
-一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
+一个大语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式，默认支持OpenAI API格式。
 
-## 使用方法
+## 快速使用
+可以使用以下两种方式启动模型推理性能压测工具：
 
-### 命令行
+::::{tab-set}
+:::{tab-item} 命令行启动
 ```bash
-evalscope perf --help
-usage: evalscope <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
-                                       [--log-every-n-query LOG_EVERY_N_QUERY] [--headers KEY1=VALUE1 [KEY1=VALUE1 ...]] [--wandb-api-key WANDB_API_KEY] [--name NAME] [--debug] [--tokenizer-path TOKENIZER_PATH]
-                                       [--api API] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH] [--prompt PROMPT] [--query-template QUERY_TEMPLATE] [--dataset DATASET]
-                                       [--dataset-path DATASET_PATH] [--frequency-penalty FREQUENCY_PENALTY] [--logprobs] [--max-tokens MAX_TOKENS] [--n-choices N_CHOICES] [--seed SEED] [--stop STOP] [--stream]
-                                       [--temperature TEMPERATURE] [--top-p TOP_P]
-options:
-  -h, --help            显示此帮助信息并退出
-  --model MODEL         测试模型名称。
-  --url URL
-  --connect-timeout CONNECT_TIMEOUT
-                        网络连接超时
-  --read-timeout READ_TIMEOUT
-                        网络读取超时
-  -n NUMBER, --number NUMBER
-                        发出的请求数量，如果为None，则将基于数据集或提示发送请求。
-  --parallel PARALLEL   设置并发请求的数量，默认为1
-  --rate RATE           每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥
-  --log-every-n-query LOG_EVERY_N_QUERY
-                        每n个查询记录日志。
-  --headers KEY1=VALUE1 [KEY1=VALUE1 ...]
-                        额外的HTTP头，格式为key1=value1 key2=value2。该头将用于每个查询。您可以使用此参数指定HTTP授权和其他头信息。
-  --wandb-api-key WANDB_API_KEY
-                        wandb API密钥，如果设置，则度量将保存到wandb。
-  --name NAME           wandb数据库结果名称和结果数据库名称，默认为: {model_name}_{current_time}
-  --debug               调试请求发送。
-  --tokenizer-path TOKENIZER_PATH
-                        指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
-  --api API             指定服务API，目前支持[openai|dashscope]，您可以使用python定义自定义解析器，并指定python文件路径，参考api_plugin_base.py。
-  --max-prompt-length MAX_PROMPT_LENGTH
-                        最大输入prompt长度
-  --min-prompt-length MIN_PROMPT_LENGTH
-                        最小输入prompt长度。
-  --prompt PROMPT       指定请求prompt，所有查询将使用此prompt。您可以通过@file_path指定本地文件，prompt将为文件内容。
-  --query-template QUERY_TEMPLATE
-                        指定查询模板，应该是一个JSON字符串或本地文件，使用本地文件时，通过@local_file_path指定，将在模板中替换模型和prompt。
-  --dataset DATASET     指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考dataset_plugin_base.py。
-  --dataset-path DATASET_PATH
-                        数据集文件的路径，与数据集结合使用。如果数据集为None，则每一行默认为一个prompt。
-  --frequency-penalty FREQUENCY_PENALTY
-                        frequency_penalty值。
-  --logprobs            对数概率。
-  --max-tokens MAX_TOKENS
-                        可以生成的最大token数量。
-  --n-choices N_CHOICES
-                        生成的补全选择数量。
-  --seed SEED           随机种子。
-  --stop STOP           停止生成的tokens。
-  --stop-token-ids      设置停止生成的token的ID。
-  --stream              使用SSE流输出。
-  --temperature TEMPERATURE
-                        采样温度。
-  --top-p TOP_P         top_p采样。
+evalscope perf \
+    --url "http://127.0.0.1:8000/v1/chat/completions" \
+    --parallel 1 \
+    --model qwen2.5 \
+    --number 15 \
+    --api openai \
+    --dataset openqa \
+    --stream
 ```
-### 结果
-```bash
- Total requests: 10
- Succeed requests: 10
- Failed requests: 0
- Average QPS: 0.256
- Average latency: 3.859
- Throughput(average output tokens per second): 23.317
- Average time to first token: 0.007
- Average input tokens per request: 21.800
- Average output tokens per request: 91.100
- Average time per output token: 0.04289
- Average package per request: 93.100
- Average package latency: 0.042
- Percentile of time to first token: 
-     p50: 0.0021
-     p66: 0.0023
-     p75: 0.0025
-     p80: 0.0030
-     p90: 0.0526
-     p95: 0.0526
-     p98: 0.0526
-     p99: 0.0526
- Percentile of request latency: 
-     p50: 3.9317
-     p66: 3.9828
-     p75: 4.0153
-     p80: 7.2801
-     p90: 7.7003
-     p95: 7.7003
-     p98: 7.7003
-     p99: 7.7003
+:::
+
+:::{tab-item} Python脚本启动
+```python
+from evalscope.perf.main import run_perf_benchmark
+
+task_cfg = {"url": "http://127.0.0.1:8000/v1/chat/completions",
+            "parallel": 1,
+            "model": "qwen2.5",
+            "number": 15,
+            "api": "openai",
+            "dataset": "openqa",
+            "stream": True}
+run_perf_benchmark(task_cfg)
+```
+:::
+::::
+参数说明：
+
+- `url`: 请求的URL地址
+- `parallel`: 并行处理的任务数量
+- `model`: 使用的模型名称
+- `number`: 请求数量
+- `api`: 使用的API服务
+- `dataset`: 数据集名称
+- `stream`: 是否启用流式处理
+
+
+### 输出结果
+```text
+Benchmarking summary: 
++----------------------------------------------+------------------------------------------------+
+| key                                          | Value                                          |
++==============================================+================================================+
+| Time taken for tests (senconds)              | 7.539                                          |
++----------------------------------------------+------------------------------------------------+
+| Number of concurrency                        | 1                                              |
++----------------------------------------------+------------------------------------------------+
+| Total requests                               | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Succeed requests                             | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Failed requests                              | 0                                              |
++----------------------------------------------+------------------------------------------------+
+| Average QPS                                  | 1.99                                           |
++----------------------------------------------+------------------------------------------------+
+| Average latency                              | 0.492                                          |
++----------------------------------------------+------------------------------------------------+
+| Average time to first token                  | 0.026                                          |
++----------------------------------------------+------------------------------------------------+
+| Throughput(average output tokens per second) | 334.006                                        |
++----------------------------------------------+------------------------------------------------+
+| Average time per output token                | 0.00299                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package per request                  | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package latency                      | 0.003                                          |
++----------------------------------------------+------------------------------------------------+
+| Average input tokens per request             | 40.133                                         |
++----------------------------------------------+------------------------------------------------+
+| Average output tokens per request            | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Expected number of requests                  | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Result DB path                               | ./outputs/qwen2.5_benchmark_20241107_201413.db |
++----------------------------------------------+------------------------------------------------+
+
+Percentile results: 
++------------+---------------------+---------+
+| Percentile | First Chunk Latency | Latency |
++------------+---------------------+---------+
+|    10%     |       0.0178        | 0.1577  |
+|    25%     |       0.0183        | 0.2358  |
+|    50%     |       0.0199        | 0.4311  |
+|    66%     |       0.0218        | 0.6317  |
+|    75%     |       0.0429        | 0.7121  |
+|    80%     |       0.0432        | 0.7957  |
+|    90%     |       0.0432        | 0.9153  |
+|    95%     |       0.0433        | 0.9897  |
+|    98%     |       0.0433        | 0.9897  |
+|    99%     |       0.0433        | 0.9897  |
++------------+---------------------+---------+
 ```
 
-#### 指标说明
+### 指标说明
 
 | **指标**                                     | **说明**                       | **数值**        |
 |------------------------------------------|-----------------------------|-----------------|
-| Total requests                          | 总请求数                     | 10              |
-| Succeeded requests                      | 成功请求                     | 10              |
-| Failed requests                         | 失败请求                      | 0               |
-| Average QPS                            | 每秒平均查询                 | 0.256           |
-| Average latency                         | 所有请求的平均延迟          | 3.859           |
-| Throughput                              | 每秒输出tokens              | 23.317          |
-| Average time to first token            | 第一次token的平均时间       | 0.007           |
-| Average input tokens per request        | 每个请求的平均输入tokens    | 21.800          |
-| Average output tokens per request       | 每个请求的平均输出tokens    | 91.100          |
-| Average time per output token           | 每个输出token的平均时间     | 0.04289         |
-| Average package per request             | 每个请求的平均包数          | 93.100          |
-| Average package latency                  | 每个包的平均延迟            | 0.042           |
-| Percentile of time to first token (p50, ..., p99) | 第一次token的时间百分位     |   p50=0.0021, ..., p99=0.0526         |
-| Percentile of request latency (p50, ..., p99)          | 请求延迟的百分位          |  p50=3.9317, ..., p99=7.7003         |
+| Total requests                          | 总请求数                     | 15              |
+| Succeeded requests                      | 成功请求数                     | 15              |
+| Failed requests                         | 失败请求数                      | 0               |
+| Average QPS                            | 每秒平均请求数                 | 1.99          |
+| Average latency                         | 所有请求的平均延迟          | 0.492          |
+| Throughput(average output tokens per second)  | 每秒输出token数量              | 334.006          |
+| Average time to first token            | 首token的平均延时       |    0.026         |
+| Average input tokens per request        | 每个请求的平均输入token数量    | 40.133         |
+| Average output tokens per request       | 每个请求的平均输出token数量    | 167.867            |
+| Average time per output token           | 输出每个token的平均时间     | 0.00299         |
+| Average package per request             | 每个请求的平均包数          | 167.867           |
+| Average package latency                  | 每个包的平均延迟            | 0.003            |
+| Percentile of time to first token (p10, ..., p99) | 首token延时百分位     |            |
+| Percentile of request latency (p10, ..., p99)          | 请求延迟的百分位          |          |
 
+
+## 全部参数说明
+执行 `evalscope perf --help` 可获取全部参数说明：
+
+
+### 基本设置
+- `--model` 测试模型名称。
+- `--url` 指定API地址。
+- `--name` wandb数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
+- `--api` 指定服务API，目前支持[openai|dashscope]，您可以使用python定义自定义解析器，并指定python文件路径，参考`api_plugin_base.py`。
+- `--api-key` API密钥，可选。
+- `--debug` 输出调试信息。
+
+### 网络配置
+- `--connect-timeout` 网络连接超时，默认为120s。
+- `--read-timeout` 网络读取超时，默认为120s。
+- `--headers` 额外的HTTP头，格式为`key1=value1 key2=value2`。该头将用于每个查询。
+
+### 请求控制
+- `--number` 发出的请求数量，默认为None，表示基于数据集数量发送请求。
+- `--parallel` 设置并发请求的数量，默认为1。
+- `--rate` 每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥。
+- `--log-every-n-query` 每n个查询记录日志。
+
+### Prompt设置
+- `--max-prompt-length` 最大输入prompt长度，默认为`sys.maxsize`。
+- `--min-prompt-length` 最小输入prompt长度，默认为0。
+- `--prompt` 指定请求prompt，一个字符串或本地文件，使用优先级高于`dataset`。使用本地文件时，通过`@{path/to/file}`指定本地文件。
+- `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`{path/to/file}`指定，将在模板中替换模型和prompt。默认为`[{'role': 'user', 'content': prompt}]`
+
+### 数据集配置
+- `--dataset` 指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考`dataset_plugin_base.py`。
+- `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
+
+### 模型设置
+- `--tokenizer-path` 指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
+- `--frequency-penalty` frequency_penalty值。
+- `--logprobs` 对数概率。
+- `--max-tokens` 可以生成的最大token数量。
+- `--n-choices` 生成的补全选择数量。
+- `--seed` 随机种子。
+- `--stop` 停止生成的tokens。
+- `--stop-token-ids` 设置停止生成的token的ID。
+- `--stream` 使用SSE流输出。
+- `--temperature` 采样温度。
+- `--top-p` top_p采样。
+
+### 数据存储
+- `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
+
+
+## 示例
 
 ### 请求参数  
 您可以在`query-template`中设置请求参数，也可以使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。

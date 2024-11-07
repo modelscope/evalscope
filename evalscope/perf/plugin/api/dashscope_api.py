@@ -1,5 +1,4 @@
-import sys
-from sys import maxsize
+import os
 from typing import Any, Dict, Iterator, List
 
 import json
@@ -38,7 +37,16 @@ class DashScopeApiPlugin(ApiPluginBase):
         """
         try:
             if param.query_template is not None:
-                query = json.loads(param.query_template)
+                if param.query_template.startswith('@'):
+                    file_path = param.query_template[1:]
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as file:
+                            query = json.load(file)
+                    else:
+                        raise FileNotFoundError(f'{file_path}')
+                else:
+                    query = json.loads(param.query_template)
+
                 query['input']['messages'] = messages  # replace template content with message.
                 return self.__compose_query_from_parameter(query, param)
             else:

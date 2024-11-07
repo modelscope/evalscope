@@ -1,11 +1,10 @@
-# pip3 install --no-dependencies -r requirements/framework.txt
-torch
 absl-py
 #auto-gptq
 accelerate
 cachetools
-datasets>=2.18.0,<3.0.0
+datasets>=3.0.0,<=3.0.1
 editdistance
+jieba
 jsonlines
 matplotlib
 modelscope[framework]
@@ -19,6 +18,7 @@ pyyaml
 regex
 requests
 requests-toolbelt
+rouge-chinese
 rouge-score>=0.1.0
 sacrebleu
 scikit-learn
@@ -28,9 +28,9 @@ simple-ddl-parser
 # streamlit
 tabulate
 tiktoken
+# pip3 install --no-dependencies -r requirements/framework.txt
+torch
 tqdm
 transformers>=4.33
 transformers_stream_generator
-jieba
-rouge-chinese
 # wandb

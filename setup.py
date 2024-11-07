@@ -66,8 +66,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
                     if ';' in rest:
                         # Handle platform specific dependencies
                         # http://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-platform-specific-dependencies
-                        version, platform_deps = map(str.strip,
-                                                     rest.split(';'))
+                        version, platform_deps = map(str.strip, rest.split(';'))
                         info['platform_deps'] = platform_deps
                     else:
                         version = rest  # NOQA
@@ -81,8 +80,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
                 if line.startswith('http'):
                     print('skip http requirements %s' % line)
                     continue
-                if line and not line.startswith('#') and not line.startswith(
-                        '--'):
+                if line and not line.startswith('#') and not line.startswith('--'):
                     for info in parse_line(line):
                         yield info
                 elif line and line.startswith('--find-links'):
@@ -116,38 +114,15 @@ def parse_requirements(fname='requirements.txt', with_version=True):
     return gen_packages_items()
 
 
-def pack_resource():
-    import shutil
-    # pack resource such as configs and tools
-    root_dir = 'package/'
-    if os.path.isdir(root_dir):
-        shutil.rmtree(root_dir)
-    os.makedirs(root_dir)
-
-    proj_dir = root_dir + 'evalscope/'
-    shutil.copytree('evalscope', proj_dir)
-    shutil.copytree('requirements', root_dir + 'requirements')
-    shutil.copy('requirements.txt', root_dir + 'requirements.txt')
-    # shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
-    shutil.copy('./README.md', root_dir + 'README.md')
-
-
 if __name__ == '__main__':
-    print(
-        'Usage: python3 setup.py bdist_wheel or pip3 install .[opencompass] for test'
-    )
+    print('Usage: python3 setup.py bdist_wheel or pip3 install .[opencompass] for test')
 
-    pack_resource()
-    os.chdir('package')
-    install_requires, deps_link = parse_requirements(
-        'requirements/framework.txt')
+    install_requires, deps_link = parse_requirements('requirements/framework.txt')
 
     extra_requires = {}
     all_requires = []
-    extra_requires['opencompass'], _ = parse_requirements(
-        'requirements/opencompass.txt')
-    extra_requires['vlmeval'], _ = parse_requirements(
-        'requirements/vlmeval.txt')
+    extra_requires['opencompass'], _ = parse_requirements('requirements/opencompass.txt')
+    extra_requires['vlmeval'], _ = parse_requirements('requirements/vlmeval.txt')
     extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
@@ -191,9 +166,7 @@ if __name__ == '__main__':
         python_requires='>=3.8',
         zip_safe=False,
         install_requires=install_requires,
-        entry_points={
-            'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']
-        },
+        entry_points={'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']},
         dependency_links=deps_link,
         extras_require=extra_requires,
     )
