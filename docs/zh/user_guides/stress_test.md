@@ -36,7 +36,7 @@ run_perf_benchmark(task_cfg)
 参数说明：
 
 - `url`: 请求的URL地址
-- `parallel`: 并行处理的任务数量
+- `parallel`: 并行请求的任务数量
 - `model`: 使用的模型名称
 - `number`: 请求数量
 - `api`: 使用的API服务
@@ -141,17 +141,18 @@ Percentile results:
 - `--number` 发出的请求数量，默认为None，表示基于数据集数量发送请求。
 - `--parallel` 设置并发请求的数量，默认为1。
 - `--rate` 每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥。
-- `--log-every-n-query` 每n个查询记录日志。
+- `--log-every-n-query` 每n个查询记录日志，默认为10。
+- `--stream` 使用SSE流输出，默认为False。
 
 ### Prompt设置
-- `--max-prompt-length` 最大输入prompt长度，默认为`sys.maxsize`。
-- `--min-prompt-length` 最小输入prompt长度，默认为0。
-- `--prompt` 指定请求prompt，一个字符串或本地文件，使用优先级高于`dataset`。使用本地文件时，通过`@{path/to/file}`指定本地文件。
-- `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`{path/to/file}`指定，将在模板中替换模型和prompt。默认为`[{'role': 'user', 'content': prompt}]`
+- `--max-prompt-length` 最大输入prompt长度，默认为`sys.maxsize`，大于该值时，将丢弃prompt。
+- `--min-prompt-length` 最小输入prompt长度，默认为0，小于该值时，将丢弃prompt。
+- `--prompt` 指定请求prompt，一个字符串或本地文件，使用优先级高于`dataset`。使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./prompt.txt`。
+- `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./query_template.json`。
 
 ### 数据集配置
 - `--dataset` 指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考`dataset_plugin_base.py`。
-- `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
+- `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
 
 ### 模型设置
 - `--tokenizer-path` 指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
@@ -162,7 +163,6 @@ Percentile results:
 - `--seed` 随机种子。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
-- `--stream` 使用SSE流输出。
 - `--temperature` 采样温度。
 - `--top-p` top_p采样。
 
@@ -172,19 +172,37 @@ Percentile results:
 
 ## 示例
 
-### 请求参数  
-您可以在`query-template`中设置请求参数，也可以使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。
-#### 带参数的请求
-示例请求 llama3 
+### 复杂请求
+
+**示例请求1**
 ```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 --dataset-path './datasets/open_qa.jsonl' -n 1 --max-prompt-length 128000 --api openai --stream --stop '<|im_end|>' --dataset openqa --debug
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --parallel 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --temperature 0.7 \
+ --max-tokens 1024 \
+ --stop '<|im_end|>' \
+ --dataset openqa \
+ --stream \
+ --debug
 ```
+
+**示例请求2**
+您可以在`query-template`中设置请求参数，使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。
 
 ```bash
 evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
 ```
 
-#### query-template 使用说明
+### 使用query-template 
 当你需要处理更复杂的请求时，可以使用模板来简化命令行。如果同时存在模板和参数，则参数中的值将优先使用。
 query-template 示例：
 ```bash
@@ -192,30 +210,18 @@ evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 12 -
 ```
 对于 `messages` 字段, 数据集处理器的 message 将替换 query-template 中的 messages.
 
-#### 启动客户端
-```bash
-# 测试 openai 服务
-evalscope perf --url 'https://api.openai.com/v1/chat/completions' --parallel 1 --headers 'Authorization=Bearer YOUR_OPENAI_API_KEY' --model 'gpt-4o' --dataset-path 'THE_DATA_TO/open_qa.jsonl'  --log-every-n-query 10 --read-timeout=120  -n 100 --max-prompt-length 128000 --api openai --stream --dataset openqa
-```
 
-```bash
-##### open qa dataset and 
-#### dataset address: https://huggingface.co/datasets/Hello-SimpleAI/HC3-Chinese/blob/main/open_qa.jsonl
-evalscope perf --url 'http://IP:PORT/v1/chat/completions' --parallel 1 --model 'qwen' --log-every-n-query 1 --read-timeout=120 -n 1000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
-```
 
-### FAQ
-
-#### 如何使用wandb记录测试结果
+### 使用wandb记录测试结果
 --wandb-api-key 'your_wandb_api_key'  --name 'name_of_wandb_and_result_db'  
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-#### 如何调试
-使用 --debug 选项，我们将输出请求和响应。
+### 调试请求
+使用 `--debug` 选项，我们将输出请求和响应。
 
 
-#### 如何分析结果
+### 分析结果
 该工具在测试期间会将所有数据保存到 sqlite3 数据库中，包括请求和响应。您可以在测试后分析测试数据。
 
 ```python
@@ -226,7 +232,7 @@ import json
 result_db_path = 'db_name.db'
 con = sqlite3.connect(result_db_path)
 query_sql = "SELECT request, response_messages, prompt_tokens, completion_tokens \
-                FROM result WHERE success='True'"
+                FROM result WHERE success='1'"
 # how to save base64.b64encode(pickle.dumps(benchmark_data["request"])).decode("ascii"), 
 with con:
     rows = con.execute(query_sql).fetchall()
@@ -245,19 +251,10 @@ with con:
             print('prompt: %s, tokens: %s, completion: %s, tokens: %s' % (request['messages'][0]['content'], row[2], response_content, row[3]))
 ```
 
-#### 支持的 API 有哪些
-目前支持的 API 请求有 openai、dashscope 和 zhipu。您可以通过 --api 指定 API。
-
-您可以使用 --query-template 自定义您的请求，您可以指定一个 JSON 字符串如下：
-```json
-{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}
-```
-
-或使用本地文件 `@to_query_template_path`。我们将用 `model` 替换 `%m`，用 `prompt` 替换 `%p`。
 
 
-#### 如何扩展 API
-要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
+## 自定义 API
+目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
 
 通过 model、prompt 和 query_template 来构建请求的 build_request。您可以参考 opanai_api.py。
 
@@ -302,7 +299,7 @@ class ApiPluginBase:
         raise NotImplementedError  
 ```
 
-#### 支持的数据集
+## 自定义数据集
 目前支持逐行（line by line）、longalpaca 和 openqa 数据集。
 
 - 逐行方法将每一行作为一个提示。
@@ -311,10 +308,10 @@ class ApiPluginBase:
 
 - openqa 将获取 item['question'] 作为提示。
 
-#### 如何扩展数据集
+### 扩展数据集
 要扩展数据集，您可以创建 `DatasetPluginBase` 的子类，并使用 `@register_dataset('数据集名称')` 进行注解，
 
-然后实现 `build_prompt` 方法以返回一个prompt。
+然后实现 `build_messages` 方法以返回一个prompt。
 
 ```python
 class DatasetPluginBase:

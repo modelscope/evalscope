@@ -45,14 +45,13 @@ class AioHttpClient:
     async def __aexit__(self, exc_type, exc, tb):
         await self.client.close()
 
-    async def _handle_stream(self, response):
+    async def _handle_stream(self, response: aiohttp.ClientResponse):
         is_error = False
         async for line in response.content:
             line = line.decode('utf8').rstrip('\n\r')
-            if self.debug:
-                logger.debug(line)
             sse_msg = ServerSentEvent.decode(line)
             if sse_msg:
+                logger.debug(f'Response recevied: {line}')
                 if sse_msg.event == 'error':
                     is_error = True
                 if sse_msg.data:
@@ -110,23 +109,19 @@ class AioHttpClient:
             raise
 
     @staticmethod
-    async def on_request_start(session, context, params):
+    async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
         logger.debug(f'Starting request: <{params}>')
 
     @staticmethod
-    async def on_request_chunk_sent(session, context, params):
+    async def on_request_chunk_sent(session, context, params: aiohttp.TraceRequestChunkSentParams):
         method = params.method
         url = params.url
         chunk = params.chunk.decode('utf-8')
-        logger.debug(f'Request method: {method}')
-        logger.debug(f'Request URL: {url}')
-        logger.debug(f'Request chunk: {chunk}')
+        logger.debug(f'Request sent: <{method=},  {url=}, {chunk=}>')
 
     @staticmethod
-    async def on_response_chunk_received(session, context, params):
+    async def on_response_chunk_received(session, context, params: aiohttp.TraceResponseChunkReceivedParams):
         method = params.method
         url = params.url
         chunk = params.chunk.decode('utf-8')
-        logger.debug(f'Response method: {method}')
-        logger.debug(f'Response URL: {url}')
-        logger.debug(f'Response chunk: {chunk}')
+        logger.debug(f'Response recevied: <{method=},  {url=}, {chunk=}>')

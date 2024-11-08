@@ -8,6 +8,7 @@ from typing import List
 
 import json
 import numpy as np
+from tqdm.asyncio import tqdm_asyncio
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient

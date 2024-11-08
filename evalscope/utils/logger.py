@@ -1,15 +1,16 @@
-# Copyright (c) Alibaba, Inc. and its affiliates.
-
 import importlib.util as iutil
 import logging
 from typing import Optional
 
 init_loggers = {}
-# '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'
-format = '%(asctime)s - %(name)s - %(filename)s - %(levelname)s - %(message)s'
-formatter = logging.Formatter(format)
 
-logging.basicConfig(format=format, level=logging.INFO)
+detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'
+simple_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+detailed_formatter = logging.Formatter(detailed_format)
+simple_formatter = logging.Formatter(simple_format)
+
+logging.basicConfig(format=simple_format, level=logging.INFO)
 
 
 def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, file_mode: str = 'w'):
@@ -26,21 +27,17 @@ def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, fi
     logger_name = __name__.split('.')[0]
     logger = logging.getLogger(logger_name)
     logger.propagate = False
+
     if logger_name in init_loggers:
         if logger.level != log_level:
             logger.setLevel(log_level)
         add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         for handler in logger.handlers:
             handler.setLevel(log_level)
+            handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
         return logger
 
     # handle duplicate logs to the console
-    # Starting in 1.8.0, PyTorch DDP attaches a StreamHandler <stderr> (NOTSET)
-    # to the root logger. As logger.propagate is True by default, this root
-    # level handler causes logging messages from rank>0 processes to
-    # unexpectedly show up on the console, creating much unwanted clutter.
-    # To fix this issue, we set the root logger's StreamHandler, if any, to log
-    # at the ERROR level.
     torch_dist = False
     is_worker0 = True
     if iutil.find_spec('torch') is not None:
@@ -62,7 +59,7 @@ def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, fi
         handlers.append(file_handler)
 
     for handler in handlers:
-        handler.setFormatter(formatter)
+        handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
         handler.setLevel(log_level)
         logger.addHandler(handler)
 
@@ -90,6 +87,6 @@ def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
 
     if is_worker0 and log_file is not None:
         file_handler = logging.FileHandler(log_file, file_mode)
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
         file_handler.setLevel(log_level)
         logger.addHandler(file_handler)
