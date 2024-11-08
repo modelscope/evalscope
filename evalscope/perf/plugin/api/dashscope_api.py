@@ -6,7 +6,9 @@ import json
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
-from evalscope.perf.utils._logging import logger
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 @register_api('dashscope')

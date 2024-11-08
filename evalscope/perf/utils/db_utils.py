@@ -8,8 +8,10 @@ from datetime import datetime
 import json
 from tabulate import tabulate
 
-from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def create_result_table(cursor):

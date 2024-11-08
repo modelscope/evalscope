@@ -2,7 +2,9 @@ import asyncio
 import functools
 import sys
 
-from evalscope.perf.utils._logging import logger
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def exception_handler(func):

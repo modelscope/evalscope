@@ -12,12 +12,13 @@ import numpy as np
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient
 from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
-from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_utils import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
 from evalscope.perf.utils.exception_handler import exception_handler
 from evalscope.perf.utils.signal_handler import add_signal_handlers
+from evalscope.utils.logger import get_logger
 
+logger = get_logger()
 query_send_completed_event = asyncio.Event()
 data_process_completed_event = asyncio.Event()
 
@@ -117,7 +118,6 @@ async def send_requests_worker(
                         benchmark_data.success = False
                         break
                     if response_data:
-                        logger.info(response_data)
                         collected_messages.append(response_data)
                         benchmark_data.chunk_times.append(time.perf_counter())
                         benchmark_data.success = True
@@ -183,8 +183,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
             # Log the message to the logger every n queries
             if int(metrics.n_total_queries) % args.log_every_n_query == 0:
-                msg = json.dumps(message, ensure_ascii=False)
-                msg = msg[1:-1].replace('"', '')
+                msg = json.dumps(message, ensure_ascii=False, indent=2)
                 logger.info(msg)
 
     return metrics, result_db_path

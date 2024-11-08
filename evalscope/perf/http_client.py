@@ -5,8 +5,10 @@ from typing import AsyncGenerator, Dict, List, Tuple
 import aiohttp
 import json
 
-from evalscope.perf.utils._logging import logger
 from evalscope.perf.utils.server_sent_event import ServerSentEvent
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class AioHttpClient:
@@ -28,7 +30,7 @@ class AioHttpClient:
             connector=aiohttp.TCPConnector(limit=1),
             trace_configs=[self._create_trace_config()] if debug else [])
         if debug:
-            logger.setLevel(logging.DEBUG)
+            get_logger(log_level=logging.DEBUG)
 
     def _create_trace_config(self):
         trace_config = aiohttp.TraceConfig()

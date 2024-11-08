@@ -2,7 +2,9 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
-from evalscope.perf.utils._logging import logger
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 @dataclass

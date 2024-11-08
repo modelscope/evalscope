@@ -1,7 +1,9 @@
 import functools
 import signal
 
-from evalscope.perf.utils._logging import logger
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def signal_handler(signal_name, loop):
