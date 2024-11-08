@@ -4,7 +4,7 @@ absl-py
 #auto-gptq
 accelerate
 cachetools
-datasets>=2.18.0,<3.0.0
+datasets>=3.0.0,<=3.0.1
 editdistance
 jsonlines
 matplotlib
