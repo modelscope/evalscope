@@ -8,7 +8,7 @@ from typing import List
 
 import json
 import numpy as np
-from tqdm.asyncio import tqdm_asyncio
+from tqdm import tqdm
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient
@@ -101,7 +101,7 @@ async def send_requests_worker(
         while not (query_send_completed_event.is_set() and request_queue.empty()):
             try:
                 # Attempt to get a request from the queue with a timeout
-                request = await asyncio.wait_for(request_queue.get(), timeout=0.01)
+                request = await asyncio.wait_for(request_queue.get(), timeout=0.001)
                 request_queue.task_done()
             except asyncio.TimeoutError:
                 # If timeout, continue to the next iteration
@@ -110,7 +110,6 @@ async def send_requests_worker(
             # Initialize benchmark data for the current request
             benchmark_data = BenchmarkData(request=request)
             collected_messages = []
-
             try:
                 # Send the request and process the response
                 async for is_error, state_code, response_data in client.post(request):
@@ -158,34 +157,36 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
         create_result_table(cursor)
+        with tqdm(desc='Processing') as pbar:
+            while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
+                try:
+                    # Attempt to get benchmark data from the queue with a timeout
+                    benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=1)
+                    benchmark_data_queue.task_done()
+                except asyncio.TimeoutError:
+                    # If timeout, continue to the next iteration
+                    continue
 
-        while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
-            try:
-                # Attempt to get benchmark data from the queue with a timeout
-                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=1)
-                benchmark_data_queue.task_done()
-            except asyncio.TimeoutError:
-                # If timeout, continue to the next iteration
-                continue
+                # Update metrics based on the benchmark data
+                metrics.update_metrics(benchmark_data, api_plugin)
 
-            # Update metrics based on the benchmark data
-            metrics.update_metrics(benchmark_data, api_plugin)
+                # Insert benchmark data into the database and commit the transaction
+                insert_benchmark_data(cursor, benchmark_data)
+                con.commit()
 
-            # Insert benchmark data into the database and commit the transaction
-            insert_benchmark_data(cursor, benchmark_data)
-            con.commit()
+                # Create a message with the updated metrics
+                message = metrics.create_message()
 
-            # Create a message with the updated metrics
-            message = metrics.create_message()
+                # Log the message to wandb if the api key is provided
+                if args.wandb_api_key:
+                    wandb.log(message)
 
-            # Log the message to wandb if the api key is provided
-            if args.wandb_api_key:
-                wandb.log(message)
+                # Log the message to the logger every n queries
+                if int(metrics.n_total_queries) % args.log_every_n_query == 0:
+                    msg = json.dumps(message, ensure_ascii=False)
+                    logger.info(msg)
 
-            # Log the message to the logger every n queries
-            if int(metrics.n_total_queries) % args.log_every_n_query == 0:
-                msg = json.dumps(message, ensure_ascii=False, indent=2)
-                logger.info(msg)
+                pbar.update(1)  # Update the progress bar
 
     return metrics, result_db_path
 
