@@ -86,17 +86,11 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments
 @exception_handler
 async def send_requests_worker(
     task_id,
+    client: AioHttpClient,
     request_queue: asyncio.Queue,
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
 ):
-    client = AioHttpClient(
-        args.url,
-        conn_timeout=args.connect_timeout,
-        read_timeout=args.read_timeout,
-        headers=args.headers,
-        debug=args.debug,
-    )
     async with client:
         while not (query_send_completed_event.is_set() and request_queue.empty()):
             try:
@@ -191,6 +185,51 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     return metrics, result_db_path
 
 
+async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
+    is_error = True
+    timeout = args.connect_timeout
+    start_time = time.perf_counter()
+
+    async def attempt_connection():
+        request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+        async for is_error, state_code, response_data in client.post(request):
+            return is_error, state_code, response_data
+
+    while is_error:
+        is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
+        if not is_error:
+            logger.info('Connection successful.')
+            return True
+        else:
+            logger.info(f'Trying... Connection failed with error: <{state_code}> {response_data}')
+
+        current_time = time.perf_counter()
+        if current_time - start_time >= timeout:
+            logger.error('Overall connection attempt timed out.')
+            return False
+
+        await asyncio.sleep(2)
+    return False
+
+
+@exception_handler
+async def create_client(args: Arguments) -> bool:
+    if args.api == 'local':
+        client = None
+    else:
+        client = AioHttpClient(
+            args.url,
+            conn_timeout=args.connect_timeout,
+            read_timeout=args.read_timeout,
+            headers=args.headers,
+            debug=args.debug,
+        )
+
+    if not await test_connection(client, args):
+        logger.error('Test connection failed')
+    return client
+
+
 @exception_handler
 async def benchmark(args: Arguments) -> None:
     if platform.system() != 'Windows':
@@ -200,18 +239,20 @@ async def benchmark(args: Arguments) -> None:
     request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
 
-    async def create_send_request_tasks():
+    async def create_send_request_tasks(client):
         tasks: List[asyncio.Task] = []
         for idx in range(args.parallel):
-            task = asyncio.create_task(send_requests_worker(idx, request_queue, benchmark_data_queue, args))
+            task = asyncio.create_task(send_requests_worker(idx, client, request_queue, benchmark_data_queue, args))
             tasks.append(task)
         return tasks
 
     async def run_tasks():
+        client = await create_client(args)
+
         dispatch_task = asyncio.create_task(dispatch_requests_worker(request_queue, args))
         statistic_benchmark_metric_task = asyncio.create_task(
             statistic_benchmark_metric_worker(benchmark_data_queue, args))
-        send_request_tasks = await create_send_request_tasks()
+        send_request_tasks = await create_send_request_tasks(client)
 
         expected_number_of_queries = await dispatch_task
         await request_queue.join()
