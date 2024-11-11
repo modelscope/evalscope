@@ -155,7 +155,7 @@ Percentile results:
 - `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
 
 ### 模型设置
-- `--tokenizer-path` 指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
+- `--tokenizer-path` 可选，指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
 - `--frequency-penalty` frequency_penalty值。
 - `--logprobs` 对数概率。
 - `--max-tokens` 可以生成的最大token数量。
@@ -172,13 +172,40 @@ Percentile results:
 
 ## 示例
 
-### 复杂请求
-
-**示例请求1**
+### 使用`prompt`
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --parallel 2 \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt '写一个科幻小说，请开始你的表演'
+```
+也可以使用本地文件作为prompt：
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt @prompt.txt
+```
+
+### 复杂请求
+使用`stop`，`stream`，`temperature`等：
+
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --read-timeout 120 \
@@ -191,31 +218,84 @@ evalscope perf \
  --max-tokens 1024 \
  --stop '<|im_end|>' \
  --dataset openqa \
- --stream \
- --debug
+ --stream
 ```
 
-**示例请求2**
-您可以在`query-template`中设置请求参数，使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。
+### 使用`query-template`
+
+您可以在`query-template`中设置请求参数：
 
 ```bash
-evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "skip_special_tokens": false, "stop": ["<|im_end|>"], "temperature": 0.7, "max_tokens": 1024}' \
+ --dataset openqa 
 ```
+其中`%m`和`%p`会被替换为模型名称和prompt。
 
-### 使用query-template 
-当你需要处理更复杂的请求时，可以使用模板来简化命令行。如果同时存在模板和参数，则参数中的值将优先使用。
-query-template 示例：
+您也可以使用本地`query-template.json`文件：
+
+```{code-block} json
+:caption: template.json
+
+{
+   "model":"%m",
+   "messages":[
+      {
+         "role":"user",
+         "content":"%p"
+      }
+   ],
+   "stream":true,
+   "skip_special_tokens":false,
+   "stop":[
+      "<|im_end|>"
+   ],
+   "temperature":0.7,
+   "max_tokens":1024
+}
+```
 ```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 12 --model 'llama3' --log-every-n-query 10 --read-timeout=120 -n 1 --max-prompt-length 128000 --api openai --query-template '{"model": "%m", "messages": [], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}' --dataset openqa --dataset-path './datasets/open_qa.jsonl'
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template @template.json \
+ --dataset openqa 
 ```
-对于 `messages` 字段, 数据集处理器的 message 将替换 query-template 中的 messages.
-
 
 
 ### 使用wandb记录测试结果
---wandb-api-key 'your_wandb_api_key'  --name 'name_of_wandb_and_result_db'  
+
+请安装wandb：
+```bash
+pip install wandb
+```
+
+在启动时，添加以下参数，即可：
+```base
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```  
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
 
 ### 调试请求
 使用 `--debug` 选项，我们将输出请求和响应。
@@ -247,13 +327,17 @@ with con:
             response_content = ''
             for response in responses:
                 response = json.loads(response)
+                if not response['choices']:
+                   continue
                 response_content += response['choices'][0]['delta']['content']
-            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' % (request['messages'][0]['content'], row[2], response_content, row[3]))
+            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' %
+                  (request['messages'][0]['content'], row[2], response_content,
+                   row[3]))
 ```
 
 
 
-## 自定义 API
+## 自定义请求 API
 目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
 
 通过 model、prompt 和 query_template 来构建请求的 build_request。您可以参考 opanai_api.py。
@@ -261,7 +345,8 @@ with con:
 `parse_responses` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量。
 
 ```python
-class ApiPluginBase:
+@register_api('custom')
+class CustomPlugin(ApiPluginBase):
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         
@@ -300,13 +385,13 @@ class ApiPluginBase:
 ```
 
 ## 自定义数据集
-目前支持逐行（line by line）、longalpaca 和 openqa 数据集。
+目前支持如下三种格式数据集：
 
-- 逐行方法将每一行作为一个提示。
+- `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
 
-- longalpaca 将获取 item['instruction'] 作为提示。
+- `longalpaca` 将获取 item['instruction'] 作为提示，不指定`dataset_path`将从modelscope自动下载。
 
-- openqa 将获取 item['question'] 作为提示。
+- `openqa` 将获取 item['question'] 作为提示，不指定`dataset_path`将从modelscope自动下载。
 
 ### 扩展数据集
 要扩展数据集，您可以创建 `DatasetPluginBase` 的子类，并使用 `@register_dataset('数据集名称')` 进行注解，
@@ -314,61 +399,26 @@ class ApiPluginBase:
 然后实现 `build_messages` 方法以返回一个prompt。
 
 ```python
-class DatasetPluginBase:
-    def __init__(self, query_parameters: QueryParameters):
-        """Build data set plugin
+from typing import Dict, Iterator, List
 
-        Args:
-            dataset_path (str, optional): The input dataset path. Defaults to None.
-        """
-        self.query_parameters = query_parameters
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.registry import register_dataset
 
-    def __next__(self):
-        for item in self.build_messages():
-            yield item
-        raise StopIteration
 
-    def __iter__(self):
-        return self.build_messages()
-    
-    @abstractmethod
-    def build_messages(self)->Iterator[List[Dict]]:
-        """Build the request.
+@register_dataset('custom')
+class CustomDatasetPlugin(DatasetPluginBase):
+    """Read dataset and return prompt.
+    """
 
-        Raises:
-            NotImplementedError: The request is not impletion.
+    def __init__(self, query_parameters: Arguments):
+        super().__init__(query_parameters)
 
-        Yields:
-            Iterator[List[Dict]]: Yield request messages.
-        """
-        raise NotImplementedError
-    
-    def dataset_line_by_line(self, dataset: str)->Iterator[str]:
-        """Get content line by line of dataset.
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[str]: Each line of file.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            for line in f:
-                yield line
-    
-    def dataset_json_list(self, dataset: str)->Iterator[Dict]:
-        """Read data from file which is list of requests.
-           Sample: https://huggingface.co/datasets/Yukang/LongAlpaca-12k
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[Dict]: The each request object.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            content = f.read()
-        data = json.loads(content)
-        for item in data:
-            yield item      
+    def build_messages(self) -> Iterator[List[Dict]]:
+        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
+            prompt = item.strip()
+            if len(prompt) > self.query_parameters.min_prompt_length and len(
+                    prompt) < self.query_parameters.max_prompt_length:
+                yield [{'role': 'user', 'content': prompt}]
+   
 ```
