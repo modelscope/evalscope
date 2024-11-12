@@ -18,10 +18,22 @@ pip install evalscope[opencompass] -U
 
 数据集的详细信息可以参考[OpenCompass数据集列表](../../get_started/supported_dataset.md#2-opencompass评测后端支持的数据集)
 
-您可以使用以下方式，来查看数据集的名称列表：
+您可以使用以下方式，来查看支持的数据集的名称列表：
 ```python
 from evalscope.backend.opencompass import OpenCompassBackendManager
-print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
+# 显示支持的数据集名称列表
+OpenCompassBackendManager.list_datasets()
+
+>>> ['summedits', 'humaneval', 'lambada', 
+'ARC_c', 'ARC_e', 'CB', 'C3', 'cluewsc', 'piqa',
+ 'bustm', 'storycloze', 'lcsts', 'Xsum', 'winogrande', 
+ 'ocnli', 'AX_b', 'math', 'race', 'hellaswag', 
+ 'WSC', 'eprstmt', 'siqa', 'agieval', 'obqa',
+ 'afqmc', 'GaokaoBench', 'triviaqa', 'CMRC', 
+ 'chid', 'gsm8k', 'ceval', 'COPA', 'ReCoRD', 
+ 'ocnli_fc', 'mbpp', 'csl', 'tnews', 'RTE', 
+ 'cmnli', 'AX_g', 'nq', 'cmb', 'BoolQ', 'strategyqa', 
+ 'mmlu', 'WiC', 'MultiRC', 'DRCD', 'cmmlu']
 ```
 ````
 
