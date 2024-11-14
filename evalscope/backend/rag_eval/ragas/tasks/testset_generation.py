@@ -1,13 +1,15 @@
-import os
 import asyncio
+import os
+
 import pandas as pd
-from tqdm import tqdm
-from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from .translate_prompt import translate_prompts
-from evalscope.utils.logger import get_logger
+from ragas.llms import LangchainLLMWrapper
+from tqdm import tqdm
+
+from evalscope.backend.rag_eval import LLM, ChatOpenAI, EmbeddingModel
 from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
-from evalscope.backend.rag_eval import EmbeddingModel, LLM, ChatOpenAI
+from evalscope.utils.logger import get_logger
+from .translate_prompt import translate_prompts
 
 os.environ['DO_NOT_TRACK'] = 'true'
 
@@ -22,20 +24,6 @@ def get_transform(llm, embedding, language):
     knowledge graph, including extracting summaries, keyphrases, titles,
     headlines, and embeddings, as well as building similarity relationships
     between nodes.
-
-    The transforms are applied in the following order:
-    1. Parallel extraction of summaries and headlines
-    2. Embedding of summaries for document nodes
-    3. Splitting of headlines
-    4. Parallel extraction of embeddings, keyphrases, and titles
-    5. Building cosine similarity relationships between nodes
-    6. Building cosine similarity relationships between summaries
-
-    Returns
-    -------
-    Transforms
-        A list of transformation steps to be applied to the knowledge graph.
-
     """
     from ragas.testset.transforms.engine import Parallel
     from ragas.testset.transforms.extractors import (
@@ -69,8 +57,7 @@ def get_transform(llm, embedding, language):
             target_lang=language,
             llm=llm,
             adapt_instruction=True,
-        )
-    )
+        ))
 
     embedding_extractor = EmbeddingExtractor(embedding_model=embedding)
     headline_splitter = HeadlineSplitter()
@@ -97,36 +84,36 @@ def get_transform(llm, embedding, language):
 
 
 def get_distribution(llm, distribution, language):
-    from ragas.testset.synthesizers.abstract_query import (
-        AbstractQuerySynthesizer,
-        ComparativeAbstractQuerySynthesizer,
+    from ragas.testset.synthesizers.multi_hop import (
+        MultiHopAbstractQuerySynthesizer,
+        MultiHopSpecificQuerySynthesizer,
     )
-    from ragas.testset.synthesizers.specific_query import SpecificQuerySynthesizer
+    from ragas.testset.synthesizers.single_hop.specific import (
+        SingleHopSpecificQuerySynthesizer, )
 
-    abstract = AbstractQuerySynthesizer(llm=llm)
-    comparative = ComparativeAbstractQuerySynthesizer(llm=llm)
-    specific = SpecificQuerySynthesizer(llm=llm)
+    single_hop = SingleHopSpecificQuerySynthesizer(llm=llm)
+    multi_hop_abs = MultiHopAbstractQuerySynthesizer(llm=llm)
+    multi_hop_spec = MultiHopSpecificQuerySynthesizer(llm=llm)
 
     asyncio.run(
         translate_prompts(
             prompts=[
-                abstract,
-                comparative,
-                specific,
+                single_hop,
+                multi_hop_abs,
+                multi_hop_spec,
             ],
             target_lang=language,
             llm=llm,
             adapt_instruction=True,
-        )
-    )
+        ))
     return [
-        (abstract, distribution['simple']),
-        (comparative, distribution['multi_context']),
-        (specific, distribution['reasoning']),
+        (single_hop, distribution['simple']),
+        (multi_hop_abs, distribution['multi_context']),
+        (multi_hop_spec, distribution['reasoning']),
     ]
 
 
-def get_knowledge_graph(documents, transforms, local_file):
+def get_knowledge_graph(documents, transforms, local_file, run_config):
     from ragas.testset.graph import KnowledgeGraph, Node, NodeType
     from ragas.testset.transforms import apply_transforms
 
@@ -148,7 +135,7 @@ def get_knowledge_graph(documents, transforms, local_file):
     kg = KnowledgeGraph(nodes=nodes)
 
     # apply transforms and update the knowledge graph
-    apply_transforms(kg, transforms)
+    apply_transforms(kg, transforms, run_config=run_config)
 
     # save the knowledge graph
     output_path = os.path.dirname(local_file)
@@ -179,10 +166,9 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     embeddings = EmbeddingModel.load(**args.embeddings)
 
     # Change resulting question type distribution
-    distributions = get_distribution(
-        LangchainLLMWrapper(generator_llm), args.distribution, args.language
-    )
+    distributions = get_distribution(LangchainLLMWrapper(generator_llm), args.distribution, args.language)
 
+    run_config = RunConfig(timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True)
     # get transforms
     transforms = get_transform(
         LangchainLLMWrapper(generator_llm),
@@ -191,19 +177,14 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     )
 
     # get knowledge graph
-    knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph)
+    knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph, run_config)
 
-    generator = TestsetGenerator.from_langchain(
-        generator_llm, embeddings, knowledge_graph
-    )
+    generator = TestsetGenerator.from_langchain(generator_llm, embeddings, knowledge_graph)
 
-    runconfig = RunConfig(
-        timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True
-    )
     testset = generator.generate(
         testset_size=args.test_size,
         query_distribution=distributions,
-        run_config=runconfig,
+        run_config=run_config,
         with_debugging_logs=True,
         raise_exceptions=True,
     )
@@ -212,9 +193,7 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     testset_df = testset.to_pandas()
     output_path = os.path.dirname(args.output_file)
     os.makedirs(output_path, exist_ok=True)
-    testset_df.to_json(
-        args.output_file, indent=4, index=False, orient='records', force_ascii=False
-    )
+    testset_df.to_json(args.output_file, indent=4, index=False, orient='records', force_ascii=False)
 
     # get answer
     testset_with_answer = get_answer(testset_df, generator_llm, args.language)
@@ -243,21 +222,17 @@ Answer:
         contexts = '\n'.join(row['reference_contexts'])
 
         # Combine question and contexts as input for the LLM
-        input_text = template.format(
-            language=language, question=question, contexts=contexts
-        )
+        input_text = template.format(language=language, question=question, contexts=contexts)
 
         # Generate the answer using the generator LLM
         answer = generator_llm.invoke(input_text)
         if isinstance(generator_llm, ChatOpenAI):
             answer = answer.content
-        items.append(
-            {
-                'user_input': question,
-                'retrieved_contexts': row['reference_contexts'],
-                'response': answer,
-                'reference': row['reference'],
-            }
-        )
+        items.append({
+            'user_input': question,
+            'retrieved_contexts': row['reference_contexts'],
+            'response': answer,
+            'reference': row['reference'],
+        })
 
     return pd.DataFrame.from_dict(items)
