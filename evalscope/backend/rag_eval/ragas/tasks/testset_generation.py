@@ -11,47 +11,43 @@ from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArgument
 from evalscope.utils.logger import get_logger
 from .translate_prompt import translate_prompts
 
-os.environ['DO_NOT_TRACK'] = 'true'
-
 logger = get_logger()
 
 
 def get_transform(llm, embedding, language):
     """
     Creates and returns a default set of transforms for processing a knowledge graph.
-
-    This function defines a series of transformation steps to be applied to a
-    knowledge graph, including extracting summaries, keyphrases, titles,
-    headlines, and embeddings, as well as building similarity relationships
-    between nodes.
     """
     from ragas.testset.transforms.engine import Parallel
     from ragas.testset.transforms.extractors import (
         EmbeddingExtractor,
         HeadlinesExtractor,
-        KeyphrasesExtractor,
         SummaryExtractor,
-        TitleExtractor,
     )
-    from ragas.testset.transforms.relationship_builders.cosine import (
+    from ragas.testset.transforms.extractors.llm_based import NERExtractor, ThemesExtractor
+    from ragas.testset.transforms.relationship_builders import (
         CosineSimilarityBuilder,
-        SummaryCosineSimilarityBuilder,
+        OverlapScoreBuilder,
     )
     from ragas.testset.transforms.splitters import HeadlineSplitter
+    from ragas.testset.transforms.filters import CustomNodeFilter
     from ragas.testset.graph import NodeType
+    from ragas.utils import num_tokens_from_string
 
-    # define the transforms
-    summary_extractor = SummaryExtractor(llm=llm)
-    keyphrase_extractor = KeyphrasesExtractor(llm=llm)
-    title_extractor = TitleExtractor(llm=llm)
+    def summary_filter(node):
+        return (node.type == NodeType.DOCUMENT and num_tokens_from_string(node.properties['page_content']) > 500)
+
+    summary_extractor = SummaryExtractor(llm=llm, filter_nodes=lambda node: summary_filter(node))
+    ner_extractor = NERExtractor(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
+    theme_extractor = ThemesExtractor(llm=llm)
     headline_extractor = HeadlinesExtractor(llm=llm)
 
     asyncio.run(
         translate_prompts(
             prompts=[
                 summary_extractor,
-                keyphrase_extractor,
-                title_extractor,
+                theme_extractor,
+                ner_extractor,
                 headline_extractor,
             ],
             target_lang=language,
@@ -59,27 +55,35 @@ def get_transform(llm, embedding, language):
             adapt_instruction=True,
         ))
 
-    embedding_extractor = EmbeddingExtractor(embedding_model=embedding)
-    headline_splitter = HeadlineSplitter()
-    cosine_sim_builder = CosineSimilarityBuilder(threshold=0.8)
-    summary_embedder = EmbeddingExtractor(
-        name='summary_embedder',
-        filter_nodes=lambda node: True if node.type == NodeType.DOCUMENT else False,
+    splitter = HeadlineSplitter(min_tokens=500)
+
+    summary_emb_extractor = EmbeddingExtractor(
+        embedding_model=embedding,
         property_name='summary_embedding',
         embed_property_name='summary',
-        embedding_model=embedding,
+        filter_nodes=lambda node: summary_filter(node),
     )
-    summary_cosine_sim_builder = SummaryCosineSimilarityBuilder(threshold=0.6)
 
-    # specify the transforms and their order to be applied
+    cosine_sim_builder = CosineSimilarityBuilder(
+        property_name='summary_embedding',
+        new_property_name='summary_similarity',
+        threshold=0.7,
+        filter_nodes=lambda node: summary_filter(node),
+    )
+
+    ner_overlap_sim = OverlapScoreBuilder(threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK)
+
+    node_filter = CustomNodeFilter(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
+
     transforms = [
-        Parallel(summary_extractor, headline_extractor),
-        summary_embedder,
-        headline_splitter,
-        Parallel(embedding_extractor, keyphrase_extractor, title_extractor),
-        cosine_sim_builder,
-        summary_cosine_sim_builder,
+        headline_extractor,
+        splitter,
+        summary_extractor,
+        node_filter,
+        Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
+        Parallel(cosine_sim_builder, ner_overlap_sim),
     ]
+
     return transforms
 
 
@@ -106,11 +110,14 @@ def get_distribution(llm, distribution, language):
             llm=llm,
             adapt_instruction=True,
         ))
-    return [
-        (single_hop, distribution['simple']),
-        (multi_hop_abs, distribution['multi_context']),
-        (multi_hop_spec, distribution['reasoning']),
-    ]
+
+    mapping = {
+        'simple': single_hop,
+        'multi_context': multi_hop_abs,
+        'reasoning': multi_hop_spec,
+    }
+
+    return [(mapping[key], distribution[key]) for key in mapping if key in distribution]
 
 
 def get_knowledge_graph(documents, transforms, local_file, run_config):
@@ -145,6 +152,39 @@ def get_knowledge_graph(documents, transforms, local_file, run_config):
     return kg
 
 
+def get_persona(llm, kg, language):
+    from evalscope.backend.rag_eval.ragas.prompts.persona_prompt import PersonaGenerationPromptZH
+    from ragas.testset.persona import generate_personas_from_kg, PersonaGenerationPrompt
+    from ragas.testset.graph import Node
+
+    def filter(node: Node) -> bool:
+        if (node.type.name == 'DOCUMENT' and node.properties.get('summary_embedding') is not None):
+            return True
+        else:
+            return False
+
+    if language == 'chinese':
+        persona_prompt = PersonaGenerationPromptZH()
+    else:
+        persona_prompt = PersonaGenerationPrompt()
+    # NOTE: can't translate this yet
+    # asyncio.run(
+    #     translate_prompts(
+    #         prompts=[persona_prompt],
+    #         target_lang=language,
+    #         llm=llm,
+    #         adapt_instruction=True,
+    #     ))
+
+    return generate_personas_from_kg(
+        llm=llm,
+        kg=kg,
+        num_personas=3,
+        persona_generation_prompt=persona_prompt,
+        filter_fn=filter,
+    )
+
+
 def load_data(file_path):
     from langchain_community.document_loaders import UnstructuredFileLoader
 
@@ -165,21 +205,26 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     generator_llm = LLM.load(**args.generator_llm)
     embeddings = EmbeddingModel.load(**args.embeddings)
 
+    wrapped_llm = LangchainLLMWrapper(generator_llm)
+    wrapped_embeddings = LangchainEmbeddingsWrapper(embeddings)
+
     # Change resulting question type distribution
-    distributions = get_distribution(LangchainLLMWrapper(generator_llm), args.distribution, args.language)
+    distributions = get_distribution(wrapped_llm, args.distribution, args.language)
 
     run_config = RunConfig(timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True)
     # get transforms
     transforms = get_transform(
-        LangchainLLMWrapper(generator_llm),
-        LangchainEmbeddingsWrapper(embeddings),
+        wrapped_llm,
+        wrapped_embeddings,
         args.language,
     )
 
     # get knowledge graph
     knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph, run_config)
 
-    generator = TestsetGenerator.from_langchain(generator_llm, embeddings, knowledge_graph)
+    persona_list = get_persona(llm=wrapped_llm, kg=knowledge_graph, language=args.language)
+
+    generator = TestsetGenerator(llm=wrapped_llm, knowledge_graph=knowledge_graph, persona_list=persona_list)
 
     testset = generator.generate(
         testset_size=args.test_size,
