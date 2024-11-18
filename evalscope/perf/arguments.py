@@ -19,6 +19,7 @@ class Arguments:
     connect_timeout: int = 120  # Connection timeout in seconds
     read_timeout: int = 120  # Read timeout in seconds
     api_key: str = 'EMPTY'
+    request_queue_size: int = 100
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -65,6 +66,7 @@ class Arguments:
             number=args.number,
             parallel=args.parallel,
             rate=args.rate,
+            request_queue_size=args.request_queue_size,
             log_every_n_query=args.log_every_n_query,
             headers=args.headers,
             wandb_api_key=args.wandb_api_key,
@@ -134,6 +136,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('-n', '--number', type=int, default=None, help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, help='Set number of concurrency requests, default 1')
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
+    parser.add_argument('--request-queue-size', type=int, default=100, help='Size of request queue')
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')

@@ -92,10 +92,10 @@ class DeltaMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     model: str
-    messages: List[ChatMessage]
+    messages: List[ChatMessage] | str
     temperature: Optional[float] = None
     top_p: Optional[float] = None
-    max_length: Optional[int] = 2048
+    max_new_tokens: Optional[int] = 2048
     stream: Optional[bool] = False
 
 
@@ -142,7 +142,7 @@ class ChatService:
         formatted_prompt, inputs, prompt_tokens = self._prepare_inputs(request)
         outputs = self.model.generate(
             **inputs,
-            max_length=request.max_length,
+            max_new_tokens=request.max_new_tokens,
             temperature=request.temperature,
         )
         outputs = outputs[0][prompt_tokens:]  # remove prompt
@@ -160,7 +160,7 @@ class ChatService:
         generation_kwargs = dict(
             **inputs,
             streamer=self.streamer,
-            max_length=request.max_length,
+            max_new_tokens=request.max_new_tokens,
             temperature=request.temperature,
         )
         generate_partial = partial(self.model.generate, **generation_kwargs)
@@ -174,8 +174,11 @@ class ChatService:
         yield '[DONE]'
 
     def _prepare_inputs(self, request: ChatCompletionRequest):
-        formatted_prompt = self.tokenizer.apply_chat_template(
-            request.messages, tokenize=False, add_generation_prompt=True)
+        if isinstance(request.messages, str):
+            formatted_prompt = request.messages
+        else:
+            formatted_prompt = self.tokenizer.apply_chat_template(
+                request.messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
         prompt_tokens = len(inputs['input_ids'][0])
         return formatted_prompt, inputs, prompt_tokens

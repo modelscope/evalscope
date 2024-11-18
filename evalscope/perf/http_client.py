@@ -1,10 +1,13 @@
+import asyncio
 import logging
+import time
 from http import HTTPStatus
 from typing import AsyncGenerator, Dict, List, Tuple
 
 import aiohttp
 import json
 
+from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.local_server import ServerSentEvent
 from evalscope.utils.logger import get_logger
 
@@ -15,21 +18,21 @@ class AioHttpClient:
 
     def __init__(
         self,
-        url: str,
-        conn_timeout: int = 120,
-        read_timeout: int = 120,
-        headers: Dict = None,
-        debug: bool = False,
+        args: Arguments,
     ):
-        self.url = url
-        self.debug = debug
-        self.headers = {'user-agent': 'modelscope_bench', **(headers or {})}
+        self.url = args.url
+        self.debug = args.debug
+        self.headers = {'user-agent': 'modelscope_bench', **(args.headers or {})}
+        self.read_timeout = args.read_timeout
+        self.connect_timeout = args.connect_timeout
         self.client = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(
-                total=read_timeout + conn_timeout, connect=conn_timeout, sock_read=read_timeout),
+                total=self.read_timeout + self.connect_timeout,
+                connect=self.connect_timeout,
+                sock_read=self.read_timeout),
             connector=aiohttp.TCPConnector(limit=1),
-            trace_configs=[self._create_trace_config()] if debug else [])
-        if debug:
+            trace_configs=[self._create_trace_config()] if self.debug else [])
+        if self.debug:
             get_logger(log_level=logging.DEBUG)
 
     def _create_trace_config(self):
@@ -117,11 +120,48 @@ class AioHttpClient:
         method = params.method
         url = params.url
         chunk = params.chunk.decode('utf-8')
-        logger.debug(f'Request sent: <{method=},  {url=}, {chunk=}>')
+        max_length = 100
+        if len(chunk) > 2 * max_length:
+            truncated_chunk = f'{chunk[:max_length]}...{chunk[-max_length:]}'
+        else:
+            truncated_chunk = chunk
+        logger.debug(f'Request sent: <{method=},  {url=}, {truncated_chunk=}>')
 
     @staticmethod
     async def on_response_chunk_received(session, context, params: aiohttp.TraceResponseChunkReceivedParams):
         method = params.method
         url = params.url
         chunk = params.chunk.decode('utf-8')
-        logger.debug(f'Response recevied: <{method=},  {url=}, {chunk=}>')
+        max_length = 100
+        if len(chunk) > 2 * max_length:
+            truncated_chunk = f'{chunk[:max_length]}...{chunk[-max_length:]}'
+        else:
+            truncated_chunk = chunk
+        logger.debug(f'Request sent: <{method=},  {url=}, {truncated_chunk=}>')
+
+
+async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
+    is_error = True
+    timeout = args.connect_timeout
+    start_time = time.perf_counter()
+
+    async def attempt_connection():
+        request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+        async for is_error, state_code, response_data in client.post(request):
+            return is_error, state_code, response_data
+
+    while True:
+        try:
+            is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
+            if not is_error:
+                logger.info('Connection successful.')
+                return True
+            logger.warning(f'Retrying...  <{state_code}> {response_data}')
+        except Exception as e:
+            logger.warning(f'Retrying... <{e}>')
+
+        if time.perf_counter() - start_time >= timeout:
+            logger.error('Overall connection attempt timed out.')
+            return False
+
+        await asyncio.sleep(5)

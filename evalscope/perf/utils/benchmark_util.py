@@ -2,6 +2,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
+import torch
+
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -21,9 +23,10 @@ class BenchmarkData:
     first_chunk_latency: float = 0.0
     n_chunks: int = 0
     n_chunks_time: float = 0.0
+    max_gpu_memory_cost = 0
 
-    query_prompt_tokens = None
-    query_completion_tokens = None
+    prompt_tokens = None
+    completion_tokens = None
 
     def _calculate_query_stream_metric(self) -> Tuple[float, int, float]:
         self.query_latency = self.completed_time - self.start_time
@@ -37,8 +40,14 @@ class BenchmarkData:
             self.n_chunks_time = self.query_latency
 
     def _calculate_tokens(self, api_plugin):
-        self.query_prompt_tokens, self.query_completion_tokens = \
+        self.prompt_tokens, self.completion_tokens = \
             api_plugin.parse_responses(self.response_messages, request=self.request)
+
+    def update_gpu_usage(self):
+        m = 0
+        for i in range(torch.cuda.device_count()):
+            m += (torch.cuda.max_memory_allocated(i) / 2**30)  # GB
+        self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, m)
 
 
 @dataclass
@@ -76,8 +85,8 @@ class BenchmarkMetrics:
             self.n_succeed_queries += 1
 
             benchmark_data._calculate_tokens(api_plugin)
-            self.n_total_prompt_tokens += benchmark_data.query_prompt_tokens
-            self.n_total_completion_tokens += benchmark_data.query_completion_tokens
+            self.n_total_prompt_tokens += benchmark_data.prompt_tokens
+            self.n_total_completion_tokens += benchmark_data.completion_tokens
 
             benchmark_data._calculate_query_stream_metric()
             self.total_latency += benchmark_data.query_latency

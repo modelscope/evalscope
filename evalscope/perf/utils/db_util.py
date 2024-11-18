@@ -40,7 +40,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         n_chunks = benchmark_data.n_chunks
         first_chunk_latency = benchmark_data.first_chunk_latency
         chunk_time = benchmark_data.n_chunks_time
-
+        # TODO: add gpu usage
         cursor.execute(
             '''INSERT INTO result(request, start_time, chunk_times, success, response_messages,
                           completed_time, latency, first_chunk_latency, n_chunks, chunk_time,
@@ -48,7 +48,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (request, benchmark_data.start_time, chunk_times, benchmark_data.success, response_messages,
              benchmark_data.completed_time, latency, first_chunk_latency, n_chunks, chunk_time,
-             benchmark_data.query_prompt_tokens, benchmark_data.query_completion_tokens))
+             benchmark_data.prompt_tokens, benchmark_data.completion_tokens))
     else:
         cursor.execute(
             '''INSERT INTO result(request, start_time, chunk_times, success, response_messages, completed_time)

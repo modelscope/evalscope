@@ -70,7 +70,7 @@ class LocalPlugin(ApiPluginBase):
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
-            payload['max_length'] = param.max_tokens
+            payload['max_new_tokens'] = param.max_tokens
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
             payload['stream_options'] = {'include_usage': True}

@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.http_client import AioHttpClient
+from evalscope.perf.http_client import AioHttpClient, test_connection
 from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
@@ -186,57 +186,20 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     return metrics, result_db_path
 
 
-async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
-    is_error = True
-    timeout = args.connect_timeout
-    start_time = time.perf_counter()
-
-    async def attempt_connection():
-        request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
-        async for is_error, state_code, response_data in client.post(request):
-            return is_error, state_code, response_data
-
-    while True:
-        try:
-            is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
-            if not is_error:
-                logger.info('Connection successful.')
-                return True
-            logger.warning(f'Retrying...  <{state_code}> {response_data}')
-        except Exception as e:
-            logger.warning(f'Retrying... <{e}>')
-
-        if time.perf_counter() - start_time >= timeout:
-            logger.error('Overall connection attempt timed out.')
-            return False
-
-        await asyncio.sleep(5)
-
-
 @exception_handler
 async def create_client(args: Arguments) -> bool:
     if args.api == 'local':
+        #  start local server
         server = threading.Thread(target=start_app, args=(args, ), daemon=True)
         server.start()
+        # default local server url
+        args.url = 'http://127.0.0.1:8877/v1/chat/completions'
 
-        client = AioHttpClient(
-            url='http://127.0.0.1:8877/v1/chat/completions',  # default local server
-            conn_timeout=args.connect_timeout,
-            read_timeout=args.read_timeout,
-            headers=args.headers,
-            debug=args.debug,
-        )
-    else:
-        client = AioHttpClient(
-            args.url,
-            conn_timeout=args.connect_timeout,
-            read_timeout=args.read_timeout,
-            headers=args.headers,
-            debug=args.debug,
-        )
-
+    client = AioHttpClient(args)
     if not await test_connection(client, args):
-        logger.error('Test connection failed')
+        raise TimeoutError('Test connection failed')
+
+    args.model = os.path.basename(args.model)
     return client
 
 
@@ -246,7 +209,7 @@ async def benchmark(args: Arguments) -> None:
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
 
-    request_queue = asyncio.Queue()
+    request_queue = asyncio.Queue(args.request_queue_size)
     benchmark_data_queue = asyncio.Queue()
 
     async def create_send_request_tasks(client):
