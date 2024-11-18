@@ -4,7 +4,7 @@ from argparse import Namespace
 
 from evalscope.perf.arguments import Arguments, parse_args
 from evalscope.perf.benchmark import benchmark
-from evalscope.perf.utils.signal_handler import add_signal_handlers
+from evalscope.perf.utils.handler import add_signal_handlers
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

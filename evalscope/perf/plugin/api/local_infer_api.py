@@ -5,7 +5,7 @@ import json
 from transformers import AutoTokenizer
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
+from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.logger import get_logger
 
@@ -13,7 +13,7 @@ logger = get_logger()
 
 
 @register_api('local')
-class LocalPlugin(OpenaiPlugin):
+class LocalPlugin(ApiPluginBase):
     """Base of local openai interface."""
 
     def __init__(self, mode_path: str):
@@ -70,22 +70,10 @@ class LocalPlugin(OpenaiPlugin):
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
-        if param.frequency_penalty is not None:
-            payload['frequency_penalty'] = param.frequency_penalty
-        if param.logprobs is not None:
-            payload['logprobs'] = param.logprobs
-        if param.n_choices is not None:
-            payload['n'] = param.n_choices
-        if param.seed is not None:
-            payload['seed'] = param.seed
-        if param.stop is not None:
-            payload['stop'] = param.stop
+            payload['max_length'] = param.max_tokens
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
             payload['stream_options'] = {'include_usage': True}
-        if param.stop_token_ids is not None:
-            payload['stop_token_ids'] = param.stop_token_ids
         if param.temperature is not None:
             payload['temperature'] = param.temperature
         if param.top_p is not None:
@@ -128,8 +116,6 @@ class LocalPlugin(OpenaiPlugin):
                                     delta_contents[idx].append(delta_content)
                                 else:
                                     delta_contents[idx] = [delta_content]
-                # usage in chunk: {"id":"","object":"chat.completion.chunk","created":1718269986,"model":"llama3",
-                # "choices":[],"usage":{"prompt_tokens":32,"total_tokens":384,"completion_tokens":352}}
                 if 'usage' in js and js['usage']:
                     input_tokens = js['usage']['prompt_tokens']
                     output_tokens = js['usage']['completion_tokens']

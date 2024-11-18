@@ -1,45 +1,68 @@
+import os
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Literal, Optional, Union
+from dataclasses import dataclass
+from functools import partial
+from threading import Thread
+from typing import List, Literal, Optional, Union
 
 import torch
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from modelscope import AutoModel, AutoTokenizer
+from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
-from sse_starlette.sse import EventSourceResponse, ServerSentEvent
+from sse_starlette.sse import EventSourceResponse
+from transformers import TextIteratorStreamer
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):  # collects GPU memory
-    """Asynchronous context manager lifespan, used to clear CUDA cache"""
-    yield
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()  # Clear CUDA cache to release GPU memory
-        torch.cuda.ipc_collect()
+@dataclass
+class ServerSentEvent(object):
+
+    def __init__(self, data='', event=None, id=None, retry=None):
+        self.data = data
+        self.event = event
+        self.id = id
+        self.retry = retry
+
+    @classmethod
+    def decode(cls, line):
+        """Decode line to ServerSentEvent
 
 
-# By passing the lifespan context manager to the FastAPI constructor, you can manage GPU resources
-# during the lifecycle of the FastAPI application and ensure necessary cleanup after each request is processed
-app = FastAPI(lifespan=lifespan)
+        Args:
+            line (str): The line.
 
-app.add_middleware(  # Use the add_middleware method to add middleware to the FastAPI application
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
+        Return:
+            ServerSentEvent (obj:`ServerSentEvent`): The ServerSentEvent object.
 
-# Parameter description:
-# allow_origins=["*"]: List of allowed origins (domains). In this example, it is set to ["*"],
-#   which means requests from any origin are allowed.
-# allow_credentials=True: Indicates whether requests with credentials (such as cookies) are allowed.
-# allow_methods=["*"]: List of allowed HTTP methods. In this example, it is set to ["*"],
-#   which means all HTTP methods are allowed.
-# allow_headers=["*"]: List of allowed request headers. In this example, it is set to ["*"],
-#   which means all request headers are allowed.
+        """
+        if not line:
+            return None
+        sse_msg = cls()
+        # format data:xxx
+        field_type, _, field_value = line.partition(':')
+        if field_value.startswith(' '):  # compatible with openai api
+            field_value = field_value[1:]
+        if field_type == 'event':
+            sse_msg.event = field_value
+        elif field_type == 'data':
+            field_value = field_value.rstrip()
+            sse_msg.data = field_value
+        elif field_type == 'id':
+            sse_msg.id = field_value
+        elif field_type == 'retry':
+            sse_msg.retry = field_value
+        else:
+            pass
+
+        return sse_msg
+
+
+class Usage(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
 
 
 class ModelCard(BaseModel):
@@ -52,146 +75,201 @@ class ModelCard(BaseModel):
     permission: Optional[list] = None
 
 
-# Define the ModelList data model
 class ModelList(BaseModel):
     object: str = 'list'
     data: List[ModelCard] = []
 
 
-# Define the ChatMessage data model
 class ChatMessage(BaseModel):
     role: Literal['user', 'assistant', 'system']
     content: str
 
 
-# Define the DeltaMessage data model --> to store streaming output dialogue
 class DeltaMessage(BaseModel):
     role: Optional[Literal['user', 'assistant', 'system']] = None
     content: Optional[str] = None
 
 
-# Define the ChatCompletionRequest data model --> to store ChatCompletion's Request
 class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[ChatMessage]
     temperature: Optional[float] = None
     top_p: Optional[float] = None
-    max_length: Optional[int] = None
-    # When stream is set to True in the ChatGPT API request, the API will generate chat responses in a streaming manner.
+    max_length: Optional[int] = 2048
     stream: Optional[bool] = False
 
 
-# Define the ChatCompletionResponseChoice data model --> to store ChatCompletionResponse's Choice
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: ChatMessage
     finish_reason: Literal['stop', 'length']
 
 
-# Define the ChatCompletionResponseStreamChoice data model --> to store ChatCompletionResponseStream's Choice
 class ChatCompletionResponseStreamChoice(BaseModel):
     index: int
     delta: DeltaMessage
     finish_reason: Optional[Literal['stop', 'length']]
 
 
-# Define the ChatCompletionResponse data model --> to store ChatCompletionResponse types
 class ChatCompletionResponse(BaseModel):
     model: str
     object: Literal['chat.completion', 'chat.completion.chunk']
     choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
+    usage: Optional[Usage]
 
 
-# This code defines a route handler function list_models() to handle HTTP GET requests to the path "/v1/models".
-# In this function, a ModelCard object is created and added to a ModelList object to be returned as the response.
-@app.get('/v1/models', response_model=ModelList)
-async def list_models():
-    global model_args
-    model_card = ModelCard(id='gpt-3.5-turbo')
-    return ModelList(data=[model_card])
+class ChatService:
+
+    def __init__(self, model_path):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, trust_remote_code=True, device_map='auto', torch_dtype='auto')
+        self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
+        self.model_id = os.path.basename(model_path)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.eval()
+
+    def count_tokens(self, text: str) -> int:
+        # Use the tokenizer to count the number of tokens
+        return len(self.tokenizer.encode(text, add_special_tokens=False))
+
+    async def list_models(self):
+        model_card = ModelCard(id=self.model_id)
+        return ModelList(data=[model_card])
+
+    async def _non_stream_predict(self, request: ChatCompletionRequest):
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            request.messages, tokenize=False, add_generation_prompt=True)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
+        prompt_tokens = len(inputs['input_ids'][0])
+
+        outputs = self.model.generate(
+            **inputs,
+            max_length=request.max_length,
+            temperature=request.temperature,
+        )
+        outputs = outputs[0][prompt_tokens:]  # remove prompt
+        completion_tokens = len(outputs)
+        response = self.tokenizer.decode(outputs, skip_special_tokens=True)
+
+        choice_data = ChatCompletionResponseChoice(
+            index=0,
+            message=ChatMessage(role='assistant', content=response),
+            finish_reason='stop',
+        )
+
+        return ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion',
+            usage=Usage(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+            ),
+        )
+
+    async def _stream_predict(self, request: ChatCompletionRequest):
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            request.messages, tokenize=False, add_generation_prompt=True)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
+        prompt_tokens = len(inputs['input_ids'][0])
+        completion_tokens = 0
+
+        choice_data = ChatCompletionResponseStreamChoice(
+            index=0, delta=DeltaMessage(role='assistant'), finish_reason=None)
+        chunk = ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion.chunk',
+            usage=None,
+        )
+        yield chunk.model_dump_json(exclude_unset=True)
+
+        generation_kwargs = dict(
+            **inputs,
+            streamer=self.streamer,
+            max_length=request.max_length,
+            temperature=request.temperature,
+        )
+        generate_partial = partial(self.model.generate, **generation_kwargs)
+        thread = Thread(target=generate_partial)
+        thread.start()  # now start the thread
+
+        for new_text in self.streamer:
+            choice_data = ChatCompletionResponseStreamChoice(
+                index=0, delta=DeltaMessage(content=new_text), finish_reason=None)
+            completion_tokens += self.count_tokens(new_text)
+
+            chunk = ChatCompletionResponse(
+                model=self.model_id,
+                choices=[choice_data],
+                object='chat.completion.chunk',
+                usage=None,
+            )
+            yield chunk.model_dump_json(exclude_unset=True)
+
+        choice_data = ChatCompletionResponseStreamChoice(index=0, delta=DeltaMessage(), finish_reason='stop')
+        chunk = ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion.chunk',
+            usage=Usage(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+            ),
+        )
+        yield chunk.model_dump_json(exclude_unset=True)
+
+        thread.join()
+        yield '[DONE]'
 
 
-# Path: "/v1/chat/completions", Response model: ChatCompletionResponse
-@app.post('/v1/chat/completions', response_model=ChatCompletionResponse)
-async def create_chat_completion(request: ChatCompletionRequest):
-    global model, tokenizer
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
-    # Limit questions to be asked only by the user role
-    if request.messages[-1].role != 'user':
-        raise HTTPException(status_code=400, detail='Invalid request')
-    # Get the content of messages
-    query = request.messages[-1].content
 
-    # Get previous messages and check if it is a system message,
-    # then combine the system message with the latest message
-    prev_messages = request.messages[:-1]
-    if len(prev_messages) > 0 and prev_messages[0].role == 'system':
-        # prev_messages.pop(0) removes the element at index 0 from the prev_messages list and returns its value.
-        # As the element is removed from the list, the length of prev_messages is reduced by one element.
-        query = prev_messages.pop(0).content + query
+def create_app(args) -> FastAPI:
+    app = FastAPI(lifespan=lifespan)
+    chat_service = ChatService(model_path=args.model)
 
-    # Pack each "user" question and "assistant" answer and store them in history (since prev_messages.pop(0),
-    # there is no system message here)
-    history = []
-    if len(prev_messages) % 2 == 0:  # Check if there are other messages in prev_messages besides the system message
-        for i in range(0, len(prev_messages), 2):
-            if (prev_messages[i].role == 'user' and prev_messages[i + 1].role == 'assistant'):
-                history.append([prev_messages[i].content, prev_messages[i + 1].content])
-
-    if request.stream:  # If stream output is True
-        generate = predict(query, history, request.model)  # Return streaming output result
-        return EventSourceResponse(
-            generate,
-            media_type='text/event-stream')  # Use the EventSourceResponse class to construct the response object.
-
-    # If not streaming, output the entire response directly,
-    response, _ = model.chat(tokenizer, query, history=history)
-    choice_data = ChatCompletionResponseChoice(
-        index=0,
-        message=ChatMessage(role='assistant', content=response),
-        finish_reason='stop',
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=['*'],
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
     )
 
-    return ChatCompletionResponse(model=request.model, choices=[choice_data], object='chat.completion')
+    @app.get('/v1/models', response_model=ModelList)
+    async def list_models():
+        return await chat_service.list_models()
+
+    @app.post('/v1/chat/completions')
+    async def create_chat_completion(request: ChatCompletionRequest):
+        if request.stream:
+            # FIXME: Not return in stream mode
+            return EventSourceResponse(chat_service._stream_predict(request))
+        else:
+            return await chat_service._non_stream_predict(request)
+
+    return app
 
 
-async def predict(query: str, history: List[List[str]], model_id: str):
-    global model, tokenizer
-
-    # Define stream output settings
-    choice_data = ChatCompletionResponseStreamChoice(index=0, delta=DeltaMessage(role='assistant'), finish_reason=None)
-    # Store the stream output in the ChatCompletionResponse data model
-    chunk = ChatCompletionResponse(model=model_id, choices=[choice_data], object='chat.completion.chunk')
-    yield '{}'.format(chunk.model_dump_json(exclude_unset=True, ensure_ascii=False))  # Use yield for streaming output
-
-    current_length = 0
-    # Check the length of the streaming output text
-    for new_response, _ in model.stream_chat(tokenizer, query, history):
-        # If the length of the new response is equal to the current length,
-        # it means no new text is generated, continue to the next loop
-        if len(new_response) == current_length:
-            continue
-
-        new_text = new_response[current_length:]  # Get the newly added text part
-        current_length = len(new_response)
-        # Store the streaming output content in ChatCompletionResponseStreamChoice
-        choice_data = ChatCompletionResponseStreamChoice(
-            index=0, delta=DeltaMessage(content=new_text), finish_reason=None)
-        # Return the output content in real-time
-        chunk = ChatCompletionResponse(model=model_id, choices=[choice_data], object='chat.completion.chunk')
-        yield '{}'.format(chunk.model_dump_json(exclude_unset=True, ensure_ascii=False))
-
-    # Return '[DONE]' after all output is complete
-    choice_data = ChatCompletionResponseStreamChoice(index=0, delta=DeltaMessage(), finish_reason='stop')
-    chunk = ChatCompletionResponse(model=model_id, choices=[choice_data], object='chat.completion.chunk')
-    yield '{}'.format(chunk.model_dump_json(exclude_unset=True, ensure_ascii=False))
-    yield '[DONE]'
+def start_app(args):
+    app = create_app(args)
+    uvicorn.run(app, host='0.0.0.0', port=8877, workers=1)
 
 
 if __name__ == '__main__':
-    tokenizer = AutoTokenizer.from_pretrained('Qwen/Qwen2.5-0.5B-Instruct', trust_remote_code=True)
-    model = AutoModel.from_pretrained('Qwen/Qwen2.5-0.5B-Instruct', trust_remote_code=True).cuda()
-    model.eval()
+    from collections import namedtuple
 
-    uvicorn.run(app, host='0.0.0.0', port=8000, workers=1)
+    args = namedtuple('Args', 'model')
+
+    start_app(args(model='Qwen/Qwen2.5-0.5B-Instruct'))

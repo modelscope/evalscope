@@ -2,6 +2,7 @@ import asyncio
 import os
 import platform
 import sqlite3
+import threading
 import time
 from http import HTTPStatus
 from typing import List
@@ -14,9 +15,9 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient
 from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
-from evalscope.perf.utils.db_utils import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
-from evalscope.perf.utils.exception_handler import exception_handler
-from evalscope.perf.utils.signal_handler import add_signal_handlers
+from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
+from evalscope.perf.utils.handler import add_signal_handlers, exception_handler
+from evalscope.perf.utils.local_server import start_app
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -195,27 +196,36 @@ async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
         async for is_error, state_code, response_data in client.post(request):
             return is_error, state_code, response_data
 
-    while is_error:
-        is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
-        if not is_error:
-            logger.info('Connection successful.')
-            return True
-        else:
-            logger.info(f'Trying... Connection failed with error: <{state_code}> {response_data}')
+    while True:
+        try:
+            is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
+            if not is_error:
+                logger.info('Connection successful.')
+                return True
+            logger.warning(f'Retrying...  <{state_code}> {response_data}')
+        except Exception as e:
+            logger.warning(f'Retrying... <{e}>')
 
-        current_time = time.perf_counter()
-        if current_time - start_time >= timeout:
+        if time.perf_counter() - start_time >= timeout:
             logger.error('Overall connection attempt timed out.')
             return False
 
-        await asyncio.sleep(2)
-    return False
+        await asyncio.sleep(5)
 
 
 @exception_handler
 async def create_client(args: Arguments) -> bool:
     if args.api == 'local':
-        client = None
+        server = threading.Thread(target=start_app, args=(args, ), daemon=True)
+        server.start()
+
+        client = AioHttpClient(
+            url='http://127.0.0.1:8877/v1/chat/completions',  # default local server
+            conn_timeout=args.connect_timeout,
+            read_timeout=args.read_timeout,
+            headers=args.headers,
+            debug=args.debug,
+        )
     else:
         client = AioHttpClient(
             args.url,

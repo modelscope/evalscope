@@ -5,7 +5,7 @@ from typing import AsyncGenerator, Dict, List, Tuple
 import aiohttp
 import json
 
-from evalscope.perf.utils.server_sent_event import ServerSentEvent
+from evalscope.perf.utils.local_server import ServerSentEvent
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -106,7 +106,7 @@ class AioHttpClient:
                     yield rsp
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
-            raise
+            yield (True, None, e)
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
