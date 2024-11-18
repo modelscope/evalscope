@@ -1,6 +1,6 @@
 import os
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from functools import partial
 from threading import Thread
@@ -10,9 +10,9 @@ import torch
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
+from sse_starlette.sse import EventSourceResponse
 from transformers import TextIteratorStreamer
 
 
@@ -139,11 +139,7 @@ class ChatService:
         return ModelList(data=[model_card])
 
     async def _non_stream_predict(self, request: ChatCompletionRequest):
-        formatted_prompt = self.tokenizer.apply_chat_template(
-            request.messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
-        prompt_tokens = len(inputs['input_ids'][0])
-
+        formatted_prompt, inputs, prompt_tokens = self._prepare_inputs(request)
         outputs = self.model.generate(
             **inputs,
             max_length=request.max_length,
@@ -153,12 +149,86 @@ class ChatService:
         completion_tokens = len(outputs)
         response = self.tokenizer.decode(outputs, skip_special_tokens=True)
 
+        return self._create_response(response, prompt_tokens, completion_tokens)
+
+    def _stream_predict(self, request: ChatCompletionRequest):
+        formatted_prompt, inputs, prompt_tokens = self._prepare_inputs(request)
+        completion_tokens = 0
+
+        yield self._create_initial_chunk()
+
+        generation_kwargs = dict(
+            **inputs,
+            streamer=self.streamer,
+            max_length=request.max_length,
+            temperature=request.temperature,
+        )
+        generate_partial = partial(self.model.generate, **generation_kwargs)
+
+        with self._start_generation_thread(generate_partial):
+            for new_text in self.streamer:
+                yield self._create_chunk(new_text)
+                completion_tokens += self.count_tokens(new_text)
+
+        yield self._create_final_chunk(prompt_tokens, completion_tokens)
+        yield '[DONE]'
+
+    def _prepare_inputs(self, request: ChatCompletionRequest):
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            request.messages, tokenize=False, add_generation_prompt=True)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
+        prompt_tokens = len(inputs['input_ids'][0])
+        return formatted_prompt, inputs, prompt_tokens
+
+    @contextmanager
+    def _start_generation_thread(self, generate_partial):
+        thread = Thread(target=generate_partial)
+        thread.start()
+        try:
+            yield
+        finally:
+            thread.join()
+
+    def _create_initial_chunk(self):
+        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={'role': 'assistant'}, finish_reason=None)
+        chunk = ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion.chunk',
+            usage=None,
+        )
+        return chunk.model_dump_json(exclude_unset=True)
+
+    def _create_chunk(self, new_text):
+        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={'content': new_text}, finish_reason=None)
+        chunk = ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion.chunk',
+            usage=None,
+        )
+        return chunk.model_dump_json(exclude_unset=True)
+
+    def _create_final_chunk(self, prompt_tokens, completion_tokens):
+        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={}, finish_reason='stop')
+        chunk = ChatCompletionResponse(
+            model=self.model_id,
+            choices=[choice_data],
+            object='chat.completion.chunk',
+            usage=Usage(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+            ),
+        )
+        return chunk.model_dump_json(exclude_unset=True)
+
+    def _create_response(self, response, prompt_tokens, completion_tokens):
         choice_data = ChatCompletionResponseChoice(
             index=0,
             message=ChatMessage(role='assistant', content=response),
             finish_reason='stop',
         )
-
         return ChatCompletionResponse(
             model=self.model_id,
             choices=[choice_data],
@@ -169,62 +239,6 @@ class ChatService:
                 total_tokens=prompt_tokens + completion_tokens,
             ),
         )
-
-    def _stream_predict(self, request: ChatCompletionRequest):
-        formatted_prompt = self.tokenizer.apply_chat_template(
-            request.messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
-        prompt_tokens = len(inputs['input_ids'][0])
-        completion_tokens = 0
-
-        choice_data = ChatCompletionResponseStreamChoice(
-            index=0, delta=DeltaMessage(role='assistant'), finish_reason=None)
-        chunk = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion.chunk',
-            usage=None,
-        )
-        yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
-
-        generation_kwargs = dict(
-            **inputs,
-            streamer=self.streamer,
-            max_length=request.max_length,
-            temperature=request.temperature,
-        )
-        generate_partial = partial(self.model.generate, **generation_kwargs)
-        thread = Thread(target=generate_partial)
-        thread.start()  # now start the thread
-
-        for new_text in self.streamer:
-            choice_data = ChatCompletionResponseStreamChoice(
-                index=0, delta=DeltaMessage(content=new_text), finish_reason=None)
-            completion_tokens += self.count_tokens(new_text)
-
-            chunk = ChatCompletionResponse(
-                model=self.model_id,
-                choices=[choice_data],
-                object='chat.completion.chunk',
-                usage=None,
-            )
-            yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
-
-        choice_data = ChatCompletionResponseStreamChoice(index=0, delta=DeltaMessage(), finish_reason='stop')
-        chunk = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion.chunk',
-            usage=Usage(
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=prompt_tokens + completion_tokens,
-            ),
-        )
-        yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
-
-        thread.join()
-        yield 'data: [DONE]\n\n'
 
 
 @asynccontextmanager
@@ -254,7 +268,7 @@ def create_app(args) -> FastAPI:
     @app.post('/v1/chat/completions')
     async def create_chat_completion(request: ChatCompletionRequest):
         if request.stream:
-            return StreamingResponse(chat_service._stream_predict(request), media_type='text/event-stream')
+            return EventSourceResponse(chat_service._stream_predict(request))
         else:
             return await chat_service._non_stream_predict(request)
 
