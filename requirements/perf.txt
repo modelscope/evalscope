@@ -3,7 +3,6 @@ aiohttp
 fastapi
 # for calc result.
 numpy
-sse_starlette
 # for tokenizer
 transformers
 unicorn

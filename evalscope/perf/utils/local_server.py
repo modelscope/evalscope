@@ -10,9 +10,9 @@ import torch
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
-from sse_starlette.sse import EventSourceResponse
 from transformers import TextIteratorStreamer
 
 
@@ -170,7 +170,7 @@ class ChatService:
             ),
         )
 
-    async def _stream_predict(self, request: ChatCompletionRequest):
+    def _stream_predict(self, request: ChatCompletionRequest):
         formatted_prompt = self.tokenizer.apply_chat_template(
             request.messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
@@ -185,7 +185,7 @@ class ChatService:
             object='chat.completion.chunk',
             usage=None,
         )
-        yield chunk.model_dump_json(exclude_unset=True)
+        yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
 
         generation_kwargs = dict(
             **inputs,
@@ -208,7 +208,7 @@ class ChatService:
                 object='chat.completion.chunk',
                 usage=None,
             )
-            yield chunk.model_dump_json(exclude_unset=True)
+            yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
 
         choice_data = ChatCompletionResponseStreamChoice(index=0, delta=DeltaMessage(), finish_reason='stop')
         chunk = ChatCompletionResponse(
@@ -221,10 +221,10 @@ class ChatService:
                 total_tokens=prompt_tokens + completion_tokens,
             ),
         )
-        yield chunk.model_dump_json(exclude_unset=True)
+        yield f'data: {chunk.model_dump_json(exclude_unset=True)}\n\n'
 
         thread.join()
-        yield '[DONE]'
+        yield 'data: [DONE]\n\n'
 
 
 @asynccontextmanager
@@ -254,8 +254,7 @@ def create_app(args) -> FastAPI:
     @app.post('/v1/chat/completions')
     async def create_chat_completion(request: ChatCompletionRequest):
         if request.stream:
-            # FIXME: Not return in stream mode
-            return EventSourceResponse(chat_service._stream_predict(request))
+            return StreamingResponse(chat_service._stream_predict(request), media_type='text/event-stream')
         else:
             return await chat_service._non_stream_predict(request)
 
