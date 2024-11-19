@@ -321,7 +321,7 @@ pip install wandb
 ```
 
 在启动时，添加以下参数，即可：
-```base
+```bash
 --wandb-api-key 'wandb_api_key'
 --name 'name_of_wandb_log'
 ```  
