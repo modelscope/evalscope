@@ -128,8 +128,12 @@ Percentile results:
 - `--model` 测试模型名称。
 - `--url` 指定API地址。
 - `--name` wandb数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
-- `--api` 指定服务API，目前支持[openai|dashscope|local]。指定为`local`，则使用本地文件作为模型，模型文件路径为`--model`；也可指定model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
-- `--use-flash-attn` 是否使用FlashAttention，默认为False，仅在`api`为`local`时有效。
+- `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
+  - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
+  - 指定为`dashscope`，则使用支持DashScope的API，需要提供`--url`参数。
+  - 指定为`local`，则使用本地文件作为模型，并使用transformers进行推理。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
+  - 指定为`local_vllm`，则使用本地文件作为模型，并启动vllm推理服务。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
+- `--attn-implementation` Attention实现方式，默认为None，可选[flash_attention_2|eager|sdpa]，仅在`api`为`local`时有效。
 - `--api-key` API密钥，可选。
 - `--debug` 输出调试信息。
 
@@ -176,16 +180,29 @@ Percentile results:
 
 ### 使用本地模型推理
 
-无需指定`--url`参数，直接加载本地模型启动推理服务，`--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`。
+本项目支持本地transformers进行推理和vllm推理（需先安装vllm）， `--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`，无需指定`--url`参数。
+
+**使用transformers进行推理**
 
 ```bash
 evalscope perf \
  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --attn-implementation flash_attention_2 \  # 可不填，或选[flash_attention_2|eager|sdpa]
+ --number 20 \
  --rate 2 \
  --api local \
  --dataset openqa
 ```
 
+**使用vllm进行推理**
+```bash
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --number 20 \
+ --rate 2 \
+ --api local_vllm \
+ --dataset openqa
+```
 
 ### 使用`prompt`
 ```bash
@@ -352,7 +369,7 @@ with con:
 
 ## Speed Benchmark
 若想进行速度测试，得到[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，请使用 `--dataset speed_benchmark`，包括：
-- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
+- `speed_benchmark`: 测试[96, 2048, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
 - `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。
 
 ### 基于Transformer推理
@@ -360,6 +377,7 @@ with con:
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --rate 1 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
+ --attn-implementation flash_attention_2 \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
  --read-timeout 6000\
@@ -376,14 +394,41 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 | Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
 +---------------+-----------------+----------------+
-|       1       |      45.45      |      0.97      |
-|     6144      |      45.39      |      1.23      |
-|     14336     |      45.11      |      1.59      |
-|     30720     |      44.63      |      2.34      |
+|      95       |      49.37      |      0.97      |
+|     2048      |      51.19      |      1.03      |
+|     6144      |      51.41      |      1.23      |
+|     14336     |      50.99      |      1.59      |
+|     30720     |      50.06      |      2.34      |
 +---------------+-----------------+----------------+
 ```
 
 ### 基于vLLM推理
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000\
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local_vllm \
+ --dataset speed_benchmark 
+```
+输出示例（注意vllm预留显存，此处不显示GPU使用情况）：
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|      95       |     340.43      |      0.0       |
+|     2048      |     338.91      |      0.0       |
+|     6144      |     333.12      |      0.0       |
+|     14336     |     318.41      |      0.0       |
+|     30720     |     291.39      |      0.0       |
++---------------+-----------------+----------------+
+```
+
 
 ## 自定义请求 API
 目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。

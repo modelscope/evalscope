@@ -1,4 +1,5 @@
 import os
+import subprocess
 import time
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
@@ -14,6 +15,11 @@ from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 from transformers import TextIteratorStreamer
+
+from evalscope.perf.arguments import Arguments
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 @dataclass
@@ -122,15 +128,14 @@ class ChatCompletionResponse(BaseModel):
 
 class ChatService:
 
-    def __init__(self, model_path, use_flash_attn):
+    def __init__(self, model_path, attn_implementation):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        attn_impl = 'flash_attention_2' if use_flash_attn else 'eager'
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
             trust_remote_code=True,
             device_map='auto',
             torch_dtype='auto',
-            attn_implementation=attn_impl,
+            attn_implementation=attn_implementation,
         ).eval()
         self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
         self.model_id = os.path.basename(model_path)
@@ -257,12 +262,11 @@ async def lifespan(app: FastAPI):
     yield
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
 
 
 def create_app(args) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
-    chat_service = ChatService(model_path=args.model, use_flash_attn=args.use_flash_attn)
+    chat_service = ChatService(model_path=args.model, attn_implementation=args.attn_implementation)
 
     app.add_middleware(
         CORSMiddleware,
@@ -286,14 +290,44 @@ def create_app(args) -> FastAPI:
     return app
 
 
-def start_app(args):
-    app = create_app(args)
-    uvicorn.run(app, host='0.0.0.0', port=8877, workers=1)
+def start_app(args: Arguments):
+    if args.api == 'local':
+        app = create_app(args)
+        uvicorn.run(app, host='0.0.0.0', port=8877, workers=1)
+
+    elif args.api == 'local_vllm':
+        os.environ['VLLM_USE_MODELSCOPE'] = 'True'
+
+        proc = subprocess.Popen([
+            'python', '-m', 'vllm.entrypoints.openai.api_server', '--model', args.model, '--served-model-name',
+            os.path.basename(args.model), '--tensor-parallel-size',
+            str(torch.cuda.device_count()), '--max-model-len', '32768', '--gpu-memory-utilization', '0.9', '--host',
+            '0.0.0.0', '--port', '8877', '--disable-log-requests', '--disable-log-stats'
+        ])
+        import atexit
+
+        def on_exit():
+            if proc.poll() is None:
+                logger.info('Terminating the child process...')
+                proc.terminate()
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    logger.warning('Child process did not terminate within the timeout, killing it forcefully...')
+                    proc.kill()
+                    proc.wait()
+                logger.info('Child process terminated.')
+            else:
+                logger.info('Child process has already terminated.')
+
+        atexit.register(on_exit)
+    else:
+        raise ValueError(f'Unknown API type: {args.api}')
 
 
 if __name__ == '__main__':
     from collections import namedtuple
 
-    args = namedtuple('Args', ['model', 'use_flash_attn'])
+    args = namedtuple('Args', ['model', 'attn_implementation', 'api'])
 
-    start_app(args(model='Qwen/Qwen2.5-0.5B-Instruct', use_flash_attn=True))
+    start_app(args(model='Qwen/Qwen2.5-0.5B-Instruct', attn_implementation=None, api='local_vllm'))

@@ -10,7 +10,7 @@ import json
 class Arguments:
     # Model and API
     model: str  # Model identifier
-    use_flash_attn: bool = False  # Whether to use flash attention, only for local inference
+    attn_implementation: Optional[str] = None  # Attention implementaion, only for local inference
     api: str = 'openai'  # API to be used (default: 'openai')
     tokenizer_path: Optional[str] = None  # Path to the tokenizer
 
@@ -46,7 +46,7 @@ class Arguments:
     frequency_penalty: Optional[float] = None  # Frequency penalty for the response
     logprobs: Optional[bool] = None  # Whether to log probabilities
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
-    min_tokens: Optional[int] = None
+    min_tokens: Optional[int] = None  # Minimum number of tokens in the response
     n_choices: Optional[int] = None  # Number of response choices
     seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
@@ -60,7 +60,7 @@ class Arguments:
 
         return Arguments(
             model=args.model,
-            use_flash_attn=args.use_flash_attn,
+            attn_implementation=args.attn_implementation,
             url=args.url,
             api_key=args.api_key,
             connect_timeout=args.connect_timeout,
@@ -123,7 +123,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # yapf: disable
     # Model and API
     parser.add_argument('--model', type=str, required=True, help='The test model name.')
-    parser.add_argument('--use-flash-attn', action='store_true', help='Whether to use flash attention')
+    parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementaion')
     parser.add_argument('--api', type=str, default='openai', help='Specify the service API')
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')

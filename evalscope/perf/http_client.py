@@ -164,4 +164,4 @@ async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
             logger.error('Overall connection attempt timed out.')
             return False
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)

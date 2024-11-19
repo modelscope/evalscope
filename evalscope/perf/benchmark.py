@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import os
 import platform
 import sqlite3
@@ -189,18 +190,18 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
 @exception_handler
 async def create_client(args: Arguments) -> bool:
-    if args.api == 'local':
+    if args.api.startswith('local'):
         #  start local server
-        server = threading.Thread(target=start_app, args=(args, ), daemon=True)
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
         # default local server url
         args.url = 'http://127.0.0.1:8877/v1/chat/completions'
+        args.model = os.path.basename(args.model)
 
     client = AioHttpClient(args)
     if not await test_connection(client, args):
         raise TimeoutError('Test connection failed')
 
-    args.model = os.path.basename(args.model)
     return client
 
 

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List, Type
 
 
 class PluginRegistry:
@@ -20,19 +20,31 @@ class PluginRegistry:
         return self.get_class(name)
 
 
-def register_dataset(name: str):
+def register_dataset(name: str | List[str]):
 
-    def class_decorator(cls):
-        DatasetRegistry.register(name, cls)
+    def class_decorator(cls: Type):
+        if isinstance(name, str):
+            DatasetRegistry.register(name, cls)
+        elif isinstance(name, list):
+            for n in name:
+                DatasetRegistry.register(n, cls)
+        else:
+            raise TypeError('name must be a string or a list of strings')
         return cls
 
     return class_decorator
 
 
-def register_api(name: str):
+def register_api(name: str | List[str]):
 
-    def class_decorator(cls):
-        ApiRegistry.register(name, cls)
+    def class_decorator(cls: Type):
+        if isinstance(name, str):
+            ApiRegistry.register(name, cls)
+        elif isinstance(name, list):
+            for n in name:
+                ApiRegistry.register(n, cls)
+        else:
+            raise TypeError('name must be a string or a list of strings')
         return cls
 
     return class_decorator

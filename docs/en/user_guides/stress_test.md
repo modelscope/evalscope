@@ -1,174 +1,352 @@
-# Stress Testing
-A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats.
-## Usage
+# Model Inference Performance Stress Test
 
-### Command line  
+A stress testing tool for large language models that can be customized to support various dataset formats and different API protocol formats, with default support for OpenAI API format.
+
+## Quick Start
+
+The model inference performance stress test tool can be launched using the following two methods:
+
+::::{tab-set}
+:::{tab-item} Command Line
 ```bash
-evalscope perf --help
-usage: evalscope <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
-                                       [--log-every-n-query LOG_EVERY_N_QUERY] [--headers KEY1=VALUE1 [KEY1=VALUE1 ...]] [--wandb-api-key WANDB_API_KEY] [--name NAME] [--debug] [--tokenizer-path TOKENIZER_PATH]
-                                       [--api API] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH] [--prompt PROMPT] [--query-template QUERY_TEMPLATE] [--dataset DATASET]
-                                       [--dataset-path DATASET_PATH] [--frequency-penalty FREQUENCY_PENALTY] [--logprobs] [--max-tokens MAX_TOKENS] [--n-choices N_CHOICES] [--seed SEED] [--stop STOP] [--stream]
-                                       [--temperature TEMPERATURE] [--top-p TOP_P]
-
-options:
-  -h, --help            show this help message and exit
-  --model MODEL         The test model name.
-  --url URL
-  --connect-timeout CONNECT_TIMEOUT
-                        The network connection timeout
-  --read-timeout READ_TIMEOUT
-                        The network read timeout
-  -n NUMBER, --number NUMBER
-                        How many requests to be made, if None, will will send request base dataset or prompt.
-  --parallel PARALLEL   Set number of concurrency request, default 1
-  --rate RATE           Number of requests per second. default None, if it set to -1,then all the requests are sent at time 0. Otherwise, we use Poisson process to synthesize the request arrival times. Mutual exclusion
-                        with parallel
-  --log-every-n-query LOG_EVERY_N_QUERY
-                        Logging every n query.
-  --headers KEY1=VALUE1 [KEY1=VALUE1 ...]
-                        Extra http headers accepts by key1=value1 key2=value2. The headers will be use for each query.You can use this parameter to specify http authorization and other header.
-  --wandb-api-key WANDB_API_KEY
-                        The wandb api key, if set the metric will be saved to wandb.
-  --name NAME           The wandb db result name and result db name, default: {model_name}_{current_time}
-  --debug               Debug request send.
-  --tokenizer-path TOKENIZER_PATH
-                        Specify the tokenizer weight path, used to calculate the number of input and output tokens,usually in the same directory as the model weight.
-  --api API             Specify the service api, current support [openai|dashscope]you can define your custom parser with python, and specify the python file path, reference api_plugin_base.py,
-  --max-prompt-length MAX_PROMPT_LENGTH
-                        Maximum input prompt length
-  --min-prompt-length MIN_PROMPT_LENGTH
-                        Minimum input prompt length.
-  --prompt PROMPT       Specified the request prompt, all the query will use this prompt, You can specify local file via @file_path, the prompt will be the file content.
-  --query-template QUERY_TEMPLATE
-                        Specify the query template, should be a json string, or local file,with local file, specified with @local_file_path,will will replace model and prompt in the template.
-  --dataset DATASET     Specify the dataset [openqa|longalpaca|line_by_line]you can define your custom dataset parser with python, and specify the python file path, reference dataset_plugin_base.py,
-  --dataset-path DATASET_PATH
-                        Path to the dataset file, Used in conjunction with dataset. If dataset is None, each line defaults to a prompt.
-  --frequency-penalty FREQUENCY_PENALTY
-                        The frequency_penalty value.
-  --logprobs            The logprobs.
-  --max-tokens MAX_TOKENS
-                        The maximum number of tokens can be generated.
-  --n-choices N_CHOICES
-                        How may chmpletion choices to generate.
-  --seed SEED           The random seed.
-  --stop STOP           The stop generating tokens.
-  --stop-token-ids      Set the stop token ids.
-  --stream              Stream output with SSE.
-  --temperature TEMPERATURE
-                        The sample temperature.
-  --top-p TOP_P         Sampling top p.
-
+evalscope perf \
+    --url "http://127.0.0.1:8000/v1/chat/completions" \
+    --parallel 1 \
+    --model qwen2.5 \
+    --number 15 \
+    --api openai \
+    --dataset openqa \
+    --stream
 ```
-### Result
-```bash
- Total requests: 10
- Succeed requests: 10
- Failed requests: 0
- Average QPS: 0.256
- Average latency: 3.859
- Throughput(average output tokens per second): 23.317
- Average time to first token: 0.007
- Average input tokens per request: 21.800
- Average output tokens per request: 91.100
- Average time per output token: 0.04289
- Average package per request: 93.100
- Average package latency: 0.042
- Percentile of time to first token: 
-     p50: 0.0021
-     p66: 0.0023
-     p75: 0.0025
-     p80: 0.0030
-     p90: 0.0526
-     p95: 0.0526
-     p98: 0.0526
-     p99: 0.0526
- Percentile of request latency: 
-     p50: 3.9317
-     p66: 3.9828
-     p75: 4.0153
-     p80: 7.2801
-     p90: 7.7003
-     p95: 7.7003
-     p98: 7.7003
-     p99: 7.7003
+:::
+
+:::{tab-item} Python Script
+```python
+from evalscope.perf.main import run_perf_benchmark
+
+task_cfg = {"url": "http://127.0.0.1:8000/v1/chat/completions",
+            "parallel": 1,
+            "model": "qwen2.5",
+            "number": 15,
+            "api": "openai",
+            "dataset": "openqa",
+            "stream": True}
+run_perf_benchmark(task_cfg)
 ```
+:::
+::::
 
-### Metrics Description
-| **Metrics**                                     | **Description**                       | **Values**        |
-|------------------------------------------|-----------------------------|-----------------|
-| Total requests                          | Total requests                     | 10              |
-| Succeed requests                        | Succeed requests                 | 10              |
-| Failed requests                         | Failed requests                  | 0               |
-| Average QPS                            | Average queries per second             | 0.256           |
-| Average latency                         | Average latency for total requests                    | 3.859           |
-| Throughput                              | Output tokens per second        | 23.317          |
-| Average time to first token            | Average time to first token            | 0.007           |
-| Average input tokens per request        | Average input tokens per request    | 21.800          |
-| Average output tokens per request       | Average output tokens per request    | 91.100          |
-| Average time per output token           | Average time per output token      | 0.04289         |
-| Average package per request             | Average package per request         | 93.100          |
-| Average package latency                  | Average package latency                   | 0.042           |
-| Percentile of time to first token (p50, ..., p99)     | Percentile of time to first token      |   p50=0.0021, ..., p99=0.0526         |
-| Percentile of request latency (p50, ..., p99)          | Percentile of request latency          |  p50=3.9317, ..., p99=7.7003         |
+Parameter Description:
 
+- `url`: URL address for requests
+- `parallel`: Number of parallel request tasks
+- `model`: Name of the model used
+- `number`: Number of requests
+- `api`: API service used
+- `dataset`: Name of the dataset
+- `stream`: Whether to enable streaming
 
-### Request parameter  
-You can set request parameter's in query-template and with (--stop,--stream,--temperature, etc), the argument parameter will replace or add to the request.
-#### request with parameters
-Sample request llama3 vllm openai compatible interface.
-```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 --dataset-path './datasets/open_qa.jsonl' -n 1 --max-prompt-length 128000 --api openai --stream --stop '<|im_end|>' --dataset openqa --debug
-```
-```bash
-evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+### Output Results
+```text
+Benchmarking summary: 
++----------------------------------------------+------------------------------------------------+
+| key                                          | Value                                          |
++==============================================+================================================+
+| Time taken for tests (seconds)               | 7.539                                          |
++----------------------------------------------+------------------------------------------------+
+| Number of concurrency                        | 1                                              |
++----------------------------------------------+------------------------------------------------+
+| Total requests                               | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Succeeded requests                           | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Failed requests                              | 0                                              |
++----------------------------------------------+------------------------------------------------+
+| Average QPS                                  | 1.99                                           |
++----------------------------------------------+------------------------------------------------+
+| Average latency                              | 0.492                                          |
++----------------------------------------------+------------------------------------------------+
+| Average time to first token                  | 0.026                                          |
++----------------------------------------------+------------------------------------------------+
+| Throughput (average output tokens per second)| 334.006                                        |
++----------------------------------------------+------------------------------------------------+
+| Average time per output token                | 0.00299                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package per request                  | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package latency                      | 0.003                                          |
++----------------------------------------------+------------------------------------------------+
+| Average input tokens per request             | 40.133                                         |
++----------------------------------------------+------------------------------------------------+
+| Average output tokens per request            | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Expected number of requests                  | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Result DB path                               | ./outputs/qwen2.5_benchmark_20241107_201413.db |
++----------------------------------------------+------------------------------------------------+
+
+Percentile results: 
++------------+---------------------+---------+
+| Percentile | First Chunk Latency | Latency |
++------------+---------------------+---------+
+|    10%     |       0.0178        | 0.1577  |
+|    25%     |       0.0183        | 0.2358  |
+|    50%     |       0.0199        | 0.4311  |
+|    66%     |       0.0218        | 0.6317  |
+|    75%     |       0.0429        | 0.7121  |
+|    80%     |       0.0432        | 0.7957  |
+|    90%     |       0.0432        | 0.9153  |
+|    95%     |       0.0433        | 0.9897  |
+|    98%     |       0.0433        | 0.9897  |
+|    99%     |       0.0433        | 0.9897  |
++------------+---------------------+---------+
 ```
 
-#### query-template usage.
-When you need to process more complex requests, you can use templates to simplify the command line.
-If both the template and the parameter are present, the value in the parameter will prevail.
-Query-template example:
+### Metrics Explanation
+
+| **Metric**                                  | **Description**                | **Value**       |
+|---------------------------------------------|--------------------------------|-----------------|
+| Total requests                              | Total number of requests       | 15              |
+| Succeeded requests                          | Number of successful requests  | 15              |
+| Failed requests                             | Number of failed requests      | 0               |
+| Average QPS                                 | Average requests per second    | 1.99            |
+| Average latency                             | Average latency of all requests| 0.492           |
+| Throughput (average output tokens per second)| Number of output tokens per second| 334.006      |
+| Average time to first token                 | Average time to first token    | 0.026           |
+| Average input tokens per request            | Average input tokens per request| 40.133         |
+| Average output tokens per request           | Average output tokens per request| 167.867       |
+| Average time per output token               | Average time per output token  | 0.00299         |
+| Average package per request                 | Average packages per request   | 167.867         |
+| Average package latency                     | Average package latency        | 0.003           |
+| Percentile of time to first token (p10, ..., p99)| Percentile for first token delay|               |
+| Percentile of request latency (p10, ..., p99)| Percentile for request latency |                 |
+
+
+## Full Parameter Description
+
+Execute `evalscope perf --help` to get a full parameter description:
+
+### Basic Settings
+- `--model`: Name of the test model.
+- `--url`: Specify the API address.
+- `--name`: Name for the wandb database result and result database, default is `{model_name}_{current_time}`, optional.
+- `--api`: Specify the service API, currently supports [openai|dashscope|local|local_vllm].
+  - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
+  - Select `dashscope` to use the API supporting DashScope, requiring the `--url` parameter.
+  - Select `local` to use local files as models and perform inference using transformers. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
+  - Select `local_vllm` to use local files as models and start the vllm inference service. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
+- `--attn-implementation`: Attention implementation method, default is None, optional [flash_attention_2|eager|sdpa], only effective when `api` is `local`.
+- `--api-key`: API key, optional.
+- `--debug`: Output debug information.
+
+### Network Configuration
+- `--connect-timeout`: Network connection timeout, default is 120 seconds.
+- `--read-timeout`: Network read timeout, default is 120 seconds.
+- `--headers`: Additional HTTP headers, formatted as `key1=value1 key2=value2`. This header will be used for each query.
+
+### Request Control
+- `--number`: Number of requests sent, default is None, meaning requests are sent based on the dataset size.
+- `--parallel`: Set the number of concurrent requests, default is 1.
+- `--rate`: Number of requests per second, default is None. If set to -1, all requests are sent at time 0. Otherwise, requests are synthesized using a Poisson process. Mutually exclusive with parallel.
+- `--log-every-n-query`: Log every n queries, default is 10.
+- `--stream`: Use SSE stream output, default is False.
+
+### Prompt Settings
+- `--max-prompt-length`: Maximum input prompt length, default is `sys.maxsize`. Prompts exceeding this length will be discarded.
+- `--min-prompt-length`: Minimum input prompt length, default is 0. Prompts shorter than this will be discarded.
+- `--prompt`: Specify request prompt, a string or local file, taking precedence over `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
+- `--query-template`: Specify query template, a `JSON` string or local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
+
+### Dataset Configuration
+- `--dataset`: Specify the dataset [openqa|longalpaca|line_by_line]. You can define a custom dataset parser using Python and specify the Python file path, referring to `dataset_plugin_base.py`.
+- `--dataset-path`: Path to the dataset file, used in combination with the dataset. `openqa` and `longalpaca` do not need a specified dataset path and will be downloaded automatically; `line_by_line` requires a local dataset file, which will be loaded line by line.
+
+### Model Settings
+- `--tokenizer-path`: Optional, specify the path to tokenizer weights for calculating the number of input and output tokens, usually in the same directory as the model weights.
+- `--frequency-penalty`: Frequency penalty value.
+- `--logprobs`: Log probabilities.
+- `--max-tokens`: Maximum number of tokens that can be generated.
+- `--min-tokens`: Minimum number of tokens to be generated.
+- `--n-choices`: Number of completion choices generated.
+- `--seed`: Random seed, default is 42.
+- `--stop`: Tokens that stop generation.
+- `--stop-token-ids`: Set stop token IDs.
+- `--temperature`: Sampling temperature.
+- `--top-p`: Top_p sampling.
+
+### Data Storage
+- `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
+
+## Example
+
+### Using Local Model Inference
+
+This project supports inference using local transformers and vllm (vllm needs to be installed first). The `--model` can be filled with a modelscope model name, such as `Qwen/Qwen2.5-0.5B-Instruct`; or you can directly specify the model weight path, such as `/path/to/model_weights`, without needing to specify the `--url` parameter.
+
+**Inference using transformers**
+
 ```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 12 --model 'llama3' --log-every-n-query 10 --read-timeout=120 -n 1 --max-prompt-length 128000 --api openai --query-template '{"model": "%m", "messages": [], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}' --dataset openqa --dataset-path './datasets/open_qa.jsonl'
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --attn-implementation flash_attention_2 \  # Optional, or choose from [flash_attention_2|eager|sdpa]
+ --number 20 \
+ --rate 2 \
+ --api local \
+ --dataset openqa
 ```
-For messages, the dataset processor message will replace messages in the query-template.
 
-#### Start the client
+**Inference using vllm**
 ```bash
-# test openai service
-evalscope perf --url 'https://api.openai.com/v1/chat/completions' --parallel 1 --headers 'Authorization=Bearer YOUR_OPENAI_API_KEY' --model 'gpt-4o' --dataset-path 'THE_DATA_TO/open_qa.jsonl'  --log-every-n-query 10 --read-timeout=120  -n 100 --max-prompt-length 128000 --api openai --stream --dataset openqa
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --number 20 \
+ --rate 2 \
+ --api local_vllm \
+ --dataset openqa
 ```
+
+### Using `prompt`
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt 'Write a science fiction story, please begin your performance'
+```
+You can also use a local file as a prompt:
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt @prompt.txt
+```
+
+### Complex Requests
+Using `stop`, `stream`, `temperature`, etc.:
 
 ```bash
-##### open qa dataset and 
-#### dataset address: https://huggingface.co/datasets/Hello-SimpleAI/HC3-Chinese/blob/main/open_qa.jsonl
-evalscope perf --url 'http://IP:PORT/v1/chat/completions' --parallel 1 --model 'qwen' --log-every-n-query 1 --read-timeout=120 -n 1000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --temperature 0.7 \
+ --max-tokens 1024 \
+ --stop '<|im_end|>' \
+ --dataset openqa \
+ --stream
 ```
 
-## FAQ
+### Using `query-template`
 
-### How to log metrics to wandb
---wandb-api-key 'your_wandb_api_key'  --name 'name_of_wandb_and_result_db'  
+You can set request parameters in the `query-template`:
+
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "skip_special_tokens": false, "stop": ["<|im_end|>"], "temperature": 0.7, "max_tokens": 1024}' \
+ --dataset openqa 
+```
+Where `%m` and `%p` will be replaced by the model name and the prompt.
+
+You can set request parameters in the query-template:
+
+```{code-block} json
+:caption: template.json
+
+{
+   "model":"%m",
+   "messages":[
+      {
+         "role":"user",
+         "content":"%p"
+      }
+   ],
+   "stream":true,
+   "skip_special_tokens":false,
+   "stop":[
+      "<|im_end|>"
+   ],
+   "temperature":0.7,
+   "max_tokens":1024
+}
+```
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template @template.json \
+ --dataset openqa 
+```
+
+Here’s the translation of the provided text into English:
+
+### Using wandb to Record Test Results
+
+Please install wandb:
+```bash
+pip install wandb
+```
+
+When starting, add the following parameters:
+```bash
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```  
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-### How to debug
---debug 
-with --debug option, we will output the request and response.
+### Debugging Requests
+Use the `--debug` option to output the requests and responses.
 
-### How to analysis result.
-The tool will save all data during the test to the sqlite3 database, including requests and responses. You can analyze the test data after the test.
+### Analyzing Results
+During testing, this tool saves all data into an SQLite3 database, including requests and responses. You can analyze the test data after testing.
+
 ```python
 import sqlite3
 import base64
 import pickle
 import json
+
 result_db_path = 'db_name.db'
 con = sqlite3.connect(result_db_path)
 query_sql = "SELECT request, response_messages, prompt_tokens, completion_tokens \
-                FROM result WHERE success='True'"
-# how to save base64.b64encode(pickle.dumps(benchmark_data["request"])).decode("ascii"), 
+                FROM result WHERE success='1'"
+
 with con:
     rows = con.execute(query_sql).fetchall()
     if len(rows) > 0:
@@ -182,32 +360,95 @@ with con:
             response_content = ''
             for response in responses:
                 response = json.loads(response)
+                if not response['choices']:
+                   continue
                 response_content += response['choices'][0]['delta']['content']
-            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' % (request['messages'][0]['content'], row[2], response_content, row[3]))
+            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' %
+                  (request['messages'][0]['content'], row[2], response_content,
+                   row[3]))
 ```
 
-### Api supported
-Currently supports openai, dashscope, zhipu API request. You can specify api with --api.
-You can custom your request with --query-template, you can specify a json string as:
-'{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}'
-or a local file with @to_query_template_path. We will replace %m with model and %p with prompt.
+## Speed Benchmark
+To conduct speed testing and obtain speed benchmarks reported by the [Qwen official documentation](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html), use `--dataset speed_benchmark`, which includes:
+- `speed_benchmark`: Tests prompts of lengths [96, 2048, 6144, 14336, 30720], with fixed output of 2048 tokens.
+- `speed_benchmark_long`: Tests prompts of lengths [63488, 129024], with fixed output of 2048 tokens.
 
-### How to extend API
-To extend api you can create sub class of `ApiPluginBase`, annotation with @register_api("name_of_api")
-with build_request build request via model, prompt, and
-query_template. you can reference opanai_api.py
-parse_responses return number_of_prompt_tokens and number_of_completion_tokens.
+### Inference Based on Transformer
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --attn-implementation flash_attention_2 \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000\
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local \
+ --dataset speed_benchmark \
+ --debug
+```
+
+Example Output:
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|      95       |      49.37      |      0.97      |
+|     2048      |      51.19      |      1.03      |
+|     6144      |      51.41      |      1.23      |
+|     14336     |      50.99      |      1.59      |
+|     30720     |      50.06      |      2.34      |
++---------------+-----------------+----------------+
+```
+
+### Inference Based on vLLM
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000\
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local_vllm \
+ --dataset speed_benchmark 
+```
+Example Output (Note that vllm reserves GPU memory, so GPU usage is not shown here):
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|      95       |     340.43      |      0.0       |
+|     2048      |     338.91      |      0.0       |
+|     6144      |     333.12      |      0.0       |
+|     14336     |     318.41      |      0.0       |
+|     30720     |     291.39      |      0.0       |
++---------------+-----------------+----------------+
+```
+
+## Custom Request API
+Currently supported API request formats are openai and dashscope. To extend the API, you can create a subclass of `ApiPluginBase` and use the `@register_api("api name")` decorator.
+
+You can build the request using `model`, `prompt`, and `query_template` in the `build_request` method. You may refer to `opanai_api.py`.
+
+The `parse_responses` method will return the number of `prompt_tokens` and `completion_tokens`.
+
 ```python
-class ApiPluginBase:
+@register_api('custom')
+class CustomPlugin(ApiPluginBase):
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         
     @abstractmethod
-    def build_request(self, messages: List[Dict], param: QueryParameters)->Dict:
+    def build_request(self, messages: List[Dict], param: QueryParameters) -> Dict:
         """Build a api request body.
 
         Args:
-            messages (List[Dict]): The messages generated by dataset.
+            messages (List[Dict]): The messages generated by the dataset.
             param (QueryParameters): The query parameters.
 
         Raises:
@@ -222,11 +463,11 @@ class ApiPluginBase:
     def parse_responses(self, 
                         responses: List, 
                         request: Any=None,
-                        **kwargs:Any) -> Tuple[int, int]:
-        """Parser responses and return number of request and response tokens.
+                        **kwargs: Any) -> Tuple[int, int]:
+        """Parse responses and return number of request and response tokens.
 
         Args:
-            responses (List[bytes]): List of http response body, for stream output,
+            responses (List[bytes]): List of HTTP response bodies. For stream output,
                 there are multiple responses, each is bytes, for general only one. 
             request (Any): The request body.
 
@@ -236,71 +477,39 @@ class ApiPluginBase:
         raise NotImplementedError  
 ```
 
-### Dataset supported
-Currently supports line by line, longalpaca and openqa data set.
-line by line with each line as a prompt.
-longalpaca will get item['instruction'] as prompt.
-openqa will get item['question'] as prompt.
+## Custom Datasets
+Currently supported dataset formats include:
 
-### How to extension dataset.
-To extend api you can create sub class of `DatasetPluginBase`, annotation with @register_dataset('name_of_dataset')
-implement build_prompt api return a prompt.
+- `line_by_line`: Each line is treated as a separate prompt, requiring a `dataset_path`.
+
+- `longalpaca`: Uses `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
+
+- `openqa`: Uses `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
+
+### Extending Datasets
+To extend datasets, you can create a subclass of `DatasetPluginBase` and use the `@register_dataset('dataset name')` decorator,
+
+Then implement the `build_messages` method to return a prompt.
+
 ```python
-class DatasetPluginBase:
-    def __init__(self, query_parameters: QueryParameters):
-        """Build data set plugin
+from typing import Dict, Iterator, List
 
-        Args:
-            dataset_path (str, optional): The input dataset path. Defaults to None.
-        """
-        self.query_parameters = query_parameters
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.registry import register_dataset
 
-    def __next__(self):
-        for item in self.build_messages():
-            yield item
-        raise StopIteration
+@register_dataset('custom')
+class CustomDatasetPlugin(DatasetPluginBase):
+    """Read dataset and return a prompt.
+    """
 
-    def __iter__(self):
-        return self.build_messages()
-    
-    @abstractmethod
-    def build_messages(self)->Iterator[List[Dict]]:
-        """Build the request.
+    def __init__(self, query_parameters: Arguments):
+        super().__init__(query_parameters)
 
-        Raises:
-            NotImplementedError: The request is not impletion.
-
-        Yields:
-            Iterator[List[Dict]]: Yield request messages.
-        """
-        raise NotImplementedError
-    
-    def dataset_line_by_line(self, dataset: str)->Iterator[str]:
-        """Get content line by line of dataset.
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[str]: Each line of file.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            for line in f:
-                yield line
-    
-    def dataset_json_list(self, dataset: str)->Iterator[Dict]:
-        """Read data from file which is list of requests.
-           Sample: https://huggingface.co/datasets/Yukang/LongAlpaca-12k
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[Dict]: The each request object.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            content = f.read()
-        data = json.loads(content)
-        for item in data:
-            yield item      
+    def build_messages(self) -> Iterator[List[Dict]]:
+        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
+            prompt = item.strip()
+            if len(prompt) > self.query_parameters.min_prompt_length and len(
+                    prompt) < self.query_parameters.max_prompt_length:
+                yield [{'role': 'user', 'content': prompt}]
 ```
