@@ -10,6 +10,7 @@ import json
 class Arguments:
     # Model and API
     model: str  # Model identifier
+    use_flash_attn: bool = False  # Whether to use flash attention, only for local inference
     api: str = 'openai'  # API to be used (default: 'openai')
     tokenizer_path: Optional[str] = None  # Path to the tokenizer
 
@@ -19,7 +20,6 @@ class Arguments:
     connect_timeout: int = 120  # Connection timeout in seconds
     read_timeout: int = 120  # Read timeout in seconds
     api_key: str = 'EMPTY'
-    request_queue_size: int = 100
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -46,8 +46,9 @@ class Arguments:
     frequency_penalty: Optional[float] = None  # Frequency penalty for the response
     logprobs: Optional[bool] = None  # Whether to log probabilities
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
+    min_tokens: Optional[int] = None
     n_choices: Optional[int] = None  # Number of response choices
-    seed: Optional[int] = None  # Random seed for reproducibility
+    seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
     stream: Optional[bool] = None  # Whether to stream the response
@@ -59,6 +60,7 @@ class Arguments:
 
         return Arguments(
             model=args.model,
+            use_flash_attn=args.use_flash_attn,
             url=args.url,
             api_key=args.api_key,
             connect_timeout=args.connect_timeout,
@@ -66,7 +68,6 @@ class Arguments:
             number=args.number,
             parallel=args.parallel,
             rate=args.rate,
-            request_queue_size=args.request_queue_size,
             log_every_n_query=args.log_every_n_query,
             headers=args.headers,
             wandb_api_key=args.wandb_api_key,
@@ -83,6 +84,7 @@ class Arguments:
             frequency_penalty=args.frequency_penalty,
             logprobs=args.logprobs,
             max_tokens=args.max_tokens,
+            min_tokens=args.min_tokens,
             n_choices=args.n_choices,
             seed=args.seed,
             stop=args.stop,
@@ -121,6 +123,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # yapf: disable
     # Model and API
     parser.add_argument('--model', type=str, required=True, help='The test model name.')
+    parser.add_argument('--use-flash-attn', action='store_true', help='Whether to use flash attention')
     parser.add_argument('--api', type=str, default='openai', help='Specify the service API')
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
@@ -136,7 +139,6 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('-n', '--number', type=int, default=None, help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, help='Set number of concurrency requests, default 1')
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
-    parser.add_argument('--request-queue-size', type=int, default=100, help='Size of request queue')
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
@@ -159,8 +161,10 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--logprobs', action='store_true', help='The logprobs', default=None)
     parser.add_argument(
         '--max-tokens', type=int, help='The maximum number of tokens that can be generated', default=2048)
+    parser.add_argument(
+        '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)
-    parser.add_argument('--seed', type=int, help='The random seed', default=None)
+    parser.add_argument('--seed', type=int, help='The random seed', default=42)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)

@@ -71,6 +71,8 @@ class LocalPlugin(ApiPluginBase):
         payload['model'] = param.model
         if param.max_tokens is not None:
             payload['max_new_tokens'] = param.max_tokens
+        if param.min_tokens is not None:
+            payload['min_new_tokens'] = param.min_tokens
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
             payload['stream_options'] = {'include_usage': True}

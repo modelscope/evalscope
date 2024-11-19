@@ -2,18 +2,20 @@
 # Copyright (c) OpenCompass.
 
 import functools
+import hashlib
 import importlib
 import importlib.util
 import os
-import re
-import json
 import random
+import re
 import sys
-from typing import Any, Union, Dict, Tuple, List
-import hashlib
-import torch.nn.functional as F
+from typing import Any, Dict, List, Tuple, Union
 
+import json
 import jsonlines as jsonl
+import numpy as np
+import torch
+import torch.nn.functional as F
 import yaml
 
 from evalscope.constants import DumpMode, OutputsStructure
@@ -30,9 +32,7 @@ TEST_LEVEL_LIST_STR = 'TEST_LEVEL_LIST'
 def test_level_list():
     global TEST_LEVEL_LIST
     if TEST_LEVEL_LIST_STR in os.environ:
-        TEST_LEVEL_LIST = [
-            int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')
-        ]
+        TEST_LEVEL_LIST = [int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')]
 
     return TEST_LEVEL_LIST
 
@@ -49,8 +49,7 @@ def jsonl_to_list(jsonl_file):
     """
     res_list = []
     with jsonl.open(jsonl_file, mode='r') as reader:
-        for line in reader.iter(
-                type=dict, allow_none=True, skip_invalid=False):
+        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
             res_list.append(line)
     return res_list
 
@@ -283,12 +282,12 @@ class ResponseParser:
             text: The text to parse.
         """
         patterns = [
-            r"[Aa]nswer:\s*(\w+)",
-            r"[Tt]he correct answer is:\s*(\w+)",
-            r"[Tt]he correct answer is:\n\s*(\w+)",
-            r"[Tt]he correct answer is:\n\n-\s*(\w+)",
-            r"[Tt]he answer might be:\n\n-\s*(\w+)",
-            r"[Tt]he answer is \s*(\w+)",
+            r'[Aa]nswer:\s*(\w+)',
+            r'[Tt]he correct answer is:\s*(\w+)',
+            r'[Tt]he correct answer is:\n\s*(\w+)',
+            r'[Tt]he correct answer is:\n\n-\s*(\w+)',
+            r'[Tt]he answer might be:\n\n-\s*(\w+)',
+            r'[Tt]he answer is \s*(\w+)',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
@@ -329,8 +328,7 @@ def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revisio
     if not model_revision:
         model_revision = 'default'
 
-    outputs_dir = os.path.join(root_dir,
-                               f"eval_{'-'.join(datasets)}_{model_id}_{model_revision}")
+    outputs_dir = os.path.join(root_dir, f"eval_{'-'.join(datasets)}_{model_id}_{model_revision}")
 
     return outputs_dir
 
@@ -419,22 +417,15 @@ def split_str_parts_by(text: str, delimiters: List[str]):
 
     while len(text) > 0:
         for char_idx, char in enumerate(text):
-            match_index = [
-                idx for idx, start_char in enumerate(all_start_chars)
-                if start_char == char
-            ]
+            match_index = [idx for idx, start_char in enumerate(all_start_chars) if start_char == char]
             is_delimiter = False
             for index in match_index:
-                if text[char_idx:char_idx
-                        + all_length[index]] == delimiters[index]:
+                if text[char_idx:char_idx + all_length[index]] == delimiters[index]:
                     if last_words:
                         if text_list:
                             text_list[-1]['content'] = last_words
                         else:
-                            text_list.append({
-                                'key': '',
-                                'content': last_words
-                            })
+                            text_list.append({'key': '', 'content': last_words})
                     last_words = ''
                     text_list.append({'key': delimiters[index]})
                     text = text[char_idx + all_length[index]:]
@@ -451,9 +442,7 @@ def split_str_parts_by(text: str, delimiters: List[str]):
     return text_list
 
 
-def calculate_loss_scale(response: str,
-                         use_loss_scale=False
-                         ) -> Tuple[List[str], List[float]]:
+def calculate_loss_scale(response: str, use_loss_scale=False) -> Tuple[List[str], List[float]]:
     """Calculate the loss scale by splitting the agent response.
     This algorithm comes from paper: https://arxiv.org/pdf/2309.00986.pdf
     Agent response format:
@@ -474,10 +463,7 @@ def calculate_loss_scale(response: str,
         A tuple of agent response parts and their weights.
     """
     if 'Action:' in response and 'Observation:' in response and use_loss_scale:
-        agent_keyword = [
-            'Action:', 'Action Input:', 'Thought:', 'Final Answer:',
-            'Observation:'
-        ]
+        agent_keyword = ['Action:', 'Action Input:', 'Thought:', 'Final Answer:', 'Observation:']
         agent_parts = split_str_parts_by(response, agent_keyword)
         weights = []
         agent_content = []
@@ -518,17 +504,15 @@ def _get_closet_bucket(bucket_sizes, data_length):
     return cloest_length
 
 
-def pad_and_split_batch(padding_to, input_ids, attention_mask, labels,
-                        loss_scale, max_length, tokenizer, rank, world_size):
+def pad_and_split_batch(padding_to, input_ids, attention_mask, labels, loss_scale, max_length, tokenizer, rank,
+                        world_size):
     if padding_to is None:
         longest_len = input_ids.shape[-1]
         bucket_sizes = get_bucket_sizes(max_length)
         bucket_data_length = _get_closet_bucket(bucket_sizes, longest_len)
         padding_length = bucket_data_length - input_ids.shape[1]
-        input_ids = F.pad(input_ids, (0, padding_length), 'constant',
-                          tokenizer.pad_token_id)
-        attention_mask = F.pad(attention_mask, (0, padding_length), 'constant',
-                               0)
+        input_ids = F.pad(input_ids, (0, padding_length), 'constant', tokenizer.pad_token_id)
+        attention_mask = F.pad(attention_mask, (0, padding_length), 'constant', 0)
         if loss_scale:
             loss_scale = F.pad(loss_scale, (0, padding_length), 'constant', 0.)
         labels = F.pad(labels, (0, padding_length), 'constant', -100)
@@ -607,7 +591,7 @@ def get_latest_folder_path(work_dir):
 
     # timestamp parser
     def parse_timestamp(folder_name):
-        return datetime.strptime(folder_name, "%Y%m%d_%H%M%S")
+        return datetime.strptime(folder_name, '%Y%m%d_%H%M%S')
 
     # Find the latest folder
     latest_folder = max(timestamped_folders, key=parse_timestamp)
@@ -623,3 +607,18 @@ def csv_to_list(file_path: str) -> List[dict]:
         result = [row for row in csv_reader]
 
     return result
+
+
+def seed_everything(seed: int):
+    """Set all random seeds to a fixed value for reproducibility.
+
+    Args:
+        seed (int): The seed value.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False

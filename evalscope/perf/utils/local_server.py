@@ -96,6 +96,7 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = None
     top_p: Optional[float] = None
     max_new_tokens: Optional[int] = 2048
+    min_new_tokens: Optional[int] = None
     stream: Optional[bool] = False
 
 
@@ -121,14 +122,19 @@ class ChatCompletionResponse(BaseModel):
 
 class ChatService:
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, use_flash_attn):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        attn_impl = 'flash_attention_2' if use_flash_attn else 'eager'
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_path, trust_remote_code=True, device_map='auto', torch_dtype='auto')
+            model_path,
+            trust_remote_code=True,
+            device_map='auto',
+            torch_dtype='auto',
+            attn_implementation=attn_impl,
+        ).eval()
         self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
         self.model_id = os.path.basename(model_path)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model.eval()
 
     def count_tokens(self, text: str) -> int:
         # Use the tokenizer to count the number of tokens
@@ -143,6 +149,7 @@ class ChatService:
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=request.max_new_tokens,
+            min_new_tokens=request.min_new_tokens,
             temperature=request.temperature,
         )
         outputs = outputs[0][prompt_tokens:]  # remove prompt
@@ -161,6 +168,7 @@ class ChatService:
             **inputs,
             streamer=self.streamer,
             max_new_tokens=request.max_new_tokens,
+            min_new_tokens=request.min_new_tokens,
             temperature=request.temperature,
         )
         generate_partial = partial(self.model.generate, **generation_kwargs)
@@ -254,7 +262,7 @@ async def lifespan(app: FastAPI):
 
 def create_app(args) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
-    chat_service = ChatService(model_path=args.model)
+    chat_service = ChatService(model_path=args.model, use_flash_attn=args.use_flash_attn)
 
     app.add_middleware(
         CORSMiddleware,
@@ -286,6 +294,6 @@ def start_app(args):
 if __name__ == '__main__':
     from collections import namedtuple
 
-    args = namedtuple('Args', 'model')
+    args = namedtuple('Args', ['model', 'use_flash_attn'])
 
-    start_app(args(model='Qwen/Qwen2.5-0.5B-Instruct'))
+    start_app(args(model='Qwen/Qwen2.5-0.5B-Instruct', use_flash_attn=True))

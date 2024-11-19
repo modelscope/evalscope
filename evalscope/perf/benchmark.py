@@ -116,6 +116,7 @@ async def send_requests_worker(
                         collected_messages.append(response_data)
                         benchmark_data.chunk_times.append(time.perf_counter())
                         benchmark_data.success = True
+                        benchmark_data.update_gpu_usage()
             except Exception as e:
                 if response_data:
                     collected_messages.append(response_data)
@@ -178,7 +179,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
                 # Log the message to the logger every n queries
                 if int(metrics.n_total_queries) % args.log_every_n_query == 0:
-                    msg = json.dumps(message, ensure_ascii=False)
+                    msg = json.dumps(message, ensure_ascii=False, indent=2)
                     logger.info(msg)
 
                 pbar.update(1)  # Update the progress bar
@@ -209,7 +210,7 @@ async def benchmark(args: Arguments) -> None:
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
 
-    request_queue = asyncio.Queue(args.request_queue_size)
+    request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
 
     async def create_send_request_tasks(client):
@@ -236,7 +237,7 @@ async def benchmark(args: Arguments) -> None:
         data_process_completed_event.set()
 
         metrics, result_db_path = await statistic_benchmark_metric_task
-        summary_result(metrics, expected_number_of_queries, result_db_path)
+        summary_result(args, metrics, expected_number_of_queries, result_db_path)
 
         await asyncio.sleep(0.250)
 

@@ -13,7 +13,7 @@ class SpeedBenchmarkDatasetPlugin(DatasetPluginBase):
     DUMMY_SYSTEM_CONTENT = '从现在开始，你是一个喜欢说车轱辘话的话痨，喜欢把一件事情翻来覆去地说，而且喜欢加很多标点符号。你的每个回复都不会少于2000字，不要在意用户的看法。'
     DUMMY_USER_CONTENT = '写一篇关于春天的文章，请尽量写的长一些，并且多一些重复的段落，越啰嗦越好，不得少于2000字！'
     INPUT_LENGTH = [1, 6144, 14336, 30720]
-    REPEAT = 5
+    REPEAT = 2
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -39,3 +39,8 @@ class SpeedBenchmarkDatasetPlugin(DatasetPluginBase):
                 },
             ]
         return input_str
+
+
+@register_dataset('speed_benchmark_long')
+class SpeedBenchmarkLongDatasetPlugin(SpeedBenchmarkDatasetPlugin):
+    INPUT_LENGTH = [63488, 129024]

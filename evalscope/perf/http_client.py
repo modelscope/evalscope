@@ -132,12 +132,12 @@ class AioHttpClient:
         method = params.method
         url = params.url
         chunk = params.chunk.decode('utf-8')
-        max_length = 100
+        max_length = 200
         if len(chunk) > 2 * max_length:
             truncated_chunk = f'{chunk[:max_length]}...{chunk[-max_length:]}'
         else:
             truncated_chunk = chunk
-        logger.debug(f'Request sent: <{method=},  {url=}, {truncated_chunk=}>')
+        logger.debug(f'Request received: <{method=},  {url=}, {truncated_chunk=}>')
 
 
 async def test_connection(client: AioHttpClient, args: Arguments) -> bool:

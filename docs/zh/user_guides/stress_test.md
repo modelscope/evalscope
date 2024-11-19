@@ -128,7 +128,8 @@ Percentile results:
 - `--model` 测试模型名称。
 - `--url` 指定API地址。
 - `--name` wandb数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
-- `--api` 指定服务API，目前支持[openai|dashscope]，您可以使用python定义自定义解析器，并指定python文件路径，参考`api_plugin_base.py`。
+- `--api` 指定服务API，目前支持[openai|dashscope|local]。指定为`local`，则使用本地文件作为模型，模型文件路径为`--model`；也可指定model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
+- `--use-flash-attn` 是否使用FlashAttention，默认为False，仅在`api`为`local`时有效。
 - `--api-key` API密钥，可选。
 - `--debug` 输出调试信息。
 
@@ -159,8 +160,9 @@ Percentile results:
 - `--frequency-penalty` frequency_penalty值。
 - `--logprobs` 对数概率。
 - `--max-tokens` 可以生成的最大token数量。
+- `--min-tokens` 生成的最少token数量。
 - `--n-choices` 生成的补全选择数量。
-- `--seed` 随机种子。
+- `--seed` 随机种子，默认为42。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
 - `--temperature` 采样温度。
@@ -171,6 +173,19 @@ Percentile results:
 
 
 ## 示例
+
+### 使用本地模型推理
+
+无需指定`--url`参数，直接加载本地模型启动推理服务，`--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`。
+
+```bash
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --rate 2 \
+ --api local \
+ --dataset openqa
+```
+
 
 ### 使用`prompt`
 ```bash
@@ -335,7 +350,40 @@ with con:
                    row[3]))
 ```
 
+## Speed Benchmark
+若想进行速度测试，得到[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，请使用 `--dataset speed_benchmark`，包括：
+- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
+- `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。
 
+### 基于Transformer推理
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000\
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local \
+ --dataset speed_benchmark \
+ --debug
+```
+
+输出示例：
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|       1       |      45.45      |      0.97      |
+|     6144      |      45.39      |      1.23      |
+|     14336     |      45.11      |      1.59      |
+|     30720     |      44.63      |      2.34      |
++---------------+-----------------+----------------+
+```
+
+### 基于vLLM推理
 
 ## 自定义请求 API
 目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
