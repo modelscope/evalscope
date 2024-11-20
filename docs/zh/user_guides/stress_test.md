@@ -176,14 +176,15 @@ Percentile results:
 - `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
 
 
-## 示例
+## 使用示例
 
 ### 使用本地模型推理
 
 本项目支持本地transformers进行推理和vllm推理（需先安装vllm）， `--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`，无需指定`--url`参数。
 
-**使用transformers进行推理**
+**1. 使用transformers进行推理**
 
+指定`--api local`：
 ```bash
 evalscope perf \
  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
@@ -194,7 +195,9 @@ evalscope perf \
  --dataset openqa
 ```
 
-**使用vllm进行推理**
+**2. 使用vllm进行推理**
+
+指定`--api local_vllm`：
 ```bash
 evalscope perf \
  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
@@ -368,9 +371,14 @@ with con:
 ```
 
 ## Speed Benchmark
-若想进行速度测试，得到[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，请使用 `--dataset speed_benchmark`，包括：
-- `speed_benchmark`: 测试[96, 2048, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
+若想进行速度测试，得到[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，请使用 `--dataset [speed_benchmark|speed_benchmark_long]`。
+
+- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
 - `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。
+
+```{note}
+速度测试`--url`需要使用`/v1/completions`端点，而不是`/v1/chat/completions`，避免chat template的额外处理对输入长度有影响。
+```
 
 ### 基于Transformer推理
 ```bash
@@ -380,7 +388,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --attn-implementation flash_attention_2 \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
- --read-timeout 6000\
+ --read-timeout 6000 \
  --max-tokens 2048 \
  --min-tokens 2048 \
  --api local \
@@ -394,11 +402,10 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 | Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
 +---------------+-----------------+----------------+
-|      95       |      49.37      |      0.97      |
-|     2048      |      51.19      |      1.03      |
-|     6144      |      51.41      |      1.23      |
-|     14336     |      50.99      |      1.59      |
-|     30720     |      50.06      |      2.34      |
+|       1       |      50.69      |      0.97      |
+|     6144      |      51.36      |      1.23      |
+|     14336     |      49.93      |      1.59      |
+|     30720     |      49.56      |      2.34      |
 +---------------+-----------------+----------------+
 ```
 
@@ -409,7 +416,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
- --read-timeout 6000\
+ --read-timeout 6000 \
  --max-tokens 2048 \
  --min-tokens 2048 \
  --api local_vllm \
@@ -421,11 +428,10 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 | Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
 +---------------+-----------------+----------------+
-|      95       |     340.43      |      0.0       |
-|     2048      |     338.91      |      0.0       |
-|     6144      |     333.12      |      0.0       |
-|     14336     |     318.41      |      0.0       |
-|     30720     |     291.39      |      0.0       |
+|       1       |     343.08      |      0.0       |
+|     6144      |     334.71      |      0.0       |
+|     14336     |     318.88      |      0.0       |
+|     30720     |     292.86      |      0.0       |
 +---------------+-----------------+----------------+
 ```
 

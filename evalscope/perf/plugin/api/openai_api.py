@@ -12,7 +12,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-@register_api(['openai', 'local_vllm'])
+@register_api(['openai', 'local_vllm', 'local'])
 class OpenaiPlugin(ApiPluginBase):
     """Base of openai interface."""
 
@@ -30,11 +30,11 @@ class OpenaiPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
+    def build_request(self, messages: List[Dict] | str, param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
-            message (Dict): The basic message to generator query.
+            message (List[Dict] | str): The basic message to generator query.
             param (QueryParameters): The query parameters.
 
         Raises:
@@ -59,10 +59,11 @@ class OpenaiPlugin(ApiPluginBase):
                     param.stream = query['stream']
                 # replace template messages with input messages.
                 query['messages'] = messages
-                return self.__compose_query_from_parameter(query, param)
+            elif isinstance(messages, str):
+                query = {'prompt': messages}
             else:
                 query = {'messages': messages}
-                return self.__compose_query_from_parameter(query, param)
+            return self.__compose_query_from_parameter(query, param)
         except Exception as e:
             logger.exception(e)
             return None
@@ -118,7 +119,12 @@ class OpenaiPlugin(ApiPluginBase):
                     delta_contents[choice['index']] = [choice['message']['content']]
                 input_tokens = js['usage']['prompt_tokens']
                 output_tokens = js['usage']['completion_tokens']
-            else:  # 'object' == "chat.completion.chunk":
+            elif js['object'] == 'text_completion':
+                for choice in js['choices']:
+                    delta_contents[choice['index']] = [choice['text']]
+                input_tokens = js['usage']['prompt_tokens']
+                output_tokens = js['usage']['completion_tokens']
+            elif js['object'] == 'chat.completion.chunk':
                 if 'choices' in js:
                     for choice in js['choices']:
                         if 'delta' in choice and 'index' in choice:

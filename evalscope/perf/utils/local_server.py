@@ -1,22 +1,16 @@
 import os
 import subprocess
-import time
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from functools import partial
-from threading import Thread
-from typing import List, Literal, Optional, Union
 
 import torch
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from modelscope import AutoModelForCausalLM, AutoTokenizer
-from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
-from transformers import TextIteratorStreamer
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.utils.chat_service import ChatCompletionRequest, ChatService, ModelList, TextCompletionRequest
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -65,198 +59,6 @@ class ServerSentEvent(object):
         return sse_msg
 
 
-class Usage(BaseModel):
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    total_tokens: int = 0
-
-
-class ModelCard(BaseModel):
-    id: str
-    object: str = 'model'
-    created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = 'owner'
-    root: Optional[str] = None
-    parent: Optional[str] = None
-    permission: Optional[list] = None
-
-
-class ModelList(BaseModel):
-    object: str = 'list'
-    data: List[ModelCard] = []
-
-
-class ChatMessage(BaseModel):
-    role: Literal['user', 'assistant', 'system']
-    content: str
-
-
-class DeltaMessage(BaseModel):
-    role: Optional[Literal['user', 'assistant', 'system']] = None
-    content: Optional[str] = None
-
-
-class ChatCompletionRequest(BaseModel):
-    model: str
-    messages: List[ChatMessage] | str
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    max_new_tokens: Optional[int] = 2048
-    min_new_tokens: Optional[int] = None
-    stream: Optional[bool] = False
-
-
-class ChatCompletionResponseChoice(BaseModel):
-    index: int
-    message: ChatMessage
-    finish_reason: Literal['stop', 'length']
-
-
-class ChatCompletionResponseStreamChoice(BaseModel):
-    index: int
-    delta: DeltaMessage
-    finish_reason: Optional[Literal['stop', 'length']]
-
-
-class ChatCompletionResponse(BaseModel):
-    model: str
-    object: Literal['chat.completion', 'chat.completion.chunk']
-    choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
-    created: Optional[int] = Field(default_factory=lambda: int(time.time()))
-    usage: Optional[Usage]
-
-
-class ChatService:
-
-    def __init__(self, model_path, attn_implementation):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            trust_remote_code=True,
-            device_map='auto',
-            torch_dtype='auto',
-            attn_implementation=attn_implementation,
-        ).eval()
-        self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
-        self.model_id = os.path.basename(model_path)
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    def count_tokens(self, text: str) -> int:
-        # Use the tokenizer to count the number of tokens
-        return len(self.tokenizer.encode(text, add_special_tokens=False))
-
-    async def list_models(self):
-        model_card = ModelCard(id=self.model_id)
-        return ModelList(data=[model_card])
-
-    async def _non_stream_predict(self, request: ChatCompletionRequest):
-        formatted_prompt, inputs, prompt_tokens = self._prepare_inputs(request)
-        outputs = self.model.generate(
-            **inputs,
-            max_new_tokens=request.max_new_tokens,
-            min_new_tokens=request.min_new_tokens,
-            temperature=request.temperature,
-        )
-        outputs = outputs[0][prompt_tokens:]  # remove prompt
-        completion_tokens = len(outputs)
-        response = self.tokenizer.decode(outputs, skip_special_tokens=True)
-
-        return self._create_response(response, prompt_tokens, completion_tokens)
-
-    def _stream_predict(self, request: ChatCompletionRequest):
-        formatted_prompt, inputs, prompt_tokens = self._prepare_inputs(request)
-        completion_tokens = 0
-
-        yield self._create_initial_chunk()
-
-        generation_kwargs = dict(
-            **inputs,
-            streamer=self.streamer,
-            max_new_tokens=request.max_new_tokens,
-            min_new_tokens=request.min_new_tokens,
-            temperature=request.temperature,
-        )
-        generate_partial = partial(self.model.generate, **generation_kwargs)
-
-        with self._start_generation_thread(generate_partial):
-            for new_text in self.streamer:
-                yield self._create_chunk(new_text)
-                completion_tokens += self.count_tokens(new_text)
-
-        yield self._create_final_chunk(prompt_tokens, completion_tokens)
-        yield '[DONE]'
-
-    def _prepare_inputs(self, request: ChatCompletionRequest):
-        if isinstance(request.messages, str):
-            formatted_prompt = request.messages
-        else:
-            formatted_prompt = self.tokenizer.apply_chat_template(
-                request.messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
-        prompt_tokens = len(inputs['input_ids'][0])
-        return formatted_prompt, inputs, prompt_tokens
-
-    @contextmanager
-    def _start_generation_thread(self, generate_partial):
-        thread = Thread(target=generate_partial)
-        thread.start()
-        try:
-            yield
-        finally:
-            thread.join()
-
-    def _create_initial_chunk(self):
-        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={'role': 'assistant'}, finish_reason=None)
-        chunk = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion.chunk',
-            usage=None,
-        )
-        return chunk.model_dump_json(exclude_unset=True)
-
-    def _create_chunk(self, new_text):
-        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={'content': new_text}, finish_reason=None)
-        chunk = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion.chunk',
-            usage=None,
-        )
-        return chunk.model_dump_json(exclude_unset=True)
-
-    def _create_final_chunk(self, prompt_tokens, completion_tokens):
-        choice_data = ChatCompletionResponseStreamChoice(index=0, delta={}, finish_reason='stop')
-        chunk = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion.chunk',
-            usage=Usage(
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=prompt_tokens + completion_tokens,
-            ),
-        )
-        return chunk.model_dump_json(exclude_unset=True)
-
-    def _create_response(self, response, prompt_tokens, completion_tokens):
-        choice_data = ChatCompletionResponseChoice(
-            index=0,
-            message=ChatMessage(role='assistant', content=response),
-            finish_reason='stop',
-        )
-        return ChatCompletionResponse(
-            model=self.model_id,
-            choices=[choice_data],
-            object='chat.completion',
-            usage=Usage(
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=prompt_tokens + completion_tokens,
-            ),
-        )
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -280,12 +82,16 @@ def create_app(args) -> FastAPI:
     async def list_models():
         return await chat_service.list_models()
 
+    @app.post('/v1/completions')
+    async def create_text_completion(request: TextCompletionRequest):
+        return await chat_service._text_completion(request)
+
     @app.post('/v1/chat/completions')
     async def create_chat_completion(request: ChatCompletionRequest):
         if request.stream:
-            return EventSourceResponse(chat_service._stream_predict(request))
+            return EventSourceResponse(chat_service._stream_chat(request))
         else:
-            return await chat_service._non_stream_predict(request)
+            return await chat_service._chat(request)
 
     return app
 

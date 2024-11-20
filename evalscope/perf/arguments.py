@@ -15,7 +15,7 @@ class Arguments:
     tokenizer_path: Optional[str] = None  # Path to the tokenizer
 
     # Connection settings
-    url: str = 'localhost'  # URL for the API connection
+    url: str = 'http://127.0.0.1:8877/v1/chat/completions'  # URL for the API connection
     headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
     connect_timeout: int = 120  # Connection timeout in seconds
     read_timeout: int = 120  # Read timeout in seconds
@@ -129,7 +129,7 @@ def add_argument(parser: argparse.ArgumentParser):
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 
     # Connection settings
-    parser.add_argument('--url', type=str, default='localhost')
+    parser.add_argument('--url', type=str, default='http://127.0.0.1:8877/v1/chat/completions')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
     parser.add_argument('--api-key', type=str, required=False, default='EMPTY', help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=120, help='The network connection timeout')

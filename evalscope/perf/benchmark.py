@@ -194,8 +194,11 @@ async def create_client(args: Arguments) -> bool:
         #  start local server
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
-        # default local server url
-        args.url = 'http://127.0.0.1:8877/v1/chat/completions'
+
+        if args.dataset.startswith('speed_benchmark'):
+            args.url = 'http://127.0.0.1:8877/v1/completions'
+        else:
+            args.url = 'http://127.0.0.1:8877/v1/chat/completions'
         args.model = os.path.basename(args.model)
 
     client = AioHttpClient(args)

@@ -369,9 +369,14 @@ with con:
 ```
 
 ## Speed Benchmark
-To conduct speed testing and obtain speed benchmarks reported by the [Qwen official documentation](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html), use `--dataset speed_benchmark`, which includes:
-- `speed_benchmark`: Tests prompts of lengths [96, 2048, 6144, 14336, 30720], with fixed output of 2048 tokens.
-- `speed_benchmark_long`: Tests prompts of lengths [63488, 129024], with fixed output of 2048 tokens.
+To conduct speed tests and obtain the speed benchmarks reported by [Qwen Official](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html), please use `--dataset [speed_benchmark|speed_benchmark_long]`.
+
+- `speed_benchmark`: Tests prompts of lengths [1, 6144, 14336, 30720] with a fixed output of 2048 tokens.
+- `speed_benchmark_long`: Tests prompts of lengths [63488, 129024] with a fixed output of 2048 tokens.
+
+```{note}
+For speed testing, the `--url` option should use the `/v1/completions` endpoint instead of the `/v1/chat/completions` endpoint to avoid the additional processing of chat templates affecting the input length.
+```
 
 ### Inference Based on Transformer
 ```bash
@@ -381,7 +386,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --attn-implementation flash_attention_2 \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
- --read-timeout 6000\
+ --read-timeout 6000 \
  --max-tokens 2048 \
  --min-tokens 2048 \
  --api local \
@@ -395,11 +400,10 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 | Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
 +---------------+-----------------+----------------+
-|      95       |      49.37      |      0.97      |
-|     2048      |      51.19      |      1.03      |
-|     6144      |      51.41      |      1.23      |
-|     14336     |      50.99      |      1.59      |
-|     30720     |      50.06      |      2.34      |
+|       1       |      50.69      |      0.97      |
+|     6144      |      51.36      |      1.23      |
+|     14336     |      49.93      |      1.59      |
+|     30720     |      49.56      |      2.34      |
 +---------------+-----------------+----------------+
 ```
 
@@ -410,7 +414,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
- --read-timeout 6000\
+ --read-timeout 6000 \
  --max-tokens 2048 \
  --min-tokens 2048 \
  --api local_vllm \
@@ -422,11 +426,10 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 | Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
 +---------------+-----------------+----------------+
-|      95       |     340.43      |      0.0       |
-|     2048      |     338.91      |      0.0       |
-|     6144      |     333.12      |      0.0       |
-|     14336     |     318.41      |      0.0       |
-|     30720     |     291.39      |      0.0       |
+|       1       |     343.08      |      0.0       |
+|     6144      |     334.71      |      0.0       |
+|     14336     |     318.88      |      0.0       |
+|     30720     |     292.86      |      0.0       |
 +---------------+-----------------+----------------+
 ```
 

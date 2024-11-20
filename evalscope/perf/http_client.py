@@ -146,7 +146,10 @@ async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
     start_time = time.perf_counter()
 
     async def attempt_connection():
-        request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+        if 'chat/completions' in args.url:
+            request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+        else:
+            request = {'prompt': 'hello', 'model': args.model}
         async for is_error, state_code, response_data in client.post(request):
             return is_error, state_code, response_data
 
