@@ -51,7 +51,7 @@ try:
     punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
 
     if not os.path.exists(punkt_path):
-        os.system(f'wget -P {nltk_dir} {punkt_tab_url}')
+        os.system(f'wget --timeout=10 --tries=3 -P {nltk_dir} {punkt_tab_url}')
         os.system(f'unzip {punkt_path} -d {nltk_dir}')
     else:
         logger.info(f'{punkt_path} already exists, skipping download')
