@@ -17,20 +17,20 @@ class BaseModel(Embeddings):
         self,
         model_name_or_path: str,
         max_seq_length: int = 512,
-        prompt: str = "",
+        prompt: str = '',
         revision: Optional[str] = None,
         **kwargs,
     ):
         self.model_name_or_path = model_name_or_path
         self.max_seq_length = max_seq_length
-        self.model_kwargs = kwargs.pop("model_kwargs", {})
-        self.model_kwargs["trust_remote_code"] = True
+        self.model_kwargs = kwargs.pop('model_kwargs', {})
+        self.model_kwargs['trust_remote_code'] = True
 
-        self.config_kwargs = kwargs.pop("config_kwargs", {})
-        self.config_kwargs["trust_remote_code"] = True
+        self.config_kwargs = kwargs.pop('config_kwargs', {})
+        self.config_kwargs['trust_remote_code'] = True
 
-        self.encode_kwargs = kwargs.pop("encode_kwargs", {})
-        self.encode_kwargs["convert_to_tensor"] = True
+        self.encode_kwargs = kwargs.pop('encode_kwargs', {})
+        self.encode_kwargs['convert_to_tensor'] = True
 
         self.prompt = prompt
         self.revision = revision
@@ -73,7 +73,6 @@ class BaseModel(Embeddings):
         """Embed text."""
         raise NotImplementedError
 
-
     def encode_queries(self, queries: List[str], **kwargs) -> list[torch.Tensor]:
         """Embed query text. Compact mteb."""
         raise NotImplementedError
@@ -81,7 +80,8 @@ class BaseModel(Embeddings):
     def encode_corpus(self, corpus: List[str] | List[Dict[str, str]], **kwargs) -> list[torch.Tensor]:
         """Embed search docs . Compact mteb."""
         raise NotImplementedError
-    
+
+
 class SentenceTransformerModel(BaseModel):
     def __init__(
         self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs
@@ -111,22 +111,23 @@ class SentenceTransformerModel(BaseModel):
         self.model.max_seq_length = self.max_seq_length
 
     def encode(self, texts: Union[str, List[str]], prompt=None, **kwargs) -> List[torch.Tensor]:
-        kwargs.pop("prompt_name", "")  # remove prompt name, use prompt
+        kwargs.pop('prompt_name', '')  # remove prompt name, use prompt
         self.encode_kwargs.update(kwargs)
-        
+
         embeddings = self.model.encode(texts, prompt=prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings.cpu().detach()
-    
+
     def encode_queries(self, queries, **kwargs):
         return self.encode(queries, prompt=self.prompt)
-    
+
     def encode_corpus(self, corpus, **kwargs):
         if isinstance(corpus[0], dict):
             input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
         else:
             input_texts = corpus
         return self.encode(input_texts)
+
 
 class CrossEncoderModel(BaseModel):
     def __init__(self, model_name_or_path: str, **kwargs):
@@ -141,9 +142,12 @@ class CrossEncoderModel(BaseModel):
         self.encode_kwargs.update(kwargs)
 
         if len(sentences[0]) == 3:  # Note: For mteb retrieval task
-            sentences = [
-                (self.prompt + query, docs) for query, docs, instruction in sentences
-            ]
+            processed_sentences = []
+            for query, docs, instruction in sentences:
+                if isinstance(docs, dict):
+                    docs = docs['text']
+                processed_sentences.append((self.prompt + query, docs))
+            sentences = processed_sentences
         embeddings = self.model.predict(sentences, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings
@@ -154,14 +158,14 @@ class EmbeddingModel:
 
     @staticmethod
     def load(
-        model_name_or_path: str = "",
+        model_name_or_path: str = '',
         is_cross_encoder: bool = False,
-        hub: str = "modelscope",
-        revision: Optional[str] = "master",
+        hub: str = 'modelscope',
+        revision: Optional[str] = 'master',
         **kwargs,
     ):
         # If model path does not exist and hub is 'modelscope', download the model
-        if not os.path.exists(model_name_or_path) and hub == "modelscope":
+        if not os.path.exists(model_name_or_path) and hub == 'modelscope':
             model_name_or_path = download_model(model_name_or_path, revision)
 
         # Return different model instances based on whether it is a cross-encoder and pooling mode

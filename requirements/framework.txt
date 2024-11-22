@@ -13,7 +13,7 @@ nltk>=3.9
 openai
 pandas
 plotly
-pyarrow
+pyarrow<=17.0.0
 pympler
 pyyaml
 regex

@@ -1,7 +1,0 @@
-{
-  "ragas_version": "0.2.2.dev9+g8efe80d.d20241021",
-  "original_hash": 8176750950393070076,
-  "language": "chinese",
-  "instruction": "修改给定的问题以适应给定的风格和长度。",
-  "examples": []
-}

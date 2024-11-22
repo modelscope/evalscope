@@ -17,6 +17,7 @@
  <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
 <p>
 
+> ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
 ## 📋 Table of Contents
 - [Introduction](#introduction)
@@ -42,7 +43,7 @@ EvalScope is the official model evaluation and performance benchmarking framewor
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
 2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
-3. **Evaluation Backend**: 
+3. **Evaluation Backend**:
     - **Native**: EvalScope’s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc.
     - **OpenCompass**: Supports [OpenCompass](https://github.com/open-compass/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily.
     - **VLMEvalKit**: Supports [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
@@ -129,7 +130,7 @@ You can execute this command from any directory:
 python -m evalscope.run \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
- --datasets arc 
+ --datasets arc
 ```
 
 #### Install from source
@@ -236,13 +237,13 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
 
 ## Offline Evaluation
-You can use local dataset to evaluate the model without internet connection. 
+You can use local dataset to evaluate the model without internet connection.
 
 Refer to: Offline Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/offline_evaluation.html)
 
 
 ## Arena Mode
-The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. 
+The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report.
 
 Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html)
 

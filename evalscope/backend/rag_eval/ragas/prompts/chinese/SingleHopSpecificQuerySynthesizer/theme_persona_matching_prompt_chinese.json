@@ -1,0 +1,39 @@
+{
+  "ragas_version": "0.2.5",
+  "original_hash": 2334929353739018813,
+  "language": "chinese",
+  "instruction": "给定一个主题和角色列表，根据角色描述将每个角色与相关主题关联起来。",
+  "examples": [
+    {
+      "input": {
+        "themes": [
+          "同理心",
+          "包容性",
+          "远程工作"
+        ],
+        "personas": [
+          {
+            "name": "人力资源经理",
+            "role_description": "专注于包容性和员工支持。"
+          },
+          {
+            "name": "远程团队领导",
+            "role_description": "管理远程团队沟通。"
+          }
+        ]
+      },
+      "output": {
+        "mapping": {
+          "HR Manager": [
+            "包容性",
+            "同理心"
+          ],
+          "Remote Team Lead": [
+            "远程工作",
+            "同理心"
+          ]
+        }
+      }
+    }
+  ]
+}

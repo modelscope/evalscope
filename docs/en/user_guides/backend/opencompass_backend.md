@@ -15,7 +15,19 @@ There are two ways to download datasets. The automatic download method supports 
 You can view the dataset name list using the following code:
 ```python
 from evalscope.backend.opencompass import OpenCompassBackendManager
-print(f'All datasets from OpenCompass backend: {OpenCompassBackendManager.list_datasets()}')
+# list datasets
+OpenCompassBackendManager.list_datasets()
+
+>>> ['summedits', 'humaneval', 'lambada', 
+'ARC_c', 'ARC_e', 'CB', 'C3', 'cluewsc', 'piqa',
+ 'bustm', 'storycloze', 'lcsts', 'Xsum', 'winogrande', 
+ 'ocnli', 'AX_b', 'math', 'race', 'hellaswag', 
+ 'WSC', 'eprstmt', 'siqa', 'agieval', 'obqa',
+ 'afqmc', 'GaokaoBench', 'triviaqa', 'CMRC', 
+ 'chid', 'gsm8k', 'ceval', 'COPA', 'ReCoRD', 
+ 'ocnli_fc', 'mbpp', 'csl', 'tnews', 'RTE', 
+ 'cmnli', 'AX_g', 'nq', 'cmb', 'BoolQ', 'strategyqa', 
+ 'mmlu', 'WiC', 'MultiRC', 'DRCD', 'cmmlu']
 ```
 ````
 

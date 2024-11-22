@@ -18,6 +18,8 @@
 <p>
 
 
+> ⭐ 如果你喜欢这个项目，请点击右上角的 "Star" 按钮支持我们。你的支持是我们前进的动力！
+
 ## 📋 目录
 - [简介](#简介)
 - [新闻](#新闻)
@@ -46,7 +48,7 @@ EvalScope包括以下模块：
 
 2. **Data Adapter**: 数据适配器，负责转换和处理输入数据，以便适应不同的评估需求和格式。
 
-3. **Evaluation Backend**: 
+3. **Evaluation Backend**:
     - **Native**：EvalScope自身的**默认评测框架**，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。
     - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。
     - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
@@ -138,7 +140,7 @@ pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, 
 python -m evalscope.run \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
- --datasets arc 
+ --datasets arc
 ```
 
 #### 使用源码安装
@@ -176,7 +178,7 @@ python evalscope/run.py \
 
 **示例2：**
 ```shell
-python evalscope/run.py \ 
+python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
  --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
@@ -219,7 +221,7 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen', 
+        'template_type': 'qwen',
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
