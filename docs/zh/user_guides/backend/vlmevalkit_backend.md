@@ -208,7 +208,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -230,7 +230,7 @@ task_cfg_dict = {
                 'temperature': 0.0,
                 'type': 'qwen-vl-chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'output'}}
 ```
 :::
@@ -251,10 +251,10 @@ task_cfg_dict = {
     - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
     - `temperature`：模型推理的温度系数，默认值为 `0.0`。
     - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
-    - `VIDEO_LLM`：布尔值，默认为`False`，在评估视频数据集时，如需传递 `video_url` 参数，请设置为 `True`。
+    - `video_llm`：布尔值，默认为`False`，在评估视频数据集时，如需传递 `video_url` 参数，请设置为 `True`。
   - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理。
   - `limit`：整数，评估的数据数量，默认值为 `None`，表示运行所有示例。
-  - `rerun`：布尔值，是否重新运行评估，将删除所有评估临时文件。
+  - `reuse`：布尔值，是否重用评估结果，否则将删除所有评估临时文件。
   - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs`
   - `nproc`：整数，并行调用 API 的数量。
 
@@ -281,7 +281,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -300,7 +300,7 @@ task_cfg_dict = {
                 {'name': 'qwen_chat',
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'outputs'}}
 ```
 :::

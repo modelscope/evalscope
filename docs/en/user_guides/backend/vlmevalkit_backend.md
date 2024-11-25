@@ -198,7 +198,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -219,7 +219,7 @@ task_cfg_dict = {
                 'temperature': 0.0,
                 'type': 'qwen-vl-chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'output'}}
 ```
 :::
@@ -239,10 +239,10 @@ task_cfg_dict = {
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
     - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
     - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
-    - `VIDEO_LLM`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
+    - `video_llm`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
   - `mode`: Options: `['all', 'infer']`; `all` includes inference and evaluation; `infer` only performs inference.
   - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
-  - `rerun`: Boolean indicating whether to rerun the evaluation, which will delete all temporary evaluation files.
+  - `reuse`: Boolean indicating whether to reuse the evaluation, which will delete all temporary evaluation files.
   - `work_dir`: String specifying the directory to save evaluation results, logs, and summaries; default value is `outputs`.
   - `nproc`: Integer indicating the number of API calls in parallel.
 For other optional parameters, refer to `vlmeval.utils.arguments`.
@@ -264,7 +264,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -282,7 +282,7 @@ task_cfg_dict = {
                 {'name': 'qwen_chat',
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'outputs'}}
 ```
 :::

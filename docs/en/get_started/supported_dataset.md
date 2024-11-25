@@ -347,11 +347,14 @@ Abbreviations used:
 
 ### Video Understanding Dataset
 
-| Dataset                                              | Dataset Name          | Task | 
-| ---------------------------------------------------- | --------------------- | ---- | 
-| [**MMBench-Video**](https://mmbench-video.github.io) | MMBench-Video        | VQA  | 
-| [**MVBench**](https://github.com/OpenGVLab/Ask-Anything/blob/main/video_chat2/MVBENCH.md)| MVBench/MVBench_MP4 | MCQ  | 
-| [**Video-MME**](https://video-mme.github.io/)      | Video-MME            | MCQ  |
+| Dataset                                              | Dataset Name                | Task                  |
+| ---------------------------------------------------- | --------------------------- | --------------------- |
+| [**MMBench-Video**](https://mmbench-video.github.io) | MMBench-Video              | VQA                   |
+| [**MVBench**](https://github.com/OpenGVLab/Ask-Anything/blob/main/video_chat2/MVBENCH.md) | MVBench_MP4                | MCQ                   |
+| [**MLVU**](https://github.com/JUNJIE99/MLVU)        | MLVU                       | MCQ & VQA             |
+| [**TempCompass**](https://arxiv.org/abs/2403.00476) | TempCompass                 | MCQ & Y/N & Caption   |
+| [**LongVideoBench**](https://longvideobench.github.io/) | LongVideoBench             | MCQ                   |
+| [**Video-MME**](https://video-mme.github.io/)      | Video-MME                  | MCQ                   |
 
 ## 4. RAGEval Backend
 

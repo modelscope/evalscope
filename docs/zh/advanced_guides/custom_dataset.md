@@ -204,7 +204,7 @@ eval_config:
     - custom_mcq # 自定义数据集名称，放在`~/LMUData`路径中
   mode: all
   limit: 10
-  rerun: false
+  reuse: false
   work_dir: outputs
   nproc: 1
 ```
@@ -318,7 +318,7 @@ eval_config:
     - custom_vqa # 自定义数据集名称，放在`~/LMUData`路径中
   mode: all
   limit: 10
-  rerun: false
+  reuse: false
   work_dir: outputs
   nproc: 1
 ```
