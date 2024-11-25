@@ -1,4 +1,4 @@
-# Model Inference Performance Stress Test
+# Model Inference Stress Test
 
 A stress testing tool for large language models that can be customized to support various dataset formats and different API protocol formats, with default support for OpenAI API format.
 
