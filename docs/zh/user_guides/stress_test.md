@@ -1,6 +1,12 @@
 # 模型推理性能压测
 一个大语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式，默认支持OpenAI API格式。
 
+## 环境准备
+```shell
+# 安装额外依赖
+pip install evalscope[perf] -U
+```
+
 ## 快速使用
 可以使用以下两种方式启动模型推理性能压测工具：
 
@@ -156,7 +162,10 @@ Percentile results:
 - `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./query_template.json`。
 
 ### 数据集配置
-- `--dataset` 指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考`dataset_plugin_base.py`。
+- `--dataset` 指定数据集[openqa|longalpaca|line_by_line]，您也可以使用python自定义数据集解析器，参考[自定义数据集指南](#自定义数据集)。
+  - `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
+  - `longalpaca` 将获取 `item['instruction']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
+  - `openqa` 将获取 `item['question']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
 - `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
 
 ### 模型设置
@@ -437,20 +446,24 @@ Speed Benchmark Results:
 
 
 ## 自定义请求 API
-目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
+目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以继承 `ApiPluginBase` 类，并使用 `@register_api("api名称")` 进行注解，需实现如下两个方法：
 
-通过 model、prompt 和 query_template 来构建请求的 build_request。您可以参考 opanai_api.py。
+- `build_request()`方法通过 `messages` 和 `param`中的`model`和`query_template` 来构建请求，改请求后续发送到目标API。
 
-`parse_responses` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量。
+- `parse_responses()` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量，用于计算推理速度。
 
+参考如下代码：
 ```python
+from typing import Any, Dict, List, Tuple
+from evalscope.perf.arguments import Arguments
+
 @register_api('custom')
 class CustomPlugin(ApiPluginBase):
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         
     @abstractmethod
-    def build_request(self, messages: List[Dict], param: QueryParameters)->Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build a api request body.
 
         Args:
@@ -484,18 +497,8 @@ class CustomPlugin(ApiPluginBase):
 ```
 
 ## 自定义数据集
-目前支持如下三种格式数据集：
 
-- `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
-
-- `longalpaca` 将获取 item['instruction'] 作为提示，不指定`dataset_path`将从modelscope自动下载。
-
-- `openqa` 将获取 item['question'] 作为提示，不指定`dataset_path`将从modelscope自动下载。
-
-### 扩展数据集
-要扩展数据集，您可以创建 `DatasetPluginBase` 的子类，并使用 `@register_dataset('数据集名称')` 进行注解，
-
-然后实现 `build_messages` 方法以返回一个prompt。
+要自定义数据集，您可以继承 `DatasetPluginBase` 类，并使用 `@register_dataset('数据集名称')` 进行注解，然后实现 `build_messages` 方法以返回一个message，格式参考[OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)。
 
 ```python
 from typing import Dict, Iterator, List
