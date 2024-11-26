@@ -5,8 +5,6 @@ import unittest
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.utils import test_level_list
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-
 
 class TestPerf(unittest.TestCase):
 
