@@ -7,14 +7,15 @@
 </p>
 
 <p align="center">
-<a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
-<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
-</a>
-<a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
-</a>
-<br>
- <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
+  <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
+  <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
+  </a>
+  <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+  <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
+      <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
+  </a>
+  <br>
+  <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
 <p>
 
 
@@ -42,7 +43,7 @@ EvalScope is the official model evaluation and performance benchmarking framewor
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
 2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
-3. **Evaluation Backend**: 
+3. **Evaluation Backend**:
     - **Native**: EvalScope’s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc.
     - **OpenCompass**: Supports [OpenCompass](https://github.com/open-compass/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily.
     - **VLMEvalKit**: Supports [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
@@ -54,6 +55,7 @@ The architecture includes the following modules:
 
 
 ## 🎉 News
+- 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html).
 - 🔥 **[2024.10.31]** The best practice for evaluating Multimodal-RAG has been updated, please check the [📖 Blog](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag) for more details.
 - 🔥 **[2024.10.23]** Supports multimodal RAG evaluation, including the assessment of image-text retrieval using [CLIP_Benchmark](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/clip_benchmark.html), and extends [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html) to support end-to-end multimodal metrics evaluation.
 - 🔥 **[2024.10.8]** Support for RAG evaluation, including independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html).
@@ -123,31 +125,47 @@ We recommend using conda to manage your environment and installing dependencies 
 ### 1. Simple Evaluation
 To evaluate a model using default settings on specified datasets, follow the process below:
 
-#### Install using pip
-You can execute this command from any directory:
+#### Installation using pip
+
+You can execute this in any directory:
 ```bash
 python -m evalscope.run \
- --model qwen/Qwen2-0.5B-Instruct \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
  --template-type qwen \
- --datasets arc 
+ --datasets gsm8k ceval \
+ --limit 10
 ```
 
-#### Install from source
-Execute this command in the `evalscope` directory:
+#### Installation from source
+
+You need to execute this in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
  --template-type qwen \
- --datasets arc
+ --datasets gsm8k ceval \
+ --limit 10
 ```
 
-If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
+> If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
+
+**Results (tested with only 10 samples)**
+```text
+Report table:
++-----------------------+--------------------+-----------------+
+| Model                 | ceval              | gsm8k           |
++=======================+====================+=================+
+| Qwen2.5-0.5B-Instruct | (ceval/acc) 0.5577 | (gsm8k/acc) 0.5 |
++-----------------------+--------------------+-----------------+
+```
 
 
 #### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
 - `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm) for filling in this field.
 - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html) for available options.
+- `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
+
 
 ### 2. Parameterized Evaluation
 If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
@@ -187,7 +205,7 @@ In addition to the three [basic parameters](#basic-parameter-descriptions), the 
 - `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`.
   - `--few_shot_num`: Number of few-shot examples.
   - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`.
-- `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
+
 
 ### 3. Use the run_task Function to Submit an Evaluation Task
 Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
@@ -232,24 +250,46 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 - **RAGEval**: Initiate RAG evaluation tasks through EvalScope, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html): [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/index.html)
 - **ThirdParty**: Third-party evaluation tasks, such as [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) and [LongBench-Write](https://evalscope.readthedocs.io/en/latest/third_party/longwriter.html).
 
+
+## Model Serving Performance Evaluation
+A stress testing tool focused on large language models, which can be customized to support various dataset formats and different API protocol formats.
+
+Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
+
+**Supports wandb for recording results**
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
+**Supports Speed Benchmark**
+
+It supports speed testing and provides speed benchmarks similar to those found in the [official Qwen](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html) reports:
+
+```text
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|       1       |      50.69      |      0.97      |
+|     6144      |      51.36      |      1.23      |
+|     14336     |      49.93      |      1.59      |
+|     30720     |      49.56      |      2.34      |
++---------------+-----------------+----------------+
+```
+
 ## Custom Dataset Evaluation
 EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
 
 ## Offline Evaluation
-You can use local dataset to evaluate the model without internet connection. 
+You can use local dataset to evaluate the model without internet connection.
 
 Refer to: Offline Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/offline_evaluation.html)
 
 
 ## Arena Mode
-The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report. 
+The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report.
 
 Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html)
 
-## Model Serving Performance Evaluation
-A stress testing tool that focuses on large language models and can be customized to support various data set formats and different API protocol formats.
-
-Refer to : Model Serving Performance Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
 
 
 
