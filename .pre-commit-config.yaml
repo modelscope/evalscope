@@ -6,7 +6,8 @@ repos:
         exclude: |
             (?x)^(
                 thirdparty/|
-                examples/
+                examples/|
+                evalscope/utils/utils.py
             )$
   - repo: https://github.com/PyCQA/isort.git
     rev: 4.3.21

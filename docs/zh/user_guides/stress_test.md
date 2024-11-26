@@ -1,162 +1,351 @@
 # 模型推理性能压测
-一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
+一个大语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式，默认支持OpenAI API格式。
 
-## 使用方法
-
-### 命令行
-```bash
-evalscope perf --help
-usage: evalscope <command> [<args>] perf [-h] --model MODEL [--url URL] [--connect-timeout CONNECT_TIMEOUT] [--read-timeout READ_TIMEOUT] [-n NUMBER] [--parallel PARALLEL] [--rate RATE]
-                                       [--log-every-n-query LOG_EVERY_N_QUERY] [--headers KEY1=VALUE1 [KEY1=VALUE1 ...]] [--wandb-api-key WANDB_API_KEY] [--name NAME] [--debug] [--tokenizer-path TOKENIZER_PATH]
-                                       [--api API] [--max-prompt-length MAX_PROMPT_LENGTH] [--min-prompt-length MIN_PROMPT_LENGTH] [--prompt PROMPT] [--query-template QUERY_TEMPLATE] [--dataset DATASET]
-                                       [--dataset-path DATASET_PATH] [--frequency-penalty FREQUENCY_PENALTY] [--logprobs] [--max-tokens MAX_TOKENS] [--n-choices N_CHOICES] [--seed SEED] [--stop STOP] [--stream]
-                                       [--temperature TEMPERATURE] [--top-p TOP_P]
-options:
-  -h, --help            显示此帮助信息并退出
-  --model MODEL         测试模型名称。
-  --url URL
-  --connect-timeout CONNECT_TIMEOUT
-                        网络连接超时
-  --read-timeout READ_TIMEOUT
-                        网络读取超时
-  -n NUMBER, --number NUMBER
-                        发出的请求数量，如果为None，则将基于数据集或提示发送请求。
-  --parallel PARALLEL   设置并发请求的数量，默认为1
-  --rate RATE           每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥
-  --log-every-n-query LOG_EVERY_N_QUERY
-                        每n个查询记录日志。
-  --headers KEY1=VALUE1 [KEY1=VALUE1 ...]
-                        额外的HTTP头，格式为key1=value1 key2=value2。该头将用于每个查询。您可以使用此参数指定HTTP授权和其他头信息。
-  --wandb-api-key WANDB_API_KEY
-                        wandb API密钥，如果设置，则度量将保存到wandb。
-  --name NAME           wandb数据库结果名称和结果数据库名称，默认为: {model_name}_{current_time}
-  --debug               调试请求发送。
-  --tokenizer-path TOKENIZER_PATH
-                        指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
-  --api API             指定服务API，目前支持[openai|dashscope]，您可以使用python定义自定义解析器，并指定python文件路径，参考api_plugin_base.py。
-  --max-prompt-length MAX_PROMPT_LENGTH
-                        最大输入prompt长度
-  --min-prompt-length MIN_PROMPT_LENGTH
-                        最小输入prompt长度。
-  --prompt PROMPT       指定请求prompt，所有查询将使用此prompt。您可以通过@file_path指定本地文件，prompt将为文件内容。
-  --query-template QUERY_TEMPLATE
-                        指定查询模板，应该是一个JSON字符串或本地文件，使用本地文件时，通过@local_file_path指定，将在模板中替换模型和prompt。
-  --dataset DATASET     指定数据集[openqa|longalpaca|line_by_line]，您可以使用python定义自定义数据集解析器，并指定python文件路径，参考dataset_plugin_base.py。
-  --dataset-path DATASET_PATH
-                        数据集文件的路径，与数据集结合使用。如果数据集为None，则每一行默认为一个prompt。
-  --frequency-penalty FREQUENCY_PENALTY
-                        frequency_penalty值。
-  --logprobs            对数概率。
-  --max-tokens MAX_TOKENS
-                        可以生成的最大token数量。
-  --n-choices N_CHOICES
-                        生成的补全选择数量。
-  --seed SEED           随机种子。
-  --stop STOP           停止生成的tokens。
-  --stop-token-ids      设置停止生成的token的ID。
-  --stream              使用SSE流输出。
-  --temperature TEMPERATURE
-                        采样温度。
-  --top-p TOP_P         top_p采样。
-```
-### 结果
-```bash
- Total requests: 10
- Succeed requests: 10
- Failed requests: 0
- Average QPS: 0.256
- Average latency: 3.859
- Throughput(average output tokens per second): 23.317
- Average time to first token: 0.007
- Average input tokens per request: 21.800
- Average output tokens per request: 91.100
- Average time per output token: 0.04289
- Average package per request: 93.100
- Average package latency: 0.042
- Percentile of time to first token: 
-     p50: 0.0021
-     p66: 0.0023
-     p75: 0.0025
-     p80: 0.0030
-     p90: 0.0526
-     p95: 0.0526
-     p98: 0.0526
-     p99: 0.0526
- Percentile of request latency: 
-     p50: 3.9317
-     p66: 3.9828
-     p75: 4.0153
-     p80: 7.2801
-     p90: 7.7003
-     p95: 7.7003
-     p98: 7.7003
-     p99: 7.7003
+## 环境准备
+```shell
+# 安装额外依赖
+pip install evalscope[perf] -U
 ```
 
-#### 指标说明
+## 快速使用
+可以使用以下两种方式启动模型推理性能压测工具：
+
+::::{tab-set}
+:::{tab-item} 命令行启动
+```bash
+evalscope perf \
+    --url "http://127.0.0.1:8000/v1/chat/completions" \
+    --parallel 1 \
+    --model qwen2.5 \
+    --number 15 \
+    --api openai \
+    --dataset openqa \
+    --stream
+```
+:::
+
+:::{tab-item} Python脚本启动
+```python
+from evalscope.perf.main import run_perf_benchmark
+
+task_cfg = {"url": "http://127.0.0.1:8000/v1/chat/completions",
+            "parallel": 1,
+            "model": "qwen2.5",
+            "number": 15,
+            "api": "openai",
+            "dataset": "openqa",
+            "stream": True}
+run_perf_benchmark(task_cfg)
+```
+:::
+::::
+参数说明：
+
+- `url`: 请求的URL地址
+- `parallel`: 并行请求的任务数量
+- `model`: 使用的模型名称
+- `number`: 请求数量
+- `api`: 使用的API服务
+- `dataset`: 数据集名称
+- `stream`: 是否启用流式处理
+
+
+### 输出结果
+```text
+Benchmarking summary: 
++----------------------------------------------+------------------------------------------------+
+| key                                          | Value                                          |
++==============================================+================================================+
+| Time taken for tests (senconds)              | 7.539                                          |
++----------------------------------------------+------------------------------------------------+
+| Number of concurrency                        | 1                                              |
++----------------------------------------------+------------------------------------------------+
+| Total requests                               | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Succeed requests                             | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Failed requests                              | 0                                              |
++----------------------------------------------+------------------------------------------------+
+| Average QPS                                  | 1.99                                           |
++----------------------------------------------+------------------------------------------------+
+| Average latency                              | 0.492                                          |
++----------------------------------------------+------------------------------------------------+
+| Average time to first token                  | 0.026                                          |
++----------------------------------------------+------------------------------------------------+
+| Throughput(average output tokens per second) | 334.006                                        |
++----------------------------------------------+------------------------------------------------+
+| Average time per output token                | 0.00299                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package per request                  | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Average package latency                      | 0.003                                          |
++----------------------------------------------+------------------------------------------------+
+| Average input tokens per request             | 40.133                                         |
++----------------------------------------------+------------------------------------------------+
+| Average output tokens per request            | 167.867                                        |
++----------------------------------------------+------------------------------------------------+
+| Expected number of requests                  | 15                                             |
++----------------------------------------------+------------------------------------------------+
+| Result DB path                               | ./outputs/qwen2.5_benchmark_20241107_201413.db |
++----------------------------------------------+------------------------------------------------+
+
+Percentile results: 
++------------+---------------------+---------+
+| Percentile | First Chunk Latency | Latency |
++------------+---------------------+---------+
+|    10%     |       0.0178        | 0.1577  |
+|    25%     |       0.0183        | 0.2358  |
+|    50%     |       0.0199        | 0.4311  |
+|    66%     |       0.0218        | 0.6317  |
+|    75%     |       0.0429        | 0.7121  |
+|    80%     |       0.0432        | 0.7957  |
+|    90%     |       0.0432        | 0.9153  |
+|    95%     |       0.0433        | 0.9897  |
+|    98%     |       0.0433        | 0.9897  |
+|    99%     |       0.0433        | 0.9897  |
++------------+---------------------+---------+
+```
+
+### 指标说明
 
 | **指标**                                     | **说明**                       | **数值**        |
 |------------------------------------------|-----------------------------|-----------------|
-| Total requests                          | 总请求数                     | 10              |
-| Succeeded requests                      | 成功请求                     | 10              |
-| Failed requests                         | 失败请求                      | 0               |
-| Average QPS                            | 每秒平均查询                 | 0.256           |
-| Average latency                         | 所有请求的平均延迟          | 3.859           |
-| Throughput                              | 每秒输出tokens              | 23.317          |
-| Average time to first token            | 第一次token的平均时间       | 0.007           |
-| Average input tokens per request        | 每个请求的平均输入tokens    | 21.800          |
-| Average output tokens per request       | 每个请求的平均输出tokens    | 91.100          |
-| Average time per output token           | 每个输出token的平均时间     | 0.04289         |
-| Average package per request             | 每个请求的平均包数          | 93.100          |
-| Average package latency                  | 每个包的平均延迟            | 0.042           |
-| Percentile of time to first token (p50, ..., p99) | 第一次token的时间百分位     |   p50=0.0021, ..., p99=0.0526         |
-| Percentile of request latency (p50, ..., p99)          | 请求延迟的百分位          |  p50=3.9317, ..., p99=7.7003         |
+| Total requests                          | 总请求数                     | 15              |
+| Succeeded requests                      | 成功请求数                     | 15              |
+| Failed requests                         | 失败请求数                      | 0               |
+| Average QPS                            | 每秒平均请求数                 | 1.99          |
+| Average latency                         | 所有请求的平均延迟          | 0.492          |
+| Throughput(average output tokens per second)  | 每秒输出token数量              | 334.006          |
+| Average time to first token            | 首token的平均延时       |    0.026         |
+| Average input tokens per request        | 每个请求的平均输入token数量    | 40.133         |
+| Average output tokens per request       | 每个请求的平均输出token数量    | 167.867            |
+| Average time per output token           | 输出每个token的平均时间     | 0.00299         |
+| Average package per request             | 每个请求的平均包数          | 167.867           |
+| Average package latency                  | 每个包的平均延迟            | 0.003            |
+| Percentile of time to first token (p10, ..., p99) | 首token延时百分位     |            |
+| Percentile of request latency (p10, ..., p99)          | 请求延迟的百分位          |          |
 
 
-### 请求参数  
-您可以在`query-template`中设置请求参数，也可以使用（`--stop`，`--stream`，`--temperature`等），参数将替换或添加到请求中。
-#### 带参数的请求
-示例请求 llama3 
+## 全部参数说明
+执行 `evalscope perf --help` 可获取全部参数说明：
+
+
+### 基本设置
+- `--model` 测试模型名称。
+- `--url` 指定API地址。
+- `--name` wandb数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
+- `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
+  - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
+  - 指定为`dashscope`，则使用支持DashScope的API，需要提供`--url`参数。
+  - 指定为`local`，则使用本地文件作为模型，并使用transformers进行推理。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
+  - 指定为`local_vllm`，则使用本地文件作为模型，并启动vllm推理服务。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
+- `--attn-implementation` Attention实现方式，默认为None，可选[flash_attention_2|eager|sdpa]，仅在`api`为`local`时有效。
+- `--api-key` API密钥，可选。
+- `--debug` 输出调试信息。
+
+### 网络配置
+- `--connect-timeout` 网络连接超时，默认为120s。
+- `--read-timeout` 网络读取超时，默认为120s。
+- `--headers` 额外的HTTP头，格式为`key1=value1 key2=value2`。该头将用于每个查询。
+
+### 请求控制
+- `--number` 发出的请求数量，默认为None，表示基于数据集数量发送请求。
+- `--parallel` 设置并发请求的数量，默认为1。
+- `--rate` 每秒请求的数量，默认为None。如果设置为-1，则所有请求将在时间0发送。否则，我们使用泊松过程合成请求到达时间。与parallel互斥。
+- `--log-every-n-query` 每n个查询记录日志，默认为10。
+- `--stream` 使用SSE流输出，默认为False。
+
+### Prompt设置
+- `--max-prompt-length` 最大输入prompt长度，默认为`sys.maxsize`，大于该值时，将丢弃prompt。
+- `--min-prompt-length` 最小输入prompt长度，默认为0，小于该值时，将丢弃prompt。
+- `--prompt` 指定请求prompt，一个字符串或本地文件，使用优先级高于`dataset`。使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./prompt.txt`。
+- `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./query_template.json`。
+
+### 数据集配置
+- `--dataset` 指定数据集[openqa|longalpaca|line_by_line]，您也可以使用python自定义数据集解析器，参考[自定义数据集指南](#自定义数据集)。
+  - `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
+  - `longalpaca` 将获取 `item['instruction']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
+  - `openqa` 将获取 `item['question']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
+- `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
+
+### 模型设置
+- `--tokenizer-path` 可选，指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
+- `--frequency-penalty` frequency_penalty值。
+- `--logprobs` 对数概率。
+- `--max-tokens` 可以生成的最大token数量。
+- `--min-tokens` 生成的最少token数量。
+- `--n-choices` 生成的补全选择数量。
+- `--seed` 随机种子，默认为42。
+- `--stop` 停止生成的tokens。
+- `--stop-token-ids` 设置停止生成的token的ID。
+- `--temperature` 采样温度。
+- `--top-p` top_p采样。
+
+### 数据存储
+- `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
+
+
+## 使用示例
+
+### 使用本地模型推理
+
+本项目支持本地transformers进行推理和vllm推理（需先安装vllm）， `--model`可以填入modelscope模型名称，例如`Qwen/Qwen2.5-0.5B-Instruct`；也可以直接指定模型权重路径，例如`/path/to/model_weights`，无需指定`--url`参数。
+
+**1. 使用transformers进行推理**
+
+指定`--api local`：
 ```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 --dataset-path './datasets/open_qa.jsonl' -n 1 --max-prompt-length 128000 --api openai --stream --stop '<|im_end|>' --dataset openqa --debug
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --attn-implementation flash_attention_2 \  # 可不填，或选[flash_attention_2|eager|sdpa]
+ --number 20 \
+ --rate 2 \
+ --api local \
+ --dataset openqa
 ```
 
+**2. 使用vllm进行推理**
+
+指定`--api local_vllm`：
 ```bash
-evalscope perf 'http://host:port/v1/chat/completions' --parallel 128 --model 'qwen' --log-every-n-query 10 --read-timeout=120 -n 10000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+evalscope perf \
+ --model 'Qwen/Qwen2.5-0.5B-Instruct' \
+ --number 20 \
+ --rate 2 \
+ --api local_vllm \
+ --dataset openqa
 ```
 
-#### query-template 使用说明
-当你需要处理更复杂的请求时，可以使用模板来简化命令行。如果同时存在模板和参数，则参数中的值将优先使用。
-query-template 示例：
+### 使用`prompt`
 ```bash
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions' --parallel 12 --model 'llama3' --log-every-n-query 10 --read-timeout=120 -n 1 --max-prompt-length 128000 --api openai --query-template '{"model": "%m", "messages": [], "stream": true, "stream_options":{"include_usage": true},"n": 3, "stop_token_ids": [128001, 128009]}' --dataset openqa --dataset-path './datasets/open_qa.jsonl'
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt '写一个科幻小说，请开始你的表演'
 ```
-对于 `messages` 字段, 数据集处理器的 message 将替换 query-template 中的 messages.
-
-#### 启动客户端
+也可以使用本地文件作为prompt：
 ```bash
-# 测试 openai 服务
-evalscope perf --url 'https://api.openai.com/v1/chat/completions' --parallel 1 --headers 'Authorization=Bearer YOUR_OPENAI_API_KEY' --model 'gpt-4o' --dataset-path 'THE_DATA_TO/open_qa.jsonl'  --log-every-n-query 10 --read-timeout=120  -n 100 --max-prompt-length 128000 --api openai --stream --dataset openqa
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --number 20 \
+ --api openai \
+ --temperature 0.9 \
+ --max-tokens 1024 \
+ --prompt @prompt.txt
 ```
+
+### 复杂请求
+使用`stop`，`stream`，`temperature`等：
 
 ```bash
-##### open qa dataset and 
-#### dataset address: https://huggingface.co/datasets/Hello-SimpleAI/HC3-Chinese/blob/main/open_qa.jsonl
-evalscope perf --url 'http://IP:PORT/v1/chat/completions' --parallel 1 --model 'qwen' --log-every-n-query 1 --read-timeout=120 -n 1000 --max-prompt-length 128000 --tokenizer-path "THE_PATH_TO_TOKENIZER/Qwen1.5-32B/" --api openai --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}' --dataset openqa --dataset-path 'THE_PATH_TO_DATASETS/open_qa.jsonl'
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --temperature 0.7 \
+ --max-tokens 1024 \
+ --stop '<|im_end|>' \
+ --dataset openqa \
+ --stream
 ```
 
-### FAQ
+### 使用`query-template`
 
-#### 如何使用wandb记录测试结果
---wandb-api-key 'your_wandb_api_key'  --name 'name_of_wandb_and_result_db'  
+您可以在`query-template`中设置请求参数：
+
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template '{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true, "skip_special_tokens": false, "stop": ["<|im_end|>"], "temperature": 0.7, "max_tokens": 1024}' \
+ --dataset openqa 
+```
+其中`%m`和`%p`会被替换为模型名称和prompt。
+
+您也可以使用本地`query-template.json`文件：
+
+```{code-block} json
+:caption: template.json
+
+{
+   "model":"%m",
+   "messages":[
+      {
+         "role":"user",
+         "content":"%p"
+      }
+   ],
+   "stream":true,
+   "skip_special_tokens":false,
+   "stop":[
+      "<|im_end|>"
+   ],
+   "temperature":0.7,
+   "max_tokens":1024
+}
+```
+```bash
+evalscope perf \
+ --url 'http://127.0.0.1:8000/v1/chat/completions' \
+ --rate 2 \
+ --model 'qwen2.5' \
+ --log-every-n-query 10 \
+ --read-timeout 120 \
+ --connect-timeout 120 \
+ --number 20 \
+ --max-prompt-length 128000 \
+ --min-prompt-length 128 \
+ --api openai \
+ --query-template @template.json \
+ --dataset openqa 
+```
+
+
+### 使用wandb记录测试结果
+
+请安装wandb：
+```bash
+pip install wandb
+```
+
+在启动时，添加以下参数，即可：
+```bash
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```  
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-#### 如何调试
-使用 --debug 选项，我们将输出请求和响应。
+
+### 调试请求
+使用 `--debug` 选项，我们将输出请求和响应。
 
 
-#### 如何分析结果
+### 分析结果
 该工具在测试期间会将所有数据保存到 sqlite3 数据库中，包括请求和响应。您可以在测试后分析测试数据。
 
 ```python
@@ -167,7 +356,7 @@ import json
 result_db_path = 'db_name.db'
 con = sqlite3.connect(result_db_path)
 query_sql = "SELECT request, response_messages, prompt_tokens, completion_tokens \
-                FROM result WHERE success='True'"
+                FROM result WHERE success='1'"
 # how to save base64.b64encode(pickle.dumps(benchmark_data["request"])).decode("ascii"), 
 with con:
     rows = con.execute(query_sql).fetchall()
@@ -182,35 +371,99 @@ with con:
             response_content = ''
             for response in responses:
                 response = json.loads(response)
+                if not response['choices']:
+                   continue
                 response_content += response['choices'][0]['delta']['content']
-            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' % (request['messages'][0]['content'], row[2], response_content, row[3]))
+            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' %
+                  (request['messages'][0]['content'], row[2], response_content,
+                   row[3]))
 ```
 
-#### 支持的 API 有哪些
-目前支持的 API 请求有 openai、dashscope 和 zhipu。您可以通过 --api 指定 API。
+## Speed Benchmark
+若想进行速度测试，得到[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，请使用 `--dataset [speed_benchmark|speed_benchmark_long]`。
 
-您可以使用 --query-template 自定义您的请求，您可以指定一个 JSON 字符串如下：
-```json
-{"model": "%m", "messages": [{"role": "user","content": "%p"}], "stream": true,"skip_special_tokens": false,"stop": ["<|im_end|>"]}
+- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
+- `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。
+
+```{note}
+速度测试`--url`需要使用`/v1/completions`端点，而不是`/v1/chat/completions`，避免chat template的额外处理对输入长度有影响。
 ```
 
-或使用本地文件 `@to_query_template_path`。我们将用 `model` 替换 `%m`，用 `prompt` 替换 `%p`。
+### 基于Transformer推理
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --attn-implementation flash_attention_2 \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000 \
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local \
+ --dataset speed_benchmark \
+ --debug
+```
+
+输出示例：
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|       1       |      50.69      |      0.97      |
+|     6144      |      51.36      |      1.23      |
+|     14336     |      49.93      |      1.59      |
+|     30720     |      49.56      |      2.34      |
++---------------+-----------------+----------------+
+```
+
+### 基于vLLM推理
+```bash
+CUDA_VISIBLE_DEVICES=0 evalscope perf \
+ --rate 1 \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --log-every-n-query 5 \
+ --connect-timeout 6000 \
+ --read-timeout 6000 \
+ --max-tokens 2048 \
+ --min-tokens 2048 \
+ --api local_vllm \
+ --dataset speed_benchmark 
+```
+输出示例（注意vllm预留显存，此处不显示GPU使用情况）：
+```
+Speed Benchmark Results:
++---------------+-----------------+----------------+
+| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
++---------------+-----------------+----------------+
+|       1       |     343.08      |      0.0       |
+|     6144      |     334.71      |      0.0       |
+|     14336     |     318.88      |      0.0       |
+|     30720     |     292.86      |      0.0       |
++---------------+-----------------+----------------+
+```
 
 
-#### 如何扩展 API
-要扩展 API，您可以创建 `ApiPluginBase` 的子类，并使用 `@register_api("api 名称")` 进行注解。
+## 自定义请求 API
+目前支持的 API 请求格式有 openai、dashscope。要扩展 API，您可以继承 `ApiPluginBase` 类，并使用 `@register_api("api名称")` 进行注解，需实现如下两个方法：
 
-通过 model、prompt 和 query_template 来构建请求的 build_request。您可以参考 opanai_api.py。
+- `build_request()`方法通过 `messages` 和 `param`中的`model`和`query_template` 来构建请求，改请求后续发送到目标API。
 
-`parse_responses` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量。
+- `parse_responses()` 方法将返回 `prompt_tokens` 和 `completion_tokens` 的数量，用于计算推理速度。
 
+参考如下代码：
 ```python
-class ApiPluginBase:
+from typing import Any, Dict, List, Tuple
+from evalscope.perf.arguments import Arguments
+
+@register_api('custom')
+class CustomPlugin(ApiPluginBase):
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         
     @abstractmethod
-    def build_request(self, messages: List[Dict], param: QueryParameters)->Dict:
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build a api request body.
 
         Args:
@@ -243,76 +496,31 @@ class ApiPluginBase:
         raise NotImplementedError  
 ```
 
-#### 支持的数据集
-目前支持逐行（line by line）、longalpaca 和 openqa 数据集。
+## 自定义数据集
 
-- 逐行方法将每一行作为一个提示。
-
-- longalpaca 将获取 item['instruction'] 作为提示。
-
-- openqa 将获取 item['question'] 作为提示。
-
-#### 如何扩展数据集
-要扩展数据集，您可以创建 `DatasetPluginBase` 的子类，并使用 `@register_dataset('数据集名称')` 进行注解，
-
-然后实现 `build_prompt` 方法以返回一个prompt。
+要自定义数据集，您可以继承 `DatasetPluginBase` 类，并使用 `@register_dataset('数据集名称')` 进行注解，然后实现 `build_messages` 方法以返回一个message，格式参考[OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)。
 
 ```python
-class DatasetPluginBase:
-    def __init__(self, query_parameters: QueryParameters):
-        """Build data set plugin
+from typing import Dict, Iterator, List
 
-        Args:
-            dataset_path (str, optional): The input dataset path. Defaults to None.
-        """
-        self.query_parameters = query_parameters
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.registry import register_dataset
 
-    def __next__(self):
-        for item in self.build_messages():
-            yield item
-        raise StopIteration
 
-    def __iter__(self):
-        return self.build_messages()
-    
-    @abstractmethod
-    def build_messages(self)->Iterator[List[Dict]]:
-        """Build the request.
+@register_dataset('custom')
+class CustomDatasetPlugin(DatasetPluginBase):
+    """Read dataset and return prompt.
+    """
 
-        Raises:
-            NotImplementedError: The request is not impletion.
+    def __init__(self, query_parameters: Arguments):
+        super().__init__(query_parameters)
 
-        Yields:
-            Iterator[List[Dict]]: Yield request messages.
-        """
-        raise NotImplementedError
-    
-    def dataset_line_by_line(self, dataset: str)->Iterator[str]:
-        """Get content line by line of dataset.
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[str]: Each line of file.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            for line in f:
-                yield line
-    
-    def dataset_json_list(self, dataset: str)->Iterator[Dict]:
-        """Read data from file which is list of requests.
-           Sample: https://huggingface.co/datasets/Yukang/LongAlpaca-12k
-
-        Args:
-            dataset (str): The dataset path.
-
-        Yields:
-            Iterator[Dict]: The each request object.
-        """
-        with open(dataset, 'r', encoding='utf-8') as f:
-            content = f.read()
-        data = json.loads(content)
-        for item in data:
-            yield item      
+    def build_messages(self) -> Iterator[List[Dict]]:
+        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
+            prompt = item.strip()
+            if len(prompt) > self.query_parameters.min_prompt_length and len(
+                    prompt) < self.query_parameters.max_prompt_length:
+                yield [{'role': 'user', 'content': prompt}]
+   
 ```

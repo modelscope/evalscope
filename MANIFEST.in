@@ -1,0 +1,4 @@
+include README.md
+include requirements.txt
+recursive-include evalscope *
+recursive-include requirements *
