@@ -1,26 +1,30 @@
-
-from sys import maxsize
-import sys
+import os
 from typing import Any, Dict, Iterator, List
+
 import json
-from evalscope.perf.api_plugin_base import ApiPluginBase
 
-from evalscope.perf.plugin_registry import register_api
-from evalscope.perf.query_parameters import QueryParameters
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.registry import register_api
+from evalscope.utils.logger import get_logger
 
-@register_api("dashscope")
+logger = get_logger()
+
+
+@register_api('dashscope')
 class DashScopeApiPlugin(ApiPluginBase):
+
     def __init__(self, mode_path: str):
         """Init the plugin
 
         Args:
-            mode_path (str): The model path, we use the tokenizer 
+            mode_path (str): The model path, we use the tokenizer
                 weight in the model to calculate the number of the
                 input and output tokens.
         """
         super().__init__(model_path=mode_path)
-        
-    def build_request(self,messages: List[Dict], param: QueryParameters) -> Dict:
+
+    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -35,16 +39,26 @@ class DashScopeApiPlugin(ApiPluginBase):
         """
         try:
             if param.query_template is not None:
-                query = json.loads(param.query_template)
+                if param.query_template.startswith('@'):
+                    file_path = param.query_template[1:]
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as file:
+                            query = json.load(file)
+                    else:
+                        raise FileNotFoundError(f'{file_path}')
+                else:
+                    query = json.loads(param.query_template)
+
                 query['input']['messages'] = messages  # replace template content with message.
                 return self.__compose_query_from_parameter(query, param)
             else:
                 query = {'messages': messages}
                 return self.__compose_query_from_parameter(query, param)
         except Exception as e:
-            print(e)
+            logger.exception(e)
             return None
-    def __compose_query_from_parameter(self, payload: Dict, param: QueryParameters):
+
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if 'parameters' not in payload:
             payload['parameters'] = {}
@@ -73,7 +87,7 @@ class DashScopeApiPlugin(ApiPluginBase):
 
         Args:
             responses (List[bytes]): List of http response body, for stream output,
-                there are multiple responses, for general only one. 
+                there are multiple responses, for general only one.
             kwargs: (Any): The command line --parameter content.
 
         Returns:
