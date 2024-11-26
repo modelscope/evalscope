@@ -18,6 +18,7 @@
   <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
 <p>
 
+> ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
 ## 📋 Table of Contents
 - [Introduction](#introduction)
