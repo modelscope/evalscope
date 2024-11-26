@@ -164,10 +164,11 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--query-template`: Specify query template, a `JSON` string or local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
 
 ### Dataset Configuration
-- `--dataset` specifies the dataset [openqa|longalpaca|line_by_line]. You can also use a custom dataset parser in Python; refer to the [Custom Dataset Guide](#custom-datasets).
+- `--dataset` specifies the dataset [openqa|longalpaca|line_by_line|flickr8k]. You can also use a custom dataset parser in Python; refer to the [Custom Dataset Guide](#custom-datasets).
   - `line_by_line` treats each line as a separate prompt and requires a `dataset_path`.
   - `longalpaca` will use `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
   - `openqa` will use `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
+  - `flickr8k` will construct image-text inputs, making it suitable for evaluating multimodal models; the dataset will be automatically downloaded from modelscope, and specifying `dataset_path` is not supported.
 - `--dataset-path`: Path to the dataset file, used in combination with the dataset. `openqa` and `longalpaca` do not need a specified dataset path and will be downloaded automatically; `line_by_line` requires a local dataset file, which will be loaded line by line.
 
 ### Model Settings
