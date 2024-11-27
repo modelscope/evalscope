@@ -1,19 +1,26 @@
+import os
 from typing import Any, Dict, Iterator, List
-import json
-from evalscope.perf.api_plugin_base import ApiPluginBase
-from transformers import AutoTokenizer
-from evalscope.perf.plugin_registry import register_api
-from evalscope.perf.query_parameters import QueryParameters
 
-@register_api("openai")
+import json
+from transformers import AutoTokenizer
+
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.registry import register_api
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+
+@register_api(['openai', 'local_vllm', 'local'])
 class OpenaiPlugin(ApiPluginBase):
-    """Base of openai interface.
-    """
+    """Base of openai interface."""
+
     def __init__(self, mode_path: str):
         """Init the plugin
 
         Args:
-            mode_path (str): The model path, we use the tokenizer 
+            mode_path (str): The model path, we use the tokenizer
                 weight in the model to calculate the number of the
                 input and output tokens.
         """
@@ -23,11 +30,11 @@ class OpenaiPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict], param: QueryParameters) -> Dict:
+    def build_request(self, messages: List[Dict] | str, param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
-            message (Dict): The basic message to generator query.
+            message (List[Dict] | str): The basic message to generator query.
             param (QueryParameters): The query parameters.
 
         Raises:
@@ -38,22 +45,35 @@ class OpenaiPlugin(ApiPluginBase):
         """
         try:
             if param.query_template is not None:
-                query = json.loads(param.query_template)
+                if param.query_template.startswith('@'):
+                    file_path = param.query_template[1:]
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as file:
+                            query = json.load(file)
+                    else:
+                        raise FileNotFoundError(f'{file_path}')
+                else:
+                    query = json.loads(param.query_template)
+
                 if 'stream' in query.keys():
                     param.stream = query['stream']
-                query['messages'] = messages   # replace template messages with input messages.
-                return self.__compose_query_from_parameter(query, param)
+                # replace template messages with input messages.
+                query['messages'] = messages
+            elif isinstance(messages, str):
+                query = {'prompt': messages}
             else:
                 query = {'messages': messages}
-                return self.__compose_query_from_parameter(query, param)
+            return self.__compose_query_from_parameter(query, param)
         except Exception as e:
-            print(e)
+            logger.exception(e)
             return None
-        
-    def __compose_query_from_parameter(self, payload: Dict, param: QueryParameters):
+
+    def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
             payload['max_tokens'] = param.max_tokens
+        if param.min_tokens is not None:
+            payload['min_tokens'] = param.min_tokens
         if param.frequency_penalty is not None:
             payload['frequency_penalty'] = param.frequency_penalty
         if param.logprobs is not None:
@@ -66,7 +86,7 @@ class OpenaiPlugin(ApiPluginBase):
             payload['stop'] = param.stop
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
-            payload['stream_options'] = {"include_usage": True}
+            payload['stream_options'] = {'include_usage': True}
         if param.stop_token_ids is not None:
             payload['stop_token_ids'] = param.stop_token_ids
         if param.temperature is not None:
@@ -83,7 +103,7 @@ class OpenaiPlugin(ApiPluginBase):
 
         Args:
             responses (List[bytes]): List of http response body, for stream output,
-                there are multiple responses, for general only one. 
+                there are multiple responses, for general only one.
             kwargs: (Any): The command line --parameter content.
         Returns:
             Tuple: Return number of prompt token and number of completion tokens.
@@ -96,10 +116,15 @@ class OpenaiPlugin(ApiPluginBase):
             js = json.loads(response)
             if js['object'] == 'chat.completion':
                 for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['message']['content']]     
+                    delta_contents[choice['index']] = [choice['message']['content']]
                 input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']                 
-            else:  # 'object' == "chat.completion.chunk":
+                output_tokens = js['usage']['completion_tokens']
+            elif js['object'] == 'text_completion':
+                for choice in js['choices']:
+                    delta_contents[choice['index']] = [choice['text']]
+                input_tokens = js['usage']['prompt_tokens']
+                output_tokens = js['usage']['completion_tokens']
+            elif js['object'] == 'chat.completion.chunk':
                 if 'choices' in js:
                     for choice in js['choices']:
                         if 'delta' in choice and 'index' in choice:
@@ -115,8 +140,8 @@ class OpenaiPlugin(ApiPluginBase):
                 # "choices":[],"usage":{"prompt_tokens":32,"total_tokens":384,"completion_tokens":352}}
                 if 'usage' in js and js['usage']:
                     input_tokens = js['usage']['prompt_tokens']
-                    output_tokens = js['usage']['completion_tokens']     
-        if input_tokens is None and output_tokens is None and self.tokenizer is not None:                
+                    output_tokens = js['usage']['completion_tokens']
+        if (input_tokens is None and output_tokens is None and self.tokenizer is not None):
             input_tokens = 0
             output_tokens = 0
             for idx, choice_contents in delta_contents.items():
@@ -125,8 +150,7 @@ class OpenaiPlugin(ApiPluginBase):
                 output_tokens += len(self.tokenizer.encode(full_response_content))
         elif input_tokens is None and output_tokens is None:  # no usage info get.
             input_tokens = 0
-            output_tokens = 0            
-        
+            output_tokens = 0
+            logger.warning('No usage info get.')
+
         return input_tokens, output_tokens
-        
-        
