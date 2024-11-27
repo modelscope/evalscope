@@ -56,7 +56,7 @@ The architecture includes the following modules:
 
 
 ## 🎉 News
-- 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html).
+- 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html).
 - 🔥 **[2024.10.31]** The best practice for evaluating Multimodal-RAG has been updated, please check the [📖 Blog](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag) for more details.
 - 🔥 **[2024.10.23]** Supports multimodal RAG evaluation, including the assessment of image-text retrieval using [CLIP_Benchmark](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/clip_benchmark.html), and extends [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html) to support end-to-end multimodal metrics evaluation.
 - 🔥 **[2024.10.8]** Support for RAG evaluation, including independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html).
@@ -91,7 +91,9 @@ We recommend using conda to manage your environment and installing dependencies 
    # Additional options
    pip install evalscope[opencompass]   # Install OpenCompass backend
    pip install evalscope[vlmeval]       # Install VLMEvalKit backend
-   pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit)
+   pip install evalscope[rag]           # Install RAGEval backend
+   pip install evalscope[perf]          # Install Perf dependencies
+   pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
    ```
 
 > [!WARNING]
@@ -117,7 +119,9 @@ We recommend using conda to manage your environment and installing dependencies 
    # Additional options
    pip install -e '.[opencompass]'   # Install OpenCompass backend
    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-   pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit)
+   pip install -e '.[rag]'           # Install RAGEval backend
+   pip install -e '.[perf]'          # Install Perf dependencies
+   pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
    ```
 
 
@@ -255,7 +259,7 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 ## Model Serving Performance Evaluation
 A stress testing tool focused on large language models, which can be customized to support various dataset formats and different API protocol formats.
 
-Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test.html)
+Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html)
 
 **Supports wandb for recording results**
 
