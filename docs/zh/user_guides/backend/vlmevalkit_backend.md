@@ -236,7 +236,8 @@ task_cfg_dict = {
 :::
 ::::
 
-#### 基本参数
+
+#### 参数说明
 
 - `eval_backend`：默认值为 `VLMEvalKit`，表示使用 VLMEvalKit 评测后端。
 - `eval_config`：字典，包含以下字段：
@@ -255,10 +256,15 @@ task_cfg_dict = {
   - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理。
   - `limit`：整数，评估的数据数量，默认值为 `None`，表示运行所有示例。
   - `reuse`：布尔值，是否重用评估结果，否则将删除所有评估临时文件。
+    ```{note}
+    对与`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。
+    ```
   - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs`
   - `nproc`：整数，并行调用 API 的数量。
+  - `nframe`：整数，视频数据集的视频帧数，默认值为 `8`，
+  - `fps`：整数，视频数据集的帧率，默认值为 `-1`，表示使用`nframe`；设置为大于0，则使用`fps`来计算视频帧数。
+  - `use_subtitle`：布尔值，视频数据集是否使用字幕，默认值为 `False`。
 
-其他可选参数请参考`vlmeval.utils.arguments`
 
 ### 方式2. 本地模型推理评估
 
@@ -308,7 +314,7 @@ task_cfg_dict = {
 
 #### 参数说明
 
-[基本参数](#基本参数)都与上面部署模型服务评估方式一致，不一样的是模型参数：
+[基本参数](#参数说明)都与上面部署模型服务评估方式一致，不一样的是模型参数：
 - `model`：字典列表，每种模型需要的字段不同
   - `name`：模型名称，参考[VLMEvalKit支持的模型](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)。
   - `model_path`等其余参数：参考[VLMEvalKit支持的模型参数](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)。

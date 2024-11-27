@@ -208,6 +208,9 @@ eval_config:
   work_dir: outputs
   nproc: 1
 ```
+```{seealso}
+VLMEvalKit[参数说明](../user_guides/backend/vlmevalkit_backend.md#参数说明)
+```
 #### 3. 运行评测
 
 ```python
