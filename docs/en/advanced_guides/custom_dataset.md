@@ -190,6 +190,9 @@ eval_config:
   work_dir: outputs
   nproc: 1
 ```
+```{seealso}
+VLMEvalKit [Parameter Description](../user_guides/backend/vlmevalkit_backend.md#parameters)
+```
 #### 3. Run Evaluation
 ```python
 from evalscope.run import run_task
