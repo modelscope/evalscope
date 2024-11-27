@@ -63,7 +63,7 @@ EvalScope包括以下模块：
 
 
 ## 🎉 新闻
-- 🔥 **[2024.11.26]** 模型推理压测工具重构完成：支持本地启动推理服务、支持Speed Benchmark；优化异步调用错误处理，参考[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)
+- 🔥 **[2024.11.26]** 模型推理压测工具重构完成：支持本地启动推理服务、支持Speed Benchmark；优化异步调用错误处理，参考[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/index.html)
 - 🔥 **[2024.10.31]** 多模态RAG评测最佳实践发布，参考[📖博客](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag)
 - 🔥 **[2024.10.23]** 支持多模态RAG评测，包括[CLIP_Benchmark](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/clip_benchmark.html)评估图文检索器，以及扩展了[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)以支持端到端多模态指标评估。
 - 🔥 **[2024.10.8]** 支持RAG评测，包括使用[MTEB/CMTEB](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/mteb.html)进行embedding模型和reranker的独立评测，以及使用[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)进行端到端评测。
@@ -96,7 +96,9 @@ pip install evalscope                # 安装 Native backend (默认)
 # 额外选项
 pip install evalscope[opencompass]   # 安装 OpenCompass backend
 pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
-pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
+pip install evalscope[rag]           # 安装 RAGEval backend
+pip install evalscope[perf]          # 安装 模型压测模块 依赖
+pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 
@@ -125,7 +127,9 @@ pip install -e .                  # 安装 Native backend
 # 额外选项
 pip install -e '.[opencompass]'   # 安装 OpenCompass backend
 pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
-pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit)
+pip install -e '.[rag]'           # 安装 RAGEval backend
+pip install -e '.[perf]'          # 安装 模型压测模块 依赖
+pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 
@@ -264,7 +268,7 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 ## 推理性能评测工具
 一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
 
-参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test.html)
+参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/index.html)
 
 **支持wandb记录结果**
 
