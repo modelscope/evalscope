@@ -198,7 +198,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -219,13 +219,13 @@ task_cfg_dict = {
                 'temperature': 0.0,
                 'type': 'qwen-vl-chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'output'}}
 ```
 :::
 ::::
 
-#### Basic Parameters
+#### Parameters
 - `eval_backend`: Default value is `VLMEvalKit`, indicating the use of the VLMEvalKit evaluation backend.
 - `eval_config`: A dictionary containing the following fields:
   - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
@@ -239,13 +239,18 @@ task_cfg_dict = {
     - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
     - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
     - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
-    - `VIDEO_LLM`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
+    - `video_llm`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
   - `mode`: Options: `['all', 'infer']`; `all` includes inference and evaluation; `infer` only performs inference.
   - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
-  - `rerun`: Boolean indicating whether to rerun the evaluation, which will delete all temporary evaluation files.
+  - `reuse`: Boolean indicating whether to reuse the evaluation, which will delete all temporary evaluation files.
+    ```{note}
+    For `ms-vlmeval>=0.0.11`, the parameter `rerun` has been renamed to `reuse`, with a default value of `False`.
+    ```
   - `work_dir`: String specifying the directory to save evaluation results, logs, and summaries; default value is `outputs`.
   - `nproc`: Integer indicating the number of API calls in parallel.
-For other optional parameters, refer to `vlmeval.utils.arguments`.
+  - `nframe`: An integer representing the number of video frames in the video dataset, with a default value of `8`.
+  - `fps`: An integer representing the frame rate of the video dataset, with a default value of `-1`, which means to use `nframe`; if set to a value greater than 0, it will use `fps` to calculate the number of video frames.
+  - `use_subtitle`: A boolean value indicating whether the video dataset uses subtitles, with a default value of `False`.
 
 ### Method 2: Local Model Inference Evaluation
 This method does not involve starting a model service; instead, it directly configures model evaluation parameters for local inference.
@@ -264,7 +269,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  rerun: true
+  reuse: true
   work_dir: outputs
   nproc: 16
 ```
@@ -282,14 +287,14 @@ task_cfg_dict = {
                 {'name': 'qwen_chat',
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
-            'rerun': True,
+            'reuse': True,
             'work_dir': 'outputs'}}
 ```
 :::
 ::::
 
-#### Parameter Descriptions
-The [basic parameters](#basic-parameters) are consistent with the deployed model service evaluation method, but the model parameters differ:
+#### Parameters
+The [basic parameters](#parameters) are consistent with the deployed model service evaluation method, but the model parameters differ:
 - `model`: A list of dictionaries where each model requires different fields:
   - `name`: Model name, refer to the [models supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
   - `model_path` and other parameters: Refer to the [model parameters supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).

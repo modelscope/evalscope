@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 """
 1. Installation
 EvalScope: pip install evalscope[vlmeval]
@@ -9,12 +8,13 @@ EvalScope: pip install evalscope[vlmeval]
 3. Run eval task
 """
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
+from evalscope.backend.vlm_eval_kit.custom_dataset import CustomDataset
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
-from evalscope.backend.vlm_eval_kit.custom_dataset import CustomDataset
 
 logger = get_logger()
+
 
 def run_swift_eval():
 
@@ -37,12 +37,11 @@ def run_swift_eval():
     #                                         'name': 'CustomAPIModel',
     #                                         'temperature': 0.0,
     #                                         'type': 'qwen-vl-chat'}],
-    #                             'rerun': True,
+    #                             'reuse': True,
     #                             'work_dir': 'output'}}
 
     # Option 2: Use yaml file
-    task_cfg = "examples/tasks/eval_vlm_swift.yaml"
-
+    task_cfg = 'examples/tasks/eval_vlm_swift.yaml'
 
     # Run task
     run_task(task_cfg=task_cfg)

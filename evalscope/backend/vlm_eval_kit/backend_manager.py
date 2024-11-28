@@ -1,10 +1,11 @@
-from typing import Optional, Union
-from evalscope.utils import is_module_installed, get_valid_list
-from evalscope.backend.base import BackendManager
-from evalscope.utils.logger import get_logger
-from functools import partial
-import subprocess
 import copy
+import subprocess
+from functools import partial
+from typing import Optional, Union
+
+from evalscope.backend.base import BackendManager
+from evalscope.utils import get_valid_list, is_module_installed
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -19,6 +20,7 @@ class ExecutionMode:
 
 
 class VLMEvalKitBackendManager(BackendManager):
+
     def __init__(self, config: Union[str, dict], **kwargs):
         """BackendManager for VLM Evaluation Kit
 
@@ -36,7 +38,6 @@ class VLMEvalKitBackendManager(BackendManager):
 
         self._check_valid()
 
-    
     def _check_valid(self):
         # Ensure not both model and datasets are empty
         if not self.args.data or not self.args.model:
@@ -45,15 +46,15 @@ class VLMEvalKitBackendManager(BackendManager):
         # Check datasets
         valid_datasets, invalid_datasets = get_valid_list(self.args.data, self.valid_datasets)
         if len(invalid_datasets) != 0:
-            logger.warning(f"Using custom dataset: {invalid_datasets}, ")
-            
+            logger.warning(f'Using custom dataset: {invalid_datasets}, ')
+
         # Check model
         if isinstance(self.args.model[0], dict):
             model_names = [model['name'] for model in self.args.model]
             valid_model_names, invalid_model_names = get_valid_list(model_names, self.valid_model_names)
             assert len(invalid_model_names) == 0, f'Invalid models: {invalid_model_names}, ' \
                 f'refer to the following list to get proper model name: {self.valid_model_names}'
-            
+
             # set model_cfg
             new_model_names = []
             for model_cfg in self.args.model:
@@ -62,19 +63,15 @@ class VLMEvalKitBackendManager(BackendManager):
                 if model_name == 'CustomAPIModel':
                     model_type = model_cfg['type']
                     remain_cfg = copy.deepcopy(model_cfg)
-                    del remain_cfg['name'] # remove not used args
-                    del remain_cfg['type'] # remove not used args
+                    del remain_cfg['name']  # remove not used args
+                    del remain_cfg['type']  # remove not used args
 
-                    self.valid_models.update({
-                                model_type: partial(model_class, 
-                                                   model=model_type,
-                                                   **remain_cfg)
-                                })
+                    self.valid_models.update({model_type: partial(model_class, model=model_type, **remain_cfg)})
                     new_model_names.append(model_type)
                 else:
                     remain_cfg = copy.deepcopy(model_cfg)
-                    del remain_cfg['name'] # remove not used args
-                    
+                    del remain_cfg['name']  # remove not used args
+
                     self.valid_models[model_name] = partial(model_class, **remain_cfg)
                     new_model_names.append(model_name)
 
@@ -83,7 +80,7 @@ class VLMEvalKitBackendManager(BackendManager):
         elif isinstance(self.args.model[0], str):
             valid_model_names, invalid_model_names = get_valid_list(self.args.model, self.valid_model_names)
             if len(invalid_datasets) != 0:
-                logger.warning(f"Using custom dataset: {invalid_datasets}, ")
+                logger.warning(f'Using custom dataset: {invalid_datasets}, ')
 
     @property
     def cmd(self):
@@ -127,7 +124,7 @@ class VLMEvalKitBackendManager(BackendManager):
             f'--data {" ".join(self.args.data)} ' \
             f'{self.get_restore_arg("verbose", self.args.verbose)} ' \
             f'{self.get_restore_arg("ignore", self.args.ignore)} ' \
-            f'{self.get_restore_arg("rerun", self.args.rerun)} ' \
+            f'{self.get_restore_arg("reuse", self.args.reuse)} ' \
             f'{self.get_arg_with_default("work-dir", self.args.work_dir)} ' \
             f'{self.get_arg_with_default("limit", self.args.limit)} ' \
             f'{self.get_arg_with_default("mode", self.args.mode)} ' \
@@ -141,7 +138,12 @@ class VLMEvalKitBackendManager(BackendManager):
         if run_mode == ExecutionMode.CMD:
             logger.info(f'** Run command: {self.cmd}')
             try:
-                subprocess.run(self.cmd, check=True, ext=True, shell=True,)
+                subprocess.run(
+                    self.cmd,
+                    check=True,
+                    ext=True,
+                    shell=True,
+                )
             except subprocess.CalledProcessError as e:
                 logger.error(f'** Run command failed: {e.stderr}')
                 raise
