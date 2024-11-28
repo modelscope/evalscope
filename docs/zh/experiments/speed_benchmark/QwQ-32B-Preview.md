@@ -14,8 +14,13 @@
 - Pytorch 2.3.1
 - Flash Attention 2.5.8
 - Transformers 4.46.0
-  
+- EvalScope 0.7.0
+
+
 ### 压测命令
+```shell
+pip install evalscope[perf] -U
+```
 ```shell
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --parallel 1 \
