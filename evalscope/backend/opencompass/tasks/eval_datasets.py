@@ -51,6 +51,7 @@ with read_base():
     from opencompass.configs.datasets.triviaqa.triviaqa_gen_2121ce import triviaqa_datasets
     from opencompass.configs.datasets.cmb.cmb_gen_dfb5c4 import cmb_datasets
     from opencompass.configs.datasets.cmmlu.cmmlu_gen_c13365 import cmmlu_datasets
+    from opencompass.configs.datasets.PMMEval.pmmeval_gen import PMMEval_datasets
 
     # Note: to be supported
     # from opencompass.configs.datasets.flores.flores_gen_806ede import flores_datasets
