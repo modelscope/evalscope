@@ -186,9 +186,12 @@ eval_config:
     - custom_mcq # Custom dataset name, placed in the `~/LMUData` path
   mode: all
   limit: 10
-  rerun: false
+  reuse: false
   work_dir: outputs
   nproc: 1
+```
+```{seealso}
+VLMEvalKit [Parameter Description](../user_guides/backend/vlmevalkit_backend.md#parameters)
 ```
 #### 3. Run Evaluation
 ```python
@@ -292,7 +295,7 @@ eval_config:
     - custom_vqa # Name of the custom dataset, placed in the `~/LMUData` path
   mode: all
   limit: 10
-  rerun: false
+  reuse: false
   work_dir: outputs
   nproc: 1
 ```

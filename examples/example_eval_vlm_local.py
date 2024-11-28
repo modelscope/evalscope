@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 """
 1. Installation
 EvalScope: pip install evalscope[vlmeval]
@@ -33,13 +32,13 @@ def run_swift_eval():
     #                             'limit': 20,
     #                             'mode': 'all',
     #                             'model': [{'model_path': '../models/internlm-xcomposer2d5-7b', # path/to/model_dir
-    #                                         'name': 'XComposer2d5'}],                          # model name for VLMEval config
+    #                                         'name': 'XComposer2d5'}],       # model name for VLMEval config
     #                             'nproc': 1,
-    #                             'rerun': True,
+    #                             'reuse': True,
     #                             'work_dir': 'output'}}
 
     # Option 2: Use yaml file
-    task_cfg = "examples/tasks/eval_vlm_local.yaml"
+    task_cfg = 'examples/tasks/eval_vlm_local.yaml'
 
     # Run task
     run_task(task_cfg=task_cfg)
