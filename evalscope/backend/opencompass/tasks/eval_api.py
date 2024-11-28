@@ -6,7 +6,8 @@ from opencompass.tasks import OpenICLInferTask
 
 
 with read_base():
-    from opencompass.configs.summarizers.medium import summarizer
+    # from opencompass.configs.summarizers.medium import summarizer
+    from opencompass.configs.summarizers.PMMEval import summarizer
     from evalscope.backend.opencompass.tasks.eval_datasets import datasets
 
 # 1. Get datasets
