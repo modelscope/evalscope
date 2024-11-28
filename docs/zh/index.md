@@ -52,15 +52,20 @@ third_party/longwriter.md
 
 :::{toctree}
 :hidden:
+:caption: 🧪 基准测试结果
+experiments/benchmark/index.md
+experiments/speed_benchmark/index.md
+:::
+
+:::{toctree}
+:hidden:
 :caption: 📖 最佳实践
 best_practice/swift_integration.md
 best_practice/llm_full_stack.md
-best_practice/experiments.md
 :::
 
 :::{toctree}
 :hidden:
 :caption: 🌟 博客
-
 blog/index.md
 :::
