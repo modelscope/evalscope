@@ -1,10 +1,14 @@
+# MMLU
 
-# Experiments
+> 这是一项大规模的多任务测试，包含来自多个知识领域的选择题。该测试涵盖人文学科、社会科学、硬科学以及其他一些人们学习的重要领域，共涉及57个任务，包括基础数学、美国历史、计算机科学、法律等。要在此测试中获得高准确率，模型必须具备广泛的世界知识和问题解决能力。[数据集链接](https://modelscope.cn/datasets/modelscope/mmlu/summary)
 
-## [MMLU](https://modelscope.cn/datasets/modelscope/mmlu/summary)
+## 实验设置
 
-### Settings: (Split: test, Total num: 13985, 0-shot)
+- Split: test
+- Total num: 13985
+- 0-shot
 
+## 实验结果
 | Model                                                                                            | Revision | Precision | Humanities  | STEM       | SocialScience | Other   | WeightedAvg | Target      | Delta  |
 |--------------------------------------------------------------------------------------------------|----------|-----------|-------------|------------|---------------|---------|-------------|-------------|--------|
 | [Baichuan2-7B-Base](https://modelscope.cn/models/baichuan-inc/Baichuan2-7B-Base/summary)         | v1.0.2   | fp16      | 0.4111      | 0.3807     | 0.5233        | 0.504   | 0.4506      | -           |        |
@@ -18,8 +22,8 @@
 | [Qwen-7B](https://modelscope.cn/models/qwen/Qwen-7B/summary)                                     | v1.1.6   | bf16      | 0.387       | 0.4        | 0.5403        | 0.5139  | 0.4527      | -           |        |
 | [Qwen-7B-Chat-Int8](https://modelscope.cn/models/qwen/Qwen-7B-Chat-Int8/summary)                 | v1.1.6   | int8      | 0.4322      | 0.4277     | 0.6088        | 0.5778  | 0.5035      | -           |        |
 
-  - Target -- The official claimed score of the model on the dataset
-  - Delta -- The difference between the WeightedAvg score and the Target score
+- 目标 (Target) -- 模型在数据集上的官方声明得分
+- 差值 (Delta) -- 加权平均得分与目标得分之间的差异
 
 
 ### Settings: (Split: test, Total num: 13985, 5-shot)

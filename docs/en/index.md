@@ -46,8 +46,14 @@ third_party/longwriter.md
 
 :::{toctree}
 :hidden:
+:caption: 🧪 Benchmarking Results
+experiments/benchmark/index.md
+experiments/speed_benchmark/index.md
+:::
+
+:::{toctree}
+:hidden:
 :caption: 📖 Best Practices
 best_practice/swift_integration.md
 best_practice/llm_full_stack.md
-best_practice/experiments.md
 :::
