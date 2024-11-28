@@ -88,16 +88,16 @@ async def dispatch_requests_worker(request_queue: asyncio.Queue, args: Arguments
 @exception_handler
 async def send_requests_worker(
     task_id,
-    client: AioHttpClient,
     request_queue: asyncio.Queue,
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
 ):
+    client = AioHttpClient(args)
     async with client:
         while not (query_send_completed_event.is_set() and request_queue.empty()):
             try:
                 # Attempt to get a request from the queue with a timeout
-                request = await asyncio.wait_for(request_queue.get(), timeout=0.001)
+                request = await asyncio.wait_for(request_queue.get(), timeout=0.0001)
                 request_queue.task_done()
             except asyncio.TimeoutError:
                 # If timeout, continue to the next iteration
@@ -189,7 +189,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
 
 @exception_handler
-async def create_client(args: Arguments) -> bool:
+async def start_server(args: Arguments) -> bool:
     if args.api.startswith('local'):
         #  start local server
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
@@ -201,11 +201,8 @@ async def create_client(args: Arguments) -> bool:
             args.url = 'http://127.0.0.1:8877/v1/chat/completions'
         args.model = os.path.basename(args.model)
 
-    client = AioHttpClient(args)
-    if not await test_connection(client, args):
+    if not await test_connection(args):
         raise TimeoutError('Test connection failed')
-
-    return client
 
 
 @exception_handler
@@ -217,20 +214,20 @@ async def benchmark(args: Arguments) -> None:
     request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
 
-    async def create_send_request_tasks(client):
+    async def create_send_request_tasks():
         tasks: List[asyncio.Task] = []
         for idx in range(args.parallel):
-            task = asyncio.create_task(send_requests_worker(idx, client, request_queue, benchmark_data_queue, args))
+            task = asyncio.create_task(send_requests_worker(idx, request_queue, benchmark_data_queue, args))
             tasks.append(task)
         return tasks
 
     async def run_tasks():
-        client = await create_client(args)
+        await start_server(args)
 
         dispatch_task = asyncio.create_task(dispatch_requests_worker(request_queue, args))
         statistic_benchmark_metric_task = asyncio.create_task(
             statistic_benchmark_metric_worker(benchmark_data_queue, args))
-        send_request_tasks = await create_send_request_tasks(client)
+        send_request_tasks = await create_send_request_tasks()
 
         expected_number_of_queries = await dispatch_task
         await request_queue.join()

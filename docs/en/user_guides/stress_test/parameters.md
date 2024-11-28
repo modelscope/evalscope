@@ -23,8 +23,13 @@ Execute `evalscope perf --help` to get a full parameter description:
 
 ## Request Control
 - `--number`: Number of requests sent, default is None, meaning requests are sent based on the dataset size.
-- `--parallel`: Set the number of concurrent requests, default is 1.
-- `--rate`: Number of requests per second, default is None. If set to -1, all requests are sent at time 0. Otherwise, requests are synthesized using a Poisson process. Mutually exclusive with parallel.
+- `--parallel` sets the number of workers for concurrent requests, with a default of 1.
+- `--rate` specifies the number of requests generated per second (not sent), with a default of -1, indicating that all requests will be generated at time 0 with no interval; otherwise, we use a Poisson process to generate request intervals.
+  ```{tip}
+  In the implementation of this tool, request generation and sending are separated:
+  The `--rate` parameter is used to control the number of requests generated per second, and these requests will be placed in a request queue.
+  The `--parallel` parameter is used to control the number of workers sending requests; workers will take requests from the queue and send them, only sending the next request after receiving a response for the previous one. It is not recommended to set both parameters simultaneously; thus, in this tool, the `--rate` parameter is only effective when `--parallel` is set to 1.
+  ```
 - `--log-every-n-query`: Log every n queries, default is 10.
 - `--stream`: Use SSE stream output, default is False.
 

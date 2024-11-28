@@ -140,22 +140,24 @@ class AioHttpClient:
         logger.debug(f'Request received: <{method=},  {url=}, {truncated_chunk=}>')
 
 
-async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
+async def test_connection(args: Arguments) -> bool:
     is_error = True
-    timeout = args.connect_timeout
     start_time = time.perf_counter()
 
     async def attempt_connection():
-        if 'chat/completions' in args.url:
-            request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
-        else:
-            request = {'prompt': 'hello', 'model': args.model}
-        async for is_error, state_code, response_data in client.post(request):
-            return is_error, state_code, response_data
+        client = AioHttpClient(args)
+        async with client:
+            if 'chat/completions' in args.url:
+                request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+            else:
+                request = {'prompt': 'hello', 'model': args.model}
+            async for is_error, state_code, response_data in client.post(request):
+                return is_error, state_code, response_data
 
     while True:
         try:
-            is_error, state_code, response_data = await asyncio.wait_for(attempt_connection(), timeout=timeout)
+            is_error, state_code, response_data = await asyncio.wait_for(
+                attempt_connection(), timeout=args.connect_timeout)
             if not is_error:
                 logger.info('Connection successful.')
                 return True
@@ -163,7 +165,7 @@ async def test_connection(client: AioHttpClient, args: Arguments) -> bool:
         except Exception as e:
             logger.warning(f'Retrying... <{e}>')
 
-        if time.perf_counter() - start_time >= timeout:
+        if time.perf_counter() - start_time >= args.connect_timeout:
             logger.error('Overall connection attempt timed out.')
             return False
 
