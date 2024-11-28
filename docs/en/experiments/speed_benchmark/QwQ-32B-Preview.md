@@ -13,8 +13,13 @@ The Speed Benchmark tool was used to test the GPU memory usage and inference spe
 - Pytorch 2.3.1
 - Flash Attention 2.5.8
 - Transformers 4.46.0
-  
+- EvalScope 0.7.0
+
+
 ### Stress Testing Command
+```shell
+pip install evalscope[perf] -U
+```
 ```shell
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --parallel 1 \
