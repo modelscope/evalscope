@@ -122,7 +122,7 @@ pip install vllm -U
 ```
 **Deploy Model Service**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
 ```
 :::
 
