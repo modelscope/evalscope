@@ -151,6 +151,6 @@ class OpenaiPlugin(ApiPluginBase):
         elif input_tokens is None and output_tokens is None:  # no usage info get.
             input_tokens = 0
             output_tokens = 0
-            logger.warning('No usage info get.')
+            logger.warning('No usage information found. Please specify `--tokenizer-path` to generate usage details.')
 
         return input_tokens, output_tokens
