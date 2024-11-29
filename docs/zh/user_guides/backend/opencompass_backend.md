@@ -134,7 +134,7 @@ pip install vllm -U
 
 **部署模型服务**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen2-0.5B-Instruct --port 8000
+CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
 ```
 :::
 
