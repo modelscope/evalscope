@@ -9,6 +9,7 @@ eval_config:
       img_size: 224
       img_detail: low
       video_llm: false
+      timeout: 120
   data:
     # - MVBench_MP4
     # - MLVU
