@@ -3,25 +3,21 @@
 # flake8: noqa
 import os
 import sys
-from typing import List, Any, Union, Dict
-import numpy as np
 import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from typing import Any, Dict, List, Union
 
+import numpy as np
 import torch
 from torch import dtype
 
 from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
 from evalscope.models.custom import CustomModel
-from evalscope.models.template import get_template, StopWordsCriteria
+from evalscope.utils.chat_service import ChatMessage
 from evalscope.utils.logger import get_logger
-from transformers import StoppingCriteriaList
 
 logger = get_logger()
-
-# Notes:
-# - modelscope>=1.9.5
 
 
 def get_model_cache_dir(root_cache_dir: str):
@@ -93,31 +89,23 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
 
-        from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        # from modelscope import snapshot_download
+        from modelscope import AutoModelForCausalLM, AutoTokenizer
 
-        # try:
-        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-        #     logger.warning('**Use local_files_only to load model **')
-        # except:
-        #     model_dir = snapshot_download(self.model_id,
-        #                                   revision=model_revision,
-        #                                   cache_dir=model_cache_dir, )
-        #     logger.warning('**Load model from ModelScope hub **')
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id,  # self.model_id
+            revision=model_revision,
+            trust_remote_code=True,
+            cache_dir=model_cache_dir,
+        )
 
-        tokenizer = AutoTokenizer.from_pretrained(self.model_id,    # self.model_id
-                                                  revision=model_revision,
-                                                  trust_remote_code=True,
-                                                  cache_dir=model_cache_dir,)
-
-        model = AutoModelForCausalLM.from_pretrained(self.model_id,  # self.model_id
-                                                     revision=model_revision,
-                                                     device_map=device_map,
-                                                     trust_remote_code=True,
-                                                     torch_dtype=torch_dtype,
-                                                     cache_dir=model_cache_dir,)
-
-        # model.generation_config = GenerationConfig.from_pretrained(model_id, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            self.model_id,  # self.model_id
+            revision=model_revision,
+            device_map=device_map,
+            trust_remote_code=True,
+            torch_dtype=torch_dtype,
+            cache_dir=model_cache_dir,
+        )
 
         super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
@@ -187,18 +175,16 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         if softval.dtype in {torch.bfloat16, torch.float16}:
             softval = softval.to(dtype=torch.float32)
         probs = softval.detach().cpu().numpy()
-        pred: str = multi_choices[int(np.argmax(probs))]        # Format: A or B or C or D
+        pred: str = multi_choices[int(np.argmax(probs))]  # Format: A or B or C or D
 
         res_d = {
-            'choices': [
-                {
-                    'index': 0,
-                    'message': {
-                        'content': pred,
-                        'role': 'assistant'
-                    }
+            'choices': [{
+                'index': 0,
+                'message': {
+                    'content': pred,
+                    'role': 'assistant'
                 }
-            ],
+            }],
             'created': time.time(),
             'model': self.model_id,
             'object': 'chat.completion',
@@ -239,12 +225,13 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
             **kwargs: Other args.
         """
 
-        super().__init__(model_id=model_id,
-                         device_map=device_map,
-                         torch_dtype=torch_dtype,
-                         model_revision=model_revision,
-                         cache_dir=cache_dir,
-                         **kwargs)
+        super().__init__(
+            model_id=model_id,
+            device_map=device_map,
+            torch_dtype=torch_dtype,
+            model_revision=model_revision,
+            cache_dir=cache_dir,
+            **kwargs)
 
     @torch.no_grad()
     def predict(self, inputs: dict, infer_cfg: dict = None) -> dict:
@@ -282,15 +269,13 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
         pred_list: list = self.loglikelihood(inputs=inputs['data'], infer_cfg=infer_cfg)
 
         res_d = {
-            'choices': [
-                {
-                    'index': 0,
-                    'message': {
-                        'content': pred_list,
-                        'role': 'assistant'
-                    }
+            'choices': [{
+                'index': 0,
+                'message': {
+                    'content': pred_list,
+                    'role': 'assistant'
                 }
-            ],
+            }],
             'created': time.time(),
             'model': self.model_id,
             'object': 'chat.completion',
@@ -347,9 +332,9 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
     def __init__(self,
                  model_id: str,
-                 model_revision: str,
+                 model_revision: str = 'master',
                  device_map: str = 'auto',
-                 torch_dtype: dtype = torch.float16,
+                 torch_dtype: dtype = 'auto',
                  cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
                  **kwargs):
         """
@@ -359,11 +344,12 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             model_id: The model id on ModelScope, or local model_dir.
             model_revision: The model revision on ModelScope. Default: None.
             device_map: The device map for model inference.
-            torch_dtype: The torch dtype for model inference. Default: torch.float16.
+            torch_dtype: The torch dtype for model inference. Default: 'auto'.
             **kwargs: Other args.
         """
 
         custom_generation_config = kwargs.pop('generation_config', None)
+        custom_chat_template = kwargs.pop('chat_template', None)
         model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
 
         self.model_id: str = model_id
@@ -378,51 +364,36 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
 
-        self.template_type = kwargs.pop('template_type', None)
-        logger.warning(f'**Template type: {self.template_type}')
+        from modelscope import AutoModelForCausalLM, AutoTokenizer
 
-        from evalscope.models.template import TemplateType
-        if isinstance(self.model_id, str) \
-                and os.path.isdir(os.path.expanduser(self.model_id)) \
-                and self.template_type is None:
-            raise ValueError(f'Please specify the --template-type for local model dir.\n'
-                             f'Available template types: {TemplateType.get_template_name_list()}\n'
-                             f'Refer to `https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md` for more details.')
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id,
+            revision=model_revision,
+            trust_remote_code=True,
+            cache_dir=model_cache_dir,
+        )
 
-        from modelscope.utils.hf_util import AutoModelForCausalLM, AutoTokenizer
-        # from modelscope import snapshot_download
+        model = AutoModelForCausalLM.from_pretrained(
+            self.model_id,
+            revision=model_revision,
+            device_map=device_map,
+            trust_remote_code=True,
+            torch_dtype=torch_dtype,
+            cache_dir=model_cache_dir,
+        )
 
-        # try:
-        #     model_dir = snapshot_download(self.model_id, cache_dir=model_cache_dir, local_files_only=True)
-        #     logger.warning('**Use local_files_only to load model **')
-        # except:
-        #     model_dir = snapshot_download(self.model_id,
-        #                                   revision=model_revision,
-        #                                   cache_dir=model_cache_dir, )
-        #     logger.warning('**Load model from ModelScope hub **')
-
-        tokenizer = AutoTokenizer.from_pretrained(self.model_id,
-                                                  revision=model_revision,
-                                                  trust_remote_code=True,
-                                                  cache_dir=model_cache_dir,)
-
-        model = AutoModelForCausalLM.from_pretrained(self.model_id,
-                                                     revision=model_revision,
-                                                     device_map=device_map,
-                                                     trust_remote_code=True,
-                                                     torch_dtype=torch_dtype,
-                                                     cache_dir=model_cache_dir,)
-
-        self.origin_tokenizer = deepcopy(tokenizer)
-
-        self.generation_config, self.generation_template = self._parse_generation_config(tokenizer, model)
+        self.generation_config = self._parse_generation_config(tokenizer, model)
 
         if custom_generation_config:
             logger.info('**Updating generation config ...')
             self.generation_config.update(**custom_generation_config.to_dict())
         logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
-        super().__init__(model=model, tokenizer=self.generation_template.tokenizer, model_cfg=model_cfg)
+        if custom_chat_template:
+            tokenizer.chat_template = custom_chat_template
+            logger.info(f'Using custom chat template: {custom_chat_template}')
+
+        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
     def _parse_generation_config(self, tokenizer, model):
         from modelscope.utils.hf_util import GenerationConfig
@@ -431,18 +402,13 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         try:
             remote_config = GenerationConfig.from_pretrained(
-                self.model_id,
-                revision=self.model_revision,
-                trust_remote_code=True)
+                self.model_id, revision=self.model_revision, trust_remote_code=True)
             generation_config.update(**remote_config.to_dict())
         except:
             logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
 
-        # Parse templates for chat-completion
         if isinstance(self.model_id, str) and os.path.exists(self.model_id):
             logger.warning(f'Got local model dir: {self.model_id}')
-
-        generation_template = get_template(template_type=self.template_type, tokenizer=tokenizer)
 
         if tokenizer.eos_token_id is not None:
             generation_config.eos_token_id = tokenizer.eos_token_id
@@ -451,24 +417,20 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         if generation_config.max_new_tokens is None:
             generation_config.max_new_tokens = 2048
 
-        return generation_config, generation_template
+        return generation_config
 
     def _model_generate(self, query: str, infer_cfg: dict) -> str:
-        example = dict(query=query,
-                       history=[],
-                       system=None)
-
-        inputs, _ = self.generation_template.encode(example)
+        messages = [ChatMessage(role='user', content=query)]
+        formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
         input_ids = inputs['input_ids']
-        input_ids = torch.tensor(input_ids)[None].to(self.device)
-        attention_mask = torch.ones_like(input_ids).to(self.device)
 
         # Process infer_cfg
         infer_cfg = infer_cfg or {}
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
 
-        # TODO: stop settings
+        # stop settings
         stop = infer_cfg.get('stop', None)
         eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
             if stop else self.tokenizer.eos_token_id
@@ -479,20 +441,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         self.generation_config.update(**infer_cfg)
 
-        # stopping
-        stop_words = [self.generation_template.suffix[-1]]
-        decode_kwargs = {}
-        stopping_criteria = StoppingCriteriaList(
-            [StopWordsCriteria(self.tokenizer, stop_words, **decode_kwargs)])
-
         # Run inference
-        output_ids = self.model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            generation_config=self.generation_config,
-            stopping_criteria=stopping_criteria, )
+        output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
 
-        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], True, **decode_kwargs)
+        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], skip_special_tokens=True)
         return response
 
     @torch.no_grad()
@@ -510,12 +462,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         response = self._model_generate(query, infer_cfg)
 
-        choices_list = [
-            {'index': 0,
-             'message': {'content': response,
-                         'role': 'assistant'}
-             }
-        ]
+        choices_list = [{'index': 0, 'message': {'content': response, 'role': 'assistant'}}]
 
         res_d = {
             'choices': choices_list,
@@ -589,4 +536,3 @@ class CustomModelAdapter(BaseModelAdapter):
                 raise TypeError(f'Unsupported inputs type: {type(input_prompt)}')
 
         return self.custom_model.predict(prompts=in_prompts, **kwargs)
-

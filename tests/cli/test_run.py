@@ -2,7 +2,12 @@
 
 import subprocess
 import unittest
-from evalscope.utils import test_level_list, is_module_installed
+
+import torch
+
+from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.run import run_task
+from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -11,7 +16,7 @@ logger = get_logger()
 class TestRun(unittest.TestCase):
 
     def setUp(self) -> None:
-        logger.info(f'Init env for evalscope native run UTs ...\n')
+        logger.info('Init env for evalscope native run UTs ...\n')
         self._check_env('evalscope')
 
     def tearDown(self) -> None:
@@ -68,8 +73,24 @@ class TestRun(unittest.TestCase):
         logger.error(f'>>test_run_eval_with_args stderr: {run_res.stderr}')
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_eval_local(self):
-        ...
+    def test_run_task(self):
+        task_cfg = {
+            'generation_config': {
+                'do_sample': False,
+                'repetition_penalty': 1.0,
+                'max_new_tokens': 512
+            },
+            'dry_run': False,
+            'model': 'qwen/Qwen2-0.5B-Instruct',
+            'datasets': ['gsm8k'],
+            'work_dir': DEFAULT_ROOT_CACHE_DIR,
+            'outputs': 'outputs',
+            'mem_cache': False,
+            'dataset_hub': 'ModelScope',
+            'limit': 10,
+            'debug': False
+        }
+        run_task(task_cfg=task_cfg)
 
 
 if __name__ == '__main__':
