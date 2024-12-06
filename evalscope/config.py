@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
 import copy
-from dataclasses import dataclass, asdict, field
-from typing import Optional, List
+import os
+from dataclasses import asdict, dataclass, field
+from typing import List, Optional
 
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.models.custom import CustomModel
 from evalscope.utils import yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -26,7 +26,6 @@ registry_tasks = {
     # 'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
     # 'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
     # 'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
-
 }
 
 
@@ -40,13 +39,13 @@ class TaskConfig:
     model: CustomModel = None
     eval_type: str = 'custom'
     datasets: list = field(default_factory=list)
-    work_dir: str = DEFAULT_ROOT_CACHE_DIR
+    work_dir: str = DEFAULT_WORK_DIR
     outputs: str = None
     mem_cache: bool = False
     use_cache: bool = True
-    stage: str = 'all'      # `all` or `infer` or `review`
+    stage: str = 'all'  # `all` or `infer` or `review`
     dataset_hub: str = 'ModelScope'
-    dataset_dir: str = DEFAULT_ROOT_CACHE_DIR
+    dataset_dir: str = DEFAULT_WORK_DIR
     limit: int = None
     eval_backend: str = 'Native'
     eval_config: dict = field(default_factory=dict)
@@ -75,7 +74,7 @@ class TaskConfig:
             data_pattern: str, the data pattern for the task.
                     e.g. `mmlu`, `ceval`, `gsm8k`, ...
                     refer to task_config.list() for all available datasets.
-            dataset_dir: str, the directory to store multiple datasets files. e.g. /path/to/data, 
+            dataset_dir: str, the directory to store multiple datasets files. e.g. /path/to/data,
                 then your specific custom dataset directory will be /path/to/data/{name}
             subset_list: list, the subset list for the dataset.
                 e.g. ['middle_school_politics', 'operating_system']
@@ -83,7 +82,8 @@ class TaskConfig:
         """
         available_datasets = list(registry_tasks.keys())
         if data_pattern not in available_datasets:
-            logger.error(f'No dataset found in available datasets: {available_datasets}, got data_pattern: {data_pattern}')
+            logger.error(
+                f'No dataset found in available datasets: {available_datasets}, got data_pattern: {data_pattern}')
             return
 
         # Reuse the existing task config and update the datasets
@@ -91,7 +91,7 @@ class TaskConfig:
 
         custom_config = copy.deepcopy(pattern_config)
         custom_config.update({'datasets': [data_pattern]})
-        custom_config.update({'dataset_hub': 'Local'})     # TODO: to support `ModelScope`
+        custom_config.update({'dataset_hub': 'Local'})  # TODO: to support `ModelScope`
         if 'dataset_args' in custom_config:
             if data_pattern not in custom_config:
                 custom_config['dataset_args'].update({data_pattern: {}})
@@ -130,9 +130,10 @@ class TaskConfig:
             res = TaskConfig(**task)
             res.model = custom_model
             if res.outputs is None:
-                res.outputs = os.path.join(res.work_dir,
-                                           'outputs',
-                                           f"eval_{'-'.join(tasks)}_{res.model.config['model_id']}_{res.model_args.get('revision', 'default')}")
+                res.outputs = os.path.join(
+                    res.work_dir, 'outputs',
+                    f"eval_{'-'.join(tasks)}_{res.model.config['model_id']}_{res.model_args.get('revision', 'default')}"
+                )
             res_list.append(res)
 
         return res_list
@@ -163,4 +164,3 @@ if __name__ == '__main__':
     for item in swift_eval_task:
         print(item.to_dict())
         print()
-

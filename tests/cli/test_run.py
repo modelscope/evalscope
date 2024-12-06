@@ -1,14 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os
 import subprocess
 import unittest
 
 import torch
 
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
+
+os.environ['LOG_LEVEL'] = 'DEBUG'
 
 logger = get_logger()
 
@@ -75,19 +77,14 @@ class TestRun(unittest.TestCase):
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
         task_cfg = {
-            'generation_config': {
-                'do_sample': False,
-                'repetition_penalty': 1.0,
-                'max_new_tokens': 512
-            },
             'dry_run': False,
+            'use_cache': False,
             'model': 'qwen/Qwen2-0.5B-Instruct',
             'datasets': ['gsm8k'],
-            'work_dir': DEFAULT_ROOT_CACHE_DIR,
+            'work_dir': DEFAULT_WORK_DIR,
             'outputs': 'outputs',
-            'mem_cache': False,
             'dataset_hub': 'ModelScope',
-            'limit': 10,
+            'limit': 2,
             'debug': False
         }
         run_task(task_cfg=task_cfg)

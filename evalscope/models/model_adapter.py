@@ -10,21 +10,16 @@ from typing import Any, Dict, List, Union
 
 import numpy as np
 import torch
+from modelscope import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from torch import dtype
 
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_MODEL_CACHE_DIR
 from evalscope.models.custom import CustomModel
 from evalscope.utils.chat_service import ChatMessage
 from evalscope.utils.logger import get_logger
+from evalscope.utils.model_utils import fix_do_sample_warning
 
 logger = get_logger()
-
-
-def get_model_cache_dir(root_cache_dir: str):
-    model_cache_dir = os.path.join(root_cache_dir, 'models')
-    model_cache_dir = os.path.expanduser(model_cache_dir)
-    os.makedirs(model_cache_dir, exist_ok=True)
-    return model_cache_dir
 
 
 class BaseModelAdapter(ABC):
@@ -65,7 +60,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
                  torch_dtype: dtype = torch.bfloat16,
                  model_revision: str = None,
                  max_length: int = None,
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 cache_dir: str = None,
                  **kwargs):
         """
         Args:
@@ -76,7 +71,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
             max_length: The max length of input sequence. Default: None.
             **kwargs: Other args.
         """
-        model_cache_dir = get_model_cache_dir(cache_dir)
+        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
 
         self.model_id: str = model_id
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -88,8 +83,6 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         model_cfg['model_id'] = model_id
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
-
-        from modelscope import AutoModelForCausalLM, AutoTokenizer
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,  # self.model_id
@@ -212,7 +205,7 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
                  device_map: str = 'auto',
                  torch_dtype: dtype = torch.bfloat16,
                  model_revision: str = None,
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 cache_dir: str = None,
                  **kwargs):
         """
         Continuation-logits model adapter.
@@ -335,7 +328,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                  model_revision: str = 'master',
                  device_map: str = 'auto',
                  torch_dtype: dtype = 'auto',
-                 cache_dir: str = DEFAULT_ROOT_CACHE_DIR,
+                 cache_dir: str = None,
                  **kwargs):
         """
         Chat completion model adapter. Tasks of chat and generation are supported.
@@ -350,7 +343,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         custom_generation_config = kwargs.pop('generation_config', None)
         custom_chat_template = kwargs.pop('chat_template', None)
-        model_cache_dir = get_model_cache_dir(root_cache_dir=cache_dir)
+        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
 
         self.model_id: str = model_id
         self.model_revision: str = model_revision
@@ -363,8 +356,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         model_cfg['model_id'] = model_id
         model_cfg['device_map'] = device_map
         model_cfg['torch_dtype'] = str(torch_dtype)
-
-        from modelscope import AutoModelForCausalLM, AutoTokenizer
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,
@@ -396,9 +387,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
     def _parse_generation_config(self, tokenizer, model):
-        from modelscope.utils.hf_util import GenerationConfig
-
-        generation_config = getattr(model, 'generation_config', GenerationConfig())
+        generation_config = getattr(model, 'generation_config', GenerationConfig(do_sample=False))
 
         try:
             remote_config = GenerationConfig.from_pretrained(
@@ -440,6 +429,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
 
         self.generation_config.update(**infer_cfg)
+        fix_do_sample_warning(self.generation_config)
 
         # Run inference
         output_ids = self.model.generate(**inputs, generation_config=self.generation_config)

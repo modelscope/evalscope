@@ -9,11 +9,11 @@ import json
 import torch  # noqa
 
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR
 from evalscope.evaluator import Evaluator
 from evalscope.evaluator.evaluator import HumanevalEvaluator
 from evalscope.models.custom import CustomModel
-from evalscope.utils import EvalBackend, gen_hash, import_module_util, json_to_dict, make_outputs_dir, yaml_to_dict
+from evalscope.utils import EvalBackend, import_module_util, json_to_dict, make_outputs_dir, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -38,9 +38,11 @@ def parse_args():
     parser.add_argument(
         '--template-type',
         type=str,
-        help='Deprecated. See `--chat-template`',
+        help='Deprecated, will be removed in v1.0.0. See `--chat-template`.',
         required=False,
     )
+    parser.add_argument(
+        '--mem-cache', help='Deprecated, will be removed in v1.0.0.', action='store_true', default=False)
     parser.add_argument(
         '--chat-template',
         type=str,
@@ -91,7 +93,7 @@ def parse_args():
         help='The datasets dir. Use to specify the local datasets or datasets cache dir.'
         'See --dataset-hub for more details.',
         required=False,
-        default=DEFAULT_ROOT_CACHE_DIR)
+        default=DEFAULT_DATASET_CACHE_DIR)
     parser.add_argument(
         '--dataset-hub',
         help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. '
@@ -105,7 +107,7 @@ def parse_args():
         help='Outputs dir. Default to `outputs`, which means dump to current path: ./outputs',
         required=False,
         default='outputs')
-    parser.add_argument('--work-dir', help='The root cache dir.', required=False, default=DEFAULT_ROOT_CACHE_DIR)
+    parser.add_argument('--work-dir', help='The root cache dir.', required=False, default=DEFAULT_WORK_DIR)
     parser.add_argument(
         '--limit',
         type=int,
@@ -209,7 +211,6 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             from evalscope.backend.rag_eval import RAGEvalBackendManager
             rag_eval_backend_manager = RAGEvalBackendManager(config=eval_config)
             rag_eval_backend_manager.run()
-        # TODO: Add other evaluation backends
         elif eval_backend == EvalBackend.THIRD_PARTY.value:
             raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
@@ -219,11 +220,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     output_task_cfg = copy.copy(task_cfg)
     logger.info(output_task_cfg)
 
-    model_args: dict = task_cfg.get('model_args', {
-        'revision': 'default',
-        'precision': torch.float16,
-        'device_map': 'auto'
-    })
+    model_args: dict = task_cfg.get('model_args', {})
     # Get the GLOBAL default config (infer_cfg) for prediction
     generation_config: dict = task_cfg.get(
         'generation_config', {
@@ -231,9 +228,9 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             'repetition_penalty': 1.0,
             'max_length': 2048,
             'max_new_tokens': 512,
-            'temperature': 0.3,
-            'top_k': 50,
-            'top_p': 0.8,
+            'temperature': 1.0,
+            'top_p': 1.0,
+            'top_k': 50
         })
     dataset_args: dict = task_cfg.get('dataset_args', {})
     dry_run: bool = task_cfg.get('dry_run', False)
@@ -241,11 +238,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     template_type: str = task_cfg.get('template_type', None)
     eval_type: str = task_cfg.get('eval_type', 'checkpoint')
     datasets: list = task_cfg.get('datasets', None)
-    work_dir: str = task_cfg.get('work_dir', DEFAULT_ROOT_CACHE_DIR)
+    work_dir: str = task_cfg.get('work_dir', DEFAULT_WORK_DIR)
     outputs: str = task_cfg.get('outputs', 'outputs')
     use_cache: bool = task_cfg.get('use_cache', True)
     dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
-    dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_ROOT_CACHE_DIR)
+    dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_DATASET_CACHE_DIR)
     stage: str = task_cfg.get('stage', 'all')
     limit: int = task_cfg.get('limit', None)
     debug: str = task_cfg.get('debug', False)
@@ -271,18 +268,14 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
     elif eval_type == 'custom':
-        model_id: str = None
-        model_revision: str = None
+        model_id: str = 'default'
+        model_revision: str = DEFAULT_MODEL_REVISION
     else:
         model_id: str = model
-        model_revision: str = model_args.get('revision', 'master')
+        model_revision: str = model_args.get('revision', DEFAULT_MODEL_REVISION)
 
     # Get outputs directory
-    if isinstance(model_id, str) and os.path.isdir(os.path.expanduser(model_id)):
-        # get the output_model_id when model_id is a local model dir
-        output_model_id: str = gen_hash(model_id)
-    else:
-        output_model_id: str = model_id
+    output_model_id: str = os.path.basename(model_id)
     if outputs == 'outputs':
         outputs = make_outputs_dir(
             root_dir=os.path.join(work_dir, 'outputs'),
@@ -314,12 +307,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
             # Init model adapter
             device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
             model_adapter = imported_modules['ModelAdapterClass'](
-                model_id=model_id,
-                model_revision=model_revision,
-                device_map=device_map,
-                torch_dtype=model_precision,
-                cache_dir=work_dir,
-                template_type=template_type)
+                model_id=model_id, model_revision=model_revision, device_map=device_map, torch_dtype=model_precision)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
@@ -360,7 +348,6 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
                 use_cache=use_cache,
                 root_cache_dir=work_dir,
                 outputs_dir=outputs,
-                is_custom_outputs_dir=outputs != 'outputs',
                 datasets_dir=dataset_dir,
                 datasets_hub=dataset_hub,
                 stage=stage,
