@@ -1,25 +1,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import pickle
+from datetime import datetime, timedelta
 from typing import Union
 
 import cachetools
 from cachetools import Cache as CachetoolsCache
 from pympler import asizeof
-from datetime import datetime, timedelta
-import pickle
 
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-
 DEFAULT_CACHE_MAXSIZE = 1 * 1024 * 1024 * 1024  # 1 GB
-DEFAULT_CACHE_EXPIRE = 60 * 60 * 24             # 1 day (seconds)
-DEFAULT_MEM_CACHE_PATH = os.environ.get('MEM_CACHE_PATH',
-                                        os.path.join(os.path.expanduser(DEFAULT_ROOT_CACHE_DIR),
-                                                     'mem_cache', 'global_cache.pkl'))
+DEFAULT_CACHE_EXPIRE = 60 * 60 * 24  # 1 day (seconds)
+DEFAULT_MEM_CACHE_PATH = os.environ.get(
+    'MEM_CACHE_PATH', os.path.join(os.path.expanduser(DEFAULT_WORK_DIR), 'mem_cache', 'global_cache.pkl'))
 
 
 class Cache:
@@ -34,10 +32,8 @@ class Cache:
 
     @classmethod
     def ttl_cache(cls, max_size: float = DEFAULT_CACHE_MAXSIZE, expire: float = DEFAULT_CACHE_EXPIRE):
-        return cachetools.TTLCache(maxsize=max_size,
-                                   ttl=timedelta(seconds=expire),
-                                   timer=datetime.now,
-                                   getsizeof=asizeof.asizeof)
+        return cachetools.TTLCache(
+            maxsize=max_size, ttl=timedelta(seconds=expire), timer=datetime.now, getsizeof=asizeof.asizeof)
 
     @classmethod
     def load(cls, path: str) -> Union[CachetoolsCache, None]:

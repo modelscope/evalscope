@@ -1,28 +1,27 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
-import time
-import json
 import re
-from copy import deepcopy
+import time
 from collections import OrderedDict
+from copy import deepcopy
+from typing import Any, Dict, List, Optional, Union
 
+import json
 from tqdm import tqdm
-from typing import Optional, List, Any, Union, Dict
 
 from evalscope.benchmarks import DataAdapter
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR, OutputsStructure, AnswerKeys, ReviewKeys, EvalStage
+from evalscope.constants import DEFAULT_WORK_DIR, AnswerKeys, EvalStage, OutputsStructure, ReviewKeys
 from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import gen_hash, dict_torch_dtype_to_str, dump_jsonl_data, process_outputs_structure, \
-    normalize_score, dict_to_yaml, jsonl_to_list
+from evalscope.utils import (dict_to_yaml, dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list,
+                             normalize_score, process_outputs_structure)
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
 class Evaluator(object):
-
     """
     The evaluator for model on datasets.
 
@@ -34,10 +33,8 @@ class Evaluator(object):
         subset_list: list, the subset list for the dataset.
         model_adapter: BaseModelAdapter, the model adapter for the model.
         use_cache: bool, whether to use local cache. Default: True
-        mem_cache_method: str, the memory cache method. Default: 'ttl' (deprecated)
         root_cache_dir: str, the root cache dir. Default: DEFAULT_ROOT_CACHE_DIR
         outputs_dir: str, the outputs dir. Default: ''
-        is_custom_outputs_dir: bool, whether to use custom outputs dir. Default: False  (deprecated)
         datasets_dir: str, the datasets dir. Default: DEFAULT_ROOT_CACHE_DIR
         datasets_hub: str, the datasets hub. `Local`, `ModelScope` or `HuggingFace`. Default: 'ModelScope'
         stage: str, the stage of evaluation. `all` or `infer` or `review`. Default: 'all'
@@ -46,22 +43,21 @@ class Evaluator(object):
         **kwargs: kwargs.
     """
 
-    def __init__(self,
-                 dataset_name_or_path: str,
-                 data_adapter: DataAdapter,
-                 subset_list: Optional[list] = None,
-                 model_adapter: Optional[BaseModelAdapter] = None,
-                 use_cache: bool = True,
-                 mem_cache_method: str = 'ttl',
-                 root_cache_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
-                 outputs_dir: Optional[str] = '',
-                 is_custom_outputs_dir: bool = False,
-                 datasets_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
-                 datasets_hub: Optional[str] = 'ModelScope',
-                 stage: Optional[str] = 'all',      # refer to evalscope.constants.EvalStage
-                 eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
-                 overall_task_cfg: Optional[dict] = None,
-                 **kwargs):
+    def __init__(
+            self,
+            dataset_name_or_path: str,
+            data_adapter: DataAdapter,
+            subset_list: Optional[list] = None,
+            model_adapter: Optional[BaseModelAdapter] = None,
+            use_cache: bool = True,
+            root_cache_dir: Optional[str] = DEFAULT_WORK_DIR,
+            outputs_dir: Optional[str] = '',
+            datasets_dir: Optional[str] = DEFAULT_WORK_DIR,
+            datasets_hub: Optional[str] = 'ModelScope',
+            stage: Optional[str] = 'all',  # refer to evalscope.constants.EvalStage
+            eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
+            overall_task_cfg: Optional[dict] = None,
+            **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.custom_task_name: str = None
@@ -85,62 +81,28 @@ class Evaluator(object):
         self.model_revision = self.model_cfg.get('revision', None)
         self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
 
-        # Get default outputs_dir
-        # TODO: refactor outputs_dir, del timestamp concat
-        # if not is_custom_outputs_dir:
-        #     outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-        #                                    model_id=self.model_id,
-        #                                    model_revision=self.model_revision_str)
-
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
         self.outputs_structure = process_outputs_structure(self.outputs_dir)
 
         # Load dataset
-        self.dataset = self.data_adapter.load(dataset_name_or_path=dataset_name_or_path,
-                                              subset_list=subset_list,
-                                              work_dir=self.datasets_dir,
-                                              datasets_hub=datasets_hub,
-                                              **kwargs)
+        self.dataset = self.data_adapter.load(
+            dataset_name_or_path=dataset_name_or_path,
+            subset_list=subset_list,
+            work_dir=self.datasets_dir,
+            datasets_hub=datasets_hub,
+            **kwargs)
 
         # Get prompts from dataset
         self.prompts = self.data_adapter.gen_prompts(data_dict=self.dataset)
         del self.dataset
 
-        # Init memory cache
-        # TODO: refactor mem cache manager
-        # mem_cache_file_name = self.dataset_name_or_path.replace('/', '_') + \
-        #     '_' + self.model_id.replace('/', '_') + \
-        #     '_' + self.model_revision_str + \
-        #     '_cache.pkl'
-        # self.mem_cache_path = os.path.join(self.root_cache_dir, 'mem_cache', mem_cache_file_name)
-
-        # Note: mem_cache is deprecated, use `use_cache` instead
-        self.mem_cache = None
-        self.mem_cache_method = mem_cache_method
-        # if self.use_cache:
-        #     self.mem_cache = init_mem_cache(method=self.mem_cache_method, cache_file_path=self.mem_cache_path)
-        #     logger.info(f'** Using memory cache with size: {len(self.mem_cache)}')
-
-    def _pred_answer(self,
-                     input_d: dict,
-                     infer_cfg: dict,
-                     subset_name: str,
-                     answer_id: str = None) -> dict:
-
-        # Get answer from memory cache
-        if self.mem_cache is not None:
-            if answer_id in self.mem_cache:
-                logger.info(f'** Reusing answer `{answer_id}` in memory cache.')
-                return self.mem_cache[answer_id]
+    def _pred_answer(self, input_d: dict, infer_cfg: dict, subset_name: str, answer_id: str = None) -> dict:
 
         ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
         ans[AnswerKeys.ANSWER_ID] = answer_id
         ans[AnswerKeys.SUBSET_NAME] = subset_name
-
-        if self.mem_cache is not None:
-            self.mem_cache[answer_id] = ans
 
         return ans
 
@@ -195,8 +157,8 @@ class Evaluator(object):
         if isinstance(self.model_adapter, CustomModelAdapter):
             # Batch inference for custom model
 
-            resp_answers_list: List[Dict[str, Any]] = self.model_adapter.predict(inputs=prompts_list,
-                                                                                 infer_cfg=infer_cfg)
+            resp_answers_list: List[Dict[str, Any]] = self.model_adapter.predict(
+                inputs=prompts_list, infer_cfg=infer_cfg)
 
             assert len(prompts_list) == len(resp_answers_list), \
                 f'Length of prompts_list({len(prompts_list)}) != Length of resp_answers_list({len(resp_answers_list)})'
@@ -207,10 +169,10 @@ class Evaluator(object):
                 model_cfg_str = json.dumps(
                     OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
                     ensure_ascii=False)
-                input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(in_d).items())),
-                                              ensure_ascii=False)
-                infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
-                                           ensure_ascii=False)
+                input_prompt_str = json.dumps(
+                    OrderedDict(sorted(dict_torch_dtype_to_str(in_d).items())), ensure_ascii=False)
+                infer_cfg_str = json.dumps(
+                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
                 answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
                 resp_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
@@ -228,17 +190,15 @@ class Evaluator(object):
                 model_cfg_str = json.dumps(
                     OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
                     ensure_ascii=False)
-                input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())),
-                                              ensure_ascii=False)
-                infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())),
-                                           ensure_ascii=False)
+                input_prompt_str = json.dumps(
+                    OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())), ensure_ascii=False)
+                infer_cfg_str = json.dumps(
+                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
                 answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
                 # Get answers
-                answer_d: dict = self._pred_answer(input_d=input_prompt,
-                                                   infer_cfg=infer_cfg,
-                                                   subset_name=subset_name,
-                                                   answer_id=answer_id)
+                answer_d: dict = self._pred_answer(
+                    input_d=input_prompt, infer_cfg=infer_cfg, subset_name=subset_name, answer_id=answer_id)
 
                 answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
                 answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
@@ -259,16 +219,7 @@ class Evaluator(object):
 
         return answers_list
 
-    def _get_review(self,
-                    answer_d: dict,
-                    review_id: str = None,
-                    reviewer_spec: dict = None) -> dict:
-
-        # Get review from memory cache
-        if self.mem_cache is not None:
-            if review_id in self.mem_cache:
-                logger.info(f'** Reusing review `{review_id}` in memory cache.')
-                return self.mem_cache[review_id]
+    def _get_review(self, answer_d: dict, review_id: str = None, reviewer_spec: dict = None) -> dict:
 
         if reviewer_spec is None:
             reviewer_spec = {}
@@ -286,15 +237,16 @@ class Evaluator(object):
         for choice in choices:
             raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
-            answer_content = self.data_adapter.parse_pred_result(result=answer_content,
-                                                                 raw_input_d=raw_input_d,
-                                                                 eval_type=self.eval_type)
+            answer_content = self.data_adapter.parse_pred_result(
+                result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
 
             review_result = self.data_adapter.match(gold_content, answer_content)
-            choice[ReviewKeys.REVIEW] = {ReviewKeys.GOLD: gold_content,
-                                         ReviewKeys.PRED: answer_content,
-                                         ReviewKeys.RESULT: review_result}
+            choice[ReviewKeys.REVIEW] = {
+                ReviewKeys.GOLD: gold_content,
+                ReviewKeys.PRED: answer_content,
+                ReviewKeys.RESULT: review_result
+            }
 
             rev_choices.append(choice)
 
@@ -303,9 +255,6 @@ class Evaluator(object):
         review_res[ReviewKeys.REVIEW_ID] = review_id
         review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
         review_res[ReviewKeys.REVIEW_TIME] = time.time()
-
-        if self.mem_cache is not None:
-            self.mem_cache[review_id] = review_res
 
         return review_res
 
@@ -339,11 +288,13 @@ class Evaluator(object):
             # Gen review_id (concat: answer_id + reviewer_spec)
             answer_id = answer_d[AnswerKeys.ANSWER_ID]
 
-            reviewer_spec: dict = {'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
-                                   'reviewer': ['Evaluator'],
-                                   'revision': ['default']}
-            reviewer_spec_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())),
-                                           ensure_ascii=False)
+            reviewer_spec: dict = {
+                'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
+                'reviewer': ['Evaluator'],
+                'revision': ['default']
+            }
+            reviewer_spec_str = json.dumps(
+                OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
             review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
 
             # Get review
@@ -417,29 +368,10 @@ class Evaluator(object):
                 # Make table
                 report_table: str = gen_table([report_dir])
                 logger.info(f'** Report table: \n {report_table} \n')
-            except:
+            except Exception:
                 logger.error('Failed to generate report table.')
 
-    # def save_cache(self):
-    #     if self.mem_cache is not None:
-    #         logger.info(f'** Saving memory cache with size: {len(self.mem_cache)}')
-    #         Cache.save(cache=self.mem_cache, path=self.mem_cache_path)
-
-    # def clear_cache(self):
-    #     """
-    #     Clear memory cache.
-    #
-    #     Returns: None
-    #     """
-    #     if self.mem_cache is not None:
-    #         cache_len = len(self.mem_cache)
-    #         self.mem_cache.clear()
-    #         logger.info(f'** Memory cache cleared, length changed: {cache_len} -> {len(self.mem_cache)}')
-
-    def eval(self,
-             infer_cfg: dict = None,
-             debug: bool = False,
-             **kwargs) -> dict:
+    def eval(self, infer_cfg: dict = None, debug: bool = False, **kwargs) -> dict:
         """
         Evaluate the model on the specific benchmark. Streaming & parallel mode is supported.
         It is required to rewrite this method to support your own evaluator.
@@ -465,7 +397,7 @@ class Evaluator(object):
 
         logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
 
-        reviews_score_all = {}      # {subset_name: (score, num)}
+        reviews_score_all = {}  # {subset_name: (score, num)}
         stage_answers_dict = {}
         stage_reviews_dict = {}
 
@@ -473,19 +405,14 @@ class Evaluator(object):
             limit = infer_cfg.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
 
-            answers_list: list = self.get_answers(subset_name=subset_name,
-                                                  prompts_list=prompts_list,
-                                                  infer_cfg=infer_cfg,
-                                                  debug=debug,
-                                                  **kwargs)
+            answers_list: list = self.get_answers(
+                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=infer_cfg, debug=debug, **kwargs)
             if self.stage == EvalStage.INFER:
                 stage_answers_dict[subset_name] = answers_list
                 continue
 
-            reviews_list: list = self.get_reviews(subset_name=subset_name,
-                                                  answers_list=answers_list,
-                                                  debug=debug,
-                                                  **kwargs)
+            reviews_list: list = self.get_reviews(
+                subset_name=subset_name, answers_list=answers_list, debug=debug, **kwargs)
 
             metric_res = self.compute_metrics(reviews_list=reviews_list)
             reviews_score_all[subset_name] = (metric_res, len(reviews_list))
@@ -498,13 +425,13 @@ class Evaluator(object):
             return stage_reviews_dict
 
         # Generate report
-        report_map: dict = self.data_adapter.gen_report(subset_score_map=reviews_score_all,
-                                                        report_name=self.custom_task_name)
+        report_map: dict = self.data_adapter.gen_report(
+            subset_score_map=reviews_score_all, report_name=self.custom_task_name)
         self.dump_report(report_map=report_map)
 
         # Dump overall task config
-        overall_task_cfg_file: str = os.path.join(self.outputs_structure.get(OutputsStructure.CONFIGS_DIR),
-                                                  'task_output_config.yaml')
+        overall_task_cfg_file: str = os.path.join(
+            self.outputs_structure.get(OutputsStructure.CONFIGS_DIR), 'task_output_config.yaml')
         overall_task_cfg_file = os.path.abspath(overall_task_cfg_file)
 
         # TODO: check the robustness of dump yaml
@@ -513,10 +440,11 @@ class Evaluator(object):
             logger.info(f'** The overall task config:\n {self.overall_task_cfg}')
             if 'model' in self.overall_task_cfg and not isinstance(self.overall_task_cfg['model'], str):
                 self.overall_task_cfg['model'] = None
-                logger.info(f'>> Overwrite overall_task_cfg for `model` due to it is not a string')
+                logger.info('>> Overwrite overall_task_cfg for `model` due to it is not a string')
             if 'model_args' in self.overall_task_cfg and self.overall_task_cfg.get('model_args') is not None:
-                self.overall_task_cfg['model_args'].update({'precision': str(self.overall_task_cfg['model_args']['precision'])})
-                logger.info(f'>> Overwrite overall_task_cfg for `model_args.precision` due to it is not a string')
+                self.overall_task_cfg['model_args'].update(
+                    {'precision': str(self.overall_task_cfg['model_args']['precision'])})
+                logger.info('>> Overwrite overall_task_cfg for `model_args.precision` due to it is not a string')
 
             dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
         except Exception as e:
@@ -533,16 +461,17 @@ class Evaluator(object):
 
 class HumanevalEvaluator(object):
 
-    def __init__(self,
-                 problem_file: str,
-                 model_id: str,
-                 model_revision: str,
-                 model_adapter: BaseModelAdapter,
-                 outputs_dir: Optional[str] = '',
-                 is_custom_outputs_dir: bool = False,
-                 k: List[int] = [1, 10, 100],
-                 n_workers: int = 4,
-                 timeout: float = 3.0,):
+    def __init__(
+        self,
+        problem_file: str,
+        model_id: str,
+        model_revision: str,
+        model_adapter: BaseModelAdapter,
+        outputs_dir: Optional[str] = '',
+        k: List[int] = [1, 10, 100],
+        n_workers: int = 4,
+        timeout: float = 3.0,
+    ):
         try:
             from human_eval.evaluation import evaluate_functional_correctness
             from human_eval.data import read_problems, write_jsonl
@@ -565,11 +494,8 @@ class HumanevalEvaluator(object):
         self.problems = self.read_problems_func(self.problem_file)
 
         # Get default outputs_dir
-        model_revision_str: str = model_revision if model_revision is not None else 'none'
-        # if not is_custom_outputs_dir:
-        #     outputs_dir = make_outputs_dir(work_dir=outputs_dir,
-        #                                    model_id=model_id,
-        #                                    model_revision=model_revision_str)
+        # model_revision_str: str = model_revision if model_revision is not None else 'none'
+
         self.outputs_dir = os.path.expanduser(outputs_dir)
 
         # Deal with the output paths
@@ -596,19 +522,20 @@ class HumanevalEvaluator(object):
 
         # predict
         ans_list: list = self.get_answers(infer_cfg)
-        ans_out_file: str = os.path.join(self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR),
-                                         'human_eval_predictions.jsonl')
+        ans_out_file: str = os.path.join(
+            self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR), 'human_eval_predictions.jsonl')
 
         self.write_jsonl_func(filename=ans_out_file, data=ans_list)
         # logger.info(f'** Dump predictions to {ans_out_file} successfully.')
         logger.info('** Dump predictions successfully.')
 
         # evaluate  results: e.g. {'pass@1': 0.333, 'pass@10': 0.111}
-        results = self.eval_func(sample_file=ans_out_file,
-                                 k=self.k,
-                                 n_workers=self.num_workers,
-                                 timeout=self.timeout,
-                                 problem_file=self.problem_file)
+        results = self.eval_func(
+            sample_file=ans_out_file,
+            k=self.k,
+            n_workers=self.num_workers,
+            timeout=self.timeout,
+            problem_file=self.problem_file)
 
         # output: report
         report_map: dict = self.gen_report(results=results)
@@ -618,13 +545,13 @@ class HumanevalEvaluator(object):
         with open(report_file, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
         # logger.info(f'** Dump report to {report_file} \n')
-        logger.info(f'** Dump report \n')
+        logger.info('** Dump report \n')
 
         try:
             # Make table
             report_table: str = gen_table([report_dir])
             logger.info(f'** Report table: \n {report_table} \n')
-        except:
+        except Exception:
             logger.error('Failed to generate report table.')
 
     def gen_report(self, results: dict) -> dict:
@@ -653,15 +580,10 @@ class HumanevalEvaluator(object):
         """
         results = {k: normalize_score(score=v) for k, v in results.items()}
 
-        category_d = dict(name='DEFAULT',
-                          score=results,
-                          subset=[])
+        category_d = dict(name='DEFAULT', score=results, subset=[])
 
-        res_map = dict(name='HumanEval',
-                       metric='pass@k',
-                       score=results,
-                       category=[category_d],
-                       total_num=len(self.problems))
+        res_map = dict(
+            name='HumanEval', metric='pass@k', score=results, category=[category_d], total_num=len(self.problems))
 
         return res_map
 

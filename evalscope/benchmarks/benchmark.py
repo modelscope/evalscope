@@ -3,7 +3,7 @@
 import os.path
 from typing import Optional
 
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
+from evalscope.constants import DEFAULT_WORK_DIR
 
 
 class Benchmark(object):
@@ -20,7 +20,7 @@ class Benchmark(object):
              split: str = None,
              token: str = None,
              hub: str = 'ModelScope',
-             work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+             work_dir: Optional[str] = DEFAULT_WORK_DIR,
              **kwargs):
         """
         Load a dataset from ModelScope or HuggingFace.
@@ -41,8 +41,8 @@ class Benchmark(object):
         work_dir = os.path.join(work_dir, 'benchmarks', dataset_name.replace('/', '_'))
         if hub == 'ModelScope':
             from modelscope.msdatasets import MsDataset
-            dataset = MsDataset.load(dataset_name=dataset_name, subset_name=subset, split=split, token=token,
-                                     cache_dir=work_dir, **kwargs)
+            dataset = MsDataset.load(
+                dataset_name=dataset_name, subset_name=subset, split=split, token=token, cache_dir=work_dir, **kwargs)
 
             dataset.dataset_name = dataset_name.split('/')[-1]
             dataset.subset_name = subset

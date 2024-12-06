@@ -1,5 +1,6 @@
 import importlib.util as iutil
 import logging
+import os
 from typing import Optional
 
 init_loggers = {}
@@ -9,11 +10,12 @@ simple_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 detailed_formatter = logging.Formatter(detailed_format)
 simple_formatter = logging.Formatter(simple_format)
+DEFAULT_LEVEL = logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=logging.INFO)
+logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, file_mode: str = 'w'):
+def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w'):
     """Get logging logger
 
     Args:

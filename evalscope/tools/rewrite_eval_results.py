@@ -2,14 +2,13 @@
 import os
 import time
 
+from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.models.custom import CustomModel
 from evalscope.run import run_task
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
 from evalscope.utils import yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-
 """
 This script is used to rewrite the evaluation results without re-running the model predictions.
 """
@@ -26,19 +25,20 @@ class DummyCustomModel(CustomModel):
         response = 'The answer is C. NOTE: ONLY FOR TEST'
 
         res_d: dict = {
-            'choices': [
-                {
-                    'index': 0,
-                    'message': {
-                        # 'content': f'The answer is B. Raw prompt: {prompt}',
-                        'content': response,
-                        'role': 'assistant'
-                    }
+            'choices': [{
+                'index': 0,
+                'message': {
+                    # 'content': f'The answer is B. Raw prompt: {prompt}',
+                    'content': response,
+                    'role': 'assistant'
                 }
-            ],
-            'created': time.time(),
-            'model': self.config.get('model_id'),  # should be model_id
-            'object': 'chat.completion',
+            }],
+            'created':
+            time.time(),
+            'model':
+            self.config.get('model_id'),  # should be model_id
+            'object':
+            'chat.completion',
             'usage': {
                 'completion_tokens': 0,
                 'prompt_tokens': 0,
@@ -66,11 +66,11 @@ def get_task_cfg(cfg_file: str, model_instance: CustomModel):
             'model': model_instance,  # NOTE: model_id or # model_dir or model_instance(CustomModel)
             'eval_type': 'custom',  # NOTE: `checkpoint` or `custom` or `service`
             'datasets': ['arc'],
-            'work_dir': DEFAULT_ROOT_CACHE_DIR,
+            'work_dir': DEFAULT_WORK_DIR,
             'outputs': './outputs/eval_swift_dummy',
             'mem_cache': False,
             'dataset_hub': 'ModelScope',
-            'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
+            'dataset_dir': DEFAULT_WORK_DIR,
             'stage': 'all',
             'limit': 10,
             'debug': False
@@ -91,5 +91,4 @@ if __name__ == '__main__':
     task_cfg_d.update({'model': swift_model})
 
     eval_results: dict = run_task(task_cfg=task_cfg_d)
-    print(f'** Evaluation results finished !\n')
-
+    print('** Evaluation results finished !\n')
