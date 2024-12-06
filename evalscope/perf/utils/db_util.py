@@ -88,9 +88,8 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         cursor.execute(query, common_columns)
 
 
-def get_result_db_path(name, model):
+def get_result_db_path(name, model, output_dir):
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_dir = './outputs'
     result_db_path = os.path.join(output_dir, f'{name or model}_perf', current_time, 'benchmark_data.db')
 
     if not os.path.exists(os.path.dirname(result_db_path)):
