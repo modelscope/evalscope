@@ -138,7 +138,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     api_plugin_class = ApiRegistry(args.api)
     api_plugin = api_plugin_class(args.tokenizer_path)
 
-    result_db_path = get_result_db_path(args.name, args.model)
+    result_db_path = get_result_db_path(args.name, args.model, args.outputs_dir)
     # Initialize wandb
     if args.wandb_api_key:
         import wandb
@@ -192,7 +192,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 async def start_server(args: Arguments) -> bool:
     if args.api.startswith('local'):
         #  start local server
-        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args),), daemon=True)
         server.start()
 
         if args.dataset.startswith('speed_benchmark'):
