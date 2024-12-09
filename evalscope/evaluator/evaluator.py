@@ -450,10 +450,6 @@ class Evaluator(object):
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')
 
-        # Note: deprecated
-        # self.save_cache()
-        # self.clear_cache()
-
         logger.info(f'\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
 
         return report_map

@@ -276,13 +276,13 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
     # Get outputs directory
     output_model_id: str = os.path.basename(model_id)
-    if outputs == 'outputs':
-        outputs = make_outputs_dir(
-            root_dir=os.path.join(work_dir, 'outputs'),
-            datasets=datasets,
-            model_id=output_model_id,
-            model_revision=model_revision,
-        )
+
+    outputs = make_outputs_dir(
+        root_dir=os.path.join(work_dir, outputs),
+        datasets=datasets,
+        model_id=output_model_id,
+        model_revision=model_revision,
+    )
 
     eval_results = dict()
     for dataset_name in datasets:

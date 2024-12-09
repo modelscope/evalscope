@@ -434,48 +434,6 @@ def split_str_parts_by(text: str, delimiters: List[str]):
     return text_list
 
 
-def calculate_loss_scale(response: str, use_loss_scale=False) -> Tuple[List[str], List[float]]:
-    """Calculate the loss scale by splitting the agent response.
-    This algorithm comes from paper: https://arxiv.org/pdf/2309.00986.pdf
-    Agent response format:
-    ```text
-        Thought: you should always think about what to do
-        Action: the action to take, should be one of the above tools[fire_recognition,
-            fire_alert, call_police, call_fireman]
-        Action Input: the input to the action
-        Observation: the result of the action
-        ... (this Thought/Action/Action Input/Observation can be repeated zero or more times)
-        Thought: I now know the final answer
-        Final Answer: the final answer to the original input question
-    ```
-    Args:
-        response: The response text
-        use_loss_scale: Use weighted loss. With this, some part of the loss will be enhanced to improve performance.
-    Returns:
-        A tuple of agent response parts and their weights.
-    """
-    if 'Action:' in response and 'Observation:' in response and use_loss_scale:
-        agent_keyword = ['Action:', 'Action Input:', 'Thought:', 'Final Answer:', 'Observation:']
-        agent_parts = split_str_parts_by(response, agent_keyword)
-        weights = []
-        agent_content = []
-        for c in agent_parts:
-            if c['key'] in ('Action:', 'Action Input:'):
-                weights += [2.0]
-                weights += [2.0]
-            elif c['key'] in ('Thought:', 'Final Answer:', ''):
-                weights += [1.0]
-                weights += [1.0]
-            elif c['key'] in ('Observation:', ):
-                weights += [2.0]
-                weights += [0.0]
-            agent_content.append(c['key'])
-            agent_content.append(c['content'])
-        return agent_content, weights
-    else:
-        return [response], [1.0]
-
-
 def get_bucket_sizes(max_length: int) -> List[int]:
     return [max_length // 4 * (i + 1) for i in range(4)]
 
@@ -494,45 +452,6 @@ def _get_closet_bucket(bucket_sizes, data_length):
         cloest_length = data_length
 
     return cloest_length
-
-
-def pad_and_split_batch(padding_to, input_ids, attention_mask, labels, loss_scale, max_length, tokenizer, rank,
-                        world_size):
-    if padding_to is None:
-        longest_len = input_ids.shape[-1]
-        bucket_sizes = get_bucket_sizes(max_length)
-        bucket_data_length = _get_closet_bucket(bucket_sizes, longest_len)
-        padding_length = bucket_data_length - input_ids.shape[1]
-        input_ids = F.pad(input_ids, (0, padding_length), 'constant', tokenizer.pad_token_id)
-        attention_mask = F.pad(attention_mask, (0, padding_length), 'constant', 0)
-        if loss_scale:
-            loss_scale = F.pad(loss_scale, (0, padding_length), 'constant', 0.)
-        labels = F.pad(labels, (0, padding_length), 'constant', -100)
-
-    # manully split the batch to different DP rank.
-    batch_size = input_ids.shape[0] // world_size
-    if batch_size > 0:
-        start = rank * batch_size
-        end = (rank + 1) * batch_size
-        input_ids = input_ids[start:end, :]
-        attention_mask = attention_mask[start:end, :]
-        labels = labels[start:end, :]
-        if loss_scale:
-            loss_scale = loss_scale[start:end, :]
-    return input_ids, attention_mask, labels, loss_scale
-
-
-def get_dist_setting() -> Tuple[int, int, int, int]:
-    """return rank, local_rank, world_size, local_world_size"""
-    rank = int(os.getenv('RANK', -1))
-    local_rank = int(os.getenv('LOCAL_RANK', -1))
-    world_size = int(os.getenv('WORLD_SIZE', 1))
-    local_world_size = int(os.getenv('LOCAL_WORLD_SIZE', 1))
-    return rank, local_rank, world_size, local_world_size
-
-
-def use_torchacc() -> bool:
-    return os.getenv('USE_TORCHACC', '0') == '1'
 
 
 def is_module_installed(module_name):
