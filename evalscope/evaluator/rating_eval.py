@@ -6,19 +6,13 @@ import pandas as pd
 import pyarrow as pa
 
 from evalscope.constants import MetricMembers
+from evalscope.utils import jsonl_to_list
 from evalscope.utils.arena_utils import compute_elo
 from evalscope.utils.logger import get_logger
-from evalscope.utils import jsonl_to_list
 
 logger = get_logger()
 
-DEFAULT_COLUMNS_MAPPING = {
-    'model_a': 'model_a',
-    'model_b': 'model_b',
-    'win': 'win',
-    'tstamp': 'ts',
-    'language': 'lang'
-}
+DEFAULT_COLUMNS_MAPPING = {'model_a': 'model_a', 'model_b': 'model_b', 'win': 'win', 'tstamp': 'ts', 'language': 'lang'}
 
 
 class RatingEvaluate(object):
@@ -41,10 +35,9 @@ class RatingEvaluate(object):
         elo_ratings = compute_elo(battles)
         col_model = 'Model'
         col_elo_rating = 'Elo_Rating'
-        elo_ratings_res = pd.DataFrame(
-            [[n, elo_ratings[n]] for n in elo_ratings.keys()],
-            columns=[col_model, col_elo_rating]).sort_values(
-                col_elo_rating, ascending=False).reset_index(drop=True)
+        elo_ratings_res = pd.DataFrame([[n, elo_ratings[n]] for n in elo_ratings.keys()],
+                                       columns=[col_model, col_elo_rating]).sort_values(
+                                           col_elo_rating, ascending=False).reset_index(drop=True)
         elo_ratings_res = elo_ratings_res.round({col_elo_rating: 1})
         return elo_ratings_res
 
@@ -89,23 +82,11 @@ class RatingEvaluate(object):
                 'tie': 1
             }]
         else:
-            return [{
-                'model': winner,
-                'win': 1,
-                'loss': 0,
-                'tie': 0
-            }, {
-                'model': loser,
-                'win': 0,
-                'loss': 1,
-                'tie': 0
-            }]
+            return [{'model': winner, 'win': 1, 'loss': 0, 'tie': 0}, {'model': loser, 'win': 0, 'loss': 1, 'tie': 0}]
 
     def compute_pairwise_rating(self, raw_data):
         df_all = self.preprocess(raw_data_df=raw_data)
-        model_list = (
-            df_all['model_a'].unique().tolist()
-            + df_all['model_b'].unique().tolist())
+        model_list = (df_all['model_a'].unique().tolist() + df_all['model_b'].unique().tolist())
         model_list = list(set(model_list))
 
         list_res = []
@@ -114,8 +95,7 @@ class RatingEvaluate(object):
             if self.baseline_model is not None:
                 if self.baseline_model not in [row['model_a'], row['model_b']]:
                     logger.warning(
-                        f'One of the models in the battle should be the baseline model: {self.baseline_model}'
-                    )
+                        f'One of the models in the battle should be the baseline model: {self.baseline_model}')
                     continue
             rating = self.get_single_pairwise_rating(row)
             list_res = list_res + rating
@@ -149,15 +129,15 @@ class RatingEvaluate(object):
 
         for metric in self.metrics:
 
-            if metric == MetricMembers.ELO.value:
+            if metric == MetricMembers.ELO:
                 res = self.compute_elo_rating(raw_data)
                 res_all.append(res)
 
-            elif metric == MetricMembers.PAIRWISE.value:
+            elif metric == MetricMembers.PAIRWISE:
                 res = self.compute_pairwise_rating(raw_data)
                 res_all.append(res)
 
-            elif metric == MetricMembers.SCORE.value:
+            elif metric == MetricMembers.SCORE:
                 res = self.compute_score_rating(raw_data)
                 res_all.append(res)
 

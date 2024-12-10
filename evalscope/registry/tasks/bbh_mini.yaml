@@ -1,5 +1,5 @@
 model_args:    # model args should be followed by benchmark requirements
-  revision: default
+  revision: master
   precision: torch.float16
   device_map: auto
 #  model_name_or_path: qwen/qwen-7b-chat

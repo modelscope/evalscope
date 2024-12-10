@@ -62,3 +62,4 @@ Execute `evalscope perf --help` to get a full parameter description:
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
+- `--outputs-dir` specifies the output file path, with a default value of `./outputs`.

@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os.path
+import random
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-import random
 
 from evalscope.benchmarks import Benchmark
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR, AnswerKeys
+from evalscope.constants import DEFAULT_WORK_DIR, AnswerKeys
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -29,7 +29,8 @@ class DataAdapter(ABC):
             train_split: str, usually for few-shot examples. e.g. 'train'
             eval_split: str, the target eval split name. e.g. 'test'
             prompt_template: str, the prompt template for the benchmark,
-                e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:`
+                e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in
+                    the form of A or B or C or D, do not output explanation:`
         """
         self.subset_list = subset_list
         self.metric_list = metric_list
@@ -42,7 +43,7 @@ class DataAdapter(ABC):
     def load(self,
              dataset_name_or_path: str,
              subset_list: list = None,
-             work_dir: Optional[str] = DEFAULT_ROOT_CACHE_DIR,
+             work_dir: Optional[str] = DEFAULT_WORK_DIR,
              datasets_hub: str = 'ModelScope',
              **kwargs) -> dict:
         """
@@ -59,7 +60,8 @@ class DataAdapter(ABC):
             if not os.path.exists(dataset_name_or_path):
                 raise FileNotFoundError(f'Dataset path not found: {dataset_name_or_path}')
 
-            logger.info(f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
+            logger.info(
+                f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
@@ -76,12 +78,13 @@ class DataAdapter(ABC):
                 data_dict[sub_name] = {}
                 # e.g. train: few-shot, test: target dataset to evaluate
                 for split in split_list:
-                    dataset = Benchmark.load(dataset_name=dataset_name_or_path,
-                                             subset=sub_name,
-                                             split=split,
-                                             hub=datasets_hub,
-                                             work_dir=work_dir,
-                                             **kwargs)
+                    dataset = Benchmark.load(
+                        dataset_name=dataset_name_or_path,
+                        subset=sub_name,
+                        split=split,
+                        hub=datasets_hub,
+                        work_dir=work_dir,
+                        **kwargs)
 
                     data_dict[sub_name].update({split: dataset})
 
@@ -121,10 +124,9 @@ class DataAdapter(ABC):
             few_shot_data = []
             if self.few_shot_num and self.few_shot_num > 0:
                 few_shot_random: bool = self.config_kwargs.get('few_shot_random', True)
-                few_shot_data = self.get_fewshot_examples(
-                    [item for item in sub_data_dict[self.train_split]],
-                    self.few_shot_num,
-                    few_shot_random=few_shot_random)
+                few_shot_data = self.get_fewshot_examples([item for item in sub_data_dict[self.train_split]],
+                                                          self.few_shot_num,
+                                                          few_shot_random=few_shot_random)
 
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
