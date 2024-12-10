@@ -86,13 +86,15 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
 
     jsonl_file = os.path.expanduser(jsonl_file)
 
+    if not isinstance(data_list, list):
+        data_list = [data_list]
+
     if dump_mode == DumpMode.OVERWRITE:
         dump_mode = 'w'
     elif dump_mode == DumpMode.APPEND:
         dump_mode = 'a'
     with jsonl.open(jsonl_file, mode=dump_mode) as writer:
         writer.write_all(data_list)
-    logger.info(f'Dump data to {jsonl_file} successfully.')
 
 
 def yaml_to_dict(yaml_file) -> dict:
@@ -149,14 +151,14 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
 
 
 def markdown_table(header_l, data_l):
-    md_str = f'| {" | ".join(header_l)} |'
-    md_str += f'\n| {" | ".join(["---"] * len(header_l))} |'
+    md_str = f'| {' | '.join(header_l)} |'
+    md_str += f'\n| {' | '.join([' - -- '] * len(header_l))} |'
     for data in data_l:
         if isinstance(data, str):
             data = [data]
         assert len(data) <= len(header_l)
         tmp = data + [''] * (len(header_l) - len(data))
-        md_str += f'\n| {" | ".join(tmp)} |'
+        md_str += f'\n| {' | '.join(tmp)} |'
     return md_str
 
 
@@ -165,8 +167,8 @@ def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
     return random.Random(seed).choices(choices, k=1, **kwargs)[0]
 
 
-def gen_hash(name: str):
-    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()
+def gen_hash(name: str, bits: int = 32):
+    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
 
 
 def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
@@ -323,32 +325,6 @@ def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revisio
     outputs_dir = os.path.join(root_dir, model_id, model_revision, f"eval_{'-'.join(datasets)}")
 
     return outputs_dir
-
-
-def process_outputs_structure(outputs_dir: str, is_make: bool = True) -> dict:
-    logs_dir = os.path.join(outputs_dir, 'logs')
-    predictions_dir = os.path.join(outputs_dir, 'predictions')
-    reviews_dir = os.path.join(outputs_dir, 'reviews')
-    reports_dir = os.path.join(outputs_dir, 'reports')
-    configs_dir = os.path.join(outputs_dir, 'configs')
-
-    if is_make:
-        os.makedirs(outputs_dir, exist_ok=True)
-        os.makedirs(logs_dir, exist_ok=True)
-        os.makedirs(predictions_dir, exist_ok=True)
-        os.makedirs(reviews_dir, exist_ok=True)
-        os.makedirs(reports_dir, exist_ok=True)
-        os.makedirs(configs_dir, exist_ok=True)
-
-    outputs_structure = {
-        OutputsStructure.LOGS_DIR: logs_dir,
-        OutputsStructure.PREDICTIONS_DIR: predictions_dir,
-        OutputsStructure.REVIEWS_DIR: reviews_dir,
-        OutputsStructure.REPORTS_DIR: reports_dir,
-        OutputsStructure.CONFIGS_DIR: configs_dir,
-    }
-
-    return outputs_structure
 
 
 def import_module_util(import_path_prefix: str, module_name: str, members_to_import: list) -> dict:

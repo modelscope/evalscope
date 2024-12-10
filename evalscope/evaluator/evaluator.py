@@ -10,11 +10,11 @@ import json
 from tqdm import tqdm
 
 from evalscope.benchmarks import DataAdapter
-from evalscope.constants import DEFAULT_WORK_DIR, AnswerKeys, EvalStage, OutputsStructure, ReviewKeys
+from evalscope.config import TaskConfig
+from evalscope.constants import AnswerKeys, DumpMode, EvalStage, OutputsStructure, ReviewKeys
 from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import (dict_to_yaml, dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list,
-                             process_outputs_structure)
+from evalscope.utils import dict_to_yaml, dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -31,9 +31,8 @@ class Evaluator(object):
         data_adapter: DataAdapter, the data adapter for the dataset.
         subset_list: list, the subset list for the dataset.
         model_adapter: BaseModelAdapter, the model adapter for the model.
-        use_cache: bool, whether to use local cache. Default: True
-        root_cache_dir: str, the root cache dir. Default: DEFAULT_ROOT_CACHE_DIR
-        outputs_dir: str, the outputs dir. Default: ''
+        use_cache: str, path to local cache. Default: None
+        outputs_dir: OutputsStructure, the outputs dir. Default: None
         datasets_dir: str, the datasets dir. Default: DEFAULT_ROOT_CACHE_DIR
         datasets_hub: str, the datasets hub. `Local`, `ModelScope` or `HuggingFace`. Default: 'ModelScope'
         stage: str, the stage of evaluation. `all` or `infer` or `review`. Default: 'all'
@@ -48,22 +47,20 @@ class Evaluator(object):
             data_adapter: DataAdapter,
             subset_list: Optional[list] = None,
             model_adapter: Optional[BaseModelAdapter] = None,
-            use_cache: bool = True,
-            root_cache_dir: Optional[str] = DEFAULT_WORK_DIR,
-            outputs_dir: Optional[str] = '',
-            datasets_dir: Optional[str] = DEFAULT_WORK_DIR,
+            use_cache: Optional[str] = None,
+            outputs: Optional[OutputsStructure] = None,
+            datasets_dir: Optional[str] = None,
             datasets_hub: Optional[str] = 'ModelScope',
             stage: Optional[str] = 'all',  # refer to evalscope.constants.EvalStage
             eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
-            overall_task_cfg: Optional[dict] = None,
+            overall_task_cfg: Optional[TaskConfig] = None,
             **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
-        self.custom_task_name: str = None
-        if os.path.exists(self.dataset_name_or_path):
-            self.custom_task_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep))
+        self.dataset_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep))
+        self.model_name = os.path.basename(str(overall_task_cfg.model).rstrip(os.sep))
+        self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
-        self.root_cache_dir = os.path.expanduser(root_cache_dir)
         self.datasets_dir = os.path.expanduser(datasets_dir)
         self.kwargs = kwargs
         self.data_adapter = data_adapter
@@ -73,17 +70,14 @@ class Evaluator(object):
         self.use_cache = use_cache
         self.overall_task_cfg = overall_task_cfg
         if isinstance(self.model_adapter, CustomModelAdapter):
-            self.overall_task_cfg.update({'custom_config': self.model_adapter.custom_model.config})
+            self.overall_task_cfg.model_args = self.model_adapter.custom_model.config
 
         self.model_cfg = self.model_adapter.model_cfg
         self.model_id = self.model_cfg['model_id']
-        self.model_revision = self.model_cfg.get('revision', None)
-        self.model_revision_str = self.model_revision if self.model_revision is not None else 'none'
-
-        self.outputs_dir = os.path.expanduser(outputs_dir)
+        self.model_revision = self.model_cfg.get('revision', 'master')
 
         # Deal with the output paths
-        self.outputs_structure = process_outputs_structure(self.outputs_dir)
+        self.outputs_structure = outputs
 
         # Load dataset
         self.dataset = self.data_adapter.load(
@@ -138,20 +132,15 @@ class Evaluator(object):
         assert len(prompts_list) > 0, 'prompts_list must not be empty when calling func get_answers() !'
 
         answers_list = []
-        pred_dir: str = self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR)
-
-        if self.custom_task_name:
-            pred_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
-        else:
-            pred_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
-
+        pred_dir: str = self.outputs_structure.predictions_dir
+        pred_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
         pred_file_path: str = os.path.join(pred_dir, pred_file_name)
 
         if self.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
-            logger.info(f'** Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
-
-            return answers_list
+            logger.info(f'Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
+            # Note: assume prediction in order of prompts_list
+            prompts_list = prompts_list[len(answers_list):]
 
         if isinstance(self.model_adapter, CustomModelAdapter):
             # Batch inference for custom model
@@ -181,6 +170,7 @@ class Evaluator(object):
                 resp_d[AnswerKeys.ORIGIN_PROMPT] = in_d
 
                 answers_list.append(resp_d)
+                dump_jsonl_data(resp_d, pred_file_path, dump_mode=DumpMode.APPEND)
 
         else:
             for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
@@ -208,14 +198,9 @@ class Evaluator(object):
                     logger.info(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
 
                 answers_list.append(answer_d)
+                dump_jsonl_data(answer_d, pred_file_path, dump_mode=DumpMode.APPEND)
 
-        if len(answers_list) == 0:
-            logger.error(f'** Got empty predictions on subset {subset_name} of dataset: {self.dataset_name_or_path}')
-
-        # Dump answers
-        os.makedirs(pred_dir, exist_ok=True)
-        dump_jsonl_data(answers_list, pred_file_path)
-
+        logger.info(f'Dump predictions to {pred_file_path}.')
         return answers_list
 
     def _get_review(self, answer_d: dict, review_id: str = None, reviewer_spec: dict = None) -> dict:
@@ -272,15 +257,12 @@ class Evaluator(object):
         """
         reviews_list = []
 
-        review_dir: str = self.outputs_structure.get(OutputsStructure.REVIEWS_DIR)
-        if self.custom_task_name:
-            review_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
-        else:
-            review_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '_' + subset_name + '.jsonl'
+        review_dir: str = self.outputs_structure.reviews_dir
+        review_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
         review_file_path: str = os.path.join(review_dir, review_file_name)
 
         if self.use_cache and os.path.exists(review_file_path):
-            logger.warning(f'** Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
+            logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
 
@@ -325,7 +307,7 @@ class Evaluator(object):
         review_res_list = []
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'** Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
                 continue
 
             review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
@@ -335,7 +317,7 @@ class Evaluator(object):
 
         return metric_score
 
-    def dump_report(self, report_map: dict, use_table: bool = True):
+    def dump_report(self, reviews_score_all: dict, use_table: bool = True):
         """
         Get report for total reviews of specific dataset.
         It is required to rewrite this method to support your own evaluator.
@@ -346,29 +328,29 @@ class Evaluator(object):
 
         Returns: None
         """
+        # Get report map
+        report_map: dict = self.data_adapter.gen_report(
+            subset_score_map=reviews_score_all, report_name=self.custom_task_name)
+        report_map.update(dict(model_name=self.model_name, dataset_name=self.dataset_name))
 
         # Dump report
-        report_dir: str = self.outputs_structure[OutputsStructure.REPORTS_DIR]
-
-        if self.custom_task_name:
-            report_file_name: str = self.custom_task_name + '.json'
-        else:
-            report_file_name: str = self.dataset_name_or_path.replace(os.sep, '_') + '.json'
-
-        os.makedirs(report_dir, exist_ok=True)
+        report_dir: str = self.outputs_structure.reports_dir
+        report_file_name: str = self.custom_task_name + '.json'
         report_path: str = os.path.join(report_dir, report_file_name)
+
+        # Write report
         with open(report_path, 'w') as f:
             f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        # logger.info(f'** Dump report to {report_path} \n')
-        logger.info(f'** Dump report: {report_file_name} \n')
+        logger.info(f'Dump report: {report_path} \n')
 
+        # Make table
         if use_table:
             try:
-                # Make table
                 report_table: str = gen_table([report_dir])
-                logger.info(f'** Report table: \n {report_table} \n')
+                logger.info(f'Report table: \n {report_table} \n')
             except Exception:
                 logger.error('Failed to generate report table.')
+        return report_map
 
     def eval(self, infer_cfg: dict = None, debug: bool = False, **kwargs) -> dict:
         """
@@ -401,7 +383,7 @@ class Evaluator(object):
         stage_reviews_dict = {}
 
         for subset_name, prompts_list in self.prompts.items():
-            limit = infer_cfg.get('limit', len(prompts_list))
+            limit = kwargs.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
 
             answers_list: list = self.get_answers(
@@ -424,31 +406,8 @@ class Evaluator(object):
             return stage_reviews_dict
 
         # Generate report
-        report_map: dict = self.data_adapter.gen_report(
-            subset_score_map=reviews_score_all, report_name=self.custom_task_name)
-        self.dump_report(report_map=report_map)
+        report_map = self.dump_report(reviews_score_all)
 
-        # Dump overall task config
-        overall_task_cfg_file: str = os.path.join(
-            self.outputs_structure.get(OutputsStructure.CONFIGS_DIR), 'task_output_config.yaml')
-        overall_task_cfg_file = os.path.abspath(overall_task_cfg_file)
-
-        # check the robustness of dump yaml
-        try:
-            logger.info(f'** Dump overall task config to {overall_task_cfg_file}')
-            logger.info(f'** The overall task config:\n {self.overall_task_cfg}')
-            if 'model' in self.overall_task_cfg and not isinstance(self.overall_task_cfg['model'], str):
-                self.overall_task_cfg['model'] = None
-                logger.info('>> Overwrite overall_task_cfg for `model` due to it is not a string')
-            if 'model_args' in self.overall_task_cfg and self.overall_task_cfg.get('model_args') is not None:
-                self.overall_task_cfg['model_args'].update(
-                    {'precision': str(self.overall_task_cfg['model_args']['precision'])})
-                logger.info('>> Overwrite overall_task_cfg for `model_args.precision` due to it is not a string')
-
-            dict_to_yaml(self.overall_task_cfg, overall_task_cfg_file)
-        except Exception as e:
-            logger.warning(f'Failed to dump overall task config: {e}')
-
-        logger.info(f'\n**** Evaluation finished on {self.dataset_name_or_path} ****\n')
+        logger.info(f'**** Evaluation finished on {self.dataset_name_or_path} ****\n')
 
         return report_map

@@ -75,7 +75,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
         self.model_id: str = model_id
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        logger.warning(f'**Device: {self.device}')
+        logger.warning(f'Device: {self.device}')
 
         torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
 
@@ -348,7 +348,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.model_id: str = model_id
         self.model_revision: str = model_revision
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        logger.warning(f'**Device: {self.device}')
+        logger.warning(f'Device: {self.device}')
 
         torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
 
@@ -376,9 +376,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         self.generation_config = self._parse_generation_config(tokenizer, model)
 
         if custom_generation_config:
-            logger.info('**Updating generation config ...')
+            logger.info('Updating generation config ...')
             self.generation_config.update(**custom_generation_config.to_dict())
-        logger.info(f'**Generation config init: {self.generation_config.to_dict()}')
 
         if custom_chat_template:
             tokenizer.chat_template = custom_chat_template
@@ -415,7 +414,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         input_ids = inputs['input_ids']
 
         # Process infer_cfg
-        infer_cfg = infer_cfg or {}
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
 
@@ -438,7 +436,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         return response
 
     @torch.no_grad()
-    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = dict({})) -> dict:
+    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = {}) -> dict:
 
         # Process inputs
         if isinstance(inputs, str):

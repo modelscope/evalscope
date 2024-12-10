@@ -8,7 +8,7 @@ import json
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalBackend, OutputsStructure
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import csv_to_list, get_latest_folder_path, json_to_dict, process_outputs_structure, yaml_to_dict
+from evalscope.utils import csv_to_list, get_latest_folder_path, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -20,8 +20,8 @@ class Summarizer:
     def get_report(outputs_dir: str) -> List[dict]:
         res_list: list = []
 
-        outputs_structure: dict = process_outputs_structure(outputs_dir, is_make=False)
-        reports_dir: str = outputs_structure.get(OutputsStructure.REPORTS_DIR)
+        outputs_structure = OutputsStructure(outputs_dir, is_make=False)
+        reports_dir: str = outputs_structure.reports_dir
         if reports_dir is None:
             raise ValueError(f'No reports directory in {outputs_dir}')
 

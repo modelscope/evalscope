@@ -9,7 +9,7 @@ from evalscope.constants import OutputsStructure
 from evalscope.evaluator.evaluator import logger
 from evalscope.models.model_adapter import BaseModelAdapter
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import normalize_score, process_outputs_structure
+from evalscope.utils import normalize_score
 
 
 class HumanevalEvaluator(object):
@@ -20,7 +20,7 @@ class HumanevalEvaluator(object):
         model_id: str,
         model_revision: str,
         model_adapter: BaseModelAdapter,
-        outputs_dir: Optional[str] = '',
+        outputs: Optional[OutputsStructure] = None,
         k: List[int] = [1, 10, 100],
         n_workers: int = 4,
         timeout: float = 3.0,
@@ -46,13 +46,8 @@ class HumanevalEvaluator(object):
         # {'task_id': {'task_id': '', 'prompt': '', 'entry_point': '', 'canonical_solution': '', 'test': ''}, ...}
         self.problems = self.read_problems_func(self.problem_file)
 
-        # Get default outputs_dir
-        # model_revision_str: str = model_revision if model_revision is not None else 'none'
-
-        self.outputs_dir = os.path.expanduser(outputs_dir)
-
         # Deal with the output paths
-        self.outputs_structure = process_outputs_structure(self.outputs_dir)
+        self.outputs_structure = OutputsStructure(outputs)
 
     def get_answers(self, infer_cfg: dict) -> List[dict]:
         ans_list: list = []
@@ -75,8 +70,7 @@ class HumanevalEvaluator(object):
 
         # predict
         ans_list: list = self.get_answers(infer_cfg)
-        ans_out_file: str = os.path.join(
-            self.outputs_structure.get(OutputsStructure.PREDICTIONS_DIR), 'human_eval_predictions.jsonl')
+        ans_out_file: str = os.path.join(self.outputs_structure.predictions_dir, 'human_eval_predictions.jsonl')
 
         self.write_jsonl_func(filename=ans_out_file, data=ans_list)
         # logger.info(f'** Dump predictions to {ans_out_file} successfully.')
@@ -92,7 +86,7 @@ class HumanevalEvaluator(object):
 
         # output: report
         report_map: dict = self.gen_report(results=results)
-        report_dir: str = self.outputs_structure.get(OutputsStructure.REPORTS_DIR)
+        report_dir: str = self.outputs_structure.reports_dir
         report_file: str = os.path.join(report_dir, 'human_eval_report.json')
 
         with open(report_file, 'w') as f:

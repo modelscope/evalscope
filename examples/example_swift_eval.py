@@ -5,7 +5,6 @@ from typing import List
 
 import json
 
-from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.models.custom import CustomModel
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
@@ -54,37 +53,6 @@ class SwiftModel(CustomModel):
         }
 
         return [res_d for _ in prompts]
-
-
-def get_task_cfg(cfg_file: str, model_instance: CustomModel):
-
-    if cfg_file:
-        cfg_file: str = os.path.abspath(cfg_file)
-        logger.info(f'Loading task config from {cfg_file}')
-        task_cfg_d: dict = yaml_to_dict(yaml_file=cfg_file)
-        task_cfg_d.update({'model': model_instance})
-        logger.info(f'**Task config: {task_cfg_d}')
-    else:
-        # 默认config 示例
-        task_cfg_d = {
-            'model_args': {},
-            'generation_config': {},
-            'dataset_args': {},
-            'dry_run': False,
-            'model': model_instance,  # NOTE: model_id or # model_dir or model_instance(CustomModel)
-            'eval_type': 'custom',  # NOTE: `checkpoint` or `custom` or `service`
-            'datasets': ['arc'],
-            'work_dir': DEFAULT_WORK_DIR,
-            'outputs': './outputs/eval_swift_dummy',
-            'mem_cache': False,
-            'dataset_hub': 'ModelScope',
-            'dataset_dir': DEFAULT_WORK_DIR,
-            'stage': 'all',
-            'limit': 10,
-            'debug': False
-        }
-
-    return task_cfg_d
 
 
 if __name__ == '__main__':

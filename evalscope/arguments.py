@@ -60,13 +60,13 @@ def parse_args() -> TaskConfig:
 
     # Cache and working directory arguments
     parser.add_argument('--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501
-    parser.add_argument('--use-cache', type=str, help='To reuse the cache or not.')
-    parser.add_argument('--outputs', help='Outputs dir.')
+    parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
     parser.add_argument('--work-dir', help='The root cache dir.')
 
     # Debug and runtime mode arguments
     parser.add_argument('--debug', action='store_true', default=False, help='Debug mode, will print information for debugging.')  # noqa: E501
     parser.add_argument('--dry-run', action='store_true', default=False, help='Dry run in single processing mode.')
+    parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')
     # yapf: enable
     args = parser.parse_args()
 

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 from evalscope.benchmarks import Benchmark
-from evalscope.constants import DEFAULT_WORK_DIR, AnswerKeys
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -43,7 +43,7 @@ class DataAdapter(ABC):
     def load(self,
              dataset_name_or_path: str,
              subset_list: list = None,
-             work_dir: Optional[str] = DEFAULT_WORK_DIR,
+             work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
              datasets_hub: str = 'ModelScope',
              **kwargs) -> dict:
         """
@@ -61,7 +61,7 @@ class DataAdapter(ABC):
                 raise FileNotFoundError(f'Dataset path not found: {dataset_name_or_path}')
 
             logger.info(
-                f'Loading dataset from local disk: >dataset_name: {dataset_name_or_path}  >work_dir: {work_dir}')
+                f'Loading dataset from local disk: > dataset_name: {dataset_name_or_path}  > work_dir: {work_dir}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
@@ -115,10 +115,10 @@ class DataAdapter(ABC):
         if self.few_shot_num and self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'\n** Use default settings: \n'
-                    f'>few_shot_num: {self.few_shot_num}, '
-                    f'>few_shot_split: {self.train_split}, '
-                    f'>target_eval_split: {self.eval_split}')
+        logger.info(f'Use default settings: '
+                    f'> few_shot_num: {self.few_shot_num}, '
+                    f'> few_shot_split: {self.train_split}, '
+                    f'> target_eval_split: {self.eval_split}')
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []

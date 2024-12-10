@@ -5,7 +5,6 @@ import unittest
 
 import torch
 
-from evalscope.constants import DEFAULT_WORK_DIR
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
@@ -81,7 +80,6 @@ class TestRun(unittest.TestCase):
             'use_cache': False,
             'model': 'qwen/Qwen2-0.5B-Instruct',
             'datasets': ['gsm8k'],
-            'work_dir': DEFAULT_WORK_DIR,
             'outputs': 'outputs',
             'dataset_hub': 'ModelScope',
             'limit': 2,

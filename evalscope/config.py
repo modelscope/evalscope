@@ -7,8 +7,7 @@ from typing import Dict, List, Optional, Union
 
 import json
 
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_OUTPUT_DIR, DEFAULT_WORK_DIR, EvalBackend,
-                                 EvalStage, EvalType, HubType)
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
 from evalscope.utils import yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -66,13 +65,13 @@ class TaskConfig:
 
     # Cache and working directory arguments
     mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
-    use_cache: bool = True
-    outputs: str = DEFAULT_OUTPUT_DIR
+    use_cache: Optional[str] = None
     work_dir: str = DEFAULT_WORK_DIR
 
     # Debug and runtime mode arguments
     debug: bool = False
     dry_run: bool = False
+    seed: int = 42
 
     @staticmethod
     def registry(name: str, data_pattern: str, dataset_dir: str = None, subset_list: list = None) -> None:
@@ -135,11 +134,7 @@ class TaskConfig:
 
             res = TaskConfig(**task)
             res.model = custom_model
-            if res.outputs is None:
-                res.outputs = os.path.join(
-                    res.work_dir, 'outputs',
-                    f"eval_{'-'.join(tasks)}_{res.model.config['model_id']}_{res.model_args.get('revision', 'default')}"
-                )
+
             res_list.append(res)
 
         return res_list

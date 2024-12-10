@@ -1,60 +1,74 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+"""
+Run evaluation for LLMs.
+"""
 import os.path
+from datetime import datetime
 from typing import List, Union
 
 import torch
 
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_MODEL_REVISION, EvalBackend
+from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, OutputsStructure
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
-from evalscope.utils import import_module_util, json_to_dict, make_outputs_dir, yaml_to_dict
+from evalscope.utils import dict_to_yaml, gen_hash, import_module_util, json_to_dict, seed_everything, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-"""
-Run evaluation for LLMs.
-"""
 
 BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[dict, List[dict]]:
+    run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+
     if isinstance(task_cfg, list):
         eval_results = []
         for one_task_cfg in task_cfg:
-            eval_results.append(run_single_task(one_task_cfg))
+            eval_results.append(run_single_task(one_task_cfg, run_time))
         return eval_results
 
     if isinstance(task_cfg, TaskConfig):
-        logger.info('** Args: Task config is provided with TaskConfig type. **')
+        logger.info('Args: Task config is provided with TaskConfig type.')
     elif isinstance(task_cfg, dict):
-        logger.info('** Args: Task config is provided with dictionary type. **')
+        logger.info('Args: Task config is provided with dictionary type.')
         task_cfg = TaskConfig(**task_cfg)
     elif isinstance(task_cfg, str):
         if task_cfg.endswith('.yaml'):
-            logger.info('** Args: Task config is provided with yaml type. **')
+            logger.info('Args: Task config is provided with yaml type.')
             task_cfg_dict = yaml_to_dict(task_cfg)
             task_cfg = TaskConfig(**task_cfg_dict)
         elif task_cfg.endswith('.json'):
-            logger.info('** Args: Task config is provided with json type. **')
+            logger.info('Args: Task config is provided with json type.')
             task_cfg_dict = json_to_dict(task_cfg)
             task_cfg = TaskConfig(**task_cfg_dict)
         else:
             raise ValueError(f'Unsupported file format: {task_cfg}, should be a yaml or json file.')
     else:
-        raise ValueError('** Args: Please provide a valid task config. **')
+        raise ValueError('Args: Please provide a valid task config.')
 
-    result = run_single_task(task_cfg)
+    result = run_single_task(task_cfg, run_time)
     return result
 
 
-def run_single_task(task_cfg: TaskConfig) -> dict:
+def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
+
+    seed_everything(task_cfg.seed)
+
+    # Set work_dir
+    if task_cfg.use_cache:
+        task_cfg.work_dir = task_cfg.use_cache
+        logger.info(f'Set resume from {task_cfg.work_dir}')
+    elif task_cfg.work_dir == DEFAULT_WORK_DIR:
+        task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
+
+    logger.info(task_cfg)
+
     eval_backend = task_cfg.eval_backend
-    eval_config: Union[str, dict] = task_cfg.eval_config
+    eval_config = task_cfg.eval_config
 
     if eval_backend != EvalBackend.NATIVE:
 
@@ -78,9 +92,6 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
 
         return dict()
 
-    # Get the output task config
-    logger.info(task_cfg)
-
     model_args = task_cfg.model_args
     generation_config = task_cfg.generation_config
     dry_run = task_cfg.dry_run
@@ -88,7 +99,6 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
     template_type = task_cfg.template_type
     eval_type = task_cfg.eval_type
     work_dir = task_cfg.work_dir
-    outputs = task_cfg.outputs
     use_cache = task_cfg.use_cache
     datasets = task_cfg.datasets
     dataset_args = task_cfg.dataset_args
@@ -99,19 +109,27 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
     debug = task_cfg.debug
 
     if model is None or datasets is None:
-        if not task_cfg.get('eval_backend'):
-            raise ValueError('** Args: Please provide model and datasets. **')
+        raise ValueError('Args: Please provide model and datasets.')
 
     if template_type:
         logger.warning(
-            '** DeprecatedWarning: template_type is deprecated, please use `--chat-template` for custom chat template instead.'  # noqa: E501
+            'DeprecatedWarning: template_type is deprecated, please use `--chat-template` for custom chat template instead.'  # noqa: E501
         )
 
-    model_precision = model_args.get('precision', torch.float16)
+    model_precision = model_args.get('precision', 'auto')
     if isinstance(model_precision, str) and model_precision != 'auto':
         model_precision = eval(model_precision)
 
-    logger.info(f'** Set use_cache to {use_cache}.')
+    # Get outputs directory
+    outputs = OutputsStructure(outputs_dir=work_dir)
+
+    # Dump overall task config
+    task_cfg_file = os.path.join(outputs.configs_dir, f'task_config_{gen_hash(str(task_cfg), bits=6)}.yaml')
+    try:
+        logger.info(f'Dump task config to {task_cfg_file}')
+        dict_to_yaml(task_cfg.to_dict(), task_cfg_file)
+    except Exception as e:
+        logger.warning(f'Failed to dump overall task config: {e}')
 
     # Get model args
     if dry_run:
@@ -123,16 +141,6 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
     else:
         model_id: str = model
         model_revision: str = model_args.get('revision', DEFAULT_MODEL_REVISION)
-
-    # Get outputs directory
-    output_model_id: str = os.path.basename(model_id)
-
-    outputs = make_outputs_dir(
-        root_dir=os.path.join(work_dir, outputs),
-        datasets=datasets,
-        model_id=output_model_id,
-        model_revision=model_revision,
-    )
 
     eval_results = dict()
     for dataset_name in datasets:
@@ -167,7 +175,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
                 model_id=model_id,
                 model_revision=model_revision,
                 model_adapter=model_adapter,
-                outputs_dir=outputs,
+                outputs=outputs,
                 is_custom_outputs_dir=False,
             )
         else:
@@ -188,7 +196,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
 
             in_subset_list: list = dataset_args.get(dataset_name, {}).get('subset_list',
                                                                           imported_modules['SUBSET_LIST'])
-            logger.info(f'\n** Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
+            logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
             evaluator = Evaluator(
                 dataset_name_or_path=dataset_name_or_path,
@@ -196,8 +204,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
                 data_adapter=data_adapter,
                 model_adapter=model_adapter,
                 use_cache=use_cache,
-                root_cache_dir=work_dir,
-                outputs_dir=outputs,
+                outputs=outputs,
                 datasets_dir=dataset_dir,
                 datasets_hub=dataset_hub,
                 stage=stage,
@@ -205,9 +212,7 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
                 overall_task_cfg=task_cfg,
             )
 
-        infer_cfg = generation_config or {}
-        infer_cfg.update(dict(limit=limit))
-        res_dict: dict = evaluator.eval(infer_cfg=infer_cfg, debug=debug)
+        res_dict: dict = evaluator.eval(infer_cfg=generation_config, debug=debug, limit=limit)
 
         eval_results[dataset_name] = res_dict
 
