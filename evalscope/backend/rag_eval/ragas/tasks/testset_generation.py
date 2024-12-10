@@ -1,4 +1,3 @@
-import asyncio
 import os
 
 import pandas as pd
@@ -9,115 +8,10 @@ from tqdm import tqdm
 from evalscope.backend.rag_eval import LLM, ChatOpenAI, EmbeddingModel
 from evalscope.backend.rag_eval.ragas.arguments import TestsetGenerationArguments
 from evalscope.utils.logger import get_logger
-from .translate_prompt import translate_prompts
+from .build_distribution import default_query_distribution
+from .build_transform import default_transforms
 
 logger = get_logger()
-
-
-def get_transform(llm, embedding, language):
-    """
-    Creates and returns a default set of transforms for processing a knowledge graph.
-    """
-    from ragas.testset.transforms.engine import Parallel
-    from ragas.testset.transforms.extractors import (
-        EmbeddingExtractor,
-        HeadlinesExtractor,
-        SummaryExtractor,
-    )
-    from ragas.testset.transforms.extractors.llm_based import NERExtractor, ThemesExtractor
-    from ragas.testset.transforms.relationship_builders import (
-        CosineSimilarityBuilder,
-        OverlapScoreBuilder,
-    )
-    from ragas.testset.transforms.splitters import HeadlineSplitter
-    from ragas.testset.transforms.filters import CustomNodeFilter
-    from ragas.testset.graph import NodeType
-    from ragas.utils import num_tokens_from_string
-
-    def summary_filter(node):
-        return (node.type == NodeType.DOCUMENT and num_tokens_from_string(node.properties['page_content']) > 500)
-
-    summary_extractor = SummaryExtractor(llm=llm, filter_nodes=lambda node: summary_filter(node))
-    ner_extractor = NERExtractor(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
-    theme_extractor = ThemesExtractor(llm=llm)
-    headline_extractor = HeadlinesExtractor(llm=llm)
-
-    asyncio.run(
-        translate_prompts(
-            prompts=[
-                summary_extractor,
-                theme_extractor,
-                ner_extractor,
-                headline_extractor,
-            ],
-            target_lang=language,
-            llm=llm,
-            adapt_instruction=True,
-        ))
-
-    splitter = HeadlineSplitter(min_tokens=500)
-
-    summary_emb_extractor = EmbeddingExtractor(
-        embedding_model=embedding,
-        property_name='summary_embedding',
-        embed_property_name='summary',
-        filter_nodes=lambda node: summary_filter(node),
-    )
-
-    cosine_sim_builder = CosineSimilarityBuilder(
-        property_name='summary_embedding',
-        new_property_name='summary_similarity',
-        threshold=0.7,
-        filter_nodes=lambda node: summary_filter(node),
-    )
-
-    ner_overlap_sim = OverlapScoreBuilder(threshold=0.01, filter_nodes=lambda node: node.type == NodeType.CHUNK)
-
-    node_filter = CustomNodeFilter(llm=llm, filter_nodes=lambda node: node.type == NodeType.CHUNK)
-
-    transforms = [
-        headline_extractor,
-        splitter,
-        summary_extractor,
-        node_filter,
-        Parallel(summary_emb_extractor, theme_extractor, ner_extractor),
-        Parallel(cosine_sim_builder, ner_overlap_sim),
-    ]
-
-    return transforms
-
-
-def get_distribution(llm, distribution, language):
-    from ragas.testset.synthesizers.multi_hop import (
-        MultiHopAbstractQuerySynthesizer,
-        MultiHopSpecificQuerySynthesizer,
-    )
-    from ragas.testset.synthesizers.single_hop.specific import (
-        SingleHopSpecificQuerySynthesizer, )
-
-    single_hop = SingleHopSpecificQuerySynthesizer(llm=llm)
-    multi_hop_abs = MultiHopAbstractQuerySynthesizer(llm=llm)
-    multi_hop_spec = MultiHopSpecificQuerySynthesizer(llm=llm)
-
-    asyncio.run(
-        translate_prompts(
-            prompts=[
-                single_hop,
-                multi_hop_abs,
-                multi_hop_spec,
-            ],
-            target_lang=language,
-            llm=llm,
-            adapt_instruction=True,
-        ))
-
-    mapping = {
-        'simple': single_hop,
-        'multi_context': multi_hop_abs,
-        'reasoning': multi_hop_spec,
-    }
-
-    return [(mapping[key], distribution[key]) for key in mapping if key in distribution]
 
 
 def get_knowledge_graph(documents, transforms, local_file, run_config):
@@ -155,13 +49,6 @@ def get_knowledge_graph(documents, transforms, local_file, run_config):
 def get_persona(llm, kg, language):
     from evalscope.backend.rag_eval.ragas.prompts.persona_prompt import PersonaGenerationPromptZH
     from ragas.testset.persona import generate_personas_from_kg, PersonaGenerationPrompt
-    from ragas.testset.graph import Node
-
-    def filter(node: Node) -> bool:
-        if (node.type.name == 'DOCUMENT' and node.properties.get('summary_embedding') is not None):
-            return True
-        else:
-            return False
 
     if language == 'chinese':
         persona_prompt = PersonaGenerationPromptZH()
@@ -176,19 +63,13 @@ def get_persona(llm, kg, language):
     #         adapt_instruction=True,
     #     ))
 
-    return generate_personas_from_kg(
-        llm=llm,
-        kg=kg,
-        num_personas=3,
-        persona_generation_prompt=persona_prompt,
-        filter_fn=filter,
-    )
+    return generate_personas_from_kg(llm=llm, kg=kg, num_personas=3, persona_generation_prompt=persona_prompt)
 
 
 def load_data(file_path):
     from langchain_community.document_loaders import UnstructuredFileLoader
 
-    loader = UnstructuredFileLoader(file_path, mode='elements')
+    loader = UnstructuredFileLoader(file_path, mode='single')
     data = loader.load()
     return data
 
@@ -208,23 +89,26 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
     wrapped_llm = LangchainLLMWrapper(generator_llm)
     wrapped_embeddings = LangchainEmbeddingsWrapper(embeddings)
 
-    # Change resulting question type distribution
-    distributions = get_distribution(wrapped_llm, args.distribution, args.language)
-
-    run_config = RunConfig(timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True)
     # get transforms
-    transforms = get_transform(
+    transforms = default_transforms(
+        documents,
         wrapped_llm,
         wrapped_embeddings,
         args.language,
     )
 
+    run_config = RunConfig(timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True)
     # get knowledge graph
     knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph, run_config)
-
+    # get persona
     persona_list = get_persona(llm=wrapped_llm, kg=knowledge_graph, language=args.language)
 
-    generator = TestsetGenerator(llm=wrapped_llm, knowledge_graph=knowledge_graph, persona_list=persona_list)
+    # Change resulting question type distribution
+    distributions = default_query_distribution(wrapped_llm, knowledge_graph, args.language)
+
+    # generate testset
+    generator = TestsetGenerator(
+        llm=wrapped_llm, embedding_model=wrapped_embeddings, knowledge_graph=knowledge_graph, persona_list=persona_list)
 
     testset = generator.generate(
         testset_size=args.test_size,

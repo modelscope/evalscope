@@ -1,0 +1,7 @@
+{
+  "ragas_version": "0.2.7",
+  "original_hash": -1333942410710431097,
+  "language": "chinese",
+  "instruction": "给定文档摘要和节点内容，将节点内容评分在1到5的范围内。",
+  "examples": []
+}
