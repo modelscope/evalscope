@@ -1,19 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# flake8: noqa
-import argparse
-import copy
+
 import os.path
 from typing import List, Union
 
-import json
-import torch  # noqa
+import torch
 
+from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR
-from evalscope.evaluator import Evaluator
-from evalscope.evaluator.evaluator import HumanevalEvaluator
+from evalscope.constants import DEFAULT_MODEL_REVISION, EvalBackend
+from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
-from evalscope.utils import EvalBackend, import_module_util, json_to_dict, make_outputs_dir, yaml_to_dict
+from evalscope.utils import import_module_util, json_to_dict, make_outputs_dir, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -25,227 +22,81 @@ BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Run evaluation on benchmarks for LLMs.')
-
-    parser.add_argument(
-        '--model',
-        help='The model id on modelscope, or local model dir.',
-        type=str,
-        # required=True,
-        required=False,
-    )
-    parser.add_argument(
-        '--template-type',
-        type=str,
-        help='Deprecated, will be removed in v1.0.0. See `--chat-template`.',
-        required=False,
-    )
-    parser.add_argument(
-        '--mem-cache', help='Deprecated, will be removed in v1.0.0.', action='store_true', default=False)
-    parser.add_argument(
-        '--chat-template',
-        type=str,
-        help='The custom jinja template for chat generation, should be a string.',
-        required=False,
-    )
-    parser.add_argument(
-        '--eval-type',
-        type=str,
-        help='The type for evaluating. '
-        'service - for APIs, TO-DO'
-        'checkpoint - for models on ModelScope or local model dir, '
-        'custom - for custom models.'
-        '         Need to set `--model` to evalscope.models.custom.CustomModel format.'
-        'default to `checkpoint`.',
-        required=False,
-        default='checkpoint',
-    )
-    parser.add_argument(
-        '--model-args',
-        type=str,
-        help='The model args, should be a string.',
-        required=False,
-        default='revision=None,precision=torch.float16,device_map=auto')
-    parser.add_argument(
-        '--generation-config',
-        type=str,
-        help='The generation config, should be a string.',
-        required=False,
-        default='do_sample=False,repetition_penalty=1.0,max_new_tokens=512',
-    )
-    parser.add_argument(
-        '--datasets',
-        help='Dataset id list, align to the module name in evalscope.benchmarks',
-        type=str,
-        nargs='+',
-        required=False,
-    )
-    parser.add_argument(
-        '--dataset-args',
-        type=json.loads,
-        help='The dataset args, should be a json string. The key of dict should be aligned to datasets,'
-        'e.g. {"humaneval": {"local_path": "/to/your/path"}}',
-        required=False,
-        default='{}')
-    parser.add_argument(
-        '--dataset-dir',
-        help='The datasets dir. Use to specify the local datasets or datasets cache dir.'
-        'See --dataset-hub for more details.',
-        required=False,
-        default=DEFAULT_DATASET_CACHE_DIR)
-    parser.add_argument(
-        '--dataset-hub',
-        help='The datasets hub, can be `ModelScope` or `HuggingFace` or `Local`. '
-        'Default to `ModelScope`.'
-        'If `Local`, the --dataset-dir should be local input data dir.'
-        'Otherwise, the --dataset-dir should be the cache dir for datasets.',
-        required=False,
-        default='ModelScope')
-    parser.add_argument(
-        '--outputs',
-        help='Outputs dir. Default to `outputs`, which means dump to current path: ./outputs',
-        required=False,
-        default='outputs')
-    parser.add_argument('--work-dir', help='The root cache dir.', required=False, default=DEFAULT_WORK_DIR)
-    parser.add_argument(
-        '--limit',
-        type=int,
-        help='Max evaluation samples num for each subset. Default to None, which means no limit.',
-        default=None)
-    parser.add_argument(
-        '--debug', help='Debug mode, will print information for debugging.', action='store_true', default=False)
-    parser.add_argument('--dry-run', help='Dry run in single processing mode.', action='store_true', default=False)
-    parser.add_argument('--use-cache', help='To reuse the cache or not. Default to `true`.', type=str, default='false')
-    parser.add_argument(
-        '--stage',
-        help='The stage of evaluation pipeline, '
-        'can be `all`, `infer`, `review`. Default to `all`.',
-        type=str,
-        default='all')
-
-    parser.add_argument(
-        '--eval-backend',
-        help='The evaluation backend to use. Default to None.'
-        'can be `Native`, `OpenCompass` and `ThirdParty`. '
-        'Default to `Native`.',
-        type=str,
-        default=EvalBackend.NATIVE.value,
-        required=False)
-
-    parser.add_argument(
-        '--eval-config',
-        help='The eval task config file path for evaluation backend, should be a yaml or json file.',
-        type=str,
-        default=None,
-        required=False)
-
-    args = parser.parse_args()
-
-    return args
-
-
-def parse_str_args(str_args: str) -> dict:
-    assert isinstance(str_args, str), 'args should be a string.'
-    arg_list: list = str_args.strip().split(',')
-    arg_list = [arg.strip() for arg in arg_list]
-    arg_dict: dict = dict([arg.split('=') for arg in arg_list])
-
-    final_args = dict()
-    for k, v in arg_dict.items():
-        try:
-            final_args[k] = eval(v)
-        except:
-            if v.lower() == 'true':
-                v = True
-            if v.lower() == 'false':
-                v = False
-            final_args[k] = v
-
-    return final_args
-
-
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[dict, List[dict]]:
-
     if isinstance(task_cfg, list):
         eval_results = []
         for one_task_cfg in task_cfg:
-            eval_results.append(run_task(one_task_cfg))
+            eval_results.append(run_single_task(one_task_cfg))
         return eval_results
 
     if isinstance(task_cfg, TaskConfig):
-        task_cfg = task_cfg.to_dict()
-    elif isinstance(task_cfg, str):
-        if task_cfg.endswith('.yaml'):
-            task_cfg = yaml_to_dict(task_cfg)
-        elif task_cfg.endswith('.json'):
-            task_cfg = json_to_dict(task_cfg)
-        else:
-            raise ValueError(f'Unsupported file format: {task_cfg}, should be a yaml or json file.')
+        logger.info('** Args: Task config is provided with TaskConfig type. **')
     elif isinstance(task_cfg, dict):
         logger.info('** Args: Task config is provided with dictionary type. **')
+        task_cfg = TaskConfig(**task_cfg)
+    elif isinstance(task_cfg, str):
+        if task_cfg.endswith('.yaml'):
+            logger.info('** Args: Task config is provided with yaml type. **')
+            task_cfg_dict = yaml_to_dict(task_cfg)
+            task_cfg = TaskConfig(**task_cfg_dict)
+        elif task_cfg.endswith('.json'):
+            logger.info('** Args: Task config is provided with json type. **')
+            task_cfg_dict = json_to_dict(task_cfg)
+            task_cfg = TaskConfig(**task_cfg_dict)
+        else:
+            raise ValueError(f'Unsupported file format: {task_cfg}, should be a yaml or json file.')
     else:
         raise ValueError('** Args: Please provide a valid task config. **')
 
-    # Check and run evaluation backend
-    if task_cfg.get('eval_backend') is None:
-        task_cfg['eval_backend'] = EvalBackend.NATIVE.value
+    result = run_single_task(task_cfg)
+    return result
 
-    eval_backend = task_cfg.get('eval_backend')
-    eval_config: Union[str, dict] = task_cfg.get('eval_config')
 
-    if eval_backend != EvalBackend.NATIVE.value:
+def run_single_task(task_cfg: TaskConfig) -> dict:
+    eval_backend = task_cfg.eval_backend
+    eval_config: Union[str, dict] = task_cfg.eval_config
+
+    if eval_backend != EvalBackend.NATIVE:
 
         if eval_config is None:
             logger.warning(f'Got eval_backend {eval_backend}, but eval_config is not provided.')
 
-        if eval_backend == EvalBackend.OPEN_COMPASS.value:
+        if eval_backend == EvalBackend.OPEN_COMPASS:
             from evalscope.backend.opencompass import OpenCompassBackendManager
             oc_backend_manager = OpenCompassBackendManager(config=eval_config)
             oc_backend_manager.run()
-        elif eval_backend == EvalBackend.VLM_EVAL_KIT.value:
+        elif eval_backend == EvalBackend.VLM_EVAL_KIT:
             from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
             vlm_eval_kit_backend_manager = VLMEvalKitBackendManager(config=eval_config)
             vlm_eval_kit_backend_manager.run()
-        elif eval_backend == EvalBackend.RAG_EVAL.value:
+        elif eval_backend == EvalBackend.RAG_EVAL:
             from evalscope.backend.rag_eval import RAGEvalBackendManager
             rag_eval_backend_manager = RAGEvalBackendManager(config=eval_config)
             rag_eval_backend_manager.run()
-        elif eval_backend == EvalBackend.THIRD_PARTY.value:
+        elif eval_backend == EvalBackend.THIRD_PARTY:
             raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
         return dict()
 
     # Get the output task config
-    output_task_cfg = copy.copy(task_cfg)
-    logger.info(output_task_cfg)
+    logger.info(task_cfg)
 
-    model_args: dict = task_cfg.get('model_args', {})
-    # Get the GLOBAL default config (infer_cfg) for prediction
-    generation_config: dict = task_cfg.get(
-        'generation_config', {
-            'do_sample': False,
-            'repetition_penalty': 1.0,
-            'max_length': 2048,
-            'max_new_tokens': 512,
-            'temperature': 1.0,
-            'top_p': 1.0,
-            'top_k': 50
-        })
-    dataset_args: dict = task_cfg.get('dataset_args', {})
-    dry_run: bool = task_cfg.get('dry_run', False)
-    model: Union[str, CustomModel] = task_cfg.get('model', None)
-    template_type: str = task_cfg.get('template_type', None)
-    eval_type: str = task_cfg.get('eval_type', 'checkpoint')
-    datasets: list = task_cfg.get('datasets', None)
-    work_dir: str = task_cfg.get('work_dir', DEFAULT_WORK_DIR)
-    outputs: str = task_cfg.get('outputs', 'outputs')
-    use_cache: bool = task_cfg.get('use_cache', True)
-    dataset_hub: str = task_cfg.get('dataset_hub', 'ModelScope')
-    dataset_dir: str = task_cfg.get('dataset_dir', DEFAULT_DATASET_CACHE_DIR)
-    stage: str = task_cfg.get('stage', 'all')
-    limit: int = task_cfg.get('limit', None)
-    debug: str = task_cfg.get('debug', False)
+    model_args = task_cfg.model_args
+    generation_config = task_cfg.generation_config
+    dry_run = task_cfg.dry_run
+    model = task_cfg.model
+    template_type = task_cfg.template_type
+    eval_type = task_cfg.eval_type
+    work_dir = task_cfg.work_dir
+    outputs = task_cfg.outputs
+    use_cache = task_cfg.use_cache
+    datasets = task_cfg.datasets
+    dataset_args = task_cfg.dataset_args
+    dataset_hub = task_cfg.dataset_hub
+    dataset_dir = task_cfg.dataset_dir
+    stage = task_cfg.stage
+    limit = task_cfg.limit
+    debug = task_cfg.debug
 
     if model is None or datasets is None:
         if not task_cfg.get('eval_backend'):
@@ -253,7 +104,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
     if template_type:
         logger.warning(
-            '** DeprecatedWarning: template_type is deprecated, please use `--chat-template` for custom chat template instead.'
+            '** DeprecatedWarning: template_type is deprecated, please use `--chat-template` for custom chat template instead.'  # noqa: E501
         )
 
     model_precision = model_args.get('precision', torch.float16)
@@ -264,7 +115,6 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
     # Get model args
     if dry_run:
-        from evalscope.models.dummy_chat_model import DummyChatModel
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
     elif eval_type == 'custom':
@@ -321,7 +171,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
                 is_custom_outputs_dir=False,
             )
         else:
-            # TODO: CHECK dataset_args
+            # CHECK dataset_args
             dataset_name_or_path: str = dataset_args.get(dataset_name,
                                                          {}).get('local_path') or imported_modules['DATASET_ID']
 
@@ -336,8 +186,8 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
                 prompt_template=in_prompt_template,
             )
 
-            in_subset_list: list = dataset_args.get(dataset_name, {})\
-                .get('subset_list', imported_modules['SUBSET_LIST'])
+            in_subset_list: list = dataset_args.get(dataset_name, {}).get('subset_list',
+                                                                          imported_modules['SUBSET_LIST'])
             logger.info(f'\n** Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
             evaluator = Evaluator(
@@ -352,7 +202,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
                 datasets_hub=dataset_hub,
                 stage=stage,
                 eval_type=eval_type,
-                overall_task_cfg=output_task_cfg,
+                overall_task_cfg=task_cfg,
             )
 
         infer_cfg = generation_config or {}
@@ -365,35 +215,9 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 
 
 def main():
-    args = parse_args()
-
-    # Get task_cfg
-    use_cache: bool = False if args.use_cache.lower() == 'false' else True
-    task_cfg = {
-        'model_args': parse_str_args(args.model_args),
-        'generation_config': parse_str_args(args.generation_config),
-        'dataset_args': args.dataset_args,
-        'dry_run': args.dry_run,
-        'model': args.model,
-        'template_type': args.template_type,
-        'eval_type': args.eval_type,
-        'datasets': args.datasets,
-        'work_dir': args.work_dir,
-        'outputs': args.outputs,
-        'use_cache': use_cache,
-        'dataset_hub': args.dataset_hub,
-        'dataset_dir': args.dataset_dir,
-        'stage': args.stage,
-        'limit': args.limit,
-        'debug': args.debug,
-        'eval_backend': args.eval_backend,
-        'eval_config': args.eval_config,
-    }
-
+    task_cfg = parse_args()
     run_task(task_cfg)
 
 
 if __name__ == '__main__':
-    # Usage: python3 evalscope/run.py --model ZhipuAI/chatglm2-6b --datasets mmlu hellaswag --limit 10
-    # Usage: python3 evalscope/run.py --model qwen/Qwen-1_8B --generation-config do_sample=false,temperature=0.0 --datasets ceval --dataset-args '{"ceval": {"few_shot_num": 0}}' --limit 10
     main()

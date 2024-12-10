@@ -2,10 +2,13 @@
 
 import copy
 import os
-from dataclasses import asdict, dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Union
 
-from evalscope.constants import DEFAULT_WORK_DIR
+import json
+
+from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_OUTPUT_DIR, DEFAULT_WORK_DIR, EvalBackend,
+                                 EvalStage, EvalType, HubType)
 from evalscope.models.custom import CustomModel
 from evalscope.utils import yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -22,47 +25,54 @@ registry_tasks = {
     'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
     'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
     'general_qa': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/general_qa.yaml')),
+}
 
-    # 'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
-    # 'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
-    # 'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
+DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'auto', 'device': 'auto'}
+DEFAULT_GENERATION_CONFIG = {
+    'max_length': 2048,
+    'max_new_tokens': 512,
+    'do_sample': False,
+    'top_k': 50,
+    'top_p': 1.0,
+    'temperature': 1.0,
 }
 
 
 @dataclass
 class TaskConfig:
-    model_args: Optional[dict] = field(default_factory=dict)
-    template_type: Optional[str] = 'default-generation'
-    generation_config: Optional[dict] = field(default_factory=dict)
-    dataset_args: Optional[dict] = field(default_factory=dict)
-    dry_run: bool = False
-    model: CustomModel = None
-    eval_type: str = 'custom'
-    datasets: list = field(default_factory=list)
-    work_dir: str = DEFAULT_WORK_DIR
-    outputs: str = None
-    mem_cache: bool = False
-    use_cache: bool = True
-    stage: str = 'all'  # `all` or `infer` or `review`
-    dataset_hub: str = 'ModelScope'
-    dataset_dir: str = DEFAULT_WORK_DIR
-    limit: int = None
-    eval_backend: str = 'Native'
-    eval_config: dict = field(default_factory=dict)
+    # Model-related arguments
+    model: Union[str, CustomModel, None] = None
+    model_args: Optional[Dict] = field(default_factory=lambda: DEFAULT_MODEL_ARGS | {})
 
-    # def __post_init__(self):
-    #     self.registry_tasks = {
-    #         'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
-    #         'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
-    #         'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
-    #         'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
-    #         'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
-    #
-    #         'bbh_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh_mini.yaml')),
-    #         'mmlu_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu_mini.yaml')),
-    #         'ceval_mini': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval_mini.yaml')),
-    #
-    #     }
+    # Template-related arguments
+    template_type: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
+    chat_template: Optional[str] = None
+
+    # Dataset-related arguments
+    datasets: Optional[List[str]] = None
+    dataset_args: Optional[Dict] = field(default_factory=dict)
+    dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
+    dataset_hub: str = HubType.MODELSCOPE
+
+    # Generation configuration arguments
+    generation_config: Optional[Dict] = field(default_factory=lambda: DEFAULT_GENERATION_CONFIG | {})
+
+    # Evaluation-related arguments
+    eval_type: str = EvalType.CHECKPOINT
+    eval_backend: str = EvalBackend.NATIVE
+    eval_config: Union[str, Dict, None] = None
+    stage: str = EvalStage.ALL
+    limit: Optional[int] = None
+
+    # Cache and working directory arguments
+    mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
+    use_cache: bool = True
+    outputs: str = DEFAULT_OUTPUT_DIR
+    work_dir: str = DEFAULT_WORK_DIR
+
+    # Debug and runtime mode arguments
+    debug: bool = False
+    dry_run: bool = False
 
     @staticmethod
     def registry(name: str, data_pattern: str, dataset_dir: str = None, subset_list: list = None) -> None:
@@ -102,7 +112,6 @@ class TaskConfig:
             custom_config['dataset_args'][data_pattern].update({'local_path': dataset_dir})
 
         if subset_list is not None:
-            # custom_config['dataset_args'].get(data_pattern, {}).update({'subset_list': subset_list})
             custom_config['dataset_args'][data_pattern].update({'subset_list': subset_list})
 
         registry_tasks.update({name: custom_config})
@@ -110,13 +119,10 @@ class TaskConfig:
 
     def to_dict(self):
         # Note: to avoid serialization error for some model instance
-        _tmp_model = copy.copy(self.model)
-        self.model = None
-        res_dict = asdict(self)
-        res_dict.update({'model': _tmp_model})
-        self.model = _tmp_model
+        return self.__dict__
 
-        return res_dict
+    def __str__(self):
+        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
 
     @staticmethod
     def load(custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
@@ -159,8 +165,7 @@ if __name__ == '__main__':
     # Register a new task
     TaskConfig.registry(name='arc_swift', data_pattern='arc', dataset_dir='/path/to/swift_custom_work')
 
-    import json
     swift_eval_task: List[TaskConfig] = TaskConfig.load(custom_model=model, tasks=['gsm8k', 'arc', 'arc_swift'])
     for item in swift_eval_task:
-        print(item.to_dict())
+        print(item)
         print()

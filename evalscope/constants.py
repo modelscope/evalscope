@@ -5,9 +5,16 @@ from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 
 DEFAULT_WORK_DIR = '.'
+DEFAULT_OUTPUT_DIR = 'outputs'
 DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
 DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub
 DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/datasets
+
+
+class HubType:
+    MODELSCOPE = 'modelscope'
+    HUGGINGFACE = 'huggingface'
+    LOCAL = 'local'
 
 
 class DumpMode:
@@ -31,7 +38,7 @@ class MetricsConstant:
     ]
 
 
-class MetricMembers(Enum):
+class MetricMembers:
 
     # Math accuracy metric
     MATH_ACCURACY = 'math_accuracy'
@@ -154,3 +161,26 @@ class EvalStage:
     ALL = 'all'
     INFER = 'infer'
     REVIEW = 'review'
+
+
+class EvalType:
+
+    CUSTOM = 'custom'
+    CHECKPOINT = 'checkpoint'
+
+
+class EvalBackend:
+    # Use native evaluation pipeline of EvalScope
+    NATIVE = 'Native'
+
+    # Use OpenCompass framework as the evaluation backend
+    OPEN_COMPASS = 'OpenCompass'
+
+    # Use VLM Eval Kit as the multi-modal model evaluation backend
+    VLM_EVAL_KIT = 'VLMEvalKit'
+
+    # Use RAGEval as the RAG evaluation backend
+    RAG_EVAL = 'RAGEval'
+
+    # Use third-party evaluation backend/modules
+    THIRD_PARTY = 'ThirdParty'

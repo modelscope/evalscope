@@ -3,7 +3,7 @@
 import os.path
 from typing import Optional
 
-from evalscope.constants import DEFAULT_WORK_DIR
+from evalscope.constants import DEFAULT_WORK_DIR, HubType
 
 
 class Benchmark(object):
@@ -39,7 +39,7 @@ class Benchmark(object):
             A dict.
         """
         work_dir = os.path.join(work_dir, 'benchmarks', dataset_name.replace('/', '_'))
-        if hub == 'ModelScope':
+        if hub == HubType.MODELSCOPE:
             from modelscope.msdatasets import MsDataset
             dataset = MsDataset.load(
                 dataset_name=dataset_name, subset_name=subset, split=split, token=token, cache_dir=work_dir, **kwargs)
@@ -48,7 +48,7 @@ class Benchmark(object):
             dataset.subset_name = subset
             # dataset.split = split
             return dataset
-        elif hub == 'HuggingFace':
+        elif hub == HubType.HUGGINGFACE:
             # TODO: implement this by xingjun.wxj@alibaba-inc.com
             raise NotImplementedError('HuggingFace hub is not supported yet.')
         else:
