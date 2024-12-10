@@ -112,35 +112,43 @@ class OpenaiPlugin(ApiPluginBase):
         delta_contents = {}
         input_tokens = None
         output_tokens = None
+
         for response in responses:
             js = json.loads(response)
-            if js['object'] == 'chat.completion':
-                for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['message']['content']]
-                input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']
-            elif js['object'] == 'text_completion':
-                for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['text']]
-                input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']
-            elif js['object'] == 'chat.completion.chunk':
-                if 'choices' in js:
+            if 'object' in js:
+                if js['object'] == 'chat.completion':
                     for choice in js['choices']:
-                        if 'delta' in choice and 'index' in choice:
-                            delta = choice['delta']
-                            idx = choice['index']
-                            if 'content' in delta:
-                                delta_content = delta['content']
-                                if idx in delta_contents:
-                                    delta_contents[idx].append(delta_content)
-                                else:
-                                    delta_contents[idx] = [delta_content]
-                # usage in chunk: {"id":"","object":"chat.completion.chunk","created":1718269986,"model":"llama3",
-                # "choices":[],"usage":{"prompt_tokens":32,"total_tokens":384,"completion_tokens":352}}
-                if 'usage' in js and js['usage']:
+                        delta_contents[choice['index']] = [choice['message']['content']]
                     input_tokens = js['usage']['prompt_tokens']
                     output_tokens = js['usage']['completion_tokens']
+                elif js['object'] == 'text_completion':
+                    for choice in js['choices']:
+                        delta_contents[choice['index']] = [choice['text']]
+                    input_tokens = js['usage']['prompt_tokens']
+                    output_tokens = js['usage']['completion_tokens']
+                elif js['object'] == 'chat.completion.chunk':
+                    if 'choices' in js:
+                        for choice in js['choices']:
+                            if 'delta' in choice and 'index' in choice:
+                                delta = choice['delta']
+                                idx = choice['index']
+                                if 'content' in delta:
+                                    delta_content = delta['content']
+                                    if idx in delta_contents:
+                                        delta_contents[idx].append(delta_content)
+                                    else:
+                                        delta_contents[idx] = [delta_content]
+                    # usage in chunk
+                    if 'usage' in js and js['usage']:
+                        input_tokens = js['usage']['prompt_tokens']
+                        output_tokens = js['usage']['completion_tokens']
+            else:
+                if 'usage' in js and js['usage']:
+                    input_tokens = js['usage'].get('prompt_tokens', 0)
+                    output_tokens = js['usage'].get('completion_tokens', 0)
+                else:
+                    logger.warning('No `object` or `usage` information found in response.')
+
         if (input_tokens is None and output_tokens is None and self.tokenizer is not None):
             input_tokens = 0
             output_tokens = 0
