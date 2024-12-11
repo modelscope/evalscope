@@ -97,7 +97,7 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
         args.language,
     )
 
-    run_config = RunConfig(timeout=600, max_retries=3, max_wait=120, max_workers=1, log_tenacity=True)
+    run_config = RunConfig(timeout=600, max_retries=10, max_wait=120, max_workers=1, log_tenacity=True)
     # get knowledge graph
     knowledge_graph = get_knowledge_graph(documents, transforms, args.knowledge_graph, run_config)
     # get persona
