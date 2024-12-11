@@ -44,7 +44,6 @@ task_cfg.update({
     'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
     'eval_type': 'checkpoint',                 # Evaluation type, must be retained, fixed as checkpoint
     'model': '../models/Qwen2-0.5B-Instruct',  # Model path
-    'template_type': 'qwen',                   # Model template type
     'outputs': 'outputs',
     'mem_cache': False,
     'limit': 10,
@@ -97,7 +96,6 @@ task_cfg.update({
     'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
     'eval_type': 'checkpoint',                 # Evaluation type, must be retained, fixed as checkpoint
     'model': '../models/Qwen2-0.5B-Instruct',  # Model path
-    'template_type': 'qwen',                   # Model template type
     'outputs': 'outputs',
     'mem_cache': False,
     'limit': 10,

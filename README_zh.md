@@ -144,7 +144,6 @@ pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, 
 ```bash
 python -m evalscope.run \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --template-type qwen \
  --datasets gsm8k ceval \
  --limit 10
 ```
@@ -155,7 +154,6 @@ python -m evalscope.run \
 ```bash
 python evalscope/run.py \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --template-type qwen \
  --datasets gsm8k ceval \
  --limit 10
 ```
@@ -174,7 +172,6 @@ Report table:
 
 #### 基本参数说明
 - `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
-- `--template-type`: 指定了模型对应的模板类型，参考[模板表格](https://swift.readthedocs.io/zh-cn/latest/Instruction/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.html#id4)中的`Default Template`字段填写
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
 - `--limit`: 每个数据集最大评估数据量，不填写则默认为全部评估，可用于快速验证评估流程
 
@@ -186,7 +183,6 @@ Report table:
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --model-args revision=master,precision=torch.float16,device_map=auto \
  --datasets gsm8k ceval \
  --use-cache true \
@@ -197,7 +193,6 @@ python evalscope/run.py \
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
  --datasets ceval \
  --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
@@ -237,7 +232,6 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen',
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,

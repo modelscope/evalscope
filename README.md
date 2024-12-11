@@ -136,7 +136,6 @@ You can execute this in any directory:
 ```bash
 python -m evalscope.run \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --template-type qwen \
  --datasets gsm8k ceval \
  --limit 10
 ```
@@ -147,7 +146,6 @@ You need to execute this in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --template-type qwen \
  --datasets gsm8k ceval \
  --limit 10
 ```
@@ -167,7 +165,6 @@ Report table:
 
 #### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
-- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm) for filling in this field.
 - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html) for available options.
 - `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
 
@@ -179,7 +176,6 @@ If you wish to conduct a more customized evaluation, such as modifying model par
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --model-args revision=master,precision=torch.float16,device_map=auto \
  --datasets gsm8k ceval \
  --use-cache true \
@@ -190,7 +186,6 @@ python evalscope/run.py \
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
  --datasets ceval \
  --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
@@ -227,7 +222,6 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen',
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,

@@ -14,7 +14,6 @@ This will unzip the dataset into the `/path/to/workdir/data` directory, which wi
 ```shell
 python evalscope/run.py \
  --model ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
  --datasets arc \
  --dataset-hub Local \
  --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
@@ -35,7 +34,6 @@ Structure your model files similar to the `chatglm3-6b` directory, link: https:/
 ```shell
 python evalscope/run.py \
  --model /path/to/ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
  --datasets arc \
  --dataset-hub Local \
  --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \

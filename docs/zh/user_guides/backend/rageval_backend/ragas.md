@@ -70,7 +70,6 @@ generate_testset_task_cfg = {
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
-                "template_type": "qwen",
             },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
@@ -97,7 +96,6 @@ generate_testset_task_cfg = {
     - `generator_llm`: `dict`：生成器LLM的配置：
       - 若使用本地模型，支持如下参数：
         - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
-        - `template_type`: `str`：模板类型，例如 "qwen"。
         - `generation_config`: `dict`：生成配置，例如 `{"temperature": 0.7}`。
       - 若使用 API 模型，支持如下参数：
         - `model_name`: `str`：自定义模型的名称。
@@ -230,7 +228,6 @@ eval_task_cfg = {
             "testset_file": "outputs/testset_with_answer.json",
             "critic_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
-                "template_type": "qwen",
             },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",

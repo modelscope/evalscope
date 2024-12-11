@@ -1,13 +1,16 @@
 import os
-from typing import Any, Dict, Iterator, List, Mapping, Optional
-from modelscope.utils.hf_util import GenerationConfig
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
-from evalscope.models.model_adapter import ChatGenerationModelAdapter
 from langchain_openai import ChatOpenAI
+from modelscope.utils.hf_util import GenerationConfig
+from typing import Any, Dict, Iterator, List, Mapping, Optional
+
+from evalscope.constants import DEFAULT_MODEL_REVISION
+from evalscope.models.model_adapter import ChatGenerationModelAdapter
 
 
 class LLM:
+
     @staticmethod
     def load(**kw):
         api_base = kw.get('api_base', None)
@@ -25,8 +28,8 @@ class LocalLLM(BaseLLM):
     """A custom LLM that loads a model from a given path and performs inference."""
 
     model_name_or_path: str
-    model_revision: str = 'master'
-    template_type: str = 'default'
+    model_revision: str = DEFAULT_MODEL_REVISION
+    template_type: Optional[str] = None
     model_name: Optional[str]
     model: Optional[ChatGenerationModelAdapter]
     generation_config: Optional[Dict]
@@ -37,7 +40,6 @@ class LocalLLM(BaseLLM):
         self.model = ChatGenerationModelAdapter(
             model_id=self.model_name_or_path,
             model_revision=self.model_revision,
-            template_type=self.template_type,
             generation_config=GenerationConfig(**self.generation_config) if self.generation_config else None,
         )
 

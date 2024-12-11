@@ -3,14 +3,13 @@
 Run evaluation for LLMs.
 """
 import os.path
+import torch
 from datetime import datetime
 from typing import List, Union
 
-import torch
-
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, OutputsStructure
+from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType, OutputsStructure
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import dict_to_yaml, gen_hash, import_module_util, json_to_dict, seed_everything, yaml_to_dict
@@ -135,7 +134,7 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     if dry_run:
         model_id: str = 'dummy'
         model_revision: str = 'v1.0.0'
-    elif eval_type == 'custom':
+    elif eval_type == EvalType.CUSTOM:
         model_id: str = 'default'
         model_revision: str = DEFAULT_MODEL_REVISION
     else:

@@ -14,7 +14,6 @@ unzip data.zip
 ```shell
 python evalscope/run.py \
  --model ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
  --datasets arc \
  --dataset-hub Local \
  --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
@@ -37,7 +36,6 @@ python evalscope/run.py \
 ```shell
 python evalscope/run.py \
  --model /path/to/ZhipuAI/chatglm3-6b \
- --template-type chatglm3 \
  --datasets arc \
  --dataset-hub Local \
  --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \

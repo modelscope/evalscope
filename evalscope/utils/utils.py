@@ -5,18 +5,17 @@ import functools
 import hashlib
 import importlib
 import importlib.util
+import json
+import jsonlines as jsonl
+import numpy as np
 import os
 import random
 import re
 import sys
-from typing import Any, Dict, List, Tuple, Union
-
-import json
-import jsonlines as jsonl
-import numpy as np
 import torch
 import torch.nn.functional as F
 import yaml
+from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.constants import DumpMode, OutputsStructure
 from evalscope.utils.logger import get_logger
@@ -117,7 +116,6 @@ def dict_to_yaml(d: dict, yaml_file: str):
     """
     with open(yaml_file, 'w') as f:
         yaml.dump(d, f, default_flow_style=False)
-    logger.info(f'Dump data to {yaml_file} successfully.')
 
 
 def json_to_dict(json_file) -> dict:
@@ -148,18 +146,6 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
             obj_cls = getattr(obj_cls, attr)
 
     return functools.partial(obj_cls, *args, **kwargs)
-
-
-def markdown_table(header_l, data_l):
-    md_str = f'| {' | '.join(header_l)} |'
-    md_str += f'\n| {' | '.join([' - -- '] * len(header_l))} |'
-    for data in data_l:
-        if isinstance(data, str):
-            data = [data]
-        assert len(data) <= len(header_l)
-        tmp = data + [''] * (len(header_l) - len(data))
-        md_str += f'\n| {' | '.join(tmp)} |'
-    return md_str
 
 
 def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
@@ -463,6 +449,7 @@ def get_valid_list(input_list, candidate_list):
 
 def get_latest_folder_path(work_dir):
     from datetime import datetime
+
     # Get all subdirectories in the work_dir
     folders = [f for f in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, f))]
 

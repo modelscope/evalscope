@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass
@@ -12,7 +12,6 @@ class TestsetGenerationArguments:
     For local LLM support, you can use the following fields:
         model_name_or_path: str
         model_revision: str = "master"
-        template_type: str = "default"
         generation_config: Optional[Dict]
 
     For API LLM support, you can use the following fields:
@@ -22,9 +21,7 @@ class TestsetGenerationArguments:
     """
     generator_llm: Dict = field(default_factory=dict)
     embeddings: Dict = field(default_factory=dict)
-    distribution: str = field(
-        default_factory=lambda: {'simple': 0.5, 'multi_context': 0.4, 'reasoning': 0.1}
-    )
+    distribution: str = field(default_factory=lambda: {'simple': 0.5, 'multi_context': 0.4, 'reasoning': 0.1})
     # For LLM based evaluation
     # available: ['english', 'hindi', 'marathi', 'chinese', 'spanish', 'amharic', 'arabic',
     # 'armenian', 'bulgarian', 'urdu', 'russian', 'polish', 'persian', 'dutch', 'danish',
@@ -37,9 +34,7 @@ class EvaluationArguments:
     testset_file: str
     critic_llm: Dict = field(default_factory=dict)
     embeddings: Dict = field(default_factory=dict)
-    metrics: List[str] = field(
-        default_factory=lambda: ['answer_relevancy', 'faithfulness']
-    )
+    metrics: List[str] = field(default_factory=lambda: ['answer_relevancy', 'faithfulness'])
     # For LLM based evaluation
     # available: ['english', 'hindi', 'marathi', 'chinese', 'spanish', 'amharic', 'arabic',
     # 'armenian', 'bulgarian', 'urdu', 'russian', 'polish', 'persian', 'dutch', 'danish',

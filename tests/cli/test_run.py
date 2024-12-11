@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
 import subprocess
-import unittest
-
 import torch
+import unittest
 
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
@@ -33,13 +32,11 @@ class TestRun(unittest.TestCase):
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_simple_eval(self):
         model = 'ZhipuAI/chatglm3-6b'
-        template_type = 'chatglm3'
         datasets = 'arc'  # arc ceval
         limit = 100
 
         cmd_simple = f'python3 -m evalscope.run ' \
                      f'--model {model} ' \
-                     f'--template-type {template_type} ' \
                      f'--datasets {datasets} ' \
                      f'--limit {limit}'
 
@@ -53,14 +50,12 @@ class TestRun(unittest.TestCase):
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_eval_with_args(self):
         model = 'ZhipuAI/chatglm3-6b'
-        template_type = 'chatglm3'
         datasets = 'arc ceval'  # arc ceval
         limit = 5
         dataset_args = '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}'
 
         cmd_with_args = f'python3 -m evalscope.run ' \
                         f'--model {model} ' \
-                        f'--template-type {template_type} ' \
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \
                         f'--generation-config do_sample=false,temperature=0.0 ' \
@@ -75,16 +70,7 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
-        task_cfg = {
-            'dry_run': False,
-            'use_cache': False,
-            'model': 'qwen/Qwen2-0.5B-Instruct',
-            'datasets': ['gsm8k'],
-            'outputs': 'outputs',
-            'dataset_hub': 'ModelScope',
-            'limit': 2,
-            'debug': False
-        }
+        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct', 'datasets': ['gsm8k'], 'limit': 2, 'debug': False}
         run_task(task_cfg=task_cfg)
 
 

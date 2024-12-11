@@ -1,10 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import glob
+import json
 import os
 from collections import defaultdict
-
-import json
 from tabulate import tabulate
 
 from evalscope.utils.logger import get_logger
@@ -37,7 +36,7 @@ def get_report(report_file: str):
 
 def get_model_reports(model_report_dir: str):
     model_report_dir = os.path.normpath(model_report_dir)
-    report_files = glob.glob(os.path.join(model_report_dir, '*.json'))
+    report_files = glob.glob(os.path.join(model_report_dir, '**/*.json'))
 
     model_reports_d = defaultdict(list)
     for file_path in report_files:
@@ -55,8 +54,6 @@ def gen_table(reports_path_list: list):
     for report_path in reports_path_list:
         model_reports_d = get_model_reports(report_path)
         for model_name, report_list in model_reports_d.items():
-            # report_list: [{'dataset_name': 'CompetitionMath', 'score': '4.42 (acc)'},
-            #               {'dataset_name': 'GSM8K', 'score': '28.51 (acc)'}]
             report_list = sorted(report_list, key=lambda x: x['dataset_name'])
             if not is_headers_set:
                 headers.extend([x['dataset_name'] for x in report_list])

@@ -47,7 +47,6 @@ task_cfg.update({
     'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
     'eval_type': 'checkpoint',                 # 评测类型，需保留，固定为checkpoint
     'model': '../models/Qwen2-0.5B-Instruct',  # 模型路径
-    'template_type': 'qwen',                   # 模型模板类型
     'outputs': 'outputs',
     'mem_cache': False,
     'limit': 10,
@@ -107,7 +106,6 @@ task_cfg.update({
     'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
     'eval_type': 'checkpoint',                 # 评测类型，需保留，固定为checkpoint
     'model': '../models/Qwen2-0.5B-Instruct',  # 模型路径
-    'template_type': 'qwen',                   # 模型模板类型
     'outputs': 'outputs',
     'mem_cache': False,
     'limit': 10,

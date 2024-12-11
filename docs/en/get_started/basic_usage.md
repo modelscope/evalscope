@@ -10,7 +10,6 @@ You can execute this command from any directory:
 ```bash
 python -m evalscope.run \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --datasets arc 
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
@@ -21,7 +20,6 @@ Execute this command in the `evalscope` directory:
 ```bash
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --datasets arc
 ```
 If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
@@ -30,14 +28,6 @@ If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 
 ### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
-- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm) for filling in this field.
-    ````{note}
-    You can also view the list of `template_type` for models using the following code:
-    ``` python
-    from evalscope.models.template import TemplateType
-    print(TemplateType.get_template_name_list())
-    ```
-    ````
 - `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](./supported_dataset.md#1-native-supported-datasets) for available options.
 
 ## 2. Parameterized Evaluation
@@ -47,7 +37,6 @@ If you wish to conduct a more customized evaluation, such as modifying model par
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --model-args revision=master,precision=torch.float16,device_map=auto \
  --datasets gsm8k ceval \
  --use-cache true \
@@ -58,7 +47,6 @@ python evalscope/run.py \
 ```shell
 python evalscope/run.py \
  --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
  --generation-config do_sample=false,temperature=0.0 \
  --datasets ceval \
  --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
@@ -95,7 +83,6 @@ your_task_cfg = {
         'dataset_args': {},
         'dry_run': False,
         'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen',
         'datasets': ['arc', 'hellaswag'],
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,

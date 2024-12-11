@@ -1,13 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import json
 import os
 import time
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Union
-
-import json
 from tqdm import tqdm
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
@@ -132,9 +131,9 @@ class Evaluator(object):
         assert len(prompts_list) > 0, 'prompts_list must not be empty when calling func get_answers() !'
 
         answers_list = []
-        pred_dir: str = self.outputs_structure.predictions_dir
-        pred_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
-        pred_file_path: str = os.path.join(pred_dir, pred_file_name)
+        pred_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
+        pred_file_path = os.path.join(self.outputs_structure.predictions_dir, self.model_name, pred_file_name)
+        os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
 
         if self.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
@@ -257,9 +256,9 @@ class Evaluator(object):
         """
         reviews_list = []
 
-        review_dir: str = self.outputs_structure.reviews_dir
-        review_file_name: str = self.custom_task_name + '_' + subset_name + '.jsonl'
-        review_file_path: str = os.path.join(review_dir, review_file_name)
+        review_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
+        review_file_path = os.path.join(self.outputs_structure.reviews_dir, self.model_name, review_file_name)
+        os.makedirs(os.path.dirname(review_file_path), exist_ok=True)
 
         if self.use_cache and os.path.exists(review_file_path):
             logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
@@ -286,9 +285,8 @@ class Evaluator(object):
 
             reviews_list.append(review_d)
 
-        # Dump reviews
-        os.makedirs(review_dir, exist_ok=True)
-        dump_jsonl_data(reviews_list, review_file_path)
+            # Dump reviews
+            dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
 
         return reviews_list
 
@@ -334,9 +332,9 @@ class Evaluator(object):
         report_map.update(dict(model_name=self.model_name, dataset_name=self.dataset_name))
 
         # Dump report
-        report_dir: str = self.outputs_structure.reports_dir
-        report_file_name: str = self.custom_task_name + '.json'
-        report_path: str = os.path.join(report_dir, report_file_name)
+        report_path: str = os.path.join(self.outputs_structure.reports_dir, self.model_name,
+                                        self.dataset_name + '.json')
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
 
         # Write report
         with open(report_path, 'w') as f:
@@ -346,7 +344,7 @@ class Evaluator(object):
         # Make table
         if use_table:
             try:
-                report_table: str = gen_table([report_dir])
+                report_table: str = gen_table([self.outputs_structure.reports_dir])
                 logger.info(f'Report table: \n {report_table} \n')
             except Exception:
                 logger.error('Failed to generate report table.')
