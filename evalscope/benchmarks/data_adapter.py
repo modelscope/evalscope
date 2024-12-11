@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 from evalscope.benchmarks import Benchmark
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, HubType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -44,7 +44,7 @@ class DataAdapter(ABC):
              dataset_name_or_path: str,
              subset_list: list = None,
              work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-             datasets_hub: str = 'ModelScope',
+             datasets_hub: str = HubType.MODELSCOPE,
              **kwargs) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
@@ -55,11 +55,9 @@ class DataAdapter(ABC):
 
         """
         dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
-        if datasets_hub == 'Local':
-            # Try to load dataset from local disk
-            if not os.path.exists(dataset_name_or_path):
-                raise FileNotFoundError(f'Dataset path not found: {dataset_name_or_path}')
 
+        # Try to load dataset from local disk
+        if os.path.exists(dataset_name_or_path):
             logger.info(
                 f'Loading dataset from local disk: > dataset_name: {dataset_name_or_path}  > work_dir: {work_dir}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)

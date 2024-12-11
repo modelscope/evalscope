@@ -2,13 +2,13 @@
 
 # RAGAS
 
-本框架支持[RAGAS](https://github.com/explodinggradients/ragas)（Retrieval Augmented Generation Assessment），一个专门用于评估检索增强生成（RAG）流程性能的框架。其具有的一些核心评估指标包括：
+本框架支持[RAGAS](https://github.com/explodinggradients/ragas)（Retrieval Augmented Generation Assessment），一个专门用于评测检索增强生成（RAG）流程性能的框架。其具有的一些核心评测指标包括：
 
 - 忠实性（Faithfulness）：衡量生成答案的事实准确性，确保生成内容的真实性和可靠性。
-- 答案相关性（Answer Relevance）：评估答案与给定问题的相关性，验证响应是否直接解决了用户的查询。
-- 上下文精准度（Context Precision）：评估用于生成答案的上下文的精确度，确保从上下文中选择了相关信息。
+- 答案相关性（Answer Relevance）：评测答案与给定问题的相关性，验证响应是否直接解决了用户的查询。
+- 上下文精准度（Context Precision）：评测用于生成答案的上下文的精确度，确保从上下文中选择了相关信息。
 - 上下文相关性（Context Relevancy）：衡量所选上下文与问题的相关性，帮助改进上下文选择以提高答案的准确性。
-- 上下文召回率（Context Recall）：评估检索到的相关上下文信息的完整性，确保没有遗漏关键上下文。
+- 上下文召回率（Context Recall）：评测检索到的相关上下文信息的完整性，确保没有遗漏关键上下文。
 
 此外，RAGAS还提供了自动测试数据生成的工具，方便用户使用。
 
@@ -53,7 +53,7 @@ RAGAS提供了自动生成测试数据的功能，用户可以指定测试集大
 
 ```{figure} images/generation_process.png
 
-Ragas采用了一种新颖的评估数据生成方法。理想的评估数据集应该涵盖在实际应用中遇到的各种类型的问题，包括不同难度等级的问题。默认情况下，大语言模型（LLMs）不擅长创建多样化的样本，因为它们往往遵循常见的路径。受到[Evol-Instruct](https://arxiv.org/abs/2304.12244)等工作的启发，Ragas通过采用进化生成范式来实现这一目标，在这一过程中，具有不同特征的问题（如推理、条件、多个上下文等）会根据提供的文档集被系统地构建。这种方法确保了对您管道中各个组件性能的全面覆盖，从而使评估过程更加稳健。
+Ragas采用了一种新颖的评测数据生成方法。理想的评测数据集应该涵盖在实际应用中遇到的各种类型的问题，包括不同难度等级的问题。默认情况下，大语言模型（LLMs）不擅长创建多样化的样本，因为它们往往遵循常见的路径。受到[Evol-Instruct](https://arxiv.org/abs/2304.12244)等工作的启发，Ragas通过采用进化生成范式来实现这一目标，在这一过程中，具有不同特征的问题（如推理、条件、多个上下文等）会根据提供的文档集被系统地构建。这种方法确保了对您管道中各个组件性能的全面覆盖，从而使评测过程更加稳健。
 ```
 
 **配置任务**
@@ -81,9 +81,9 @@ generate_testset_task_cfg = {
 
 ```
 配置文件说明：
-- `eval_backend`: `str`：评估后端的名称 "RAGEval"。
-- `eval_config`: `dict`：包含评估配置的详细信息。
-  - `tool`: `str`：评估工具的名称"RAGAS"。
+- `eval_backend`: `str`：评测后端的名称 "RAGEval"。
+- `eval_config`: `dict`：包含评测配置的详细信息。
+  - `tool`: `str`：评测工具的名称"RAGAS"。
   - `testset_generation`: `dict`：测试集生成的配置。
     - `docs`: `list`：测试集生成所需的文档列表，例如 ["README_zh.md"]。
     - `test_size`: `int`：生成测试集的大小，例如 5。
@@ -143,50 +143,50 @@ run_task(task_cfg=generate_testset_task_cfg)
     {
         "user_input":"How does EvalScope evaluate model performance?",
         "retrieved_contexts":[
-            "📝 简介\n\nEvalScope是魔搭社区官方推出的模型评估与性能基准测试框架，内置多个常用测试基准和评估指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持🚀\n\n"
+            "📝 简介\n\nEvalScope是魔搭社区官方推出的模型评测与性能基准测试框架，内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持🚀\n\n"
         ],
-        "response":"EvalScope通过内置的多个常用测试基准和评估指标来评估模型性能，支持多种类型的模型评测和多种评测场景。它还与ms-swift训练框架无缝集成，实现了一键评测功能。",
-        "reference":"EvalScope通过内置多个常用测试基准和评估指标来评估模型性能，支持多种类型的模型评测和多种评测场景。"
+        "response":"EvalScope通过内置的多个常用测试基准和评测指标来评测模型性能，支持多种类型的模型评测和多种评测场景。它还与ms-swift训练框架无缝集成，实现了一键评测功能。",
+        "reference":"EvalScope通过内置多个常用测试基准和评测指标来评测模型性能，支持多种类型的模型评测和多种评测场景。"
     },
     {
         "user_input":"How does EvalScope's archtecture support model evalution?",
         "retrieved_contexts":[
-            "EvalScope 整体架构图.\n\nEvalScope包括以下模块：\n\nModel Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\nData Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评估需求和格式。\n\nEvaluation Backend:\n\nNative：EvalScope自身的默认评测框架，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。\n\nOpenCompass：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。\n\nVLMEvalKit：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。\n\nRAGEval：支持RAG评估，支持使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\nThirdParty：其他第三方评估任务，如ToolBench。\n\nPerformance Evaluator: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。\n\nEvaluation Report: 最终生成的评估报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。\n\nVisualization: 可视化结果，帮助用户更直观地理解评估结果，便于分析和比较不同模型的表现。\n\n"
+            "EvalScope 整体架构图.\n\nEvalScope包括以下模块：\n\nModel Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\nData Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评测需求和格式。\n\nEvaluation Backend:\n\nNative：EvalScope自身的默认评测框架，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。\n\nOpenCompass：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评测。\n\nVLMEvalKit：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。\n\nRAGEval：支持RAG评测，支持使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\nThirdParty：其他第三方评测任务，如ToolBench。\n\nPerformance Evaluator: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。\n\nEvaluation Report: 最终生成的评测报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。\n\nVisualization: 可视化结果，帮助用户更直观地理解评测结果，便于分析和比较不同模型的表现。\n\n"
         ],
-        "response":"EvalScope的架构通过模型适配器和数据适配器支持多种模型和数据格式的评估，并通过多种评估后端提供灵活的评估模式。性能评测模块和可视化工具进一步帮助衡量和展示模型的性能。",
+        "response":"EvalScope的架构通过模型适配器和数据适配器支持多种模型和数据格式的评测，并通过多种评测后端提供灵活的评测模式。性能评测模块和可视化工具进一步帮助衡量和展示模型的性能。",
         "reference":"EvalScope's architecture supports model evaluation through various modules: Model Adapter for converting model outputs, Data Adapter for processing input data, Evaluation Backend with multiple evaluation modes and support for different frameworks like OpenCompass, VLMEvalKit, and RAGEval, Performance Evaluator for measuring model performance, Evaluation Report for summarizing performance, and Visualization for understanding and comparing results."
     },
     {
-        "user_input":"EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面的功能和效果如何比较？",
+        "user_input":"EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面的功能和效果如何比较？",
         "retrieved_contexts":[
-            "EvalScope是魔搭社区推出的模型评估与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评估后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评估。EvalScope还提供了可视化工具和评估报告，帮助用户分析和优化模型性能。"
+            "EvalScope是魔搭社区推出的模型评测与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评测后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评测。EvalScope还提供了可视化工具和评测报告，帮助用户分析和优化模型性能。"
         ],
-        "response":"EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面提供全面支持，具有模块化架构和无缝集成功能。它通过可视化工具和评估报告帮助用户分析和优化模型性能。",
-        "reference":"EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面提供了多种功能和效果。它支持多种模型评测，包括LLM和多模态LLM，具有模型适配器、数据适配器、评估后端和性能评测工具等模块。EvalScope支持RAG评测和竞技场模式，并与ms-swift训练框架无缝集成，提供可视化工具和评估报告，帮助用户分析和优化模型性能。"
+        "response":"EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面提供全面支持，具有模块化架构和无缝集成功能。它通过可视化工具和评测报告帮助用户分析和优化模型性能。",
+        "reference":"EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面提供了多种功能和效果。它支持多种模型评测，包括LLM和多模态LLM，具有模型适配器、数据适配器、评测后端和性能评测工具等模块。EvalScope支持RAG评测和竞技场模式，并与ms-swift训练框架无缝集成，提供可视化工具和评测报告，帮助用户分析和优化模型性能。"
     },
     {
-        "user_input":"在不同报告中，EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面的功能和效果如何比较？",
+        "user_input":"在不同报告中，EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面的功能和效果如何比较？",
         "retrieved_contexts":[
-            "EvalScope是魔搭社区推出的模型评估与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评估后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评估。EvalScope还提供了可视化工具和评估报告，帮助用户分析和优化模型性能。"
+            "EvalScope是魔搭社区推出的模型评测与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评测后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评测。EvalScope还提供了可视化工具和评测报告，帮助用户分析和优化模型性能。"
         ],
-        "response":"EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面功能全面，支持多种评测场景，并提供可视化工具和评估报告，帮助用户分析和优化模型性能。与ms-swift训练框架的无缝集成进一步提升了其使用效果。",
-        "reference":"EvalScope在模型评估、性能基准测试、多模态模型和RAG评测方面表现出色。它支持多种模型评测，包括LLM和多模态LLM，并提供了丰富的评测场景和工具，如RAG评测和竞技场模式。EvalScope的架构模块化，易于集成和使用，用户可以通过pip或源码安装，并使用简单或自定义参数进行评估。此外，EvalScope还提供可视化工具和评估报告，帮助用户分析和优化模型性能。"
+        "response":"EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面功能全面，支持多种评测场景，并提供可视化工具和评测报告，帮助用户分析和优化模型性能。与ms-swift训练框架的无缝集成进一步提升了其使用效果。",
+        "reference":"EvalScope在模型评测、性能基准测试、多模态模型和RAG评测方面表现出色。它支持多种模型评测，包括LLM和多模态LLM，并提供了丰富的评测场景和工具，如RAG评测和竞技场模式。EvalScope的架构模块化，易于集成和使用，用户可以通过pip或源码安装，并使用简单或自定义参数进行评测。此外，EvalScope还提供可视化工具和评测报告，帮助用户分析和优化模型性能。"
     },
     {
-        "user_input":"在不同报告中，EvalScope框架在多模态模型的模型评估、性能基准测试和RAG评测中的应用和效果如何比较？",
+        "user_input":"在不同报告中，EvalScope框架在多模态模型的模型评测、性能基准测试和RAG评测中的应用和效果如何比较？",
         "retrieved_contexts":[
-            "EvalScope是魔搭社区推出的模型评估与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评估后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评估。EvalScope还提供了可视化工具和评估报告，帮助用户分析和优化模型性能。"
+            "EvalScope是魔搭社区推出的模型评测与性能基准测试框架，支持多种模型评测，包括LLM、多模态LLM等。其架构包括模型适配器、数据适配器、评测后端、性能评测工具等模块。EvalScope支持多种评测场景，如RAG评测、竞技场模式等，并与ms-swift训练框架无缝集成。用户可以通过pip或源码安装EvalScope，并使用简单或自定义参数进行模型评测。EvalScope还提供了可视化工具和评测报告，帮助用户分析和优化模型性能。"
         ],
         "response":"我不知道。",
-        "reference":"EvalScope框架在多模态模型的模型评估、性能基准测试和RAG评测中应用广泛，提供了多种评测场景和工具，帮助用户分析和优化模型性能。"
+        "reference":"EvalScope框架在多模态模型的模型评测、性能基准测试和RAG评测中应用广泛，提供了多种评测场景和工具，帮助用户分析和优化模型性能。"
     },
     {
         "user_input":"如何在自定义数据集上进行评测？",
         "retrieved_contexts":[
-            "🎉 新闻\n\n🔥 [2024.10.8] 支持RAG评测，包括使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\n🔥 [2024.09.18] 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎📖阅读\n\n🔥 [2024.09.12] 支持 LongWriter 评估，您可以使用基准测试 LongBench-Write 来评测长输出的质量以及输出长度。\n\n🔥 [2024.08.30] 支持自定义数据集评测，包括文本数据集和多模态图文数据集。\n\n🔥 [2024.08.20] 更新了官方文档，包括快速上手、最佳实践和常见问题等，欢迎📖阅读。\n\n🔥 [2024.08.09] 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评估体验，基于OpenAI API方式的评估链路，最高加速10倍。\n\n🔥 [2024.07.31] 重要修改：llmuses包名修改为evalscope，请同步修改您的代码。\n\n🔥 [2024.07.26] 支持VLMEvalKit作为第三方评测框架，发起多模态模型评测任务。\n\n🔥 [2024.06.29] 支持OpenCompass作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置。\n\n🔥 [2024.06.13] EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 。\n\n🔥 [2024.06.13] 接入Agent评测集ToolBench。\n\n"
+            "🎉 新闻\n\n🔥 [2024.10.8] 支持RAG评测，包括使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\n🔥 [2024.09.18] 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎📖阅读\n\n🔥 [2024.09.12] 支持 LongWriter 评测，您可以使用基准测试 LongBench-Write 来评测长输出的质量以及输出长度。\n\n🔥 [2024.08.30] 支持自定义数据集评测，包括文本数据集和多模态图文数据集。\n\n🔥 [2024.08.20] 更新了官方文档，包括快速上手、最佳实践和常见问题等，欢迎📖阅读。\n\n🔥 [2024.08.09] 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评测体验，基于OpenAI API方式的评测链路，最高加速10倍。\n\n🔥 [2024.07.31] 重要修改：llmuses包名修改为evalscope，请同步修改您的代码。\n\n🔥 [2024.07.26] 支持VLMEvalKit作为第三方评测框架，发起多模态模型评测任务。\n\n🔥 [2024.06.29] 支持OpenCompass作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评测任务配置。\n\n🔥 [2024.06.13] EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 。\n\n🔥 [2024.06.13] 接入Agent评测集ToolBench。\n\n"
         ],
-        "response":"您可以使用支持自定义数据集评测的功能来评估文本数据集和多模态图文数据集的表现。具体的评测工具和方法可以参考相关文档或使用第三方评测框架。",
-        "reference":"在自定义数据集上进行评测可以通过支持的评测工具和框架来实现。例如，可以使用RAG评测、LongWriter评估、VLMEvalKit、OpenCompass等工具来评测文本数据集和多模态图文数据集的性能。"
+        "response":"您可以使用支持自定义数据集评测的功能来评测文本数据集和多模态图文数据集的表现。具体的评测工具和方法可以参考相关文档或使用第三方评测框架。",
+        "reference":"在自定义数据集上进行评测可以通过支持的评测工具和框架来实现。例如，可以使用RAG评测、LongWriter评测、VLMEvalKit、OpenCompass等工具来评测文本数据集和多模态图文数据集的性能。"
     },
     {
         "user_input":"如何通过源码安装evalscope及其相关依赖？",
@@ -199,18 +199,18 @@ run_task(task_cfg=generate_testset_task_cfg)
     {
         "user_input":"在RAG评测中，embedding模型的作用是什么？",
         "retrieved_contexts":[
-            "🎉 新闻\n\n🔥 [2024.10.8] 支持RAG评测，包括使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\n🔥 [2024.09.18] 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎📖阅读\n\n🔥 [2024.09.12] 支持 LongWriter 评估，您可以使用基准测试 LongBench-Write 来评测长输出的质量以及输出长度。\n\n🔥 [2024.08.30] 支持自定义数据集评测，包括文本数据集和多模态图文数据集。\n\n🔥 [2024.08.20] 更新了官方文档，包括快速上手、最佳实践和常见问题等，欢迎📖阅读。\n\n🔥 [2024.08.09] 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评估体验，基于OpenAI API方式的评估链路，最高加速10倍。\n\n🔥 [2024.07.31] 重要修改：llmuses包名修改为evalscope，请同步修改您的代码。\n\n🔥 [2024.07.26] 支持VLMEvalKit作为第三方评测框架，发起多模态模型评测任务。\n\n🔥 [2024.06.29] 支持OpenCompass作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评估任务配置。\n\n🔥 [2024.06.13] EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 。\n\n🔥 [2024.06.13] 接入Agent评测集ToolBench。\n\n"
+            "🎉 新闻\n\n🔥 [2024.10.8] 支持RAG评测，包括使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\n🔥 [2024.09.18] 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎📖阅读\n\n🔥 [2024.09.12] 支持 LongWriter 评测，您可以使用基准测试 LongBench-Write 来评测长输出的质量以及输出长度。\n\n🔥 [2024.08.30] 支持自定义数据集评测，包括文本数据集和多模态图文数据集。\n\n🔥 [2024.08.20] 更新了官方文档，包括快速上手、最佳实践和常见问题等，欢迎📖阅读。\n\n🔥 [2024.08.09] 简化安装方式，支持pypi安装vlmeval相关依赖；优化多模态模型评测体验，基于OpenAI API方式的评测链路，最高加速10倍。\n\n🔥 [2024.07.31] 重要修改：llmuses包名修改为evalscope，请同步修改您的代码。\n\n🔥 [2024.07.26] 支持VLMEvalKit作为第三方评测框架，发起多模态模型评测任务。\n\n🔥 [2024.06.29] 支持OpenCompass作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评测任务配置。\n\n🔥 [2024.06.13] EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 。\n\n🔥 [2024.06.13] 接入Agent评测集ToolBench。\n\n"
         ],
         "response":"在RAG评测中，embedding模型用于生成文本的向量表示，以便在检索时进行相似性匹配和排序。它是实现信息检索和知识集成的重要组成部分。",
-        "reference":"在RAG评测中，embedding模型用于进行独立评测，帮助评估模型的性能。"
+        "reference":"在RAG评测中，embedding模型用于进行独立评测，帮助评测模型的性能。"
     },
     {
         "user_input":"EvalScope的整体架构图中包含哪些模块，它们各自的功能是什么？",
         "retrieved_contexts":[
-            "EvalScope 整体架构图.\n\nEvalScope包括以下模块：\n\nModel Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\nData Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评估需求和格式。\n\nEvaluation Backend:\n\nNative：EvalScope自身的默认评测框架，支持多种评估模式，包括单模型评估、竞技场模式、Baseline模型对比模式等。\n\nOpenCompass：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评估。\n\nVLMEvalKit：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。\n\nRAGEval：支持RAG评估，支持使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\nThirdParty：其他第三方评估任务，如ToolBench。\n\nPerformance Evaluator: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。\n\nEvaluation Report: 最终生成的评估报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。\n\nVisualization: 可视化结果，帮助用户更直观地理解评估结果，便于分析和比较不同模型的表现。\n\n"
+            "EvalScope 整体架构图.\n\nEvalScope包括以下模块：\n\nModel Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\nData Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评测需求和格式。\n\nEvaluation Backend:\n\nNative：EvalScope自身的默认评测框架，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。\n\nOpenCompass：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评测。\n\nVLMEvalKit：支持VLMEvalKit作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。\n\nRAGEval：支持RAG评测，支持使用MTEB\/CMTEB进行embedding模型和reranker的独立评测，以及使用RAGAS进行端到端评测。\n\nThirdParty：其他第三方评测任务，如ToolBench。\n\nPerformance Evaluator: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。\n\nEvaluation Report: 最终生成的评测报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。\n\nVisualization: 可视化结果，帮助用户更直观地理解评测结果，便于分析和比较不同模型的表现。\n\n"
         ],
-        "response":"EvalScope包括以下模块：Model Adapter，用于将模型输出转换为所需格式；Data Adapter，负责输入数据转换；Evaluation Backend，支持多种评测框架；Performance Evaluator，衡量模型性能；Evaluation Report，生成评估报告；Visualization，提供评估结果的可视化。",
-        "reference":"EvalScope的整体架构图中包含以下模块：\n\n1. Model Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\n2. Data Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评估需求和格式。\n\n3. Evaluation Backend: 包括多个评测后端模块：\n   - Native: EvalScope自身的默认评测框架，支持多种评估模式。\n   - OpenCompass: 支持OpenCompass作为评测后端，简化任务提交。\n   - VLMEvalKit: 支持多模态评测任务。\n   - RAGEval: 支持RAG评估，使用MTEB\/CMTEB和RAGAS进行评测。\n   - ThirdParty: 其他第三方评估任务，如ToolBench。\n\n4. Performance Evaluator: 模型性能评测，负责衡量模型推理服务性能，包括性能评测、压力测试、报告生成和可视化。\n\n5. Evaluation Report: 最终生成的评估报告，总结模型的性能表现，用于决策和模型优化。\n\n6. Visualization: 可视化结果，帮助用户理解评估结果，便于分析和比较不同模型的表现。"
+        "response":"EvalScope包括以下模块：Model Adapter，用于将模型输出转换为所需格式；Data Adapter，负责输入数据转换；Evaluation Backend，支持多种评测框架；Performance Evaluator，衡量模型性能；Evaluation Report，生成评测报告；Visualization，提供评测结果的可视化。",
+        "reference":"EvalScope的整体架构图中包含以下模块：\n\n1. Model Adapter: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。\n\n2. Data Adapter: 数据适配器，负责转换和处理输入数据，以便适应不同的评测需求和格式。\n\n3. Evaluation Backend: 包括多个评测后端模块：\n   - Native: EvalScope自身的默认评测框架，支持多种评测模式。\n   - OpenCompass: 支持OpenCompass作为评测后端，简化任务提交。\n   - VLMEvalKit: 支持多模态评测任务。\n   - RAGEval: 支持RAG评测，使用MTEB\/CMTEB和RAGAS进行评测。\n   - ThirdParty: 其他第三方评测任务，如ToolBench。\n\n4. Performance Evaluator: 模型性能评测，负责衡量模型推理服务性能，包括性能评测、压力测试、报告生成和可视化。\n\n5. Evaluation Report: 最终生成的评测报告，总结模型的性能表现，用于决策和模型优化。\n\n6. Visualization: 可视化结果，帮助用户理解评测结果，便于分析和比较不同模型的表现。"
     }
 ]
 ```

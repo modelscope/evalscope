@@ -1,17 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI, Inc. and its affiliates.
 # flake8: noqa
+import numpy as np
 import os
 import sys
 import time
+import torch
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Dict, List, Union
-
-import numpy as np
-import torch
 from modelscope import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from torch import dtype
+from typing import Any, Dict, List, Union
 
 from evalscope.constants import DEFAULT_MODEL_CACHE_DIR
 from evalscope.models.custom import CustomModel
@@ -377,7 +376,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         if custom_generation_config:
             logger.info('Updating generation config ...')
-            self.generation_config.update(**custom_generation_config.to_dict())
+            self.generation_config.update(**custom_generation_config)
 
         if custom_chat_template:
             tokenizer.chat_template = custom_chat_template

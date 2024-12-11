@@ -19,6 +19,7 @@ We always welcome PRs and issues from users to improve EvalScope.
 get_started/introduction.md
 get_started/installation.md
 get_started/basic_usage.md
+get_started/parameters.md
 get_started/supported_dataset.md
 :::
 
@@ -37,6 +38,7 @@ user_guides/backend/index.md
 advanced_guides/custom_dataset.md
 advanced_guides/custom_model.md
 :::
+
 :::{toctree}
 :hidden:
 :caption: 🧰 Third-Party Tools

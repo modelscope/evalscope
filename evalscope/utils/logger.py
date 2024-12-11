@@ -15,7 +15,7 @@ DEFAULT_LEVEL = logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO') == 'DEBUG' else 
 logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w'):
+def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
     """Get logging logger
 
     Args:
@@ -31,12 +31,12 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
     logger.propagate = False
 
     if logger_name in init_loggers:
-        if logger.level != log_level:
+        if force:
             logger.setLevel(log_level)
-        add_file_handler_if_needed(logger, log_file, file_mode, log_level)
-        for handler in logger.handlers:
-            handler.setLevel(log_level)
-            handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+            for handler in logger.handlers:
+                handler.setLevel(log_level)
+                handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+            add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 
     # handle duplicate logs to the console

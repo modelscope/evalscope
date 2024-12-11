@@ -10,10 +10,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalStage, OutputsStructure, ReviewKeys
+from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, AnswerKeys, DumpMode, EvalStage, EvalType, HubType,
+                                 OutputsStructure, ReviewKeys)
 from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import dict_to_yaml, dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list
+from evalscope.utils import dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -40,20 +41,19 @@ class Evaluator(object):
         **kwargs: kwargs.
     """
 
-    def __init__(
-            self,
-            dataset_name_or_path: str,
-            data_adapter: DataAdapter,
-            subset_list: Optional[list] = None,
-            model_adapter: Optional[BaseModelAdapter] = None,
-            use_cache: Optional[str] = None,
-            outputs: Optional[OutputsStructure] = None,
-            datasets_dir: Optional[str] = None,
-            datasets_hub: Optional[str] = 'ModelScope',
-            stage: Optional[str] = 'all',  # refer to evalscope.constants.EvalStage
-            eval_type: Optional[str] = 'checkpoint',  # `checkpoint` or `service` or `custom`
-            overall_task_cfg: Optional[TaskConfig] = None,
-            **kwargs):
+    def __init__(self,
+                 dataset_name_or_path: str,
+                 data_adapter: DataAdapter,
+                 subset_list: Optional[list] = None,
+                 model_adapter: Optional[BaseModelAdapter] = None,
+                 use_cache: Optional[str] = None,
+                 outputs: Optional[OutputsStructure] = None,
+                 datasets_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+                 datasets_hub: Optional[str] = HubType.MODELSCOPE,
+                 stage: Optional[str] = EvalStage.ALL,
+                 eval_type: Optional[str] = EvalType.CHECKPOINT,
+                 overall_task_cfg: Optional[TaskConfig] = None,
+                 **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.dataset_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep))
@@ -72,8 +72,6 @@ class Evaluator(object):
             self.overall_task_cfg.model_args = self.model_adapter.custom_model.config
 
         self.model_cfg = self.model_adapter.model_cfg
-        self.model_id = self.model_cfg['model_id']
-        self.model_revision = self.model_cfg.get('revision', 'master')
 
         # Deal with the output paths
         self.outputs_structure = outputs
@@ -345,7 +343,7 @@ class Evaluator(object):
         if use_table:
             try:
                 report_table: str = gen_table([self.outputs_structure.reports_dir])
-                logger.info(f'Report table: \n {report_table} \n')
+                logger.info(f'Report table: \n{report_table} \n')
             except Exception:
                 logger.error('Failed to generate report table.')
         return report_map

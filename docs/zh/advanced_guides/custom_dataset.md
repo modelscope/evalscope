@@ -1,4 +1,4 @@
-# 自定义数据集评估
+# 自定义数据集评测
 
 ## LLM 数据集
 
@@ -140,12 +140,12 @@ run_task(task_cfg=task_cfg)
 +----------------------------------+-------------------------------------------+ 
 ```
 
-### (可选) 使用ms-swift框架自定义评估
+### (可选) 使用ms-swift框架自定义评测
 
 ```{seealso}
 支持两种pattern的评测集：选择题格式的`CEval`和问答题格式的`General-QA`
 
-参考：[ms-swift评估自定义评测集](../best_practice/swift_integration.md#自定义评测集)
+参考：[ms-swift评测自定义评测集](../best_practice/swift_integration.md#自定义评测集)
 ```
 
 --------------
@@ -283,7 +283,7 @@ class CustomDataset:
         
         print(data)
         
-        # ========根据需要计算评估指标=========
+        # ========根据需要计算评测指标=========
         # 精确匹配
         result = np.mean(data['answer'] == data['prediction'])
         ret = {'Overall': result}

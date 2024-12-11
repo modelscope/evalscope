@@ -1,7 +1,7 @@
 (clip_benchmark)=
 
 # CLIP Benchmark
-本框架支持[CLIP Benchmark](https://github.com/LAION-AI/CLIP_benchmark)，其旨在为评估和分析CLIP（Contrastive Language-Image Pretraining）及其变体提供一个统一的框架和基准，目前框架支持43个评估数据集，包括zero-shot retireval任务，评价指标为recall@k；zero-shot classification任务，评价指标为acc@k。
+本框架支持[CLIP Benchmark](https://github.com/LAION-AI/CLIP_benchmark)，其旨在为评测和分析CLIP（Contrastive Language-Image Pretraining）及其变体提供一个统一的框架和基准，目前框架支持43个评测数据集，包括zero-shot retireval任务，评价指标为recall@k；zero-shot classification任务，评价指标为acc@k。
 
 ## 支持的数据集
 
@@ -181,7 +181,7 @@ run_task(task_cfg=task_cfg)
 ```
 
 ### 图文检索转文本检索
-为方便评估不同的多模态检索方法，本框架支持通过多模态大模型，将图文检索问题转化为文本检索问题，再进行文本检索评测。
+为方便评测不同的多模态检索方法，本框架支持通过多模态大模型，将图文检索问题转化为文本检索问题，再进行文本检索评测。
 
 **1. 准备数据集**
 
@@ -297,5 +297,5 @@ query-id	corpus-id	score
 
 有了数据集之后，按照CMTEB的教程，可以执行文本检索任务。
 ```{seealso}
-参考[自定义文本检索文本评估](./mteb.md#自定义文本检索评估)
+参考[自定义文本检索文本评测](./mteb.md#自定义文本检索评测)
 ```

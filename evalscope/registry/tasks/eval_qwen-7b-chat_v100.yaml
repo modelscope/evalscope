@@ -24,5 +24,5 @@ datasets:
 outputs: ./outputs/eval_qwen-7b-chat_v100    # Directory to save the outputs, structure: logs, predictions, reviews, reports
 use_cache: false
 stage: all
-dataset_hub: ModelScope    # `Local` or `ModelScope`
+dataset_hub: modelscope    # `Local` or `ModelScope`
 limit: 10

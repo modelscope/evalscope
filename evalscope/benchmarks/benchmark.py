@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os.path
+from modelscope.msdatasets import MsDataset
 from typing import Optional
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, HubType
@@ -38,21 +39,20 @@ class Benchmark(object):
         Returns:
             A dict.
         """
-        work_dir = os.path.join(work_dir, 'benchmarks', dataset_name.replace('/', '_'))
-        if hub == HubType.MODELSCOPE:
-            from modelscope.msdatasets import MsDataset
-            dataset = MsDataset.load(
-                dataset_name=dataset_name, subset_name=subset, split=split, token=token, cache_dir=work_dir, **kwargs)
 
-            dataset.dataset_name = dataset_name.split('/')[-1]
-            dataset.subset_name = subset
-            # dataset.split = split
-            return dataset
-        elif hub == HubType.HUGGINGFACE:
-            # TODO: implement this by xingjun.wxj@alibaba-inc.com
-            raise NotImplementedError('HuggingFace hub is not supported yet.')
-        else:
-            raise ValueError(f'hub must be `ModelScope` or `HuggingFace`, but got {hub}')
+        dataset = MsDataset.load(
+            dataset_name=dataset_name,
+            subset_name=subset,
+            split=split,
+            token=token,
+            cache_dir=work_dir,
+            hub=hub,
+            **kwargs)
+
+        dataset.dataset_name = dataset_name.split('/')[-1]
+        dataset.subset_name = subset
+        # dataset.split = split
+        return dataset
 
 
 if __name__ == '__main__':

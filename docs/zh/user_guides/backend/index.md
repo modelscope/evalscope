@@ -17,7 +17,7 @@ EvalScope支持多个评测后端，以集成多个工具实现不同的评测�
 :link-type: ref
 
 +++
-通过EvalScope发起轻量化的OpenCompass评估任务，支持多种LLM评测任务。
+通过EvalScope发起轻量化的OpenCompass评测任务，支持多种LLM评测任务。
 :::
 
 :::{grid-item-card} VLMEvalKit
@@ -25,7 +25,7 @@ EvalScope支持多个评测后端，以集成多个工具实现不同的评测�
 :link-type: ref
 
 +++
-通过EvalScope发起轻量化的VLMEvalKit评估任务，支持多种VLM评测任务。
+通过EvalScope发起轻量化的VLMEvalKit评测任务，支持多种VLM评测任务。
 :::
 
 :::{grid-item-card} RAGEval
@@ -33,7 +33,7 @@ EvalScope支持多个评测后端，以集成多个工具实现不同的评测�
 :link-type: ref
 
 +++
-支持RAG和图文多模态RAG评估：支持检索模块的独立评测，以及端到端生成评测。
+支持RAG和图文多模态RAG评测：支持检索模块的独立评测，以及端到端生成评测。
 :::
 
 ::::

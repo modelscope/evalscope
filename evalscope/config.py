@@ -1,11 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import copy
+import json
 import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
-
-import json
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
@@ -100,7 +99,7 @@ class TaskConfig:
 
         custom_config = copy.deepcopy(pattern_config)
         custom_config.update({'datasets': [data_pattern]})
-        custom_config.update({'dataset_hub': 'Local'})  # TODO: to support `ModelScope`
+        # custom_config.update({'dataset_hub': 'Local'})  # to support `ModelScope`
         if 'dataset_args' in custom_config:
             if data_pattern not in custom_config:
                 custom_config['dataset_args'].update({data_pattern: {}})

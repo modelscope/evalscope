@@ -2,7 +2,7 @@
 
 # VLMEvalKit
 
-为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评估任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评估任务。同时，我们支持基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，部署多模态模型服务。
+为便于使用VLMEvalKit 评测后端，我们基于VLMEvalKit源码做了定制，命名为`ms-vlmeval`，该版本在原版基础上对评测任务的配置和执行进行了封装，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的VLMEvalKit评测任务。同时，我们支持基于OpenAI API格式的接口评测任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，部署多模态模型服务。
 
 ## 1. 环境准备
 ```shell
@@ -25,10 +25,10 @@ pip install evalscope[vlmeval] -U
 | COCO_VAL                                                           |        |
 | ChartQA_TEST                                                       |        |
 | DUDE, DUDE_MINI                                                   |        |
-| DocVQA_TEST, DocVQA_VAL                                            |DocVQA_TEST没有提供答案，使用DocVQA_VAL进行自动评估        |
+| DocVQA_TEST, DocVQA_VAL                                            |DocVQA_TEST没有提供答案，使用DocVQA_VAL进行自动评测        |
 | GMAI_mm_bench_VAL                                                  |        |
 | HallusionBench                                                     |        |
-| InfoVQA_TEST, InfoVQA_VAL                                          |InfoVQA_TEST没有提供答案，使用InfoVQA_VAL进行自动评估        |
+| InfoVQA_TEST, InfoVQA_VAL                                          |InfoVQA_TEST没有提供答案，使用InfoVQA_VAL进行自动评测        |
 | LLaVABench                                                         |        |
 | MLLMGuard_DS                                                       |        |
 |MMBench-Video                                             |        |
@@ -83,10 +83,10 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 
 
 
-## 3. 模型评估
-模型评估有两种方式可以选择，一种是部署模型服务评估，另一种是本地模型推理评估。具体如下：
+## 3. 模型评测
+模型评测有两种方式可以选择，一种是部署模型服务评测，另一种是本地模型推理评测。具体如下：
 
-### 方式1. 部署模型服务评估
+### 方式1. 部署模型服务评测
 
 #### 模型部署
 
@@ -188,7 +188,7 @@ ollama create llava -f ./Modelfile
 ::::
 
 
-#### 配置模型评估参数
+#### 配置模型评测参数
 
 编写配置
 ::::{tab-set}
@@ -252,25 +252,25 @@ task_cfg_dict = {
     - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
     - `temperature`：模型推理的温度系数，默认值为 `0.0`。
     - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
-    - `video_llm`：布尔值，默认为`False`，在评估视频数据集时，如需传递 `video_url` 参数，请设置为 `True`。
-  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评估；`infer`仅进行推理。
-  - `limit`：整数，评估的数据数量，默认值为 `None`，表示运行所有示例。
-  - `reuse`：布尔值，是否重用评估结果，否则将删除所有评估临时文件。
+    - `video_llm`：布尔值，默认为`False`，在评测视频数据集时，如需传递 `video_url` 参数，请设置为 `True`。
+  - `mode`：选项: `['all', 'infer']`，`all`包括推理和评测；`infer`仅进行推理。
+  - `limit`：整数，评测的数据数量，默认值为 `None`，表示运行所有示例。
+  - `reuse`：布尔值，是否重用评测结果，否则将删除所有评测临时文件。
     ```{note}
     对与`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。
     ```
-  - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs`
+  - `work_dir`：字符串，保存评测结果、日志和摘要的目录。默认值为 `outputs`
   - `nproc`：整数，并行调用 API 的数量。
   - `nframe`：整数，视频数据集的视频帧数，默认值为 `8`，
   - `fps`：整数，视频数据集的帧率，默认值为 `-1`，表示使用`nframe`；设置为大于0，则使用`fps`来计算视频帧数。
   - `use_subtitle`：布尔值，视频数据集是否使用字幕，默认值为 `False`。
 
 
-### 方式2. 本地模型推理评估
+### 方式2. 本地模型推理评测
 
-不启动模型服务，直接配置模型评估参数，在本地进行推理
+不启动模型服务，直接配置模型评测参数，在本地进行推理
 
-#### 配置模型评估参数
+#### 配置模型评测参数
 ::::{tab-set}
 :::{tab-item} yaml 配置文件
 
@@ -314,7 +314,7 @@ task_cfg_dict = {
 
 #### 参数说明
 
-[基本参数](#参数说明)都与上面部署模型服务评估方式一致，不一样的是模型参数：
+[基本参数](#参数说明)都与上面部署模型服务评测方式一致，不一样的是模型参数：
 - `model`：字典列表，每种模型需要的字段不同
   - `name`：模型名称，参考[VLMEvalKit支持的模型](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)。
   - `model_path`等其余参数：参考[VLMEvalKit支持的模型参数](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)。
@@ -341,7 +341,7 @@ OPENAI_API_BASE: http://127.0.0.1:8866/v1/chat/completions # 裁判员模型的 
 LOCAL_LLM: qwen2-7b-instruct #裁判员模型的 model_id
 ```
 
-## 4. 执行评估任务
+## 4. 执行评测任务
 ```{caution}
 若想让模型重新进行推理，需清空`outputs`文件夹下的模型预测结果再运行脚本。
 因为之前的预测结果不会自动清除，若存在该结果**会跳过推理阶段**，直接对结果进行评测。

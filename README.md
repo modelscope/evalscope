@@ -226,7 +226,6 @@ your_task_cfg = {
         'work_dir': DEFAULT_ROOT_CACHE_DIR,
         'outputs': DEFAULT_ROOT_CACHE_DIR,
         'mem_cache': False,
-        'dataset_hub': 'ModelScope',
         'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
         'limit': 10,
         'debug': False

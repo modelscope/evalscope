@@ -2,18 +2,20 @@
 """
 Run evaluation for LLMs.
 """
+import logging
 import os.path
 import torch
+from argparse import Namespace
 from datetime import datetime
 from typing import List, Union
 
-from evalscope.arguments import parse_args
+from evalscope.arguments import convert_args, parse_args
 from evalscope.config import TaskConfig
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType, OutputsStructure
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import dict_to_yaml, gen_hash, import_module_util, json_to_dict, seed_everything, yaml_to_dict
-from evalscope.utils.logger import get_logger
+from evalscope.utils.logger import DEFAULT_LEVEL, get_logger
 
 logger = get_logger()
 
@@ -21,7 +23,7 @@ BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
-def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[dict, List[dict]]:
+def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
     run_time = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     if isinstance(task_cfg, list):
@@ -35,8 +37,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
     elif isinstance(task_cfg, dict):
         logger.info('Args: Task config is provided with dictionary type.')
         task_cfg = TaskConfig(**task_cfg)
+    elif isinstance(task_cfg, Namespace):
+        logger.info('Args: Task config is provided with ComandLine type.')
+        task_cfg = convert_args(task_cfg)
     elif isinstance(task_cfg, str):
-        if task_cfg.endswith('.yaml'):
+        if task_cfg.endswith('.yaml') or task_cfg.endswith('.yml'):
             logger.info('Args: Task config is provided with yaml type.')
             task_cfg_dict = yaml_to_dict(task_cfg)
             task_cfg = TaskConfig(**task_cfg_dict)
@@ -56,6 +61,11 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig]]) -> Union[
 def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
 
     seed_everything(task_cfg.seed)
+
+    # Set debug
+    debug = task_cfg.debug
+    if debug:
+        get_logger(log_level=logging.DEBUG, force=True)
 
     # Set work_dir
     if task_cfg.use_cache:
@@ -96,6 +106,7 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     dry_run = task_cfg.dry_run
     model = task_cfg.model
     template_type = task_cfg.template_type
+    chat_template = task_cfg.chat_template
     eval_type = task_cfg.eval_type
     work_dir = task_cfg.work_dir
     use_cache = task_cfg.use_cache
@@ -105,7 +116,6 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     dataset_dir = task_cfg.dataset_dir
     stage = task_cfg.stage
     limit = task_cfg.limit
-    debug = task_cfg.debug
 
     if model is None or datasets is None:
         raise ValueError('Args: Please provide model and datasets.')
@@ -164,7 +174,12 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
             # Init model adapter
             device_map = model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
             model_adapter = imported_modules['ModelAdapterClass'](
-                model_id=model_id, model_revision=model_revision, device_map=device_map, torch_dtype=model_precision)
+                model_id=model_id,
+                model_revision=model_revision,
+                device_map=device_map,
+                torch_dtype=model_precision,
+                generation_config=generation_config,
+                chat_template=chat_template)
 
         if dataset_name == 'humaneval':
             problem_file: str = dataset_args.get('humaneval', {}).get('local_path')
@@ -178,23 +193,29 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
                 is_custom_outputs_dir=False,
             )
         else:
-            # CHECK dataset_args
-            dataset_name_or_path: str = dataset_args.get(dataset_name,
-                                                         {}).get('local_path') or imported_modules['DATASET_ID']
+            # Get the configuration related to dataset_name from dataset_args
+            dataset_config = dataset_args.get(dataset_name, {})
 
-            in_prompt_template: str = dataset_args.get(dataset_name, {}).get('prompt_template', '')
+            # Determine the dataset path
+            dataset_name_or_path = dataset_config.get('local_path') or imported_modules['DATASET_ID']
 
-            # Init data adapter
-            few_shot_num: int = dataset_args.get(dataset_name, {}).get('few_shot_num', None)
-            few_shot_random: bool = dataset_args.get(dataset_name, {}).get('few_shot_random', True)
+            # Get the prompt template
+            in_prompt_template = dataset_config.get('prompt_template', '')
+
+            # Prepare few-shot configuration
+            few_shot_num = dataset_config.get('few_shot_num', None)
+            few_shot_random = dataset_config.get('few_shot_random', True)
+
+            # Initialize the data adapter
             data_adapter = imported_modules['DataAdapterClass'](
                 few_shot_num=few_shot_num,
                 few_shot_random=few_shot_random,
                 prompt_template=in_prompt_template,
             )
 
-            in_subset_list: list = dataset_args.get(dataset_name, {}).get('subset_list',
-                                                                          imported_modules['SUBSET_LIST'])
+            # Get the subset list
+            in_subset_list = dataset_config.get('subset_list', imported_modules['SUBSET_LIST'])
+
             logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
             evaluator = Evaluator(
@@ -219,8 +240,8 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
 
 
 def main():
-    task_cfg = parse_args()
-    run_task(task_cfg)
+    args = parse_args()
+    run_task(args)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@
 
 - MTEB（Massive Text Embedding Benchmark）是一个大规模的基准测试，旨在衡量文本嵌入模型在多样化嵌入任务上的性能。MTEB 包括56个数据集，涵盖8个任务，并且支持超过112种不同的语言。这个基准测试的目标是帮助开发者找到适用于多种任务的最佳文本嵌入模型。
 
-- CMTEB（Chinese Massive Text Embedding Benchmark）是一个专门针对中文文本向量的评测基准，它基于MTEB构建，旨在评估中文文本向量模型的性能。CMTEB收集了35个公共数据集，并分为6类评估任务，包括检索（retrieval）、重排序（reranking）、语义文本相似度（STS）、分类（classification）、对分类（pair classification）和聚类（clustering）。
+- CMTEB（Chinese Massive Text Embedding Benchmark）是一个专门针对中文文本向量的评测基准，它基于MTEB构建，旨在评测中文文本向量模型的性能。CMTEB收集了35个公共数据集，并分为6类评测任务，包括检索（retrieval）、重排序（reranking）、语义文本相似度（STS）、分类（classification）、对分类（pair classification）和聚类（clustering）。
 
 ## 支持的数据集
 
@@ -33,7 +33,7 @@
 | [ATEC](https://github.com/IceFlameWorm/NLP_Datasets/tree/master/ATEC) | [C-MTEB/ATEC](https://modelscope.cn/datasets/C-MTEB/ATEC) | ATEC NLP句子对相似性竞赛 | STS | s2s | 20,000 |
 | [BQ](https://huggingface.co/datasets/shibing624/nli_zh) | [C-MTEB/BQ](https://modelscope.cn/datasets/C-MTEB/BQ) | 银行问题语义相似性 | STS | s2s | 10,000 |
 | [LCQMC](https://huggingface.co/datasets/shibing624/nli_zh) | [C-MTEB/LCQMC](https://modelscope.cn/datasets/C-MTEB/LCQMC) | 大规模中文问题匹配语料库 | STS | s2s | 12,500 |
-| [PAWSX](https://arxiv.org/pdf/1908.11828.pdf) | [C-MTEB/PAWSX](https://modelscope.cn/datasets/C-MTEB/PAWSX) | 翻译的PAWS评估对 | STS | s2s | 2,000 |
+| [PAWSX](https://arxiv.org/pdf/1908.11828.pdf) | [C-MTEB/PAWSX](https://modelscope.cn/datasets/C-MTEB/PAWSX) | 翻译的PAWS评测对 | STS | s2s | 2,000 |
 | [STSB](https://github.com/pluto-junzeng/CNSD) | [C-MTEB/STSB](https://modelscope.cn/datasets/C-MTEB/STSB) | 将STS-B翻译成中文 | STS | s2s | 1,360 |
 | [AFQMC](https://github.com/CLUEbenchmark/CLUE) | [C-MTEB/AFQMC](https://modelscope.cn/datasets/C-MTEB/AFQMC) | 蚂蚁金服问答匹配语料库 | STS | s2s | 3,861 |
 | [QBQTC](https://github.com/CLUEbenchmark/QBQTC) | [C-MTEB/QBQTC](https://modelscope.cn/datasets/C-MTEB/QBQTC) | QQ浏览器查询标题语料库 | STS | s2s | 5,000 |
@@ -606,9 +606,9 @@ run_task(task_cfg=one_stage_task_cfg)
 
 </details>
 
-## 自定义数据集评估
+## 自定义数据集评测
 
-### 自定义文本检索评估
+### 自定义文本检索评测
 
 1. 构建数据集，数据格式为：
 
@@ -650,7 +650,7 @@ retrieval_data
   {"_id": "query10", "text": "远程工作的好处是什么？"}
   ```
 
-- `qrels`: 评估文件，可包含多个`tsv`文件，格式为`query-id doc-id  score`，query-id为查询的id，doc-id为语料库的id，score为语料库与查询的相关度打分。例如：
+- `qrels`: 评测文件，可包含多个`tsv`文件，格式为`query-id doc-id  score`，query-id为查询的id，doc-id为语料库的id，score为语料库与查询的相关度打分。例如：
   ```
   query-id	corpus-id	score
   query1	doc1	1
@@ -696,10 +696,10 @@ task_cfg = {
 ```
 参数说明，基本参数与默认配置一致，需要修改的参数有：
 - `eval`:
-  - `tasks`: 评估任务，必须为`CustomRetrieval`。
+  - `tasks`: 评测任务，必须为`CustomRetrieval`。
   - `dataset_path`: 数据集路径，为自定义数据集的路径。
 
-3. 运行评估
+3. 运行评测
 
 ```python
 from evalscope.run import run_task
