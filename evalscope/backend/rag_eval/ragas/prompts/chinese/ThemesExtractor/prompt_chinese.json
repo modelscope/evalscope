@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.5",
-  "original_hash": 2452110859551524285,
+  "ragas_version": "0.2.7",
+  "original_hash": -7344189172470926110,
   "language": "chinese",
   "instruction": "从给定的文本中提取主要主题和概念。",
   "examples": [

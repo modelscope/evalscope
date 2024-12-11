@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.5",
-  "original_hash": -2189588237940965149,
+  "ragas_version": "0.2.7",
+  "original_hash": -1903496084584659501,
   "language": "chinese",
   "instruction": "请说明给定的信息是否得到视觉和文本上下文信息的支持。您需要回答“是”或“否”。如果任何图像和文本上下文支持该信息，请回答“是”。",
   "examples": [
