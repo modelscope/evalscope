@@ -1,20 +1,24 @@
 
-![](docs/en/_static/images/evalscope_logo.png)
+<p align="center">
+    <br>
+    <img src="docs/en/_static/images/evalscope_logo.png"/>
+    <br>
+<p>
 
 <p align="center">
-    <a href="README.md">English</a> | 简体中文
+  中文 &nbsp ｜ &nbsp <a href="README.md">English</a> &nbsp
 </p>
 
 <p align="center">
-  <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
-  <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
-  </a>
-  <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
-  <a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'>
-      <img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' />
-  </a>
-  <br>
-<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a>
+<img src="https://img.shields.io/badge/python-%E2%89%A53.8-5be.svg">
+<a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
+<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
+<a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href='https://evalscope.readthedocs.io/zh-cn/latest/?badge=latest'><img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' /></a>
+<p>
+
+<p align="center">
+<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documents</a>
 <p>
 
 
@@ -35,7 +39,9 @@
 
 ## 📝 简介
 
-EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持🚀
+EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，专为多样化的模型评估需求而设计。它支持广泛的模型类型，包括但不限于大语言模型、多模态模型、Embedding 模型、Reranker 模型和 CLIP 模型。
+
+EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等，其内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K等。此外，通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，可一键发起评测，为模型训练和评测提供全链路支持🚀
 
 <p align="center">
     <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
@@ -135,120 +141,133 @@ pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, 
 
 ## 🚀 快速开始
 
-### 1. 简单评测
-在指定的若干数据集上使用默认配置评测某个模型，流程如下：
+在指定的若干数据集上使用默认配置评测某个模型，本框架支持两钟启动评测任务的方式：使用命令行启动或使用Python代码启动评测任务。
 
-#### 使用pip安装
+### 方式1. 使用命令行
 
-可在任意路径下执行：
+在任意路径下执行`eval`命令：
 ```bash
-python -m evalscope.run \
+evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --datasets gsm8k ceval \
- --limit 10
+ --datasets gsm8k arc \
+ --limit 5
 ```
 
-#### 使用源码安装
 
-在`evalscope`路径下执行：
-```bash
-python evalscope/run.py \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --datasets gsm8k ceval \
- --limit 10
-```
+### 方式2. 使用Python代码
 
-**运行结果（只使用了10个样例测试）**
-```text
-Report table:
-+-----------------------+--------------------+-----------------+
-| Model                 | ceval              | gsm8k           |
-+=======================+====================+=================+
-| Qwen2.5-0.5B-Instruct | (ceval/acc) 0.5577 | (gsm8k/acc) 0.5 |
-+-----------------------+--------------------+-----------------+
-```
+使用python代码进行评测时需要用`run_task`函数提交评测任务，传入一个`TaskConfig`作为参数，也可以为python字典、yaml文件路径或json文件路径，例如：
 
-#### 基本参数说明
-- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen2-0.5B-Instruct模型链接](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
-- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动下载，支持的数据集参考[数据集列表](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
-- `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证评测流程
+**使用Python 字典**
 
-
-### 2. 带参数评测
-若想进行更加自定义的评测，例如自定义模型参数，或者数据集参数，可以使用以下命令：
-
-**示例1：**
-```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --datasets gsm8k ceval \
- --use-cache true \
- --limit 10
-```
-
-**示例2：**
-```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --generation-config do_sample=false,temperature=0.0 \
- --datasets ceval \
- --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
- --limit 10
-```
-
-#### 参数说明
-除开上述的[基本参数](#基本参数说明)，其他参数如下：
-- `--model-args`: 模型加载参数，以逗号分隔，key=value形式
-- `--generation-config`: 生成参数，以逗号分隔，key=value形式
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_new_tokens`: 生成最大长度，默认为1024
-  - `temperature`: 采样温度
-  - `top_p`: 采样阈值
-  - `top_k`: 采样阈值
-- `--use-cache`: 是否使用本地缓存，默认为`false`；如果为`true`，则已经评测过的模型和数据集组合将不会再次评测，直接从本地缓存读取
-- `--dataset-args`: 评测数据集的设置参数，以json格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应
-  - `--few_shot_num`: few-shot的数量
-  - `--few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
-
-
-### 3. 使用run_task函数提交评测任务
-
-使用`run_task`函数提交评测任务所需参数与命令行启动评测任务相同。
-
-需要传入一个字典作为参数，字典中包含以下字段：
-
-#### 1. 配置任务字典参数
-```python
-import torch
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
-
-# 示例
-your_task_cfg = {
-        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
-        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
-        'dataset_args': {},
-        'dry_run': False,
-        'model': 'qwen/Qwen2-0.5B-Instruct',
-        'datasets': ['arc', 'hellaswag'],
-        'work_dir': DEFAULT_ROOT_CACHE_DIR,
-        'outputs': DEFAULT_ROOT_CACHE_DIR,
-        'mem_cache': False,
-        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
-        'limit': 10,
-        'debug': False
-    }
-```
-其中`DEFAULT_ROOT_CACHE_DIR` 为 `'~/.cache/evalscope'`
-
-#### 2. run_task执行任务
 ```python
 from evalscope.run import run_task
 
-run_task(task_cfg=your_task_cfg)
+task_cfg = {
+    'model': 'Qwen/Qwen2.5-0.5B-Instruct',
+    'datasets': ['gsm8k', 'arc'],
+    'limit': 5
+}
+
+run_task(task_cfg=task_cfg)
 ```
 
-## 使用其他评测后端
+<details><summary>更多启动方式</summary>
+
+**使用`TaskConfig`**
+
+```python
+from evalscope.run import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['gsm8k', 'arc'],
+    limit=5
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+**使用`yaml`文件**
+
+`config.yaml`:
+```yaml
+model: Qwen/Qwen2.5-0.5B-Instruct
+datasets:
+  - gsm8k
+  - arc
+limit: 5
+```
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.yaml")
+```
+
+**使用`json`文件**
+
+`config.json`:
+```json
+{
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "datasets": ["gsm8k", "arc"],
+    "limit": 5
+}
+```
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.json")
+```
+</details>
+
+### 基本参数说明
+- `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
+- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
+- `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
+
+### 输出结果
+```
++-----------------------+-------------------+-----------------+
+| Model                 | ai2_arc           | gsm8k           |
++=======================+===================+=================+
+| Qwen2.5-0.5B-Instruct | (ai2_arc/acc) 0.6 | (gsm8k/acc) 0.6 |
++-----------------------+-------------------+-----------------+
+```
+
+## ⚙️ 复杂评测
+若想进行更加自定义的评测，例如自定义模型参数，或者数据集参数，可以使用以下命令，启动评测方式与简单评测一致，下面展示了使用`eval`命令启动评测：
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --generation-config do_sample=true,temperature=0.5 \
+ --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
+ --datasets gsm8k \
+ --limit 10
+```
+
+### 参数说明
+- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
+  - `revision`: 模型版本，默认为`master`
+  - `precision`: 模型精度，默认为`auto`
+  - `device_map`: 模型分配设备，默认为`auto`
+- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
+  - `do_sample`: 是否使用采样，默认为`false`
+  - `max_length`: 最大长度，默认为2048
+  - `max_new_tokens`: 生成最大长度，默认为512
+- `--dataset-args`: 评测数据集的设置参数，以`json`格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
+  - `few_shot_num`: few-shot的数量
+  - `few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
+
+参考：[全部参数说明](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html)
+
+
+## 其他评测后端
 EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
 - **Native**：EvalScope自身的**默认评测框架**，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。
 - [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成：[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/opencompass_backend.html)
@@ -280,7 +299,6 @@ Speed Benchmark Results:
 |     30720     |      49.56      |      2.34      |
 +---------------+-----------------+----------------+
 ```
-
 
 
 ## 自定义数据集评测

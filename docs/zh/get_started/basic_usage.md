@@ -136,6 +136,17 @@ evalscope eval \
 ```
 
 ### 参数说明
+- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
+  - `revision`: 模型版本，默认为`master`
+  - `precision`: 模型精度，默认为`auto`
+  - `device_map`: 模型分配设备，默认为`auto`
+- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
+  - `do_sample`: 是否使用采样，默认为`false`
+  - `max_length`: 最大长度，默认为2048
+  - `max_new_tokens`: 生成最大长度，默认为512
+- `--dataset-args`: 评测数据集的设置参数，以`json`格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
+  - `few_shot_num`: few-shot的数量
+  - `few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
 
 ```{seealso}
 参考：[全部参数说明](parameters.md)

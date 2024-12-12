@@ -1,26 +1,29 @@
+<p align="center">
+    <br>
+    <img src="docs/en/_static/images/evalscope_logo.png"/>
+    <br>
+<p>
 
-
-![](docs/en/_static/images/evalscope_logo.png)
 
 <p align="center">
-    English | <a href="README_zh.md">简体中文</a>
+  <a href="README_zh.md">中文</a> &nbsp ｜ &nbsp English &nbsp
 </p>
 
 <p align="center">
-  <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
-  <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope">
-  </a>
-  <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
-  <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'>
-      <img src='https://readthedocs.org/projects/evalscope-en/badge/?version=latest' alt='Documentation Status' />
-  </a>
-  <br>
-  <a href="https://evalscope.readthedocs.io/en/latest/">📖 Documents</a>
+<img src="https://img.shields.io/badge/python-%E2%89%A53.8-5be.svg">
+<a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
+<a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
+<a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' /></a>
+<p>
+
+<p align="center">
+<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documents</a>
 <p>
 
 > ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
-## 📋 Table of Contents
+## 📋 Contents
 - [Introduction](#introduction)
 - [News](#News)
 - [Installation](#installation)
@@ -34,7 +37,9 @@
 
 ## 📝 Introduction
 
-EvalScope is the official model evaluation and performance benchmarking framework launched by the [ModelScope](https://modelscope.cn/) community. It comes with built-in common benchmarks and evaluation metrics, such as MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, and HumanEval. EvalScope supports various types of model evaluations, including LLMs, multimodal LLMs, embedding models, and reranker models. It is also applicable to multiple evaluation scenarios, such as end-to-end RAG evaluation, arena mode, and model inference performance stress testing. Moreover, with the seamless integration of the ms-swift training framework, evaluations can be initiated with a single click, providing full end-to-end support from model training to evaluation 🚀
+EvalScope is [ModelScope](https://modelscope.cn/)'s official framework for model evaluation and benchmarking, designed for diverse assessment needs. It supports various model types including large language models, multimodal, embedding, reranker, and CLIP models.
+
+The framework accommodates multiple evaluation scenarios such as end-to-end RAG evaluation, arena mode, and inference performance testing. It features built-in benchmarks and metrics like MMLU, CMMLU, C-Eval, and GSM8K. Seamlessly integrated with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, EvalScope enables one-click evaluations, offering comprehensive support for model training and assessment 🚀
 
 <p align="center">
   <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
@@ -127,117 +132,129 @@ We recommend using conda to manage your environment and installing dependencies 
 
 ## 🚀 Quick Start
 
-### 1. Simple Evaluation
-To evaluate a model using default settings on specified datasets, follow the process below:
+To evaluate a model on specified datasets using default configurations, this framework supports two ways to initiate evaluation tasks: using the command line or using Python code.
 
-#### Installation using pip
+### Method 1. Using Command Line
 
-You can execute this in any directory:
+Execute the `eval` command in any directory:
 ```bash
-python -m evalscope.run \
+evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
- --datasets gsm8k ceval \
- --limit 10
+ --datasets gsm8k arc \
+ --limit 5
 ```
 
-#### Installation from source
+### Method 2. Using Python Code
 
-You need to execute this in the `evalscope` directory:
-```bash
-python evalscope/run.py \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --datasets gsm8k ceval \
- --limit 10
-```
+When using Python code for evaluation, you need to submit the evaluation task using the `run_task` function, passing a `TaskConfig` as a parameter. It can also be a Python dictionary, yaml file path, or json file path, for example:
 
-> If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
+**Using Python Dictionary**
 
-**Results (tested with only 10 samples)**
-```text
-Report table:
-+-----------------------+--------------------+-----------------+
-| Model                 | ceval              | gsm8k           |
-+=======================+====================+=================+
-| Qwen2.5-0.5B-Instruct | (ceval/acc) 0.5577 | (gsm8k/acc) 0.5 |
-+-----------------------+--------------------+-----------------+
-```
-
-
-#### Basic Parameter Descriptions
-- `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
-- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html) for available options.
-- `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
-
-
-### 2. Parameterized Evaluation
-If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
-
-**Example 1:**
-```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --datasets gsm8k ceval \
- --use-cache true \
- --limit 10
-```
-
-**Example 2:**
-```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --generation-config do_sample=false,temperature=0.0 \
- --datasets ceval \
- --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
- --limit 10
-```
-
-#### Parameter Descriptions
-In addition to the three [basic parameters](#basic-parameter-descriptions), the other parameters are as follows:
-- `--model-args`: Model loading parameters, separated by commas, in `key=value` format.
-- `--generation-config`: Generation parameters, separated by commas, in `key=value` format.
-  - `do_sample`: Whether to use sampling, default is `false`.
-  - `max_new_tokens`: Maximum generation length, default is 1024.
-  - `temperature`: Sampling temperature.
-  - `top_p`: Sampling threshold.
-  - `top_k`: Sampling threshold.
-- `--use-cache`: Whether to use local cache, default is `false`. If set to `true`, previously evaluated model and dataset combinations will not be evaluated again, and will be read directly from the local cache.
-- `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`.
-  - `--few_shot_num`: Number of few-shot examples.
-  - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`.
-
-
-### 3. Use the run_task Function to Submit an Evaluation Task
-Using the `run_task` function to submit an evaluation task requires the same parameters as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
-
-#### 1. Configuration Task Dictionary Parameters
-```python
-import torch
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
-
-# Example
-your_task_cfg = {
-        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
-        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
-        'dataset_args': {},
-        'dry_run': False,
-        'model': 'qwen/Qwen2-0.5B-Instruct',
-        'datasets': ['arc', 'hellaswag'],
-        'work_dir': DEFAULT_ROOT_CACHE_DIR,
-        'outputs': DEFAULT_ROOT_CACHE_DIR,
-        'mem_cache': False,
-        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
-        'limit': 10,
-        'debug': False
-    }
-```
-Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~/.cache/evalscope'`.
-
-#### 2. Execute Task with run_task
 ```python
 from evalscope.run import run_task
-run_task(task_cfg=your_task_cfg)
+
+task_cfg = {
+    'model': 'Qwen/Qwen2.5-0.5B-Instruct',
+    'datasets': ['gsm8k', 'arc'],
+    'limit': 5
+}
+
+run_task(task_cfg=task_cfg)
 ```
+
+<details><summary>More Startup Methods</summary>
+
+**Using `TaskConfig`**
+
+```python
+from evalscope.run import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['gsm8k', 'arc'],
+    limit=5
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+**Using `yaml` file**
+
+`config.yaml`:
+```yaml
+model: Qwen/Qwen2.5-0.5B-Instruct
+datasets:
+  - gsm8k
+  - arc
+limit: 5
+```
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.yaml")
+```
+
+**Using `json` file**
+
+`config.json`:
+```json
+{
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "datasets": ["gsm8k", "arc"],
+    "limit": 5
+}
+```
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.json")
+```
+</details>
+
+### Basic Parameter
+- `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, e.g., [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); or use the local path of the model, e.g., `/path/to/model`
+- `--datasets`: Dataset names, supports inputting multiple datasets separated by spaces. Datasets will be automatically downloaded from modelscope. For supported datasets, refer to the [Dataset List](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
+- `--limit`: Maximum amount of evaluation data for each dataset. If not specified, it defaults to evaluating all data. Can be used for quick validation
+
+### Output Results
+```
++-----------------------+-------------------+-----------------+
+| Model                 | ai2_arc           | gsm8k           |
++=======================+===================+=================+
+| Qwen2.5-0.5B-Instruct | (ai2_arc/acc) 0.6 | (gsm8k/acc) 0.6 |
++-----------------------+-------------------+-----------------+
+```
+
+## ⚙️ Complex Evaluation
+For more customized evaluations, such as customizing model parameters or dataset parameters, you can use the following command. The evaluation startup method is the same as simple evaluation. Below shows how to start the evaluation using the `eval` command:
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --generation-config do_sample=true,temperature=0.5 \
+ --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
+ --datasets gsm8k \
+ --limit 10
+```
+
+### Parameter
+- `--model-args`: Model loading parameters, separated by commas in `key=value` format. Default parameters:
+  - `revision`: Model version, default is `master`
+  - `precision`: Model precision, default is `auto`
+  - `device_map`: Model device allocation, default is `auto`
+- `--generation-config`: Generation parameters, separated by commas in `key=value` format. Default parameters:
+  - `do_sample`: Whether to use sampling, default is `false`
+  - `max_length`: Maximum length, default is 2048
+  - `max_new_tokens`: Maximum length of generation, default is 512
+- `--dataset-args`: Configuration parameters for evaluation datasets, passed in `json` format. The key is the dataset name, and the value is the parameters. Note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
+  - `few_shot_num`: Number of few-shot examples
+  - `few_shot_random`: Whether to randomly sample few-shot data, if not set, defaults to `true`
+
+Reference: [Full Parameter Description](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html)
 
 
 ## Evaluation Backend

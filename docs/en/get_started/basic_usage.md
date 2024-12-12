@@ -136,6 +136,19 @@ evalscope eval \
 ```
 
 ### Parameter Descriptions
+- `--model-args`: Model loading parameters, separated by commas in the `key=value` format, default parameters:
+  - `revision`: Model version, defaults to `master`
+  - `precision`: Model precision, defaults to `auto`
+  - `device_map`: Device allocation for the model, defaults to `auto`
+  
+- `--generation-config`: Generation parameters, separated by commas in the `key=value` format, default parameters:
+  - `do_sample`: Whether to use sampling, defaults to `false`
+  - `max_length`: Maximum length, defaults to 2048
+  - `max_new_tokens`: Maximum length for generation, defaults to 512
+  
+- `--dataset-args`: Settings parameters for the evaluation dataset, provided in `json` format, where the key is the dataset name and the value is the parameter. Note that these must correspond one-to-one with the values in the `--datasets` parameter:
+  - `few_shot_num`: Number of few-shot samples
+  - `few_shot_random`: Whether to randomly sample few-shot data; if not set, defaults to `true`
 
 ```{seealso}
 Reference: [All Parameter Descriptions](parameters.md)
