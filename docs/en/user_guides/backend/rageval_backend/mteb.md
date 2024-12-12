@@ -99,35 +99,6 @@ one_stage_task_cfg = {
     },
 }
 ```
-#### Parameter Explanation
-
-- `eval_backend`: Default value is `RAGEval`, indicating the use of the RAGEval evaluation backend.
-- `eval_config`: A dictionary containing the following fields:
-    - `tool`: The evaluation tool, using `MTEB`.
-    - `model`: A list of model configurations. **Only one model can be placed for single-stage evaluation**, containing the following fields:
-        - `model_name_or_path`: `str` The model name or path. Supports automatic downloading from the ModelScope repository.
-        - `is_cross_encoder`: `bool` Whether the model is a cross-encoder. Default is False.
-        - `pooling_mode`: `Optional[str]` Pooling mode. Default is `mean`. Possible values are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For the `bge` series models, please set it to "cls".
-        - `max_seq_length`: `int` Maximum sequence length. Default is 512.
-        - `prompt`: `str` Prompt for the retrieval task in front of the model. Default is an empty string.
-        - `model_kwargs`: `dict` Keyword arguments for the model. Default value is `{"torch_dtype": "auto"}`.
-        - `config_kwargs`: `Dict[str, Any]` Keyword arguments for the configuration. Default is an empty dictionary.
-        - `encode_kwargs`: `dict` Keyword arguments for encoding. Default value is:
-            ```python
-            {
-                "show_progress_bar": True,
-                "batch_size": 32
-            }
-            ```
-        - `hub`: `str` Source of the model, which can be "modelscope" or "huggingface".
-    - `eval`: A dictionary containing the following fields:
-        - `tasks`: `List[str]` Task names. See [Task List](#supported-datasets).
-        - `top_k`: `int` Number of top results to select for retrieval tasks.
-        - `verbosity`: `int` Level of verbosity. Range is 0-3.
-        - `output_folder`: `str` Output folder. Default is "outputs".
-        - `overwrite_results`: `bool` Whether to overwrite results. Default is True.
-        - `limits`: `Optional[int]` Limit the number of samples. Default is None; it is not recommended to set this for retrieval tasks.
-        - `hub`: `str` Source of the dataset, which can be "modelscope" or "huggingface".
 
 
 ### Two-stage Evaluation
@@ -169,9 +140,36 @@ two_stage_task_cfg = {
     },
 }
 ```
-#### Parameter Explanation
+## Parameter Explanation
 
-The basic parameters are the same as those for single-stage evaluation. The difference lies in the `model` field, where two models need to be provided. The first model is used for retrieval, and the second model is used for reranking. The reranking model needs to be a cross-encoder, i.e., `is_cross_encoder=True`.
+- `eval_backend`: Default value is `RAGEval`, indicating the use of the RAGEval evaluation backend.
+- `eval_config`: A dictionary containing the following fields:
+    - `tool`: Evaluation tool, using `MTEB`.
+    - `model`: List of model configurations. **For single-stage evaluation, only one model can be placed; for two-stage evaluation, two models are passed in, with the first model used for retrieval and the second model used for reranking**, including the following fields:
+        - `model_name_or_path`: `str` Model name or path, supports automatic download from the modelscope repository.
+        - `is_cross_encoder`: `bool` Whether the model is a cross-encoder, default is False; reranking models should be set to `True`.
+        - `pooling_mode`: `Optional[str]` Pooling mode, default is `mean`, optional values are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For `bge` series models, please set to "cls".
+        - `max_seq_length`: `int` Maximum sequence length, default is 512.  
+        - `prompt`: `str` Prompt for retrieval tasks in front of the model, default is an empty string.  
+        - `model_kwargs`: `dict` Keyword arguments for the model, default is `{"torch_dtype": "auto"}`.  
+        - `config_kwargs`: `Dict[str, Any]` Keyword arguments for configuration, default is an empty dictionary.  
+        - `encode_kwargs`: `dict` Keyword arguments for encoding, default is:  
+            ```python  
+            {  
+                "show_progress_bar": True,  
+                "batch_size": 32
+            }  
+            ```  
+        - `hub`: `str` Source of the model, can be "modelscope" or "huggingface".  
+    - `eval`: A dictionary containing the following fields:
+        - `tasks`: `List[str]` Task names, refer to the [task list](#supported-datasets)
+        - `top_k`: `int` Select the top K results, for retrieval tasks  
+        - `verbosity`: `int` Level of detail, ranging from 0-3  
+        - `output_folder`: `str` Output folder, default is "outputs"  
+        - `overwrite_results`: `bool` Whether to overwrite results, default is True  
+        - `limits`: `Optional[int]` Limit on the number of samples, default is None; not recommended to set for retrieval tasks
+        - `hub`: `str` Source of the dataset, can be "modelscope" or "huggingface"  
+
 
 
 ## Model Evaluation
@@ -615,101 +613,6 @@ The following is an example of the output:
 
 ## Custom Dataset Evaluation
 
-### Custom Text Retrieval Evaluation
-
-1. Construct the Dataset with the following format:
-
-```
-retrieval_data
-├── corpus.jsonl
-├── queries.jsonl
-└── qrels
-    └── test.tsv
-```
-
-Where:
-- `corpus.jsonl`: Corpus file, each line is a JSON object formatted as `{"_id": "xxx", "text": "xxx"}`. `_id` is the corpus ID, and `text` is the corpus text. For example:
-  ```json
-  {"_id": "doc1", "text": "Climate change is leading to more extreme weather patterns."}
-  {"_id": "doc2", "text": "The stock market surged today, led by tech stocks."}
-  {"_id": "doc3", "text": "AI is transforming various industries by automating tasks and providing insights."}
-  {"_id": "doc4", "text": "With technological advancements, renewable energy sources like wind and solar are becoming more widespread."}
-  {"_id": "doc5", "text": "Recent studies show that a balanced diet and regular exercise can significantly improve mental health."}
-  {"_id": "doc6", "text": "Virtual reality is creating new opportunities in education, entertainment, and training."}
-  {"_id": "doc7", "text": "Electric vehicles are becoming increasingly popular due to environmental benefits and advances in battery technology."}
-  {"_id": "doc8", "text": "Space exploration missions are revealing new information about our solar system and beyond."}
-  {"_id": "doc9", "text": "Blockchain technology has potential applications beyond cryptocurrency, including supply chain management and secure voting systems."}
-  {"_id": "doc10", "text": "The benefits of remote work include greater flexibility and reduced commuting time."}
-  ```
-
-- `queries.jsonl`: Query file, each line is a JSON object formatted as `{"_id": "xxx", "text": "xxx"}`. `_id` is the query ID, and `text` is the query text. For example:
-  ```json
-  {"_id": "query1", "text": "What are the impacts of climate change?"}
-  {"_id": "query2", "text": "What caused the stock market to rise today?"}
-  {"_id": "query3", "text": "How is AI changing industries?"}
-  {"_id": "query4", "text": "What are the advancements in renewable energy?"}
-  {"_id": "query5", "text": "How does a balanced diet improve mental health?"}
-  {"_id": "query6", "text": "What new opportunities does virtual reality create?"}
-  {"_id": "query7", "text": "Why are electric vehicles becoming more popular?"}
-  {"_id": "query8", "text": "What new information has space exploration revealed?"}
-  {"_id": "query9", "text": "What are the applications of blockchain technology beyond cryptocurrency?"}
-  {"_id": "query10", "text": "What are the benefits of remote work?"}
-  ```
-
-- `qrels`: Evaluation file(s) in TSV format, with columns `query-id`, `doc-id`, and `score`. `query-id` is the query ID, `doc-id` is the corpus ID, and `score` is the relevance score. For example:
-  ```
-  query-id  corpus-id  score
-  query1    doc1       1
-  query2    doc2       1
-  query3    doc3       1
-  query4    doc4       1
-  query5    doc5       1
-  query6    doc6       1
-  query7    doc7       1
-  query8    doc8       1
-  query9    doc9       1
-  query10   doc10      1
-  ```
-
-2. Construct the Configuration File
-```python
-task_cfg = {
-    "eval_backend": "RAGEval",
-    "eval_config": {
-        "tool": "MTEB",
-        "model": [
-            {
-                "model_name_or_path": "AI-ModelScope/m3e-base",
-                "pooling_mode": None,  # load from model config
-                "max_seq_length": 512,
-                "prompt": "",
-                "model_kwargs": {"torch_dtype": "auto"},
-                "encode_kwargs": {
-                    "batch_size": 128,
-                },
-            }
-        ],
-        "eval": {
-            "tasks": ["CustomRetrieval"],
-            "dataset_path": "custom_eval/text/retrieval",
-            "verbosity": 2,
-            "output_folder": "outputs",
-            "overwrite_results": True,
-            "limits": 500,
-        },
-    },
-}
-```
-
-Parameter description, with essential parameters modified from the default configuration:
-- `eval`:
-  - `tasks`: Evaluation task, must be `CustomRetrieval`.
-  - `dataset_path`: Path to the custom dataset.
-
-3. Run the Evaluation
-
-```python
-from evalscope.run import run_task
-
-run_task(task_cfg=task_cfg)
+```{seealso}
+[Custom Retrieval Dataset](../../../advanced_guides/custom_dataset/embedding.md)
 ```

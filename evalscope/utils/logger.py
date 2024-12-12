@@ -1,5 +1,6 @@
 import importlib.util as iutil
 import logging
+import os
 from typing import Optional
 
 init_loggers = {}
@@ -9,11 +10,12 @@ simple_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 detailed_formatter = logging.Formatter(detailed_format)
 simple_formatter = logging.Formatter(simple_format)
+DEFAULT_LEVEL = logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=logging.INFO)
+logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, file_mode: str = 'w'):
+def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
     """Get logging logger
 
     Args:
@@ -29,12 +31,12 @@ def get_logger(log_file: Optional[str] = None, log_level: int = logging.INFO, fi
     logger.propagate = False
 
     if logger_name in init_loggers:
-        if logger.level != log_level:
+        if force:
             logger.setLevel(log_level)
-        add_file_handler_if_needed(logger, log_file, file_mode, log_level)
-        for handler in logger.handlers:
-            handler.setLevel(log_level)
-            handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+            for handler in logger.handlers:
+                handler.setLevel(log_level)
+                handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+            add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 
     # handle duplicate logs to the console

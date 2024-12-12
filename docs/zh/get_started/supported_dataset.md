@@ -3,7 +3,7 @@
 ## 1. 原生支持的数据集
 
 ```{tip}
-目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/backend/opencompass_backend.md)进行语言模型评估；或使用[VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评估。
+目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/backend/opencompass_backend.md)进行语言模型评测；或使用[VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评测。
 ```
 
 | 名称        | 链接                                                                                   | 状态 | 备注 |
@@ -18,7 +18,7 @@
 | `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
 | `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
 | `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be intergrated |      |
+| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | Active |      |
 
 ## 2. OpenCompass评测后端支持的数据集
 
@@ -383,7 +383,7 @@
 | [ATEC](https://github.com/IceFlameWorm/NLP_Datasets/tree/master/ATEC) | [C-MTEB/ATEC](https://modelscope.cn/datasets/C-MTEB/ATEC) | ATEC NLP句子对相似性竞赛 | STS | s2s | 20,000 |
 | [BQ](https://huggingface.co/datasets/shibing624/nli_zh) | [C-MTEB/BQ](https://modelscope.cn/datasets/C-MTEB/BQ) | 银行问题语义相似性 | STS | s2s | 10,000 |
 | [LCQMC](https://huggingface.co/datasets/shibing624/nli_zh) | [C-MTEB/LCQMC](https://modelscope.cn/datasets/C-MTEB/LCQMC) | 大规模中文问题匹配语料库 | STS | s2s | 12,500 |
-| [PAWSX](https://arxiv.org/pdf/1908.11828.pdf) | [C-MTEB/PAWSX](https://modelscope.cn/datasets/C-MTEB/PAWSX) | 翻译的PAWS评估对 | STS | s2s | 2,000 |
+| [PAWSX](https://arxiv.org/pdf/1908.11828.pdf) | [C-MTEB/PAWSX](https://modelscope.cn/datasets/C-MTEB/PAWSX) | 翻译的PAWS评测对 | STS | s2s | 2,000 |
 | [STSB](https://github.com/pluto-junzeng/CNSD) | [C-MTEB/STSB](https://modelscope.cn/datasets/C-MTEB/STSB) | 将STS-B翻译成中文 | STS | s2s | 1,360 |
 | [AFQMC](https://github.com/CLUEbenchmark/CLUE) | [C-MTEB/AFQMC](https://modelscope.cn/datasets/C-MTEB/AFQMC) | 蚂蚁金服问答匹配语料库 | STS | s2s | 3,861 |
 | [QBQTC](https://github.com/CLUEbenchmark/QBQTC) | [C-MTEB/QBQTC](https://modelscope.cn/datasets/C-MTEB/QBQTC) | QQ浏览器查询标题语料库 | STS | s2s | 5,000 |

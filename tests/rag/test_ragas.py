@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
 import unittest
-from evalscope.utils import test_level_list, is_module_installed
-from evalscope.utils.logger import get_logger
+
 from evalscope.run import run_task
+from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -40,7 +41,6 @@ class TestRAGAS(unittest.TestCase):
                     },
                     'generator_llm': {
                         'model_name_or_path': 'qwen/Qwen2-7B-Instruct',
-                        'template_type': 'qwen',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
@@ -64,7 +64,6 @@ class TestRAGAS(unittest.TestCase):
                     'testset_file': 'outputs/testset_chinese_with_answer.json',
                     'critic_llm': {
                         'model_name_or_path': 'qwen/Qwen2-7B-Instruct',
-                        'template_type': 'qwen',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
@@ -90,7 +89,8 @@ class TestRAGAS(unittest.TestCase):
             'eval_config': {
                 'tool': 'RAGAS',
                 'eval': {
-                    'testset_file': 'outputs/testset.json',
+                    'testset_file':
+                    'outputs/testset.json',
                     'critic_llm': {
                         'model_name': 'gpt-4o-mini',  # 自定义聊天模型名称
                         'api_base': 'http://127.0.0.1:8088/v1',  # 自定义基础URL

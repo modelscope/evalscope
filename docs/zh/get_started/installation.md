@@ -2,6 +2,7 @@
 
 ## 方式1. 使用pip安装
 我们推荐使用conda来管理环境，并使用pip安装依赖:
+
 1. 创建conda环境 (可选)
 ```shell
 # 建议使用 python 3.10
@@ -35,6 +36,8 @@ from llmuses import ...
 
 
 ## 方式2. 使用源码安装
+使用源码安装可使用最新功能
+
 1. 下载源码
 ```shell
 git clone https://github.com/modelscope/evalscope.git

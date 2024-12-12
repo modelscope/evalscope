@@ -1,11 +1,11 @@
-# Custom Model Evaluation
+# Custom Model
 
 ## LLM Model Evaluation
 Evaluation of large language models currently supports two methods: Native Evaluation and OpenCompass Evaluation.
 
 ### Method 1: Using Native Evaluation
 ```{seealso}
-See [Basic Usage Guide: Submitting Evaluation Tasks with run_task](../get_started/basic_usage.md#3-use-the-run_task-function-to-submit-an-evaluation-task)
+See [Basic Usage Guide](../get_started/basic_usage.md)
 ```
 
 ### Method 2: Using OpenCompass Evaluation

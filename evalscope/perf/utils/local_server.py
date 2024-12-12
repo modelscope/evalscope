@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.chat_service import ChatCompletionRequest, ChatService, ModelList, TextCompletionRequest
+from evalscope.utils.chat_service import ChatCompletionRequest, ChatService, ModelList, TextCompletionRequest
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
