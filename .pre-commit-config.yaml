@@ -7,7 +7,8 @@ repos:
             (?x)^(
                 thirdparty/|
                 examples/|
-                evalscope/utils/utils.py
+                evalscope/utils/utils.py|
+                docs/
             )
   - repo: https://github.com/PyCQA/isort.git
     rev: 5.13.2
@@ -20,8 +21,10 @@ repos:
         exclude: |
             (?x)^(
                 thirdparty/|
-                examples/
-            )$
+                examples/|
+                evalscope/utils/utils.py|
+                docs/
+            )
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v5.0.0
     hooks:

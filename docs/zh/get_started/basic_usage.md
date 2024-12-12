@@ -161,3 +161,42 @@ evalscope eval \
 | Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
 +-----------------------+-----------------+
 ```
+
+## 使用本地数据集和模型
+
+数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
+
+假如当前本地工作路径为 `/path/to/workdir`。
+
+### 下载数据集到本地
+执行以下命令：
+```shell
+wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+unzip data.zip
+```
+解压后的数据集在：`/path/to/workdir/data` 目录下，该目录在后续步骤将会作为`local_path`参数的值传入
+
+
+### 下载模型到本地
+模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评测任务时，可提前将模型下载到本地：
+
+例如使用Git下载Qwen2.5-0.5B-Instruct模型到本地：
+```bash
+git lfs install
+git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+```
+
+```{seealso}
+[ModelScope下载模型指南](https://modelscope.cn/docs/models/download)
+```
+
+### 执行评测任务
+运行下面的命令进行评测，传入本地数据集路径和模型路径，注意`local_path`需要跟`--datasets`参数中的值一一对应：
+
+```shell
+evalscope eval \
+ --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
+ --datasets arc \
+ --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --limit 10
+```

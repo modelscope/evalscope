@@ -163,3 +163,41 @@ Reference: [All Parameter Descriptions](parameters.md)
 | Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
 +-----------------------+-----------------+
 ```
+
+## Using Local Datasets and Models
+
+By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:
+
+Assume the current local working path is `/path/to/workdir`.
+
+### Download the Dataset Locally
+Execute the following commands:
+```shell
+wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+unzip data.zip
+```
+The extracted dataset will be in the `/path/to/workdir/data` directory. This directory will be passed as the value of the `local_path` parameter in subsequent steps.
+
+### Download the Model Locally
+Model files are hosted on the ModelScope Hub and require internet access for loading. If you need to create evaluation tasks in an offline environment, you can download the model to your local machine in advance:
+
+For example, use Git to download the Qwen2.5-0.5B-Instruct model locally:
+```bash
+git lfs install
+git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+```
+
+```{seealso}
+[ModelScope Model Download Guide](https://modelscope.cn/docs/models/download)
+```
+
+### Execute Evaluation Task
+Run the following command to perform the evaluation, passing in the local dataset path and model path. Note that `local_path` must correspond one-to-one with the values in the `--datasets` parameter:
+
+```shell
+evalscope eval \
+ --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
+ --datasets arc \
+ --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --limit 10
+```

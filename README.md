@@ -30,7 +30,6 @@
 - [Quick Start](#quick-start)
 - [Evaluation Backend](#evaluation-backend)
 - [Custom Dataset Evaluation](#custom-dataset-evaluation)
-- [Offline Evaluation](#offline-evaluation)
 - [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
 
@@ -293,11 +292,6 @@ Speed Benchmark Results:
 
 ## Custom Dataset Evaluation
 EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
-
-## Offline Evaluation
-You can use local dataset to evaluate the model without internet connection.
-
-Refer to: Offline Evaluation [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/offline_evaluation.html)
 
 
 ## Arena Mode
