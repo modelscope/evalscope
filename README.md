@@ -30,8 +30,8 @@
 - [Quick Start](#quick-start)
 - [Evaluation Backend](#evaluation-backend)
 - [Custom Dataset Evaluation](#custom-dataset-evaluation)
-- [Arena Mode](#arena-mode)
 - [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
+- [Arena Mode](#arena-mode)
 
 
 ## 📝 Introduction
@@ -291,7 +291,7 @@ Speed Benchmark Results:
 ```
 
 ## Custom Dataset Evaluation
-EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset.html)
+EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/index.html)
 
 
 ## Arena Mode

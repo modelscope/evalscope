@@ -9,13 +9,13 @@ from argparse import Namespace
 from datetime import datetime
 from typing import List, Union
 
-from evalscope.arguments import convert_args, parse_args
+from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType, OutputsStructure
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
-from evalscope.utils import dict_to_yaml, gen_hash, import_module_util, json_to_dict, seed_everything, yaml_to_dict
-from evalscope.utils.logger import DEFAULT_LEVEL, get_logger
+from evalscope.utils import dict_to_yaml, gen_hash, import_module_util, seed_everything
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -36,19 +36,17 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
         logger.info('Args: Task config is provided with TaskConfig type.')
     elif isinstance(task_cfg, dict):
         logger.info('Args: Task config is provided with dictionary type.')
-        task_cfg = TaskConfig(**task_cfg)
+        task_cfg = TaskConfig.from_dict(task_cfg)
     elif isinstance(task_cfg, Namespace):
         logger.info('Args: Task config is provided with ComandLine type.')
-        task_cfg = convert_args(task_cfg)
+        task_cfg = TaskConfig.from_args(task_cfg)
     elif isinstance(task_cfg, str):
         if task_cfg.endswith('.yaml') or task_cfg.endswith('.yml'):
             logger.info('Args: Task config is provided with yaml type.')
-            task_cfg_dict = yaml_to_dict(task_cfg)
-            task_cfg = TaskConfig(**task_cfg_dict)
+            task_cfg = TaskConfig.from_yaml(task_cfg)
         elif task_cfg.endswith('.json'):
             logger.info('Args: Task config is provided with json type.')
-            task_cfg_dict = json_to_dict(task_cfg)
-            task_cfg = TaskConfig(**task_cfg_dict)
+            task_cfg = TaskConfig.from_json(task_cfg)
         else:
             raise ValueError(f'Unsupported file format: {task_cfg}, should be a yaml or json file.')
     else:

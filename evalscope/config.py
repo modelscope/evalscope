@@ -3,27 +3,18 @@
 import copy
 import json
 import os
+from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
-from evalscope.utils import yaml_to_dict
+from evalscope.utils import json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
-
-registry_tasks = {
-    'arc': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/arc.yaml')),
-    'gsm8k': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/gsm8k.yaml')),
-    'mmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/mmlu.yaml')),
-    'cmmlu': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/cmmlu.yaml')),
-    'ceval': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/ceval.yaml')),
-    'bbh': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/bbh.yaml')),
-    'general_qa': yaml_to_dict(os.path.join(cur_path, 'registry/tasks/general_qa.yaml')),
-}
 
 DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'auto', 'device': 'auto'}
 DEFAULT_GENERATION_CONFIG = {
@@ -66,11 +57,62 @@ class TaskConfig:
     mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
     use_cache: Optional[str] = None
     work_dir: str = DEFAULT_WORK_DIR
+    outputs: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
 
     # Debug and runtime mode arguments
     debug: bool = False
     dry_run: bool = False
     seed: int = 42
+
+    def to_dict(self):
+        # Note: to avoid serialization error for some model instance
+        return self.__dict__
+
+    def __str__(self):
+        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
+
+    def update(self, other: Union['TaskConfig', dict]):
+        if isinstance(other, TaskConfig):
+            other = other.to_dict()
+        self.__dict__.update(other)
+
+    @staticmethod
+    def list():
+        return list(registry_tasks.keys())
+
+    @staticmethod
+    def from_yaml(yaml_file: str):
+        return TaskConfig.from_dict(yaml_to_dict(yaml_file))
+
+    @staticmethod
+    def from_dict(d: dict):
+        return TaskConfig(**d)
+
+    @staticmethod
+    def from_json(json_file: str):
+        return TaskConfig.from_dict(json_to_dict(json_file))
+
+    @staticmethod
+    def from_args(args: Namespace):
+        # Convert Namespace to a dictionary and filter out None values
+        args_dict = {k: v for k, v in vars(args).items() if v is not None}
+        del args_dict['func']  # Note: compat CLI arguments
+
+        return TaskConfig.from_dict(args_dict)
+
+    @staticmethod
+    def load(custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
+        res_list = []
+        for task_name in tasks:
+            task = registry_tasks.get(task_name, None)
+            if task is None:
+                logger.error(f'No task found in tasks: {list(registry_tasks.keys())}, got task_name: {task_name}')
+                continue
+
+            task.model = custom_model
+            res_list.append(task)
+
+        return res_list
 
     @staticmethod
     def registry(name: str, data_pattern: str, dataset_dir: str = None, subset_list: list = None) -> None:
@@ -95,52 +137,26 @@ class TaskConfig:
             return
 
         # Reuse the existing task config and update the datasets
-        pattern_config = registry_tasks.get(data_pattern)
+        pattern_config = registry_tasks[data_pattern]
 
         custom_config = copy.deepcopy(pattern_config)
-        custom_config.update({'datasets': [data_pattern]})
-        # custom_config.update({'dataset_hub': 'Local'})  # to support `ModelScope`
-        if 'dataset_args' in custom_config:
-            if data_pattern not in custom_config:
-                custom_config['dataset_args'].update({data_pattern: {}})
-        else:
-            custom_config.update({'dataset_args': {data_pattern: {}}})
+        custom_config.datasets = [data_pattern]
+        custom_config.dataset_args = {data_pattern: {}}
+        custom_config.eval_type = EvalType.CHECKPOINT
 
         if dataset_dir is not None:
-            custom_config['dataset_args'][data_pattern].update({'local_path': dataset_dir})
+            custom_config.dataset_args[data_pattern].update({'local_path': dataset_dir})
 
         if subset_list is not None:
-            custom_config['dataset_args'][data_pattern].update({'subset_list': subset_list})
+            custom_config.dataset_args[data_pattern].update({'subset_list': subset_list})
 
         registry_tasks.update({name: custom_config})
         logger.info(f'** Registered task: {name} with data pattern: {data_pattern}')
 
-    def to_dict(self):
-        # Note: to avoid serialization error for some model instance
-        return self.__dict__
 
-    def __str__(self):
-        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
+tasks = ['arc', 'gsm8k', 'mmlu', 'cmmlu', 'ceval', 'bbh', 'general_qa']
 
-    @staticmethod
-    def load(custom_model: CustomModel, tasks: List[str]) -> List['TaskConfig']:
-        res_list = []
-        for task_name in tasks:
-            task: dict = registry_tasks.get(task_name, None)
-            if task is None:
-                logger.error(f'No task found in tasks: {list(registry_tasks.keys())}, got task_name: {task_name}')
-                continue
-
-            res = TaskConfig(**task)
-            res.model = custom_model
-
-            res_list.append(res)
-
-        return res_list
-
-    @staticmethod
-    def list():
-        return list(registry_tasks.keys())
+registry_tasks = {task: TaskConfig.from_yaml(os.path.join(cur_path, f'registry/tasks/{task}.yaml')) for task in tasks}
 
 
 class TempModel(CustomModel):

@@ -89,11 +89,3 @@ def parse_args():
 
     args = parser.parse_args()
     return args
-
-
-def convert_args(args):
-    # Convert Namespace to a dictionary and filter out None values
-    args_dict = {k: v for k, v in vars(args).items() if v is not None}
-    del args_dict['func']  # Note: compact CLI arguments
-
-    return TaskConfig(**args_dict)

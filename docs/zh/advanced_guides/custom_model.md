@@ -19,7 +19,7 @@
 
 ## VLM 模型评测
 
-目前多模态模型评测只支持使用 VLMEvalKit 评测后端。
+目前多模态模型评测支持使用 VLMEvalKit 评测后端。
 
 ### 使用 VLMEvalKit 评测后端
 

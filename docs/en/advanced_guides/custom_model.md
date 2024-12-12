@@ -1,4 +1,4 @@
-# Custom Model Evaluation
+# Custom Model
 
 ## LLM Model Evaluation
 Evaluation of large language models currently supports two methods: Native Evaluation and OpenCompass Evaluation.

@@ -22,7 +22,6 @@ model: null   # Note: to be implemented as CustomModel
 eval_type: custom
 datasets:
   - arc
-outputs: null    # structure: configs, logs, predictions, reviews, reports # TODO: need to parse
 use_cache: false
 stage: all
 dataset_hub: modelscope    # `Local` or `ModelScope`

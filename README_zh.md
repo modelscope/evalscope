@@ -301,7 +301,7 @@ Speed Benchmark Results:
 
 
 ## 自定义数据集评测
-EvalScope支持自定义数据集评测，具体请参考：自定义数据集评测[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset.html)
+EvalScope支持自定义数据集评测，具体请参考：自定义数据集评测[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/index.html)
 
 
 ## 竞技场模式
