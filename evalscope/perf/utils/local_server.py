@@ -1,10 +1,9 @@
 import os
 import subprocess
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
-
 import torch
 import uvicorn
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse

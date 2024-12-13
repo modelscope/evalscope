@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import glob
+import json
 import os
 from typing import List, Union
-
-import json
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalBackend, OutputsStructure

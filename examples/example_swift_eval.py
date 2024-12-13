@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import json
 import os
 import time
 from typing import List
-
-import json
 
 from evalscope.models.custom import CustomModel
 from evalscope.run import run_task

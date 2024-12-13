@@ -4,7 +4,6 @@ import inspect
 import re
 import signal
 from collections import defaultdict
-
 from tqdm import tqdm
 
 
@@ -20,8 +19,7 @@ def check_input(text, arg):
     code_block = code_block_pattern.search(text)
     code_string = code_block.group(1)
 
-    function_name_pattern = re.compile(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\(',
-                                       re.DOTALL)
+    function_name_pattern = re.compile(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\(', re.DOTALL)
     function_name_block = function_name_pattern.search(code_string)
     function_name = function_name_block.group(1)
 
@@ -52,9 +50,7 @@ def exec_func(func, arr):
 
 
 def compute_pass_k_one_sample(predict, func_args, func_outputs, k=4):
-    assert len(
-        predict
-    ) >= k, f'pass@k must have {k} generations, now have {len(predict)}'
+    assert len(predict) >= k, f'pass@k must have {k} generations, now have {len(predict)}'
     for predict_i in predict[:k]:
         try:
             for arg, gold in zip(func_args, func_outputs):
@@ -87,9 +83,7 @@ def compute_pass_k(predict_l, reference_l, func_args_l, k=4, lang='py'):
 def run_code_eval(data_l, k=4, md_level=2):
     print(f"{'#' * md_level} Code Eval(pass@{k})")
     for data in tqdm(data_l):
-        data[f'pass@{k}'] = compute_pass_k_one_sample(data['gen'],
-                                                      data['func_args'],
-                                                      data['func_outputs'], k)
+        data[f'pass@{k}'] = compute_pass_k_one_sample(data['gen'], data['func_args'], data['func_outputs'], k)
     task_data_d = defaultdict(list)
     for data in data_l:
         for task in data['task_tags']:

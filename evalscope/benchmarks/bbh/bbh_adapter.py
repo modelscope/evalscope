@@ -1,10 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import json
 import os
 import random
 import re
-
-import json
 
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import AnswerKeys

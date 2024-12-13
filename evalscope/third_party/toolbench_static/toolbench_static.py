@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-from typing import Union
 from copy import deepcopy
+from typing import Union
 
-from evalscope.third_party.toolbench_static.infer import InferArgs, run_infer
 from evalscope.third_party.toolbench_static.eval import EvalArgs, run_eval
-from evalscope.utils import yaml_to_dict, get_logger, json_to_dict
+from evalscope.third_party.toolbench_static.infer import InferArgs, run_infer
+from evalscope.utils import get_logger, json_to_dict, yaml_to_dict
 
 logger = get_logger()
 

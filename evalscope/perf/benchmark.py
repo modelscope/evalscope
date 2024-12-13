@@ -1,16 +1,15 @@
 import asyncio
 import copy
+import json
+import numpy as np
 import os
 import platform
 import sqlite3
 import threading
 import time
 from http import HTTPStatus
-from typing import List
-
-import json
-import numpy as np
 from tqdm import tqdm
+from typing import List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient, test_connection
@@ -141,8 +140,8 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     result_db_path = get_result_db_path(args.name, args.model, args.outputs_dir)
     # Initialize wandb
     if args.wandb_api_key:
-        import wandb
         import datetime
+        import wandb
         os.environ['WANDB_SILENT'] = 'true'
         os.environ['WANDB_DIR'] = './outputs'
 
@@ -192,7 +191,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 async def start_server(args: Arguments) -> bool:
     if args.api.startswith('local'):
         #  start local server
-        server = threading.Thread(target=start_app, args=(copy.deepcopy(args),), daemon=True)
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
 
         if args.dataset.startswith('speed_benchmark'):

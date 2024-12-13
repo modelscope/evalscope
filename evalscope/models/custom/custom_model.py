@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from abc import ABC, abstractmethod
-from typing import Any, Union, Dict, List
 import torch
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Union
 
 
 class CustomModel(ABC):
@@ -11,7 +11,7 @@ class CustomModel(ABC):
         self.kwargs = kwargs
 
         if config.get('model_id', None) is None:
-            raise ValueError(f"**Error: model_id is required in config for CustomModel. Got config: {config}")
+            raise ValueError(f'**Error: model_id is required in config for CustomModel. Got config: {config}')
 
     @abstractmethod
     @torch.no_grad()

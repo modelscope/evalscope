@@ -1,13 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import subprocess
+import tempfile
+from dataclasses import asdict
 from enum import Enum
 from typing import Optional, Union
-import subprocess
-from dataclasses import asdict
-import tempfile
 
-from evalscope.utils import is_module_installed, get_module_path, get_valid_list
 from evalscope.backend.base import BackendManager
 from evalscope.backend.opencompass.api_meta_template import get_template
+from evalscope.utils import get_module_path, get_valid_list, is_module_installed
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -107,8 +107,8 @@ class OpenCompassBackendManager(BackendManager):
 
     @staticmethod
     def list_datasets(return_details: bool = False):
-        from opencompass.utils.run import get_config_from_arg
         from dataclasses import dataclass
+        from opencompass.utils.run import get_config_from_arg
 
         @dataclass
         class TempArgs:
@@ -160,18 +160,18 @@ class OpenCompassBackendManager(BackendManager):
             None
         """
         if run_mode == RunMode.FUNCTION:
-            from opencompass.cli.main import run_task
             from opencompass.cli.arguments import ApiModelConfig
+            from opencompass.cli.main import run_task
 
             assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
 
             tmp_model_d: dict = self.args.models[0]
             assert 'path' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
-                f"Got invalid model config: {tmp_model_d}. \nTo get valid format: " \
+                f'Got invalid model config: {tmp_model_d}. \nTo get valid format: ' \
                 "{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
 
             # Get valid datasets
-            dataset_names = self.args.datasets       # e.g. ['mmlu', 'ceval']
+            dataset_names = self.args.datasets  # e.g. ['mmlu', 'ceval']
             dataset_names_all, real_dataset_all = self.list_datasets(return_details=True)
 
             if not dataset_names:
@@ -185,7 +185,9 @@ class OpenCompassBackendManager(BackendManager):
                 assert len(valid_dataset_names) > 0, f'No valid datasets. ' \
                                                      f'To get the valid datasets, please refer to {dataset_names_all}'
 
-            valid_datasets = [_dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names]
+            valid_datasets = [
+                _dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names
+            ]
             for _dataset in valid_datasets:
                 _dataset.pop('dataset_name')
                 _dataset['reader_cfg']['test_range'] = self.args.limit
@@ -232,16 +234,23 @@ class OpenCompassBackendManager(BackendManager):
 if __name__ == '__main__':
 
     # OpenCompassBackendManager.list_datasets()
-    # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC', 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa', 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c', 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval', 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
+    # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC',
+    # 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa',
+    # 'triviaqa', 'WiC', 'COPA', 'commonsenseqa', 'piqa', 'nq', 'mbpp', 'csl', 'Xsum', 'CB', 'tnews', 'ARC_c',
+    # 'afqmc', 'eprstmt', 'ReCoRD', 'bbh', 'TheoremQA', 'CMRC', 'AX_b', 'siqa', 'storycloze', 'humaneval',
+    # 'cluewsc', 'winogrande', 'lambada', 'ceval', 'bustm', 'C3', 'lcsts']
 
     # 'meta_template': 'default-api-meta-template-oc',
     # models: llama3-8b-instruct, qwen-7b-chat
     oc_backend_manager = OpenCompassBackendManager(
-        config={'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-                'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}],
-                'limit': 5
-                }
-    )
+        config={
+            'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
+            'models': [{
+                'path': 'llama3-8b-instruct',
+                'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'
+            }],
+            'limit': 5
+        })
     all_datasets = OpenCompassBackendManager.list_datasets()
     print(f'all_datasets: {all_datasets}')
     oc_backend_manager.run()

@@ -6,9 +6,10 @@ EvalScope: pip install mteb
 
 2. Run eval task
 """
+import torch
+
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
-import torch
 
 logger = get_logger()
 

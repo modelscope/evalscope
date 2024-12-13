@@ -2,12 +2,11 @@
 # Copyright 2020 The HuggingFace Datasets Authors and the current dataset script contributor.
 #
 # Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
-import os
-
 import datasets
+import os
 import pandas as pd
-# flake8: noqa
 
+# flake8: noqa
 """DO NOT EDIT unless you are contributing a new dataset."""
 
 _CITATION = """\
@@ -28,7 +27,6 @@ _HOMEPAGE = 'https://cevalbenchmark.com'
 _LICENSE = 'Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License'
 
 _URL = r'https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/c-eval/ceval-exam.zip'
-
 
 task_list = [
     'computer_network',
@@ -85,32 +83,27 @@ task_list = [
     'physician',
 ]
 
+
 class CevalExamConfig(datasets.BuilderConfig):
+
     def __init__(self, **kwargs):
         super().__init__(version=datasets.Version('1.0.0'), **kwargs)
 
 
 class CevalExam(datasets.GeneratorBasedBuilder):
-    BUILDER_CONFIGS = [
-        CevalExamConfig(
-            name=task_name,
-        )
-        for task_name in task_list
-    ]
+    BUILDER_CONFIGS = [CevalExamConfig(name=task_name, ) for task_name in task_list]
 
     def _info(self):
-        features = datasets.Features(
-            {
-                'id': datasets.Value('int32'),
-                'question': datasets.Value('string'),
-                'A': datasets.Value('string'),
-                'B': datasets.Value('string'),
-                'C': datasets.Value('string'),
-                'D': datasets.Value('string'),
-                'answer': datasets.Value('string'),
-                'explanation':datasets.Value('string'),
-            }
-        )
+        features = datasets.Features({
+            'id': datasets.Value('int32'),
+            'question': datasets.Value('string'),
+            'A': datasets.Value('string'),
+            'B': datasets.Value('string'),
+            'C': datasets.Value('string'),
+            'D': datasets.Value('string'),
+            'answer': datasets.Value('string'),
+            'explanation': datasets.Value('string'),
+        })
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
             features=features,
@@ -126,25 +119,19 @@ class CevalExam(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.TEST,
                 gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir, 'test', f'{task_name}_test.csv'
-                    ),
+                    'filepath': os.path.join(data_dir, 'test', f'{task_name}_test.csv'),
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split('val'),
                 gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir,  'val', f'{task_name}_val.csv'
-                    ),
+                    'filepath': os.path.join(data_dir, 'val', f'{task_name}_val.csv'),
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split('dev'),
                 gen_kwargs={
-                    'filepath': os.path.join(
-                        data_dir, 'dev', f'{task_name}_dev.csv'
-                    ),
+                    'filepath': os.path.join(data_dir, 'dev', f'{task_name}_dev.csv'),
                 },
             ),
         ]

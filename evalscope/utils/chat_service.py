@@ -1,14 +1,13 @@
 import os
 import time
+import torch
 from contextlib import contextmanager
 from functools import partial
-from threading import Thread
-from typing import List, Literal, Optional, Union
-
-import torch
 from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
+from threading import Thread
 from transformers import TextIteratorStreamer
+from typing import List, Literal, Optional, Union
 
 
 class Usage(BaseModel):

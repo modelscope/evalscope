@@ -1,9 +1,8 @@
+import json
 import os
 import re
-from typing import List, Optional
-
-import json
 from tqdm import tqdm
+from typing import List, Optional
 
 from evalscope.constants import OutputsStructure
 from evalscope.evaluator.evaluator import logger
@@ -26,8 +25,8 @@ class HumanevalEvaluator(object):
         timeout: float = 3.0,
     ):
         try:
-            from human_eval.evaluation import evaluate_functional_correctness
             from human_eval.data import read_problems, write_jsonl
+            from human_eval.evaluation import evaluate_functional_correctness
         except ImportError:
             raise ImportError('Please install human_eval:'
                               'https://github.com/openai/human-eval/tree/master#installation , '

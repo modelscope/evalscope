@@ -1,8 +1,7 @@
-import os
-from typing import Any, Dict, Iterator, List
-
 import json
+import os
 from transformers import AutoTokenizer
+from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase

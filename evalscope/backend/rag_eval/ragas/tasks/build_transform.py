@@ -1,6 +1,4 @@
 import asyncio
-from typing import List
-
 from langchain_core.documents import Document
 from ragas.embeddings import BaseRagasEmbeddings
 from ragas.llms import BaseRagasLLM
@@ -12,6 +10,7 @@ from ragas.testset.transforms.filters import CustomNodeFilter
 from ragas.testset.transforms.relationship_builders import CosineSimilarityBuilder, OverlapScoreBuilder
 from ragas.testset.transforms.splitters import HeadlineSplitter
 from ragas.utils import num_tokens_from_string
+from typing import List
 
 from .translate_prompt import translate_prompts
 

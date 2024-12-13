@@ -1,17 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import numpy as np
 import os
 import re
-import numpy as np
 
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score, jsonl_to_list
+from evalscope.utils import jsonl_to_list, normalize_score
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
-
 
 DATASET_ID = 'modelscope/hellaswag'
 SUBSET_LIST = ['default']
@@ -44,12 +43,13 @@ class HellaSwagAdapter(DataAdapter):
             logger.warning(f'few_shot_num should be 0 for HellaSwag, but got {few_shot_num}. Use 0-shot by default.')
             few_shot_num = 0
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -91,7 +91,9 @@ class HellaSwagAdapter(DataAdapter):
 
         endings: list = [self._preprocess(ending) for ending in input_d['endings']]
 
-        few_shot_prompts = [self._generate_prompt(input_d=sample, endings=endings, include_answer=True) for sample in few_shot_list]
+        few_shot_prompts = [
+            self._generate_prompt(input_d=sample, endings=endings, include_answer=True) for sample in few_shot_list
+        ]
         context: str = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, endings=endings, include_answer=False)
 
@@ -124,9 +126,9 @@ class HellaSwagAdapter(DataAdapter):
 
             return str(best_choice_idx)
         elif eval_type == 'service':
-            return result           # TODO: to be supported !
+            return result  # TODO: to be supported !
         elif eval_type == 'custom':
-            return result           # TODO: to be supported !
+            return result  # TODO: to be supported !
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 
@@ -177,17 +179,19 @@ class HellaSwagAdapter(DataAdapter):
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score)
+        } for subset_name, (score, _) in subset_score_map.items()]
 
-        category_d = dict(name='DEFAULT',
-                          score=weighted_avg_acc,
-                          subset=cate_avg_list)
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
 
-        res_map = dict(name=report_name or 'hellaswag',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=[category_d],
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'hellaswag',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
 
         return res_map
 

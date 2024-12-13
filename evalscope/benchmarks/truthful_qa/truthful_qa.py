@@ -16,10 +16,8 @@
 # flake8: noqa
 
 import csv
-import json
-
 import datasets
-
+import json
 
 _CITATION = """\
 @misc{lin2021truthfulqa,
@@ -69,37 +67,35 @@ class TruthfulQa(datasets.GeneratorBasedBuilder):
             name='generation',
             # url="https://raw.githubusercontent.com/sylinrl/TruthfulQA/013686a06be7a7bde5bf8223943e106c7250123c/TruthfulQA.csv",
             url='https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/truthful_qa/TruthfulQA.csv',
-            features=datasets.Features(
-                {
-                    'type': datasets.Value('string'),
-                    'category': datasets.Value('string'),
-                    'question': datasets.Value('string'),
-                    'best_answer': datasets.Value('string'),
-                    'correct_answers': datasets.features.Sequence(datasets.Value('string')),
-                    'incorrect_answers': datasets.features.Sequence(datasets.Value('string')),
-                    'source': datasets.Value('string'),
-                }
-            ),
-            description="The Generation TruthfulQA (main) task tests a model's ability to generate 1-2 sentence answers for a given question truthfully.",
+            features=datasets.Features({
+                'type': datasets.Value('string'),
+                'category': datasets.Value('string'),
+                'question': datasets.Value('string'),
+                'best_answer': datasets.Value('string'),
+                'correct_answers': datasets.features.Sequence(datasets.Value('string')),
+                'incorrect_answers': datasets.features.Sequence(datasets.Value('string')),
+                'source': datasets.Value('string'),
+            }),
+            description=
+            "The Generation TruthfulQA (main) task tests a model's ability to generate 1-2 sentence answers for a given question truthfully.",
         ),
         TruthfulQaConfig(
             name='multiple_choice',
             # url="https://raw.githubusercontent.com/sylinrl/TruthfulQA/013686a06be7a7bde5bf8223943e106c7250123c/data/mc_task.json",
             url='https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/truthful_qa/mc_task.json',
-            features=datasets.Features(
-                {
-                    'question': datasets.Value('string'),
-                    'mc1_targets': {
-                        'choices': datasets.features.Sequence(datasets.Value('string')),
-                        'labels': datasets.features.Sequence(datasets.Value('int32')),
-                    },
-                    'mc2_targets': {
-                        'choices': datasets.features.Sequence(datasets.Value('string')),
-                        'labels': datasets.features.Sequence(datasets.Value('int32')),
-                    },
-                }
-            ),
-            description="The Multiple-Choice TruthfulQA task provides a multiple-choice option to test a model's ability to identify true statements.",
+            features=datasets.Features({
+                'question': datasets.Value('string'),
+                'mc1_targets': {
+                    'choices': datasets.features.Sequence(datasets.Value('string')),
+                    'labels': datasets.features.Sequence(datasets.Value('int32')),
+                },
+                'mc2_targets': {
+                    'choices': datasets.features.Sequence(datasets.Value('string')),
+                    'labels': datasets.features.Sequence(datasets.Value('int32')),
+                },
+            }),
+            description=
+            "The Multiple-Choice TruthfulQA task provides a multiple-choice option to test a model's ability to identify true statements.",
         ),
     ]
 

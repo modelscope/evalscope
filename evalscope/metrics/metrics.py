@@ -2,18 +2,17 @@
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
 import itertools
-import math
-from collections.abc import Iterable
-from collections import defaultdict
-from typing import Dict, List, Union
-from nltk.translate.bleu_score import sentence_bleu
-from nltk import word_tokenize
 import jieba
-
+import math
 import numpy as np
+import random
 import sacrebleu
 import sklearn.metrics
-import random
+from collections import defaultdict
+from collections.abc import Iterable
+from nltk import word_tokenize
+from nltk.translate.bleu_score import sentence_bleu
+from typing import Dict, List, Union
 
 
 def mean(arr):
@@ -22,12 +21,12 @@ def mean(arr):
 
 def pop_stddev(arr):
     mu = mean(arr)
-    return math.sqrt(sum([(x - mu) ** 2 for x in arr]) / len(arr))
+    return math.sqrt(sum([(x - mu)**2 for x in arr]) / len(arr))
 
 
 def sample_stddev(arr):
     mu = mean(arr)
-    return math.sqrt(sum([(x - mu) ** 2 for x in arr]) / (len(arr) - 1))
+    return math.sqrt(sum([(x - mu)**2 for x in arr]) / (len(arr) - 1))
 
 
 def mean_stderr(arr):
@@ -134,13 +133,14 @@ def bleu(items):
     refs, preds = _sacreformat(refs, preds)
     return sacrebleu.corpus_bleu(preds, refs).score
 
+
 def bleu_ngram_one_sample(predict, reference):
     """
     Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
 
     Args:
         items: [(ref, pred)]
-        
+
     Returns:
         {
             'bleu-1': 0.8,
@@ -150,6 +150,7 @@ def bleu_ngram_one_sample(predict, reference):
         }
 
     """
+
     def is_contains_chinese(strs):
         for _char in strs:
             if '\u4e00' <= _char <= '\u9fa5':
@@ -230,6 +231,7 @@ def _sacreformat(refs, preds):
 
 
 class _bootstrap_internal:
+
     def __init__(self, f, n):
         self.f = f
         self.n = n
@@ -260,11 +262,11 @@ def bootstrap_stderr(f, xs, iters):
 
     print('bootstrapping for stddev:', f.__name__)
     for bootstrap in tqdm(
-        pool.imap(
-            _bootstrap_internal(f, chunk_size),
-            [(i, xs) for i in range(iters // chunk_size)],
-        ),
-        total=iters // chunk_size,
+            pool.imap(
+                _bootstrap_internal(f, chunk_size),
+                [(i, xs) for i in range(iters // chunk_size)],
+            ),
+            total=iters // chunk_size,
     ):
         # sample w replacement
         res.extend(bootstrap)
@@ -372,11 +374,9 @@ def calculate_arc_accuracy(question_answers: Dict[str, str], predictions: Dict[s
     return score / len(question_answers)
 
 
-def calculate_pass_at_k(
-    num_samples: Union[int, List[int], np.ndarray],
-    num_correct: Union[List[int], np.ndarray],
-    k: int = 1
-) -> np.ndarray:
+def calculate_pass_at_k(num_samples: Union[int, List[int], np.ndarray],
+                        num_correct: Union[List[int], np.ndarray],
+                        k: int = 1) -> np.ndarray:
     """
     Estimates pass@k of each problem and returns them in an array.
     Examples:

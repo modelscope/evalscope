@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import List, Union
-
 import pandas as pd
 import pyarrow as pa
+from typing import List, Union
 
 from evalscope.constants import MetricMembers
 from evalscope.utils import jsonl_to_list

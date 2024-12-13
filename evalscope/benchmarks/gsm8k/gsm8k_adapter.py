@@ -1,12 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI, Inc. and its affiliates.
+import math
 import os
 import re
-import math
+
 from evalscope.benchmarks import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score, jsonl_to_list
+from evalscope.utils import jsonl_to_list, normalize_score
 from evalscope.utils.logger import get_logger
+
 # flake8: noqa
 
 logger = get_logger()
@@ -54,13 +56,14 @@ class GSM8KAdapter(DataAdapter):
                          f'Use 4-shot by default.')
             few_shot_num = 4
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         prompt_template=prompt_template,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            prompt_template=prompt_template,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -182,17 +185,19 @@ class GSM8KAdapter(DataAdapter):
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score)
+        } for subset_name, (score, _) in subset_score_map.items()]
 
-        category_d = dict(name='DEFAULT',
-                          score=weighted_avg_acc,
-                          subset=cate_avg_list)
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
 
-        res_map = dict(name=report_name or 'gsm8k',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=[category_d],
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'gsm8k',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
 
         return res_map
 
@@ -209,8 +214,7 @@ class GSM8KAdapter(DataAdapter):
                 "When Bella buys 2/5 times more marbles, she'll have increased the number of marbles by 2/5*60 = 24\nThe total number of marbles she'll have is 60+24 = 84\nIf Bella currently has 60 marbles, and she has two times as many marbles as frisbees, she has 60/2 = 30 frisbees.\nIf Bella buys 2/5 times more frisbees, she'll have 2/5*30 = 12 more frisbees.\nThe total number of frisbees she'll have will increase to 30+12 = 42\nBella also has 20 more frisbees than deck cards, meaning she has 30-20 = 10 deck cards\nIf she buys 2/5 times more deck cards, she'll have 2/5*10 = 4 more deck cards.\nThe total number of deck cards she'll have is 10+4 = 14\nTogether, Bella will have a total of 14+42+84 = 140 items\nThe answer is 140\n\n"
                 "Question: A group of 4 fruit baskets contains 9 apples, 15 oranges, and 14 bananas in the first three baskets and 2 less of each fruit in the fourth basket. How many fruits are there?\nLet's think step by step\n"
                 'For the first three baskets, the number of apples and oranges in one basket is 9+15=24\nIn total, together with bananas, the number of fruits in one basket is 24+14=38 for the first three baskets.\nSince there are three baskets each having 38 fruits, there are 3*38=114 fruits in the first three baskets.\nThe number of apples in the fourth basket is 9-2=7\nThere are also 15-2=13 oranges in the fourth basket\nThe combined number of oranges and apples in the fourth basket is 13+7=20\nThe fourth basket also contains 14-2=12 bananas.\nIn total, the fourth basket has 20+12=32 fruits.\nThe four baskets together have 32+114=146 fruits.\nThe answer is 146\n\n'
-                f"Question: {input_d['question']}\nLet's think step by step\nAnswer:"
-            )
+                f"Question: {input_d['question']}\nLet's think step by step\nAnswer:")
             # context = input_d['question']
             # fewshot_prompts = ['Question: ' + item_d['question'] + '\nAnswer: ' + item_d['answer'] for item_d in few_shot_list]
             # fewshot_prompts = fewshot_prompts + ['Question: ' + context + '\nAnswer:']
@@ -222,9 +226,7 @@ class GSM8KAdapter(DataAdapter):
 
     @staticmethod
     def extract_answer(s: str) -> str:
-        _PAT_LAST_DIGIT = re.compile(
-            r'([+-])?(?=([0-9]|\.[0-9]))(0|([1-9](\d{0,2}(,\d{3})*)|\d*))?(\.\d*)?(?=\D|$)'
-        )
+        _PAT_LAST_DIGIT = re.compile(r'([+-])?(?=([0-9]|\.[0-9]))(0|([1-9](\d{0,2}(,\d{3})*)|\d*))?(\.\d*)?(?=\D|$)')
         match = list(_PAT_LAST_DIGIT.finditer(s))
         if match:
             last_digit = match[-1].group().replace(',', '').replace('+', '').strip().strip('.')
