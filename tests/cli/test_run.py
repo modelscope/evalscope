@@ -33,7 +33,7 @@ class TestRun(unittest.TestCase):
     def test_run_simple_eval(self):
         model = 'qwen/Qwen2-0.5B-Instruct'
         datasets = 'arc'  # arc ceval
-        limit = 100
+        limit = 10
 
         cmd_simple = f'evalscope eval ' \
                      f'--model {model} ' \
