@@ -29,16 +29,17 @@ In these examples settings.xml lists input files and formats.
 """
 
 from __future__ import absolute_import, division, print_function
-import collections
-import re
-import os
 
+import collections
 import nltk
 import numpy as np
+import os
+import re
 import six
 from absl import logging
 from rouge_score import scoring, tokenizers
 from six.moves import map, range
+
 from evalscope.utils import get_logger
 
 logger = get_logger()
@@ -81,11 +82,7 @@ class RougeScorer(scoring.BaseScorer):
         ...                       'The quick brown dog jumps on the log.')
     """
 
-    def __init__(self,
-                 rouge_types,
-                 use_stemmer=False,
-                 split_summaries=False,
-                 tokenizer=None):
+    def __init__(self, rouge_types, use_stemmer=False, split_summaries=False, tokenizer=None):
 
         self.rouge_types = rouge_types
         if tokenizer:
@@ -160,21 +157,15 @@ class RougeScorer(scoring.BaseScorer):
                     sents = [x for x in sents if len(x)]
                     return sents
 
-                target_tokens_list = [
-                    self._tokenizer.tokenize(s) for s in get_sents(target)
-                ]
-                prediction_tokens_list = [
-                    self._tokenizer.tokenize(s) for s in get_sents(prediction)
-                ]
+                target_tokens_list = [self._tokenizer.tokenize(s) for s in get_sents(target)]
+                prediction_tokens_list = [self._tokenizer.tokenize(s) for s in get_sents(prediction)]
 
-                scores = _summary_level_lcs(target_tokens_list,
-                                            prediction_tokens_list)
+                scores = _summary_level_lcs(target_tokens_list, prediction_tokens_list)
             elif re.match(r'rouge[0-9]$', six.ensure_str(rouge_type)):
                 # Rouge from n-grams.
                 n = int(rouge_type[5:])
                 if n <= 0:
-                    raise ValueError('rougen requires positive n: %s'
-                                     % rouge_type)
+                    raise ValueError('rougen requires positive n: %s' % rouge_type)
                 target_ngrams = _create_ngrams(target_tokens, n)
                 prediction_ngrams = _create_ngrams(prediction_tokens, n)
                 scores = _score_ngrams(target_ngrams, prediction_ngrams)
@@ -349,8 +340,7 @@ def _score_ngrams(target_ngrams, prediction_ngrams):
 
     intersection_ngrams_count = 0
     for ngram in six.iterkeys(target_ngrams):
-        intersection_ngrams_count += min(target_ngrams[ngram],
-                                         prediction_ngrams[ngram])
+        intersection_ngrams_count += min(target_ngrams[ngram], prediction_ngrams[ngram])
     target_ngrams_count = sum(target_ngrams.values())
     prediction_ngrams_count = sum(prediction_ngrams.values())
 

@@ -4,7 +4,6 @@
 import ast
 import re
 
-
 # from . import utils as ann_utils
 from evalscope.constants import ArenaWinner
 from evalscope.utils.logger import get_logger
@@ -51,9 +50,7 @@ def lmsys_parser(completion, output_format):
             else:
                 raise Exception('Invalid score pair.')
         except Exception as e:
-            logger.error(
-                f'{e}\nContent: {completion}\nYou must manually fix the score pair.'
-            )
+            logger.error(f'{e}\nContent: {completion}\nYou must manually fix the score pair.')
             return ArenaWinner.UNKNOWN, [-1, -1]
     elif output_format == '[[A]]':
         if '[[A]]' in completion:
@@ -63,8 +60,7 @@ def lmsys_parser(completion, output_format):
         elif '[[C]]' in completion:
             winner = ArenaWinner.TIE
         else:
-            logger.error(
-                f'\nContent: {completion}\nYou must manually fix the score.')
+            logger.error(f'\nContent: {completion}\nYou must manually fix the score.')
             winner = ArenaWinner.UNKNOWN
         return winner
 
@@ -76,8 +72,7 @@ def ranking_parser(completion, **kwargs):
         else:
             ordered_completions = completion
 
-        rank = [c for c in ordered_completions
-                if c['model'] == 'model_a'][0]['rank']
+        rank = [c for c in ordered_completions if c['model'] == 'model_a'][0]['rank']
         assert rank in [1, 2]
 
         return ArenaWinner.MODEL_A if rank == 1 else ArenaWinner.MODEL_B

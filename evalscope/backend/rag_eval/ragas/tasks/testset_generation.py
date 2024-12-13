@@ -1,5 +1,4 @@
 import os
-
 import pandas as pd
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
@@ -47,8 +46,9 @@ def get_knowledge_graph(documents, transforms, local_file, run_config):
 
 
 def get_persona(llm, kg, language):
+    from ragas.testset.persona import PersonaGenerationPrompt, generate_personas_from_kg
+
     from evalscope.backend.rag_eval.ragas.prompts.persona_prompt import PersonaGenerationPromptZH
-    from ragas.testset.persona import generate_personas_from_kg, PersonaGenerationPrompt
 
     if language == 'chinese':
         persona_prompt = PersonaGenerationPromptZH()
@@ -76,8 +76,8 @@ def load_data(file_path):
 
 def generate_testset(args: TestsetGenerationArguments) -> None:
 
-    from ragas.testset import TestsetGenerator
     from ragas import RunConfig
+    from ragas.testset import TestsetGenerator
 
     # load data
     documents = load_data(args.docs)

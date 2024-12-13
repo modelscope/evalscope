@@ -1,6 +1,5 @@
 import asyncio
 import os
-
 from datasets import Dataset
 
 from evalscope.backend.rag_eval import LLM, EmbeddingModel
@@ -13,9 +12,9 @@ logger = get_logger()
 
 def rag_eval(args: EvaluationArguments, ) -> None:
 
-    from ragas import evaluate, RunConfig
-    from ragas.llms import LangchainLLMWrapper
     import importlib
+    from ragas import RunConfig, evaluate
+    from ragas.llms import LangchainLLMWrapper
 
     def dynamic_import(*function_names):
         functions = []

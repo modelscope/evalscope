@@ -1,7 +1,6 @@
+import json
 import os
 from typing import Any, Dict, Iterator, List
-
-import json
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase

@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-
 import datasets
+import os
 import pandas as pd
-
 
 _CITATION = """\
 @inproceedings{lai-etal-2017-race,
@@ -40,39 +38,33 @@ _DESCRIPTION = """\
 RACE is a large-scale reading comprehension dataset with more than 28,000 passages and nearly 100,000 questions.
 """
 
-_HOMEPAGE = "https://modelscope.cn/datasets/modelscope/race/summary"
+_HOMEPAGE = 'https://modelscope.cn/datasets/modelscope/race/summary'
 
-_URL = "https://modelscope.cn/api/v1/datasets/modelscope/race/repo?Revision=master&FilePath=race.zip"
+_URL = 'https://modelscope.cn/api/v1/datasets/modelscope/race/repo?Revision=master&FilePath=race.zip'
 
 task_list = [
-    "high",
-    "middle",
+    'high',
+    'middle',
 ]
 
 
 class RACEConfig(datasets.BuilderConfig):
+
     def __init__(self, **kwargs):
-        super().__init__(version=datasets.Version("1.0.0"), **kwargs)
+        super().__init__(version=datasets.Version('1.0.0'), **kwargs)
 
 
 class RACE(datasets.GeneratorBasedBuilder):
-    BUILDER_CONFIGS = [
-        RACEConfig(
-            name=task_name,
-        )
-        for task_name in task_list
-    ]
+    BUILDER_CONFIGS = [RACEConfig(name=task_name, ) for task_name in task_list]
 
     def _info(self):
-        features = datasets.Features(
-            {
-                "example_id": datasets.Value("string"),
-                "article": datasets.Value("string"),
-                "answer": datasets.Value("string"),
-                "question": datasets.Value("string"),
-                "options": [datasets.Value("string")],
-            }
-        )
+        features = datasets.Features({
+            'example_id': datasets.Value('string'),
+            'article': datasets.Value('string'),
+            'answer': datasets.Value('string'),
+            'question': datasets.Value('string'),
+            'options': [datasets.Value('string')],
+        })
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
             features=features,
@@ -87,32 +79,26 @@ class RACE(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.TEST,
                 gen_kwargs={
-                    "filepath": os.path.join(
-                        data_dir, f"race/test/{task_name}-00000-of-00001.parquet"
-                    ),
+                    'filepath': os.path.join(data_dir, f'race/test/{task_name}-00000-of-00001.parquet'),
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "filepath": os.path.join(
-                        data_dir, f"race/val/{task_name}-00000-of-00001.parquet"
-                    ),
+                    'filepath': os.path.join(data_dir, f'race/val/{task_name}-00000-of-00001.parquet'),
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.TRAIN,
                 gen_kwargs={
-                    "filepath": os.path.join(
-                        data_dir, f"race/train/{task_name}-00000-of-00001.parquet"
-                    ),
+                    'filepath': os.path.join(data_dir, f'race/train/{task_name}-00000-of-00001.parquet'),
                 },
             ),
         ]
 
     def _generate_examples(self, filepath):
         df = pd.read_parquet(filepath)
-        df.columns = ["example_id", "article", "answer", "question", "options"]
+        df.columns = ['example_id', 'article', 'answer', 'question', 'options']
 
-        for i, instance in enumerate(df.to_dict(orient="records")):
+        for i, instance in enumerate(df.to_dict(orient='records')):
             yield i, instance
