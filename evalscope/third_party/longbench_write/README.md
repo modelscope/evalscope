@@ -26,16 +26,30 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
                 output_dir='./outputs',
                 openai_api_key=None,
                 openai_gpt_model='gpt-4o-2024-05-13',
-                infer_generation_kwargs={
-                    'max_new_tokens': 32768,
-                    'temperature': 0.5
+                infer_config={
+                    'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 
+                    'is_chat': True, 
+                    'verbose': False, 
+                    'generation_kwargs': {
+                        'max_new_tokens': 32768, 
+                        'temperature': 0.5, 
+                        'repetition_penalty': 1.0
+                    },
+                    'proc_num': 16,
                 },
-                eval_generation_kwargs={
-                    'max_new_tokens': 1024,
-                    'temperature': 0.5,
-                    'stop': None
-                },
-                proc_num=8)
+                eval_config={
+                    'openai_api_key': 'YOUR_OPENAI_API_KEY', 
+                    'openai_api_base': 'https://api.openai.com/v1/chat/completions', 
+                    'openai_gpt_model': 'gpt-4o-2024-05-13', 
+                    'generation_kwargs': {
+                        'max_new_tokens': 1024, 
+                        'temperature': 0.5, 
+                        'stop': None
+                    }, 
+                    'proc_num': 8
+                }
+            )
+
 
 ```
 - Arguments:

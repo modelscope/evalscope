@@ -45,7 +45,8 @@ def run_task(task_cfg: Union[str, dict]):
                                   verbose=infer_config.get('verbose', False),
                               ),
                               generation_kwargs=infer_config.get('generation_kwargs'),
-                              enable='infer' in stage)
+                              enable='infer' in stage,
+                              proc_num=infer_config.get('proc_num', 16))
 
     # Run eval process
     run_eval(model=model,
