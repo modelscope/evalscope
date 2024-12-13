@@ -17,7 +17,7 @@ import torch.nn.functional as F
 import yaml
 from typing import Any, Dict, List, Tuple, Union
 
-from evalscope.constants import DumpMode, OutputsStructure
+from evalscope.constants import DumpMode
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

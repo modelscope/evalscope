@@ -7,7 +7,7 @@ import os.path
 import torch
 from argparse import Namespace
 from datetime import datetime
-from typing import List, Union
+from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
@@ -23,8 +23,11 @@ BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
-def configure_logging(debug: bool):
+def configure_logging(debug: bool, outputs: Optional[OutputsStructure]):
     """Configure logging level based on the debug flag."""
+    if outputs:
+        log_file = os.path.join(outputs.logs_dir, 'eval_log.log')
+        get_logger(log_file=log_file, force=True)
     if debug:
         get_logger(log_level=logging.DEBUG, force=True)
 
@@ -44,12 +47,12 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
 def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
     seed_everything(task_cfg.seed)
-    configure_logging(task_cfg.debug)
-    set_work_directory(task_cfg, run_time)
+    outputs = setup_work_directory(task_cfg, run_time)
+    configure_logging(task_cfg.debug, outputs)
 
     logger.info(task_cfg)
 
-    return evaluate_model(task_cfg)
+    return evaluate_model(task_cfg, outputs)
 
 
 def parse_task_config(task_cfg) -> TaskConfig:
@@ -76,13 +79,16 @@ def parse_task_config(task_cfg) -> TaskConfig:
     return task_cfg
 
 
-def set_work_directory(task_cfg: TaskConfig, run_time: str):
+def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     """Set the working directory for the task."""
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
     elif task_cfg.work_dir == DEFAULT_WORK_DIR:
         task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
+
+    outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
+    return outputs
 
 
 def run_non_native_backend(task_cfg: TaskConfig) -> dict:
@@ -115,14 +121,14 @@ def get_backend_manager_class(eval_backend: EvalBackend):
         raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
 
-def evaluate_model(task_cfg: TaskConfig) -> dict:
+def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
-    if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg)
     # Initialize evaluator
     eval_results = {}
-    outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
     task_cfg.dump_yaml(outputs.configs_dir)
+
+    if task_cfg.eval_backend != EvalBackend.NATIVE:
+        return run_non_native_backend(task_cfg)
 
     for dataset_name in task_cfg.datasets:
         evaluator = create_evaluator(task_cfg, dataset_name, outputs)
