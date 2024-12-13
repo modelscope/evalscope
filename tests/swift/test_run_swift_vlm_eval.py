@@ -1,12 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import json
 import os
+import requests
 import shutil
 import subprocess
 import time
 import unittest
-
-import json
-import requests
 
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
 from evalscope.run import run_task

@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
 import json
+import os
+
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score, ResponseParser
+from evalscope.utils import ResponseParser, normalize_score
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -44,13 +45,14 @@ class ARCAdapter(DataAdapter):
         if few_shot_num != 0:
             logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         prompt_template=prompt_template,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            prompt_template=prompt_template,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         """
@@ -78,8 +80,10 @@ class ARCAdapter(DataAdapter):
                             rows.append({
                                 'id': item['id'],
                                 'question': item['question']['stem'],
-                                'choices': {'text': [d['text'] for d in raw_choices],
-                                            'label': [d['label'] for d in raw_choices]},
+                                'choices': {
+                                    'text': [d['text'] for d in raw_choices],
+                                    'label': [d['label'] for d in raw_choices]
+                                },
                                 'answerKey': item['answerKey'],
                             })
 
@@ -143,9 +147,11 @@ class ARCAdapter(DataAdapter):
         if eval_type == 'checkpoint':
             return result
         elif eval_type == 'service':
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(
+                text=result, options=self.choices)  # TODO: to be checked !
         elif eval_type == 'custom':
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(
+                text=result, options=self.choices)  # TODO: to be checked !
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 
@@ -200,17 +206,19 @@ class ARCAdapter(DataAdapter):
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score)
+        } for subset_name, (score, _) in subset_score_map.items()]
 
-        category_d = dict(name='DEFAULT',
-                          score=weighted_avg_acc,
-                          subset=cate_avg_list)
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
 
-        res_map = dict(name=report_name or 'arc',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=[category_d],
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'arc',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
 
         return res_map
 

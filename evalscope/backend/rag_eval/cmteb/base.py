@@ -1,10 +1,9 @@
-from collections import defaultdict
-from typing import List
-
 import datasets
+from collections import defaultdict
 from datasets import DatasetDict
 from modelscope import MsDataset
 from mteb import AbsTask
+from typing import List
 
 from evalscope.backend.rag_eval.cmteb.tasks import CLS_CUSTOM, CLS_DICT, CLS_RETRIEVAL
 from evalscope.constants import HubType

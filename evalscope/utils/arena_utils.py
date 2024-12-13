@@ -1,13 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) lmsys.org.
 
-import random
-from collections import OrderedDict, defaultdict
-from typing import List, Sequence, Union
-
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import random
+from collections import OrderedDict, defaultdict
+from typing import List, Sequence, Union
 
 from evalscope.utils.logger import get_logger
 
@@ -25,9 +24,7 @@ def compute_elo(battles,
                 init_rating=1000):
     rating = defaultdict(lambda: init_rating)
 
-    for rd, model_a, model_b, win in battles[[
-            col_model_a, col_model_b, col_win
-    ]].itertuples():
+    for rd, model_a, model_b, win in battles[[col_model_a, col_model_b, col_win]].itertuples():
         ra = rating[model_a]
         rb = rating[model_b]
         ea = 1 / (1 + base**((rb - ra) / scale))
@@ -46,9 +43,7 @@ def compute_elo(battles,
     return rating
 
 
-def merge_ques_ans(answer_list_all,
-                   merge_key: str = 'question_id',
-                   merge_mode: str = 'inner') -> pd.DataFrame:
+def merge_ques_ans(answer_list_all, merge_key: str = 'question_id', merge_mode: str = 'inner') -> pd.DataFrame:
     """
     Merge question and answer list to unifiled data.
 
@@ -67,18 +62,11 @@ def merge_ques_ans(answer_list_all,
     """
     ans_df = pd.DataFrame()
     for ans_list in answer_list_all:
-        ans_list = [{
-            'question_id': item['question_id'],
-            item['model_id']: item
-        } for item in ans_list]
+        ans_list = [{'question_id': item['question_id'], item['model_id']: item} for item in ans_list]
         if ans_df.empty:
             ans_df = pa.Table.from_pylist(ans_list).to_pandas()
         else:
-            ans_df = pd.merge(
-                ans_df,
-                pa.Table.from_pylist(ans_list).to_pandas(),
-                on=merge_key,
-                how=merge_mode)
+            ans_df = pd.merge(ans_df, pa.Table.from_pylist(ans_list).to_pandas(), on=merge_key, how=merge_mode)
 
     return ans_df
 
@@ -112,21 +100,17 @@ def get_battle_pairs(columns: List[str], baseline_idx: int = -1) -> List[tuple]:
 
     if baseline_idx != -1:
         n_column = columns[baseline_idx]
-        res_list = [(column, n_column) for column in columns
-                    if column != n_column]
+        res_list = [(column, n_column) for column in columns if column != n_column]
     else:
         mat = np.ones((cols_num, cols_num))
         mat_lower_tril = np.tril(mat, k=-1)
         x_ids, y_ids = np.where(mat_lower_tril == 1)
-        res_list = [(columns[x_id], columns[y_id])
-                    for x_id, y_id in zip(x_ids, y_ids)]
+        res_list = [(columns[x_id], columns[y_id]) for x_id, y_id in zip(x_ids, y_ids)]
 
     return res_list
 
 
-def get_battle_pairs_origin(columns: List[str],
-                            compare_base: bool = False,
-                            swap: bool = False):  # TODO: to refactor
+def get_battle_pairs_origin(columns: List[str], compare_base: bool = False, swap: bool = False):  # TODO: to refactor
     """
     Get battle pair names from columns.
 
@@ -152,8 +136,7 @@ def get_battle_pairs_origin(columns: List[str],
         mat = np.ones((cols_num, cols_num))
         mat_lower_tril = np.tril(mat, k=-1)
         x_ids, y_ids = np.where(mat_lower_tril == 1)
-        res_list = [(columns[x_id], columns[y_id])
-                    for x_id, y_id in zip(x_ids, y_ids)]
+        res_list = [(columns[x_id], columns[y_id]) for x_id, y_id in zip(x_ids, y_ids)]
     else:
         for column in columns[1:]:
             res_list.append((columns[0], column))
@@ -163,8 +146,7 @@ def get_battle_pairs_origin(columns: List[str],
     return res_list
 
 
-def shuffle_pairwise_preferences(
-        df: pd.DataFrame, arr_is_shuffle: Sequence[int]) -> pd.DataFrame:
+def shuffle_pairwise_preferences(df: pd.DataFrame, arr_is_shuffle: Sequence[int]) -> pd.DataFrame:
     """Shuffle the outputs of a pairwise preference dataframe.
 
     Examples
@@ -182,8 +164,7 @@ def shuffle_pairwise_preferences(
     df['output_2'] = np.where(arr_is_shuffle, col_1, col_2)
 
     if 'preference' in df.columns:
-        df['preference'] = np.where(arr_is_shuffle, 3 - df['preference'],
-                                    df['preference'])
+        df['preference'] = np.where(arr_is_shuffle, 3 - df['preference'], df['preference'])
 
     return df
 
@@ -202,20 +183,14 @@ class BattlePairSelection:
         # Make sure model_elo_map to be ordered when compare_base is true.
         self.model_elo_map = model_elo_map
 
-    def top_k(self,
-              k: int = DEFAULT_K,
-              compare_base: bool = False,
-              swap: bool = False) -> list:
+    def top_k(self, k: int = DEFAULT_K, compare_base: bool = False, swap: bool = False) -> list:
         if k <= 0:
             k = self.DEFAULT_K
         sorted_res = sorted(self.model_elo_map.items(), key=lambda x: x[1])[:k]
         sorted_res = list(dict(sorted_res).keys())
         return get_battle_pairs_origin(sorted_res, compare_base, swap)
 
-    def random_k(self,
-                 k: int = DEFAULT_K,
-                 compare_base: bool = False,
-                 swap: bool = False) -> list:
+    def random_k(self, k: int = DEFAULT_K, compare_base: bool = False, swap: bool = False) -> list:
         if k <= 0:
             k = self.DEFAULT_K
         if k > len(self.model_elo_map):
@@ -226,21 +201,16 @@ class BattlePairSelection:
         res = list(res.keys())
         return get_battle_pairs_origin(res, compare_base, swap)
 
-    def volatility_index(self,
-                         frac: float = 0.2,
-                         compare_base: bool = False,
-                         swap: bool = False) -> list:
+    def volatility_index(self, frac: float = 0.2, compare_base: bool = False, swap: bool = False) -> list:
         res_list = []
-        candidate_list = get_battle_pairs_origin(
-            list(self.model_elo_map.keys()), compare_base, swap)
+        candidate_list = get_battle_pairs_origin(list(self.model_elo_map.keys()), compare_base, swap)
         for t in candidate_list:
             model_a = t[0]
             model_b = t[1]
             base_elo_a = self.model_elo_map.get(model_a)
             base_elo_b = self.model_elo_map.get(model_b)
 
-            vol_frac = abs(base_elo_b - base_elo_a) / max(
-                base_elo_a, base_elo_b)
+            vol_frac = abs(base_elo_b - base_elo_a) / max(base_elo_a, base_elo_b)
             if vol_frac <= frac:
                 res_list.append(t)
 

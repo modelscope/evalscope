@@ -1,11 +1,10 @@
 import base64
+import json
 import os
 import pickle
 import sqlite3
 import sys
 from datetime import datetime
-
-import json
 from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments
