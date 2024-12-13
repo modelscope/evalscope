@@ -5,20 +5,19 @@ import functools
 import hashlib
 import importlib
 import importlib.util
+import json
+import jsonlines as jsonl
+import numpy as np
 import os
 import random
 import re
 import sys
-from typing import Any, Dict, List, Tuple, Union
-
-import json
-import jsonlines as jsonl
-import numpy as np
 import torch
 import torch.nn.functional as F
 import yaml
+from typing import Any, Dict, List, Tuple, Union
 
-from evalscope.constants import DumpMode, OutputsStructure
+from evalscope.constants import DumpMode
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -86,13 +85,15 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
 
     jsonl_file = os.path.expanduser(jsonl_file)
 
+    if not isinstance(data_list, list):
+        data_list = [data_list]
+
     if dump_mode == DumpMode.OVERWRITE:
         dump_mode = 'w'
     elif dump_mode == DumpMode.APPEND:
         dump_mode = 'a'
     with jsonl.open(jsonl_file, mode=dump_mode) as writer:
         writer.write_all(data_list)
-    logger.info(f'Dump data to {jsonl_file} successfully.')
 
 
 def yaml_to_dict(yaml_file) -> dict:
@@ -115,7 +116,6 @@ def dict_to_yaml(d: dict, yaml_file: str):
     """
     with open(yaml_file, 'w') as f:
         yaml.dump(d, f, default_flow_style=False)
-    logger.info(f'Dump data to {yaml_file} successfully.')
 
 
 def json_to_dict(json_file) -> dict:
@@ -148,25 +148,13 @@ def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
     return functools.partial(obj_cls, *args, **kwargs)
 
 
-def markdown_table(header_l, data_l):
-    md_str = f'| {" | ".join(header_l)} |'
-    md_str += f'\n| {" | ".join(["---"] * len(header_l))} |'
-    for data in data_l:
-        if isinstance(data, str):
-            data = [data]
-        assert len(data) <= len(header_l)
-        tmp = data + [''] * (len(header_l) - len(data))
-        md_str += f'\n| {" | ".join(tmp)} |'
-    return md_str
-
-
 def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
     """Random choice with a (potentially string) seed."""
     return random.Random(seed).choices(choices, k=1, **kwargs)[0]
 
 
-def gen_hash(name: str):
-    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()
+def gen_hash(name: str, bits: int = 32):
+    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
 
 
 def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
@@ -313,14 +301,6 @@ class ResponseParser:
 
 
 def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revision: str):
-    # model_revision = model_revision if model_revision is not None else 'none'
-    # now = datetime.datetime.now()
-    # format_time = now.strftime('%Y%m%d_%H%M%S')
-    # outputs_name = format_time + '_' + 'default' + '_' + model_id.replace('/', '_') + '_' + model_revision
-    # outputs_dir = os.path.join(work_dir, outputs_name)
-    # dataset_name = dataset_id.replace('/', '_')
-    # outputs_dir = os.path.join(work_dir, dataset_name)
-
     if not model_id:
         model_id = 'default'
     model_id = model_id.replace('/', '_')
@@ -328,35 +308,9 @@ def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revisio
     if not model_revision:
         model_revision = 'default'
 
-    outputs_dir = os.path.join(root_dir, f"eval_{'-'.join(datasets)}_{model_id}_{model_revision}")
+    outputs_dir = os.path.join(root_dir, model_id, model_revision, f"eval_{'-'.join(datasets)}")
 
     return outputs_dir
-
-
-def process_outputs_structure(outputs_dir: str, is_make: bool = True) -> dict:
-    logs_dir = os.path.join(outputs_dir, 'logs')
-    predictions_dir = os.path.join(outputs_dir, 'predictions')
-    reviews_dir = os.path.join(outputs_dir, 'reviews')
-    reports_dir = os.path.join(outputs_dir, 'reports')
-    configs_dir = os.path.join(outputs_dir, 'configs')
-
-    if is_make:
-        os.makedirs(outputs_dir, exist_ok=True)
-        os.makedirs(logs_dir, exist_ok=True)
-        os.makedirs(predictions_dir, exist_ok=True)
-        os.makedirs(reviews_dir, exist_ok=True)
-        os.makedirs(reports_dir, exist_ok=True)
-        os.makedirs(configs_dir, exist_ok=True)
-
-    outputs_structure = {
-        OutputsStructure.LOGS_DIR: logs_dir,
-        OutputsStructure.PREDICTIONS_DIR: predictions_dir,
-        OutputsStructure.REVIEWS_DIR: reviews_dir,
-        OutputsStructure.REPORTS_DIR: reports_dir,
-        OutputsStructure.CONFIGS_DIR: configs_dir,
-    }
-
-    return outputs_structure
 
 
 def import_module_util(import_path_prefix: str, module_name: str, members_to_import: list) -> dict:
@@ -442,48 +396,6 @@ def split_str_parts_by(text: str, delimiters: List[str]):
     return text_list
 
 
-def calculate_loss_scale(response: str, use_loss_scale=False) -> Tuple[List[str], List[float]]:
-    """Calculate the loss scale by splitting the agent response.
-    This algorithm comes from paper: https://arxiv.org/pdf/2309.00986.pdf
-    Agent response format:
-    ```text
-        Thought: you should always think about what to do
-        Action: the action to take, should be one of the above tools[fire_recognition,
-            fire_alert, call_police, call_fireman]
-        Action Input: the input to the action
-        Observation: the result of the action
-        ... (this Thought/Action/Action Input/Observation can be repeated zero or more times)
-        Thought: I now know the final answer
-        Final Answer: the final answer to the original input question
-    ```
-    Args:
-        response: The response text
-        use_loss_scale: Use weighted loss. With this, some part of the loss will be enhanced to improve performance.
-    Returns:
-        A tuple of agent response parts and their weights.
-    """
-    if 'Action:' in response and 'Observation:' in response and use_loss_scale:
-        agent_keyword = ['Action:', 'Action Input:', 'Thought:', 'Final Answer:', 'Observation:']
-        agent_parts = split_str_parts_by(response, agent_keyword)
-        weights = []
-        agent_content = []
-        for c in agent_parts:
-            if c['key'] in ('Action:', 'Action Input:'):
-                weights += [2.0]
-                weights += [2.0]
-            elif c['key'] in ('Thought:', 'Final Answer:', ''):
-                weights += [1.0]
-                weights += [1.0]
-            elif c['key'] in ('Observation:', ):
-                weights += [2.0]
-                weights += [0.0]
-            agent_content.append(c['key'])
-            agent_content.append(c['content'])
-        return agent_content, weights
-    else:
-        return [response], [1.0]
-
-
 def get_bucket_sizes(max_length: int) -> List[int]:
     return [max_length // 4 * (i + 1) for i in range(4)]
 
@@ -502,45 +414,6 @@ def _get_closet_bucket(bucket_sizes, data_length):
         cloest_length = data_length
 
     return cloest_length
-
-
-def pad_and_split_batch(padding_to, input_ids, attention_mask, labels, loss_scale, max_length, tokenizer, rank,
-                        world_size):
-    if padding_to is None:
-        longest_len = input_ids.shape[-1]
-        bucket_sizes = get_bucket_sizes(max_length)
-        bucket_data_length = _get_closet_bucket(bucket_sizes, longest_len)
-        padding_length = bucket_data_length - input_ids.shape[1]
-        input_ids = F.pad(input_ids, (0, padding_length), 'constant', tokenizer.pad_token_id)
-        attention_mask = F.pad(attention_mask, (0, padding_length), 'constant', 0)
-        if loss_scale:
-            loss_scale = F.pad(loss_scale, (0, padding_length), 'constant', 0.)
-        labels = F.pad(labels, (0, padding_length), 'constant', -100)
-
-    # manully split the batch to different DP rank.
-    batch_size = input_ids.shape[0] // world_size
-    if batch_size > 0:
-        start = rank * batch_size
-        end = (rank + 1) * batch_size
-        input_ids = input_ids[start:end, :]
-        attention_mask = attention_mask[start:end, :]
-        labels = labels[start:end, :]
-        if loss_scale:
-            loss_scale = loss_scale[start:end, :]
-    return input_ids, attention_mask, labels, loss_scale
-
-
-def get_dist_setting() -> Tuple[int, int, int, int]:
-    """return rank, local_rank, world_size, local_world_size"""
-    rank = int(os.getenv('RANK', -1))
-    local_rank = int(os.getenv('LOCAL_RANK', -1))
-    world_size = int(os.getenv('WORLD_SIZE', 1))
-    local_world_size = int(os.getenv('LOCAL_WORLD_SIZE', 1))
-    return rank, local_rank, world_size, local_world_size
-
-
-def use_torchacc() -> bool:
-    return os.getenv('USE_TORCHACC', '0') == '1'
 
 
 def is_module_installed(module_name):
@@ -576,6 +449,7 @@ def get_valid_list(input_list, candidate_list):
 
 def get_latest_folder_path(work_dir):
     from datetime import datetime
+
     # Get all subdirectories in the work_dir
     folders = [f for f in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, f))]
 

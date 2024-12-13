@@ -70,7 +70,6 @@ generate_testset_task_cfg = {
             "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
-                "template_type": "qwen",
             },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",
@@ -97,7 +96,6 @@ Configuration file description:
     - `generator_llm`: `dict`: Configuration of the generator LLM:
       - If using a local model, supports the following parameters:
         - `model_name_or_path`: `str`: Name or path of the generator model, e.g., "qwen/Qwen2-7B-Instruct" can be automatically downloaded from ModelScope; providing a path will load the model locally.
-        - `template_type`: `str`: Template type, e.g., "qwen".
         - `generation_config`: `dict`: Generation configuration, e.g., `{"temperature": 0.7}`.
       - If using an API model, supports the following parameters:
         - `model_name`: `str`: Name of the custom model.
@@ -237,7 +235,6 @@ eval_task_cfg = {
             "testset_file": "outputs/testset_with_answer.json",
             "critic_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
-                "template_type": "qwen",
             },
             "embeddings": {
                 "model_name_or_path": "AI-ModelScope/m3e-base",

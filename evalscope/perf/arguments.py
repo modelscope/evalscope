@@ -1,9 +1,10 @@
 import argparse
+import json
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import json
+from evalscope.constants import DEFAULT_WORK_DIR
 
 
 @dataclass
@@ -33,7 +34,7 @@ class Arguments:
     name: Optional[str] = None  # Name for the run
 
     # Output settings
-    outputs_dir: str = 'outputs'
+    outputs_dir: str = DEFAULT_WORK_DIR
 
     # Prompt settings
     max_prompt_length: int = sys.maxsize  # Maximum length of the prompt

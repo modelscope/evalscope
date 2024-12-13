@@ -99,7 +99,7 @@ ms-swift启动启动部署：
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct
 ```
 
-ms-swift启动评估评估：
+ms-swift启动评测评测：
 ```shell
 swift eval --eval_url http://127.0.0.1:8000/v1 --eval_dataset ARC_e
 ```

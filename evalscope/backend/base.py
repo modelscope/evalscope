@@ -1,11 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from typing import Union
 
+from evalscope.config import TaskConfig
 from evalscope.utils import yaml_to_dict
 
 
 class BackendManager:
-    def __init__(self, config: Union[str, dict], **kwargs):
+
+    def __init__(self, config: Union[str, dict, TaskConfig], **kwargs):
         """
         BackendManager is the base class for the evaluation backend manager.
         It provides the basic configuration parsing, command generation, task submission, and result fetching.
@@ -15,6 +17,8 @@ class BackendManager:
         """
         if isinstance(config, str):
             self.config_d = yaml_to_dict(config)
+        elif isinstance(config, TaskConfig):
+            self.config_d = config.eval_config
         else:
             self.config_d = config
 

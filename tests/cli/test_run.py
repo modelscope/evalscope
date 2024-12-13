@@ -1,9 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os
 import subprocess
+import torch
 import unittest
-from evalscope.utils import test_level_list, is_module_installed
+
+from evalscope.run import run_task
+from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
+
+os.environ['LOG_LEVEL'] = 'DEBUG'
 
 logger = get_logger()
 
@@ -11,7 +16,7 @@ logger = get_logger()
 class TestRun(unittest.TestCase):
 
     def setUp(self) -> None:
-        logger.info(f'Init env for evalscope native run UTs ...\n')
+        logger.info('Init env for evalscope native run UTs ...\n')
         self._check_env('evalscope')
 
     def tearDown(self) -> None:
@@ -26,14 +31,12 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_simple_eval(self):
-        model = 'ZhipuAI/chatglm3-6b'
-        template_type = 'chatglm3'
+        model = 'qwen/Qwen2-0.5B-Instruct'
         datasets = 'arc'  # arc ceval
-        limit = 100
+        limit = 10
 
-        cmd_simple = f'python3 -m evalscope.run ' \
+        cmd_simple = f'evalscope eval ' \
                      f'--model {model} ' \
-                     f'--template-type {template_type} ' \
                      f'--datasets {datasets} ' \
                      f'--limit {limit}'
 
@@ -46,15 +49,13 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_eval_with_args(self):
-        model = 'ZhipuAI/chatglm3-6b'
-        template_type = 'chatglm3'
-        datasets = 'arc ceval'  # arc ceval
+        model = 'qwen/Qwen2-0.5B-Instruct'
+        datasets = 'arc'  # arc ceval
         limit = 5
         dataset_args = '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}'
 
-        cmd_with_args = f'python3 -m evalscope.run ' \
+        cmd_with_args = f'evalscope eval ' \
                         f'--model {model} ' \
-                        f'--template-type {template_type} ' \
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \
                         f'--generation-config do_sample=false,temperature=0.0 ' \
@@ -68,9 +69,47 @@ class TestRun(unittest.TestCase):
         logger.error(f'>>test_run_eval_with_args stderr: {run_res.stderr}')
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_eval_local(self):
-        ...
+    def test_run_task(self):
+        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct', 'datasets': ['gsm8k'], 'limit': 2, 'debug': False}
+        run_task(task_cfg=task_cfg)
 
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_custom_task(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen/Qwen2-0.5B-Instruct',
+            datasets=['ceval'],  # 数据格式，选择题格式固定为 'ceval'
+            dataset_args={
+                'ceval': {
+                    'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
+                    'subset_list': [
+                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
+                    ]
+                }
+            },
+        )
+        run_task(task_cfg=task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_custom_qa(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen/Qwen2-0.5B-Instruct',
+            datasets=['general_qa'],  # 数据格式，选择题格式固定为 'ceval'
+            dataset_args={
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
+                    'subset_list': [
+                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
+                    ]
+                }
+            },
+        )
+
+        run_task(task_cfg=task_cfg)
 
 if __name__ == '__main__':
     unittest.main()

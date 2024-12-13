@@ -1,11 +1,10 @@
+import aiohttp
 import asyncio
+import json
 import logging
 import time
 from http import HTTPStatus
 from typing import AsyncGenerator, Dict, List, Tuple
-
-import aiohttp
-import json
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.local_server import ServerSentEvent
@@ -33,7 +32,7 @@ class AioHttpClient:
             connector=aiohttp.TCPConnector(limit=1),
             trace_configs=[self._create_trace_config()] if self.debug else [])
         if self.debug:
-            get_logger(log_level=logging.DEBUG)
+            get_logger(log_level=logging.DEBUG, force=True)
 
     def _create_trace_config(self):
         trace_config = aiohttp.TraceConfig()

@@ -225,33 +225,6 @@ task_cfg_dict = {
 :::
 ::::
 
-#### Parameters
-- `eval_backend`: Default value is `VLMEvalKit`, indicating the use of the VLMEvalKit evaluation backend.
-- `eval_config`: A dictionary containing the following fields:
-  - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
-  - `model`: A list of dictionaries; each must contain the following fields:
-    - `type`: The model name for OpenAI API requests.
-      - If deploying with `ms-swift`, set to the value of `--model_type`;
-      - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
-      - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
-    - `name`: Fixed value, must be `CustomAPIModel`.
-    - `api_base`: The URL for the OpenAI API, which is the URL for the model service.
-    - `key`: The OpenAI API key for the model API, default value is `EMPTY`.
-    - `temperature`: Temperature coefficient for model inference; default value is `0.0`.
-    - `img_size`: Image size for model inference; default value is `-1`, indicating the original size; set to other values, e.g., `224`, to resize the image to 224x224.
-    - `video_llm`: A boolean value, defaulting to `False`. When evaluating video datasets, set this to `True` if you need to pass the `video_url` parameter.
-  - `mode`: Options: `['all', 'infer']`; `all` includes inference and evaluation; `infer` only performs inference.
-  - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
-  - `reuse`: Boolean indicating whether to reuse the evaluation, which will delete all temporary evaluation files.
-    ```{note}
-    For `ms-vlmeval>=0.0.11`, the parameter `rerun` has been renamed to `reuse`, with a default value of `False`.
-    ```
-  - `work_dir`: String specifying the directory to save evaluation results, logs, and summaries; default value is `outputs`.
-  - `nproc`: Integer indicating the number of API calls in parallel.
-  - `nframe`: An integer representing the number of video frames in the video dataset, with a default value of `8`.
-  - `fps`: An integer representing the frame rate of the video dataset, with a default value of `-1`, which means to use `nframe`; if set to a value greater than 0, it will use `fps` to calculate the number of video frames.
-  - `use_subtitle`: A boolean value indicating whether the video dataset uses subtitles, with a default value of `False`.
-
 ### Method 2: Local Model Inference Evaluation
 This method does not involve starting a model service; instead, it directly configures model evaluation parameters for local inference.
 
@@ -293,11 +266,40 @@ task_cfg_dict = {
 :::
 ::::
 
-#### Parameters
-The [basic parameters](#parameters) are consistent with the deployed model service evaluation method, but the model parameters differ:
-- `model`: A list of dictionaries where each model requires different fields:
-  - `name`: Model name, refer to the [models supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
-  - `model_path` and other parameters: Refer to the [model parameters supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
+## Parameters
+- `eval_backend`: Default value is `VLMEvalKit`, indicating the use of the VLMEvalKit evaluation backend.
+- `eval_config`: A dictionary containing the following fields:
+  - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
+Certainly! Here's the translated text in English, while maintaining the original formatting:
+
+  - `model`: A list of dictionaries, where each dictionary can specify the following fields:
+    - When using remote API calls:
+      - `api_base`: The URL for the OpenAI API, i.e., the URL of the model service.
+      - `type`: The name of the model for OpenAI API requests.
+        - If deploying with `ms-swift`, set to the value of `--model_type`;
+        - If deploying the model with `vLLM` or `LMDeploy`, set to `model_id`;
+        - If deploying the model with `Ollama`, set to `model_name`, you can check it using the `ollama list` command.
+      - `name`: Fixed value, must be `CustomAPIModel`.
+      - `key`: The OpenAI API key for the model API, default is `EMPTY`.
+      - `temperature`: The temperature coefficient for model inference, default is `0.0`.
+      - `img_size`: The image size for model inference, default is `-1`, which means using the original size; setting it to another value, such as `224`, means scaling the image to 224x224 size.
+      - `video_llm`: Boolean value, default is `False`. When evaluating video datasets, if you need to pass the `video_url` parameter, set it to `True`.
+    - When using local model inference:
+      - `name`: Model name, refer to [Models Supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
+      - `model_path` and other parameters: Refer to [VLMEvalKit Supported Model Parameters](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
+  - `mode`: Options: `['all', 'infer']`; `all` includes inference and evaluation; `infer` only performs inference.
+  - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
+  - `reuse`: Boolean indicating whether to reuse the evaluation, which will delete all temporary evaluation files.
+    ```{note}
+    For `ms-vlmeval>=0.0.11`, the parameter `rerun` has been renamed to `reuse`, with a default value of `False`.
+    ```
+  - `work_dir`: String specifying the directory to save evaluation results, logs, and summaries; default value is `outputs`.
+  - `nproc`: Integer indicating the number of API calls in parallel.
+  - `nframe`: An integer representing the number of video frames in the video dataset, with a default value of `8`.
+  - `fps`: An integer representing the frame rate of the video dataset, with a default value of `-1`, which means to use `nframe`; if set to a value greater than 0, it will use `fps` to calculate the number of video frames.
+  - `use_subtitle`: A boolean value indicating whether the video dataset uses subtitles, with a default value of `False`.
+
+
 
 ### (Optional) Deploy Judge Model
 You can deploy a local language model as a judge/extractor using ms-swift. Refer to the [ms-swift LLM Deployment Guide](https://swift.readthedocs.io/en/latest/Multi-Modal/vllm-inference-acceleration.html).

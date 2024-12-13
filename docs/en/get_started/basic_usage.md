@@ -1,115 +1,203 @@
 # Basic Usage
 
-## 1. Simple Evaluation
-To evaluate a model using default settings on specified datasets, follow the process below:
+## Simple Evaluation
+Evaluate a model on specified datasets using default configurations. This framework supports two ways to initiate evaluation tasks: via command line or using Python code.
+
+### Method 1. Using Command Line
 
 ::::{tab-set}
+:::{tab-item} Use the `eval` command
 
-:::{tab-item} Install using pip
-You can execute this command from any directory:
+Execute the `eval` command from any directory:
 ```bash
-python -m evalscope.run \
- --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
- --datasets arc 
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k arc \
+ --limit 5
 ```
-If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 :::
 
-:::{tab-item} Install from source
-Execute this command in the `evalscope` directory:
+:::{tab-item} Run `run.py`
+
+Execute from the `evalscope` root directory:
 ```bash
 python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
- --datasets arc
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k arc \
+ --limit 5
 ```
-If prompted with `Do you wish to run the custom code? [y/N]`, please type `y`.
 :::
 ::::
 
-### Basic Parameter Descriptions
-- `--model`: Specifies the `model_id` of the model on [ModelScope](https://modelscope.cn/), allowing automatic download. For example, see the [Qwen2-0.5B-Instruct model link](https://modelscope.cn/models/qwen/Qwen2-0.5B-Instruct/summary); you can also use a local path, such as `/path/to/model`.
-- `--template-type`: Specifies the template type corresponding to the model. Refer to the `Default Template` field in the [template table](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm) for filling in this field.
-    ````{note}
-    You can also view the list of `template_type` for models using the following code:
-    ``` python
-    from evalscope.models.template import TemplateType
-    print(TemplateType.get_template_name_list())
-    ```
-    ````
-- `--datasets`: The dataset name, allowing multiple datasets to be specified, separated by spaces; these datasets will be automatically downloaded. Refer to the [supported datasets list](./supported_dataset.md#1-native-supported-datasets) for available options.
+### Method 2. Using Python Code
 
-## 2. Parameterized Evaluation
-If you wish to conduct a more customized evaluation, such as modifying model parameters or dataset parameters, you can use the following commands:
+When using Python code for evaluation, submit the evaluation task with the `run_task` function by passing in a `TaskConfig` as a parameter. It can also be a Python dictionary, a YAML file path, or a JSON file path, for example:
 
-**Example 1:**
-```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --datasets gsm8k ceval \
- --use-cache true \
- --limit 10
+::::{tab-set}
+:::{tab-item} Using Python Dictionary
+
+```python
+from evalscope.run import run_task
+
+task_cfg = {
+    'model': 'Qwen/Qwen2.5-0.5B-Instruct',
+    'datasets': ['gsm8k', 'arc'],
+    'limit': 5
+}
+
+run_task(task_cfg=task_cfg)
+```
+:::
+
+:::{tab-item} Using `TaskConfig`
+
+```python
+from evalscope.run import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['gsm8k', 'arc'],
+    limit=5
+)
+
+run_task(task_cfg=task_cfg)
+```
+:::
+
+:::{tab-item} Using `yaml` file
+
+```{code-block} yaml 
+:caption: config.yaml
+
+model: Qwen/Qwen2.5-0.5B-Instruct
+datasets:
+  - gsm8k
+  - arc
+limit: 5
 ```
 
-**Example 2:**
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.yaml")
+```
+:::
+
+:::{tab-item} Using `json` file
+
+```{code-block} json
+:caption: config.json
+
+{
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "datasets": ["gsm8k", "arc"],
+    "limit": 5
+}
+```
+
+```python
+from evalscope.run import run_task
+
+run_task(task_cfg="config.json")
+```
+:::
+
+::::
+
+
+### Basic Parameter Descriptions
+- `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, for example, [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); it can also be a local path to the model, e.g., `/path/to/model`.
+- `--datasets`: Dataset names, supporting multiple datasets separated by spaces. Datasets will be automatically downloaded from ModelScope; refer to the [Dataset List](./supported_dataset.md#1-native-supported-datasets) for supported datasets.
+- `--limit`: Maximum amount of evaluation data per dataset. If not specified, it defaults to evaluating all data, which can be used for quick validation.
+
+
+### Output Results
+```text
++-----------------------+-------------------+-----------------+
+| Model                 | ai2_arc           | gsm8k           |
++=======================+===================+=================+
+| Qwen2.5-0.5B-Instruct | (ai2_arc/acc) 0.6 | (gsm8k/acc) 0.6 |
++-----------------------+-------------------+-----------------+ 
+```
+
+
+## Complex Evaluation
+For more customized evaluations, like setting custom model parameters or dataset parameters, you can use the following command. The method to initiate evaluation is the same as in simple evaluation. Below is an example using the `eval` command to start the evaluation:
+
 ```shell
-python evalscope/run.py \
- --model qwen/Qwen2-0.5B-Instruct \
- --template-type qwen \
- --generation-config do_sample=false,temperature=0.0 \
- --datasets ceval \
- --dataset-args '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}' \
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --model-args revision=master,precision=torch.float16,device_map=auto \
+ --generation-config do_sample=true,temperature=0.5 \
+ --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
+ --datasets gsm8k \
  --limit 10
 ```
 
 ### Parameter Descriptions
-In addition to the three [basic parameters](#basic-parameter-descriptions), the other parameters are as follows:
-- `--model-args`: Model loading parameters, separated by commas, in `key=value` format.
-- `--generation-config`: Generation parameters, separated by commas, in `key=value` format.
-  - `do_sample`: Whether to use sampling, default is `false`.
-  - `max_new_tokens`: Maximum generation length, default is 1024.
-  - `temperature`: Sampling temperature.
-  - `top_p`: Sampling threshold.
-  - `top_k`: Sampling threshold.
-- `--use-cache`: Whether to use local cache, default is `false`. If set to `true`, previously evaluated model and dataset combinations will not be evaluated again, and will be read directly from the local cache.
-- `--dataset-args`: Evaluation dataset configuration parameters, provided in JSON format, where the key is the dataset name and the value is the parameter; note that these must correspond one-to-one with the values in `--datasets`.
-  - `--few_shot_num`: Number of few-shot examples.
-  - `--few_shot_random`: Whether to randomly sample few-shot data; if not specified, defaults to `true`.
-- `--limit`: Maximum number of evaluation samples per dataset; if not specified, all will be evaluated, which is useful for quick validation.
+- `--model-args`: Model loading parameters, separated by commas in the `key=value` format, default parameters:
+  - `revision`: Model version, defaults to `master`
+  - `precision`: Model precision, defaults to `auto`
+  - `device_map`: Device allocation for the model, defaults to `auto`
+  
+- `--generation-config`: Generation parameters, separated by commas in the `key=value` format, default parameters:
+  - `do_sample`: Whether to use sampling, defaults to `false`
+  - `max_length`: Maximum length, defaults to 2048
+  - `max_new_tokens`: Maximum length for generation, defaults to 512
+  
+- `--dataset-args`: Settings parameters for the evaluation dataset, provided in `json` format, where the key is the dataset name and the value is the parameter. Note that these must correspond one-to-one with the values in the `--datasets` parameter:
+  - `few_shot_num`: Number of few-shot samples
+  - `few_shot_random`: Whether to randomly sample few-shot data; if not set, defaults to `true`
 
-## 3. Use the run_task Function to Submit an Evaluation Task
-Using the `run_task` function to submit an evaluation task requires the [same parameters](#parameter-descriptions) as the command line. You need to pass a dictionary as the parameter, which includes the following fields:
-
-### 1. Configuration Task Dictionary Parameters
-```python
-import torch
-from evalscope.constants import DEFAULT_ROOT_CACHE_DIR
-
-# Example
-your_task_cfg = {
-        'model_args': {'revision': None, 'precision': torch.float16, 'device_map': 'auto'},
-        'generation_config': {'do_sample': False, 'repetition_penalty': 1.0, 'max_new_tokens': 512},
-        'dataset_args': {},
-        'dry_run': False,
-        'model': 'qwen/Qwen2-0.5B-Instruct',
-        'template_type': 'qwen',
-        'datasets': ['arc', 'hellaswag'],
-        'work_dir': DEFAULT_ROOT_CACHE_DIR,
-        'outputs': DEFAULT_ROOT_CACHE_DIR,
-        'mem_cache': False,
-        'dataset_hub': 'ModelScope',
-        'dataset_dir': DEFAULT_ROOT_CACHE_DIR,
-        'limit': 10,
-        'debug': False
-    }
+```{seealso}
+Reference: [All Parameter Descriptions](parameters.md)
 ```
-Here, `DEFAULT_ROOT_CACHE_DIR` is set to `'~/.cache/evalscope'`.
 
-### 2. Execute Task with run_task
-```python
-from evalscope.run import run_task
-run_task(task_cfg=your_task_cfg)
+### Output Results
+
+```text
++-----------------------+-----------------+
+| Model                 | gsm8k           |
++=======================+=================+
+| Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
++-----------------------+-----------------+
+```
+
+## Using Local Datasets and Models
+
+By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:
+
+Assume the current local working path is `/path/to/workdir`.
+
+### Download the Dataset Locally
+Execute the following commands:
+```shell
+wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
+unzip data.zip
+```
+The extracted dataset will be in the `/path/to/workdir/data` directory. This directory will be passed as the value of the `local_path` parameter in subsequent steps.
+
+### Download the Model Locally
+Model files are hosted on the ModelScope Hub and require internet access for loading. If you need to create evaluation tasks in an offline environment, you can download the model to your local machine in advance:
+
+For example, use Git to download the Qwen2.5-0.5B-Instruct model locally:
+```bash
+git lfs install
+git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+```
+
+```{seealso}
+[ModelScope Model Download Guide](https://modelscope.cn/docs/models/download)
+```
+
+### Execute Evaluation Task
+Run the following command to perform the evaluation, passing in the local dataset path and model path. Note that `local_path` must correspond one-to-one with the values in the `--datasets` parameter:
+
+```shell
+evalscope eval \
+ --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
+ --datasets arc \
+ --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --limit 10
 ```
