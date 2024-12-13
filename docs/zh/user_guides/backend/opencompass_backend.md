@@ -2,7 +2,7 @@
 
 # OpenCompass
 
-为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评估任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评估任务。同时，我们先期开放了基于OpenAI API格式的接口评估任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，来拉起模型推理服务。
+为便于使用OpenCompass 评测后端，我们基于OpenCompass源码做了定制，命名为`ms-opencompass`，该版本在原版基础上对评测任务的配置和执行做了一些优化，并支持pypi安装方式，使得用户可以通过EvalScope发起轻量化的OpenCompass评测任务。同时，我们先期开放了基于OpenAI API格式的接口评测任务，您可以使用[ms-swift](https://github.com/modelscope/swift)、[vLLM](https://github.com/vllm-project/vllm)、[LMDeploy](https://github.com/InternLM/lmdeploy)、[Ollama](https://ollama.ai/)等模型服务，来拉起模型推理服务。
 
 ## 1. 环境准备
 ```shell
@@ -103,7 +103,7 @@ unzip eval_data.zip
 
 
 ## 3. 部署模型服务
-OpenCompass 评测后端使用统一的OpenAI API调用来进行评估，因此我们需要进行模型部署。
+OpenCompass 评测后端使用统一的OpenAI API调用来进行评测，因此我们需要进行模型部署。
 
 下面介绍四种方式部署模型服务：
 ::::{tab-set}
@@ -203,7 +203,7 @@ ollama create llama3 -f ./Modelfile
 ::::
 
 
-## 4. 模型评估
+## 4. 模型评测
 
 ### 配置文件
 有如下三种方式编写配置文件：
@@ -284,7 +284,7 @@ eval_config:
     - `openai_api_base`：OpenAI API 的URL。
     - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型。
     - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
-  - `work_dir`：字符串，保存评估结果、日志和摘要的目录。默认值为 `outputs/default`。
+  - `work_dir`：字符串，保存评测结果、日志和摘要的目录。默认值为 `outputs/default`。
   - `limit`： 可以是 `int`、`float` 或 `str`，例如 5、5.0 或 `'[10:20]'`。默认值为 `None`，表示运行所有示例。
 
 有关其他可选属性，请参考 `opencompass.cli.arguments.ApiModelConfig`。

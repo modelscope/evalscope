@@ -6,9 +6,6 @@ from evalscope.cli.base import CLICommand
 from evalscope.perf.arguments import add_argument
 from evalscope.perf.main import run_perf_benchmark
 
-current_path = os.path.dirname(os.path.abspath(__file__))
-root_path = os.path.dirname(current_path)
-
 
 def subparser_func(args):
     """ Function which will be called for a specific sub parser.

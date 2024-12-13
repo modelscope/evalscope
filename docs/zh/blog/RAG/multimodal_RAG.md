@@ -1,16 +1,16 @@
 (multimodal_rag)=
 
-# 打破文本边界：如何进行多模态RAG评估
+# 打破文本边界：如何进行多模态RAG评测
 
 ## 整体介绍
 
 在现代信息处理与检索系统中，如何有效地从这些包括了文本，图像，视频等多模态混合内容中，提取和利用信息是一个重要的研究方向。一般的检索增强生成（RAG，Retrieval-Augmented Generation）方法主要依赖于文本数据，常常忽略了图像中的丰富信息。多模态大型语言模型（MLLM）的出现.为这一问题提供了新的解决方案。例如，GPT-4o和Qwen-VL等多模态大模型，不仅能够理解和生成自然语言，还能解释和描述图像内容，为RAG系统在处理多模态内容时带来了新的可能性。伴之而来的问题，是如何确保多模态RAG系统在实际应用中的有效性和可靠性。
 
-本文多模态RAG使用[EvalScope](https://github.com/modelscope/evalscope)， Ragas等框架，提供一套完整的多模态RAG评估实践指南，协助开发者全面评估图文多模态RAG流程。
+本文多模态RAG使用[EvalScope](https://github.com/modelscope/evalscope)， Ragas等框架，提供一套完整的多模态RAG评测实践指南，协助开发者全面评测图文多模态RAG流程。
 
-### 评估流程
+### 评测流程
 
-本文所使用的多模态RAG流程和评估流程如下：
+本文所使用的多模态RAG流程和评测流程如下：
 
 ![image](./images/rag_pipeline.png)
 
@@ -20,23 +20,23 @@
     
 3.  检索增强生成：使用相似性搜索来检索图像和文本，并将召回结果传递给多模态LLM进行答案生成。
     
-4.  评估模型生成结果：使用EvalScope框架，将**用户输入**、**检索上下文**、**模型输出**和**标准答案(可选)** 这四部分输入给法官大模型，模型将根据给定的指标评估整个RAG生成的效果。
+4.  评测模型生成结果：使用EvalScope框架，将**用户输入**、**检索上下文**、**模型输出**和**标准答案(可选)** 这四部分输入给法官大模型，模型将根据给定的指标评测整个RAG生成的效果。
     
 
-### 评估指标
+### 评测指标
 
-EvalScope支持RAG和多模态RAG的**独立评估**和**端到端评估**：
+EvalScope支持RAG和多模态RAG的**独立评测**和**端到端评测**：
 
-*   **独立评估**：单独评估检索模块，评估指标包括指标包括 **命中率**(Hit Rate)、**平均排名倒数**(Mean Reciprocal Rank, MRR)、**归一化折扣累积增益**(Normalized Discounted Cumulative Gain, NDCG)、**准确率**(Precision) 等，这些指标用于测量系统在根据查询或任务排名项目方面的有效性。
+*   **独立评测**：单独评测检索模块，评测指标包括指标包括 **命中率**(Hit Rate)、**平均排名倒数**(Mean Reciprocal Rank, MRR)、**归一化折扣累积增益**(Normalized Discounted Cumulative Gain, NDCG)、**准确率**(Precision) 等，这些指标用于测量系统在根据查询或任务排名项目方面的有效性。
     
-*   **端到端评估**：评估RAG模型对给定输入生成的输出内容，包括模型生成答案与输入查询的相关性和对齐程度。从内容生成目标视角来评估可以将评估划分为**无参考答案**和**有参考答案**：无参考答案评估指标包括**上下文相关性**(Context Relevance)、**忠实度**(Faithfulness) 等；而有参考答案评估指标包括**正确性**(Answer Correctness)、**BLEU**、**ROUGE**等。
+*   **端到端评测**：评测RAG模型对给定输入生成的输出内容，包括模型生成答案与输入查询的相关性和对齐程度。从内容生成目标视角来评测可以将评测划分为**无参考答案**和**有参考答案**：无参考答案评测指标包括**上下文相关性**(Context Relevance)、**忠实度**(Faithfulness) 等；而有参考答案评测指标包括**正确性**(Answer Correctness)、**BLEU**、**ROUGE**等。
     
 
 :::
-注意：**本文主要介绍多模态RAG的端到端生成评估**，如果想要进行CLIP模型检索性能的评估，可以参考EvalScope所支持的[CLIP Benchmark](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/clip_benchmark.html#clip-benchmark)，提供自定义图文检索评估支持。
+注意：**本文主要介绍多模态RAG的端到端生成评测**，如果想要进行CLIP模型检索性能的评测，可以参考EvalScope所支持的[CLIP Benchmark](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/clip_benchmark.html#clip-benchmark)，提供自定义图文检索评测支持。
 :::
 
-下面详细介绍本文评估所使用指标及其计算方法：
+下面详细介绍本文评测所使用指标及其计算方法：
 
 #### 忠实度 
 
@@ -87,7 +87,7 @@ EvalScope支持RAG和多模态RAG的**独立评估**和**端到端评估**：
 
 #### 正确性
 
-> 评估涉及将**模型输出**与**标准答案**进行比对，以衡量其**准确性**。评分范围从0到1，分数越高，表示生成的回答与标准答案的匹配度越高，正确性更好。该指标不涉及图像模态。
+> 评测涉及将**模型输出**与**标准答案**进行比对，以衡量其**准确性**。评分范围从0到1，分数越高，表示生成的回答与标准答案的匹配度越高，正确性更好。该指标不涉及图像模态。
 
 
 :::{card} 
@@ -121,21 +121,21 @@ $$\text{F1 Score} = {|\text{TP}| \over {(|\text{TP}| + 0.5 \times (|\te
 因此，低正确性回答的F1 score为0.5，而高正确性回答的F1为1。
 :::
 
-更多常见评估指标可参考[EvalScope使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html#id5)。
+更多常见评测指标可参考[EvalScope使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html#id5)。
 
 ---
 
-下面将详细介绍如何获得评估数据以及如何使用EvalScope进行评估：
+下面将详细介绍如何获得评测数据以及如何使用EvalScope进行评测：
 
 ## 环境准备
 
 请安装以下依赖包，
 
 ```python
-pip install evalscope[rag] # 提供RAG评估依赖
+pip install evalscope[rag] # 提供RAG评测依赖
 ```
 
-## 评估数据准备
+## 评测数据准备
 
 本教程使用[《常见植物彩图册》](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/sub_plants.pdf)作为数据来源，其中包含800多张植物图片，本文节选其中“大田作物类”章节，共42页pdf文档作为示例，本文只使用其中的图片。当然，您也可以跳过下面的**文档解析**步骤，直接从modelscope下载并使用该[数据集](https://modelscope.cn/datasets/modelscope/plants-image)：
 
@@ -369,9 +369,9 @@ class RAGPipeline:
 
 这段代码实现了一个多模态（图像和文本）检索的RAG流程，代码包含了初始化、分离图像和文本、生成提示信息、显示图像、检查base64编码、执行检索与生成回答、显示结果以及保存案例数据的功能。
 
-### 获得评估数据
+### 获得评测数据
 
-运行下面这段代码即可得到多模态RAG评估所需要的数据，这里我们使用`qwen-vl-plus`作为生成模型：
+运行下面这段代码即可得到多模态RAG评测所需要的数据，这里我们使用`qwen-vl-plus`作为生成模型：
 
 ```python
 from evalscope.backend.rag_eval import LLM
@@ -422,24 +422,24 @@ for prompt in ["玉米", "西兰花", "洋芋", "水稻", "汽车"]:
 
 *   **reference（标准答案），可选字段**
     
-    *   在评估答案正确性时需要该字段，可以使用GPT-4o等模型来模拟生成。
+    *   在评测答案正确性时需要该字段，可以使用GPT-4o等模型来模拟生成。
         
 
-## 多模态RAG评估
+## 多模态RAG评测
 
-对图文多模态RAG流程进行端到端的性能评估，是确保模型能够准确、有效地响应用户查询的至关重要的一个步骤。接下来我们使用EvalScope框架来执行一系列的评估任务。
+对图文多模态RAG流程进行端到端的性能评测，是确保模型能够准确、有效地响应用户查询的至关重要的一个步骤。接下来我们使用EvalScope框架来执行一系列的评测任务。
 
-### 配置评估参数
+### 配置评测参数
 
-在执行评估任务之前需要配置一系列参数，具体如下：
+在执行评测任务之前需要配置一系列参数，具体如下：
 
-*   指定了评估后端为 `RAGEval`，使用开源的 `RAGAS` 工具，并配置了测试集文件路径。
+*   指定了评测后端为 `RAGEval`，使用开源的 `RAGAS` 工具，并配置了测试集文件路径。
     
-*   评估使用的评估法官模型为通过API调用的 `qwen-vl-max` ；嵌入模型为`AI-ModelScope/bge-large-zh`，该模型可自动从ModelScope加载。
+*   评测使用的评测法官模型为通过API调用的 `qwen-vl-max` ；嵌入模型为`AI-ModelScope/bge-large-zh`，该模型可自动从ModelScope加载。
     
-*   定义了使用的评估指标，包括多模态忠实度 (`MultiModalFaithfulness`) 、多模态相关性 (`MultiModalRelevance`)和回答正确性（`AnswerCorrectness`），我们已经把这些多模态评估指标都贡献到了`RAGAS` 工具里。
+*   定义了使用的评测指标，包括多模态忠实度 (`MultiModalFaithfulness`) 、多模态相关性 (`MultiModalRelevance`)和回答正确性（`AnswerCorrectness`），我们已经把这些多模态评测指标都贡献到了`RAGAS` 工具里。
     
-*   设定评估语言为中文，框架会自动将prompt翻译为目标语言。
+*   设定评测语言为中文，框架会自动将prompt翻译为目标语言。
     
 
 ```python
@@ -468,9 +468,9 @@ multi_modal_task_cfg = {
 }
 ```
 
-### 执行评估
+### 执行评测
 
-运行如下代码即可完成评估：
+运行如下代码即可完成评测：
 
 ```python
 from evalscope.run import run_task
@@ -490,7 +490,7 @@ run_task(task_cfg=multi_modal_task_cfg)
 
 本案例中的**参考答案**由GPT-4o生成。
 
-下面分析一下评估结果：
+下面分析一下评测结果：
 
 *   根据答案正确性来看，模型的回答都有良好的正确性，正确描述了图片中的相关特征，包括第5个问题和图像不相关的案例。
     
@@ -501,4 +501,4 @@ run_task(task_cfg=multi_modal_task_cfg)
 
 ## 总结
 
-多模态RAG系统的评估，与基于纯文本的RAG系统评估比较，有其独特的特点与挑战。通过选取组合不同模型，以及利用EvalScope，RAGAS，Langchain等开源框架，使得我们能够较为全面的评估多模态RAG系统的忠实度、相关性和正确性等指标，从而反映多模态RAG流程生成的性能。本文的实践总结，希望通过具体的场景例子，分析各个组件在这个链路上的作用，从而帮助更多的开发者来根据其实际场景，来针对性的改进多模态RAG流程，从而实现多模态RAG任务的真正落地应用。
+多模态RAG系统的评测，与基于纯文本的RAG系统评测比较，有其独特的特点与挑战。通过选取组合不同模型，以及利用EvalScope，RAGAS，Langchain等开源框架，使得我们能够较为全面的评测多模态RAG系统的忠实度、相关性和正确性等指标，从而反映多模态RAG流程生成的性能。本文的实践总结，希望通过具体的场景例子，分析各个组件在这个链路上的作用，从而帮助更多的开发者来根据其实际场景，来针对性的改进多模态RAG流程，从而实现多模态RAG任务的真正落地应用。
