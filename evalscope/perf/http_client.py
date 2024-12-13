@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import json
-import logging
 import time
 from http import HTTPStatus
 from typing import AsyncGenerator, Dict, List, Tuple
@@ -20,7 +19,6 @@ class AioHttpClient:
         args: Arguments,
     ):
         self.url = args.url
-        self.debug = args.debug
         self.headers = {'user-agent': 'modelscope_bench', **(args.headers or {})}
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
@@ -30,9 +28,7 @@ class AioHttpClient:
                 connect=self.connect_timeout,
                 sock_read=self.read_timeout),
             connector=aiohttp.TCPConnector(limit=1),
-            trace_configs=[self._create_trace_config()] if self.debug else [])
-        if self.debug:
-            get_logger(log_level=logging.DEBUG, force=True)
+            trace_configs=[self._create_trace_config()] if args.debug else [])
 
     def _create_trace_config(self):
         trace_config = aiohttp.TraceConfig()
