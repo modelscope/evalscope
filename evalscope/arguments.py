@@ -56,8 +56,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--limit', type=int, default=None, help='Max evaluation samples num for each subset.')
 
     # Cache and working directory arguments
-    parser.add_argument(
-        '--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501
+    parser.add_argument('--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501
     parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
 
