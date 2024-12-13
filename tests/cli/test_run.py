@@ -31,11 +31,11 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_simple_eval(self):
-        model = 'ZhipuAI/chatglm3-6b'
+        model = 'qwen/Qwen2-0.5B-Instruct'
         datasets = 'arc'  # arc ceval
         limit = 100
 
-        cmd_simple = f'python3 -m evalscope.run ' \
+        cmd_simple = f'evalscope eval ' \
                      f'--model {model} ' \
                      f'--datasets {datasets} ' \
                      f'--limit {limit}'
@@ -49,12 +49,12 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_eval_with_args(self):
-        model = 'ZhipuAI/chatglm3-6b'
-        datasets = 'arc ceval'  # arc ceval
+        model = 'qwen/Qwen2-0.5B-Instruct'
+        datasets = 'arc'  # arc ceval
         limit = 5
         dataset_args = '{"ceval": {"few_shot_num": 0, "few_shot_random": false}}'
 
-        cmd_with_args = f'python3 -m evalscope.run ' \
+        cmd_with_args = f'evalscope eval ' \
                         f'--model {model} ' \
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \

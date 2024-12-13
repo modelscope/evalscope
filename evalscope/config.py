@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
-from evalscope.utils import json_to_dict, yaml_to_dict
+from evalscope.utils import dict_to_yaml, gen_hash, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -75,6 +75,15 @@ class TaskConfig:
         if isinstance(other, TaskConfig):
             other = other.to_dict()
         self.__dict__.update(other)
+
+    def dump_yaml(self, output_dir: str):
+        """Dump the task configuration to a YAML file."""
+        task_cfg_file = os.path.join(output_dir, f'task_config_{gen_hash(str(self), bits=6)}.yaml')
+        try:
+            logger.info(f'Dump task config to {task_cfg_file}')
+            dict_to_yaml(self.to_dict(), task_cfg_file)
+        except Exception as e:
+            logger.warning(f'Failed to dump overall task config: {e}')
 
     @staticmethod
     def list():
