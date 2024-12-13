@@ -1,40 +1,19 @@
 import asyncio
 
+from ragas.llms import BaseRagasLLM
+from ragas.testset.graph import KnowledgeGraph
 from ragas.testset.synthesizers.multi_hop import MultiHopAbstractQuerySynthesizer, MultiHopSpecificQuerySynthesizer
 from ragas.testset.synthesizers.single_hop.specific import SingleHopSpecificQuerySynthesizer
 
 from .translate_prompt import translate_prompts
 
 
-def get_distribution(llm, distribution, language):
+def default_query_distribution(llm: BaseRagasLLM, kg: KnowledgeGraph, language: str):
+    """
+    Generates a distribution of query synthesizers, optionally tailored to a
+        specific knowledge graph (KG) and translated into a given language.
+    """
 
-    single_hop = SingleHopSpecificQuerySynthesizer(llm=llm)
-    multi_hop_abs = MultiHopAbstractQuerySynthesizer(llm=llm)
-    multi_hop_spec = MultiHopSpecificQuerySynthesizer(llm=llm)
-
-    asyncio.run(
-        translate_prompts(
-            prompts=[
-                single_hop,
-                multi_hop_abs,
-                multi_hop_spec,
-            ],
-            target_lang=language,
-            llm=llm,
-            adapt_instruction=True,
-        ))
-
-    mapping = {
-        'simple': single_hop,
-        'multi_context': multi_hop_abs,
-        'reasoning': multi_hop_spec,
-    }
-
-    return [(mapping[key], distribution[key]) for key in mapping if key in distribution]
-
-
-def default_query_distribution(llm, kg, language):
-    """ """
     single_hop = SingleHopSpecificQuerySynthesizer(llm=llm)
     multi_hop_abs = MultiHopAbstractQuerySynthesizer(llm=llm)
     multi_hop_spec = MultiHopSpecificQuerySynthesizer(llm=llm)
