@@ -16,7 +16,7 @@ logger = get_logger()
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
-DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'auto', 'device': 'auto'}
+DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'torch.float16', 'device': 'auto'}
 DEFAULT_GENERATION_CONFIG = {
     'max_length': 2048,
     'max_new_tokens': 512,

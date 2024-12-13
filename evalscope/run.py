@@ -123,10 +123,6 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
             'DeprecatedWarning: template_type is deprecated, please use `--chat-template` for custom chat template instead.'  # noqa: E501
         )
 
-    model_precision = model_args.get('precision', 'auto')
-    if isinstance(model_precision, str) and model_precision != 'auto':
-        model_precision = eval(model_precision)
-
     # Get outputs directory
     outputs = OutputsStructure(outputs_dir=work_dir)
 
@@ -148,6 +144,10 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     else:
         model_id: str = model
         model_revision: str = model_args.get('revision', DEFAULT_MODEL_REVISION)
+
+    model_precision = model_args.get('precision', torch.float16)
+    if isinstance(model_precision, str) and model_precision != 'auto':
+        model_precision = eval(model_precision)
 
     eval_results = dict()
     for dataset_name in datasets:
