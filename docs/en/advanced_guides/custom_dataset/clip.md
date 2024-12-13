@@ -1,7 +1,5 @@
 # CLIP Model
 
-This framework supports custom evaluation datasets, which can be prepared and configured in the following format to perform assessments.
-
 ## Custom Image-Text Retrieval Dataset
 
 ### 1. Prepare the Dataset
