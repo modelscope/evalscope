@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import unittest
 
 from evalscope.perf.main import run_perf_benchmark
@@ -49,6 +51,8 @@ class TestPerf(unittest.TestCase):
             'model': 'qwen2.5',
             'api': 'openai',
             'dataset': 'speed_benchmark',
+            'min_tokens': 2048,
+            'max_tokens': 2048,
             'debug': True,
         }
         run_perf_benchmark(task_cfg)
