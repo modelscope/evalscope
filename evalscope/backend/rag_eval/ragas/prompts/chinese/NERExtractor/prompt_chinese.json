@@ -1,8 +1,8 @@
 {
-  "ragas_version": "0.2.5",
-  "original_hash": -7036736759899743798,
+  "ragas_version": "0.2.7",
+  "original_hash": -677862064343016555,
   "language": "chinese",
-  "instruction": "从给定文本中提取命名实体，限制输出为最重要的实体。确保实体数量不超过指定的最大值。",
+  "instruction": "从给定文本中提取命名实体，限制输出为顶级实体。确保实体数量不超过指定的最大值。",
   "examples": [
     {
       "input": {
