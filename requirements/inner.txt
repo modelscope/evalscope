@@ -4,7 +4,6 @@ alibaba_itag_sdk
 dashscope
 editdistance
 jsonlines
-jsonlines
 nltk
 openai
 pandas==1.5.3

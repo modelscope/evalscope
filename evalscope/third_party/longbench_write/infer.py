@@ -1,24 +1,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) ZhipuAI, Inc. and its affiliates.
 
-import os
 import json
+import numpy as np
+import os
+import random
+import torch
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+from tqdm import tqdm
 from typing import List
 
-import torch
-import numpy as np
-import random
-from modelscope import AutoTokenizer, AutoModelForCausalLM
-from tqdm import tqdm
-
-from evalscope.third_party.longbench_write.utils import count_words
 from evalscope.models.api import OpenaiApi
+from evalscope.third_party.longbench_write.utils import count_words
 from evalscope.utils import get_logger
 
 logger = get_logger()
 
 DEFAULT_PROC_NUM = 8
-
 """
 This script is used to generate predictions for the LongWriter model.
 Refer to https://github.com/THUDM/LongWriter for more details.
@@ -32,9 +30,9 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
 
     for dt in tqdm(data, total=len(data), desc=f'Infer on rank-{rank}: '):
         prompt = dt['prompt']
-        if "llama" in path.lower():
-            prompt = f"[INST]{prompt}[/INST]"
-            input = tokenizer(prompt, truncation=False, return_tensors="pt").to(device)
+        if 'llama' in path.lower():
+            prompt = f'[INST]{prompt}[/INST]'
+            input = tokenizer(prompt, truncation=False, return_tensors='pt').to(device)
             context_length = input.input_ids.shape[-1]
             output = model.generate(
                 **input,
@@ -45,10 +43,10 @@ def get_pred(rank, world_size, data, path, max_new_tokens, temperature, tokenize
             )[0]
             response = tokenizer.decode(output[context_length:], skip_special_tokens=True)
         else:
-            response, history = model.chat(tokenizer, prompt, history=[], max_new_tokens=max_new_tokens,
-                                           temperature=temperature)
-        dt["response_length"], _ = count_words(response)
-        dt["response"] = response
+            response, history = model.chat(
+                tokenizer, prompt, history=[], max_new_tokens=max_new_tokens, temperature=temperature)
+        dt['response_length'], _ = count_words(response)
+        dt['response'] = response
 
         logger.info(dt)
 
@@ -125,12 +123,14 @@ def seed_everything(seed):
 #     return f'{model_id_path}/pred.jsonl'
 
 
-def run_infer(model: str,
-              data_path: str,
-              output_dir: str,
-              api_config: dict,
-              generation_kwargs: dict = None,
-              enable: bool = True, ):
+def run_infer(
+    model: str,
+    data_path: str,
+    output_dir: str,
+    api_config: dict,
+    generation_kwargs: dict = None,
+    enable: bool = True,
+):
     """
     Process inference for LongWriter model.
 
@@ -171,19 +171,22 @@ def run_infer(model: str,
 
     logger.info(f'Input example: {data_list[0]}')
 
-    api_client = OpenaiApi(model=model,
-                           openai_api_key=None,
-                           openai_api_base=api_config.get('openai_api_base', 'http://127.0.0.1:8000/v1/chat/completions'),
-                           max_new_tokens=generation_kwargs.get('max_new_tokens', 4096),
-                           temperature=generation_kwargs.get('temperature', 0.0),
-                           repetition_penalty=generation_kwargs.get('repetition_penalty', 1.0),
-                           is_chat=api_config.get('is_chat', True),
-                           verbose=api_config.get('verbose', False),
-                           )
+    api_client = OpenaiApi(
+        model=model,
+        openai_api_key=None,
+        openai_api_base=api_config.get('openai_api_base', 'http://127.0.0.1:8000/v1/chat/completions'),
+        max_new_tokens=generation_kwargs.get('max_new_tokens', 4096),
+        temperature=generation_kwargs.get('temperature', 0.0),
+        repetition_penalty=generation_kwargs.get('repetition_penalty', 1.0),
+        is_chat=api_config.get('is_chat', True),
+        verbose=api_config.get('verbose', False),
+    )
 
     # TODO: ONLY FOR TEST  generate_simple
     results: List[str] = api_client.generate_simple(inputs=[example['prompt'] for example in data_list])
-    assert len(results) == len(data_list), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
+    assert len(results) == len(
+        data_list
+    ), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
     logger.info(f'Finish generating predictions with {len(data_list)} samples for {model}')
 
     # Outputs
@@ -191,8 +194,8 @@ def run_infer(model: str,
     output_pred_file: str = f'{model_id_path}/pred.jsonl'
     with open(output_pred_file, 'w', encoding='utf-8') as f:
         for dt, res in zip(data_list, results):
-            dt["response_length"], _ = count_words(res)
-            dt["response"] = res
+            dt['response_length'], _ = count_words(res)
+            dt['response'] = res
             f.write(json.dumps(dt, ensure_ascii=False) + '\n')
 
     logger.info(f'Predictions are saved in {output_pred_file}')
@@ -202,16 +205,19 @@ def run_infer(model: str,
 
 if __name__ == '__main__':
     # ZhipuAI/LongWriter-glm4-9b, ZhipuAI/LongWriter-llama3.1-8b
-    api_config = dict(openai_api_key=None,
-                      openai_api_base='http://127.0.0.1:8000/v1/chat/completions',
-                      is_chat=True,
-                      verbose=True,)
+    api_config = dict(
+        openai_api_key=None,
+        openai_api_base='http://127.0.0.1:8000/v1/chat/completions',
+        is_chat=True,
+        verbose=True,
+    )
 
-    run_infer(model='ZhipuAI/LongWriter-glm4-9b',
-              data_path='resources/longbench_write.jsonl',
-              output_dir='outputs',
-              api_config=api_config,
-              generation_kwargs=dict({
-                      'max_new_tokens': 32768,
-                      'temperature': 0.5})
-              )
+    run_infer(
+        model='ZhipuAI/LongWriter-glm4-9b',
+        data_path='resources/longbench_write.jsonl',
+        output_dir='outputs',
+        api_config=api_config,
+        generation_kwargs=dict({
+            'max_new_tokens': 32768,
+            'temperature': 0.5
+        }))

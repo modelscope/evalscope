@@ -1,7 +1,6 @@
+import json
 import subprocess
 from typing import Any, Dict, Iterator, List
-
-import json
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

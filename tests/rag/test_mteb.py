@@ -2,9 +2,10 @@
 
 import subprocess
 import unittest
-from evalscope.utils import test_level_list, is_module_installed
-from evalscope.utils.logger import get_logger
+
 from evalscope.run import run_task
+from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 

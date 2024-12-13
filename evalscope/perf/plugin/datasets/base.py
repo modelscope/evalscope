@@ -1,8 +1,7 @@
+import json
 import sys
 from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Tuple
-
-import json
 
 from evalscope.perf.arguments import Arguments
 

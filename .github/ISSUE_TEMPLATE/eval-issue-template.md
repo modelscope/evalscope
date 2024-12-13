@@ -14,7 +14,7 @@ assignees: ''
 ## 使用的工具 / Tools Used
 - [ ] Native / 原生框架
 - [ ] Opencompass backend
-- [ ] VLMEvalKit backend 
+- [ ] VLMEvalKit backend
 - [ ] RAGEval backend
 - [ ] Perf / 模型推理压测工具
 - [ ] Arena  /竞技场模式

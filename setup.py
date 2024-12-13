@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from setuptools import find_packages, setup
+
 import os
 import sys
-from setuptools import find_packages, setup
 
 
 def readme():

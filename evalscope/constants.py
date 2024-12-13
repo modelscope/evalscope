@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-
 from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 

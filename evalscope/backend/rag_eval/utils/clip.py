@@ -1,11 +1,10 @@
 import os
-from typing import List
-
 import torch
 import torch.nn.functional as F
 from langchain_core.embeddings import Embeddings
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
+from typing import List
 
 from evalscope.backend.rag_eval.utils.tools import PIL_to_base64, download_model
 from evalscope.constants import HubType
@@ -31,8 +30,8 @@ class VisionModel:
 class VLMAPI:
 
     def __init__(self, model_name, openai_api_base, openai_api_key, prompt=None):
-        from langchain_openai import ChatOpenAI
         from langchain_core.prompts import ChatPromptTemplate
+        from langchain_openai import ChatOpenAI
 
         self.model_name = model_name
         self.model = ChatOpenAI(

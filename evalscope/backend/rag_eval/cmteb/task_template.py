@@ -1,8 +1,8 @@
-import os
 import mteb
-from evalscope.backend.rag_eval import EmbeddingModel
-from evalscope.backend.rag_eval import cmteb
+import os
 from mteb.task_selection import results_to_dataframe
+
+from evalscope.backend.rag_eval import EmbeddingModel, cmteb
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -19,8 +19,8 @@ def show_results(output_folder, model, results):
         model_name,
         revision,
     )
-    logger.info(f"Evaluation results:\n{results_df.to_markdown()}")
-    logger.info(f"Evaluation results saved in {os.path.abspath(save_path)}")
+    logger.info(f'Evaluation results:\n{results_df.to_markdown()}')
+    logger.info(f'Evaluation results saved in {os.path.abspath(save_path)}')
 
 
 def one_stage_eval(
@@ -29,18 +29,16 @@ def one_stage_eval(
 ) -> None:
     # load model
     model = EmbeddingModel.load(**model_args)
-    custom_dataset_path = eval_args.pop("dataset_path", None)
+    custom_dataset_path = eval_args.pop('dataset_path', None)
     # load task first to update instructions
-    tasks = cmteb.TaskBase.get_tasks(
-        task_names=eval_args["tasks"], dataset_path=custom_dataset_path
-    )
+    tasks = cmteb.TaskBase.get_tasks(task_names=eval_args['tasks'], dataset_path=custom_dataset_path)
     evaluation = mteb.MTEB(tasks=tasks)
 
     # run evaluation
     results = evaluation.run(model, **eval_args)
 
     # save and log results
-    show_results(eval_args["output_folder"], model, results)
+    show_results(eval_args['output_folder'], model, results)
 
 
 def two_stage_eval(
@@ -56,7 +54,7 @@ def two_stage_eval(
     first_stage_path = f"{eval_args['output_folder']}/stage1"
     second_stage_path = f"{eval_args['output_folder']}/stage2"
 
-    tasks = cmteb.TaskBase.get_tasks(task_names=eval_args["tasks"])
+    tasks = cmteb.TaskBase.get_tasks(task_names=eval_args['tasks'])
     for task in tasks:
         evaluation = mteb.MTEB(tasks=[task])
 
@@ -66,19 +64,19 @@ def two_stage_eval(
             save_predictions=True,
             output_folder=first_stage_path,
             overwrite_results=True,
-            hub=eval_args["hub"],
-            limits=eval_args["limits"],
+            hub=eval_args['hub'],
+            limits=eval_args['limits'],
         )
         # stage 2: run cross encoder
         results = evaluation.run(
             cross_encoder,
-            top_k=eval_args["top_k"],
+            top_k=eval_args['top_k'],
             save_predictions=True,
             output_folder=second_stage_path,
-            previous_results=f"{first_stage_path}/{task.metadata.name}_default_predictions.json",
+            previous_results=f'{first_stage_path}/{task.metadata.name}_default_predictions.json',
             overwrite_results=True,
-            hub=eval_args["hub"],
-            limits=eval_args["limits"],
+            hub=eval_args['hub'],
+            limits=eval_args['limits'],
         )
 
         # save and log results

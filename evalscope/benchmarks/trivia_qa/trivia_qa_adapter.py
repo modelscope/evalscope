@@ -1,17 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI Inc, and its affiliates.
 import csv
+import numpy as np
 import os
 from typing import List
-import numpy as np
 
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
 from evalscope.utils.logger import get_logger
+
 # flake8: noqa
 
 logger = get_logger()
-
 
 DATASET_ID = 'modelscope/trivia_qa'
 SUBSET_LIST = ['default']
@@ -37,12 +37,13 @@ class TriviaQaAdapter(DataAdapter):
             logger.info(f'few_shot_num is not specified for TriviaQA, use default value: 5')
             few_shot_num = 5
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -62,11 +63,15 @@ class TriviaQaAdapter(DataAdapter):
                             question = row[0]
                             answers = eval(row[1])
                             split_data.append({
-                                'input': [
-                                    {"role": "system", "content": "Follow the given examples and answer the question."},
-                                    {"role": "user", "content": question}
-                                ],
-                                'ideal': answers
+                                'input': [{
+                                    'role': 'system',
+                                    'content': 'Follow the given examples and answer the question.'
+                                }, {
+                                    'role': 'user',
+                                    'content': question
+                                }],
+                                'ideal':
+                                answers
                             })
                         data_dict[subset_name][split] = split_data
 
@@ -100,6 +105,7 @@ class TriviaQaAdapter(DataAdapter):
         Returns:
             {'data': [(context, continuation), ...]}
         """
+
         def get_sys_prompt(inp: dict) -> str:
             return inp['input'][0]['content']
 
@@ -113,7 +119,7 @@ class TriviaQaAdapter(DataAdapter):
 
     def get_gold_answer(self, input_d: dict) -> list:
         # Get the gold choice
-        ans: list = input_d.get("ideal", [])
+        ans: list = input_d.get('ideal', [])
         return ans
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
@@ -185,15 +191,14 @@ class TriviaQaAdapter(DataAdapter):
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         cate_avg_list = [{'name': subset_name, 'score': score} for subset_name, (score, _) in subset_score_map.items()]
 
-        category_d = dict(name='DEFAULT',
-                          score=weighted_avg_acc,
-                          subset=cate_avg_list)
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
 
-        res_map = dict(name=report_name or 'trivia_qa',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=[category_d],
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'trivia_qa',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
 
         return res_map
 

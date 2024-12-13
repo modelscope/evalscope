@@ -1,16 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os.path
-from typing import List
-import re
 import json
+import os.path
+import re
+from typing import List
 
 from evalscope.third_party.longbench_write.eval import EvalLength
-from evalscope.third_party.longbench_write.utils import count_words, chinese_to_arabic
+from evalscope.third_party.longbench_write.utils import chinese_to_arabic, count_words
 from evalscope.utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-
 """
 This script is used to preprocess the dataset for the LongWriter.
 """
@@ -141,7 +140,7 @@ class DataETL:
         return out_file
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # run `no_required_length`: got 1748 exampels left
 
     # Refer to: https://modelscope.cn/datasets/ZhipuAI/LongWriter-6k/files
