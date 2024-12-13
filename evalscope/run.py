@@ -45,9 +45,8 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
     seed_everything(task_cfg.seed)
     configure_logging(task_cfg.debug)
-
-    # Set work_dir
     set_work_directory(task_cfg, run_time)
+
     logger.info(task_cfg)
 
     return evaluate_model(task_cfg)
