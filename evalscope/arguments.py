@@ -1,8 +1,6 @@
 import argparse
 import json
 
-from evalscope.config import TaskConfig
-
 
 class ParseStrArgsAction(argparse.Action):
 
