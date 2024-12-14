@@ -98,7 +98,7 @@ class OpenaiApi:
             future_to_task = {executor.submit(process_one, input_one): input_one for input_one in inputs}
 
             # Show progress bar
-            for future in tqdm(as_completed(future_to_task), total=len(inputs)):
+            for future in tqdm(as_completed(future_to_task), total=len(inputs), desc='[Predicting]'):
                 results.append(future.result())
 
         return results
