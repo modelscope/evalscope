@@ -1,19 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) ZhipuAI, Inc. and its affiliates.
-import multiprocessing
-import os
 import json
-import random
-import re
-from concurrent.futures import ThreadPoolExecutor
-
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import random
+import re
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-from evalscope.utils import jsonl_to_list
-from evalscope.utils import get_logger
+from evalscope.utils import get_logger, jsonl_to_list
 
 logger = get_logger()
 
@@ -52,14 +49,16 @@ class EvalLength:
             return 100 * max(0, 1. - (x / y - 1) / 2)
 
     def eval(self, dump_res: bool = True):
-        # example = {"prompt": "Write an outline for a short 100-word blog post about xxx", "type": "Community Forum", "length": 100, "response_length": 103, "response": "I. Introduction A. xxx"}
+        # example = {"prompt": "Write an outline for a short 100-word blog post about xxx",
+        #            "type": "Community Forum", "length": 100, "response_length": 103,
+        #            "response": "I. Introduction A. xxx"}
         predictions = [json.loads(line) for line in open(self.pred_path, encoding='utf-8')]
         x, y, scores = [], [], []
 
         for pred in tqdm(predictions, total=len(predictions), desc='[Processing eval_l]'):
-            x.append(pred["length"])
-            y.append(pred["response_length"])
-            scores.append(self.score(pred["length"], pred["response_length"]))
+            x.append(pred['length'])
+            y.append(pred['response_length'])
+            scores.append(self.score(pred['length'], pred['response_length']))
 
         avg_score_l = np.mean(scores)
         logger.info(f'Average score of length evaluation: {avg_score_l:.2f}')
@@ -105,7 +104,7 @@ class EvalQuality:
 
         EVAL_Q = 'eval_quality'
         OPENAI_BASE_URL = 'https://api.openai.com/v1/chat/completions'
-        DIMS = ["Relevance", "Accuracy", "Coherence", "Clarity", "Breadth and Depth", "Reading Experience"]
+        DIMS = ['Relevance', 'Accuracy', 'Coherence', 'Clarity', 'Breadth and Depth', 'Reading Experience']
 
         def __init__(self,
                      model: str,
@@ -153,17 +152,17 @@ class EvalQuality:
                 tries += 1
                 try:
                     headers = {
-                        'Authorization': "Bearer {}".format(self.openai_api_key),
+                        'Authorization': 'Bearer {}'.format(self.openai_api_key),
                     }
                     messages = [
                         {'role': 'user', 'content': prompt},
                     ]
                     resp = requests.post(self.openai_api_base, json={
-                        "model": self.openai_gpt_model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_new_tokens,
-                        "stop": stop,
+                        'model': self.openai_gpt_model,
+                        'messages': messages,
+                        'temperature': temperature,
+                        'max_tokens': max_new_tokens,
+                        'stop': stop,
                     }, headers=headers, timeout=600)
                     if resp.status_code != 200:
                         raise Exception(resp.text)
@@ -173,16 +172,16 @@ class EvalQuality:
                 except KeyboardInterrupt as e:
                     raise e
                 except Exception as e:
-                    if "maximum context length" in str(e):
+                    if 'maximum context length' in str(e):
                         raise e
-                    elif "triggering" in str(e):
+                    elif 'triggering' in str(e):
                         return 'Trigger OpenAI\'s content management policy'
                     logger.error("Error Occurs: \"%s\"        Retry ..." % (str(e)))
             else:
-                logger.error("Max tries. Failed.")
-                return "Max tries. Failed."
+                logger.error('Max tries. Failed.')
+                return 'Max tries. Failed.'
             try:
-                return resp["choices"][0]["message"]["content"]
+                return resp['choices'][0]['message']['content']
             except:
                 return ''
 
@@ -196,7 +195,7 @@ class EvalQuality:
 
         def process_data(self, item):
             # for item in tqdm(items, total=len(items), desc=f'Process of eval_q: '):
-            prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item["response"])
+            prompt = self.prompt_template.replace('$INST$', item['prompt']).replace('$RESPONSE$', item['response'])
             scores = None
             output = self.get_response_gpt4(prompt, **self.generation_kwargs)
             try:
@@ -236,7 +235,8 @@ class EvalQuality:
             total_score = dict()
             for dim in self.DIMS:
                 # scores = [float(score[dim]) if dim in score else 3 for score in self.eval_scores]
-                scores = [float(item['scores'][dim]) if 'scores' in item and dim in item['scores'] else 3 for item in self.eval_scores]
+                scores = [float(item['scores'][dim]) if 'scores' in item and dim in item['scores']
+                          else 3 for item in self.eval_scores]
                 total_score[dim] = ((sum(scores) / len(scores)) - 1) * 25
             total_score['total'] = sum(total_score.values()) / len(total_score)
             logger.info(f'Total score of quality evaluation: {total_score["total"]:.2f}')
