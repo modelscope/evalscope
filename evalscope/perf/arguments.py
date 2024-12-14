@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -10,10 +11,12 @@ from evalscope.constants import DEFAULT_WORK_DIR
 @dataclass
 class Arguments:
     # Model and API
-    model: str  # Model identifier
+    model: str  # Model name or path
+    model_id: Optional[str] = None  # Model identifier
     attn_implementation: Optional[str] = None  # Attention implementaion, only for local inference
     api: str = 'openai'  # API to be used (default: 'openai')
     tokenizer_path: Optional[str] = None  # Path to the tokenizer
+    port: str = '8877'  # Port number for the local API server
 
     # Connection settings
     url: str = 'http://127.0.0.1:8877/v1/chat/completions'  # URL for the API connection
@@ -102,6 +105,7 @@ class Arguments:
         if self.api_key:
             # Assuming the API key is used as a Bearer token
             self.headers['Authorization'] = f'Bearer {self.api_key}'
+        self.model_id = os.path.basename(self.model)
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)

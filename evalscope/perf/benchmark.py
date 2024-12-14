@@ -137,17 +137,17 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     api_plugin_class = ApiRegistry(args.api)
     api_plugin = api_plugin_class(args.tokenizer_path)
 
-    result_db_path = get_result_db_path(args.name, args.model, args.outputs_dir)
+    result_db_path = get_result_db_path(args)
     # Initialize wandb
     if args.wandb_api_key:
         import datetime
         import wandb
         os.environ['WANDB_SILENT'] = 'true'
-        os.environ['WANDB_DIR'] = './outputs'
+        os.environ['WANDB_DIR'] = args.outputs_dir
 
         wandb.login(key=args.wandb_api_key)
         current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        name = args.name if args.name else f'{args.model}_{current_time}'
+        name = args.name if args.name else f'{args.model_id}_{current_time}'
         wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
 
     with sqlite3.connect(result_db_path) as con:
@@ -198,7 +198,6 @@ async def start_server(args: Arguments) -> bool:
             args.url = 'http://127.0.0.1:8877/v1/completions'
         else:
             args.url = 'http://127.0.0.1:8877/v1/chat/completions'
-        args.model = os.path.basename(args.model)
 
     if not await test_connection(args):
         raise TimeoutError('Test connection failed')
