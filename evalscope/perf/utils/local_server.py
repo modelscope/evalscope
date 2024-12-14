@@ -106,7 +106,7 @@ def start_app(args: Arguments):
         proc = subprocess.Popen([
             'python', '-m', 'vllm.entrypoints.openai.api_server',
             '--model', args.model,
-            '--served-model-name', args.model_id,
+            '--served-model-name', args.model,
             '--tensor-parallel-size', str(torch.cuda.device_count()),
             '--max-model-len', '32768',
             '--gpu-memory-utilization', '0.9',
