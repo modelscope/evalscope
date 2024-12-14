@@ -2,12 +2,11 @@
 # flake8: noqa
 
 import argparse
-import os
-import re
-
 import json
+import os
 import pandas as pd
 import plotly.graph_objects as go
+import re
 import seaborn as sns
 import streamlit as st
 import yaml
@@ -47,20 +46,15 @@ def cat_view(df, category, models):
 
     model_scores = {}
     for model in models:
-        model_a_scores = (
-            cat_df[cat_df['model_a'] == model]['scores'].apply(
-                lambda x: x[0]).sum())
-        model_b_scores = (
-            cat_df[cat_df['model_b'] == model]['scores'].apply(
-                lambda x: x[1]).sum())
+        model_a_scores = (cat_df[cat_df['model_a'] == model]['scores'].apply(lambda x: x[0]).sum())
+        model_b_scores = (cat_df[cat_df['model_b'] == model]['scores'].apply(lambda x: x[1]).sum())
 
         # calculate count of occurrences for model_a and model_b
         model_a_counts = cat_df[cat_df['model_a'] == model].shape[0]
         model_b_counts = cat_df[cat_df['model_b'] == model].shape[0]
 
         # calculate average scores for each model
-        model_scores[model] = (model_a_scores + model_b_scores) / (
-            model_a_counts + model_b_counts)
+        model_scores[model] = (model_a_scores + model_b_scores) / (model_a_counts + model_b_counts)
 
     return dict(
         category=category,
@@ -111,8 +105,7 @@ def show_table_view(df):
     # Calculate the average score for each category
     cat_data = [cat_view(df, category, models) for category in catogories]
     cat_df = pd.DataFrame(cat_data)
-    cat_df.sort_values(
-        by=models[0], ascending=False, inplace=True, ignore_index=True)
+    cat_df.sort_values(by=models[0], ascending=False, inplace=True, ignore_index=True)
 
     # Add total data
     total_data = cat_view(df, 'all', models)
@@ -124,14 +117,12 @@ def show_table_view(df):
 
     # Render as link for each category
     cat_df['category'] = cat_df['category'].apply(
-        lambda x:
-        '<a href="?category={}&model_a={}&model_b={}" target="_self">{}</a>'.
-        format(x, models[0], models[1], x), )
+        lambda x: '<a href="?category={}&model_a={}&model_b={}" target="_self">{}</a>'.format(
+            x, models[0], models[1], x), )
 
     # Format the table
     if len(models) == 2:
-        cat_df['score diff'] = cat_df.apply(
-            lambda x: (x[models[1]] - x[models[0]]) / x[models[0]], axis=1)
+        cat_df['score diff'] = cat_df.apply(lambda x: (x[models[1]] - x[models[0]]) / x[models[0]], axis=1)
         cat_df.rename(
             columns={
                 'category': '类别',
@@ -142,8 +133,7 @@ def show_table_view(df):
         )
         style_df = cat_df.style.format({
             **dict(zip(models, ['{:.2f}' for model in models])),
-            '分差百分比':
-            '{:.2%}',
+            '分差百分比': '{:.2%}',
         }).applymap(
             get_color, subset=['分差百分比'])
     else:
@@ -156,15 +146,13 @@ def show_table_view(df):
         )
 
         def format(row):
-            p = '{:.2%}'.format(
-                (row[model] - row[baseline_model]) / row[baseline_model])
+            p = '{:.2%}'.format((row[model] - row[baseline_model]) / row[baseline_model])
             p = '+' + p if p[0] != '-' else p
             return f'{row[model]:.2f} ({p})'
 
         def color(value):
             match = re.search(r'\((.*?)\)', value)
-            return get_color(float(match.group(1).strip('%'))
-                             / 100) if match else ''
+            return get_color(float(match.group(1).strip('%')) / 100) if match else ''
 
         baseline_model = models[0]
         for model in models[1:]:
@@ -172,8 +160,7 @@ def show_table_view(df):
                 format,
                 axis=1,
             )
-        cat_df[baseline_model] = cat_df[baseline_model].apply(
-            lambda x: '{:.2f}'.format(x))
+        cat_df[baseline_model] = cat_df[baseline_model].apply(lambda x: '{:.2f}'.format(x))
         style_df = cat_df.style.applymap(color, subset=models[1:])
 
     # df_html = style_df.to_html(escape=False, index=False) # TODO
@@ -184,23 +171,13 @@ def show_table_view(df):
 def show_radar_chart(df):
     score_list = []
     for index, row in df.iterrows():
-        score_list.append(
-            dict(
-                model=row['model_a'],
-                category=row['category'],
-                score=row['scores'][0]))
-        score_list.append(
-            dict(
-                model=row['model_b'],
-                category=row['category'],
-                score=row['scores'][1]))
+        score_list.append(dict(model=row['model_a'], category=row['category'], score=row['scores'][0]))
+        score_list.append(dict(model=row['model_b'], category=row['category'], score=row['scores'][1]))
 
     score_df = pd.DataFrame(score_list)
-    df_agg = score_df.groupby(['model',
-                               'category'])['score'].mean().reset_index()
+    df_agg = score_df.groupby(['model', 'category'])['score'].mean().reset_index()
 
-    pivot_df = df_agg.pivot(
-        index='model', columns='category', values='score').fillna(0)
+    pivot_df = df_agg.pivot(index='model', columns='category', values='score').fillna(0)
 
     categories = pivot_df.columns.tolist()
 
@@ -216,16 +193,13 @@ def show_radar_chart(df):
         fig.add_trace(
             go.Scatterpolar(
                 r=model_values,
-                theta=categories
-                + [categories[0]],  # Make the categories cyclic
+                theta=categories + [categories[0]],  # Make the categories cyclic
                 fill='none',
                 name=model,
                 line=dict(color=color_dict[model]),
             ))
 
-    fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 10])),
-        showlegend=True)
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 10])), showlegend=True)
     st.plotly_chart(fig)
 
 
@@ -255,8 +229,7 @@ def show_single_result(df, category, model_a, model_b):
         )
 
     with col2:
-        model_b = st.selectbox('选择模型B',
-                               [m for m in model_names if m != model_a])
+        model_b = st.selectbox('选择模型B', [m for m in model_names if m != model_a])
 
     with st.container():
         st.markdown(
@@ -277,8 +250,7 @@ def show_single_result(df, category, model_a, model_b):
 {output_a}
 </div>""".format(
                     model_a=model_a,
-                    output_a=df[(df['question'] == ques) & (
-                        df['model_a'] == model_a)].iloc[0]['output_a'],
+                    output_a=df[(df['question'] == ques) & (df['model_a'] == model_a)].iloc[0]['output_a'],
                 ),
                 unsafe_allow_html=True,
             )
@@ -290,16 +262,13 @@ def show_single_result(df, category, model_a, model_b):
 {output_b}
 </div>""".format(
                     model_b=model_b,
-                    output_b=df[(df['question'] == ques) & (
-                        df['model_b'] == model_b)].iloc[0]['output_b'],
+                    output_b=df[(df['question'] == ques) & (df['model_b'] == model_b)].iloc[0]['output_b'],
                 ),
                 unsafe_allow_html=True,
             )
 
-    score_1 = df[(df['question'] == ques)
-                 & (df['model_a'] == model_a)].iloc[0]['scores']
-    score_2 = df[(df['question'] == ques)
-                 & (df['model_b'] == model_a)].iloc[0]['scores']
+    score_1 = df[(df['question'] == ques) & (df['model_a'] == model_a)].iloc[0]['scores']
+    score_2 = df[(df['question'] == ques) & (df['model_b'] == model_a)].iloc[0]['scores']
 
     scores = [
         {
@@ -352,8 +321,7 @@ def run_app(review_file, category_file):
         'output_a',
         'output_b',
     ]]
-    df['category'] = df['category'].apply(
-        lambda x: get_category_group(category_map, x))
+    df['category'] = df['category'].apply(lambda x: get_category_group(category_map, x))
 
     query_params = st.experimental_get_query_params()
     if 'category' in query_params:
@@ -378,8 +346,10 @@ def run_app(review_file, category_file):
 def parse_args():
     parser = argparse.ArgumentParser(description='Run visualization on a evaluation.')
 
-    parser.add_argument('--review-file', type=str, default='evalscope/registry/data/qa_browser/battle.jsonl', required=True)
-    parser.add_argument('--category-file', type=str, default='evalscope/registry/data/qa_browser/category_mapping.yaml', required=True)
+    parser.add_argument(
+        '--review-file', type=str, default='evalscope/registry/data/qa_browser/battle.jsonl', required=True)
+    parser.add_argument(
+        '--category-file', type=str, default='evalscope/registry/data/qa_browser/category_mapping.yaml', required=True)
 
     args = parser.parse_args()
 
@@ -394,5 +364,7 @@ def main():
 
 if __name__ == '__main__':
 
-    print('**Usage:\n streamlit run viz.py -- --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml')
+    print(
+        '**Usage:\n streamlit run viz.py -- --review-file evalscope/registry/data/qa_browser/battle.jsonl --category-file evalscope/registry/data/qa_browser/category_mapping.yaml'
+    )
     main()

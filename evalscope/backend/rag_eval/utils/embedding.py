@@ -1,12 +1,11 @@
 import os
-from typing import Dict, List, Optional, Union
-
 import torch
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import models
 from sentence_transformers.cross_encoder import CrossEncoder
 from sentence_transformers.SentenceTransformer import SentenceTransformer
 from torch import Tensor
+from typing import Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.utils.tools import download_model
 from evalscope.constants import HubType

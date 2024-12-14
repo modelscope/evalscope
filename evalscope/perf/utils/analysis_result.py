@@ -1,8 +1,7 @@
 import base64
+import json
 import pickle
 import sqlite3
-
-import json
 
 result_db_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/qwen2.5_benchmark_20241111_160543.db'
 con = sqlite3.connect(result_db_path)

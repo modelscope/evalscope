@@ -1,12 +1,7 @@
 import itertools
-
 from datasets import Dataset, DatasetDict
-
 from mteb.abstasks.AbsTaskClustering import AbsTaskClustering
-from mteb.abstasks.AbsTaskClusteringFast import (
-    AbsTaskClusteringFast,
-    check_label_distribution,
-)
+from mteb.abstasks.AbsTaskClusteringFast import AbsTaskClusteringFast, check_label_distribution
 from mteb.abstasks.TaskMetadata import TaskMetadata
 
 NUM_SAMPLES = 2048
@@ -46,7 +41,9 @@ class CLSClusteringFastS2S(AbsTaskClusteringFast):
             primaryClass={cs.CL}
         }""",  # noqa
         descriptive_stats={
-            'n_samples': {'test': NUM_SAMPLES},
+            'n_samples': {
+                'test': NUM_SAMPLES
+            },
             'avg_character_length': {},
         },
     )
@@ -55,9 +52,7 @@ class CLSClusteringFastS2S(AbsTaskClusteringFast):
         ds = {}
         for split in self.metadata.eval_splits:
             labels = list(itertools.chain.from_iterable(self.dataset[split]['labels']))
-            sentences = list(
-                itertools.chain.from_iterable(self.dataset[split]['sentences'])
-            )
+            sentences = list(itertools.chain.from_iterable(self.dataset[split]['sentences']))
 
             check_label_distribution(self.dataset[split])
 
@@ -106,7 +101,9 @@ class CLSClusteringFastP2P(AbsTaskClusteringFast):
             primaryClass={cs.CL}
         }""",  # noqa
         descriptive_stats={
-            'n_samples': {'test': NUM_SAMPLES},
+            'n_samples': {
+                'test': NUM_SAMPLES
+            },
             'avg_character_length': {},
         },
     )
@@ -115,9 +112,7 @@ class CLSClusteringFastP2P(AbsTaskClusteringFast):
         ds = {}
         for split in self.metadata.eval_splits:
             labels = list(itertools.chain.from_iterable(self.dataset[split]['labels']))
-            sentences = list(
-                itertools.chain.from_iterable(self.dataset[split]['sentences'])
-            )
+            sentences = list(itertools.chain.from_iterable(self.dataset[split]['sentences']))
 
             check_label_distribution(self.dataset[split])
 
@@ -166,7 +161,9 @@ class ThuNewsClusteringFastS2S(AbsTaskClusteringFast):
   url = {https://github.com/thunlp/THUCTC}
 }""",
         descriptive_stats={
-            'n_samples': {'test': NUM_SAMPLES},
+            'n_samples': {
+                'test': NUM_SAMPLES
+            },
             'avg_character_length': {},
         },
     )
@@ -175,9 +172,7 @@ class ThuNewsClusteringFastS2S(AbsTaskClusteringFast):
         ds = {}
         for split in self.metadata.eval_splits:
             labels = list(itertools.chain.from_iterable(self.dataset[split]['labels']))
-            sentences = list(
-                itertools.chain.from_iterable(self.dataset[split]['sentences'])
-            )
+            sentences = list(itertools.chain.from_iterable(self.dataset[split]['sentences']))
 
             check_label_distribution(self.dataset[split])
 
@@ -226,7 +221,9 @@ class ThuNewsClusteringFastP2P(AbsTaskClusteringFast):
   url = {https://github.com/thunlp/THUCTC}
 }""",
         descriptive_stats={
-            'n_samples': {'test': NUM_SAMPLES},
+            'n_samples': {
+                'test': NUM_SAMPLES
+            },
             'avg_character_length': {},
         },
     )
@@ -235,9 +232,7 @@ class ThuNewsClusteringFastP2P(AbsTaskClusteringFast):
         ds = {}
         for split in self.metadata.eval_splits:
             labels = list(itertools.chain.from_iterable(self.dataset[split]['labels']))
-            sentences = list(
-                itertools.chain.from_iterable(self.dataset[split]['sentences'])
-            )
+            sentences = list(itertools.chain.from_iterable(self.dataset[split]['sentences']))
 
             check_label_distribution(self.dataset[split])
 

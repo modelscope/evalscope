@@ -1,26 +1,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
 import json
+import os
+
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score, jsonl_to_list
+from evalscope.utils import jsonl_to_list, normalize_score
 from evalscope.utils.logger import get_logger
+
 # flake8: noqa
 
 logger = get_logger()
 
 DATASET_ID = 'modelscope/race'
 
-SUBSET_LIST = [
-    "high",
-    "middle"
-]
+SUBSET_LIST = ['high', 'middle']
 
-
-SUBJECT_MAPPING = {"high": "High",
-                   "middle": "Middle"
-}
+SUBJECT_MAPPING = {'high': 'High', 'middle': 'Middle'}
 
 
 class RACEAdapter(DataAdapter):
@@ -49,12 +45,13 @@ class RACEAdapter(DataAdapter):
             logger.warning(f'few_shot_num <= 3 for RACE, but got {few_shot_num}. Use 3-shot by default.')
             few_shot_num = 3
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -92,8 +89,7 @@ class RACEAdapter(DataAdapter):
 
         """
         prompt = 'The following are multiple choice reading comprehension questions (with answers).\n\n'.format(
-            self._format_subject(subset_name)
-        )
+            self._format_subject(subset_name))
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
 
         context: str = '\n'.join(few_shot_prompts) + '\n'
@@ -122,9 +118,9 @@ class RACEAdapter(DataAdapter):
         """
         if eval_type == 'checkpoint':
             return result
-        elif eval_type == 'service':        # TODO: to be implemented
+        elif eval_type == 'service':  # TODO: to be implemented
             return result
-        elif eval_type == 'custom':         # TODO: to be implemented
+        elif eval_type == 'custom':  # TODO: to be implemented
             return result
         else:
             raise ValueError(f'Unknown eval_type: {eval_type}')
@@ -191,17 +187,24 @@ class RACEAdapter(DataAdapter):
             domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
                                      sum([num for _, _, num in domain_res_list])
             domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
-            category_list.append({'name': domain_name,
-                                  'score': normalize_score(score=domain_weighted_avg_acc),
-                                  'subset': [{'name': subset_name, 'score': subset_score}
-                                             for subset_name, subset_score, _ in domain_res_list]})
+            category_list.append({
+                'name':
+                domain_name,
+                'score':
+                normalize_score(score=domain_weighted_avg_acc),
+                'subset': [{
+                    'name': subset_name,
+                    'score': subset_score
+                } for subset_name, subset_score, _ in domain_res_list]
+            })
 
         # Get final dict of report
-        res_map = dict(name=report_name or 'race',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=category_list,
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'race',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=category_list,
+            total_num=total_num)
 
         return res_map
 

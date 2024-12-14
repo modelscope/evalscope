@@ -5,11 +5,13 @@ repos:
       - id: flake8
         exclude: |
             (?x)^(
-                thirdparty/|
                 examples/|
-                evalscope/utils/utils.py|
                 docs/|
-                tests/
+                tests/|
+                evalscope/utils/utils.py|
+                evalscope/third_party/|
+                evalscope/backend/rag_eval/clip_benchmark/tasks|
+                evalscope/backend/rag_eval/cmteb/tasks
             )
   - repo: https://github.com/PyCQA/isort.git
     rev: 5.13.2
@@ -21,11 +23,13 @@ repos:
       - id: yapf
         exclude: |
             (?x)^(
-                thirdparty/|
                 examples/|
-                evalscope/utils/utils.py|
                 docs/|
-                tests/
+                tests/|
+                evalscope/utils/utils.py|
+                evalscope/third_party/|
+                evalscope/backend/rag_eval/clip_benchmark/tasks|
+                evalscope/backend/rag_eval/cmteb/tasks
             )
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v5.0.0

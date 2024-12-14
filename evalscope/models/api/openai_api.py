@@ -1,35 +1,34 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-from tqdm import tqdm
+import requests
 import threading
 import time
 from asyncio import Queue
-
-import requests
-from typing import Union, List, Optional, Dict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from modelscope.utils.logger import get_logger
+from typing import Dict, List, Optional, Union
 
 logger = get_logger()
 
 
 class OpenaiApi:
 
-    def __init__(self,
-                 model: str,
-                 openai_api_key,
-                 openai_api_base,
-                 logprobs: Optional[bool] = False,
-                 top_logprobs: Optional[int] = None,
-                 max_new_tokens: int = 4096,
-                 temperature: Optional[float] = 0.0,
-                 repetition_penalty: Optional[float] = 1.0,
-                 is_chat: bool = True,
-                 verbose: bool = True,
-                 retry: int = 3,
-                 query_per_second: int = 10,     # TODO
-                 **kwargs):
+    def __init__(
+            self,
+            model: str,
+            openai_api_key,
+            openai_api_base,
+            logprobs: Optional[bool] = False,
+            top_logprobs: Optional[int] = None,
+            max_new_tokens: int = 4096,
+            temperature: Optional[float] = 0.0,
+            repetition_penalty: Optional[float] = 1.0,
+            is_chat: bool = True,
+            verbose: bool = True,
+            retry: int = 3,
+            query_per_second: int = 10,  # TODO
+            **kwargs):
 
         self.temperature = temperature
         self.repetition_penalty = repetition_penalty
@@ -46,14 +45,17 @@ class OpenaiApi:
 
         self.token_bucket = TokenBucket(query_per_second, verbose)
 
-    def generate_simple(self, inputs: Union[List[str]], num_proc: int = 8):
+    def generate_simple(self, inputs: Union[List[str]]):
 
         def process_one(in_data: str):
 
             if self.is_chat:
                 data = dict(
                     model=self.model,
-                    messages=[{'role': 'user', 'content': in_data}],
+                    messages=[{
+                        'role': 'user',
+                        'content': in_data
+                    }],
                     max_tokens=self.max_tokens,
                     n=1,
                     logprobs=self.logprobs,
@@ -73,7 +75,10 @@ class OpenaiApi:
 
             # todo
             openai_api_key = self.openai_api_key or ''
-            header = {'Authorization': f'Bearer ', 'content-type': 'application/json', }
+            header = {
+                'Authorization': f'Bearer {openai_api_key}',
+                'content-type': 'application/json',
+            }
             data = json.dumps(data, ensure_ascii=False)
 
             if self.verbose:
@@ -92,20 +97,12 @@ class OpenaiApi:
                 else:
                     return resp['choices'][0]['text'].strip()
 
-        results = []
-        with ThreadPoolExecutor(max_workers=num_proc) as executor:
-            # Submit all tasks
-            future_to_task = {executor.submit(process_one, input_one): input_one for input_one in inputs}
-
-            # Show progress bar
-            for future in tqdm(as_completed(future_to_task), total=len(inputs), desc='[Predicting]'):
-                results.append(future.result())
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(process_one, inputs))
 
         return results
 
-    def generate(self,
-                 inputs: Union[List[str], List[List]],
-                 **kwargs) -> List[str]:
+    def generate(self, inputs: Union[List[str], List[List]], **kwargs) -> List[str]:
         """
         Generate responses from OpenAI API.
 
@@ -167,13 +164,12 @@ class OpenaiApi:
 
                 def remove_none_val(input_d: dict):
                     return {k: v for k, v in input_d.items() if v is not None}
+
                 data = remove_none_val(data)
 
                 if self.verbose:
                     logger.info(f'>> Post data: {json.dumps(data, ensure_ascii=False)}')
-                raw_response = requests.post(self.url,
-                                             headers=header,
-                                             data=json.dumps(data, ensure_ascii=False))
+                raw_response = requests.post(self.url, headers=header, data=json.dumps(data, ensure_ascii=False))
 
                 response = raw_response.json()
                 if self.verbose:

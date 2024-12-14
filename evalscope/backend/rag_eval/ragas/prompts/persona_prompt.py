@@ -1,5 +1,4 @@
 import typing as t
-
 from pydantic import BaseModel
 from ragas.prompt import PydanticPrompt, StringIO
 from ragas.testset.persona import Persona
