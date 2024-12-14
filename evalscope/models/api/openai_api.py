@@ -4,10 +4,12 @@ import json
 import requests
 import threading
 import time
+from tqdm import tqdm
 from asyncio import Queue
-from concurrent.futures import ThreadPoolExecutor
-from modelscope.utils.logger import get_logger
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Union
+
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -45,7 +47,7 @@ class OpenaiApi:
 
         self.token_bucket = TokenBucket(query_per_second, verbose)
 
-    def generate_simple(self, inputs: Union[List[str]]):
+    def generate_simple(self, inputs: Union[List[str]], num_proc: int = 8):
 
         def process_one(in_data: str):
 
@@ -97,8 +99,14 @@ class OpenaiApi:
                 else:
                     return resp['choices'][0]['text'].strip()
 
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(process_one, inputs))
+        results = []
+        with ThreadPoolExecutor(max_workers=num_proc) as executor:
+            # Submit all tasks
+            future_to_task = {executor.submit(process_one, input_one): input_one for input_one in inputs}
+
+            # Show progress bar
+            for future in tqdm(as_completed(future_to_task), total=len(inputs), desc=['Predicting']):
+                results.append(future.result())
 
         return results
 

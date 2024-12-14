@@ -2,10 +2,9 @@
 import os
 from typing import Union
 
-from evalscope.third_party.longbench_write.infer import run_infer
 from evalscope.third_party.longbench_write.eval import run_eval
-from evalscope.utils import yaml_to_dict, json_to_dict
-from evalscope.utils import get_logger
+from evalscope.third_party.longbench_write.infer import run_infer
+from evalscope.utils import get_logger, json_to_dict, yaml_to_dict
 
 logger = get_logger()
 
