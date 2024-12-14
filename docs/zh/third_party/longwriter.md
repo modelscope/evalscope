@@ -149,8 +149,13 @@ eval_config:
 启动vLLM服务：
 ```shell
 CUDA_VISIBLE_DEVICES=0 VLLM_USE_MODELSCOPE=True vllm serve --max-model-len=65536 --gpu_memory_utilization=0.95 --trust-remote-code ZhipuAI/LongWriter-glm4-9b
-
 ```
+- Arguments:
+  - `max-model-len`: The maximum length of the model input.
+  - `gpu_memory_utilization`: The GPU memory utilization.
+  - `trust-remote-code`: Whether to trust the remote code.
+  - `model`: Could be a model id on the ModelScope/HuggingFace hub, or a local model dir.
+
 * 提示：可以使用`CUDA_VISIBLE_DEVICES=0,1,2,3`来配置多GPUs环境。
 
 
