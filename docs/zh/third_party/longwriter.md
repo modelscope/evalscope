@@ -71,22 +71,36 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
 
 ```json
 {
-    "stage": ["infer", "eval_l", "eval_q"],
+    "stage": [
+        "infer",
+        "eval_l",
+        "eval_q"
+    ],
     "model": "ZhipuAI/LongWriter-glm4-9b",
     "input_data_path": null,
     "output_dir": "./outputs",
-    "openai_api_key": null,
-    "openai_gpt_model": "gpt-4o-2024-05-13",
-    "infer_generation_kwargs": {
-        "max_new_tokens": 32768,
-        "temperature": 0.5
+    "infer_config": {
+        "openai_api_base": "http://127.0.0.1:8000/v1/chat/completions",
+        "is_chat": true,
+        "verbose": false,
+        "generation_kwargs": {
+            "max_new_tokens": 32768,
+            "temperature": 0.5,
+            "repetition_penalty": 1.0
+        },
+        "proc_num": 16
     },
-    "eval_generation_kwargs": {
-        "max_new_tokens": 1024,
-        "temperature": 0.5,
-        "stop": null
-    },
-    "proc_num": 8
+    "eval_config": {
+        "openai_api_key": null,
+        "openai_api_base": "https://api.openai.com/v1/chat/completions",
+        "openai_gpt_model": "gpt-4o-2024-05-13",
+        "generation_kwargs": {
+            "max_new_tokens": 1024,
+            "temperature": 0.5,
+            "stop": null
+        },
+        "proc_num": 8
+    }
 }
 ```
 参考 [default_task.json](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/default_task.json) for more details.
@@ -99,19 +113,27 @@ stage:
   - infer
   - eval_l
   - eval_q
-model: ZhipuAI/LongWriter-glm4-9b
+model: "ZhipuAI/LongWriter-glm4-9b"
 input_data_path: null
-output_dir: ./outputs
-openai_api_key: null
-openai_gpt_model: gpt-4o-2024-05-13
-infer_generation_kwargs:
-  max_new_tokens: 32768
-  temperature: 0.5
-eval_generation_kwargs:
-  max_new_tokens: 1024
-  temperature: 0.5
-  stop: null
-proc_num: 8
+output_dir: "./outputs"
+infer_config:
+  openai_api_base: "http://127.0.0.1:8000/v1/chat/completions"
+  is_chat: true
+  verbose: false
+  generation_kwargs:
+    max_new_tokens: 32768
+    temperature: 0.5
+    repetition_penalty: 1.0
+  proc_num: 16
+eval_config:
+  openai_api_key: null
+  openai_api_base: "https://api.openai.com/v1/chat/completions"
+  openai_gpt_model: "gpt-4o-2024-05-13"
+  generation_kwargs:
+    max_new_tokens: 1024
+    temperature: 0.5
+    stop: null
+  proc_num: 8
 
 ```
 参考 [default_task.yaml](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/default_task.yaml) for more details.
