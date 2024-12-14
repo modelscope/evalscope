@@ -4,13 +4,11 @@ Thanks to the authors of OpenCLIP
 """
 
 import logging
-from contextlib import suppress
-
 import torch
 import torch.nn.functional as F
+from contextlib import suppress
+from sklearn.metrics import balanced_accuracy_score, classification_report
 from tqdm import tqdm
-
-from sklearn.metrics import classification_report, balanced_accuracy_score
 
 from evalscope.utils.logger import get_logger
 
@@ -49,7 +47,7 @@ def zero_shot_classifier(model, classnames, templates, device, amp=True):
                 # generic prompts tht are specialized for each class by replacing {c} with the class name
                 texts = [template.format(c=classname) for template in templates]
             else:
-                raise ValueError("templates must be a list or a dict")
+                raise ValueError('templates must be a list or a dict')
             class_embedding = model.encode_text(texts).mean(dim=0)
             class_embedding = F.normalize(class_embedding, dim=0)
             zeroshot_weights.append(class_embedding)
@@ -57,7 +55,7 @@ def zero_shot_classifier(model, classnames, templates, device, amp=True):
     return zeroshot_weights
 
 
-def accuracy(output, target, topk=(1,)):
+def accuracy(output, target, topk=(1, )):
     """
     Compute top-k accuracy
 
@@ -79,10 +77,7 @@ def accuracy(output, target, topk=(1,)):
     pred = output.topk(max(topk), 1, True, True)[1].t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))
     n = len(target)
-    return [
-        float(correct[:k].reshape(-1).float().sum(0, keepdim=True).cpu().numpy()) / n
-        for k in topk
-    ]
+    return [float(correct[:k].reshape(-1).float().sum(0, keepdim=True).cpu().numpy()) / n for k in topk]
 
 
 def run_classification(model, classifier, dataloader, device, amp=True, limit=None):
@@ -115,7 +110,7 @@ def run_classification(model, classifier, dataloader, device, amp=True, limit=No
                 # predict
                 image_features = model.encode_image(images)
                 logits = 100.0 * image_features @ classifier
-            
+
             if limit is not None:
                 # Update sample counter
                 sample_count += len(images)
@@ -217,15 +212,13 @@ def evaluate(
 
     if is_multilabel:
         if verbose:
-            logger.info("Detected a multi-label classification dataset")
+            logger.info('Detected a multi-label classification dataset')
         # Multiple labels per image, multiple classes on the dataset
         ap_per_class = average_precision_per_class(logits, target)
         if verbose:
-            for class_name, ap in zip(
-                dataloader.dataset.classes, ap_per_class.tolist()
-            ):
-                logger.info(f"Class: {class_name}, AveragePrecision: {ap}")
-        return {"mean_average_precision": ap_per_class.mean().item()}
+            for class_name, ap in zip(dataloader.dataset.classes, ap_per_class.tolist()):
+                logger.info(f'Class: {class_name}, AveragePrecision: {ap}')
+        return {'mean_average_precision': ap_per_class.mean().item()}
     else:
         # Single label per image, multiple classes on the dataset
         # just compute accuracy and mean_per_class_recall
@@ -235,13 +228,13 @@ def evaluate(
         if len(dataloader.dataset.classes) >= 5:
             acc1, acc5 = accuracy(logits, target, topk=(1, 5))
         else:
-            (acc1,) = accuracy(logits, target, topk=(1,))
-            acc5 = float("nan")
+            (acc1, ) = accuracy(logits, target, topk=(1, ))
+            acc5 = float('nan')
         mean_per_class_recall = balanced_accuracy_score(target, pred)
         if verbose:
-            logger.info("\n" + classification_report(target, pred, digits=3))
+            logger.info('\n' + classification_report(target, pred, digits=3))
         return {
-            "acc1": acc1,
-            "acc5": acc5,
-            "mean_per_class_recall": mean_per_class_recall,
+            'acc1': acc1,
+            'acc5': acc5,
+            'mean_per_class_recall': mean_per_class_recall,
         }

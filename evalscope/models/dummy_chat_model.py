@@ -2,6 +2,7 @@
 
 import random
 import time
+
 from evalscope.models import ChatBaseModel
 from evalscope.utils.logger import get_logger
 
@@ -32,15 +33,13 @@ class DummyChatModel(ChatBaseModel):
 
         # Build response
         res = {
-            'choices': [
-                {
-                    'index': 0,
-                    'message': {
-                        'content': choice,
-                        'role': 'assistant'
-                    }
+            'choices': [{
+                'index': 0,
+                'message': {
+                    'content': choice,
+                    'role': 'assistant'
                 }
-            ],
+            }],
             'created': time.time(),
             'model': self.MODEL_ID + '-' + self.REVISION,
             'object': 'chat.completion',

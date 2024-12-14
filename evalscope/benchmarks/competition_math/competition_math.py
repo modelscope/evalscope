@@ -1,12 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 """Mathematics Aptitude Test of Heuristics (MATH) dataset."""
 
+import datasets
 import json
 import os
-
-import datasets
-
 
 _CITATION = """\
 @article{hendrycksmath2021,
@@ -24,7 +21,6 @@ _CITATION = """\
 }
 """
 
-
 _DESCRIPTION = """\
 The Mathematics Aptitude Test of Heuristics (MATH) dataset consists of problems
 from mathematics competitions, including the AMC 10, AMC 12, AIME, and more.
@@ -32,12 +28,9 @@ Each problem in MATH has a full step-by-step solution, which can be used to teac
 models to generate answer derivations and explanations.
 """
 
-
 _HOMEPAGE = 'https://github.com/hendrycks/math'
 
-
 _LICENSE = 'https://github.com/hendrycks/math/blob/main/LICENSE'
-
 
 # Original data URL: "https://people.eecs.berkeley.edu/~hendrycks/MATH.tar"
 _URL = 'https://sail-moe.oss-cn-hangzhou.aliyuncs.com/open_data/math/MATH.zip'
@@ -49,14 +42,12 @@ class CompetitionMathDataset(datasets.GeneratorBasedBuilder):
     VERSION = datasets.Version('1.0.0')
 
     def _info(self):
-        features = datasets.Features(
-            {
-                'problem': datasets.Value('string'),
-                'level': datasets.Value('string'),
-                'type': datasets.Value('string'),
-                'solution': datasets.Value('string'),
-            }
-        )
+        features = datasets.Features({
+            'problem': datasets.Value('string'),
+            'level': datasets.Value('string'),
+            'type': datasets.Value('string'),
+            'solution': datasets.Value('string'),
+        })
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
             features=features,

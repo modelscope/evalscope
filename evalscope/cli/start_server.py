@@ -1,66 +1,55 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os, sys, time
-from argparse import ArgumentParser
+import os
 import subprocess
-
+import sys
+import time
+from argparse import ArgumentParser
 
 from evalscope.cli.base import CLICommand
-
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 print(current_path)
 root_path = os.path.dirname(current_path)
 print(root_path)
 
+
 def subparser_func(args):
     """ Function which will be called for a specific sub parser.
     """
     return PerfServerCMD(args)
 
+
 def add_perf_args(parser):
+    parser.add_argument('--server-command', required=True, type=str, help='The start server command.')
     parser.add_argument(
-        '--server-command', required=True, type=str, help='The start server command.')
-    parser.add_argument(
-        '--logdir', required=True, type=str, help='The monitor log save dir, tensorboard start at this path for display!')
-    parser.add_argument(
-        '--host', type=str, default='0.0.0.0', help='The tensorboard host'
-    )    
-    parser.add_argument(
-        '--tensorboard-port', type=str, default='6006', help='The tensorboard port'
-    )
+        '--logdir',
+        required=True,
+        type=str,
+        help='The monitor log save dir, tensorboard start at this path for display!')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='The tensorboard host')
+    parser.add_argument('--tensorboard-port', type=str, default='6006', help='The tensorboard port')
+
 
 def async_run_command_with_popen(cmd):
     sub_process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        bufsize=1,
-        universal_newlines=True,
-        encoding='utf8')
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True, encoding='utf8')
     return sub_process
 
+
 def start_monitor(args):
-    cmd = ['python',
-           '%s/perf/monitor.py'%root_path,
-           '--logdir',
-           args.logdir]
+    cmd = ['python', '%s/perf/monitor.py' % root_path, '--logdir', args.logdir]
     print(cmd)
     p = async_run_command_with_popen(cmd)
     os.set_blocking(p.stdout.fileno(), False)
     return p
 
+
 def start_tensorboard(args):
-    cmd = ['tensorboard',
-           '--logdir',
-           args.logdir,
-           '--host',
-           args.host,
-           '--port',
-           args.tensorboard_port
-           ]
+    cmd = ['tensorboard', '--logdir', args.logdir, '--host', args.host, '--port', args.tensorboard_port]
     p = async_run_command_with_popen(cmd)
     os.set_blocking(p.stdout.fileno(), False)
     return p
+
 
 def start_server(args):
     cmd = args.server_command
@@ -76,7 +65,7 @@ def start_server(args):
 
     os.set_blocking(sub_process.stdout.fileno(), False)
     return sub_process
- 
+
 
 def wait_for_workers(workers):
     while True:
@@ -91,12 +80,12 @@ def wait_for_workers(workers):
                     else:
                         break
             else:
-                print('Worker %s completed!'%idx)
+                print('Worker %s completed!' % idx)
                 for line in iter(worker.stdout.readline, ''):
                     if line != '':
                         sys.stdout.write(line)
                     else:
-                        break                
+                        break
                 workers[idx] = None
 
         is_all_completed = True
@@ -108,7 +97,8 @@ def wait_for_workers(workers):
         if is_all_completed:
             break
         time.sleep(0.1)
-        
+
+
 class PerfServerCMD(CLICommand):
     name = 'server'
 
@@ -127,12 +117,8 @@ class PerfServerCMD(CLICommand):
         # start monitor
         p_monitor = start_monitor(self.args)
         # start tensorboard
-        p_tensorboard = start_tensorboard(self.args)        
+        p_tensorboard = start_tensorboard(self.args)
         # start server
         p_server = start_server(self.args)
-        
+
         wait_for_workers([p_monitor, p_tensorboard, p_server])
-        
-        
-        
-        

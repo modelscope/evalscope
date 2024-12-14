@@ -1,17 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) Allen Institute, and its affiliates.
 # Copyright 2020 The HuggingFace Datasets Authors and the current dataset script contributor.
-
 """AI2 ARC (Abstraction and Reasoning Corpus) for General Artificial Intelligence Benchmark."""
-
 """AUTO GENERATED, DO NOT EDIT"""
 
+import datasets
 import json
 import os
-import datasets
 
 # flake8: noqa
-
 
 _CITATION = """\
 @article{allenai:arc,
@@ -85,17 +82,20 @@ class Ai2Arc(datasets.GeneratorBasedBuilder):
             # This is the description that will appear on the datasets page.
             description=_DESCRIPTION,
             # datasets.features.FeatureConnectors
-            features=datasets.Features(
-                {
-                    'id': datasets.Value('string'),
-                    'question': datasets.Value('string'),
-                    'choices': datasets.features.Sequence(
-                        {'text': datasets.Value('string'), 'label': datasets.Value('string')}
-                    ),
-                    'answerKey': datasets.Value('string')
-                    # These are the features of your dataset like images, labels ...
-                }
-            ),
+            features=datasets.Features({
+                'id':
+                datasets.Value('string'),
+                'question':
+                datasets.Value('string'),
+                'choices':
+                datasets.features.Sequence({
+                    'text': datasets.Value('string'),
+                    'label': datasets.Value('string')
+                }),
+                'answerKey':
+                datasets.Value('string')
+                # These are the features of your dataset like images, labels ...
+            }),
             # If there's a common (input, target) tuple from the features,
             # specify them here. They'll be used if as_supervised=True in
             # builder.as_dataset.
@@ -144,5 +144,8 @@ class Ai2Arc(datasets.GeneratorBasedBuilder):
                     'id': id_,
                     'answerKey': answerkey,
                     'question': question,
-                    'choices': {'text': text_choices, 'label': label_choices},
+                    'choices': {
+                        'text': text_choices,
+                        'label': label_choices
+                    },
                 }

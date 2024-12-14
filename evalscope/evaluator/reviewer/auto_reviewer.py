@@ -2,6 +2,7 @@
 # flake8: noqa
 
 import os
+import pandas as pd
 import random
 import sys
 import time
@@ -9,15 +10,10 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, List
 
-import pandas as pd
-
 from evalscope.constants import ArenaMode, EvalConfigKeys, FnCompletionParser, PositionBiasMitigation
 from evalscope.models.openai_model import OpenAIModel
-from evalscope.utils import completion_parsers
-from evalscope.utils.arena_utils import (get_battle_pairs,
-                                         merge_ques_ans,
-                                         shuffle_pairwise_preferences)
-from evalscope.utils import dump_jsonl_data, jsonl_to_list, random_seeded_choice
+from evalscope.utils import completion_parsers, dump_jsonl_data, jsonl_to_list, random_seeded_choice
+from evalscope.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -33,8 +29,7 @@ class BaseReviewer(ABC):
         """
         Run pairwise battles with given models.
         """
-        raise NotImplementedError(
-            'run() method must be implemented in your subclass.')
+        raise NotImplementedError('run() method must be implemented in your subclass.')
 
 
 class AutoReviewerGpt4(BaseReviewer):
@@ -71,13 +66,9 @@ class AutoReviewerGpt4(BaseReviewer):
 
         self.review_result_file = review_result_file
         self.prompt_list = jsonl_to_list(prompt_file)
-        self.answer_list = [
-            jsonl_to_list(answer_file) for answer_file in answer_file_list
-        ]
-        self.reference_list = jsonl_to_list(
-            reference_file) if reference_file else []
-        self.cache_list = jsonl_to_list(
-            cache_file) if cache_file and os.path.isfile(cache_file) else []
+        self.answer_list = [jsonl_to_list(answer_file) for answer_file in answer_file_list]
+        self.reference_list = jsonl_to_list(reference_file) if reference_file else []
+        self.cache_list = jsonl_to_list(cache_file) if cache_file and os.path.isfile(cache_file) else []
 
         self.reviewer_args = reviewer_args if reviewer_args \
             else self._get_default_args()
@@ -88,24 +79,18 @@ class AutoReviewerGpt4(BaseReviewer):
             self.answer_list.append(jsonl_to_list(baseline_file))
             self.baseline_idx = len(self.answer_list) - 1
 
-        self.position_bias_mitigation = self.reviewer_args.pop(
-            EvalConfigKeys.POSITION_BIAS_MITIGATION,
-            PositionBiasMitigation.NONE)
+        self.position_bias_mitigation = self.reviewer_args.pop(EvalConfigKeys.POSITION_BIAS_MITIGATION,
+                                                               PositionBiasMitigation.NONE)
         if self.position_bias_mitigation == PositionBiasMitigation.RANDOMIZE_ORDER:
-            self.random_seed = self.reviewer_args.pop(
-                EvalConfigKeys.RANDOM_SEED, 123)
+            self.random_seed = self.reviewer_args.pop(EvalConfigKeys.RANDOM_SEED, 123)
 
-        fn_completion_parser = self.reviewer_args.pop(
-            EvalConfigKeys.FN_COMPLETION_PARSER,
-            FnCompletionParser.LMSYS_PARSER)
-        completion_parser_kwargs = self.reviewer_args.pop(
-            EvalConfigKeys.COMPLETION_PARSER_KWARGS, {})
+        fn_completion_parser = self.reviewer_args.pop(EvalConfigKeys.FN_COMPLETION_PARSER,
+                                                      FnCompletionParser.LMSYS_PARSER)
+        completion_parser_kwargs = self.reviewer_args.pop(EvalConfigKeys.COMPLETION_PARSER_KWARGS, {})
         if isinstance(fn_completion_parser, str):
-            fn_completion_parser = getattr(completion_parsers,
-                                           fn_completion_parser)
+            fn_completion_parser = getattr(completion_parsers, fn_completion_parser)
 
-        self.fn_completion_parser = partial(fn_completion_parser,
-                                            **completion_parser_kwargs)
+        self.fn_completion_parser = partial(fn_completion_parser, **completion_parser_kwargs)
         self.gpt_predictor = OpenAIModel(model_cfg=self.reviewer_args)
 
     @staticmethod
@@ -133,45 +118,35 @@ class AutoReviewerGpt4(BaseReviewer):
         # Default to general category (idx 0)
         target_prompt_dict = prompts_list[0]
         for item in prompts_list:
-            is_category_match = category in item['category'] if isinstance(
-                item['category'], list) else item['category'] == category
+            is_category_match = category in item['category'] if isinstance(item['category'],
+                                                                           list) else item['category'] == category
             is_type_match = item.get('type', ArenaMode.PAIRWISE) == type
             if is_category_match and is_type_match:
                 target_prompt_dict = item
                 break
-            elif is_type_match and target_prompt_dict.get('type',
-                                                          ArenaMode.PAIRWISE) != type:
+            elif is_type_match and target_prompt_dict.get('type', ArenaMode.PAIRWISE) != type:
                 target_prompt_dict = item  # fallback to type match
 
         sys_prompt = target_prompt_dict['system_prompt']
         prompt_template = target_prompt_dict['prompt_template']
         defaults = target_prompt_dict.get('defaults', dict({}))
-        output_format = target_prompt_dict.get('output_format',
-                                               '[[rating_a,rating_b]]')
+        output_format = target_prompt_dict.get('output_format', '[[rating_a,rating_b]]')
 
         if type == ArenaMode.SINGLE:
-            user_prompt = prompt_template.format(
-                question=ques, answer=ans1, ref_answer_1=ans_ref, **defaults)
+            user_prompt = prompt_template.format(question=ques, answer=ans1, ref_answer_1=ans_ref, **defaults)
         else:
             user_prompt = prompt_template.format(
-                question=ques,
-                answer_a=ans1,
-                answer_b=ans2,
-                ref_answer_1=ans_ref,
-                **defaults)
+                question=ques, answer_a=ans1, answer_b=ans2, ref_answer_1=ans_ref, **defaults)
 
         return sys_prompt, user_prompt, output_format
 
     def get_review_cache(self, model_a, model_b, question) -> list:
         if model_b:
-            cache_hit = next(
-                (r for r in self.cache_list if r['model_a'] == model_a
-                 and r['model_b'] == model_b and r['question'] == question),
-                None)
+            cache_hit = next((r for r in self.cache_list
+                              if r['model_a'] == model_a and r['model_b'] == model_b and r['question'] == question),
+                             None)
         else:
-            cache_hit = next(
-                (r for r in self.cache_list
-                 if r['model'] == model_a and r['question'] == question), None)
+            cache_hit = next((r for r in self.cache_list if r['model'] == model_a and r['question'] == question), None)
         return cache_hit
 
     def get_review_pair(self, item: List[dict], dry_run=False, **kwargs) -> dict:
@@ -265,12 +240,10 @@ class AutoReviewerGpt4(BaseReviewer):
         return review_result
 
     def _get_review_pair(self, model_a, model_b, question, category, ans1, ans2, dry_run=False, **kwargs) -> (str, Any):
-        input_msg = dict(
-            ques=question, category=category, ans1=ans1, ans2=ans2)
+        input_msg = dict(ques=question, category=category, ans1=ans1, ans2=ans2)
 
         if self.reference_list:
-            ans_ref = next((ref for ref in self.reference_list
-                            if ref.get('text') == question), None)
+            ans_ref = next((ref for ref in self.reference_list if ref.get('text') == question), None)
             assert ans_ref['answer']
             input_msg['ans_ref'] = ans_ref['answer']
 
@@ -284,8 +257,7 @@ class AutoReviewerGpt4(BaseReviewer):
         else:
             review_text = self._get_reviewer_prediction(sys_prompt, user_prompt, **kwargs)
 
-        result = self.fn_completion_parser(
-            review_text, output_format=output_format)
+        result = self.fn_completion_parser(review_text, output_format=output_format)
         if not isinstance(result, tuple):
             result = (result, None)
         return review_text, *result
@@ -294,8 +266,7 @@ class AutoReviewerGpt4(BaseReviewer):
         input_msg = dict(ques=question, category=category, ans1=answer)
 
         if self.reference_list:
-            ans_ref = next((ref for ref in self.reference_list
-                            if ref.get('text') == question), None)
+            ans_ref = next((ref for ref in self.reference_list if ref.get('text') == question), None)
             assert ans_ref['answer']
             input_msg['ans_ref'] = ans_ref['answer']
 
@@ -312,8 +283,7 @@ class AutoReviewerGpt4(BaseReviewer):
         score = self.fn_completion_parser(review_text, output_format)
         return review_text, score
 
-    def _get_reviewer_prediction_dummy(self, sys_prompt: str, user_prompt: str,
-                                       output_format) -> str:
+    def _get_reviewer_prediction_dummy(self, sys_prompt: str, user_prompt: str, output_format) -> str:
         logger.info('Get dummy scores for input prompt ...')
         if output_format == '[[rating]]':
             return f'[[{round(random.random(), 2)}]]'
@@ -359,8 +329,7 @@ class AutoReviewerGpt4(BaseReviewer):
         if self.review_mode == ArenaMode.PAIRWISE:
             battle_pairs = get_battle_pairs(merged_ans_df.columns)
         elif self.review_mode == ArenaMode.PAIRWISE_BASELINE:
-            battle_pairs = get_battle_pairs(merged_ans_df.columns,
-                                            self.baseline_idx)
+            battle_pairs = get_battle_pairs(merged_ans_df.columns, self.baseline_idx)
         elif self.review_mode == ArenaMode.SINGLE:
             battle_pairs = [(col, ) for col in merged_ans_df.columns]
         else:
@@ -373,14 +342,12 @@ class AutoReviewerGpt4(BaseReviewer):
                 pair_df.columns = ['output_1', 'output_2']
                 pair_df['is_switched_outputs'] = pair_df.apply(
                     lambda x: random_seeded_choice(
-                        seed='is_switched_outputs' + x[0]['text'] + str(
-                            self.random_seed),
+                        seed='is_switched_outputs' + x[0]['text'] + str(self.random_seed),
                         choices=[False, True],
                     ),
                     axis=1,
                 )
-                pair_df = shuffle_pairwise_preferences(
-                    pair_df, pair_df['is_switched_outputs'])
+                pair_df = shuffle_pairwise_preferences(pair_df, pair_df['is_switched_outputs'])
 
             for index, row in pair_df.iterrows():
                 row_result = self.get_review_pair(row.to_list(), dry_run=dry_run, **kwargs) \
@@ -395,17 +362,21 @@ if __name__ == '__main__':
 
     work_path = os.path.join(Path(__file__).absolute().parent, '../../../')
     prompt_template_path = os.path.join(work_path, 'evalscope/registry/data/prompt_template/prompt_templates.jsonl')
-    answer_file_list = [os.path.join(work_path, 'outputs/arena/default/answers/answer_chatglm2-6b.jsonl'),
-                        os.path.join(work_path, 'outputs/arena/default/answers/answer_llama2-7b.jsonl')]
+    answer_file_list = [
+        os.path.join(work_path, 'outputs/arena/default/answers/answer_chatglm2-6b.jsonl'),
+        os.path.join(work_path, 'outputs/arena/default/answers/answer_llama2-7b.jsonl')
+    ]
     review_result_file_path = os.path.join(work_path, 'outputs/arena/default/reviews/review_gpt4.jsonl')
 
-    input_kwargs = dict(prompt_file=prompt_template_path,
-                        answer_file_list=answer_file_list,
-                        review_result_file=review_result_file_path,
-                        reviewer_args={},
-                        baseline_file='',
-                        reference_file='',
-                        cache_file='', )
+    input_kwargs = dict(
+        prompt_file=prompt_template_path,
+        answer_file_list=answer_file_list,
+        review_result_file=review_result_file_path,
+        reviewer_args={},
+        baseline_file='',
+        reference_file='',
+        cache_file='',
+    )
 
     auto_reviewer = AutoReviewerGpt4(**input_kwargs)
     auto_reviewer.run(dry_run=True)

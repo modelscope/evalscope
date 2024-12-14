@@ -13,14 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # flake8: noqa
-
 """Grade School Math 8k dataset."""
 
+import datasets
 import json
 import textwrap
-
-import datasets
-
 
 _CITATION = """\
 @misc{cobbe2021training,
@@ -76,8 +73,7 @@ class Gsm8k(datasets.GeneratorBasedBuilder):
                 using basic arithmetic operations (+ - / *) to reach the final
                 answer. A bright middle school student should be able to solve
                 every problem.
-                """,
-            ),
+                """, ),
             urls={
                 'train': TRAIN_URL,
                 'test': TEST_URL,
@@ -86,12 +82,10 @@ class Gsm8k(datasets.GeneratorBasedBuilder):
     ]
 
     def _info(self):
-        features = datasets.Features(
-            {
-                'question': datasets.Value('string'),
-                'answer': datasets.Value('string'),
-            }
-        )
+        features = datasets.Features({
+            'question': datasets.Value('string'),
+            'answer': datasets.Value('string'),
+        })
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
             features=features,

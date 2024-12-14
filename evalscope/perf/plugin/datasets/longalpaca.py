@@ -1,6 +1,5 @@
-from typing import Any, Dict, Iterator, List
-
 from modelscope import MsDataset
+from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

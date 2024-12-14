@@ -56,7 +56,7 @@ class EvalLength:
         predictions = [json.loads(line) for line in open(self.pred_path, encoding='utf-8')]
         x, y, scores = [], [], []
 
-        for pred in tqdm(predictions, total=len(predictions), desc=f'Process of eval_l: '):
+        for pred in tqdm(predictions, total=len(predictions), desc='[Processing eval_l]'):
             x.append(pred["length"])
             y.append(pred["response_length"])
             scores.append(self.score(pred["length"], pred["response_length"]))
@@ -144,7 +144,8 @@ class EvalQuality:
 
             self.openai_api_key: str = openai_api_key
             self.openai_gpt_model = openai_gpt_model
-            assert self.openai_api_key, 'Please set `OPENAI_API_KEY` in environment variables.'
+            if not self.openai_api_key:
+                logger.error('Please set `OPENAI_API_KEY` in the envs when stage `eval_q` is activated!')
 
         def get_response_gpt4(self, prompt, temperature=0.5, max_new_tokens=1024, stop=None):
             tries = 0

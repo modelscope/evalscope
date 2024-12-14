@@ -1,11 +1,11 @@
-import os
 import asyncio
-from typing import List
-from ragas.prompt import PromptMixin
+import os
 from ragas.llms import BaseRagasLLM
+from ragas.prompt import PromptMixin, PydanticPrompt
 from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES
-from evalscope.utils.logger import get_logger
+from typing import List
 
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -17,9 +17,7 @@ async def translate_prompt(
     adapt_instruction: bool = False,
 ):
     if target_lang not in RAGAS_SUPPORTED_LANGUAGE_CODES:
-        logger.warning(
-            f'{target_lang} is not in supported language: {list(RAGAS_SUPPORTED_LANGUAGE_CODES)}'
-        )
+        logger.warning(f'{target_lang} is not in supported language: {list(RAGAS_SUPPORTED_LANGUAGE_CODES)}')
         return
 
     if not issubclass(type(prompt_user), PromptMixin):
@@ -28,9 +26,7 @@ async def translate_prompt(
 
     class_name = prompt_user.__class__.__name__
     current_dir = os.path.dirname(__file__)
-    prompt_dir = os.path.abspath(
-        os.path.join(current_dir, f'../prompts/{target_lang}/{class_name}')
-    )
+    prompt_dir = os.path.abspath(os.path.join(current_dir, f'../prompts/{target_lang}/{class_name}'))
     os.makedirs(prompt_dir, exist_ok=True)
 
     try:
@@ -43,8 +39,7 @@ async def translate_prompt(
 
     logger.info(f'Translating prompts to {target_lang}')
     adapted_prompts = await prompt_user.adapt_prompts(
-        language=target_lang, llm=llm, adapt_instruction=adapt_instruction
-    )
+        language=target_lang, llm=llm, adapt_instruction=adapt_instruction)
     prompt_user.set_prompts(**adapted_prompts)
     try:
         prompt_user.save_prompts(prompt_dir)
@@ -62,11 +57,6 @@ async def translate_prompts(
     adapt_instruction: bool = False,
 ):
     if target_lang and target_lang != 'english':
-        await asyncio.gather(
-            *[
-                translate_prompt(prompt, target_lang, llm, adapt_instruction)
-                for prompt in prompts
-            ]
-        )
+        await asyncio.gather(*[translate_prompt(prompt, target_lang, llm, adapt_instruction) for prompt in prompts])
 
         logger.info('Translate prompts finished')

@@ -130,7 +130,8 @@ def run_infer(model: str,
               output_dir: str,
               api_config: dict,
               generation_kwargs: dict = None,
-              enable: bool = True, ):
+              enable: bool = True,
+              proc_num: int = DEFAULT_PROC_NUM):
     """
     Process inference for LongWriter model.
 
@@ -147,6 +148,7 @@ def run_infer(model: str,
         generation_kwargs: The generation arguments for the model.
             Attributes: `max_new_tokens`: The maximum number of tokens to generate. `temperature`: The temperature
         enable: Whether to run infer process.
+        proc_num: calling OpenAI api service with proc_num
     """
     model_id_path: str = os.path.join(output_dir, model.strip(os.sep).replace(os.sep, '__'))
 
@@ -181,8 +183,8 @@ def run_infer(model: str,
                            verbose=api_config.get('verbose', False),
                            )
 
-    # TODO: ONLY FOR TEST  generate_simple
-    results: List[str] = api_client.generate_simple(inputs=[example['prompt'] for example in data_list])
+    # TODO: refine generate_simple
+    results: List[str] = api_client.generate_simple(inputs=[example['prompt'] for example in data_list], num_proc=proc_num)
     assert len(results) == len(data_list), f'Error: The number of predictions {len(results)} is not equal to the number of inputs {len(data_list)}.'
     logger.info(f'Finish generating predictions with {len(data_list)} samples for {model}')
 

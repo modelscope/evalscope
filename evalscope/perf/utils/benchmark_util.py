@@ -1,8 +1,7 @@
 import time
+import torch
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
-
-import torch
 
 from evalscope.utils.logger import get_logger
 

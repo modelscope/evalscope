@@ -1,6 +1,6 @@
+# isort: skip_file
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from typing import Dict, Any, List
-
+from typing import Any, Dict, List
 """
 The API meta template for OpenCompass.
 
@@ -26,18 +26,16 @@ class MetaTemplateType:
 TEMPLATE_MAPPING: Dict[str, Dict[str, Any]] = {}
 
 
-def register_template(name: str,
-                      template: Dict[str, Any],
-                      exists_ok: bool = False):
+def register_template(name: str, template: Dict[str, Any], exists_ok: bool = False):
     if not exists_ok and name in TEMPLATE_MAPPING:
-        raise ValueError(f"The `{name}` has already been registered in the TEMPLATE_MAPPING.")
+        raise ValueError(f'The `{name}` has already been registered in the TEMPLATE_MAPPING.')
 
     TEMPLATE_MAPPING[name] = template
 
 
 def get_template(name: str) -> Dict[str, Any]:
     if name not in TEMPLATE_MAPPING:
-        raise ValueError(f"The `{name}` has not been registered in the TEMPLATE_MAPPING.")
+        raise ValueError(f'The `{name}` has not been registered in the TEMPLATE_MAPPING.')
 
     return TEMPLATE_MAPPING[name]
 
@@ -46,16 +44,12 @@ def get_template(name: str) -> Dict[str, Any]:
 register_template(
     name=MetaTemplateType.default_api_meta_template_oc,
     template=dict(
-        round=[
-            dict(role='HUMAN', api_role='HUMAN'),
-            dict(role='BOT', api_role='BOT', generate=True)
-        ],
+        round=[dict(role='HUMAN', api_role='HUMAN'),
+               dict(role='BOT', api_role='BOT', generate=True)],
         reserved_roles=[
             dict(role='SYSTEM', api_role='SYSTEM'),
         ],
-    )
-)
-
+    ))
 
 if __name__ == '__main__':
     res = MetaTemplateType.get_template_name_list()

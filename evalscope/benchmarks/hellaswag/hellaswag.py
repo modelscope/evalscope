@@ -1,19 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright 2020 The HuggingFace Datasets Authors and the current dataset script contributor.
-
 """HellaSwag: Can a Machine Really Finish Your Sentence? is a new dataset for commonsense NLI.
     A paper was published at ACL2019.
 """
-
 """DO NOT EDIT."""
 
-import json
 import datasets
+import json
+
 # flake8: noqa
 
 # HomePage: https://rowanzellers.com/hellaswag/
 # GitHub: https://github.com/rowanz/hellaswag
-
 
 _CITATION = """\
 @inproceedings{zellers2019hellaswag,
@@ -47,21 +45,19 @@ class Hellaswag(datasets.GeneratorBasedBuilder):
             # This is the description that will appear on the datasets page.
             description=_DESCRIPTION,
             # datasets.features.FeatureConnectors
-            features=datasets.Features(
-                {
-                    # These are the features of your dataset like images, labels ...
-                    'ind': datasets.Value('int32'),
-                    'activity_label': datasets.Value('string'),
-                    'ctx_a': datasets.Value('string'),
-                    'ctx_b': datasets.Value('string'),
-                    'ctx': datasets.Value('string'),
-                    'endings': datasets.features.Sequence(datasets.Value('string')),
-                    'source_id': datasets.Value('string'),
-                    'split': datasets.Value('string'),
-                    'split_type': datasets.Value('string'),
-                    'label': datasets.Value('string'),
-                }
-            ),
+            features=datasets.Features({
+                # These are the features of your dataset like images, labels ...
+                'ind': datasets.Value('int32'),
+                'activity_label': datasets.Value('string'),
+                'ctx_a': datasets.Value('string'),
+                'ctx_b': datasets.Value('string'),
+                'ctx': datasets.Value('string'),
+                'endings': datasets.features.Sequence(datasets.Value('string')),
+                'source_id': datasets.Value('string'),
+                'split': datasets.Value('string'),
+                'split_type': datasets.Value('string'),
+                'label': datasets.Value('string'),
+            }),
             # If there's a common (input, target) tuple from the features,
             # specify them here. They'll be used if as_supervised=True in
             # builder.as_dataset.

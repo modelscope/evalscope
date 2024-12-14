@@ -1,6 +1,6 @@
 {
-  "ragas_version": "0.2.5",
-  "original_hash": 2334929353739018813,
+  "ragas_version": "0.2.7",
+  "original_hash": 4608101540215877909,
   "language": "chinese",
   "instruction": "给定一个主题和角色列表，根据角色描述将每个角色与相关主题关联起来。",
   "examples": [
@@ -17,7 +17,7 @@
             "role_description": "专注于包容性和员工支持。"
           },
           {
-            "name": "远程团队领导",
+            "name": "远程团队负责人",
             "role_description": "管理远程团队沟通。"
           }
         ]

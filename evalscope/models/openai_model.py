@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import openai
 import os
 import time
-
-import openai
 
 from evalscope.models import ChatBaseModel
 from evalscope.utils.logger import get_logger
@@ -43,22 +42,25 @@ class OpenAIModel(ChatBaseModel):
 
         logger.info(f'Using OpenAI model_id: {model_id}')
 
-        res = self._predict(model_id=model_id,
-                            sys_prompt=sys_prompt,
-                            user_prompt=user_prompt,
-                            temperature=temperature,
-                            max_tokens=max_tokens,
-                            mode=mode)
+        res = self._predict(
+            model_id=model_id,
+            sys_prompt=sys_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            mode=mode)
 
         return res
 
-    def _predict(self,
-                 model_id,
-                 sys_prompt,
-                 user_prompt,
-                 temperature,
-                 max_tokens,
-                 mode: str = 'chat.completion',) -> dict:
+    def _predict(
+        self,
+        model_id,
+        sys_prompt,
+        user_prompt,
+        temperature,
+        max_tokens,
+        mode: str = 'chat.completion',
+    ) -> dict:
 
         res = {}
         openai.api_key = self.api_key
@@ -82,9 +84,8 @@ class OpenAIModel(ChatBaseModel):
                         ans_text = resp['choices'][0]['message']['content']
                         model_id = resp['model']
                     else:
-                        logger.warning(
-                            f'OpenAI GPT API call failed: got empty response '
-                            f'for input {sys_prompt} {user_prompt}')
+                        logger.warning(f'OpenAI GPT API call failed: got empty response '
+                                       f'for input {sys_prompt} {user_prompt}')
                         ans_text = ''
                         model_id = ''
 
@@ -98,6 +99,5 @@ class OpenAIModel(ChatBaseModel):
             except Exception as e:
                 logger.warning(f'OpenAI API call failed: {e}')
                 time.sleep(3)
-        logger.error(
-            f'OpenAI API call failed after {self.MAX_RETRIES} retries')
+        logger.error(f'OpenAI API call failed after {self.MAX_RETRIES} retries')
         return res

@@ -29,7 +29,6 @@ def chinese_to_arabic(chinese_number: str) -> int:
         '七': 7,
         '八': 8,
         '九': 9,
-
         '俩': 2,
         '两': 2,
     }

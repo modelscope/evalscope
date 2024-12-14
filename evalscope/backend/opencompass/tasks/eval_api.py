@@ -4,7 +4,6 @@ from opencompass.partitioners import NaivePartitioner
 from opencompass.runners import LocalRunner
 from opencompass.tasks import OpenICLInferTask
 
-
 with read_base():
     # from opencompass.configs.summarizers.medium import summarizer
     # from opencompass.configs.summarizers.PMMEval import summarizer
@@ -17,7 +16,6 @@ for _dataset in datasets:
         from opencompass.datasets.humaneval import humaneval_gpt_postprocess
         _dataset['eval_cfg']['pred_postprocessor']['type'] = humaneval_gpt_postprocess
 
-
 # 2. Get models, only for placeholder, you should fill in the real model information from command line
 # See more templates in `opencompass.cli.arguments.ApiModelConfig`
 models = []
@@ -25,8 +23,5 @@ models = []
 # 3. Get infer config
 infer = dict(
     partitioner=dict(type=NaivePartitioner),
-    runner=dict(
-        type=LocalRunner,
-        max_num_workers=4,
-        task=dict(type=OpenICLInferTask)),
+    runner=dict(type=LocalRunner, max_num_workers=4, task=dict(type=OpenICLInferTask)),
 )

@@ -1,9 +1,10 @@
 import argparse
+import json
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import json
+from evalscope.constants import DEFAULT_WORK_DIR
 
 
 @dataclass
@@ -32,6 +33,9 @@ class Arguments:
     wandb_api_key: Optional[str] = None  # WandB API key for logging
     name: Optional[str] = None  # Name for the run
 
+    # Output settings
+    outputs_dir: str = DEFAULT_WORK_DIR
+
     # Prompt settings
     max_prompt_length: int = sys.maxsize  # Maximum length of the prompt
     min_prompt_length: int = 0  # Minimum length of the prompt
@@ -57,7 +61,6 @@ class Arguments:
 
     @staticmethod
     def from_args(args):
-
         return Arguments(
             model=args.model,
             attn_implementation=args.attn_implementation,
@@ -72,6 +75,7 @@ class Arguments:
             headers=args.headers,
             wandb_api_key=args.wandb_api_key,
             name=args.name,
+            outputs_dir=args.outputs_dir,
             debug=args.debug,
             tokenizer_path=args.tokenizer_path,
             api=args.api,
@@ -152,6 +156,9 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
 
+    # Output settings
+    parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
+
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')
     parser.add_argument('--dataset-path', type=str, required=False, help='Path to the dataset file')
@@ -170,6 +177,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
+
     # yapf: enable
 
 

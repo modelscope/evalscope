@@ -1,18 +1,21 @@
 import os
 import torch
-from typing import List, Optional, Union, Dict
-from sentence_transformers import models
-from sentence_transformers.SentenceTransformer import SentenceTransformer
-from sentence_transformers.cross_encoder import CrossEncoder
-from torch import Tensor
-from evalscope.backend.rag_eval.utils.tools import download_model
-from evalscope.utils.logger import get_logger
 from langchain_core.embeddings import Embeddings
+from sentence_transformers import models
+from sentence_transformers.cross_encoder import CrossEncoder
+from sentence_transformers.SentenceTransformer import SentenceTransformer
+from torch import Tensor
+from typing import Dict, List, Optional, Union
+
+from evalscope.backend.rag_eval.utils.tools import download_model
+from evalscope.constants import HubType
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
 class BaseModel(Embeddings):
+
     def __init__(
         self,
         model_name_or_path: str,
@@ -83,9 +86,8 @@ class BaseModel(Embeddings):
 
 
 class SentenceTransformerModel(BaseModel):
-    def __init__(
-        self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs
-    ):
+
+    def __init__(self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs):
         super().__init__(model_name_or_path, **kwargs)
 
         if not pooling_mode:
@@ -104,9 +106,7 @@ class SentenceTransformerModel(BaseModel):
                 word_embedding_model.get_word_embedding_dimension(),
                 pooling_mode=pooling_mode,
             )
-            self.model = SentenceTransformer(
-                modules=[word_embedding_model, pooling_model],
-            )
+            self.model = SentenceTransformer(modules=[word_embedding_model, pooling_model], )
 
         self.model.max_seq_length = self.max_seq_length
 
@@ -130,6 +130,7 @@ class SentenceTransformerModel(BaseModel):
 
 
 class CrossEncoderModel(BaseModel):
+
     def __init__(self, model_name_or_path: str, **kwargs):
         super().__init__(model_name_or_path, **kwargs)
         self.model = CrossEncoder(
@@ -160,12 +161,12 @@ class EmbeddingModel:
     def load(
         model_name_or_path: str = '',
         is_cross_encoder: bool = False,
-        hub: str = 'modelscope',
+        hub: str = HubType.MODELSCOPE,
         revision: Optional[str] = 'master',
         **kwargs,
     ):
         # If model path does not exist and hub is 'modelscope', download the model
-        if not os.path.exists(model_name_or_path) and hub == 'modelscope':
+        if not os.path.exists(model_name_or_path) and hub == HubType.MODELSCOPE:
             model_name_or_path = download_model(model_name_or_path, revision)
 
         # Return different model instances based on whether it is a cross-encoder and pooling mode

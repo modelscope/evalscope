@@ -1,9 +1,9 @@
 import logging
-from contextlib import suppress
-
 import torch
 import torch.nn.functional as F
+from contextlib import suppress
 from tqdm import tqdm
+
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -51,9 +51,7 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
     for batch_images, batch_texts, inds in tqdm(dataloader):
 
         # store the index of image for each text
-        batch_texts_image_index = [
-            ind for ind, texts in zip(inds, batch_texts) for text in texts
-        ]
+        batch_texts_image_index = [ind for ind, texts in zip(inds, batch_texts) for text in texts]
 
         # compute the embedding of images and texts
         batch_images_emb = model.encode_image(batch_images)
@@ -93,33 +91,16 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
         # so we can easily compute that using the actual recall, by checking whether there is at least one true positive,
         # which would be the case if the recall is greater than 0. One we compute the recal for each image (or text), we average
         # it over the dataset.
-        metrics[f"image_retrieval_recall@{recall_k}"] = (
-            (
-                batchify(
-                    recall_at_k, scores, positive_pairs, batch_size, device, k=recall_k
-                )
-                > 0
-            )
-            .float()
-            .mean()
-            .item()
-        )
-        metrics[f"text_retrieval_recall@{recall_k}"] = (
-            (
-                batchify(
-                    recall_at_k,
-                    scores.T,
-                    positive_pairs.T,
-                    batch_size,
-                    device,
-                    k=recall_k,
-                )
-                > 0
-            )
-            .float()
-            .mean()
-            .item()
-        )
+        metrics[f'image_retrieval_recall@{recall_k}'] = ((batchify(
+            recall_at_k, scores, positive_pairs, batch_size, device, k=recall_k) > 0).float().mean().item())
+        metrics[f'text_retrieval_recall@{recall_k}'] = ((batchify(
+            recall_at_k,
+            scores.T,
+            positive_pairs.T,
+            batch_size,
+            device,
+            k=recall_k,
+        ) > 0).float().mean().item())
 
     return metrics
 
@@ -147,9 +128,7 @@ def recall_at_k(scores, positive_pairs, k):
     # compute number of positives for each text
     nb_positive = positive_pairs.sum(dim=1)
     # nb_texts, k, nb_images
-    topk_indices_onehot = torch.nn.functional.one_hot(
-        topk_indices, num_classes=nb_images
-    )
+    topk_indices_onehot = torch.nn.functional.one_hot(topk_indices, num_classes=nb_images)
     # compute number of true positives
     positive_pairs_reshaped = positive_pairs.view(nb_texts, 1, nb_images)
     # a true positive means a positive among the topk

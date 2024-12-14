@@ -45,7 +45,8 @@ def run_task(task_cfg: Union[str, dict]):
                                   verbose=infer_config.get('verbose', False),
                               ),
                               generation_kwargs=infer_config.get('generation_kwargs'),
-                              enable='infer' in stage)
+                              enable='infer' in stage,
+                              proc_num=infer_config.get('proc_num', 16))
 
     # Run eval process
     run_eval(model=model,
@@ -77,7 +78,7 @@ if __name__ == '__main__':
                     },
 
                     eval_config={
-                        'openai_api_key': 'YOUR_OPENAI_API_KEY',
+                        'openai_api_key': None,
                         'openai_api_base': 'https://api.openai.com/v1/chat/completions',
                         'openai_gpt_model': 'gpt-4o-2024-05-13',
                         'generation_kwargs': {'max_new_tokens': 1024, 'temperature': 0.5, 'stop': None},

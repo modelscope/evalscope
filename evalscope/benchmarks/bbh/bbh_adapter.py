@@ -1,21 +1,21 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
-import re
-import random
 import json
+import os
+import random
+import re
 
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import AnswerKeys
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score, ResponseParser
+from evalscope.utils import ResponseParser, normalize_score
 from evalscope.utils.logger import get_logger
+
 # flake8: noqa
 
 logger = get_logger()
 
 DATASET_ID = 'modelscope/bbh'
-
 
 # BBH multiple choice subset list
 MULTIPLE_CHOICE = 'multiple_choice'
@@ -87,12 +87,13 @@ class BBHAdapter(DataAdapter):
                          f'Use 3-shot by default.')
             few_shot_num = 3
 
-        super().__init__(subset_list=subset_list,
-                         metric_list=metric_list,
-                         few_shot_num=few_shot_num,
-                         train_split=train_split,
-                         eval_split=eval_split,
-                         **kwargs)
+        super().__init__(
+            subset_list=subset_list,
+            metric_list=metric_list,
+            few_shot_num=few_shot_num,
+            train_split=train_split,
+            eval_split=eval_split,
+            **kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -151,10 +152,10 @@ class BBHAdapter(DataAdapter):
         if self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'\n** Use default settings: \n'
-                    f'>few_shot_num: {self.few_shot_num}, '
-                    f'>few_shot_split: {self.train_split}, '
-                    f'>target_eval_split: {self.eval_split}')
+        logger.info(f'Use default settings: '
+                    f'> few_shot_num: {self.few_shot_num}, '
+                    f'> few_shot_split: {self.train_split}, '
+                    f'> target_eval_split: {self.eval_split}')
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
@@ -260,17 +261,19 @@ class BBHAdapter(DataAdapter):
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{'name': subset_name, 'score': normalize_score(score=score)} for subset_name, (score, _) in subset_score_map.items()]
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score)
+        } for subset_name, (score, _) in subset_score_map.items()]
 
-        category_d = dict(name='DEFAULT',
-                          score=weighted_avg_acc,
-                          subset=cate_avg_list)
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
 
-        res_map = dict(name=report_name or 'bbh',
-                       metric=self.metric_list[0]['name'],
-                       score=weighted_avg_acc,
-                       category=[category_d],
-                       total_num=total_num)
+        res_map = dict(
+            name=report_name or 'bbh',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
 
         return res_map
 

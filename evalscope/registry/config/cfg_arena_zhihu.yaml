@@ -21,7 +21,7 @@ answers_gen:
         model_id_or_path: /mnt/data/data/user/maoyunlin.myl/output/qwen2-7b-instruct/v25-20240809-113533/checkpoint-309-merged
         revision: NULL       # revision of model, default is NULL
         precision: torch.float16
-        enable: true           # enable or disable this model     
+        enable: true           # enable or disable this model
         template_type: default-generation
         generation_config:
             do_sample: true

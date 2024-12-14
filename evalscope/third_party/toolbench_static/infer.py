@@ -16,13 +16,13 @@
 
 # Make it more memory efficient by monkey patching the LLaMA model with FlashAttn.
 
-from dataclasses import dataclass, field
 import json
 import os
-from rouge import Rouge
-import time
-from urllib3.exceptions import MaxRetryError, NewConnectionError
 import requests
+import time
+from dataclasses import dataclass, field
+from rouge import Rouge
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 
 def evaluate_rouge_l(cand_list: list, ref_list: list):
@@ -30,7 +30,7 @@ def evaluate_rouge_l(cand_list: list, ref_list: list):
         return 0
     rouge = Rouge()
     rouge_score = rouge.get_scores(hyps=cand_list, refs=ref_list, avg=True)
-    rougel = rouge_score["rouge-l"]["f"]
+    rougel = rouge_score['rouge-l']['f']
     return rougel
 
 
@@ -42,8 +42,8 @@ def nested_load_test_data(data_path):
             test_raw_data += temp_test
         return test_raw_data
     elif os.path.isfile(data_path) and data_path.endswith('.json'):
-        print("Load data from", data_path)
-        temp_data = json.load(open(data_path, "r"))
+        print('Load data from', data_path)
+        temp_data = json.load(open(data_path, 'r'))
         test_raw_data = temp_data
         return test_raw_data
     else:
@@ -51,39 +51,24 @@ def nested_load_test_data(data_path):
 
 
 def baichuan_call(context: list, system: str):
-    url = "https://api.baichuan-ai.com/v1/chat/completions"
-    api_key = "sk-xxx"
+    url = 'https://api.baichuan-ai.com/v1/chat/completions'
+    api_key = 'sk-xxx'
 
     new_msg = []
-    new_msg.append({
-        "role": 'system',
-        'content': system})
+    new_msg.append({'role': 'system', 'content': system})
     for m in context:
-        if m['role'] == "user":
-            new_msg.append({
-                'role': 'user', 'content': m['content']
-            })
-        elif m['role'] == "function":
-            new_msg.append({
-                'role': 'user', 'content': m['content']
-            })
+        if m['role'] == 'user':
+            new_msg.append({'role': 'user', 'content': m['content']})
+        elif m['role'] == 'function':
+            new_msg.append({'role': 'user', 'content': m['content']})
         elif m['role'] == 'assistant':
-            new_msg.append({
-                'role': 'assistant', 'content': m['content']
-            })
+            new_msg.append({'role': 'assistant', 'content': m['content']})
     # print(json.dumps(new_msg, indent=2))
-    data = {
-        "model": "Baichuan2-Turbo",
-        "messages": new_msg,
-        "stream": False
-    }
+    data = {'model': 'Baichuan2-Turbo', 'messages': new_msg, 'stream': False}
 
     json_data = json.dumps(data)
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + api_key
-    }
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api_key}
 
     for i in range(5):
         res = None
@@ -91,7 +76,7 @@ def baichuan_call(context: list, system: str):
             res = requests.post(url, data=json_data, headers=headers, timeout=60)
             res = res._content.decode('utf-8')
             res = json.loads(res)
-            return res["choices"][0]["message"]["content"]
+            return res['choices'][0]['message']['content']
         except KeyError:
             print(res)
             time.sleep(1)
@@ -105,57 +90,52 @@ def baichuan_call(context: list, system: str):
         except NewConnectionError:
             time.sleep(5)
             continue
-    return ""
+    return ''
 
 
 def minimax_call(context: list, system: str):
-    group_id = "your-id"
-    api_key = "your-xxx"
+    group_id = 'your-id'
+    api_key = 'your-xxx'
 
-    url = f"https://api.minimax.chat/v1/text/chatcompletion_pro?GroupId={group_id}"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    url = f'https://api.minimax.chat/v1/text/chatcompletion_pro?GroupId={group_id}'
+    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
 
     # construct message
-    system_prompt = "MM智能助理是一款由MiniMax自研的，没有调用其他产品的接口的大型语言模型。" \
-                    "MiniMax是一家中国科技公司，一直致力于进行大模型相关的研究。"
+    system_prompt = 'MM智能助理是一款由MiniMax自研的，没有调用其他产品的接口的大型语言模型。' \
+                    'MiniMax是一家中国科技公司，一直致力于进行大模型相关的研究。'
     system_prompt += ('\n' + system)
 
     new_msg = []
     for m in context:
-        if m['role'] == "user":
-            new_msg.append({
-                'sender_type': 'USER', 'sender_name': 'user', 'text': m['content']
-            })
-        elif m['role'] == "function":
-            new_msg.append({
-                'sender_type': 'USER', 'sender_name': 'funtion', 'text': m['content']
-            })
+        if m['role'] == 'user':
+            new_msg.append({'sender_type': 'USER', 'sender_name': 'user', 'text': m['content']})
+        elif m['role'] == 'function':
+            new_msg.append({'sender_type': 'USER', 'sender_name': 'funtion', 'text': m['content']})
         elif m['role'] == 'assistant':
-            new_msg.append({
-                'sender_type': 'BOT', 'sender_name': 'MM智能助理', 'text': m['content']
-            })
+            new_msg.append({'sender_type': 'BOT', 'sender_name': 'MM智能助理', 'text': m['content']})
 
     request_body = {
-        "model": "abab6-chat",
+        'model': 'abab6-chat',
         # "model": "abab5.5s-chat",
-        "tokens_to_generate": 8192,
-        "reply_constraints": {"sender_type": "BOT", "sender_name": "MM智能助理"},
-        "messages": new_msg,
-        "bot_setting": [
-            {
-                "bot_name": "MM智能助理",
-                "content": system_prompt,
-            }
-        ],
+        'tokens_to_generate': 8192,
+        'reply_constraints': {
+            'sender_type': 'BOT',
+            'sender_name': 'MM智能助理'
+        },
+        'messages': new_msg,
+        'bot_setting': [{
+            'bot_name': 'MM智能助理',
+            'content': system_prompt,
+        }],
     }
     response = requests.post(url, headers=headers, json=request_body)
     status_code = response.status_code
     for i in range(5):
         try:
             if status_code == 200:
-                reply = response.json()["reply"]
+                reply = response.json()['reply']
                 if len(reply) == 0:
-                    print("limit rate")
+                    print('limit rate')
                     time.sleep(8)
                     continue
                 print(f'>>return: {reply}')
@@ -167,12 +147,12 @@ def minimax_call(context: list, system: str):
             print(response)
             time.sleep(5)
             continue
-    return ""
+    return ''
 
 
 def swift_call(context: list, system: str, swift_infer_obj):
     query_d: dict = context[-1]
-    history_list = context[: -1]
+    history_list = context[:-1]
 
     query: str = query_d['content']
     history_msg = []
@@ -211,9 +191,8 @@ def run_infer(args: InferArgs):
 
     if args.deploy_type == 'swift':
         from evalscope.third_party.toolbench_static.llm.swift_infer import SwiftInfer, SwiftInferArgs
-        swift_infer_args = SwiftInferArgs(model_id_or_path=args.model_name_or_path,
-                                          model_type=args.model_type,
-                                          max_new_tokens=args.max_new_tokens)
+        swift_infer_args = SwiftInferArgs(
+            model_id_or_path=args.model_name_or_path, model_type=args.model_type, max_new_tokens=args.max_new_tokens)
         swift_infer = SwiftInfer(args=swift_infer_args)
     else:
         swift_infer = None
@@ -232,7 +211,7 @@ def run_infer(args: InferArgs):
     preds = []
     refs = []
     for i, o in enumerate(infer_samples):
-        if i < len(processed_samples) and "predictions" in processed_samples[i].keys():
+        if i < len(processed_samples) and 'predictions' in processed_samples[i].keys():
             infer_samples[i]['predictions'] = processed_samples[i]['predictions']
             refs.append(processed_samples[i]['target'])
             preds.append(processed_samples[i]['predictions'])
@@ -267,7 +246,7 @@ def run_infer(args: InferArgs):
         reference = infer_samples[i]['target']
         infer_samples[i]['predictions'] = candidate
         if reference.strip() in ['', '.', ',']:
-            reference = "none"
+            reference = 'none'
         refs.append(reference)
         preds.append(candidate)
 

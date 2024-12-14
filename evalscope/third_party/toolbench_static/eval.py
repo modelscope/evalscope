@@ -1,10 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-from dataclasses import dataclass
-
-from rouge import Rouge
 import os
+from dataclasses import dataclass
+from rouge import Rouge
 
 
 @dataclass
@@ -24,7 +23,7 @@ def run_eval(args: EvalArgs):
             return 0
         rouge = Rouge()
         rouge_score = rouge.get_scores(hyps=cand_list, refs=ref_list, avg=True)
-        rougel = rouge_score["rouge-l"]["f"]
+        rougel = rouge_score['rouge-l']['f']
         return rougel
 
     def evaluate_action_em(cand_list: list, ref_list: list):
@@ -97,8 +96,8 @@ def run_eval(args: EvalArgs):
         data = json.load(f)
 
     def parse_action(text):
-        action = "None"
-        action_input = "{}"
+        action = 'None'
+        action_input = '{}'
         if 'Action Input:' in text:
             input_idx = text.rindex('Action Input:')
             action_input = text[input_idx + len('Action Input:'):].strip()
@@ -117,24 +116,24 @@ def run_eval(args: EvalArgs):
 
     def parse_output(text):
         action, action_input = parse_action(text)
-        if action == "Finish":
+        if action == 'Finish':
             try:
                 action_input = json.loads(action_input)
                 # print(action_input)
                 # print(json.dumps(action_input,indent=2))
-                return_type = action_input["return_type"]
-                if return_type == "give_answer":
-                    if "final_answer" in action_input.keys():
+                return_type = action_input['return_type']
+                if return_type == 'give_answer':
+                    if 'final_answer' in action_input.keys():
                         answer = str(action_input['final_answer'])
                         if answer.strip() in ['', '.', ',']:
-                            answer = "None"
+                            answer = 'None'
                     else:
-                        answer = "None"
-                    return "finish", action, action_input, answer
+                        answer = 'None'
+                    return 'finish', action, action_input, answer
                 else:
-                    return "give up", None, None, None
+                    return 'give up', None, None, None
             except:
-                return "give up", None, None, None
+                return 'give up', None, None, None
         else:
             plan = 'call'
             answer = None
@@ -163,7 +162,7 @@ def run_eval(args: EvalArgs):
         # ref_ans: None
 
         pred_plan, pred_action, pred_input, pred_ans = parse_output(prediction)
-        if ref_action is not None and ref_action == "invalid_hallucination_function_name":
+        if ref_action is not None and ref_action == 'invalid_hallucination_function_name':
             continue
         if pred_action is not None and ref_action != 'none' and ref_action not in [t['name'] for t in d['tools']]:
             continue
