@@ -87,14 +87,19 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         cursor.execute(query, common_columns)
 
 
-def get_result_db_path(name, model, output_dir):
+def get_output_path(args: Arguments) -> str:
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-    result_db_path = os.path.join(output_dir, f'{name or model}_perf', current_time, 'benchmark_data.db')
+    output_path = os.path.join(args.outputs_dir, current_time, f'{args.name or args.model_id}')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path, exist_ok=True)
+    logger.info(f'Save the result to: {output_path}')
+    return output_path
 
-    if not os.path.exists(os.path.dirname(result_db_path)):
-        os.makedirs(os.path.dirname(result_db_path), exist_ok=True)
 
-    logger.info(f'Save the result to: {result_db_path}')
+def get_result_db_path(args: Arguments):
+    result_db_path = os.path.join(args.outputs_dir, 'benchmark_data.db')
+
+    logger.info(f'Save the data base to: {result_db_path}')
     if os.path.exists(result_db_path):
         logger.warning('The db file exists, delete it and start again!.')
         sys.exit(1)

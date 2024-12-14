@@ -65,9 +65,9 @@ async def lifespan(app: FastAPI):
         torch.cuda.empty_cache()
 
 
-def create_app(args) -> FastAPI:
+def create_app(model, attn_implementation=None) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
-    chat_service = ChatService(model_path=args.model, attn_implementation=args.attn_implementation)
+    chat_service = ChatService(model_path=model, attn_implementation=attn_implementation)
 
     app.add_middleware(
         CORSMiddleware,
@@ -97,18 +97,25 @@ def create_app(args) -> FastAPI:
 
 def start_app(args: Arguments):
     if args.api == 'local':
-        app = create_app(args)
-        uvicorn.run(app, host='0.0.0.0', port=8877, workers=1)
+        app = create_app(args.model, args.attn_implementation)
+        uvicorn.run(app, host='0.0.0.0', port=args.port, workers=1)
 
     elif args.api == 'local_vllm':
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
-
+        # yapf: disable
         proc = subprocess.Popen([
-            'python', '-m', 'vllm.entrypoints.openai.api_server', '--model', args.model, '--served-model-name',
-            os.path.basename(args.model), '--tensor-parallel-size',
-            str(torch.cuda.device_count()), '--max-model-len', '32768', '--gpu-memory-utilization', '0.9', '--host',
-            '0.0.0.0', '--port', '8877', '--disable-log-requests', '--disable-log-stats'
+            'python', '-m', 'vllm.entrypoints.openai.api_server',
+            '--model', args.model,
+            '--served-model-name', args.model,
+            '--tensor-parallel-size', str(torch.cuda.device_count()),
+            '--max-model-len', '32768',
+            '--gpu-memory-utilization', '0.9',
+            '--host', '0.0.0.0',
+            '--port', args.port,
+            '--disable-log-requests',
+            '--disable-log-stats',
         ])
+        # yapf: enable
         import atexit
 
         def on_exit():
