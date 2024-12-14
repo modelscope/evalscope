@@ -4,7 +4,9 @@
 The LongWriter supports 10,000+ Word Generation From Long Context LLMs.
 We can use the benchmark **LongBench-Write** focuses more on measuring the long output quality as well as the output length.
 
-Refer to [LongWriter](https://github.com/THUDM/LongWriter)
+GitHub: [LongWriter](https://github.com/THUDM/LongWriter)
+Technical Report: [Minimum Tuning to Unlock Long Output from LLMs with High Quality Data as the Key](https://arxiv.org/abs/2410.10210)
+
 
 ## Usage
 

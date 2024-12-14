@@ -4,7 +4,9 @@
 LongWriter 使得LLM能够生成超过10000个单词的内容。我们可以使用基准测试 **LongBench-Write** 来评估长输出的质量以及按需生成相应长度文本的能力。
 
 
-参考 [LongWriter](https://github.com/THUDM/LongWriter)
+GitHub: [LongWriter](https://github.com/THUDM/LongWriter)
+技术报告： [Minimum Tuning to Unlock Long Output from LLMs with High Quality Data as the Key](https://arxiv.org/abs/2410.10210)
+
 
 ## 使用方式
 
