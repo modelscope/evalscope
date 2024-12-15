@@ -47,16 +47,16 @@ def run_swift_eval():
     task_cfg = dict(
         eval_backend='OpenCompass',
         eval_config={
-            'datasets': ['winogrande'],
+            'datasets': ['gsm8k', 'ARC_c'],
             'models': [
                 {
-                    'path': 'qwen2-7b-instruct',  # Please make sure the model is deployed
+                    'path': 'qwen2.5',  # Please make sure the model is deployed
                     'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                     'is_chat': True,
                     'batch_size': 16,
                 },
             ],
-            'work_dir': 'outputs/qwen2_eval_result',
+            'work_dir': 'outputs',
             'limit': 10,
         },
     )

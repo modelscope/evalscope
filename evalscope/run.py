@@ -50,9 +50,13 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     outputs = setup_work_directory(task_cfg, run_time)
     configure_logging(task_cfg.debug, outputs)
 
+    task_cfg.dump_yaml(outputs.configs_dir)
     logger.info(task_cfg)
 
-    return evaluate_model(task_cfg, outputs)
+    if task_cfg.eval_backend != EvalBackend.NATIVE:
+        return run_non_native_backend(task_cfg)
+    else:
+        return evaluate_model(task_cfg, outputs)
 
 
 def parse_task_config(task_cfg) -> TaskConfig:
@@ -88,6 +92,9 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
         task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
+
+    if task_cfg.eval_backend == EvalBackend.OPEN_COMPASS:
+        task_cfg.eval_config['time_str'] = run_time
     return outputs
 
 
@@ -125,10 +132,6 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     # Initialize evaluator
     eval_results = {}
-    task_cfg.dump_yaml(outputs.configs_dir)
-
-    if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg)
 
     for dataset_name in task_cfg.datasets:
         evaluator = create_evaluator(task_cfg, dataset_name, outputs)

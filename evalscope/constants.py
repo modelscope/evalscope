@@ -79,8 +79,8 @@ class ArenaMode:
 class OutputsStructure:
     LOGS_DIR = 'logs'
     PREDICTIONS_DIR = 'predictions'
-    REVIEWS_DIR = 'reviews'
-    REPORTS_DIR = 'reports'
+    REVIEWS_DIR = 'results'
+    REPORTS_DIR = 'summary'
     CONFIGS_DIR = 'configs'
 
     def __init__(self, outputs_dir: str, is_make: bool = True):
