@@ -50,7 +50,9 @@ def run_swift_eval():
             'datasets': ['gsm8k', 'ARC_c'],
             'models': [
                 {
-                    'path': 'qwen2.5',  # Please make sure the model is deployed
+                    'path': 'Qwen2.5-7B-Instruct',  # Served model id. Please make sure the model is deployed.
+                                                    # The path should be aligned with MS/HF model_name,
+                                                    # e.g. for Qwen/Qwen2.5-7B-Instruct, the path should be Qwen2.5-7B-Instruct
                     'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions',
                     'is_chat': True,
                     'batch_size': 16,

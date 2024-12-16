@@ -140,9 +140,11 @@ def get_percentile_results(result_db_path: str):
     latency_results = percentile_results(rows, latency_index, percentiles)
 
     # Prepare data for tabulation
+    # Throughput = number of output tokens per second across all concurrency requests
+    # Latency = TTFT + (TPOT) * (the number of tokens to be generated)
     return {
         'Percentile': [f'{p}%' for p in percentiles],
-        'First Chunk Latency (s)': [first_chunk_latency_results[p] for p in percentiles],
+        'Time to first token (s)': [first_chunk_latency_results[p] for p in percentiles],
         'Latency (s)': [latency_results[p] for p in percentiles]
     }
 
