@@ -142,7 +142,7 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
             chunk_times = json.loads(chunk_times_json)
             return [t2 - t1 for t1, t2 in zip(chunk_times[:-1], chunk_times[1:])]
         except (json.JSONDecodeError, TypeError) as e:
-            logger.error(f"Error parsing chunk times: {e}")
+            logger.error(f'Error parsing chunk times: {e}')
             return []
 
     query_sql = ('SELECT start_time, chunk_times, success, completed_time, latency, first_chunk_latency, '
