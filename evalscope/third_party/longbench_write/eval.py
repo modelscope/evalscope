@@ -10,7 +10,8 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-from evalscope.utils import get_logger, jsonl_to_list
+from evalscope.utils import get_logger
+from evalscope.utils.io_utils import jsonl_to_list
 
 logger = get_logger()
 

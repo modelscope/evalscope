@@ -80,7 +80,7 @@ class BaseModel(Embeddings):
         """Embed query text. Compact mteb."""
         raise NotImplementedError
 
-    def encode_corpus(self, corpus: List[str] | List[Dict[str, str]], **kwargs) -> list[torch.Tensor]:
+    def encode_corpus(self, corpus: Union[List[str], List[Dict[str, str]]], **kwargs) -> list[torch.Tensor]:
         """Embed search docs . Compact mteb."""
         raise NotImplementedError
 

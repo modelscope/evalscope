@@ -76,33 +76,6 @@ class ArenaMode:
     PAIRWISE_BASELINE = 'pairwise_baseline'
 
 
-class OutputsStructure:
-    LOGS_DIR = 'logs'
-    PREDICTIONS_DIR = 'predictions'
-    REVIEWS_DIR = 'reviews'
-    REPORTS_DIR = 'reports'
-    CONFIGS_DIR = 'configs'
-
-    def __init__(self, outputs_dir: str, is_make: bool = True):
-        self.outputs_dir = outputs_dir
-        self.logs_dir = os.path.join(outputs_dir, OutputsStructure.LOGS_DIR)
-        self.predictions_dir = os.path.join(outputs_dir, OutputsStructure.PREDICTIONS_DIR)
-        self.reviews_dir = os.path.join(outputs_dir, OutputsStructure.REVIEWS_DIR)
-        self.reports_dir = os.path.join(outputs_dir, OutputsStructure.REPORTS_DIR)
-        self.configs_dir = os.path.join(outputs_dir, OutputsStructure.CONFIGS_DIR)
-
-        if is_make:
-            self.create_directories()
-
-    def create_directories(self):
-        os.makedirs(self.outputs_dir, exist_ok=True)
-        os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.predictions_dir, exist_ok=True)
-        os.makedirs(self.reviews_dir, exist_ok=True)
-        os.makedirs(self.reports_dir, exist_ok=True)
-        os.makedirs(self.configs_dir, exist_ok=True)
-
-
 class AnswerKeys:
     ANSWER_ID = 'answer_id'
     RAW_INPUT = 'raw_input'

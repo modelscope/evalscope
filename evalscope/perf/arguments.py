@@ -16,7 +16,7 @@ class Arguments:
     attn_implementation: Optional[str] = None  # Attention implementaion, only for local inference
     api: str = 'openai'  # API to be used (default: 'openai')
     tokenizer_path: Optional[str] = None  # Path to the tokenizer
-    port: str = '8877'  # Port number for the local API server
+    port: int = 8877  # Port number for the local API server
 
     # Connection settings
     url: str = 'http://127.0.0.1:8877/v1/chat/completions'  # URL for the API connection
@@ -138,6 +138,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Connection settings
     parser.add_argument('--url', type=str, default='http://127.0.0.1:8877/v1/chat/completions')
+    parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
     parser.add_argument('--api-key', type=str, required=False, default='EMPTY', help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=120, help='The network connection timeout')

@@ -13,6 +13,7 @@
   - 指定为`local`，则使用本地文件作为模型，并使用transformers进行推理。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 指定为`local_vllm`，则使用本地文件作为模型，并启动vllm推理服务。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 您也可以自定义API，请参考[自定义API指南](./custom.md/#自定义请求-api)。
+- `--port` 本地推理服务端口，默认为8877，仅对`local`和`local_vllm`有效。
 - `--attn-implementation` Attention实现方式，默认为None，可选[flash_attention_2|eager|sdpa]，仅在`api`为`local`时有效。
 - `--api-key` API密钥，可选。
 - `--debug` 输出调试信息。

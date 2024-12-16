@@ -11,25 +11,17 @@ from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType, OutputsStructure
+from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import import_module_util, seed_everything
-from evalscope.utils.logger import get_logger
+from evalscope.utils.io_utils import OutputsStructure, are_paths_same
+from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
 
 BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
-
-
-def configure_logging(debug: bool, outputs: Optional[OutputsStructure]):
-    """Configure logging level based on the debug flag."""
-    if outputs:
-        log_file = os.path.join(outputs.logs_dir, 'eval_log.log')
-        get_logger(log_file=log_file, force=True)
-    if debug:
-        get_logger(log_level=logging.DEBUG, force=True)
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
@@ -48,11 +40,15 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
     seed_everything(task_cfg.seed)
     outputs = setup_work_directory(task_cfg, run_time)
-    configure_logging(task_cfg.debug, outputs)
+    configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
+    task_cfg.dump_yaml(outputs.configs_dir)
     logger.info(task_cfg)
 
-    return evaluate_model(task_cfg, outputs)
+    if task_cfg.eval_backend != EvalBackend.NATIVE:
+        return run_non_native_backend(task_cfg)
+    else:
+        return evaluate_model(task_cfg, outputs)
 
 
 def parse_task_config(task_cfg) -> TaskConfig:
@@ -84,10 +80,15 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
-    elif task_cfg.work_dir == DEFAULT_WORK_DIR:
+    elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
         task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
+
+    if task_cfg.eval_backend == EvalBackend.OPEN_COMPASS:
+        task_cfg.eval_config['time_str'] = run_time
+    elif task_cfg.eval_backend == EvalBackend.VLM_EVAL_KIT:
+        task_cfg.eval_config['work_dir'] = task_cfg.work_dir
     return outputs
 
 
@@ -125,10 +126,6 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     # Initialize evaluator
     eval_results = {}
-    task_cfg.dump_yaml(outputs.configs_dir)
-
-    if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg)
 
     for dataset_name in task_cfg.datasets:
         evaluator = create_evaluator(task_cfg, dataset_name, outputs)

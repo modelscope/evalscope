@@ -5,19 +5,13 @@ import functools
 import hashlib
 import importlib
 import importlib.util
-import json
-import jsonlines as jsonl
 import numpy as np
 import os
 import random
 import re
-import sys
 import torch
-import torch.nn.functional as F
-import yaml
 from typing import Any, Dict, List, Tuple, Union
 
-from evalscope.constants import DumpMode
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -34,102 +28,6 @@ def test_level_list():
         TEST_LEVEL_LIST = [int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')]
 
     return TEST_LEVEL_LIST
-
-
-def jsonl_to_list(jsonl_file):
-    """
-    Read jsonl file to list.
-
-    Args:
-        jsonl_file: jsonl file path.
-
-    Returns:
-        list: list of lines. Each line is a dict.
-    """
-    res_list = []
-    with jsonl.open(jsonl_file, mode='r') as reader:
-        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
-            res_list.append(line)
-    return res_list
-
-
-def jsonl_to_reader(jsonl_file):
-    """
-    Read jsonl file to reader object.
-
-    Args:
-        jsonl_file: jsonl file path.
-
-    Returns:
-        reader: jsonl reader object.
-    """
-    with jsonl.open(jsonl_file, mode='r') as reader:
-        return reader
-
-
-def jsonl_to_csv():
-    pass
-
-
-def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
-    """
-    Dump data to jsonl file.
-
-    Args:
-        data_list: data list to be dumped.  [{'a': 'aaa'}, ...]
-        jsonl_file: jsonl file path.
-        dump_mode: dump mode. It can be 'overwrite' or 'append'.
-    """
-    if not jsonl_file:
-        raise ValueError('output file must be provided.')
-
-    jsonl_file = os.path.expanduser(jsonl_file)
-
-    if not isinstance(data_list, list):
-        data_list = [data_list]
-
-    if dump_mode == DumpMode.OVERWRITE:
-        dump_mode = 'w'
-    elif dump_mode == DumpMode.APPEND:
-        dump_mode = 'a'
-    with jsonl.open(jsonl_file, mode=dump_mode) as writer:
-        writer.write_all(data_list)
-
-
-def yaml_to_dict(yaml_file) -> dict:
-    """
-    Read yaml file to dict.
-    """
-    with open(yaml_file, 'r') as f:
-        try:
-            stream = yaml.safe_load(f)
-        except yaml.YAMLError as e:
-            logger.error(f'{e}')
-            raise e
-
-    return stream
-
-
-def dict_to_yaml(d: dict, yaml_file: str):
-    """
-    Dump dict to yaml file.
-    """
-    with open(yaml_file, 'w') as f:
-        yaml.dump(d, f, default_flow_style=False)
-
-
-def json_to_dict(json_file) -> dict:
-    """
-    Read json file to dict.
-    """
-    with open(json_file, 'r') as f:
-        try:
-            stream = json.load(f)
-        except json.JSONDecodeError as e:
-            logger.error(f'{e}')
-            raise e
-
-    return stream
 
 
 def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
@@ -300,18 +198,6 @@ class ResponseParser:
         return ''
 
 
-def make_outputs_dir(root_dir: str, datasets: list, model_id: str, model_revision: str):
-    if not model_id:
-        model_id = 'default'
-    model_id = model_id.replace('/', '_')
-
-    if not model_revision:
-        model_revision = 'default'
-
-    outputs_dir = os.path.join(root_dir, model_id, model_revision, f"eval_{'-'.join(datasets)}")
-
-    return outputs_dir
-
 
 def import_module_util(import_path_prefix: str, module_name: str, members_to_import: list) -> dict:
     """
@@ -353,67 +239,6 @@ def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float
         logger.warning(f'Unknown score type: {type(score)}')
 
     return score
-
-
-def split_str_parts_by(text: str, delimiters: List[str]):
-    """Split the text field into parts.
-    Args:
-        text: A text to be split.
-        delimiters: The delimiters.
-    Returns:
-        The split text in list of dicts.
-    """
-    all_start_chars = [d[0] for d in delimiters]
-    all_length = [len(d) for d in delimiters]
-
-    text_list = []
-    last_words = ''
-
-    while len(text) > 0:
-        for char_idx, char in enumerate(text):
-            match_index = [idx for idx, start_char in enumerate(all_start_chars) if start_char == char]
-            is_delimiter = False
-            for index in match_index:
-                if text[char_idx:char_idx + all_length[index]] == delimiters[index]:
-                    if last_words:
-                        if text_list:
-                            text_list[-1]['content'] = last_words
-                        else:
-                            text_list.append({'key': '', 'content': last_words})
-                    last_words = ''
-                    text_list.append({'key': delimiters[index]})
-                    text = text[char_idx + all_length[index]:]
-                    is_delimiter = True
-                    break
-            if not is_delimiter:
-                last_words += char
-            else:
-                break
-        if last_words == text:
-            text = ''
-
-    text_list[-1]['content'] = last_words
-    return text_list
-
-
-def get_bucket_sizes(max_length: int) -> List[int]:
-    return [max_length // 4 * (i + 1) for i in range(4)]
-
-
-def _get_closet_bucket(bucket_sizes, data_length):
-    """Select the one from bucket_sizes that is closest in distance to
-    data_length. This is required for TorchAcc.
-    """
-    cloest_length = sys.maxsize
-    for b in bucket_sizes:
-        if b == data_length or ((b < cloest_length) and (b > data_length)):
-            cloest_length = b
-
-    if cloest_length == sys.maxsize:
-        bucket_sizes.append(data_length)
-        cloest_length = data_length
-
-    return cloest_length
 
 
 def is_module_installed(module_name):
