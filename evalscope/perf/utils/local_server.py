@@ -111,7 +111,7 @@ def start_app(args: Arguments):
             '--max-model-len', '32768',
             '--gpu-memory-utilization', '0.9',
             '--host', '0.0.0.0',
-            '--port', args.port,
+            '--port', str(args.port),
             '--disable-log-requests',
             '--disable-log-stats',
         ])

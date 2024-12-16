@@ -75,6 +75,14 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
     return logger
 
 
+def configure_logging(debug: bool, log_file: Optional[str] = None):
+    """Configure logging level based on the debug flag."""
+    if log_file:
+        get_logger(log_file=log_file, force=True)
+    if debug:
+        get_logger(log_level=logging.DEBUG, force=True)
+
+
 def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):

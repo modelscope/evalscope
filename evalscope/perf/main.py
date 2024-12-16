@@ -8,7 +8,7 @@ from evalscope.perf.arguments import Arguments, parse_args
 from evalscope.perf.benchmark import benchmark
 from evalscope.perf.utils.db_util import get_output_path
 from evalscope.perf.utils.handler import add_signal_handlers
-from evalscope.utils.logger import get_logger
+from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.utils import seed_everything
 
 logger = get_logger()
@@ -23,10 +23,7 @@ def run_perf_benchmark(args):
 
     # Setup logger and output
     args.outputs_dir = get_output_path(args)
-    get_logger(log_file=os.path.join(args.outputs_dir, 'benchmark.log'), force=True)
-
-    if args.debug:
-        get_logger(log_level=logging.DEBUG, force=True)
+    configure_logging(args.debug, os.path.join(args.outputs_dir, 'benchmark.log'))
 
     logger.info('Starting benchmark...')
     logger.info(args)

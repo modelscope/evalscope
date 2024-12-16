@@ -11,25 +11,17 @@ from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
-from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType, OutputsStructure
+from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import import_module_util, seed_everything
-from evalscope.utils.logger import get_logger
+from evalscope.utils.io_utils import OutputsStructure
+from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
 
 BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
 MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
-
-
-def configure_logging(debug: bool, outputs: Optional[OutputsStructure]):
-    """Configure logging level based on the debug flag."""
-    if outputs:
-        log_file = os.path.join(outputs.logs_dir, 'eval_log.log')
-        get_logger(log_file=log_file, force=True)
-    if debug:
-        get_logger(log_level=logging.DEBUG, force=True)
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
@@ -48,7 +40,7 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
     seed_everything(task_cfg.seed)
     outputs = setup_work_directory(task_cfg, run_time)
-    configure_logging(task_cfg.debug, outputs)
+    configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
     task_cfg.dump_yaml(outputs.configs_dir)
     logger.info(task_cfg)

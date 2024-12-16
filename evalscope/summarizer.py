@@ -5,9 +5,10 @@ import os
 from typing import List, Union
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalBackend, OutputsStructure
+from evalscope.constants import EvalBackend
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import csv_to_list, get_latest_folder_path, json_to_dict, yaml_to_dict
+from evalscope.utils import csv_to_list, get_latest_folder_path
+from evalscope.utils.io_utils import OutputsStructure, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

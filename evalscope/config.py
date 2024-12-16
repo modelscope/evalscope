@@ -9,7 +9,8 @@ from typing import Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
-from evalscope.utils import dict_to_yaml, gen_hash, json_to_dict, yaml_to_dict
+from evalscope.utils import gen_hash
+from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

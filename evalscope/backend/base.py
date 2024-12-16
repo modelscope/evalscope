@@ -2,7 +2,7 @@
 from typing import Union
 
 from evalscope.config import TaskConfig
-from evalscope.utils import yaml_to_dict
+from evalscope.utils.io_utils import yaml_to_dict
 
 
 class BackendManager:
