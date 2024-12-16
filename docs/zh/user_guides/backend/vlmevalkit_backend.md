@@ -194,6 +194,7 @@ ollama create llava -f ./Modelfile
 ::::{tab-set}
 :::{tab-item} yaml 配置文件
 ```yaml
+work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -208,8 +209,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  reuse: true
-  work_dir: outputs
+  reuse: false
   nproc: 16
 ```
 :::
@@ -218,6 +218,7 @@ eval_config:
 
 ```python
 task_cfg_dict = {
+    'work_dir': 'outputs',
     'eval_backend': 'VLMEvalKit',
     'eval_config': 
             {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
@@ -230,8 +231,7 @@ task_cfg_dict = {
                 'temperature': 0.0,
                 'type': 'qwen-vl-chat'}
                 ],
-            'reuse': True,
-            'work_dir': 'output'}}
+            'reuse': False,}}
 ```
 :::
 ::::
@@ -248,6 +248,7 @@ task_cfg_dict = {
 ```{code-block} yaml 
 :caption: eval_openai_api.json
 
+work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -258,7 +259,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  reuse: true
+  reuse: false
   work_dir: outputs
   nproc: 16
 ```
@@ -268,6 +269,7 @@ eval_config:
 
 ```python
 task_cfg_dict = {
+    'work_dir': 'outputs',
     'eval_backend': 'VLMEvalKit',
     'eval_config': 
             {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
@@ -277,8 +279,7 @@ task_cfg_dict = {
                 {'name': 'qwen_chat',
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
-            'reuse': True,
-            'work_dir': 'outputs'}}
+            'reuse': False}}
 ```
 :::
 ::::
@@ -286,6 +287,7 @@ task_cfg_dict = {
 ### 参数说明
 
 - `eval_backend`：默认值为 `VLMEvalKit`，表示使用 VLMEvalKit 评测后端。
+- `work_dir`：字符串，保存评测结果、日志和摘要的目录。默认值为 `outputs`。
 - `eval_config`：字典，包含以下字段：
   - `data`：列表，参考[目前支持的数据集](#2-数据准备)
   - `model`：字典列表，每个字典可以指定以下字段：
@@ -307,9 +309,8 @@ task_cfg_dict = {
   - `limit`：整数，评测的数据数量，默认值为 `None`，表示运行所有示例。
   - `reuse`：布尔值，是否重用评测结果，否则将删除所有评测临时文件。
     ```{note}
-    对与`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。
+    对与`ms-vlmeval>=0.0.11`参数`rerun` 更名为`reuse`，默认值为`False`。设置为`True`时需要在task_cfg_dict中添加`use_cache`来指定使用的缓存目录。
     ```
-  - `work_dir`：字符串，保存评测结果、日志和摘要的目录。默认值为 `outputs`
   - `nproc`：整数，并行调用 API 的数量。
   - `nframe`：整数，视频数据集的视频帧数，默认值为 `8`，
   - `fps`：整数，视频数据集的帧率，默认值为 `-1`，表示使用`nframe`；设置为大于0，则使用`fps`来计算视频帧数。

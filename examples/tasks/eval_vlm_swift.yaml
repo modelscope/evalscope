@@ -1,4 +1,5 @@
 eval_backend: VLMEvalKit
+work_dir: outputs
 eval_config:
   model:
     - type: internvl2-8b   # model id of the model
@@ -24,7 +25,6 @@ eval_config:
   mode: all
   limit: 10
   reuse: true
-  work_dir: outputs
   nproc: 1
   # judge model server config
   OPENAI_API_KEY: EMPTY

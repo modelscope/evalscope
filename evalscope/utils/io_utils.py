@@ -150,3 +150,13 @@ def json_to_dict(json_file) -> dict:
             raise e
 
     return stream
+
+
+def are_paths_same(path1, path2):
+    """
+    Check if two paths are the same.
+    """
+    real_path1 = os.path.realpath(os.path.abspath(path1))
+    real_path2 = os.path.realpath(os.path.abspath(path2))
+
+    return real_path1 == real_path2

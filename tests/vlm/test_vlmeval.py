@@ -40,8 +40,9 @@ class TestVLMEval(unittest.TestCase):
                 }],  # model name for VLMEval config
                 'nproc': 1,
                 'reuse': True,
-                'work_dir': 'outputs'
-            }
+            },
+            'work_dir': 'outputs',
+            'use_cache': 'outputs/20241216_142838'
         }
 
         logger.info(f'>> Start to run task: {task_cfg}')

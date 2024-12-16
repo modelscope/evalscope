@@ -15,7 +15,7 @@ from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBa
 from evalscope.evaluator import Evaluator, HumanevalEvaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import import_module_util, seed_everything
-from evalscope.utils.io_utils import OutputsStructure
+from evalscope.utils.io_utils import OutputsStructure, are_paths_same
 from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
@@ -80,13 +80,15 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
-    elif task_cfg.work_dir == DEFAULT_WORK_DIR:
+    elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
         task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
 
     if task_cfg.eval_backend == EvalBackend.OPEN_COMPASS:
         task_cfg.eval_config['time_str'] = run_time
+    elif task_cfg.eval_backend == EvalBackend.VLM_EVAL_KIT:
+        task_cfg.eval_config['work_dir'] = task_cfg.work_dir
     return outputs
 
 
