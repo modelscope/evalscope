@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from langchain_core.embeddings import Embeddings
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
-from typing import List
+from typing import List, Union
 
 from evalscope.backend.rag_eval.utils.tools import PIL_to_base64, download_model
 from evalscope.constants import HubType
@@ -86,7 +86,7 @@ class CLIPModel(Embeddings):
         self.transform = self.processor.image_processor
         self.tokenizer = self.processor.tokenizer
 
-    def encode_text(self, batch_texts: List[str] | List[List[str]]):
+    def encode_text(self, batch_texts: Union[List[str], List[List[str]]]):
         if isinstance(batch_texts[0], list):
             batch_texts = [text for _, texts in enumerate(batch_texts) for text in texts]
         # Ensure that the input texts are within the token limit

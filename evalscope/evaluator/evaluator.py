@@ -11,10 +11,11 @@ from typing import Any, Dict, List, Optional, Union
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, AnswerKeys, DumpMode, EvalStage, EvalType, HubType,
-                                 OutputsStructure, ReviewKeys)
+                                 ReviewKeys)
 from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
-from evalscope.utils import dict_torch_dtype_to_str, dump_jsonl_data, gen_hash, jsonl_to_list
+from evalscope.utils import dict_torch_dtype_to_str, gen_hash
+from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

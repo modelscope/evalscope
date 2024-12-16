@@ -4,11 +4,11 @@ import re
 from tqdm import tqdm
 from typing import List, Optional
 
-from evalscope.constants import OutputsStructure
 from evalscope.evaluator.evaluator import logger
 from evalscope.models.model_adapter import BaseModelAdapter
 from evalscope.tools.combine_reports import gen_table
 from evalscope.utils import normalize_score
+from evalscope.utils.io_utils import OutputsStructure
 
 
 class HumanevalEvaluator(object):

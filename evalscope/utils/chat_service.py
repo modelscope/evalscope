@@ -43,7 +43,7 @@ class DeltaMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     model: str
-    messages: List[ChatMessage] | str
+    messages: Union[List[ChatMessage], str]
     temperature: Optional[float] = None
     top_p: Optional[float] = None
     max_tokens: Optional[int] = 2048

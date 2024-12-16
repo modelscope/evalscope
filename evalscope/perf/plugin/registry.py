@@ -1,4 +1,4 @@
-from typing import Any, List, Type
+from typing import Any, List, Type, Union
 
 
 class PluginRegistry:
@@ -20,7 +20,7 @@ class PluginRegistry:
         return self.get_class(name)
 
 
-def register_dataset(name: str | List[str]):
+def register_dataset(name: Union[str, List[str]]):
 
     def class_decorator(cls: Type):
         if isinstance(name, str):
@@ -35,7 +35,7 @@ def register_dataset(name: str | List[str]):
     return class_decorator
 
 
-def register_api(name: str | List[str]):
+def register_api(name: Union[str, List[str]]):
 
     def class_decorator(cls: Type):
         if isinstance(name, str):

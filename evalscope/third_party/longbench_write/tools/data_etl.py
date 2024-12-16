@@ -6,7 +6,7 @@ from typing import List
 
 from evalscope.third_party.longbench_write.eval import EvalLength
 from evalscope.third_party.longbench_write.utils import chinese_to_arabic, count_words
-from evalscope.utils import jsonl_to_list
+from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

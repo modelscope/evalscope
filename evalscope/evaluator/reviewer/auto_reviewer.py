@@ -12,8 +12,9 @@ from typing import Any, List
 
 from evalscope.constants import ArenaMode, EvalConfigKeys, FnCompletionParser, PositionBiasMitigation
 from evalscope.models.openai_model import OpenAIModel
-from evalscope.utils import completion_parsers, dump_jsonl_data, jsonl_to_list, random_seeded_choice
+from evalscope.utils import completion_parsers, random_seeded_choice
 from evalscope.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
+from evalscope.utils.io_utils import dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

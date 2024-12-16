@@ -6,7 +6,8 @@ import re
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import jsonl_to_list, normalize_score
+from evalscope.utils import normalize_score
+from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
