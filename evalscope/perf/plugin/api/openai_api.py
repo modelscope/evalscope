@@ -1,7 +1,7 @@
 import json
 import os
 from transformers import AutoTokenizer
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
@@ -29,7 +29,7 @@ class OpenaiPlugin(ApiPluginBase):
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict] | str, param: Arguments) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Arguments) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
