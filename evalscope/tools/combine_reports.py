@@ -19,16 +19,14 @@ def get_report(report_file: str):
     dataset_name = data_d['dataset_name']
     model_name = data_d['model_name']
     score = data_d['score']  # float or dict
+    metric = data_d['metric']
     score_d = {}
     if isinstance(score, dict):
-        # score_d = dict([(k, round(v, 4) * 100) for k, v in score.items()])
         score_d = score
     elif isinstance(score, float):
-        # score_d['acc'] = round(score, 4) * 100
-        score_d['acc'] = score
+        score_d[metric] = score
     else:
         raise ValueError(f'Unknown score type: {type(score)}')
-    # score_str = '\n'.join([str(v) + ' (' + k + ')' for k, v in score_d.items()])
     score_str = '\n'.join(['(' + dataset_name + '/' + k + ') ' + str(v) for k, v in score_d.items()])
 
     return model_name, {'dataset_name': dataset_name, 'score': score_str}
