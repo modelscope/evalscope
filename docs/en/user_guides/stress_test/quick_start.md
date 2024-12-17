@@ -63,74 +63,83 @@ Parameter Descriptions:
 ### Output Results
 ```text
 Benchmarking summary: 
-+----------------------------------------------+------------------------------------------------+
-| key                                          | Value                                          |
-+==============================================+================================================+
-| Time taken for tests (seconds)              | 7.539                                          |
-+----------------------------------------------+------------------------------------------------+
-| Number of concurrency                        | 1                                              |
-+----------------------------------------------+------------------------------------------------+
-| Total requests                               | 15                                             |
-+----------------------------------------------+------------------------------------------------+
-| Succeeded requests                           | 15                                             |
-+----------------------------------------------+------------------------------------------------+
-| Failed requests                              | 0                                              |
-+----------------------------------------------+------------------------------------------------+
-| Average QPS                                  | 1.99                                           |
-+----------------------------------------------+------------------------------------------------+
-| Average latency                              | 0.492                                          |
-+----------------------------------------------+------------------------------------------------+
-| Average time to first token                  | 0.026                                          |
-+----------------------------------------------+------------------------------------------------+
-| Throughput (average output tokens per second) | 334.006                                        |
-+----------------------------------------------+------------------------------------------------+
-| Average time per output token                | 0.00299                                        |
-+----------------------------------------------+------------------------------------------------+
-| Average package per request                  | 167.867                                        |
-+----------------------------------------------+------------------------------------------------+
-| Average package latency                      | 0.003                                          |
-+----------------------------------------------+------------------------------------------------+
-| Average input tokens per request             | 40.133                                         |
-+----------------------------------------------+------------------------------------------------+
-| Average output tokens per request            | 167.867                                        |
-+----------------------------------------------+------------------------------------------------+
-| Expected number of requests                  | 15                                             |
-+----------------------------------------------+------------------------------------------------+
-| Result DB path                               | ./outputs/qwen2.5_benchmark_20241107_201413.db |
-+----------------------------------------------+------------------------------------------------+
++-----------------------------------+-----------------------------------------------------+
+| Key                               | Value                                               |
++===================================+=====================================================+
+| Time taken for tests (s)          | 10.739                                              |
++-----------------------------------+-----------------------------------------------------+
+| Number of concurrency             | 1                                                   |
++-----------------------------------+-----------------------------------------------------+
+| Total requests                    | 15                                                  |
++-----------------------------------+-----------------------------------------------------+
+| Succeed requests                  | 15                                                  |
++-----------------------------------+-----------------------------------------------------+
+| Failed requests                   | 0                                                   |
++-----------------------------------+-----------------------------------------------------+
+| Throughput(average tokens/s)      | 324.059                                             |
++-----------------------------------+-----------------------------------------------------+
+| Average QPS                       | 1.397                                               |
++-----------------------------------+-----------------------------------------------------+
+| Average latency (s)               | 0.696                                               |
++-----------------------------------+-----------------------------------------------------+
+| Average time to first token (s)   | 0.029                                               |
++-----------------------------------+-----------------------------------------------------+
+| Average time per output token (s) | 0.00309                                             |
++-----------------------------------+-----------------------------------------------------+
+| Average input tokens per request  | 50.133                                              |
++-----------------------------------+-----------------------------------------------------+
+| Average output tokens per request | 232.0                                               |
++-----------------------------------+-----------------------------------------------------+
+| Average package latency (s)       | 0.003                                               |
++-----------------------------------+-----------------------------------------------------+
+| Average package per request       | 232.0                                               |
++-----------------------------------+-----------------------------------------------------+
+| Expected number of requests       | 15                                                  |
++-----------------------------------+-----------------------------------------------------+
+| Result DB path                    | ./outputs/20241216_194204/qwen2.5/benchmark_data.db |
++-----------------------------------+-----------------------------------------------------+
 
 Percentile results: 
-+------------+---------------------+---------+
-| Percentile | First Chunk Latency | Latency |
-+------------+---------------------+---------+
-|    10%     |       0.0178        | 0.1577  |
-|    25%     |       0.0183        | 0.2358  |
-|    50%     |       0.0199        | 0.4311  |
-|    66%     |       0.0218        | 0.6317  |
-|    75%     |       0.0429        | 0.7121  |
-|    80%     |       0.0432        | 0.7957  |
-|    90%     |       0.0432        | 0.9153  |
-|    95%     |       0.0433        | 0.9897  |
-|    98%     |       0.0433        | 0.9897  |
-|    99%     |       0.0433        | 0.9897  |
-+------------+---------------------+---------+
++------------+----------+----------+-------------+--------------+---------------+----------------------+
+| Percentile | TTFT (s) | TPOT (s) | Latency (s) | Input tokens | Output tokens | Throughput(tokens/s) |
++------------+----------+----------+-------------+--------------+---------------+----------------------+
+|    10%     |  0.0202  |  0.0027  |   0.1846    |      41      |      50       |       270.8324       |
+|    25%     |  0.0209  |  0.0028  |   0.2861    |      44      |      83       |       290.0714       |
+|    50%     |  0.0233  |  0.0028  |   0.7293    |      49      |      250      |       335.644        |
+|    66%     |  0.0267  |  0.0029  |   0.9052    |      50      |      308      |       340.2603       |
+|    75%     |  0.0437  |  0.0029  |   0.9683    |      53      |      325      |       341.947        |
+|    80%     |  0.0438  |  0.003   |   1.0799    |      58      |      376      |       342.7985       |
+|    90%     |  0.0439  |  0.0032  |   1.2474    |      62      |      424      |       345.5268       |
+|    95%     |  0.0463  |  0.0033  |   1.3038    |      66      |      431      |       348.1648       |
+|    98%     |  0.0463  |  0.0035  |   1.3038    |      66      |      431      |       348.1648       |
+|    99%     |  0.0463  |  0.0037  |   1.3038    |      66      |      431      |       348.1648       |
++------------+----------+----------+-------------+--------------+---------------+----------------------+
 ```
 
 ### Metric Descriptions
 
-| **Metric**                                  | **Description**                  | **Value**      |
-|------------------------------------------|---------------------------------|-----------------|
-| Total requests                          | Total number of requests        | 15              |
-| Succeeded requests                      | Number of successful requests   | 15              |
-| Failed requests                         | Number of failed requests       | 0               |
-| Average QPS                            | Average requests per second     | 1.99            |
-| Average latency                         | Average latency for all requests| 0.492           |
-| Throughput (average output tokens per second) | Average output tokens per second| 334.006        |
-| Average time to first token            | Average delay for the first token| 0.026          |
-| Average input tokens per request        | Average number of input tokens per request | 40.133  |
-| Average output tokens per request       | Average number of output tokens per request | 167.867 |
-| Average time per output token           | Average time for each output token | 0.00299      |
-| Average package per request             | Average number of packages per request | 167.867 |
-| Average package latency                  | Average latency for each package| 0.003           |
-| Percentile of time to first token (p10, ..., p99) | Percentiles for the first token latency |       |
-| Percentile of request latency (p10, ..., p99) | Percentiles for request latency |                |
+| Metric                                | Description                                                                                 |
+|--------------------------------------|-------------------------------------------------------------------------------------------|
+| Time taken for tests (s)             | Time used for tests (seconds)                                                             |
+| Number of concurrency                | Number of concurrent requests                                                             |
+| Total requests                       | Total number of requests                                                                  |
+| Succeed requests                     | Number of successful requests                                                             |
+| Failed requests                      | Number of failed requests                                                                 |
+| Throughput (average tokens/s)        | Throughput (average number of tokens processed per second)                                |
+| Average QPS                          | Average number of queries per second (Queries Per Second)                                 |
+| Average latency (s)                  | Average latency time (seconds)                                                            |
+| Average time to first token (s)      | Average time to first token (seconds)                                                     |
+| Average time per output token (s)    | Average time per output token (seconds)                                                   |
+| Average input tokens per request     | Average number of input tokens per request                                                |
+| Average output tokens per request    | Average number of output tokens per request                                               |
+| Average package latency (s)          | Average package latency time (seconds)                                                    |
+| Average package per request          | Average number of packages per request                                                    |
+| Expected number of requests          | Expected number of requests                                                               |
+| Result DB path                       | Result database path                                                                      |
+| **Percentile**                       | **Data is divided into 100 equal parts, and the nth percentile indicates that n% of the data points are below this value** |
+| TTFT (s)                             | Time to First Token, the time to generate the first token                                 |
+| TPOT (s)                             | Time Per Output Token, the time to generate each output token                             |
+| Latency (s)                          | Latency time, the time between request and response                                       |
+| Input tokens                         | Number of input tokens                                                                    |
+| Output tokens                        | Number of output tokens                                                                   |
+| Throughput (tokens/s)                | Throughput, the number of tokens processed per second                                     |
