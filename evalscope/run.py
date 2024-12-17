@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
-from evalscope.config import TaskConfig
+from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models.custom import CustomModel
@@ -49,30 +49,6 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
         return run_non_native_backend(task_cfg)
     else:
         return evaluate_model(task_cfg, outputs)
-
-
-def parse_task_config(task_cfg) -> TaskConfig:
-    """Parse task configuration from various formats into a TaskConfig object."""
-    if isinstance(task_cfg, TaskConfig):
-        logger.info('Args: Task config is provided with TaskConfig type.')
-    elif isinstance(task_cfg, dict):
-        logger.info('Args: Task config is provided with dictionary type.')
-        task_cfg = TaskConfig.from_dict(task_cfg)
-    elif isinstance(task_cfg, Namespace):
-        logger.info('Args: Task config is provided with CommandLine type.')
-        task_cfg = TaskConfig.from_args(task_cfg)
-    elif isinstance(task_cfg, str):
-        extension = task_cfg.split('.')[-1]
-        logger.info(f'Args: Task config is provided with {extension} file type.')
-        if extension in ['yaml', 'yml']:
-            task_cfg = TaskConfig.from_yaml(task_cfg)
-        elif extension == 'json':
-            task_cfg = TaskConfig.from_json(task_cfg)
-        else:
-            raise ValueError('Args: Unsupported file extension.')
-    else:
-        raise ValueError('Args: Please provide a valid task config.')
-    return task_cfg
 
 
 def setup_work_directory(task_cfg: TaskConfig, run_time: str):

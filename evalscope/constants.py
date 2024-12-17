@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 
@@ -7,6 +6,7 @@ DEFAULT_WORK_DIR = './outputs'
 DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
 DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub
 DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/datasets
+DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old version
 
 
 class HubType:
@@ -139,17 +139,30 @@ class EvalType:
 
 
 class EvalBackend:
-    # Use native evaluation pipeline of EvalScope
-    NATIVE = 'Native'
 
-    # Use OpenCompass framework as the evaluation backend
-    OPEN_COMPASS = 'OpenCompass'
+    class _Backend:
+        #  compatible with old version, set 'value'
 
-    # Use VLM Eval Kit as the multi-modal model evaluation backend
-    VLM_EVAL_KIT = 'VLMEvalKit'
+        def __init__(self, value):
+            self._value = value
 
-    # Use RAGEval as the RAG evaluation backend
-    RAG_EVAL = 'RAGEval'
+        @property
+        def value(self):
+            return self._value
 
-    # Use third-party evaluation backend/modules
-    THIRD_PARTY = 'ThirdParty'
+        def __str__(self):
+            return self._value
+
+        def __repr__(self):
+            return f"'{self._value}'"
+
+        def __eq__(self, other):
+            if isinstance(other, str):
+                return self._value == other
+            return NotImplemented
+
+    NATIVE = _Backend('Native')
+    OPEN_COMPASS = _Backend('OpenCompass')
+    VLM_EVAL_KIT = _Backend('VLMEvalKit')
+    RAG_EVAL = _Backend('RAGEval')
+    THIRD_PARTY = _Backend('ThirdParty')
