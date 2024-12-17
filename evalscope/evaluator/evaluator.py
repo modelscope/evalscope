@@ -58,7 +58,7 @@ class Evaluator(object):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.dataset_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep))
-        self.model_name = os.path.basename(str(overall_task_cfg.model).rstrip(os.sep))
+        self.model_name = overall_task_cfg.model_id
         self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
         self.datasets_dir = os.path.expanduser(datasets_dir)
