@@ -12,7 +12,7 @@ from typing import List, Optional, Union
 from evalscope.arguments import parse_args
 from evalscope.config import TaskConfig
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
-from evalscope.evaluator import Evaluator, HumanevalEvaluator
+from evalscope.evaluator import Evaluator
 from evalscope.models.custom import CustomModel
 from evalscope.utils import import_module_util, seed_everything
 from evalscope.utils.io_utils import OutputsStructure, are_paths_same
@@ -140,45 +140,35 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
     model_adapter = initialize_model_adapter(task_cfg, dataset_name, imported_modules)
 
-    if dataset_name == 'humaneval':
-        problem_file = task_cfg.dataset_args.get('humaneval', {}).get('local_path')
-        return HumanevalEvaluator(
-            problem_file=problem_file,
-            model_id=task_cfg.model,
-            model_revision=task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION),
-            model_adapter=model_adapter,
-            outputs=outputs,
-            is_custom_outputs_dir=False,
-        )
-    else:
-        dataset_config = task_cfg.dataset_args.get(dataset_name, {})
-        dataset_name_or_path = dataset_config.get('local_path') or imported_modules['DATASET_ID']
-        in_prompt_template = dataset_config.get('prompt_template', '')
-        few_shot_num = dataset_config.get('few_shot_num', None)
-        few_shot_random = dataset_config.get('few_shot_random', True)
+    dataset_config = task_cfg.dataset_args.get(dataset_name, {})
+    dataset_name_or_path = dataset_config.get('local_path') or imported_modules['DATASET_ID']
+    in_prompt_template = dataset_config.get('prompt_template', '')
+    few_shot_num = dataset_config.get('few_shot_num', None)
+    few_shot_random = dataset_config.get('few_shot_random', True)
 
-        data_adapter = imported_modules['DataAdapterClass'](
-            few_shot_num=few_shot_num,
-            few_shot_random=few_shot_random,
-            prompt_template=in_prompt_template,
-        )
-        in_subset_list = dataset_config.get('subset_list', imported_modules['SUBSET_LIST'])
+    data_adapter = imported_modules['DataAdapterClass'](
+        few_shot_num=few_shot_num,
+        few_shot_random=few_shot_random,
+        prompt_template=in_prompt_template,
+        outputs=outputs,
+    )
+    in_subset_list = dataset_config.get('subset_list', imported_modules['SUBSET_LIST'])
 
-        logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
+    logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
 
-        return Evaluator(
-            dataset_name_or_path=dataset_name_or_path,
-            subset_list=in_subset_list,
-            data_adapter=data_adapter,
-            model_adapter=model_adapter,
-            use_cache=task_cfg.use_cache,
-            outputs=outputs,
-            datasets_dir=task_cfg.dataset_dir,
-            datasets_hub=task_cfg.dataset_hub,
-            stage=task_cfg.stage,
-            eval_type=task_cfg.eval_type,
-            overall_task_cfg=task_cfg,
-        )
+    return Evaluator(
+        dataset_name_or_path=dataset_name_or_path,
+        subset_list=in_subset_list,
+        data_adapter=data_adapter,
+        model_adapter=model_adapter,
+        use_cache=task_cfg.use_cache,
+        outputs=outputs,
+        datasets_dir=task_cfg.dataset_dir,
+        datasets_hub=task_cfg.dataset_hub,
+        stage=task_cfg.stage,
+        eval_type=task_cfg.eval_type,
+        overall_task_cfg=task_cfg,
+    )
 
 
 def initialize_model_adapter(task_cfg: TaskConfig, dataset_name: str, imported_modules):
