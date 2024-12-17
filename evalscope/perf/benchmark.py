@@ -195,9 +195,9 @@ async def start_server(args: Arguments) -> bool:
         server.start()
 
         if args.dataset.startswith('speed_benchmark'):
-            args.url = 'http://127.0.0.1:8877/v1/completions'
+            args.url = f'http://127.0.0.1:{args.port}/v1/completions'
         else:
-            args.url = 'http://127.0.0.1:8877/v1/chat/completions'
+            args.url = f'http://127.0.0.1:{args.port}/v1/chat/completions'
 
     if not await test_connection(args):
         raise TimeoutError('Test connection failed')
