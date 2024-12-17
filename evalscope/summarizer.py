@@ -4,7 +4,7 @@ import json
 import os
 from typing import List, Union
 
-from evalscope.config import TaskConfig
+from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import EvalBackend
 from evalscope.tools.combine_reports import gen_table
 from evalscope.utils import csv_to_list, get_latest_folder_path
@@ -25,7 +25,7 @@ class Summarizer:
         if reports_dir is None:
             raise ValueError(f'No reports directory in {outputs_dir}')
 
-        report_files: list = glob.glob(os.path.join(reports_dir, '*.json'))
+        report_files: list = glob.glob(os.path.join(reports_dir, '**/*.json'))
         for report_file in report_files:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
@@ -48,33 +48,20 @@ class Summarizer:
             A report dict is overall report on a benchmark for specific model.
         """
         final_res_list: List[dict] = []
-        candidate_task_cfgs: List[dict] = []
+        candidate_task_cfgs: List[TaskConfig] = []
 
-        if isinstance(task_cfg, dict):
-            candidate_task_cfgs = [task_cfg]
-        elif isinstance(task_cfg, str):
-            task_cfg: dict = yaml_to_dict(task_cfg)
-            candidate_task_cfgs = [task_cfg]
-        elif isinstance(task_cfg, TaskConfig):
-            task_cfg: dict = task_cfg.to_dict()
-            candidate_task_cfgs = [task_cfg]
-        elif isinstance(task_cfg, list):
+        if isinstance(task_cfg, list):
             for task_cfg_item in task_cfg:
-                if isinstance(task_cfg_item, str):
-                    task_cfg_item: dict = yaml_to_dict(task_cfg_item)
-                elif isinstance(task_cfg_item, TaskConfig):
-                    task_cfg_item: dict = task_cfg_item.to_dict()
-                candidate_task_cfgs.append(task_cfg_item)
+                candidate_task_cfgs.append(parse_task_config(task_cfg_item))
         else:
-            raise ValueError(f'Invalid task_cfg: {task_cfg}')
+            candidate_task_cfgs.append(parse_task_config(task_cfg))
 
         for candidate_task in candidate_task_cfgs:
             logger.info(f'**Loading task cfg for summarizer: {candidate_task}')
-            eval_backend = candidate_task.get('eval_backend') or EvalBackend.NATIVE
+            eval_backend = candidate_task.eval_backend
 
             if eval_backend == EvalBackend.NATIVE:
-                outputs_dir: str = candidate_task.get('outputs')
-                outputs_dir: str = os.path.expanduser(outputs_dir)
+                outputs_dir: str = os.path.expanduser(candidate_task.work_dir)
                 if outputs_dir is None:
                     raise ValueError(f'No outputs_dir in {task_cfg}')
                 res_list: list = Summarizer.get_report(outputs_dir=outputs_dir)
@@ -129,8 +116,8 @@ class Summarizer:
         return final_res_list
 
     @staticmethod
-    def parse_eval_config(candidate_task):
-        eval_config: Union[str, dict] = candidate_task.get('eval_config')
+    def parse_eval_config(candidate_task: TaskConfig):
+        eval_config: Union[str, dict] = candidate_task.eval_config
         assert eval_config is not None, 'Please provide eval_config for specific evaluation backend.'
 
         if isinstance(eval_config, str):
