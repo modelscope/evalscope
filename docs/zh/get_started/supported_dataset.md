@@ -6,19 +6,22 @@
 目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/backend/opencompass_backend.md)进行语言模型评测；或使用[VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评测。
 ```
 
-| 名称        | 链接                                                                                   | 状态 | 备注 |
-|--------------------|----------------------------------------------------------------------------------------|--------|------|
-| `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
-| `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
-| `gsm8k`            | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       | Active |      |
-| `arc`              | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       | Active |      |
-| `hellaswag`        | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               | Active |      |
-| `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | Active |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Active |      |
-| `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
-| `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
-| `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | Active |      |
+以下是去掉“状态”列后的表格：
+
+| 名称        | 链接                                                                                   | 备注 |
+|-------------|----------------------------------------------------------------------------------------|------|
+| `mmlu`      | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         |      |
+| `ceval`     | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  |      |
+| `gsm8k`     | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       |      |
+| `arc`       | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       |      |
+| `hellaswag` | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               |      |
+| `truthful_qa`| [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)          |      |
+| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) |  |
+| `humaneval` | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | 需安装[humaneval](https://github.com/openai/human-eval/tree/master#installation)，因为涉及到一些代码运行的操作，建议在sandbox环境（docker）中运行 |
+| `bbh`       | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           |      |
+| `race`      | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         |      |
+| `trivia_qa` | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               |      |
+
 
 ## 2. OpenCompass评测后端支持的数据集
 
