@@ -116,19 +116,19 @@ class BenchmarkMetrics:
 
     def create_message(self, default_ndigits=3):
         message = {
-            'Time taken for tests (senconds)': round(self.total_time, default_ndigits),
+            'Time taken for tests (s)': round(self.total_time, default_ndigits),
             'Number of concurrency': self.concurrency,
             'Total requests': int(self.n_total_queries),
             'Succeed requests': self.n_succeed_queries,
             'Failed requests': self.n_failed_queries,
+            'Throughput(average tokens/s)': round(self.avg_token_per_seconds, default_ndigits),
             'Average QPS': round(self.qps, default_ndigits),
             'Average latency (s)': round(self.avg_latency, default_ndigits),
             'Average time to first token (s)': round(self.avg_first_chunk_latency, default_ndigits),
             'Average time per output token (s)': round(self.avg_time_per_token, 5),
-            'Average package latency (s)': round(self.avg_chunk_time, default_ndigits),
-            'Average package per request': round(self.n_avg_chunks, default_ndigits),
-            'Throughput(average output tokens per second)': round(self.avg_token_per_seconds, default_ndigits),
             'Average input tokens per request': round(self.avg_prompt_tokens, default_ndigits),
             'Average output tokens per request': round(self.avg_completion_tokens, default_ndigits),
+            'Average package latency (s)': round(self.avg_chunk_time, default_ndigits),
+            'Average package per request': round(self.n_avg_chunks, default_ndigits),
         }
         return message

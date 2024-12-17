@@ -25,6 +25,7 @@ class TestPerf(unittest.TestCase):
             'number': 15,
             'api': 'openai',
             'dataset': 'openqa',
+            'stream': True,
             'debug': True,
         }
         run_perf_benchmark(task_cfg)
