@@ -9,7 +9,8 @@ from typing import Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
 from evalscope.models.custom import CustomModel
-from evalscope.utils import dict_to_yaml, gen_hash, json_to_dict, yaml_to_dict
+from evalscope.utils import gen_hash
+from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -31,6 +32,7 @@ DEFAULT_GENERATION_CONFIG = {
 class TaskConfig:
     # Model-related arguments
     model: Union[str, CustomModel, None] = None
+    model_id: Optional[str] = None
     model_args: Optional[Dict] = field(default_factory=lambda: DEFAULT_MODEL_ARGS | {})
 
     # Template-related arguments
@@ -63,6 +65,13 @@ class TaskConfig:
     debug: bool = False
     dry_run: bool = False
     seed: int = 42
+
+    def __post_init__(self):
+        if (not self.model_id) and self.model:
+            if isinstance(self.model, CustomModel):
+                self.model_id = type(self.model).__name__
+            else:
+                self.model_id = os.path.basename(self.model).rstrip(os.sep)
 
     def to_dict(self):
         # Note: to avoid serialization error for some model instance
@@ -119,6 +128,7 @@ class TaskConfig:
                 continue
 
             task.model = custom_model
+            task.model_id = type(custom_model).__name__
             res_list.append(task)
 
         return res_list
@@ -166,6 +176,30 @@ class TaskConfig:
 tasks = ['arc', 'gsm8k', 'mmlu', 'cmmlu', 'ceval', 'bbh', 'general_qa']
 
 registry_tasks = {task: TaskConfig.from_yaml(os.path.join(cur_path, f'registry/tasks/{task}.yaml')) for task in tasks}
+
+
+def parse_task_config(task_cfg) -> TaskConfig:
+    """Parse task configuration from various formats into a TaskConfig object."""
+    if isinstance(task_cfg, TaskConfig):
+        logger.info('Args: Task config is provided with TaskConfig type.')
+    elif isinstance(task_cfg, dict):
+        logger.info('Args: Task config is provided with dictionary type.')
+        task_cfg = TaskConfig.from_dict(task_cfg)
+    elif isinstance(task_cfg, Namespace):
+        logger.info('Args: Task config is provided with CommandLine type.')
+        task_cfg = TaskConfig.from_args(task_cfg)
+    elif isinstance(task_cfg, str):
+        extension = task_cfg.split('.')[-1]
+        logger.info(f'Args: Task config is provided with {extension} file type.')
+        if extension in ['yaml', 'yml']:
+            task_cfg = TaskConfig.from_yaml(task_cfg)
+        elif extension == 'json':
+            task_cfg = TaskConfig.from_json(task_cfg)
+        else:
+            raise ValueError('Args: Unsupported file extension.')
+    else:
+        raise ValueError('Args: Please provide a valid task config.')
+    return task_cfg
 
 
 class TempModel(CustomModel):

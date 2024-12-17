@@ -5,8 +5,8 @@ import pyarrow as pa
 from typing import List, Union
 
 from evalscope.constants import MetricMembers
-from evalscope.utils import jsonl_to_list
 from evalscope.utils.arena_utils import compute_elo
+from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

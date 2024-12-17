@@ -184,6 +184,7 @@ Create configuration files:
 ::::{tab-set}
 :::{tab-item} YAML Configuration File
 ```yaml
+work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -198,8 +199,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  reuse: true
-  work_dir: outputs
+  reuse: false
   nproc: 16
 ```
 :::
@@ -207,6 +207,7 @@ eval_config:
 :::{tab-item} Python Dictionary
 ```python
 task_cfg_dict = {
+    'work_dir': 'outputs',
     'eval_backend': 'VLMEvalKit',
     'eval_config': 
             {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
@@ -219,8 +220,7 @@ task_cfg_dict = {
                 'temperature': 0.0,
                 'type': 'qwen-vl-chat'}
                 ],
-            'reuse': True,
-            'work_dir': 'output'}}
+            'reuse': False}}
 ```
 :::
 ::::
@@ -232,6 +232,7 @@ This method does not involve starting a model service; instead, it directly conf
 ::::{tab-set}
 :::{tab-item} YAML Configuration File
 ```yaml
+work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
@@ -242,7 +243,7 @@ eval_config:
     - ChartQA_TEST
   mode: all
   limit: 20
-  reuse: true
+  reuse: false
   work_dir: outputs
   nproc: 16
 ```
@@ -251,6 +252,7 @@ eval_config:
 :::{tab-item} Python Dictionary
 ```python
 task_cfg_dict = {
+    'work_dir': 'outputs',
     'eval_backend': 'VLMEvalKit',
     'eval_config': 
             {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
@@ -260,13 +262,13 @@ task_cfg_dict = {
                 {'name': 'qwen_chat',
                 'model_path': 'models/Qwen-VL-Chat'}
                 ],
-            'reuse': True,
-            'work_dir': 'outputs'}}
+            'reuse': False}}
 ```
 :::
 ::::
 
 ## Parameters
+- `work_dir`: A string specifying the directory where evaluation results, logs, and summaries are saved. The default value is `outputs`.
 - `eval_backend`: Default value is `VLMEvalKit`, indicating the use of the VLMEvalKit evaluation backend.
 - `eval_config`: A dictionary containing the following fields:
   - `data`: A list referencing the [currently supported datasets](#2-data-preparation).
@@ -291,7 +293,7 @@ Certainly! Here's the translated text in English, while maintaining the original
   - `limit`: Integer indicating the number of evaluation data; default value is `None`, meaning all examples will be run.
   - `reuse`: Boolean indicating whether to reuse the evaluation, which will delete all temporary evaluation files.
     ```{note}
-    For `ms-vlmeval>=0.0.11`, the parameter `rerun` has been renamed to `reuse`, with a default value of `False`.
+    For `ms-vlmeval>=0.0.11`, the parameter `rerun` has been renamed to `reuse`, with a default value of `False`. When set to `True`, you need to add `use_cache` in the `task_cfg_dict` to specify the cache directory to be used.
     ```
   - `work_dir`: String specifying the directory to save evaluation results, logs, and summaries; default value is `outputs`.
   - `nproc`: Integer indicating the number of API calls in parallel.

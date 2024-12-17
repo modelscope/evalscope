@@ -5,19 +5,21 @@
 The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/backend/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md) for multi-modal model evaluation.
 ```
 
-| Dataset Name       | Link                                                                                   | Status | Note |
-|--------------------|----------------------------------------------------------------------------------------|--------|------|
-| `mmlu`             | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         | Active |      |
-| `ceval`            | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  | Active |      |
-| `gsm8k`            | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       | Active |      |
-| `arc`              | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       | Active |      |
-| `hellaswag`        | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               | Active |      |
-| `truthful_qa`      | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)           | Active |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Active |      |
-| `humaneval`        | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | Active |      |
-| `bbh`              | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Active |      |
-| `race`             | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Active |      |
-| `trivia_qa`        | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               | To be integrated |      |
+以下是翻译成英文后的表格：
+
+| Name            | Link                                                                                     | Notes |
+|-----------------|------------------------------------------------------------------------------------------|-------|
+| `mmlu`          | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                           |       |
+| `ceval`         | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                    |       |
+| `gsm8k`         | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                         |       |
+| `arc`           | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                         |       |
+| `hellaswag`     | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                 |       |
+| `truthful_qa`   | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)             |       |
+| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) |       |
+| `humaneval`     | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                 | Requires [humaneval](https://github.com/openai/human-eval/tree/master#installation) installation. Since it involves some code execution operations, it is recommended to run in a sandbox environment (docker). |
+| `bbh`           | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                             |       |
+| `race`          | [race](https://modelscope.cn/datasets/modelscope/race/summary)                           |       |
+| `trivia_qa`     | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                 |       |
 
 ## 2. OpenCompass Backend
 Refer to the [detailed explanation](https://github.com/open-compass/opencompass#-dataset-support)

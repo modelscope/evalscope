@@ -6,6 +6,7 @@ import sqlite3
 import sys
 from datetime import datetime
 from tabulate import tabulate
+from typing import Dict, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
@@ -107,44 +108,87 @@ def get_result_db_path(args: Arguments):
     return result_db_path
 
 
-def get_percentile_results(result_db_path: str):
+def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int, float]:
+    """
+    Calculate the percentiles for a specific list of data.
 
-    def percentile_results(rows, index, percentiles):
-        results = {}
-        n_success_queries = len(rows)
-        for percentile in percentiles:
+    :param data: List of values for a specific metric.
+    :param percentiles: List of percentiles to calculate.
+    :return: Dictionary of calculated percentiles.
+    """
+    results = {}
+    n_success_queries = len(data)
+    data.sort()
+    for percentile in percentiles:
+        try:
             idx = int(n_success_queries * percentile / 100)
-            row = rows[idx]
-            value = row[index] if row[index] is not None else float('inf')
+            value = data[idx] if data[idx] is not None else float('nan')
             results[percentile] = round(value, 4)
-        return results
+        except IndexError:
+            results[percentile] = float('nan')
+    return results
+
+
+def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
+    """
+    Compute and return quantiles for various metrics from the database results.
+
+    :param result_db_path: Path to the SQLite database file.
+    :return: Dictionary of percentiles for various metrics.
+    """
+
+    def inter_token_latencies(chunk_times_json: str) -> List[float]:
+        try:
+            chunk_times = json.loads(chunk_times_json)
+            return [t2 - t1 for t1, t2 in zip(chunk_times[:-1], chunk_times[1:])]
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(f'Error parsing chunk times: {e}')
+            return []
 
     query_sql = ('SELECT start_time, chunk_times, success, completed_time, latency, first_chunk_latency, '
                  'n_chunks, chunk_time, prompt_tokens, completion_tokens '
-                 'FROM result WHERE success=1 ORDER BY first_chunk_latency ASC')
+                 'FROM result WHERE success=1')
+
     percentiles = [10, 25, 50, 66, 75, 80, 90, 95, 98, 99]
 
     with sqlite3.connect(result_db_path) as con:
         rows = con.execute(query_sql).fetchall()
 
-    if len(rows) <= len(percentiles):
+    if len(rows) < len(percentiles):
         logger.info('Too little data to calculate quantiles!')
         return {}
 
-    # Calculate percentiles for first chunk latency and latency
-    first_chunk_latency_index = 5
-    latency_index = 4
+    # Define index variables for columns
+    CHUNK_TIMES_INDEX = 1
+    LATENCY_INDEX = 4
+    FIRST_CHUNK_LATENCY_INDEX = 5
+    PROMPT_TOKENS_INDEX = 8
+    COMPLETION_TOKENS_INDEX = 9
 
-    first_chunk_latency_results = percentile_results(rows, first_chunk_latency_index, percentiles)
-    rows.sort(key=lambda x: x[latency_index])
-    latency_results = percentile_results(rows, latency_index, percentiles)
+    # Prepare data for each metric
+    inter_token_latencies_all = []
+    for row in rows:
+        inter_token_latencies_all.extend(inter_token_latencies(row[CHUNK_TIMES_INDEX]))
 
-    # Prepare data for tabulation
-    return {
-        'Percentile': [f'{p}%' for p in percentiles],
-        'First Chunk Latency (s)': [first_chunk_latency_results[p] for p in percentiles],
-        'Latency (s)': [latency_results[p] for p in percentiles]
+    metrics = {
+        'TTFT (s)': [row[FIRST_CHUNK_LATENCY_INDEX] for row in rows],
+        'TPOT (s)':
+        inter_token_latencies_all,
+        'Latency (s)': [row[LATENCY_INDEX] for row in rows],
+        'Input tokens': [row[PROMPT_TOKENS_INDEX] for row in rows],
+        'Output tokens': [row[COMPLETION_TOKENS_INDEX] for row in rows],
+        'Throughput(tokens/s)':
+        [(row[COMPLETION_TOKENS_INDEX] / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
+         for row in rows]
     }
+
+    # Calculate percentiles for each metric
+    results = {'Percentile': [f'{p}%' for p in percentiles]}
+    for metric_name, data in metrics.items():
+        metric_percentiles = calculate_percentiles(data, percentiles)
+        results[metric_name] = [metric_percentiles[p] for p in percentiles]
+
+    return results
 
 
 def summary_result(args: Arguments, metrics: BenchmarkMetrics, expected_number_of_queries: int, result_db_path: str):

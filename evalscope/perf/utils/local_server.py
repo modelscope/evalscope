@@ -102,6 +102,7 @@ def start_app(args: Arguments):
 
     elif args.api == 'local_vllm':
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
+        os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
         # yapf: disable
         proc = subprocess.Popen([
             'python', '-m', 'vllm.entrypoints.openai.api_server',
@@ -111,7 +112,8 @@ def start_app(args: Arguments):
             '--max-model-len', '32768',
             '--gpu-memory-utilization', '0.9',
             '--host', '0.0.0.0',
-            '--port', args.port,
+            '--port', str(args.port),
+            '--trust-remote-code',
             '--disable-log-requests',
             '--disable-log-stats',
         ])

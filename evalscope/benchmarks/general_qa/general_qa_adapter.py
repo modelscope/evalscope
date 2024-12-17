@@ -8,7 +8,7 @@ from typing import Any, Optional
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import bleu_ngram_one_sample, weighted_mean
 from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh
-from evalscope.utils import jsonl_to_list
+from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

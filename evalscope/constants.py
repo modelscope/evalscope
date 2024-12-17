@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 
@@ -7,6 +6,7 @@ DEFAULT_WORK_DIR = './outputs'
 DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
 DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub
 DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/datasets
+DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old version
 
 
 class HubType:
@@ -76,33 +76,6 @@ class ArenaMode:
     PAIRWISE_BASELINE = 'pairwise_baseline'
 
 
-class OutputsStructure:
-    LOGS_DIR = 'logs'
-    PREDICTIONS_DIR = 'predictions'
-    REVIEWS_DIR = 'reviews'
-    REPORTS_DIR = 'reports'
-    CONFIGS_DIR = 'configs'
-
-    def __init__(self, outputs_dir: str, is_make: bool = True):
-        self.outputs_dir = outputs_dir
-        self.logs_dir = os.path.join(outputs_dir, OutputsStructure.LOGS_DIR)
-        self.predictions_dir = os.path.join(outputs_dir, OutputsStructure.PREDICTIONS_DIR)
-        self.reviews_dir = os.path.join(outputs_dir, OutputsStructure.REVIEWS_DIR)
-        self.reports_dir = os.path.join(outputs_dir, OutputsStructure.REPORTS_DIR)
-        self.configs_dir = os.path.join(outputs_dir, OutputsStructure.CONFIGS_DIR)
-
-        if is_make:
-            self.create_directories()
-
-    def create_directories(self):
-        os.makedirs(self.outputs_dir, exist_ok=True)
-        os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.predictions_dir, exist_ok=True)
-        os.makedirs(self.reviews_dir, exist_ok=True)
-        os.makedirs(self.reports_dir, exist_ok=True)
-        os.makedirs(self.configs_dir, exist_ok=True)
-
-
 class AnswerKeys:
     ANSWER_ID = 'answer_id'
     RAW_INPUT = 'raw_input'
@@ -166,17 +139,30 @@ class EvalType:
 
 
 class EvalBackend:
-    # Use native evaluation pipeline of EvalScope
-    NATIVE = 'Native'
 
-    # Use OpenCompass framework as the evaluation backend
-    OPEN_COMPASS = 'OpenCompass'
+    class _Backend:
+        #  compatible with old version, set 'value'
 
-    # Use VLM Eval Kit as the multi-modal model evaluation backend
-    VLM_EVAL_KIT = 'VLMEvalKit'
+        def __init__(self, value):
+            self._value = value
 
-    # Use RAGEval as the RAG evaluation backend
-    RAG_EVAL = 'RAGEval'
+        @property
+        def value(self):
+            return self._value
 
-    # Use third-party evaluation backend/modules
-    THIRD_PARTY = 'ThirdParty'
+        def __str__(self):
+            return self._value
+
+        def __repr__(self):
+            return f"'{self._value}'"
+
+        def __eq__(self, other):
+            if isinstance(other, str):
+                return self._value == other
+            return NotImplemented
+
+    NATIVE = _Backend('Native')
+    OPEN_COMPASS = _Backend('OpenCompass')
+    VLM_EVAL_KIT = _Backend('VLMEvalKit')
+    RAG_EVAL = _Backend('RAGEval')
+    THIRD_PARTY = _Backend('ThirdParty')

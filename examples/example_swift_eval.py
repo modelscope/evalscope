@@ -7,7 +7,7 @@ from typing import List
 from evalscope.models.custom import CustomModel
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
-from evalscope.utils import yaml_to_dict
+from evalscope.utils.io_utils import yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
