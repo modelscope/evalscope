@@ -113,6 +113,7 @@ def start_app(args: Arguments):
             '--gpu-memory-utilization', '0.9',
             '--host', '0.0.0.0',
             '--port', str(args.port),
+            '--trust-remote-code',
             '--disable-log-requests',
             '--disable-log-stats',
         ])
