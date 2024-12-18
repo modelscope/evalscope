@@ -47,7 +47,7 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
     <br>EvalScope 整体架构图.
 </p>
 
-EvalScope包括以下模块：
+<details><summary>架构介绍</summary>
 
 1. **Model Adapter**: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。
 
@@ -65,6 +65,16 @@ EvalScope包括以下模块：
 5. **Evaluation Report**: 最终生成的评测报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。
 
 6. **Visualization**: 可视化结果，帮助用户更直观地理解评测结果，便于分析和比较不同模型的表现。
+
+</details>
+
+## ☎ 用户群
+
+请扫描下面的二维码来加入我们的交流群：
+
+[Discord Group](https://discord.com/invite/D27yfEFVz5)              |  微信群 | 钉钉群
+:-------------------------:|:-------------------------:|:-------------------------:
+<img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/discord_qr.jpg" width="160" height="160">  |  <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/wechat.png" width="160" height="160"> | <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/dingding.png" width="160" height="160">
 
 
 ## 🎉 新闻
