@@ -68,7 +68,7 @@ Please scan the QR code below to join our community groups:
 
 [Discord Group](https://discord.com/invite/D27yfEFVz5)              |  WeChat Group | DingTalk Group
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="docs/asset/discord_qr.jpg" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+<img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/discord_qr.jpg" width="160" height="160">  |  <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/wechat.png" width="160" height="160"> | <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/dingding.png" width="160" height="160">
 
 
 ## 🎉 News
