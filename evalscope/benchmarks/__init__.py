@@ -18,6 +18,6 @@ for file_path in files:
         # Convert file path to a module path
         relative_path = os.path.relpath(file_path, os.path.dirname(__file__))
         module_path = relative_path[:-3].replace(os.path.sep, '.')  # strip '.py' and convert to module path
-        full_path = f"evalscope.benchmarks.{module_path}"
+        full_path = f'evalscope.benchmarks.{module_path}'
         importlib.import_module(full_path)
-        print(f"Importing {full_path}")
+        print(f'Importing {full_path}')

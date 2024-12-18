@@ -30,7 +30,7 @@ class BenchmarkMeta:
             del args['local_path']
         self.__dict__.update(args)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         cur_dict = copy.deepcopy(self.__dict__)
         del cur_dict['data_adapter']
         del cur_dict['model_adapter']
@@ -51,7 +51,7 @@ class Benchmark:
     @classmethod
     def get(cls, name: str) -> 'BenchmarkMeta':
         if name not in BENCHMARK_MAPPINGS:
-            raise Exception(f"Unknown benchmark: {name}. Available tasks: {BENCHMARK_MAPPINGS.keys()}")
+            raise Exception(f'Unknown benchmark: {name}. Available tasks: {BENCHMARK_MAPPINGS.keys()}')
         benchmark = BENCHMARK_MAPPINGS[name]
         return benchmark
 
@@ -60,7 +60,7 @@ class Benchmark:
 
         def register_wrapper(data_adapter):
             if name in BENCHMARK_MAPPINGS:
-                raise Exception(f"Benchmark {name} already registered")
+                raise Exception(f'Benchmark {name} already registered')
             BENCHMARK_MAPPINGS[name] = BenchmarkMeta(
                 name=name, data_adapter=data_adapter, model_adapter=model_adapter, dataset_id=dataset_id, **kwargs)
             return data_adapter
