@@ -1,8 +1,10 @@
 import copy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from evalscope.benchmarks import DataAdapter
+if TYPE_CHECKING:
+    from evalscope.benchmarks import DataAdapter
+
 from evalscope.models import BaseModelAdapter
 
 BENCHMARK_MAPPINGS = {}
@@ -12,7 +14,7 @@ BENCHMARK_MAPPINGS = {}
 class BenchmarkMeta:
     name: str
     dataset_id: str
-    data_adapter: DataAdapter
+    data_adapter: 'DataAdapter'
     model_adapter: BaseModelAdapter
     subset_list: List[str] = field(default_factory=list)
     metric_list: List[Dict] = field(default_factory=list)
@@ -33,6 +35,12 @@ class BenchmarkMeta:
         del cur_dict['data_adapter']
         del cur_dict['model_adapter']
         return cur_dict
+
+    def get_data_adapter(self, config: dict = None) -> 'DataAdapter':
+        if config:
+            dataset_config = config.get(self.name, {})
+            self.update(dataset_config)
+        return self.data_adapter(**self.to_dict())
 
 
 class Benchmark:
