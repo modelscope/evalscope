@@ -45,6 +45,8 @@ The framework accommodates multiple evaluation scenarios such as end-to-end RAG 
   <br>EvalScope Framework.
 </p>
 
+<details><summary>Framework Description</summary>
+
 The architecture includes the following modules:
 1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
 2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
@@ -57,6 +59,16 @@ The architecture includes the following modules:
 4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
 5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
 6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+
+</details>
+
+## ☎ User Groups
+
+Please scan the QR code below to join our community groups:
+
+[Discord Group](https://discord.com/invite/D27yfEFVz5)              |  WeChat Group | DingTalk Group
+:-------------------------:|:-------------------------:|:-------------------------:
+<img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/discord_qr.jpg" width="160" height="160">  |  <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/wechat.png" width="160" height="160"> | <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/dingding.png" width="160" height="160">
 
 
 ## 🎉 News
