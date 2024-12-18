@@ -1,35 +1,36 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI, Inc. and its affiliates.
+# flake8: noqa
 import math
 import os
 import re
 
-from evalscope.benchmarks import DataAdapter
-from evalscope.metrics.metrics import exact_match, weighted_mean
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.metrics.metrics import weighted_mean
+from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils import normalize_score
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
-# flake8: noqa
-
 logger = get_logger()
 
-DATASET_ID = 'modelscope/gsm8k'
-SUBSET_LIST = ['main']
-ANS_RE = re.compile(r'#### (\-?[0-9\.\,]+)')
-INVALID_ANS = '[invalid]'
 
-
+@Benchmark.register(
+    name='gsm8k',
+    dataset_id='modelscope/gsm8k',
+    subset_list=['main'],
+    metric_list=[{
+        'name': 'WeightedAverageAccuracy',
+        'object': weighted_mean
+    }],
+    few_shot_num=4,
+    train_split='train',
+    eval_split='test',
+    prompt_template='',
+    model_adapter=ChatGenerationModelAdapter)
 class GSM8KAdapter(DataAdapter):
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = 'train',
-                 eval_split: str = 'test',
-                 prompt_template: str = '',
-                 **kwargs):
+    def __init__(self, **kwargs):
         """
         Data adapter for GSM8K dataset.
 
@@ -41,30 +42,13 @@ class GSM8KAdapter(DataAdapter):
             eval_split (str): The target eval split name. Default: 'test'
             **kwargs: ...
         """
-
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        if few_shot_num is None:
-            logger.info(f'Set 4-shot examples by system for GSM8K.')
-            few_shot_num = 4
-
+        few_shot_num = kwargs.get('few_shot_num', 4)
         if few_shot_num != 4 and few_shot_num != 0:
             logger.error(f'GSM8K uses 4-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
                          f'Use 4-shot by default.')
             few_shot_num = 4
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            prompt_template=prompt_template,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}

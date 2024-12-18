@@ -2,7 +2,6 @@
 """
 Run evaluation for LLMs.
 """
-import logging
 import os.path
 import torch
 from argparse import Namespace
@@ -10,18 +9,16 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
+from evalscope.benchmarks import Benchmark, BenchmarkMeta
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models.custom import CustomModel
-from evalscope.utils import import_module_util, seed_everything
+from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure, are_paths_same
 from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
-
-BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
-MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
@@ -113,29 +110,18 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
 
 def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure):
     """Create an evaluator object for the specified dataset."""
-    imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
-    model_adapter = initialize_model_adapter(task_cfg, dataset_name, imported_modules)
-
+    # imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
+    benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
     dataset_config = task_cfg.dataset_args.get(dataset_name, {})
-    dataset_name_or_path = dataset_config.get('local_path') or imported_modules['DATASET_ID']
-    in_prompt_template = dataset_config.get('prompt_template', '')
-    few_shot_num = dataset_config.get('few_shot_num', None)
-    few_shot_random = dataset_config.get('few_shot_random', True)
+    benchmark.update(dataset_config)
 
-    data_adapter = imported_modules['DataAdapterClass'](
-        few_shot_num=few_shot_num,
-        few_shot_random=few_shot_random,
-        prompt_template=in_prompt_template,
-        outputs=outputs,
-    )
-    in_subset_list = dataset_config.get('subset_list', imported_modules['SUBSET_LIST'])
-
-    logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
+    data_adapter = benchmark.data_adapter(**benchmark.to_dict())
+    model_adapter = initialize_model_adapter(task_cfg, benchmark.model_adapter)
 
     return Evaluator(
-        dataset_name_or_path=dataset_name_or_path,
-        subset_list=in_subset_list,
+        dataset_name_or_path=benchmark.dataset_id,
         data_adapter=data_adapter,
+        subset_list=benchmark.subset_list,
         model_adapter=model_adapter,
         use_cache=task_cfg.use_cache,
         outputs=outputs,
@@ -147,7 +133,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     )
 
 
-def initialize_model_adapter(task_cfg: TaskConfig, dataset_name: str, imported_modules):
+def initialize_model_adapter(task_cfg: TaskConfig, model_adapter):
     """Initialize the model adapter based on the task configuration."""
     if task_cfg.dry_run:
         from evalscope.models.dummy_chat_model import DummyChatModel
@@ -162,7 +148,7 @@ def initialize_model_adapter(task_cfg: TaskConfig, dataset_name: str, imported_m
         model_precision = task_cfg.model_args.get('precision', torch.float16)
         if isinstance(model_precision, str) and model_precision != 'auto':
             model_precision = eval(model_precision)
-        return imported_modules['ModelAdapterClass'](
+        return model_adapter(
             model_id=task_cfg.model,
             model_revision=task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION),
             device_map=device_map,

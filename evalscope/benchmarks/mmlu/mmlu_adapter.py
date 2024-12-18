@@ -139,15 +139,12 @@ class MMLUAdapter(DataAdapter):
     choices = ['A', 'B', 'C', 'D']
 
     def __init__(self,
-                 subset_list: list = None,
+                 subset_list: list = SUBSET_LIST,
                  metric_list: list = None,
                  few_shot_num: int = None,
                  train_split: str = 'train',
                  eval_split: str = 'test',
                  **kwargs):
-
-        if subset_list is None:
-            subset_list = SUBSET_LIST
 
         if metric_list is None:
             metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
