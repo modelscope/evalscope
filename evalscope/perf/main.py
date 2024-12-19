@@ -19,7 +19,9 @@ def run_perf_benchmark(args):
         args = Arguments(**args)
     elif isinstance(args, Namespace):
         args = Arguments.from_args(args)
-    seed_everything(args.seed)
+
+    if args.seed is not None:
+        seed_everything(args.seed)
 
     # Setup logger and output
     args.outputs_dir = get_output_path(args)
