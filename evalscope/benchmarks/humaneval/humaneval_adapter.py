@@ -1,13 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import json
-import os
 import re
-from tqdm import tqdm
 from typing import List
 
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.metrics.metrics import weighted_mean
-from evalscope.tools.combine_reports import gen_table
 from evalscope.utils import normalize_score
 from evalscope.utils.logger import get_logger
 
@@ -31,7 +27,7 @@ class HumanevalAdapter(DataAdapter):
                  few_shot_num: int = None,
                  train_split: str = None,
                  eval_split: str = 'test',
-                 prompt_template: str = 'Complete the following python code:\n',
+                 prompt_template: str = None,
                  **kwargs):
         try:
             from human_eval.data import stream_jsonl, write_jsonl
@@ -45,12 +41,14 @@ class HumanevalAdapter(DataAdapter):
             subset_list = SUBSET_LIST
 
         if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
+            metric_list = [{'name': 'pass@1', 'object': weighted_mean}]
+
+        if prompt_template is None:
+            prompt_template = 'Complete the following python code:\n'
 
         self.k = [1]
         self.num_workers = 4
         self.timeout = 4.0
-        self.outputs = kwargs.get('outputs', None)
 
         self.read_problems_func = stream_jsonl
         self.write_jsonl_func = write_jsonl
@@ -87,57 +85,6 @@ class HumanevalAdapter(DataAdapter):
 
         return {'data': [full_prompt]}
 
-    def get_answers(self, infer_cfg: dict) -> List[dict]:
-        ans_list: list = []
-        system_prompt: str = ''
-        for task_id, data_d in tqdm(self.problems.items(), total=len(self.problems), desc='Predicting(problems)'):
-            prompt: str = system_prompt + data_d['prompt']
-            inputs: dict = {'data': [prompt]}
-
-            pred_res: dict = self.model_adapter.predict(inputs=inputs, infer_cfg=infer_cfg)
-
-            pred_ans: str = pred_res['choices'][0]['message']['content']
-            pred_ans = self._postprocess(pred_ans)
-
-            ans_list.append({'task_id': task_id, 'completion': pred_ans})
-
-        return ans_list
-
-    def eval(self, infer_cfg: dict, **kwargs):
-
-        # predict
-        ans_list: list = self.get_answers(infer_cfg)
-        ans_out_file: str = os.path.join(self.outputs_structure.predictions_dir, 'human_eval_predictions.jsonl')
-
-        self.write_jsonl_func(filename=ans_out_file, data=ans_list)
-        # logger.info(f'** Dump predictions to {ans_out_file} successfully.')
-        logger.info('** Dump predictions successfully.')
-
-        # evaluate  results: e.g. {'pass@1': 0.333, 'pass@10': 0.111}
-        results = self.eval_func(
-            sample_file=ans_out_file,
-            k=self.k,
-            n_workers=self.num_workers,
-            timeout=self.timeout,
-            problem_file=self.problem_file)
-
-        # output: report
-        report_map: dict = self.gen_report(results=results)
-        report_dir: str = self.outputs_structure.reports_dir
-        report_file: str = os.path.join(report_dir, 'human_eval_report.json')
-
-        with open(report_file, 'w') as f:
-            f.write(json.dumps(report_map, ensure_ascii=False, indent=4))
-        # logger.info(f'** Dump report to {report_file} \n')
-        logger.info('** Dump report \n')
-
-        try:
-            # Make table
-            report_table: str = gen_table([report_dir])
-            logger.info(f'** Report table: \n {report_table} \n')
-        except Exception:
-            logger.error('Failed to generate report table.')
-
     def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
@@ -151,7 +98,7 @@ class HumanevalAdapter(DataAdapter):
 
         res_map = dict(
             name=report_name or 'HumanEval',
-            metric='pass@1',
+            metric=self.metric_list[0]['name'],
             score=weighted_avg_acc,
             category=[category_d],
             total_num=total_num)

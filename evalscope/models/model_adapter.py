@@ -3,11 +3,9 @@
 # flake8: noqa
 import numpy as np
 import os
-import sys
 import time
 import torch
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from modelscope import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from torch import dtype
 from typing import Any, Dict, List, Union
@@ -21,23 +19,75 @@ from evalscope.utils.model_utils import fix_do_sample_warning
 logger = get_logger()
 
 
+class LocalModel:
+
+    def __init__(self,
+                 model_id: str,
+                 model_revision: str = 'master',
+                 device_map: str = 'auto',
+                 torch_dtype: dtype = torch.bfloat16,
+                 cache_dir: str = None,
+                 **kwargs):
+        """
+        Args:
+            model_id: The model id on ModelScope, or local model_dir.
+            model_revision: The model revision on ModelScope.
+            device_map: The device map for model inference.
+            torch_dtype: The torch dtype for model inference.
+            cache_dir: Directory to cache the models.
+        """
+        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
+
+        self.model_id = model_id
+        self.model_revision = model_revision
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.info(f'Device: {self.device}')
+
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id,
+            revision=model_revision,
+            trust_remote_code=True,
+            cache_dir=model_cache_dir,
+        )
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_id,
+            revision=model_revision,
+            device_map=device_map,
+            trust_remote_code=True,
+            torch_dtype=torch_dtype,
+            cache_dir=model_cache_dir,
+        )
+
+        self.model_cfg = {
+            'model_id': model_id,
+            'device_map': device_map,
+            'torch_dtype': str(torch_dtype),
+        }
+
+
 class BaseModelAdapter(ABC):
     """
     Base class for model adapter.
     """
 
-    def __init__(self, model, tokenizer, model_cfg: dict):
+    def __init__(self, model: Union[LocalModel, CustomModel], **kwargs):
         """
         Args:
             model: The model instance which is compatible with
                 AutoModel/AutoModelForCausalLM/AutoModelForSeq2SeqLM of transformers.
-            tokenizer: The tokenizer instance which is compatible with AutoTokenizer of transformers.
-            model_cfg:
-                Attributes: model_id, model_revision, device_map, torch_dtype
         """
-        self.model = model
-        self.tokenizer = tokenizer
-        self.model_cfg = model_cfg
+        if isinstance(model, LocalModel):
+            self.model = model.model
+            self.model_id = model.model_id
+            self.model_revision = model.model_revision
+            self.device = model.device
+            self.tokenizer = model.tokenizer
+            self.model_cfg = model.model_cfg
+        elif isinstance(model, CustomModel):
+            pass
+        else:
+            raise ValueError(f'Unsupported model type: {type(model)}')
 
     @abstractmethod
     @torch.no_grad()
@@ -53,55 +103,10 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
     _DEFAULT_MAX_LENGTH = 2048
 
-    def __init__(self,
-                 model_id: str,
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = torch.bfloat16,
-                 model_revision: str = None,
-                 max_length: int = None,
-                 cache_dir: str = None,
-                 **kwargs):
-        """
-        Args:
-            model_id: The model id on ModelScope, or local model_dir.  TODO: torch.nn.module to be supported.
-            device_map: The device map for model inference.
-            torch_dtype: The torch dtype for model inference. Default: torch.bfloat16.
-            model_revision: The model revision on ModelScope. Default: None.
-            max_length: The max length of input sequence. Default: None.
-            **kwargs: Other args.
-        """
-        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
+    def __init__(self, model: LocalModel, **kwargs):
+        super().__init__(model)
 
-        self.model_id: str = model_id
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        logger.warning(f'Device: {self.device}')
-
-        torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
-
-        model_cfg: dict = dict()
-        model_cfg['model_id'] = model_id
-        model_cfg['device_map'] = device_map
-        model_cfg['torch_dtype'] = str(torch_dtype)
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            self.model_id,  # self.model_id
-            revision=model_revision,
-            trust_remote_code=True,
-            cache_dir=model_cache_dir,
-        )
-
-        model = AutoModelForCausalLM.from_pretrained(
-            self.model_id,  # self.model_id
-            revision=model_revision,
-            device_map=device_map,
-            trust_remote_code=True,
-            torch_dtype=torch_dtype,
-            cache_dir=model_cache_dir,
-        )
-
-        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
-
-        self._max_length = max_length
+        self._max_length = kwargs.get('max_length')
 
     @property
     def max_length(self):
@@ -198,32 +203,12 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
 
 class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
+    """
+    Continuation-logits model adapter.
+    """
 
-    def __init__(self,
-                 model_id: str,
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = torch.bfloat16,
-                 model_revision: str = None,
-                 cache_dir: str = None,
-                 **kwargs):
-        """
-        Continuation-logits model adapter.
-
-        Args:
-            model_id: The model id on ModelScope, or local model_dir.
-            device_map: The device map for model inference.
-            torch_dtype: The torch dtype for model inference. Default: torch.bfloat16.
-            model_revision: The model revision on ModelScope. Default: None.
-            **kwargs: Other args.
-        """
-
-        super().__init__(
-            model_id=model_id,
-            device_map=device_map,
-            torch_dtype=torch_dtype,
-            model_revision=model_revision,
-            cache_dir=cache_dir,
-            **kwargs)
+    def __init__(self, model: LocalModel, **kwargs):
+        super().__init__(model, **kwargs)
 
     @torch.no_grad()
     def predict(self, inputs: dict, infer_cfg: dict = None) -> dict:
@@ -321,68 +306,25 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
 
 
 class ChatGenerationModelAdapter(BaseModelAdapter):
+    """
+    Chat generation model adapter.
+    """
 
-    def __init__(self,
-                 model_id: str,
-                 model_revision: str = 'master',
-                 device_map: str = 'auto',
-                 torch_dtype: dtype = 'auto',
-                 cache_dir: str = None,
-                 **kwargs):
-        """
-        Chat completion model adapter. Tasks of chat and generation are supported.
+    def __init__(self, model: LocalModel, **kwargs):
+        super().__init__(model)
 
-        Args:
-            model_id: The model id on ModelScope, or local model_dir.
-            model_revision: The model revision on ModelScope. Default: None.
-            device_map: The device map for model inference.
-            torch_dtype: The torch dtype for model inference. Default: 'auto'.
-            **kwargs: Other args.
-        """
+        self.generation_config = self._parse_generation_config(self.tokenizer, self.model)
 
         custom_generation_config = kwargs.pop('generation_config', None)
         custom_chat_template = kwargs.pop('chat_template', None)
-        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
-
-        self.model_id: str = model_id
-        self.model_revision: str = model_revision
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        logger.warning(f'Device: {self.device}')
-
-        torch_dtype = torch_dtype if torch_dtype is not None else 'auto'
-
-        model_cfg: dict = dict()
-        model_cfg['model_id'] = model_id
-        model_cfg['device_map'] = device_map
-        model_cfg['torch_dtype'] = str(torch_dtype)
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            self.model_id,
-            revision=model_revision,
-            trust_remote_code=True,
-            cache_dir=model_cache_dir,
-        )
-
-        model = AutoModelForCausalLM.from_pretrained(
-            self.model_id,
-            revision=model_revision,
-            device_map=device_map,
-            trust_remote_code=True,
-            torch_dtype=torch_dtype,
-            cache_dir=model_cache_dir,
-        )
-
-        self.generation_config = self._parse_generation_config(tokenizer, model)
 
         if custom_generation_config:
             logger.info('Updating generation config ...')
             self.generation_config.update(**custom_generation_config)
 
         if custom_chat_template:
-            tokenizer.chat_template = custom_chat_template
+            self.tokenizer.chat_template = custom_chat_template
             logger.info(f'Using custom chat template: {custom_chat_template}')
-
-        super().__init__(model=model, tokenizer=tokenizer, model_cfg=model_cfg)
 
     def _parse_generation_config(self, tokenizer, model):
         generation_config = getattr(model, 'generation_config', GenerationConfig(do_sample=False))
@@ -473,7 +415,7 @@ class CustomModelAdapter(BaseModelAdapter):
             **kwargs: Other args.
         """
         self.custom_model = custom_model
-        super(CustomModelAdapter, self).__init__(model=None, tokenizer=None, model_cfg=custom_model.config)
+        super(CustomModelAdapter, self).__init__(model=custom_model)
 
     def predict(self, inputs: Union[str, dict, list], **kwargs) -> List[Dict[str, Any]]:
         """
