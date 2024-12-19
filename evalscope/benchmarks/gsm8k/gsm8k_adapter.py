@@ -17,13 +17,14 @@ logger = get_logger()
 @Benchmark.register(
     name='gsm8k',
     dataset_id='modelscope/gsm8k',
+    model_adapter=ChatGenerationModelAdapter,
     subset_list=['main'],
     metric_list=[WeightedAverageAccuracy],
     few_shot_num=4,
     train_split='train',
     eval_split='test',
     prompt_template='',
-    model_adapter=ChatGenerationModelAdapter)
+)
 class GSM8KAdapter(DataAdapter):
 
     def __init__(self, **kwargs):

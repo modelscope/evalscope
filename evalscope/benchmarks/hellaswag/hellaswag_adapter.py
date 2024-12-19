@@ -3,9 +3,9 @@ import numpy as np
 import os
 import re
 
-from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.models import ContinuationLogitsModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -13,44 +13,30 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DATASET_ID = 'modelscope/hellaswag'
-SUBSET_LIST = ['default']
 
-
+@Benchmark.register(
+    name='hellaswag',
+    dataset_id='modelscope/hellaswag',
+    model_adapter=ContinuationLogitsModelAdapter,
+    subset_list=['default'],
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=0,
+    train_split='train',
+    eval_split='validation',
+    prompt_template='',
+)
 class HellaSwagAdapter(DataAdapter):
 
     choices = ['0', '1', '2', '3']
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = 'train',
-                 eval_split: str = 'validation',
-                 **kwargs):
+    def __init__(self, **kwargs):
 
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        if few_shot_num is None:
-            # Use 0-shot by default
-            logger.info(f'Set 0-shot examples by system for HellaSwag.')
-            few_shot_num = 0
-
+        few_shot_num = kwargs.get('few_shot_num', None)
         if few_shot_num != 0:
             logger.warning(f'few_shot_num should be 0 for HellaSwag, but got {few_shot_num}. Use 0-shot by default.')
             few_shot_num = 0
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -135,66 +121,6 @@ class HellaSwagAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: The user-defined report name.
-
-        Returns: A dict of metric calculation results. The format is like:
-        {
-            "name":"HellaSwag",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.4128,
-                    "subset":[
-                        {
-                            "name":"default",
-                            "score":0.5632
-                        },
-                    ]
-                }
-            ],
-            "total_num":7800
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'hellaswag',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _preprocess(cls, text):
