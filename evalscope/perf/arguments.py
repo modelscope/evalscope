@@ -68,6 +68,7 @@ class Arguments:
             model=args.model,
             attn_implementation=args.attn_implementation,
             url=args.url,
+            port=args.port,
             api_key=args.api_key,
             connect_timeout=args.connect_timeout,
             read_timeout=args.read_timeout,
