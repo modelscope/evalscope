@@ -6,6 +6,7 @@ from modelscope.msdatasets import MsDataset
 from typing import Any, Optional
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, HubType
+from evalscope.utils import normalize_score
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -22,6 +23,11 @@ class DataAdapter(ABC):
                  prompt_template: str = '',
                  **kwargs):
         """
+        Data Adapter for the benchmark. You need to implement the following methods:
+            - gen_prompt
+            - get_gold_answer
+            - parse_pred_result
+            - match
         Args:
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
@@ -141,6 +147,91 @@ class DataAdapter(ABC):
 
         return res_dict
 
+    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
+        """
+        Generate report for the evaluation results for all subsets.
+
+        Args:
+            subset_score_map: The subset-score map.
+                e.g. {subset_name: (score, num)}
+
+            report_name: str, the user-defined report name. Default: None
+
+        Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
+
+        Here is a format example for ARC-Challenge:
+        {
+            "name":"ARC-Challenge",
+            "metric":"WeightedAverageAccuracy",
+            "score": 0.3389,
+            "category":[
+                {
+                    "name":"DEFAULT",
+                    "score": 0.3389,
+                    "subset":[
+                        {
+                            "name":"ARC-Challenge",
+                            "score": 0.3389,
+                            "num": 100
+                        },
+                    ]
+                }
+            ],
+            "total_num":100
+        }
+        """
+        total_num: int = sum([num for _, num in subset_score_map.values()])
+        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score),
+            'num': num
+        } for subset_name, (score, num) in subset_score_map.items()]
+
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
+
+        res_map = dict(
+            name=report_name or 'DEFAULT',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
+
+        return res_map
+
+    def get_fewshot_examples(self, data_list: list, k: int, few_shot_random: bool = True):
+
+        if k > len(data_list):
+            k = len(data_list)
+        if few_shot_random:
+            return random.sample(data_list, k)
+        else:
+            return data_list[:k]
+
+    def compute_metric(self, review_res_list: list) -> Any:
+        """
+        Compute evaluation result by specific metrics.
+
+        Args:
+            review_res_list: list, the review result list, each item of which is match result for gold and pred.
+
+        Attributes:
+            DataAdapter.metric_func_map: metric_name -> metric_func mapping,
+                e.g. {'WeightedAverageAccuracy': weighted_average_acc}
+
+        Returns:
+            Metric results.
+        """
+        if len(self.metric_list) == 0:
+            raise ValueError('No metric list found for the benchmark.')
+        elif len(self.metric_list) == 1:
+            # review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
+            items = [(score, 1.0) for score in review_res_list]
+            return self.metric_list[0]['object'](items)
+        else:
+            raise ValueError('Please implement the compute_metric method for multiple metrics.')
+
     @abstractmethod
     def gen_prompt(self, *args, **kwargs) -> Any:
         """
@@ -203,63 +294,3 @@ class DataAdapter(ABC):
             The match result. Usually a score (float) for chat/multiple-choice-questions.
         """
         raise NotImplementedError
-
-    @abstractmethod
-    def compute_metric(self, review_res_list: list) -> Any:
-        """
-        Compute evaluation result by specific metrics.
-
-        Args:
-            review_res_list: list, the review result list, each item of which is match result for gold and pred.
-
-        Attributes:
-            DataAdapter.metric_func_map: metric_name -> metric_func mapping,
-                e.g. {'WeightedAverageAccuracy': weighted_average_acc}
-
-        Returns:
-            Metric results.
-        """
-        raise NotImplementedError
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate report for the evaluation results for all subsets.
-
-        Args:
-            subset_score_map: The subset-score map.
-                e.g. {subset_name: (score, num)}
-
-            report_name: str, the user-defined report name. Default: None
-
-        Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
-
-        Here is a format example for ARC-Challenge:
-        {
-            "name":"ARC-Challenge",
-            "metric":"WeightedAverageAccuracy",
-            "score": 0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score": 0.3389,
-                    "subset":[
-                        {
-                            "name":"ARC-Challenge",
-                            "score": 0.3389
-                        },
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """
-        raise NotImplementedError
-
-    def get_fewshot_examples(self, data_list: list, k: int, few_shot_random: bool = True):
-
-        if k > len(data_list):
-            k = len(data_list)
-        if few_shot_random:
-            return random.sample(data_list, k)
-        else:
-            return data_list[:k]
