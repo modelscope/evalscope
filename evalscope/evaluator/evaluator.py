@@ -86,6 +86,7 @@ class Evaluator(object):
             **kwargs)
 
         # Get prompts from dataset
+        # TODO: support sampler
         self.prompts = self.data_adapter.gen_prompts(data_dict=self.dataset)
         del self.dataset
 
