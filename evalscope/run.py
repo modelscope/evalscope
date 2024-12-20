@@ -120,18 +120,15 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
         data_adapter=data_adapter,
         subset_list=benchmark.subset_list,
         model_adapter=model_adapter,
-        use_cache=task_cfg.use_cache,
         outputs=outputs,
-        datasets_dir=task_cfg.dataset_dir,
-        datasets_hub=task_cfg.dataset_hub,
-        stage=task_cfg.stage,
-        eval_type=task_cfg.eval_type,
-        overall_task_cfg=task_cfg,
+        task_cfg=task_cfg,
     )
 
 
 def get_base_model(task_cfg: TaskConfig) -> Optional[LocalModel]:
-    """Get the base model for the task."""
+    """Get the base local model for the task. If the task is not checkpoint-based, return None.
+       Avoids loading model multiple times for different datasets.
+    """
     if task_cfg.eval_type != EvalType.CHECKPOINT:
         return None
     else:
@@ -159,8 +156,11 @@ def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls, base_model
     elif task_cfg.eval_type == EvalType.CUSTOM:
         if not isinstance(task_cfg.model, CustomModel):
             raise ValueError(f'Expected evalscope.models.custom.CustomModel, but got {type(task_cfg.model)}.')
-        from evalscope.models.model_adapter import CustomModelAdapter
+        from evalscope.models import CustomModelAdapter
         return CustomModelAdapter(custom_model=task_cfg.model)
+    elif task_cfg.eval_type == EvalType.SERVICE:
+        from evalscope.models import ServerModelAdapter
+        return ServerModelAdapter(url=task_cfg.model, model_id=task_cfg.model_id)
     else:
         return model_adapter_cls(
             model=base_model or get_base_model(task_cfg),

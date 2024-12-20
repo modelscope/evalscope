@@ -4,6 +4,7 @@ import os
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import EvalType
 from evalscope.metrics import WeightedAverageAccuracy, exact_match
 from evalscope.models import ContinuationLogitsModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
@@ -92,7 +93,7 @@ class HellaSwagAdapter(DataAdapter):
         # Get the gold choice
         return input_d['label']
 
-    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
+    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
@@ -104,7 +105,7 @@ class HellaSwagAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == 'checkpoint':
+        if eval_type == EvalType.CHECKPOINT:
             # answer: in the form of [-2.3, -4.5, ...], len of self.choices
             result = np.array(result)
             endings: list = [self._preprocess(ending) for ending in raw_input_d['endings']]
@@ -112,9 +113,9 @@ class HellaSwagAdapter(DataAdapter):
             best_choice_idx = np.argmax(result / completion_len)
 
             return str(best_choice_idx)
-        elif eval_type == 'service':
+        elif eval_type == EvalType.SERVICE:
             return result  # TODO: to be supported !
-        elif eval_type == 'custom':
+        elif eval_type == EvalType.CUSTOM:
             return result  # TODO: to be supported !
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')

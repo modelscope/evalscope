@@ -72,9 +72,10 @@ class TaskConfig:
                 self.model_id = type(self.model).__name__
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
+        # Convert Enum to string
+        self.eval_backend = str(self.eval_backend)
 
     def to_dict(self):
-        # Note: to avoid serialization error for some model instance
         return self.__dict__
 
     def __str__(self):
@@ -129,6 +130,7 @@ class TaskConfig:
                 continue
 
             task.model = custom_model
+            task.model_args = custom_model.config
             task.model_id = type(custom_model).__name__
             res_list.append(task)
 

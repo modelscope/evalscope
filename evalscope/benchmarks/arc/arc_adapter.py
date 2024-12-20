@@ -4,6 +4,7 @@ import json
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import EvalType
 from evalscope.metrics import WeightedAverageAccuracy, exact_match
 from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
@@ -119,7 +120,7 @@ class ARCAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('answerKey', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
@@ -131,12 +132,12 @@ class ARCAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == 'checkpoint':
+        if eval_type == EvalType.CHECKPOINT:
             return result
-        elif eval_type == 'service':
+        elif eval_type == EvalType.SERVICE:
             return ResponseParser.parse_first_option_with_choices(
                 text=result, options=self.choices)  # TODO: to be checked !
-        elif eval_type == 'custom':
+        elif eval_type == EvalType.CUSTOM:
             return ResponseParser.parse_first_option_with_choices(
                 text=result, options=self.choices)  # TODO: to be checked !
         else:

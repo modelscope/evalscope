@@ -7,7 +7,7 @@ from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
 from threading import Thread
 from transformers import TextIteratorStreamer
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 
 class Usage(BaseModel):
@@ -66,7 +66,7 @@ class ChatCompletionResponseStreamChoice(BaseModel):
 class ChatCompletionResponse(BaseModel):
     model: str
     object: Literal['chat.completion', 'chat.completion.chunk']
-    choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
+    choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice, Any]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
     usage: Optional[Usage]
 

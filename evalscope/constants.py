@@ -135,7 +135,8 @@ class EvalStage:
 class EvalType:
 
     CUSTOM = 'custom'
-    CHECKPOINT = 'checkpoint'
+    CHECKPOINT = 'checkpoint'  # native model checkpoint
+    SERVICE = 'service'  # model service
 
 
 class EvalBackend:

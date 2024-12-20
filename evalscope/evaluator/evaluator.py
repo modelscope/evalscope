@@ -10,9 +10,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, AnswerKeys, DumpMode, EvalStage, EvalType, HubType,
-                                 ReviewKeys)
-from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
+from evalscope.constants import AnswerKeys, DumpMode, EvalStage, ReviewKeys
+from evalscope.models import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
@@ -45,44 +44,36 @@ class Evaluator(object):
     def __init__(self,
                  dataset_name_or_path: str,
                  data_adapter: DataAdapter,
-                 subset_list: Optional[list] = None,
-                 model_adapter: Optional[BaseModelAdapter] = None,
-                 use_cache: Optional[str] = None,
-                 outputs: Optional[OutputsStructure] = None,
-                 datasets_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-                 datasets_hub: Optional[str] = HubType.MODELSCOPE,
-                 stage: Optional[str] = EvalStage.ALL,
-                 eval_type: Optional[str] = EvalType.CHECKPOINT,
-                 overall_task_cfg: Optional[TaskConfig] = None,
+                 model_adapter: BaseModelAdapter,
+                 subset_list: list = None,
+                 outputs: OutputsStructure = None,
+                 task_cfg: TaskConfig = None,
                  **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.dataset_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)).split('.')[0]
-        self.model_name = overall_task_cfg.model_id
+        self.model_name = task_cfg.model_id
         self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
-        self.datasets_dir = os.path.expanduser(datasets_dir)
+        self.datasets_dir = os.path.expanduser(task_cfg.dataset_dir)
         self.kwargs = kwargs
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
-        self.eval_type = eval_type
-        self.stage = stage
-        self.use_cache = use_cache
-        self.overall_task_cfg = overall_task_cfg
-        if isinstance(self.model_adapter, CustomModelAdapter):
-            self.overall_task_cfg.model_args = self.model_adapter.custom_model.config
-
-        self.model_cfg = self.model_adapter.model_cfg
+        self.eval_type = task_cfg.eval_type
+        self.stage = task_cfg.stage
+        self.use_cache = task_cfg.use_cache
+        self.task_cfg = task_cfg
+        self.model_cfg = model_adapter.model_cfg
 
         # Deal with the output paths
         self.outputs_structure = outputs
 
         # Load dataset
         self.dataset = self.data_adapter.load(
-            dataset_name_or_path=dataset_name_or_path,
+            dataset_name_or_path=self.dataset_name_or_path,
             subset_list=subset_list,
             work_dir=self.datasets_dir,
-            datasets_hub=datasets_hub,
+            datasets_hub=task_cfg.dataset_hub,
             **kwargs)
 
         # Get prompts from dataset

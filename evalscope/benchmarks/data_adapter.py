@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from modelscope.msdatasets import MsDataset
 from typing import Any, Optional
 
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, HubType
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.utils import normalize_score
 from evalscope.utils.logger import get_logger
 
@@ -265,7 +265,7 @@ class DataAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> Any:
+    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
         """
         Parse the predicted result and extract proper answer.
 
@@ -286,9 +286,9 @@ class DataAdapter(ABC):
 
         Args:
             gold (Any): The golden answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'A'
+                        e.g. 'A', extracted from get_gold_answer method.
             pred (Any): The predicted answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'B'
+                        e.g. 'B', extracted from parse_pred_result method.
 
         Returns:
             The match result. Usually a score (float) for chat/multiple-choice-questions.
