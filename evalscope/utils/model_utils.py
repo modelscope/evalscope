@@ -1,4 +1,13 @@
+from enum import Enum
 from transformers import GenerationConfig
+
+
+class EvalBackend(Enum):
+    NATIVE = 'Native'
+    OPEN_COMPASS = 'OpenCompass'
+    VLM_EVAL_KIT = 'VLMEvalKit'
+    RAG_EVAL = 'RAGEval'
+    THIRD_PARTY = 'ThirdParty'
 
 
 def fix_do_sample_warning(generation_config: GenerationConfig) -> None:

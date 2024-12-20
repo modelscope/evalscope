@@ -5,17 +5,16 @@ import os
 import random
 import re
 
-from evalscope.benchmarks.data_adapter import DataAdapter
+from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
-from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.models.chat_adapter import ChatGenerationModelAdapter
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
-
-DATASET_ID = 'modelscope/bbh'
 
 # BBH multiple choice subset list
 MULTIPLE_CHOICE = 'multiple_choice'
@@ -59,25 +58,25 @@ TASK_TYPE = 'task_type'
 SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
 
+@Benchmark.register(
+    name='bbh',
+    dataset_id='modelscope/bbh',
+    model_adapter=ChatGenerationModelAdapter,
+    subset_list=SUBSET_LIST,
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=0,
+    train_split=None,
+    eval_split='test',
+    prompt_template='',
+)
 class BBHAdapter(DataAdapter):
     """
     Adapter for BBH free-form and multiple-choices sub-tasks.
     """
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = None,
-                 eval_split: str = 'test',
-                 **kwargs):
+    def __init__(self, **kwargs):
 
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
+        few_shot_num = kwargs.get('few_shot_num', None)
         if few_shot_num is None:
             logger.info(f'Set 3-shot examples by system for BBH.')
             few_shot_num = 3
@@ -87,13 +86,7 @@ class BBHAdapter(DataAdapter):
                          f'Use 3-shot by default.')
             few_shot_num = 3
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -216,66 +209,6 @@ class BBHAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: The user-defined report name.
-
-        Returns: A dict of metric calculation results. The format is like:
-        {
-            "name":"BBH",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.3389,
-                    "subset":[
-                        {
-                            "name":"BBH",
-                            "score":0.3389
-                        },
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'bbh',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _extract_mc_answer(cls, ans: str) -> str:

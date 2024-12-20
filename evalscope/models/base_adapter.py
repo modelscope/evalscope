@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from evalscope.models.custom import CustomModel
 from evalscope.models.local_model import LocalModel
@@ -8,8 +8,10 @@ from evalscope.models.local_model import LocalModel
 
 class BaseModelAdapter(ABC):
 
-    def __init__(self, model: Union[LocalModel, CustomModel], **kwargs):
-        if isinstance(model, LocalModel):
+    def __init__(self, model: Optional[Union[LocalModel, CustomModel]], **kwargs):
+        if model is None:
+            self.model_cfg = kwargs.get('model_cfg', None)
+        elif isinstance(model, LocalModel):
             self.model = model.model
             self.model_id = model.model_id
             self.model_revision = model.model_revision

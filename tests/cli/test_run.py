@@ -4,6 +4,7 @@ import subprocess
 import torch
 import unittest
 
+from evalscope.constants import EvalType
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
@@ -109,6 +110,23 @@ class TestRun(unittest.TestCase):
         )
 
         run_task(task_cfg=task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_server_model(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen2.5',
+            api_url='http://127.0.0.1:8801/v1/chat/completions',
+            api_key='EMPTY',
+            eval_type=EvalType.SERVICE,
+            datasets=['gsm8k', 'bbh'],
+            limit=2,
+            debug=True
+        )
+
+        run_task(task_cfg=task_cfg)
+
 
 if __name__ == '__main__':
     unittest.main()

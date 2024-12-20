@@ -160,7 +160,7 @@ def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls, base_model
         return CustomModelAdapter(custom_model=task_cfg.model)
     elif task_cfg.eval_type == EvalType.SERVICE:
         from evalscope.models import ServerModelAdapter
-        return ServerModelAdapter(url=task_cfg.model, model_id=task_cfg.model_id)
+        return ServerModelAdapter(api_url=task_cfg.api_url, model_id=task_cfg.model, api_key=task_cfg.api_key)
     else:
         return model_adapter_cls(
             model=base_model or get_base_model(task_cfg),

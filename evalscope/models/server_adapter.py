@@ -3,9 +3,9 @@ import time
 from typing import Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
-from evalscope.models.custom import CustomModel
-from evalscope.models.local_model import LocalModel
-from evalscope.utils.chat_service import ChatCompletionResponse
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class ServerModelAdapter(BaseModelAdapter):
@@ -13,15 +13,18 @@ class ServerModelAdapter(BaseModelAdapter):
     Server model adapter to request remote API model and generate results.
     """
 
-    def __init__(self, model: Union[LocalModel, CustomModel], api_url: str, **kwargs):
+    def __init__(self, api_url: str, model_id: str, api_key: str = 'EMPTY', **kwargs):
         """
         Args:
-            model: The model instance.
             api_url: The URL of the remote API model.
-            **kwargs: Other args.
+            model_id: The ID of the remote API model.
+            api_key: The API key of the remote API model.
         """
-        super().__init__(model, **kwargs)
         self.api_url = api_url
+        self.model_id = model_id
+        self.api_key = api_key
+        self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
+        super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
 
     def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = None) -> dict:
         """
@@ -48,33 +51,31 @@ class ServerModelAdapter(BaseModelAdapter):
             raise TypeError(f'Unsupported inputs type: {type(inputs)}')
 
         # Format request JSON according to OpenAI API format
+        # do not sample by default
         request_json = {
             'model': self.model_id,
-            'prompt': query,
+            'messages': [{
+                'role': 'user',
+                'content': query
+            }],
             'max_tokens': infer_cfg.get('max_tokens', 2048),
-            'temperature': infer_cfg.get('temperature', 1.0),
+            'temperature': infer_cfg.get('temperature', 0.0),
             'top_p': infer_cfg.get('top_p', 1.0),
             'n': infer_cfg.get('num_return_sequences', 1),
             'stop': infer_cfg.get('stop', None)
         }
 
-        # Request to remote API
-        response = requests.post(self.api_url, json=request_json)
-        response_data = response.json()
-
-        choices_list = [{
-            'index': i,
-            'message': {
-                'content': choice['text'],
-                'role': 'assistant'
-            }
-        } for i, choice in enumerate(response_data['choices'])]
-
-        res_d = ChatCompletionResponse(
-            model=self.model_id,
-            choices=choices_list,
-            object='chat.completion',
-            created=int(time.time()),
-            usage=response_data.get('usage', None)).model_dump(exclude_unset=True)
-
-        return res_d
+        # Request to remote API with retry mechanism
+        max_retries = 3
+        for attempt in range(max_retries):
+            response = requests.post(
+                self.api_url, json=request_json, headers={'Authorization': f'Bearer {self.api_key}'})
+            if response.status_code == 200:
+                response_data = response.json()
+                return response_data
+            logger.warning(f'Failed to request to remote API: {response.status_code} {response.text}')
+            if attempt < max_retries - 1:
+                time.sleep(5)  # Sleep for 5 seconds before retrying
+            else:
+                raise RuntimeError(f'Failed to request to remote API after {max_retries} attempts: '
+                                   f'{response.status_code} {response.text}')
