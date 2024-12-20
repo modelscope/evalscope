@@ -64,7 +64,7 @@ class TaskConfig:
     # Debug and runtime mode arguments
     debug: bool = False
     dry_run: bool = False
-    seed: int = 42
+    seed: Optional[int] = 42
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
 

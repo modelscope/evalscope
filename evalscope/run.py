@@ -13,7 +13,7 @@ from evalscope.benchmarks import Benchmark, BenchmarkMeta
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
 from evalscope.evaluator import Evaluator
-from evalscope.models import CustomModel, LocalModel
+from evalscope.models import BaseModelAdapter, CustomModel, LocalModel
 from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure, are_paths_same
 from evalscope.utils.logger import configure_logging, get_logger
@@ -35,15 +35,13 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
 
 def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
-    seed_everything(task_cfg.seed)
+    if task_cfg.seed is not None:
+        seed_everything(task_cfg.seed)
     outputs = setup_work_directory(task_cfg, run_time)
     configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
-    task_cfg.dump_yaml(outputs.configs_dir)
-    logger.info(task_cfg)
-
     if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg)
+        return run_non_native_backend(task_cfg, outputs)
     else:
         return evaluate_model(task_cfg, outputs)
 
@@ -65,7 +63,7 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     return outputs
 
 
-def run_non_native_backend(task_cfg: TaskConfig) -> dict:
+def run_non_native_backend(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Run evaluation using a non-native backend."""
     eval_backend = task_cfg.eval_backend
     eval_config = task_cfg.eval_config
@@ -75,6 +73,10 @@ def run_non_native_backend(task_cfg: TaskConfig) -> dict:
 
     backend_manager_class = get_backend_manager_class(eval_backend)
     backend_manager = backend_manager_class(config=eval_config)
+
+    task_cfg.dump_yaml(outputs.configs_dir)
+    logger.info(task_cfg)
+
     backend_manager.run()
 
     return dict()
@@ -99,9 +101,17 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     # Initialize evaluator
     eval_results = {}
-    base_model = get_base_model(task_cfg)
+    base_model = get_local_model(task_cfg)
+    evaluators = []
     for dataset_name in task_cfg.datasets:
         evaluator = create_evaluator(task_cfg, dataset_name, outputs, base_model)
+        evaluators.append(evaluator)
+
+    # dump task_cfg to outputs.configs_dir after creating evaluators
+    task_cfg.dump_yaml(outputs.configs_dir)
+    logger.info(task_cfg)
+
+    for evaluator in evaluators:
         res_dict = evaluator.eval(infer_cfg=task_cfg.generation_config, debug=task_cfg.debug, limit=task_cfg.limit)
         eval_results[dataset_name] = res_dict
 
@@ -115,6 +125,9 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args)
     model_adapter = initialize_model_adapter(task_cfg, benchmark.model_adapter, base_model)
 
+    # update task_cfg.dataset_args
+    task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()
+
     return Evaluator(
         dataset_name_or_path=benchmark.dataset_id,
         data_adapter=data_adapter,
@@ -125,7 +138,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     )
 
 
-def get_base_model(task_cfg: TaskConfig) -> Optional[LocalModel]:
+def get_local_model(task_cfg: TaskConfig) -> Optional[LocalModel]:
     """Get the base local model for the task. If the task is not checkpoint-based, return None.
        Avoids loading model multiple times for different datasets.
     """
@@ -148,7 +161,7 @@ def get_base_model(task_cfg: TaskConfig) -> Optional[LocalModel]:
         return base_model
 
 
-def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls, base_model: LocalModel):
+def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls: BaseModelAdapter, base_model: LocalModel):
     """Initialize the model adapter based on the task configuration."""
     if task_cfg.dry_run:
         from evalscope.models.model import DummyChatModel
@@ -160,12 +173,11 @@ def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls, base_model
         return CustomModelAdapter(custom_model=task_cfg.model)
     elif task_cfg.eval_type == EvalType.SERVICE:
         from evalscope.models import ServerModelAdapter
-        return ServerModelAdapter(api_url=task_cfg.api_url, model_id=task_cfg.model, api_key=task_cfg.api_key)
+        return ServerModelAdapter(
+            api_url=task_cfg.api_url, model_id=task_cfg.model, api_key=task_cfg.api_key, seed=task_cfg.seed)
     else:
         return model_adapter_cls(
-            model=base_model or get_base_model(task_cfg),
-            generation_config=task_cfg.generation_config,
-            chat_template=task_cfg.chat_template)
+            model=base_model, generation_config=task_cfg.generation_config, chat_template=task_cfg.chat_template)
 
 
 def main():

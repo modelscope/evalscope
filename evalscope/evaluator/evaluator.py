@@ -60,26 +60,29 @@ class Evaluator(object):
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
         self.eval_type = task_cfg.eval_type
+        self.subset_list = subset_list
+        self.dataset_hub = task_cfg.dataset_hub
         self.stage = task_cfg.stage
         self.use_cache = task_cfg.use_cache
         self.task_cfg = task_cfg
         self.model_cfg = model_adapter.model_cfg
-
         # Deal with the output paths
         self.outputs_structure = outputs
 
-        # Load dataset
-        self.dataset = self.data_adapter.load(
+        self.kwargs = kwargs
+
+    def load_dataset(self):
+        dataset = self.data_adapter.load(
             dataset_name_or_path=self.dataset_name_or_path,
-            subset_list=subset_list,
+            subset_list=self.subset_list,
             work_dir=self.datasets_dir,
-            datasets_hub=task_cfg.dataset_hub,
-            **kwargs)
+            datasets_hub=self.dataset_hub,
+            **self.kwargs)
 
         # Get prompts from dataset
         # TODO: support sampler
-        self.prompts = self.data_adapter.gen_prompts(data_dict=self.dataset)
-        del self.dataset
+        prompts = self.data_adapter.gen_prompts(data_dict=dataset)
+        return prompts
 
     def _pred_answer(self, input_d: dict, infer_cfg: dict, subset_name: str, answer_id: str = None) -> dict:
 
@@ -371,7 +374,8 @@ class Evaluator(object):
         stage_answers_dict = {}
         stage_reviews_dict = {}
 
-        for subset_name, prompts_list in self.prompts.items():
+        prompts = self.load_dataset()
+        for subset_name, prompts_list in prompts.items():
             limit = kwargs.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
 

@@ -64,7 +64,7 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
     model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
     metric_list=[WeightedAverageAccuracy],
-    few_shot_num=0,
+    few_shot_num=3,
     train_split=None,
     eval_split='test',
     prompt_template='',
@@ -76,15 +76,12 @@ class BBHAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
 
-        few_shot_num = kwargs.get('few_shot_num', None)
-        if few_shot_num is None:
-            logger.info(f'Set 3-shot examples by system for BBH.')
-            few_shot_num = 3
+        few_shot_num = kwargs.get('few_shot_num', 3)
 
         if few_shot_num != 3 and few_shot_num != 0:
             logger.error(f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
                          f'Use 3-shot by default.')
-            few_shot_num = 3
+            kwargs['few_shot_num'] = 3
 
         super().__init__(**kwargs)
 

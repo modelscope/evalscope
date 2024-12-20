@@ -43,7 +43,7 @@ class GSM8KAdapter(DataAdapter):
         if few_shot_num != 4 and few_shot_num != 0:
             logger.error(f'GSM8K uses 4-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
                          f'Use 4-shot by default.')
-            few_shot_num = 4
+            kwargs['few_shot_num'] = 4
 
         super().__init__(**kwargs)
 

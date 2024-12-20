@@ -32,10 +32,10 @@ class HellaSwagAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
 
-        few_shot_num = kwargs.get('few_shot_num', None)
+        few_shot_num = kwargs.get('few_shot_num', 0)
         if few_shot_num != 0:
             logger.warning(f'few_shot_num should be 0 for HellaSwag, but got {few_shot_num}. Use 0-shot by default.')
-            few_shot_num = 0
+            kwargs['few_shot_num'] = 0
 
         super().__init__(**kwargs)
 

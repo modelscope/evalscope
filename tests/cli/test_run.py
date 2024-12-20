@@ -71,7 +71,7 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
-        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct', 'datasets': ['hellaswag', 'gsm8k', 'arc'], 'limit': 2, 'debug': True}
+        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct', 'datasets': ['bbh', 'hellaswag', 'gsm8k', 'arc'], 'limit': 2, 'debug': True}
         run_task(task_cfg=task_cfg)
 
 
@@ -120,7 +120,13 @@ class TestRun(unittest.TestCase):
             api_url='http://127.0.0.1:8801/v1/chat/completions',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
-            datasets=['gsm8k', 'bbh'],
+            datasets=[
+                'gsm8k',
+                'arc',
+                'ceval',
+                'bbh',
+                # 'hellaswag',
+            ],
             limit=2,
             debug=True
         )

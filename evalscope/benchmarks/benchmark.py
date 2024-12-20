@@ -31,16 +31,24 @@ class BenchmarkMeta:
         self.__dict__.update(args)
 
     def to_dict(self) -> dict:
+        return self.__dict__
+
+    def to_string_dict(self) -> dict:
         cur_dict = copy.deepcopy(self.__dict__)
+        # cur_dict['data_adapter'] = self.data_adapter.__name__
+        # cur_dict['model_adapter'] = self.model_adapter.__name__
+        # cur_dict['metric_list'] = [metric['name'] for metric in self.metric_list]
         del cur_dict['data_adapter']
         del cur_dict['model_adapter']
+        del cur_dict['metric_list']
         return cur_dict
 
-    def get_data_adapter(self, config: dict = None) -> 'DataAdapter':
+    def get_data_adapter(self, config: dict = {}) -> 'DataAdapter':
         if config:
-            dataset_config = config.get(self.name, {})
-            self.update(dataset_config)
-        return self.data_adapter(**self.to_dict())
+            self.update(config.get(self.name, {}))
+
+        data_adapter = self.data_adapter(**self.to_dict())
+        return data_adapter
 
 
 class Benchmark:

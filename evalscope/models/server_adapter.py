@@ -23,6 +23,7 @@ class ServerModelAdapter(BaseModelAdapter):
         self.api_url = api_url
         self.model_id = model_id
         self.api_key = api_key
+        self.seed = kwargs.get('seed', None)
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
 
@@ -50,6 +51,11 @@ class ServerModelAdapter(BaseModelAdapter):
         else:
             raise TypeError(f'Unsupported inputs type: {type(inputs)}')
 
+        request_json = self.make_request(query, infer_cfg)
+        return self.send_request(request_json)
+
+    def make_request(self, query: str, infer_cfg: dict) -> dict:
+        """Make request to remote API."""
         # Format request JSON according to OpenAI API format
         # do not sample by default
         request_json = {
@@ -64,9 +70,12 @@ class ServerModelAdapter(BaseModelAdapter):
             'n': infer_cfg.get('num_return_sequences', 1),
             'stop': infer_cfg.get('stop', None)
         }
+        if self.seed is not None:
+            request_json['seed'] = self.seed
+        logger.debug(f'Request to remote API: {request_json}')
+        return request_json
 
-        # Request to remote API with retry mechanism
-        max_retries = 3
+    def send_request(self, request_json: dict, max_retries: int = 3) -> dict:
         for attempt in range(max_retries):
             response = requests.post(
                 self.api_url, json=request_json, headers={'Authorization': f'Bearer {self.api_key}'})

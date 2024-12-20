@@ -139,11 +139,6 @@ class DataAdapter(ABC):
                 prompt_d = self.gen_prompt(input_d=sample_d, subset_name=sub_name, few_shot_list=few_shot_data)
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
-        # Note: for multiprocess
-        # rnd = random.Random()
-        # rnd.seed(42)
-        # for k, v in res_dict.items():
-        #     rnd.shuffle(v)
 
         return res_dict
 
