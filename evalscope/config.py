@@ -40,8 +40,8 @@ class TaskConfig:
     chat_template: Optional[str] = None
 
     # Dataset-related arguments
-    datasets: Optional[List[str]] = None
-    dataset_args: Optional[Dict] = field(default_factory=dict)
+    datasets: List[str] = field(default_factory=list)
+    dataset_args: Dict = field(default_factory=dict)
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
     dataset_hub: str = HubType.MODELSCOPE
 

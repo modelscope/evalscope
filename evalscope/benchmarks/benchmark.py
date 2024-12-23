@@ -24,7 +24,7 @@ class BenchmarkMeta:
     eval_split: Optional[str] = None
     prompt_template: str = ''
 
-    def update(self, args: dict):
+    def _update(self, args: dict):
         if args.get('local_path'):
             self.dataset_id = args['local_path']
             del args['local_path']
@@ -45,7 +45,7 @@ class BenchmarkMeta:
 
     def get_data_adapter(self, config: dict = {}) -> 'DataAdapter':
         if config:
-            self.update(config.get(self.name, {}))
+            self._update(config)
 
         data_adapter = self.data_adapter(**self.to_dict())
         return data_adapter

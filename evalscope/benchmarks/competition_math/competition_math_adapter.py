@@ -4,53 +4,39 @@ import glob
 import json
 import os
 
-from evalscope.benchmarks import DataAdapter
-from evalscope.metrics.metrics import weighted_mean
-from evalscope.utils import normalize_score
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.metrics import WeightedAverageAccuracy
+from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
 
-DATASET_ID = 'modelscope/competition_math'
-SUBSET_LIST = ['default']
 
-
+@Benchmark.register(
+    name='competition_math',
+    dataset_id='modelscope/competition_math',
+    model_adapter=ChatGenerationModelAdapter,
+    subset_list=['default'],
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=4,
+    train_split='train',
+    eval_split='test',
+    prompt_template='',
+)
 class CompetitionMathAdapter(DataAdapter):
-    """ TODO: To be tested for all models. """
+    """ To be tested for all models. """
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = 'train',
-                 eval_split: str = 'test',
-                 **kwargs):
+    def __init__(self, **kwargs):
 
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        if few_shot_num is None:
-            # Use 4-shot by default
-            logger.info(f'Set 4-shot examples by system for MATH.')
-            few_shot_num = 4
-
+        few_shot_num = kwargs.get('few_shot_num', 4)
         if few_shot_num != 4 and few_shot_num != 0:
             logger.error(f'The MATH benchmark ONLY supports 4-shot by system or 0-shot settings, '
-                         f'but got {self.few_shot_num}. Use 4-shot by default.')
-            few_shot_num = 4
+                         f'but got {few_shot_num}. Use 4-shot by default.')
+            kwargs['few_shot_num'] = 4
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict: dict = {}
@@ -118,66 +104,6 @@ class CompetitionMathAdapter(DataAdapter):
             res = 1
 
         return res
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: The user-defined report name.
-
-        Returns: A dict of metric calculation results. The format is like:
-        {
-            "name":"CompetitionMath",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.5632,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.5632,
-                    "subset":[
-                        {
-                            "name":"main",
-                            "score":0.5632
-                        },
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'competition_math',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, use_fewshot: bool = True) -> str:

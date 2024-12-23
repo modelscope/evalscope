@@ -31,13 +31,8 @@ class Evaluator(object):
         data_adapter: DataAdapter, the data adapter for the dataset.
         subset_list: list, the subset list for the dataset.
         model_adapter: BaseModelAdapter, the model adapter for the model.
-        use_cache: str, path to local cache. Default: None
-        outputs_dir: OutputsStructure, the outputs dir. Default: None
-        datasets_dir: str, the datasets dir. Default: DEFAULT_ROOT_CACHE_DIR
-        datasets_hub: str, the datasets hub. `Local`, `ModelScope` or `HuggingFace`. Default: 'ModelScope'
-        stage: str, the stage of evaluation. `all` or `infer` or `review`. Default: 'all'
-        eval_type: str, the evaluation type. `checkpoint` or `service` or `custom`. Default: 'checkpoint'
-        overall_task_cfg: dict, the overall task config. Default: None
+        outputs: OutputsStructure, the outputs dir. Default: None
+        task_cfg: TaskConfig, the overall task config. Default: None
         **kwargs: kwargs.
     """
 

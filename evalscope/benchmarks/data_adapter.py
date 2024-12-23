@@ -63,18 +63,17 @@ class DataAdapter(ABC):
         dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         subset_list = subset_list or self.subset_list
 
-        logger.info(f'Evaluating on subsets for {dataset_name_or_path}: {subset_list}')
-
         # Try to load dataset from local disk
         if os.path.exists(dataset_name_or_path):
-            logger.info(
-                f'Loading dataset from local disk: > dataset_name: {dataset_name_or_path}  > work_dir: {work_dir}')
+            logger.info(f'Loading dataset from work_dir: {work_dir}: > dataset_name: {dataset_name_or_path} > \
+                    subsets: {subset_list}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
         else:
             # Load dataset from remote
-            logger.info(f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path}')
+            logger.info(
+                f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
             data_dict = {}
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
             if len(split_list) == 0:

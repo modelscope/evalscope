@@ -122,7 +122,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     """Create an evaluator object for the specified dataset."""
     benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
 
-    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args)
+    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
     model_adapter = initialize_model_adapter(task_cfg, benchmark.model_adapter, base_model)
 
     # update task_cfg.dataset_args
