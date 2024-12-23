@@ -3,7 +3,6 @@
 Run evaluation for LLMs.
 """
 import os.path
-import torch
 from argparse import Namespace
 from datetime import datetime
 from typing import List, Optional, Union
@@ -11,9 +10,9 @@ from typing import List, Optional, Union
 from evalscope.arguments import parse_args
 from evalscope.benchmarks import Benchmark, BenchmarkMeta
 from evalscope.config import TaskConfig, parse_task_config
-from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
+from evalscope.constants import DEFAULT_WORK_DIR, EvalBackend
 from evalscope.evaluator import Evaluator
-from evalscope.models import BaseModelAdapter, CustomModel, LocalModel
+from evalscope.models import LocalModel, get_local_model, initialize_model_adapter
 from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure, are_paths_same
 from evalscope.utils.logger import configure_logging, get_logger
@@ -131,53 +130,10 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     return Evaluator(
         dataset_name_or_path=benchmark.dataset_id,
         data_adapter=data_adapter,
-        subset_list=benchmark.subset_list,
         model_adapter=model_adapter,
         outputs=outputs,
         task_cfg=task_cfg,
     )
-
-
-def get_local_model(task_cfg: TaskConfig) -> Optional[LocalModel]:
-    """Get the base local model for the task. If the task is not checkpoint-based, return None.
-       Avoids loading model multiple times for different datasets.
-    """
-    if task_cfg.eval_type != EvalType.CHECKPOINT:
-        return None
-    else:
-        device_map = task_cfg.model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
-        cache_dir = task_cfg.model_args.get('cache_dir', None)
-        model_precision = task_cfg.model_args.get('precision', torch.float16)
-        model_revision = task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION)
-        if isinstance(model_precision, str) and model_precision != 'auto':
-            model_precision = eval(model_precision)
-
-        base_model = LocalModel(
-            model_id=task_cfg.model,
-            model_revision=model_revision,
-            device_map=device_map,
-            torch_dtype=model_precision,
-            cache_dir=cache_dir)
-        return base_model
-
-
-def initialize_model_adapter(task_cfg: TaskConfig, model_adapter_cls: BaseModelAdapter, base_model: LocalModel):
-    """Initialize the model adapter based on the task configuration."""
-    if task_cfg.dry_run:
-        from evalscope.models.model import DummyChatModel
-        return DummyChatModel(model_cfg=dict())
-    elif task_cfg.eval_type == EvalType.CUSTOM:
-        if not isinstance(task_cfg.model, CustomModel):
-            raise ValueError(f'Expected evalscope.models.custom.CustomModel, but got {type(task_cfg.model)}.')
-        from evalscope.models import CustomModelAdapter
-        return CustomModelAdapter(custom_model=task_cfg.model)
-    elif task_cfg.eval_type == EvalType.SERVICE:
-        from evalscope.models import ServerModelAdapter
-        return ServerModelAdapter(
-            api_url=task_cfg.api_url, model_id=task_cfg.model, api_key=task_cfg.api_key, seed=task_cfg.seed)
-    else:
-        return model_adapter_cls(
-            model=base_model, generation_config=task_cfg.generation_config, chat_template=task_cfg.chat_template)
 
 
 def main():

@@ -29,7 +29,6 @@ class Evaluator(object):
                 if the dataset is a local path, e.g. /path/to/your_dataset_name,
                 then the task name will be the basename of the path, which is `your_dataset_name`.
         data_adapter: DataAdapter, the data adapter for the dataset.
-        subset_list: list, the subset list for the dataset.
         model_adapter: BaseModelAdapter, the model adapter for the model.
         outputs: OutputsStructure, the outputs dir. Default: None
         task_cfg: TaskConfig, the overall task config. Default: None
@@ -40,7 +39,6 @@ class Evaluator(object):
                  dataset_name_or_path: str,
                  data_adapter: DataAdapter,
                  model_adapter: BaseModelAdapter,
-                 subset_list: list = None,
                  outputs: OutputsStructure = None,
                  task_cfg: TaskConfig = None,
                  **kwargs):
@@ -50,17 +48,14 @@ class Evaluator(object):
         self.model_name = task_cfg.model_id
         self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
-        self.datasets_dir = os.path.expanduser(task_cfg.dataset_dir)
-        self.kwargs = kwargs
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
+        self.model_cfg = model_adapter.model_cfg
         self.eval_type = task_cfg.eval_type
-        self.subset_list = subset_list
         self.dataset_hub = task_cfg.dataset_hub
         self.stage = task_cfg.stage
         self.use_cache = task_cfg.use_cache
         self.task_cfg = task_cfg
-        self.model_cfg = model_adapter.model_cfg
         # Deal with the output paths
         self.outputs_structure = outputs
 
@@ -69,13 +64,12 @@ class Evaluator(object):
     def load_dataset(self):
         dataset = self.data_adapter.load(
             dataset_name_or_path=self.dataset_name_or_path,
-            subset_list=self.subset_list,
-            work_dir=self.datasets_dir,
+            subset_list=self.data_adapter.subset_list,
+            work_dir=os.path.expanduser(self.task_cfg.dataset_dir),
             datasets_hub=self.dataset_hub,
             **self.kwargs)
 
         # Get prompts from dataset
-        # TODO: support sampler
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
         return prompts
 

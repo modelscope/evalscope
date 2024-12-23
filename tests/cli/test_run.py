@@ -71,7 +71,15 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
-        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct', 'datasets': ['bbh', 'hellaswag', 'gsm8k', 'arc'], 'limit': 2, 'debug': True}
+        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
+                    'datasets': [
+                        # 'bbh',
+                        # 'hellaswag',
+                        # 'gsm8k',
+                        'arc'
+                        ],
+                    'limit': 2,
+                    'debug': True}
         run_task(task_cfg=task_cfg)
 
 

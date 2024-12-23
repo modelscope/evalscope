@@ -97,8 +97,8 @@ if __name__ == '__main__':
         ])
     print(schema.to_dict())
     print(schema.flatten())
-    schema.dump_json('schema.json')
+    schema.dump_json('outputs/schema.json')
 
-    schema = CollectionSchema.from_dict(json.load(open('schema.json', 'r')))
+    schema = CollectionSchema.from_dict(json.load(open('outputs/schema.json', 'r')))
     print(schema.to_dict())
     print(schema.flatten())

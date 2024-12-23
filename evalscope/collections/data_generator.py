@@ -1,10 +1,9 @@
 import json
 import random
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from typing import List, Optional
 
-from evalscope.collections.collection_schema import CollectionSchema, DatasetInfo
+from evalscope.collections.collection_schema import CollectionSchema
 
 
 # Define an abstract base class for Samplers
@@ -66,4 +65,4 @@ if __name__ == '__main__':
     schema = CollectionSchema.from_dict(json.load(open('schema.json', 'r')))
     print(schema.to_dict())
     mixed_data = WeightedSampler(schema, 10).sample()
-    save_to_jsonl(mixed_data, 'mixed_data.jsonl')
+    save_to_jsonl(mixed_data, 'outputs/mixed_data.jsonl')

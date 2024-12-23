@@ -31,7 +31,7 @@ DEFAULT_GENERATION_CONFIG = {
 @dataclass
 class TaskConfig:
     # Model-related arguments
-    model: Union[str, CustomModel, None] = None
+    model: Union[str, 'CustomModel', None] = None
     model_id: Optional[str] = None
     model_args: Optional[Dict] = field(default_factory=lambda: DEFAULT_MODEL_ARGS | {})
 
@@ -74,8 +74,6 @@ class TaskConfig:
                 self.model_id = type(self.model).__name__
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
-        # Convert Enum to string
-        self.eval_backend = str(self.eval_backend)
 
     def to_dict(self):
         return self.__dict__
