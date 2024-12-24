@@ -1,9 +1,10 @@
 import json
 import random
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 from typing import List, Optional
 
-from evalscope.collections.collection_schema import CollectionSchema
+from evalscope.collections.schema import CollectionSchema
 
 
 # Define an abstract base class for Samplers
@@ -28,7 +29,7 @@ class WeightedSampler(Sampler):
 
         remaining_count = self.count
 
-        for i, dataset in enumerate(dataset_info_list):
+        for i, dataset in enumerate(tqdm(dataset_info_list)):
             data_dict = dataset.get_data()
 
             dataset_data = []
@@ -38,7 +39,9 @@ class WeightedSampler(Sampler):
                         'prompt': prompt,
                         'tags': dataset.tags,
                         'task': dataset.task_type,
-                        'source': f'{dataset.name}/{subset_name}',
+                        'weight': dataset.weight,
+                        'dataset_name': dataset.name,
+                        'subset_name': subset_name,
                     })
 
             # For the last dataset, use the remaining count
@@ -62,7 +65,7 @@ def save_to_jsonl(data, file_path):
 
 
 if __name__ == '__main__':
-    schema = CollectionSchema.from_dict(json.load(open('schema.json', 'r')))
+    schema = CollectionSchema.from_dict(json.load(open('outputs/schema.json', 'r')))
     print(schema.to_dict())
     mixed_data = WeightedSampler(schema, 10).sample()
     save_to_jsonl(mixed_data, 'outputs/mixed_data.jsonl')

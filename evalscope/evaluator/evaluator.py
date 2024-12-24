@@ -73,13 +73,19 @@ class Evaluator(object):
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
         return prompts
 
-    def _pred_answer(self, input_d: dict, infer_cfg: dict, subset_name: str, answer_id: str = None) -> dict:
+    def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
+        model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
+        input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_d).items())), ensure_ascii=False)
+        infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
+        return 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
-        ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
-        ans[AnswerKeys.ANSWER_ID] = answer_id
-        ans[AnswerKeys.SUBSET_NAME] = subset_name
-
-        return ans
+    def _process_answer(self, answer_d, input_d, subset_name, answer_id):
+        answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+        answer_d[AnswerKeys.ANSWER_ID] = answer_id
+        answer_d[AnswerKeys.SUBSET_NAME] = subset_name
+        answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
+        answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
+        return answer_d
 
     def get_answers(self,
                     subset_name: str,
@@ -130,57 +136,24 @@ class Evaluator(object):
             resp_answers_list: List[Dict[str, Any]] = self.model_adapter.predict(
                 inputs=prompts_list, infer_cfg=infer_cfg)
 
-            assert len(prompts_list) == len(resp_answers_list), \
-                f'Length of prompts_list({len(prompts_list)}) != Length of resp_answers_list({len(resp_answers_list)})'
-
-            for in_d, resp_d in zip(prompts_list, resp_answers_list):
-
-                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-                model_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                    ensure_ascii=False)
-                input_prompt_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(in_d).items())), ensure_ascii=False)
-                infer_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
-                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-                resp_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-                resp_d[AnswerKeys.ANSWER_ID] = answer_id
-                resp_d[AnswerKeys.SUBSET_NAME] = subset_name
-                resp_d[AnswerKeys.RAW_INPUT] = in_d[AnswerKeys.RAW_INPUT]
-                resp_d[AnswerKeys.ORIGIN_PROMPT] = in_d
-
-                answers_list.append(resp_d)
-                dump_jsonl_data(resp_d, pred_file_path, dump_mode=DumpMode.APPEND)
+            for input_prompt, answer_d in zip(prompts_list, resp_answers_list):
+                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
+                answers_list.append(processed_answer)
+                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
 
         else:
             for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
-
-                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-                model_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                    ensure_ascii=False)
-                input_prompt_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())), ensure_ascii=False)
-                infer_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
-                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-                # Get answers
-                answer_d: dict = self._pred_answer(
-                    input_d=input_prompt, infer_cfg=infer_cfg, subset_name=subset_name, answer_id=answer_id)
-
-                answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-                answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
-                answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+                answer_d: dict = self.model_adapter.predict(inputs=input_prompt, infer_cfg=infer_cfg)
+                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
 
                 if debug:
                     logger.info(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                    logger.info(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+                    logger.info(f'**predicted ans: {json.dumps(processed_answer, ensure_ascii=False)} \n')
 
-                answers_list.append(answer_d)
-                dump_jsonl_data(answer_d, pred_file_path, dump_mode=DumpMode.APPEND)
+                answers_list.append(processed_answer)
+                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
 
         logger.info(f'Dump predictions to {pred_file_path}.')
         return answers_list
@@ -224,6 +197,19 @@ class Evaluator(object):
 
         return review_res
 
+    def _generate_review_id(self, answer_d):
+        # Gen review_id (concat: answer_id + reviewer_spec)
+        answer_id = answer_d[AnswerKeys.ANSWER_ID]
+        reviewer_spec = {
+            'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
+            'reviewer': ['Evaluator'],
+            'revision': ['default']
+        }
+        reviewer_spec_str = json.dumps(
+            OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
+        review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
+        return review_id, reviewer_spec
+
     def get_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
         """
         Get reviews from answers.
@@ -247,19 +233,7 @@ class Evaluator(object):
             logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
-
-            # Gen review_id (concat: answer_id + reviewer_spec)
-            answer_id = answer_d[AnswerKeys.ANSWER_ID]
-
-            reviewer_spec: dict = {
-                'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
-                'reviewer': ['Evaluator'],
-                'revision': ['default']
-            }
-            reviewer_spec_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
-            review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
-
+            review_id, reviewer_spec = self._generate_review_id(answer_d)
             # Get review
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
 
@@ -267,7 +241,6 @@ class Evaluator(object):
                 logger.info(review_d)
 
             reviews_list.append(review_d)
-
             # Dump reviews
             dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
 
