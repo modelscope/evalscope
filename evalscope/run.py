@@ -119,6 +119,12 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
 
 def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure, base_model: LocalModel):
     """Create an evaluator object for the specified dataset."""
+
+    if dataset_name == 'data_collection':
+        # EvaluatorCollection is a collection of evaluators
+        from evalscope.collections import EvaluatorCollection
+        return EvaluatorCollection(task_cfg, outputs)
+
     benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
 
     data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))

@@ -6,6 +6,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 from evalscope.benchmarks import Benchmark
+from evalscope.collections.data_generator import DatasetEntry
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalType, ReviewKeys
 from evalscope.evaluator import Evaluator
@@ -40,23 +41,28 @@ class SimpleEvaluator(Evaluator):
 
 class EvaluatorCollection:
 
-    def __init__(self, task_cfg: TaskConfig):
+    def __init__(self, task_cfg: TaskConfig, outputs: OutputsStructure):
         self.task_cfg = task_cfg
+        self.outputs = outputs
         self.model = get_local_model(task_cfg)
-        self.outputs = OutputsStructure(
-            outputs_dir=os.path.join(self.task_cfg.work_dir,
-                                     datetime.now().strftime('%Y%m%d%H%M%S')))
-        self.raw_dataset = jsonl_to_list(self.task_cfg.dataset_args['data_collection']['local_path'])
+        self.dataset = self.load()
         self.dataset_name_map, self.dataset_id_map = self._parse_dataset()
         self.evaluators = self._initialize_evaluators()
+
+    def load(self) -> list[DatasetEntry]:
+        raw_dataset = jsonl_to_list(self.task_cfg.dataset_args['data_collection']['local_path'])
+        datasets = []
+        for sample in raw_dataset:
+            datasets.append(DatasetEntry(**sample))
+        return datasets
 
     def _parse_dataset(self):
         dataset_name_map = defaultdict(lambda: defaultdict(list))
         dataset_id_map = {}
-        for sample in self.raw_dataset:
-            dataset_name, subset_name = sample['dataset_name'], sample['subset_name']
-            dataset_name_map[dataset_name][subset_name].append(sample['id'])
-            dataset_id_map[sample['id']] = sample
+        for sample in self.dataset:
+            dataset_name, subset_name = sample.dataset_name, sample.subset_name
+            dataset_name_map[dataset_name][subset_name].append(sample.index)
+            dataset_id_map[sample.index] = sample
         return dataset_name_map, dataset_id_map
 
     def _initialize_evaluators(self):
@@ -75,13 +81,13 @@ class EvaluatorCollection:
             for subset_name, ids in data_map.items():
                 for _id in ids:
                     review_d = reviews[_id]
-                    row_data = self.dataset_id_map[_id]
+                    row_data: DatasetEntry = self.dataset_id_map[_id]
                     score = self.get_pred_score(review_d)
                     data.append({
-                        'task_type': row_data['task'],
+                        'task_type': row_data.task,
                         'dataset_name': dataset_name,
                         'subset_name': subset_name,
-                        'tags': row_data['tags'],
+                        'tags': row_data.tags,
                         'score': score
                     })
 
@@ -115,20 +121,20 @@ class EvaluatorCollection:
     def get_answers(self):
         pred_file_path = os.path.join(self.outputs.predictions_dir, 'data_collection.jsonl')
         answers = defaultdict(dict)
-        for sample in tqdm(self.raw_dataset, desc='Getting answers'):
-            evaluator = self.evaluators[sample['dataset_name']]
-            answer_d = evaluator.get_answer(sample['prompt'], sample['subset_name'], self.task_cfg.generation_config)
-            answers[sample['id']] = answer_d
+        for sample in tqdm(self.dataset, desc='Getting answers'):
+            evaluator = self.evaluators[sample.dataset_name]
+            answer_d = evaluator.get_answer(sample.prompt, sample.subset_name, self.task_cfg.generation_config)
+            answers[sample.index] = answer_d
             dump_jsonl_data(answer_d, pred_file_path, dump_mode=DumpMode.APPEND)
         return answers
 
     def get_reviews(self, answers):
         review_file_path = os.path.join(self.outputs.reviews_dir, 'data_collection.jsonl')
         reviews = defaultdict(dict)
-        for sample in tqdm(self.raw_dataset, desc='Getting reviews'):
-            evaluator = self.evaluators[sample['dataset_name']]
-            review_d = evaluator.get_review(answers[sample['id']])
-            reviews[sample['id']] = review_d
+        for sample in tqdm(self.dataset, desc='Getting reviews'):
+            evaluator = self.evaluators[sample.dataset_name]
+            review_d = evaluator.get_review(answers[sample.index])
+            reviews[sample.index] = review_d
             dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
         return reviews
 
@@ -136,7 +142,7 @@ class EvaluatorCollection:
     def get_pred_score(review_d) -> float:
         return review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
 
-    def evaluate(self):
+    def eval(self, **kwargs):
         answers = self.get_answers()
         reviews = self.get_reviews(answers)
         self.get_report(reviews)
@@ -155,4 +161,4 @@ if __name__ == '__main__':
     )
 
     evaluator_collection = EvaluatorCollection(task_cfg)
-    evaluator_collection.evaluate()
+    evaluator_collection.eval()

@@ -76,7 +76,10 @@ class TestRun(unittest.TestCase):
                         # 'bbh',
                         # 'hellaswag',
                         # 'gsm8k',
-                        'arc'
+                        # 'arc'
+                        'race',
+                        'truthful_qa',
+                        'trivia_qa',
                         ],
                     'limit': 2,
                     'debug': True}
@@ -129,14 +132,19 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'competition_math',
+                # 'mmlu',
+                # 'race',
+                'trivia_qa',
+                # 'cmmlu',
+                # 'humaneval',
+                # 'competition_math',
                 # 'gsm8k',
                 # 'arc',
                 # 'ceval',
                 # 'bbh',
                 # 'hellaswag',
             ],
-            limit=2,
+            limit=20,
             debug=True
         )
 
