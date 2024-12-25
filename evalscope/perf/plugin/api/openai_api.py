@@ -113,6 +113,11 @@ class OpenaiPlugin(ApiPluginBase):
         output_tokens = None
         for response in responses:
             js = json.loads(response)
+            # fix sglang api response, no object field
+            # {"id":"89467d81d1ea4435b74a34651faeedb4","model":"Qwen2.5-14B-Instruct","choices":[],"usage":{"prompt_tokens":44,"total_tokens":328,"completion_tokens":284}}
+            if 'object' not in js:
+                js['object'] = 'chat.completion.chunk'
+                logger.warning(f"Response does not contain 'object' field: {js}")
             if js['object'] == 'chat.completion':
                 for choice in js['choices']:
                     delta_contents[choice['index']] = [choice['message']['content']]
