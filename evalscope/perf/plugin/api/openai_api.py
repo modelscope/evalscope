@@ -96,19 +96,21 @@ class OpenaiPlugin(ApiPluginBase):
 
     def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.
-        One response for non-stream, multiple responses for stream.
+        Only one response for non-stream, multiple responses for stream.
         """
-        delta_contents = {}
-        input_tokens = None
-        output_tokens = None
 
+        # when stream, the last response is the full usage
+        # when non-stream, the last response is the first response
+        last_response_js = json.loads(responses[-1])
+        if 'usage' in last_response_js and last_response_js['usage']:
+            input_tokens = last_response_js['usage']['prompt_tokens']
+            output_tokens = last_response_js['usage']['completion_tokens']
+            return input_tokens, output_tokens
+
+        # no usage information in the response, parse the response to get the tokens
+        delta_contents = {}
         for response in responses:
             js = json.loads(response)
-            if 'usage' in js and js['usage']:
-                input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']
-                return input_tokens, output_tokens
-
             if 'object' in js:
                 self.__process_response_object(js, delta_contents)
             else:
