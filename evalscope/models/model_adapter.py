@@ -429,7 +429,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         fix_do_sample_warning(self.generation_config)
 
         # Run inference
-        output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
+        output_ids = self.model.generate(input_ids, generation_config=self.generation_config)
 
         response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], skip_special_tokens=True)
         return response
