@@ -157,7 +157,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
                 try:
                     # Attempt to get benchmark data from the queue with a timeout
-                    benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=1)
+                    benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
                     benchmark_data_queue.task_done()
                 except asyncio.TimeoutError:
                     # If timeout, continue to the next iteration

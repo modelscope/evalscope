@@ -103,6 +103,7 @@ def start_app(args: Arguments):
     elif args.api == 'local_vllm':
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
         os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
+        os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'
         # yapf: disable
         proc = subprocess.Popen([
             'python', '-m', 'vllm.entrypoints.openai.api_server',

@@ -67,7 +67,6 @@ generate_testset_task_cfg = {
             "test_size": 10,
             "output_file": "outputs/testset.json",
             "knowledge_graph", "outputs/knowledge_graph.json",
-            "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
             },
@@ -89,10 +88,6 @@ Configuration file description:
     - `test_size`: `int`: Size of the generated test set, e.g., 5.
     - `output_file`: `str`: Path of the generated dataset output file, e.g., "outputs/testset.json".
     - `knowledge_graph`: `str`: The file path of the knowledge graph, e.g., "outputs/knowledge_graph.json". The knowledge graph generated during the document processing will be saved in this path. If a knowledge graph already exists at this path, it will be loaded directly, skipping the generation step of the knowledge graph.
-    - `distribution`: `dict`: Configuration of the content distribution in the test set.
-      - `simple`: `float`: Proportion of simple content, e.g., 0.5.
-      - `multi_context`: `float`: Proportion of multi-context content, e.g., 0.4.
-      - `reasoning`: `float`: Proportion of reasoning content, e.g., 0.1.
     - `generator_llm`: `dict`: Configuration of the generator LLM:
       - If using a local model, supports the following parameters:
         - `model_name_or_path`: `str`: Name or path of the generator model, e.g., "qwen/Qwen2-7B-Instruct" can be automatically downloaded from ModelScope; providing a path will load the model locally.
@@ -111,6 +106,13 @@ Configuration file description:
 ragas.testset.transforms.engine - ERROR - unable to apply transformation: 'Generation' object has no attribute 'message'
 ```
 This is because the model output format is incorrect, leading to parsing errors. In this case, please try using a larger model, such as `Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4`, or proprietary models like `GPT-4o`.
+````
+
+````{tip}
+If you encounter the following error, or if the dataset generation is not effective, it indicates that there may be issues with the `unstructured` library processing the document. You can manually preprocess the input document into txt format.
+```
+ValueError: Documents appear to be too short (i.e., 100 tokens or less). Please provide longer documents.
+```
 ````
 
 **Execute Task**
