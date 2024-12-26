@@ -74,7 +74,7 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 
 [Discord Group](https://discord.com/invite/D27yfEFVz5)              |  微信群 | 钉钉群
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/discord_qr.jpg" width="160" height="160">  |  <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/wechat.png" width="160" height="160"> | <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/modelscope/user_group/dingding.png" width="160" height="160">
+<img src="docs/asset/discord_qr.jpg" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
 
 
 ## 🎉 新闻

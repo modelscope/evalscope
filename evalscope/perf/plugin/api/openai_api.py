@@ -96,60 +96,64 @@ class OpenaiPlugin(ApiPluginBase):
 
     def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.
-           sample of the output delta:
-           {"id":"4","object":"chat.completion.chunk","created":1714030870,"model":"llama3","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
-
-
-        Args:
-            responses (List[bytes]): List of http response body, for stream output,
-                there are multiple responses, for general only one.
-            kwargs: (Any): The command line --parameter content.
-        Returns:
-            Tuple: Return number of prompt token and number of completion tokens.
+        Only one response for non-stream, multiple responses for stream.
         """
-        full_response_content = ''
+
+        # when stream, the last response is the full usage
+        # when non-stream, the last response is the first response
+        last_response_js = json.loads(responses[-1])
+        if 'usage' in last_response_js and last_response_js['usage']:
+            input_tokens = last_response_js['usage']['prompt_tokens']
+            output_tokens = last_response_js['usage']['completion_tokens']
+            return input_tokens, output_tokens
+
+        # no usage information in the response, parse the response to get the tokens
         delta_contents = {}
-        input_tokens = None
-        output_tokens = None
         for response in responses:
             js = json.loads(response)
-            if js['object'] == 'chat.completion':
-                for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['message']['content']]
-                input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']
-            elif js['object'] == 'text_completion':
-                for choice in js['choices']:
-                    delta_contents[choice['index']] = [choice['text']]
-                input_tokens = js['usage']['prompt_tokens']
-                output_tokens = js['usage']['completion_tokens']
-            elif js['object'] == 'chat.completion.chunk':
-                if 'choices' in js:
-                    for choice in js['choices']:
-                        if 'delta' in choice and 'index' in choice:
-                            delta = choice['delta']
-                            idx = choice['index']
-                            if 'content' in delta:
-                                delta_content = delta['content']
-                                if idx in delta_contents:
-                                    delta_contents[idx].append(delta_content)
-                                else:
-                                    delta_contents[idx] = [delta_content]
-                # usage in chunk: {"id":"","object":"chat.completion.chunk","created":1718269986,"model":"llama3",
-                # "choices":[],"usage":{"prompt_tokens":32,"total_tokens":384,"completion_tokens":352}}
-                if 'usage' in js and js['usage']:
-                    input_tokens = js['usage']['prompt_tokens']
-                    output_tokens = js['usage']['completion_tokens']
-        if (input_tokens is None and output_tokens is None and self.tokenizer is not None):
-            input_tokens = 0
-            output_tokens = 0
+            if 'object' in js:
+                self.__process_response_object(js, delta_contents)
+            else:
+                self.__process_no_object(js, delta_contents)
+
+        input_tokens, output_tokens = self.__calculate_tokens_from_content(request, delta_contents)
+        return input_tokens, output_tokens
+
+    def __process_response_object(self, js, delta_contents):
+        if js['object'] == 'chat.completion':
+            for choice in js['choices']:
+                delta_contents[choice['index']] = [choice['message']['content']]
+        elif js['object'] == 'text_completion':
+            for choice in js['choices']:
+                delta_contents[choice['index']] = [choice['text']]
+        elif js['object'] == 'chat.completion.chunk':
+            for choice in js.get('choices', []):
+                if 'delta' in choice and 'index' in choice:
+                    delta = choice['delta']
+                    idx = choice['index']
+                    if 'content' in delta:
+                        delta_content = delta['content']
+                        delta_contents.setdefault(idx, []).append(delta_content)
+
+    def __process_no_object(self, js, delta_contents):
+        #  assume the response is a single choice
+        for choice in js['choices']:
+            if 'delta' in choice:
+                delta = choice['delta']
+                idx = choice['index']
+                if 'content' in delta:
+                    delta_content = delta['content']
+                    delta_contents.setdefault(idx, []).append(delta_content)
+            else:
+                delta_contents[choice['index']] = [choice['message']['content']]
+
+    def __calculate_tokens_from_content(self, request, delta_contents):
+        input_tokens = output_tokens = 0
+        if self.tokenizer is not None:
             for idx, choice_contents in delta_contents.items():
-                full_response_content = ''.join([m for m in choice_contents])
+                full_response_content = ''.join(choice_contents)
                 input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
                 output_tokens += len(self.tokenizer.encode(full_response_content))
-        elif input_tokens is None and output_tokens is None:  # no usage info get.
-            input_tokens = 0
-            output_tokens = 0
+        else:
             logger.warning('No usage information found. Please specify `--tokenizer-path` to generate usage details.')
-
         return input_tokens, output_tokens

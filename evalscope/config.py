@@ -115,7 +115,8 @@ class TaskConfig:
     def from_args(args: Namespace):
         # Convert Namespace to a dictionary and filter out None values
         args_dict = {k: v for k, v in vars(args).items() if v is not None}
-        if args_dict.get('func', None):
+
+        if 'func' in args_dict:
             del args_dict['func']  # Note: compat CLI arguments
 
         return TaskConfig.from_dict(args_dict)
