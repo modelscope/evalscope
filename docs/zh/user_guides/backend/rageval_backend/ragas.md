@@ -67,7 +67,6 @@ generate_testset_task_cfg = {
             "test_size": 10,
             "output_file": "outputs/testset.json",
             "knowledge_graph", "outputs/knowledge_graph.json",
-            "distribution": {"simple": 0.5, "multi_context": 0.4, "reasoning": 0.1},
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
             },
@@ -89,10 +88,6 @@ generate_testset_task_cfg = {
     - `test_size`: `int`：生成测试集的大小，例如 5。
     - `output_file`: `str`：生成数据集的输出文件路径，例如 "outputs/testset.json"。
     - `knowledge_graph`: `str`：知识图谱文件路径，例如 "outputs/knowledge_graph.json"，文档处理过程中生成的知识图谱会保存在该路径下；若该路径已有知识图谱，则会直接加载知识图谱，跳过生成知识图谱的步骤。
-    - `distribution`: `dict`：测试集内容的分布配置。
-      - `simple`: `float`：简单内容的分布比例，例如 0.5。
-      - `multi_context`: `float`：多上下文内容的分布比例，例如 0.4。
-      - `reasoning`: `float`：推理内容的分布比例，例如 0.1。
     - `generator_llm`: `dict`：生成器LLM的配置：
       - 若使用本地模型，支持如下参数：
         - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
@@ -112,6 +107,13 @@ generate_testset_task_cfg = {
 ragas.testset.transforms.engine - ERROR - unable to apply transformation: 'Generation' object has no attribute 'message'
 ```
 这是因为模型输出的格式不对，导致解析出错，此时请尝试使用规模更大的模型，例如 `Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4`，或是闭源模型`GPT-4o`等。
+````
+
+````{tip}
+若出现如下错误，或生成数据集效果不好，说明`unstructured`库处理文档时，可能存在问题，可自行预处理输入文档为txt格式
+```
+ValueError: Documents appears to be too short (ie 100 tokens or less). Please provide longer documents.
+```
 ````
 
 **执行任务**

@@ -152,3 +152,4 @@ output/
 _build/
 swift.test*
 /cache
+evalscope/backend/rag_eval/ragas/prompts/chinese
