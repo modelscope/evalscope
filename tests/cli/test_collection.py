@@ -48,7 +48,8 @@ class TestCollection(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=['data_collection'],
             dataset_args={'data_collection': {
-                'local_path': 'outputs/mixed_data_test.jsonl'
+                # 'local_path': 'outputs/mixed_data_test.jsonl'
+                'local_path': 'outputs/mixed_data.jsonl'
             }},
         )
         run_task(task_cfg=task_cfg)

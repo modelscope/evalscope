@@ -1,8 +1,8 @@
 import json
 import os
 import pandas as pd
-from collections import defaultdict
-from datetime import datetime
+from collections import OrderedDict, defaultdict
+from tabulate import tabulate
 from tqdm import tqdm
 
 from evalscope.benchmarks import Benchmark
@@ -93,25 +93,33 @@ class EvaluatorCollection:
 
         df = pd.DataFrame(data)
 
+        # Helper function for aggregation and sorting
+        def aggregate_and_sort(df, group_by_cols):
+            report_df = df.groupby(group_by_cols).agg(
+                average_score=('score', 'mean'), count=('score', 'size')).reset_index()
+            return report_df.sort_values(by='count', ascending=False)
+
         # Multi-level aggregation
-        subset_report_df = df.groupby(['task_type', 'dataset_name', 'subset_name']).agg(
-            average_score=('score', 'mean'), count=('score', 'size')).reset_index()
+        subset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name', 'subset_name'])
+        dataset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name'])
+        task_report_df = aggregate_and_sort(df, ['task_type'])
 
-        dataset_report_df = df.groupby(['task_type', 'dataset_name']).agg(
-            average_score=('score', 'mean'), count=('score', 'size')).reset_index()
+        # Explode tags and aggregate
+        df_exploded = df.explode('tags')
+        tag_report_df = aggregate_and_sort(df_exploded, ['tags'])
 
-        task_report_df = df.groupby(['task_type']).agg(
-            average_score=('score', 'mean'), count=('score', 'size')).reset_index()
-
-        # Combine all reports into a single dictionary
+        # Convert sorted DataFrames to Dict
         report = {
             'subset_level': subset_report_df.to_dict(orient='records'),
             'dataset_level': dataset_report_df.to_dict(orient='records'),
-            'task_level': task_report_df.to_dict(orient='records')
+            'task_level': task_report_df.to_dict(orient='records'),
+            'tag_level': tag_report_df.to_dict(orient='records')
         }
 
         # Log the report
-        logger.info(f"Report:\n{pd.DataFrame(report['subset_level']).to_markdown(index=False)}")
+        for level, data in report.items():
+            table = tabulate(data, headers='keys', tablefmt='pretty', showindex=False)
+            logger.info(f"{level} Report:\n{table}")
 
         # Save the report to a JSON file
         report_file_path = os.path.join(self.outputs.reports_dir, 'data_collection.json')
@@ -140,7 +148,7 @@ class EvaluatorCollection:
 
     @staticmethod
     def get_pred_score(review_d) -> float:
-        return review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
+        return float(review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT])
 
     def eval(self, **kwargs):
         answers = self.get_answers()

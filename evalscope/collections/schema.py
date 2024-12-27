@@ -62,14 +62,22 @@ class CollectionSchema:
                 instance.datasets.append(DatasetInfo(**dataset))
         return instance
 
-    def flatten(self) -> List[DatasetInfo]:
+    def flatten(self, parent_names=None) -> List[DatasetInfo]:
+        if parent_names is None:
+            parent_names = []
+
         flat_datasets = []
+        current_names = parent_names + [self.name]
 
         for dataset in self.datasets:
             if isinstance(dataset, CollectionSchema):
-                nested_datasets = dataset.flatten()
+                nested_datasets = dataset.flatten(current_names)
                 flat_datasets.extend(nested_datasets)
             else:
+                # Add all parent CollectionSchema names to the tags of each DatasetInfo
+                for name in current_names:
+                    if name not in dataset.tags:
+                        dataset.tags.append(name)
                 flat_datasets.append(dataset)
         return flat_datasets
 
