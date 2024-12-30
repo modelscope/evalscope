@@ -74,12 +74,12 @@ class TestRun(unittest.TestCase):
         task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
                     'datasets': [
                         # 'bbh',
-                        # 'hellaswag',
+                        'hellaswag',
                         # 'gsm8k',
                         # 'arc'
-                        'race',
-                        'truthful_qa',
-                        'trivia_qa',
+                        # 'race',
+                        # 'truthful_qa',
+                        # 'trivia_qa',
                         ],
                     'limit': 2,
                     'debug': True}

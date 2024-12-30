@@ -3,6 +3,7 @@ from transformers import GenerationConfig
 
 
 class EvalBackend(Enum):
+    #  NOTE: compatible with ms-swfit v2.x
     NATIVE = 'Native'
     OPEN_COMPASS = 'OpenCompass'
     VLM_EVAL_KIT = 'VLMEvalKit'

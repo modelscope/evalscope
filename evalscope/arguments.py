@@ -55,7 +55,7 @@ def add_argument(parser: argparse.ArgumentParser):
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
     parser.add_argument('--stage', type=str, default='all', help='The stage of evaluation pipeline.',
-                        choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.EVAL])
+                        choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.REVIEW])
     parser.add_argument('--limit', type=int, default=None, help='Max evaluation samples num for each subset.')
 
     # Cache and working directory arguments

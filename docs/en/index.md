@@ -58,3 +58,9 @@ experiments/speed_benchmark/index.md
 best_practice/swift_integration.md
 best_practice/llm_full_stack.md
 :::
+
+:::{toctree}
+:hidden:
+:caption: 🌟 Blogs
+blog/index.md
+:::
