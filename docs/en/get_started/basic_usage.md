@@ -164,6 +164,20 @@ Reference: [All Parameter Descriptions](parameters.md)
 +-----------------------+-----------------+
 ```
 
+## Model API Service Evaluation
+
+Specify the model API service URL and API Key to evaluate the model API service. In this case, the `eval-type` parameter must be set to `service`. For example:
+
+```shell
+evalscope eval \
+ --model qwen2.5 \
+ --api-url http://127.0.0.1:8801/v1/chat/completions \
+ --api-key EMPTY \
+ --eval-type service \
+ --datasets gsm8k \
+ --limit 10
+```
+
 ## Using Local Datasets and Models
 
 By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:

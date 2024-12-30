@@ -99,8 +99,12 @@ class EvaluatorCollection:
         def aggregate_and_sort(df, group_by_cols):
             report_df = df.groupby(group_by_cols) \
                 .agg(average_score=('score', 'mean'), count=('score', 'size')) \
-                .reset_index() \
-                .sort_values(by='count', ascending=False) \
+                .reset_index()
+
+            # Round average_score to 4 decimal places
+            report_df['average_score'] = report_df['average_score'].round(4)
+
+            report_df = report_df.sort_values(by='count', ascending=False) \
                 .to_dict(orient='records')
             return report_df
 

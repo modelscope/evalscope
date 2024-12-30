@@ -39,7 +39,7 @@ class TestCollection(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_evaluate_collection(self):
-        from evalscope.config import TaskConfig
+        from evalscope import TaskConfig, run_task
 
         task_cfg = TaskConfig(
             model='qwen2.5',
@@ -49,7 +49,7 @@ class TestCollection(unittest.TestCase):
             datasets=['data_collection'],
             dataset_args={'data_collection': {
                 # 'local_path': 'outputs/mixed_data_test.jsonl'
-                'local_path': 'outputs/mixed_data.jsonl'
+                'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
         )
         run_task(task_cfg=task_cfg)

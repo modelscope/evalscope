@@ -39,6 +39,7 @@ user_guides/arena.md
 :::{toctree}
 :hidden:
 :caption: 🛠️ 进阶教程
+advanced_guides/collection/index.md
 advanced_guides/custom_dataset/index.md
 advanced_guides/custom_model.md
 :::

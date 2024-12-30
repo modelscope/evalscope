@@ -1,24 +1,10 @@
-import json
 import random
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from tqdm import tqdm
 from typing import List, Optional
 
-from evalscope.collections.schema import CollectionSchema
-from evalscope.utils.io_utils import dump_jsonl_data
-
-
-# Define an abstract base class for Samplers
-class Sampler(ABC):
-
-    def __init__(self, schema: CollectionSchema, count: Optional[int] = None):
-        self.schema = schema
-        self.count = count
-
-    @abstractmethod
-    def sample(self) -> List[dict]:
-        pass
+from evalscope.collections.schema import CollectionSchema, DatasetInfo
 
 
 @dataclass
@@ -32,23 +18,24 @@ class DatasetEntry:
     subset_name: str = ''
 
 
-class WeightedSampler(Sampler):
+# Define an abstract base class for Samplers
+class Sampler(ABC):
 
+    def __init__(self, schema: CollectionSchema, count: Optional[int] = None):
+        self.schema = schema
+        self.count = count
+
+    @abstractmethod
     def sample(self) -> List[dict]:
-        all_data: List[DatasetEntry] = []
+        pass
 
-        dataset_info_list = self.schema.flatten()
-        total_weight = sum(dataset.weight for dataset in dataset_info_list)
-
-        remaining_count = self.count
-
-        for i, dataset in enumerate(tqdm(dataset_info_list, desc='Sampling data')):
+    def _collect_dataset_data(self, dataset_info_list: List[DatasetInfo]) -> List[DatasetEntry]:
+        all_data = []
+        for dataset in tqdm(dataset_info_list, desc='Collecting dataset data'):
             data_dict = dataset.get_data()
-
-            dataset_data = []
             for subset_name, subset_data in data_dict.items():
                 for prompt in subset_data:
-                    dataset_data.append(
+                    all_data.append(
                         DatasetEntry(
                             prompt=prompt,
                             tags=dataset.tags,
@@ -57,18 +44,9 @@ class WeightedSampler(Sampler):
                             dataset_name=dataset.name,
                             subset_name=subset_name,
                         ))
+        return all_data
 
-            # For the last dataset, use the remaining count
-            if i == len(dataset_info_list) - 1:
-                dataset_sample_count = remaining_count
-            else:
-                dataset_sample_count = int((dataset.weight / total_weight) * self.count)
-                remaining_count -= dataset_sample_count
-
-            sampled_data = random.choices(dataset_data, k=dataset_sample_count)
-            all_data.extend(sampled_data)
-
-        # update index
+    def _update_index(self, all_data: List[DatasetEntry]) -> List[dict]:
         result = []
         for i, entry in enumerate(all_data):
             entry.index = i
@@ -76,8 +54,79 @@ class WeightedSampler(Sampler):
         return result
 
 
+class WeightedSampler(Sampler):
+    """
+    Weighted sampler, according to the weight of each dataset, sample data from each dataset.
+    """
+
+    def sample(self) -> List[dict]:
+        dataset_info_list = self.schema.flatten()
+        all_data = self._collect_dataset_data(dataset_info_list)
+
+        remaining_count = self.count
+        sampled_data = []
+
+        for i, dataset in enumerate(tqdm(dataset_info_list, desc='Sampling data')):
+            if i == len(dataset_info_list) - 1:
+                dataset_sample_count = remaining_count
+            else:
+                dataset_sample_count = int(dataset.weight * self.count)
+                remaining_count -= dataset_sample_count
+
+            sampled_data.extend(random.choices(all_data, k=dataset_sample_count))
+
+        return self._update_index(sampled_data)
+
+
+class UniformSampler(Sampler):
+    """
+    Uniform sampler, sample data from each dataset with the same number of samples.
+    """
+
+    def sample(self) -> List[dict]:
+        dataset_info_list = self.schema.flatten()
+        all_data = self._collect_dataset_data(dataset_info_list)
+
+        num_datasets = len(dataset_info_list)
+        samples_per_dataset = self.count // num_datasets
+        sampled_data = []
+
+        for _ in tqdm(dataset_info_list, desc='Sampling data'):
+            sampled_data.extend(random.choices(all_data, k=samples_per_dataset))
+
+        return self._update_index(sampled_data)
+
+
+class StratifiedSampler(Sampler):
+    """
+    Stratified sampler, sample data from each dataset according to the number of samples of each dataset.
+    """
+
+    def sample(self) -> List[dict]:
+        dataset_info_list = self.schema.flatten()
+        all_data = self._collect_dataset_data(dataset_info_list)
+
+        total_samples = sum(len(dataset.get_data()) for dataset in dataset_info_list)
+        sampled_data = []
+
+        for dataset in tqdm(dataset_info_list, desc='Sampling data'):
+            dataset_samples = len(dataset.get_data())
+            samples_for_dataset = int((dataset_samples / total_samples) * self.count)
+            sampled_data.extend(random.choices(all_data, k=samples_for_dataset))
+
+        return self._update_index(sampled_data)
+
+
 if __name__ == '__main__':
-    schema = CollectionSchema.from_dict(json.load(open('outputs/schema.json', 'r')))
+    from evalscope.utils.io_utils import dump_jsonl_data
+
+    schema = CollectionSchema.from_json('outputs/schema.json')
     print(schema.to_dict())
-    mixed_data = WeightedSampler(schema, 10).sample()
-    dump_jsonl_data(mixed_data, 'outputs/mixed_data.jsonl')
+    mixed_data = WeightedSampler(schema, 100).sample()
+    dump_jsonl_data(mixed_data, 'outputs/weighted_mixed_data.jsonl')
+
+    mixed_data = UniformSampler(schema, 100).sample()
+    dump_jsonl_data(mixed_data, 'outputs/uniform_mixed_data.jsonl')
+
+    mixed_data = StratifiedSampler(schema, 100).sample()
+    dump_jsonl_data(mixed_data, 'outputs/stratified_mixed_data.jsonl')

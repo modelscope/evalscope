@@ -16,6 +16,7 @@ logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
 
 # disable datasets logging
 logging.getLogger('datasets').setLevel(logging.WARNING)
+logging.getLogger('modelscope').setLevel(logging.WARNING)
 
 
 def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
