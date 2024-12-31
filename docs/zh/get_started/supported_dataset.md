@@ -3,7 +3,7 @@
 ## 1. 原生支持的数据集
 
 ```{tip}
-目前框架原生支持如下数据集，若您需要的数据集不在列表中，可以提交[issue](https://github.com/modelscope/evalscope/issues)，我们会尽快支持；也可以参考[数据集添加指南](../user_guides/dataset/add_dataset.md)，自行添加数据集并提交[PR](https://github.com/modelscope/evalscope/pulls)，欢迎贡献。
+目前框架原生支持如下数据集，若您需要的数据集不在列表中，可以提交[issue](https://github.com/modelscope/evalscope/issues)，我们会尽快支持；也可以参考[基准评测添加指南](../advanced_guides/add_benchmark.md)，自行添加数据集并提交[PR](https://github.com/modelscope/evalscope/pulls)，欢迎贡献。
 
 您也可以使用本框架支持的其他工具进行评测，如[OpenCompass](../user_guides/backend/opencompass_backend.md)进行语言模型评测；或使用[VLMEvalKit](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评测。
 ```
@@ -20,8 +20,9 @@
 | `hellaswag`*       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
 | `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
+| `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
-| `trivia_qa`*       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
+| `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
 | `truthful_qa`     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
 
 ```{note}

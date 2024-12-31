@@ -124,10 +124,11 @@ class TriviaQaAdapter(DataAdapter):
         Returns:
             The predicted answer.
         """
-        return ResponseParser.parse_first_option(result)
+        return result
 
     def match(self, gold: list, pred: str) -> float:
-        return max([exact_match(gold=ref, pred=pred) for ref in gold])
+        is_correct = any([cand in pred for cand in gold])
+        return 1 if is_correct else 0
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, include_answer=True) -> str:

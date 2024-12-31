@@ -2,7 +2,7 @@
 
 ## 1. Native Supported Datasets
 ```{tip}
-The framework currently supports the following datasets natively. If the dataset you need is not on the list, you may submit an [issue](https://github.com/modelscope/evalscope/issues), and we will support it as soon as possible. Alternatively, you can refer to the [Dataset Addition Guide](../user_guides/dataset/add_dataset.md) to add datasets by yourself and submit a [PR](https://github.com/modelscope/evalscope/pulls). Contributions are welcome.
+The framework currently supports the following datasets natively. If the dataset you need is not on the list, you may submit an [issue](https://github.com/modelscope/evalscope/issues), and we will support it as soon as possible. Alternatively, you can refer to the [Benchmark Addition Guide](../advanced_guides/add_benchmark.md) to add datasets by yourself and submit a [PR](https://github.com/modelscope/evalscope/pulls). Contributions are welcome.
 
 You can also use other tools supported by this framework for evaluation, such as [OpenCompass](../user_guides/backend/opencompass_backend.md) for language model evaluation, or [VLMEvalKit](../user_guides/backend/vlmevalkit_backend.md) for multimodal model evaluation.
 ```
@@ -18,8 +18,9 @@ You can also use other tools supported by this framework for evaluation, such as
 | `hellaswag`*      | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                  | Commonsense Reasoning|                                                                                                                          |
 | `humaneval`+      | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                  | Code Generation  |  |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                            | Comprehensive Exam|                                                                                                                          |
+| `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | Comprehensive Exam|                                                                                                                          |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                            | Reading Comprehension|                                                                                                                          |
-| `trivia_qa`*      | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                  | Knowledge Q&A    |                                                                                                                          |
+| `trivia_qa`      | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                  | Knowledge Q&A    |                                                                                                                          |
 | `truthful_qa`     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)              | Safety           |                                                                                                                          |
 
 ```{note}

@@ -121,7 +121,6 @@ class ResponseParser:
             f'([{options_concat}])\s?是正确答案',
             f'选项\s?([{options_concat}])\s?正确',
             f'所以答\s?([{options_concat}])',
-            f'1.\s?([{options_concat}])[.。$]?$',
             f'所以\s?([{options_concat}][.。$]?$)',
             f'所有\s?([{options_concat}][.。$]?$)',
             f'[\s，：:,]([{options_concat}])[。，,\.]?$',
@@ -137,16 +136,15 @@ class ResponseParser:
             f'答案为(.*?)[{options_concat}]',
             f'固选(.*?)[{options_concat}]',
             f'答案应该是(.*?)[{options_concat}]',
-            f'[Tt]he answer is [{options_concat}]',
+            f'[Tt]he answer is \(?[{options_concat}]\)?',
             f'[Tt]he correct answer is [{options_concat}]',
             f'[Tt]he correct answer is:\n[{options_concat}]',
             f'(\s|^)[{options_concat}][\s。，,\.$]',  # noqa
-            f'[{options_concat}]',
             f'^选项\s?([{options_concat}])',
             f'^([{options_concat}])\s?选?项',
             f'(\s|^)[{options_concat}][\s。，,：:\.$]',
             f'(\s|^)[{options_concat}](\s|$)',
-            f'1.\s?(.*?)$',
+            f'[{options_concat}]',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
@@ -169,6 +167,7 @@ class ResponseParser:
         """
         patterns = [
             r'[Aa]nswer:\s*(\w+)',
+            r'answer is \(?(\w+)\)?',
             r'[Tt]he correct answer is:\s*(\w+)',
             r'[Tt]he correct answer is:\n\s*(\w+)',
             r'[Tt]he correct answer is:\n\n-\s*(\w+)',

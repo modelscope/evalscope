@@ -173,7 +173,7 @@ class DataAdapter(ABC):
             ],
             "total_num":100
         }
-        """
+        """  # noqa: E501
         total_num: int = sum([num for _, num in subset_score_map.values()])
         weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
         weighted_avg_acc = normalize_score(score=weighted_avg_acc)
@@ -226,23 +226,24 @@ class DataAdapter(ABC):
         else:
             raise ValueError('Please implement the compute_metric method for multiple metrics.')
 
-    @abstractmethod
-    def gen_prompt(self, *args, **kwargs) -> Any:
+    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
         """
         Generate model prompt from raw input, unify the prompt format for different datasets.
         The input format is compatible with OpenAI Chat Completions APIs.
-        Refer to: https://platform.openai.com/docs/guides/gpt/chat-completions-api
 
         Args:
             input_d (Any): The raw input. Depending on the dataset.
+            subset_name (str): The subset name.
+            few_shot_list (list): The few-shot examples.
 
         Returns:
+            For class ChatGenerationModelAdapter, the output format is:
+                {'data': [full_prompt], 'system_prompt': (str, optional)},  -- full_prompt: str, the constructed prompt for each sample from dataset.
             For class MultiChoiceModelAdapter, the output format is:
-                {'data': [full_prompt]},  -- full_prompt: str, the constructed prompt for each sample from dataset.
-
+                {'data': [full_prompt], 'multi_choices': self.choices}  -- full_prompt: str, the constructed prompt for each sample from dataset.
             For class ContinuationEvalModelAdapter, the output format is:
-                {'data': ctx_continuation_pair_list, 'multi_choices': self.choices}
-        """
+                {'data': ctx_continuation_pair_list, 'multi_choices': self.choices} -- ctx_continuation_pair_list: list, the context-continuation pair list.
+        """  # noqa: E501
         raise NotImplementedError
 
     @abstractmethod
@@ -274,7 +275,7 @@ class DataAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def match(self, gold: Any, pred: Any) -> Any:
+    def match(self, gold: Any, pred: Any) -> float:
         """
         Match the gold answer and the predicted answer.
 

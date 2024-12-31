@@ -216,7 +216,7 @@ class MMLUAdapter(DataAdapter):
             'target': 'A'}
 
         Returns:
-            {'data': [(context, continuation), ...]}
+            {'data': [full_prompt], 'multi_choices': self.choices}
 
         """
         prompt = 'The following are multiple choice questions (with answers) about {}.\n\n'.format(
@@ -250,9 +250,9 @@ class MMLUAdapter(DataAdapter):
         if eval_type == EvalType.CHECKPOINT:
             return result
         elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)
         elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 

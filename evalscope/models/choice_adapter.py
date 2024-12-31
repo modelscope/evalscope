@@ -5,7 +5,7 @@ from typing import List
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
-from evalscope.utils.chat_service import ChatCompletionResponse
+from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 
 
 class MultiChoiceModelAdapter(BaseModelAdapter):
@@ -86,13 +86,10 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
         res_d = ChatCompletionResponse(
             model=self.model_id,
-            choices=[{
-                'index': 0,
-                'message': {
-                    'content': pred,
-                    'role': 'assistant'
-                }
-            }],
+            choices=[
+                ChatCompletionResponseChoice(
+                    index=0, message=ChatMessage(content=pred, role='assistant'), finish_reason='stop')
+            ],
             object='chat.completion',
             created=int(time.time()),
             usage=None).model_dump(exclude_unset=True)

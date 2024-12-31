@@ -6,7 +6,7 @@ from typing import Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
-from evalscope.utils.chat_service import ChatCompletionResponse, ChatMessage
+from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import fix_do_sample_warning
 
@@ -56,9 +56,20 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return generation_config
 
-    def _model_generate(self, query: str, infer_cfg: dict) -> str:
+    def _model_generate(self, query: str, system_prompt: str = None, infer_cfg: dict = {}) -> str:
+        """
+        Args:
+            query: The input query.
+            system_prompt: The system prompt.
+            infer_cfg: The inference configuration.
+        Returns:
+            The prediction result.
+        """
         messages = [ChatMessage(role='user', content=query)]
+        if system_prompt:
+            messages.insert(0, ChatMessage(role='system', content=system_prompt))
         formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
         input_ids = inputs['input_ids']
 
@@ -86,20 +97,33 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
     @torch.no_grad()
     def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = {}) -> dict:
+        """
+        Args:
+            inputs: The input data.
+            infer_cfg: The inference configuration.
+        Returns:
+            The prediction result.
+        """
 
         # Process inputs
         if isinstance(inputs, str):
             query = inputs
+            system_prompt = None
         elif isinstance(inputs, dict):
             query = inputs['data'][0]
+            system_prompt = inputs.get('system_prompt', None)
         elif isinstance(inputs, list):
             query = '\n'.join(inputs)
+            system_prompt = None
         else:
             raise TypeError(f'Unsupported inputs type: {type(inputs)}')
 
-        response = self._model_generate(query, infer_cfg)
+        response = self._model_generate(query, system_prompt, infer_cfg)
 
-        choices_list = [{'index': 0, 'message': {'content': response, 'role': 'assistant'}}]
+        choices_list = [
+            ChatCompletionResponseChoice(
+                index=0, message=ChatMessage(content=response, role='assistant'), finish_reason='stop')
+        ]
 
         res_d = ChatCompletionResponse(
             model=self.model_id, choices=choices_list, object='chat.completion', created=int(time.time()),
