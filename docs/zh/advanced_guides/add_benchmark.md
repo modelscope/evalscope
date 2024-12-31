@@ -78,13 +78,13 @@ evalscope/benchmarks/
 ```python
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.metrics import WeightedAverageAccuracy
-from evalscope.models import MultiChoiceModelAdapter
+from evalscope.models import ChatGenerationModelAdapter
 
 
 @Benchmark.register(
     name='mmlu_pro',
     dataset_id='modelscope/mmlu-pro',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=[WeightedAverageAccuracy],
     few_shot_num=0,
