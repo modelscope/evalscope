@@ -66,10 +66,15 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         Returns:
             The prediction result.
         """
-        messages = [ChatMessage(role='user', content=query)]
-        if system_prompt:
-            messages.insert(0, ChatMessage(role='system', content=system_prompt))
-        formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        # For chat model, use the chat template to format the input
+        if self.tokenizer.chat_template is not None:
+            messages = [ChatMessage(role='user', content=query)]
+            if system_prompt:
+                messages = [ChatMessage(role='system', content=system_prompt)] + messages
+            formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        else:
+            # For base model, use the query as the input
+            formatted_prompt = query
 
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
         input_ids = inputs['input_ids']

@@ -133,9 +133,9 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'mmlu',
+                'mmlu_pro',
                 # 'race',
-                'trivia_qa',
+                # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
                 # 'competition_math',
@@ -145,7 +145,7 @@ class TestRun(unittest.TestCase):
                 # 'bbh',
                 # 'hellaswag',
             ],
-            limit=20,
+            limit=2,
             debug=True
         )
 

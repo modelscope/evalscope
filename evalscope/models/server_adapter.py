@@ -1,8 +1,9 @@
 import requests
 import time
-from typing import Union
+from typing import Optional, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
+from evalscope.utils.chat_service import ChatMessage
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -43,27 +44,40 @@ class ServerModelAdapter(BaseModelAdapter):
         # Process inputs
         if isinstance(inputs, str):
             query = inputs
+            system_prompt = None
         elif isinstance(inputs, dict):
             # TODO: to be supported for continuation list like truthful_qa
             query = inputs['data'][0]
+            system_prompt = inputs.get('system_prompt', None)
         elif isinstance(inputs, list):
             query = '\n'.join(inputs)
+            system_prompt = None
         else:
             raise TypeError(f'Unsupported inputs type: {type(inputs)}')
 
-        request_json = self.make_request(query, infer_cfg)
-        return self.send_request(request_json)
+        content = self.make_request_content(query, system_prompt)
+        request_json = self.make_request(content, infer_cfg)
+        response = self.send_request(request_json)
+        return response
 
-    def make_request(self, query: str, infer_cfg: dict) -> dict:
+    def make_request_content(self, query: str, system_prompt: Optional[str] = None) -> dict:
+        """
+        Make request content for API.
+        """
+        if system_prompt is not None:
+            messages = [
+                ChatMessage(role='system', content=system_prompt).model_dump(exclude_unset=True),
+                ChatMessage(role='user', content=query).model_dump(exclude_unset=True)
+            ]
+        else:
+            messages = [ChatMessage(role='user', content=query).model_dump(exclude_unset=True)]
+        return {'messages': messages}
+
+    def make_request(self, content: dict, infer_cfg: dict = {}) -> dict:
         """Make request to remote API."""
         # Format request JSON according to OpenAI API format
-        # do not sample by default
         request_json = {
-            'model': self.model_id,
-            'messages': [{
-                'role': 'user',
-                'content': query
-            }],
+            **content, 'model': self.model_id,
             'max_tokens': infer_cfg.get('max_tokens', 2048),
             'temperature': infer_cfg.get('temperature', 0.0),
             'top_p': infer_cfg.get('top_p', 1.0),
