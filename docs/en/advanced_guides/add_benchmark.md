@@ -62,8 +62,8 @@ We need to register the `Benchmark` in `benchmark_name_adapter.py`, so that Eval
         - `ContinuationLogitsModelAdapter`: Multiple-choice text evaluation, calculates the log likelihood of each context-continuation pair, returning a list of log likelihood values
     - `subset_list`: Sub-datasets of the benchmark test dataset
     - `metric_list`: Evaluation metrics for the benchmark test
-    - `few_shot_num`: Number of samples for CoT evaluation
-    - `train_split`: Benchmark test training set, used to sample CoT examples
+    - `few_shot_num`: Number of samples for In Context Learning evaluation
+    - `train_split`: Benchmark test training set, used to sample ICL examples
     - `eval_split`: Benchmark test evaluation set
     - `prompt_template`: Benchmark test prompt template
 - Create `MMLUProAdapter` class, inheriting from `DataAdapter`.

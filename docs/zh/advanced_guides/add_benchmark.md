@@ -61,8 +61,8 @@ evalscope/benchmarks/
         - `ContinuationLogitsModelAdapter`：多选文本评测，通过loglikelihood来计算每个上下文-延续对的对数似然值，返回对数似然值列表
     - `subset_list`：基准测试数据集的子数据集
     - `metric_list`：基准测试评估指标
-    - `few_shot_num`：CoT评测的样本数量
-    - `train_split`：基准测试训练集，用于采样CoT样例
+    - `few_shot_num`：评测的In Context Learning样本数量
+    - `train_split`：基准测试训练集，用于采样ICL样例
     - `eval_split`：基准测试评估集
     - `prompt_template`：基准测试提示模板
 - 创建`MMLUProAdapter`类，继承自`DataAdapter`。

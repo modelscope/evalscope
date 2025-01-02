@@ -73,7 +73,7 @@ class TestRun(unittest.TestCase):
     def test_run_task(self):
         task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
                     'datasets': [
-                        # 'mmlu_pro',
+                        'mmlu_pro',
                         # 'bbh',
                         'hellaswag',
                         # 'gsm8k',
