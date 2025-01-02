@@ -75,12 +75,12 @@ class TestRun(unittest.TestCase):
                     'datasets': [
                         # 'mmlu_pro',
                         # 'bbh',
-                        # 'hellaswag',
+                        'hellaswag',
                         # 'gsm8k',
                         # 'arc'
                         # 'race',
                         # 'truthful_qa',
-                        'trivia_qa',
+                        # 'trivia_qa',
                         ],
                     'limit': 20,
                     'debug': True}

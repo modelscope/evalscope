@@ -2,7 +2,6 @@
 import os.path
 import random
 from abc import ABC, abstractmethod
-from modelscope.msdatasets import MsDataset
 from typing import Any, Optional
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
@@ -71,6 +70,8 @@ class DataAdapter(ABC):
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
         else:
+            from modelscope.msdatasets import MsDataset
+
             # Load dataset from remote
             logger.info(
                 f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')

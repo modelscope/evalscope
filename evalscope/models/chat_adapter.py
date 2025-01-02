@@ -1,7 +1,6 @@
 import os
 import time
 import torch
-from modelscope import GenerationConfig
 from typing import Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
@@ -35,6 +34,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             logger.info(f'Using custom chat template: {custom_chat_template}')
 
     def _parse_generation_config(self, tokenizer, model):
+        from modelscope import GenerationConfig
+
         generation_config = getattr(model, 'generation_config', GenerationConfig(do_sample=False))
 
         try:

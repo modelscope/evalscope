@@ -2,16 +2,12 @@
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
 import itertools
-import jieba
 import math
 import numpy as np
 import random
 import sacrebleu
-import sklearn.metrics
 from collections import defaultdict
 from collections.abc import Iterable
-from nltk import word_tokenize
-from nltk.translate.bleu_score import sentence_bleu
 from typing import Dict, List, Union
 
 
@@ -38,6 +34,8 @@ def median(arr):
 
 
 def matthews_corrcoef(items):
+    import sklearn.metrics
+
     unzipped_list = list(zip(*items))
     golds = unzipped_list[0]
     preds = unzipped_list[1]
@@ -45,6 +43,8 @@ def matthews_corrcoef(items):
 
 
 def f1_score(items):
+    import sklearn.metrics
+
     unzipped_list = list(zip(*items))
     golds = unzipped_list[0]
     preds = unzipped_list[1]
@@ -150,6 +150,9 @@ def bleu_ngram_one_sample(predict, reference):
         }
 
     """
+    import jieba
+    from nltk import word_tokenize
+    from nltk.translate.bleu_score import sentence_bleu
 
     def is_contains_chinese(strs):
         for _char in strs:

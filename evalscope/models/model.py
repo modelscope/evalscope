@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import openai
 import os
 import random
 import time
@@ -147,6 +146,7 @@ class OpenAIModel(ChatBaseModel):
         max_tokens,
         mode: str = 'chat.completion',
     ) -> dict:
+        import openai
 
         res = {}
         openai.api_key = self.api_key

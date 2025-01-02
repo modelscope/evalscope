@@ -3,7 +3,6 @@ import time
 import torch
 from contextlib import contextmanager
 from functools import partial
-from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
 from threading import Thread
 from transformers import TextIteratorStreamer
@@ -96,6 +95,8 @@ class TextCompletionResponse(BaseModel):
 class ChatService:
 
     def __init__(self, model_path, attn_implementation):
+        from modelscope import AutoModelForCausalLM, AutoTokenizer
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,

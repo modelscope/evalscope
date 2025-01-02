@@ -12,7 +12,6 @@ from evalscope.metrics import WeightedAverageAccuracy
 from evalscope.metrics.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils import get_logger
-from evalscope.utils.utils import ResponseParser
 
 # flake8: noqa
 
