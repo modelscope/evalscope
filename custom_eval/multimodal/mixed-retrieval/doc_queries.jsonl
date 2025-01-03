@@ -1,2 +1,0 @@
-{"query":[{"content":"dog","type":"text"}], "doc":[{"content":"dog is a friendly animal","type":"text"}, {"content":"custom_eval/multimodal/images/dog.jpg","type":"image_path"}]}
-{"query":[{"content":"custom_eval/multimodal/images/tesla.jpg","type":"image_path"}], "doc":[{"content":"tesla is a car","type":"text"}, {"content":"custom_eval/multimodal/images/tesla.jpg","type":"image_path"}]}
