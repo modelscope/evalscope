@@ -3,7 +3,6 @@ Code adapated from https://github.com/mlfoundations/open_clip/blob/main/src/trai
 Thanks to the authors of OpenCLIP
 """
 
-import logging
 import torch
 import torch.nn.functional as F
 from contextlib import suppress

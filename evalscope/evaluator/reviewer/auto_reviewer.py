@@ -8,10 +8,10 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from evalscope.constants import ArenaMode, EvalConfigKeys, FnCompletionParser, PositionBiasMitigation
-from evalscope.models.openai_model import OpenAIModel
+from evalscope.models.model import OpenAIModel
 from evalscope.utils import completion_parsers, random_seeded_choice
 from evalscope.utils.arena_utils import get_battle_pairs, merge_ques_ans, shuffle_pairwise_preferences
 from evalscope.utils.io_utils import dump_jsonl_data, jsonl_to_list
@@ -240,7 +240,15 @@ class AutoReviewerGpt4(BaseReviewer):
             review_text=review_text)
         return review_result
 
-    def _get_review_pair(self, model_a, model_b, question, category, ans1, ans2, dry_run=False, **kwargs) -> (str, Any):
+    def _get_review_pair(self,
+                         model_a,
+                         model_b,
+                         question,
+                         category,
+                         ans1,
+                         ans2,
+                         dry_run=False,
+                         **kwargs) -> Tuple[str, Any]:
         input_msg = dict(ques=question, category=category, ans1=ans1, ans2=ans2)
 
         if self.reference_list:
@@ -263,7 +271,7 @@ class AutoReviewerGpt4(BaseReviewer):
             result = (result, None)
         return review_text, *result
 
-    def _get_review_single(self, model, question, category, answer, dry_run=False, **kwargs) -> (str, Any):
+    def _get_review_single(self, model, question, category, answer, dry_run=False, **kwargs) -> Tuple[str, Any]:
         input_msg = dict(ques=question, category=category, ans1=answer)
 
         if self.reference_list:

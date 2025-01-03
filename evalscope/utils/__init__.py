@@ -1,4 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evalscope.constants import *
+from evalscope.utils.model_utils import EvalBackend
 from evalscope.utils.utils import *

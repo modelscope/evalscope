@@ -162,7 +162,22 @@ evalscope eval \
 +-----------------------+-----------------+
 ```
 
-## 使用本地数据集和模型
+## 模型API服务评测
+
+指定模型API服务地址和API Key，评测模型API服务，此时`eval-type`参数必须指定为`service`，例如：
+
+```shell
+evalscope eval \
+ --model qwen2.5 \
+ --api-url http://127.0.0.1:8801/v1/chat/completions \
+ --api-key EMPTY \
+ --eval-type service \
+ --datasets gsm8k \
+ --limit 10
+```
+
+
+## 离线评测
 
 数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
 

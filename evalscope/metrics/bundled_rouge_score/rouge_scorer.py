@@ -55,7 +55,7 @@ try:
         os.system(f'wget --timeout=10 --tries=3 -P {nltk_dir} {punkt_tab_url}')
         os.system(f'unzip {punkt_path} -d {nltk_dir}')
     else:
-        logger.info(f'{punkt_path} already exists, skipping download')
+        logger.debug(f'{punkt_path} already exists, skipping download')
 except Exception as e:
     logger.error(f'Try to download punkt_tab.zip for nltk failed: {e}')
 

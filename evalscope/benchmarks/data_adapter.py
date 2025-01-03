@@ -4,8 +4,8 @@ import random
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from evalscope.benchmarks import Benchmark
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, HubType
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
+from evalscope.utils import normalize_score
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -22,6 +22,11 @@ class DataAdapter(ABC):
                  prompt_template: str = '',
                  **kwargs):
         """
+        Data Adapter for the benchmark. You need to implement the following methods:
+            - gen_prompt
+            - get_gold_answer
+            - parse_pred_result
+            - match
         Args:
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
@@ -55,33 +60,36 @@ class DataAdapter(ABC):
 
         """
         dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
+        subset_list = subset_list or self.subset_list
 
         # Try to load dataset from local disk
         if os.path.exists(dataset_name_or_path):
-            logger.info(
-                f'Loading dataset from local disk: > dataset_name: {dataset_name_or_path}  > work_dir: {work_dir}')
+            logger.info(f'Loading dataset from work_dir: {work_dir}: > dataset_name: {dataset_name_or_path} > \
+                    subsets: {subset_list}')
             data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
             if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
         else:
+            from modelscope.msdatasets import MsDataset
+
             # Load dataset from remote
-            logger.info(f'Loading dataset from {datasets_hub} hub: >dataset_name: {dataset_name_or_path}')
+            logger.info(
+                f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
             data_dict = {}
             split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
             if len(split_list) == 0:
                 logger.error(f'Got empty split list: {split_list}')
 
-            subset_list = subset_list if subset_list is not None else self.subset_list
             for sub_name in subset_list:
                 data_dict[sub_name] = {}
                 # e.g. train: few-shot, test: target dataset to evaluate
                 for split in split_list:
-                    dataset = Benchmark.load(
+                    dataset = MsDataset.load(
                         dataset_name=dataset_name_or_path,
-                        subset=sub_name,
+                        subset_name=sub_name,
                         split=split,
+                        cache_dir=work_dir,
                         hub=datasets_hub,
-                        work_dir=work_dir,
                         **kwargs)
 
                     data_dict[sub_name].update({split: dataset})
@@ -132,92 +140,7 @@ class DataAdapter(ABC):
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d
                 res_dict[sub_name].append(prompt_d)
 
-        rnd = random.Random()
-        rnd.seed(42)
-        for k, v in res_dict.items():
-            rnd.shuffle(v)
-
         return res_dict
-
-    @abstractmethod
-    def gen_prompt(self, *args, **kwargs) -> Any:
-        """
-        Generate model prompt from raw input, unify the prompt format for different datasets.
-        The input format is compatible with OpenAI Chat Completions APIs.
-        Refer to: https://platform.openai.com/docs/guides/gpt/chat-completions-api
-
-        Args:
-            input_d (Any): The raw input. Depending on the dataset.
-
-        Returns:
-            For class MultiChoiceModelAdapter, the output format is:
-                {'data': [full_prompt]},  -- full_prompt: str, the constructed prompt for each sample from dataset.
-
-            For class ContinuationEvalModelAdapter, the output format is:
-                {'data': ctx_continuation_pair_list, 'multi_choices': self.choices}
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_gold_answer(self, input_d: Any) -> Any:
-        """
-        Parse the raw input labels (gold).
-
-        Args:
-            input_d: input raw data. Depending on the dataset.
-
-        Returns:
-            The parsed input. e.g. gold answer ... Depending on the dataset.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> Any:
-        """
-        Parse the predicted result and extract proper answer.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d: The raw input. Depending on the dataset.
-            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def match(self, gold: Any, pred: Any) -> Any:
-        """
-        Match the gold answer and the predicted answer.
-
-        Args:
-            gold (Any): The golden answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'A'
-            pred (Any): The predicted answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'B'
-
-        Returns:
-            The match result. Usually a score (float) for chat/multiple-choice-questions.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def compute_metric(self, review_res_list: list) -> Any:
-        """
-        Compute evaluation result by specific metrics.
-
-        Args:
-            review_res_list: list, the review result list, each item of which is match result for gold and pred.
-
-        Attributes:
-            DataAdapter.metric_func_map: metric_name -> metric_func mapping,
-                e.g. {'WeightedAverageAccuracy': weighted_average_acc}
-
-        Returns:
-            Metric results.
-        """
-        raise NotImplementedError
 
     def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
@@ -243,15 +166,34 @@ class DataAdapter(ABC):
                     "subset":[
                         {
                             "name":"ARC-Challenge",
-                            "score": 0.3389
+                            "score": 0.3389,
+                            "num": 100
                         },
                     ]
                 }
             ],
             "total_num":100
         }
-        """
-        raise NotImplementedError
+        """  # noqa: E501
+        total_num: int = sum([num for _, num in subset_score_map.values()])
+        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
+        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
+        cate_avg_list = [{
+            'name': subset_name,
+            'score': normalize_score(score=score),
+            'num': num
+        } for subset_name, (score, num) in subset_score_map.items()]
+
+        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
+
+        res_map = dict(
+            name=report_name or 'DEFAULT',
+            metric=self.metric_list[0]['name'],
+            score=weighted_avg_acc,
+            category=[category_d],
+            total_num=total_num)
+
+        return res_map
 
     def get_fewshot_examples(self, data_list: list, k: int, few_shot_random: bool = True):
 
@@ -261,3 +203,90 @@ class DataAdapter(ABC):
             return random.sample(data_list, k)
         else:
             return data_list[:k]
+
+    def compute_metric(self, review_res_list: list) -> Any:
+        """
+        Compute evaluation result by specific metrics.
+
+        Args:
+            review_res_list: list, the review result list, each item of which is match result for gold and pred.
+
+        Attributes:
+            DataAdapter.metric_func_map: metric_name -> metric_func mapping,
+                e.g. {'WeightedAverageAccuracy': weighted_average_acc}
+
+        Returns:
+            Metric results.
+        """
+        if len(self.metric_list) == 0:
+            raise ValueError('No metric list found for the benchmark.')
+        elif len(self.metric_list) == 1:
+            # review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
+            items = [(score, 1.0) for score in review_res_list]
+            return self.metric_list[0]['object'](items)
+        else:
+            raise ValueError('Please implement the compute_metric method for multiple metrics.')
+
+    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
+        """
+        Generate model prompt from raw input, unify the prompt format for different datasets.
+        The input format is compatible with OpenAI Chat Completions APIs.
+
+        Args:
+            input_d (Any): The raw input. Depending on the dataset.
+            subset_name (str): The subset name.
+            few_shot_list (list): The few-shot examples.
+
+        Returns:
+            For class ChatGenerationModelAdapter, the output format is:
+                {'data': [full_prompt], 'system_prompt': (str, optional)},  -- full_prompt: str, the constructed prompt for each sample from dataset.
+            For class MultiChoiceModelAdapter, the output format is:
+                {'data': [full_prompt], 'multi_choices': self.choices}  -- full_prompt: str, the constructed prompt for each sample from dataset.
+            For class ContinuationEvalModelAdapter, the output format is:
+                {'data': ctx_continuation_pair_list, 'multi_choices': self.choices} -- ctx_continuation_pair_list: list, the context-continuation pair list.
+        """  # noqa: E501
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_gold_answer(self, input_d: Any) -> Any:
+        """
+        Parse the raw input labels (gold).
+
+        Args:
+            input_d: input raw data. Depending on the dataset.
+
+        Returns:
+            The parsed input. e.g. gold answer ... Depending on the dataset.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
+        """
+        Parse the predicted result and extract proper answer.
+
+        Args:
+            result: Predicted answer from the model. Usually a string for chat.
+            raw_input_d: The raw input. Depending on the dataset.
+            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
+
+        Returns:
+            The parsed answer. Depending on the dataset. Usually a string for chat.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def match(self, gold: Any, pred: Any) -> float:
+        """
+        Match the gold answer and the predicted answer.
+
+        Args:
+            gold (Any): The golden answer. Usually a string for chat/multiple-choice-questions.
+                        e.g. 'A', extracted from get_gold_answer method.
+            pred (Any): The predicted answer. Usually a string for chat/multiple-choice-questions.
+                        e.g. 'B', extracted from parse_pred_result method.
+
+        Returns:
+            The match result. Usually a score (float) for chat/multiple-choice-questions.
+        """
+        raise NotImplementedError
