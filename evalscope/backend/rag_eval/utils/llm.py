@@ -6,7 +6,7 @@ from modelscope.utils.hf_util import GenerationConfig
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from evalscope.constants import DEFAULT_MODEL_REVISION
-from evalscope.models.model_adapter import ChatGenerationModelAdapter
+from evalscope.models import ChatGenerationModelAdapter
 
 
 class LLM:

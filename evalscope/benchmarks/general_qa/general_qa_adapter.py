@@ -5,35 +5,32 @@ import os.path
 from collections import defaultdict
 from typing import Any, Optional
 
-from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.metrics.metrics import bleu_ngram_one_sample, weighted_mean
-from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.metrics import (WeightedAverageBLEU, bleu_ngram_one_sample, compute_rouge_score_one_sample_zh,
+                               weighted_mean)
+from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DATASET_ID = 'general_qa'
-SUBSET_LIST = ['default']
 
-
+@Benchmark.register(
+    name='general_qa',
+    dataset_id='general_qa',
+    model_adapter=ChatGenerationModelAdapter,
+    subset_list=['default'],
+    metric_list=[WeightedAverageBLEU],
+    few_shot_num=0,
+    train_split=None,
+    eval_split='test',
+)
 class GeneralQAAdapter(DataAdapter):
     # TODO: set few_shot_num
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 train_split: str = None,
-                 eval_split: str = 'test',
-                 **kwargs):
-        if subset_list is None:
-            subset_list = SUBSET_LIST
+    def __init__(self, **kwargs):
 
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageBLEU', 'object': weighted_mean}]
-
-        super().__init__(
-            subset_list=subset_list, metric_list=metric_list, train_split=train_split, eval_split=eval_split, **kwargs)
+        super().__init__(**kwargs)
 
     def load(self, dataset_name_or_path: str, subset_list: list = None, **kwargs) -> dict:
 

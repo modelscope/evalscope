@@ -31,7 +31,7 @@ DEFAULT_GENERATION_CONFIG = {
 @dataclass
 class TaskConfig:
     # Model-related arguments
-    model: Union[str, CustomModel, None] = None
+    model: Union[str, 'CustomModel', None] = None
     model_id: Optional[str] = None
     model_args: Optional[Dict] = field(default_factory=lambda: DEFAULT_MODEL_ARGS | {})
 
@@ -40,8 +40,8 @@ class TaskConfig:
     chat_template: Optional[str] = None
 
     # Dataset-related arguments
-    datasets: Optional[List[str]] = None
-    dataset_args: Optional[Dict] = field(default_factory=dict)
+    datasets: List[str] = field(default_factory=list)
+    dataset_args: Dict = field(default_factory=dict)
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
     dataset_hub: str = HubType.MODELSCOPE
 
@@ -64,7 +64,9 @@ class TaskConfig:
     # Debug and runtime mode arguments
     debug: bool = False
     dry_run: bool = False
-    seed: int = 42
+    seed: Optional[int] = 42
+    api_url: Optional[str] = None  # Only used for server model
+    api_key: Optional[str] = 'EMPTY'  # Only used for server model
 
     def __post_init__(self):
         if (not self.model_id) and self.model:
@@ -74,7 +76,6 @@ class TaskConfig:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
 
     def to_dict(self):
-        # Note: to avoid serialization error for some model instance
         return self.__dict__
 
     def __str__(self):
@@ -130,6 +131,7 @@ class TaskConfig:
                 continue
 
             task.model = custom_model
+            task.model_args = custom_model.config
             task.model_id = type(custom_model).__name__
             res_list.append(task)
 

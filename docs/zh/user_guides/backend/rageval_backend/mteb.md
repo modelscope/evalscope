@@ -102,7 +102,8 @@ one_stage_task_cfg = {
 
 
 ### 两阶段评测
-配置文件示例如下，先进行检索，再进行reranking：
+评测reranker需要用retrieval数据集，先用embedding模型检索topk，再进行排序。配置文件示例如下：
+
 ```python
 two_stage_task_cfg = {
     "eval_backend": "RAGEval",

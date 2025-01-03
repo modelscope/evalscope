@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from evalscope.constants import EvalConfigKeys
 from evalscope.evaluator.rating_eval import RatingEvaluate
-from evalscope.models.model_adapter import ChatGenerationModelAdapter
+from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils import get_obj_from_cfg
 from evalscope.utils.io_utils import dump_jsonl_data, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger

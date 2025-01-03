@@ -79,7 +79,7 @@ class TestMTEB(unittest.TestCase):
                         },
                     },
                     {
-                        'model_name_or_path': 'OpenBMB/MiniCPM-Reranker',
+                        'model_name_or_path': 'BAAI/bge-reranker-v2-m3',
                         'is_cross_encoder': True,
                         'max_seq_length': 512,
                         'prompt': '为这个问题生成一个检索用的表示',
@@ -94,7 +94,8 @@ class TestMTEB(unittest.TestCase):
                     'verbosity': 2,
                     'output_folder': 'outputs',
                     'overwrite_results': True,
-                    'limits': 10,
+                    # 'limits': 10,
+                    'top_k': 10,
                 },
             },
         }

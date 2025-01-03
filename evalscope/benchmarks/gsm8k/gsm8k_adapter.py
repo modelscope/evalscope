@@ -1,35 +1,33 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI, Inc. and its affiliates.
+# flake8: noqa
 import math
 import os
 import re
 
-from evalscope.benchmarks import DataAdapter
-from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import normalize_score
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.metrics import WeightedAverageAccuracy
+from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
-# flake8: noqa
-
 logger = get_logger()
 
-DATASET_ID = 'modelscope/gsm8k'
-SUBSET_LIST = ['main']
-ANS_RE = re.compile(r'#### (\-?[0-9\.\,]+)')
-INVALID_ANS = '[invalid]'
 
-
+@Benchmark.register(
+    name='gsm8k',
+    dataset_id='modelscope/gsm8k',
+    model_adapter=ChatGenerationModelAdapter,
+    subset_list=['main'],
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=4,
+    train_split='train',
+    eval_split='test',
+    prompt_template='',
+)
 class GSM8KAdapter(DataAdapter):
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = 'train',
-                 eval_split: str = 'test',
-                 prompt_template: str = '',
-                 **kwargs):
+    def __init__(self, **kwargs):
         """
         Data adapter for GSM8K dataset.
 
@@ -41,30 +39,13 @@ class GSM8KAdapter(DataAdapter):
             eval_split (str): The target eval split name. Default: 'test'
             **kwargs: ...
         """
-
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        if few_shot_num is None:
-            logger.info(f'Set 4-shot examples by system for GSM8K.')
-            few_shot_num = 4
-
+        few_shot_num = kwargs.get('few_shot_num', 4)
         if few_shot_num != 4 and few_shot_num != 0:
             logger.error(f'GSM8K uses 4-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
                          f'Use 4-shot by default.')
-            few_shot_num = 4
+            kwargs['few_shot_num'] = 4
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            prompt_template=prompt_template,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -141,66 +122,6 @@ class GSM8KAdapter(DataAdapter):
                 return False
 
         return number_equal(gold_ans=gold, pred_ans=pred)
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: The user-defined report name. Default: None
-
-        Returns: A dict of metric calculation results. The format is like:
-        {
-            "name":"GSM8K",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.5632,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.5632,
-                    "subset":[
-                        {
-                            "name":"main",
-                            "score":0.5632
-                        },
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'gsm8k',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, few_shot_list: list, use_fewshot: bool = True) -> str:

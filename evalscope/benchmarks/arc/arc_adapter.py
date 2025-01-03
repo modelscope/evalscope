@@ -3,40 +3,35 @@
 import json
 import os
 
-from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.metrics.metrics import exact_match, weighted_mean
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import EvalType
+from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.models import MultiChoiceModelAdapter
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
 
-DATASET_ID = 'modelscope/ai2_arc'
 
-# task_list = ['ARC-Easy', 'ARC-Challenge']
-SUBSET_LIST = ['ARC-Challenge']
-
-
+@Benchmark.register(
+    name='arc',
+    dataset_id='modelscope/ai2_arc',
+    model_adapter=MultiChoiceModelAdapter,
+    subset_list=['ARC-Easy', 'ARC-Challenge'],
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=0,
+    train_split='train',
+    eval_split='test',
+    prompt_template='',
+)
 class ARCAdapter(DataAdapter):
 
     choices = ['A', 'B', 'C', 'D']
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = 'train',
-                 eval_split: str = 'test',
-                 prompt_template: str = '',
-                 **kwargs):
-
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
+    def __init__(self, **kwargs):
+        few_shot_num = kwargs.get('few_shot_num', None)
         if few_shot_num is None:
             # Use 0-shot by default
             logger.info(f'Set 0-shot examples by system for ARC.')
@@ -45,14 +40,7 @@ class ARCAdapter(DataAdapter):
         if few_shot_num != 0:
             logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            prompt_template=prompt_template,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         """
@@ -132,7 +120,7 @@ class ARCAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('answerKey', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
@@ -144,12 +132,12 @@ class ARCAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == 'checkpoint':
+        if eval_type == EvalType.CHECKPOINT:
             return result
-        elif eval_type == 'service':
+        elif eval_type == EvalType.SERVICE:
             return ResponseParser.parse_first_option_with_choices(
                 text=result, options=self.choices)  # TODO: to be checked !
-        elif eval_type == 'custom':
+        elif eval_type == EvalType.CUSTOM:
             return ResponseParser.parse_first_option_with_choices(
                 text=result, options=self.choices)  # TODO: to be checked !
         else:
@@ -157,70 +145,6 @@ class ARCAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: The user-defined report name.
-
-        Returns: A dict of metric calculation results. The format is like:
-        {
-            "name":"ARC",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.4128,
-                    "subset":[
-                        {
-                            "name":"ARC-Easy",
-                            "score":0.5632
-                        },
-                        {
-                            "name":"ARC-Challenge",
-                            "score":0.3157
-                        }
-                    ]
-                }
-            ],
-            "total_num":7800
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'arc',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, include_answer=True) -> str:

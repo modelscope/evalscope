@@ -135,34 +135,13 @@ class EvalStage:
 class EvalType:
 
     CUSTOM = 'custom'
-    CHECKPOINT = 'checkpoint'
+    CHECKPOINT = 'checkpoint'  # native model checkpoint
+    SERVICE = 'service'  # model service
 
 
 class EvalBackend:
-
-    class _Backend:
-        #  compatible with old version, set 'value'
-
-        def __init__(self, value):
-            self._value = value
-
-        @property
-        def value(self):
-            return self._value
-
-        def __str__(self):
-            return self._value
-
-        def __repr__(self):
-            return f"'{self._value}'"
-
-        def __eq__(self, other):
-            if isinstance(other, str):
-                return self._value == other
-            return NotImplemented
-
-    NATIVE = _Backend('Native')
-    OPEN_COMPASS = _Backend('OpenCompass')
-    VLM_EVAL_KIT = _Backend('VLMEvalKit')
-    RAG_EVAL = _Backend('RAGEval')
-    THIRD_PARTY = _Backend('ThirdParty')
+    NATIVE = 'Native'
+    OPEN_COMPASS = 'OpenCompass'
+    VLM_EVAL_KIT = 'VLMEvalKit'
+    RAG_EVAL = 'RAGEval'
+    THIRD_PARTY = 'ThirdParty'

@@ -25,14 +25,15 @@
 > ⭐ 如果你喜欢这个项目，请点击右上角的 "Star" 按钮支持我们。你的支持是我们前进的动力！
 
 ## 📋 目录
-- [简介](#简介)
-- [新闻](#新闻)
-- [环境准备](#环境准备)
-- [快速开始](#快速开始)
-- [使用其他评测后端](#使用其他评测后端)
-- [自定义数据集评测](#自定义数据集评测)
-- [竞技场模式](#竞技场模式)
-- [性能评测工具](#推理性能评测工具)
+- [简介](#-简介)
+- [新闻](#-新闻)
+- [环境准备](#️-环境准备)
+- [快速开始](#-快速开始)
+- [其他评测后端](#-其他评测后端)
+- [自定义数据集评测](#-自定义数据集评测)
+- [竞技场模式](#-竞技场模式)
+- [性能评测工具](#-推理性能评测工具)
+- [贡献](#️-贡献)
 
 
 
@@ -78,11 +79,14 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 
 
 ## 🎉 新闻
+- 🔥🔥 **[2024.12.31]** 支持基准评测添加，参考[📖基准评测添加指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html)；支持自定义混合数据集评测，用更少的数据，更全面的评测模型，参考[📖混合数据集评测指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 - 🔥 **[2024.12.13]** 模型评测优化，不再需要传递`--template-type`参数；支持`evalscope eval --args`启动评测，参考[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html)
 - 🔥 **[2024.11.26]** 模型推理压测工具重构完成：支持本地启动推理服务、支持Speed Benchmark；优化异步调用错误处理，参考[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/index.html)
 - 🔥 **[2024.10.31]** 多模态RAG评测最佳实践发布，参考[📖博客](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag)
 - 🔥 **[2024.10.23]** 支持多模态RAG评测，包括[CLIP_Benchmark](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/clip_benchmark.html)评测图文检索器，以及扩展了[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)以支持端到端多模态指标评测。
 - 🔥 **[2024.10.8]** 支持RAG评测，包括使用[MTEB/CMTEB](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/mteb.html)进行embedding模型和reranker的独立评测，以及使用[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)进行端到端评测。
+<details> <summary>更多</summary>
+
 - 🔥 **[2024.09.18]** 我们的文档增加了博客模块，包含一些评测相关的技术调研和分享，欢迎[📖阅读](https://evalscope.readthedocs.io/zh-cn/latest/blog/index.html)
 - 🔥 **[2024.09.12]** 支持 LongWriter 评测，您可以使用基准测试 [LongBench-Write](evalscope/third_party/longbench_write/README.md) 来评测长输出的质量以及输出长度。
 - 🔥 **[2024.08.30]** 支持自定义数据集评测，包括文本数据集和多模态图文数据集。
@@ -93,7 +97,7 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 - 🔥 **[2024.06.29]** 支持**OpenCompass**作为第三方评测框架，我们对其进行了高级封装，支持pip方式安装，简化了评测任务配置。
 - 🔥 **[2024.06.13]** EvalScope与微调框架SWIFT进行无缝对接，提供LLM从训练到评测的全链路支持 。
 - 🔥 **[2024.06.13]** 接入Agent评测集ToolBench。
-
+</details>
 
 ## 🛠️ 环境准备
 ### 方式1. 使用pip安装
@@ -277,7 +281,7 @@ evalscope eval \
 参考：[全部参数说明](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html)
 
 
-## 其他评测后端
+## 🧪 其他评测后端
 EvalScope支持使用第三方评测框架发起评测任务，我们称之为评测后端 (Evaluation Backend)。目前支持的Evaluation Backend有：
 - **Native**：EvalScope自身的**默认评测框架**，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。
 - [OpenCompass](https://github.com/open-compass/opencompass)：通过EvalScope作为入口，发起OpenCompass的评测任务，轻量级、易于定制、支持与LLM微调框架[ms-wift](https://github.com/modelscope/swift)的无缝集成：[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/opencompass_backend.html)
@@ -285,7 +289,7 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 - **RAGEval**：通过EvalScope作为入口，发起RAG评测任务，支持使用[MTEB/CMTEB](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/mteb.html)进行embedding模型和reranker的独立评测，以及使用[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)进行端到端评测：[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/index.html)
 - **ThirdParty**: 第三方评测任务，如[ToolBench](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)、[LongBench-Write](https://evalscope.readthedocs.io/zh-cn/latest/third_party/longwriter.html)。
 
-## 推理性能评测工具
+## 📈 推理性能评测工具
 一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
 
 参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/index.html)
@@ -311,15 +315,30 @@ Speed Benchmark Results:
 ```
 
 
-## 自定义数据集评测
+## 🖊️ 自定义数据集评测
 EvalScope支持自定义数据集评测，具体请参考：自定义数据集评测[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/index.html)
 
 
-## 竞技场模式
+## 🏟️ 竞技场模式
 竞技场模式允许多个候选模型通过两两对比(pairwise battle)的方式进行评测，并可以选择借助AI Enhanced Auto-Reviewer（AAR）自动评测流程或者人工评测的方式，最终得到评测报告。参考：竞技场模式[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)
 
+## 👷‍♂️ 贡献
 
-## TO-DO List
+EvalScope作为[ModelScope](https://modelscope.cn)的官方评测工具，其基准评测功能正在持续优化中！我们诚邀您参考[贡献指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html)，轻松添加自己的评测基准，并与广大社区成员分享您的贡献。一起助力EvalScope的成长，让我们的工具更加出色！快来加入我们吧！
+
+<a href="https://github.com/modelscope/evalscope/graphs/contributors" target="_blank">
+  <table>
+    <tr>
+      <th colspan="2">
+        <br><img src="https://contrib.rocks/image?repo=modelscope/evalscope"><br><br>
+      </th>
+    </tr>
+  </table>
+</a>
+
+## 🔜  Roadmap
+- [ ] 支持更好的评测报告可视化
+- [x] 支持多数据集混合评测
 - [x] RAG evaluation
 - [x] VLM evaluation
 - [x] Agents evaluation
@@ -330,8 +349,7 @@ EvalScope支持自定义数据集评测，具体请参考：自定义数据集�
   - [ ] GAIA
   - [ ] GPQA
   - [x] MBPP
-- [ ] Auto-reviewer
-  - [ ] Qwen-max
+
 
 
 ## Star History

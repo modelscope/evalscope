@@ -3,24 +3,33 @@
 ## 1. 原生支持的数据集
 
 ```{tip}
-目前框架原生支持如下数据集，若您需要的数据集不在列表中，请提交issue；或者使用[OpenCompass backend](../user_guides/backend/opencompass_backend.md)进行语言模型评测；或使用[VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评测。
+目前框架原生支持如下数据集，若您需要的数据集不在列表中，可以提交[issue](https://github.com/modelscope/evalscope/issues)，我们会尽快支持；也可以参考[基准评测添加指南](../advanced_guides/add_benchmark.md)，自行添加数据集并提交[PR](https://github.com/modelscope/evalscope/pulls)，欢迎贡献。
+
+您也可以使用本框架支持的其他工具进行评测，如[OpenCompass](../user_guides/backend/opencompass_backend.md)进行语言模型评测；或使用[VLMEvalKit](../user_guides/backend/vlmevalkit_backend.md)进行多模态模型评测。
 ```
 
-以下是去掉“状态”列后的表格：
 
-| 名称        | 链接                                                                                   | 备注 |
-|-------------|----------------------------------------------------------------------------------------|------|
-| `mmlu`      | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                         |      |
-| `ceval`     | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                  |      |
-| `gsm8k`     | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                       |      |
-| `arc`       | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                       |      |
-| `hellaswag` | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)               |      |
-| `truthful_qa`| [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)          |      |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) |  |
-| `humaneval` | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)               | 需安装[humaneval](https://github.com/openai/human-eval/tree/master#installation)，因为涉及到一些代码运行的操作，建议在sandbox环境（docker）中运行 |
-| `bbh`       | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           |      |
-| `race`      | [race](https://modelscope.cn/datasets/modelscope/race/summary)                         |      |
-| `trivia_qa` | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)               |      |
+| 名称              | 数据集ID                                                                                           | 任务类别         | 备注                                                                                                                  |
+|-------------------|----------------------------------------------------------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `arc`             | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                    | 考试         |                                                                                                                       |
+| `bbh`             | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                            | 综合推理         |                                                                                                                       |
+| `ceval`           | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)              | 中文-综合考试             |                                                                                                                       |
+| `cmmlu`           | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                        | 中文-综合考试   |                                                                                                                       |
+| `competition_math`| [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary)   | 数学竞赛         |                                                                                                                       |
+| `gsm8k`           | [modelscope/gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                        | 数学问题         |                                                                                                                       |
+| `hellaswag`*       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
+| `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
+| `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
+| `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                                                                                                                       |
+| `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
+| `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
+| `truthful_qa`     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
+
+```{note}
+**\*** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。
+
+**+** 因为涉及到代码运行的操作，建议在沙盒环境(docker)中运行，防止对本地环境造成影响。
+```
 
 
 ## 2. OpenCompass评测后端支持的数据集

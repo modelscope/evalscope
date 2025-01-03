@@ -24,14 +24,16 @@
 > ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
 ## 📋 Contents
-- [Introduction](#introduction)
-- [News](#News)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
+- [Introduction](#-introduction)
+- [News](#-news)
+- [Installation](#️-installation)
+- [Quick Start](#-quick-start)
 - [Evaluation Backend](#evaluation-backend)
-- [Custom Dataset Evaluation](#custom-dataset-evaluation)
-- [Model Serving Performance Evaluation](#Model-Serving-Performance-Evaluation)
-- [Arena Mode](#arena-mode)
+- [Custom Dataset Evaluation](#️-custom-dataset-evaluation)
+- [Model Serving Performance Evaluation](#-model-serving-performance-evaluation)
+- [Arena Mode](#-arena-mode)
+- [Contribution](#️-contribution)
+- [Roadmap](#-roadmap)
 
 
 ## 📝 Introduction
@@ -72,11 +74,15 @@ Please scan the QR code below to join our community groups:
 
 
 ## 🎉 News
+- 🔥🔥 **[2024.12.31]** Support for adding benchmark evaluations, refer to the [📖 Benchmark Evaluation Addition Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html); support for custom mixed dataset evaluations, allowing for more comprehensive model evaluations with less data, refer to the [📖 Mixed Dataset Evaluation Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html).
 - 🔥 **[2024.12.13]** Model evaluation optimization: no need to pass the `--template-type` parameter anymore; supports starting evaluation with `evalscope eval --args`. Refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html) for more details.
 - 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html).
 - 🔥 **[2024.10.31]** The best practice for evaluating Multimodal-RAG has been updated, please check the [📖 Blog](https://evalscope.readthedocs.io/zh-cn/latest/blog/RAG/multimodal_RAG.html#multimodal-rag) for more details.
 - 🔥 **[2024.10.23]** Supports multimodal RAG evaluation, including the assessment of image-text retrieval using [CLIP_Benchmark](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/clip_benchmark.html), and extends [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html) to support end-to-end multimodal metrics evaluation.
 - 🔥 **[2024.10.8]** Support for RAG evaluation, including independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html).
+
+<details><summary>More</summary>
+
 - 🔥 **[2024.09.18]** Our documentation has been updated to include a blog module, featuring some technical research and discussions related to evaluations. We invite you to [📖 read it](https://evalscope.readthedocs.io/en/refact_readme/blog/index.html).
 - 🔥 **[2024.09.12]** Support for LongWriter evaluation, which supports 10,000+ word generation. You can use the benchmark [LongBench-Write](evalscope/third_party/longbench_write/README.md) to measure the long output quality as well as the output length.
 - 🔥 **[2024.08.30]** Support for custom dataset evaluations, including text datasets and multimodal image-text datasets.
@@ -88,7 +94,7 @@ Please scan the QR code below to join our community groups:
 - 🔥 **[2024.06.13]** EvalScope seamlessly integrates with the fine-tuning framework SWIFT, providing full-chain support from LLM training to evaluation.
 - 🔥 **[2024.06.13]** Integrated the Agent evaluation dataset ToolBench.
 
-
+</details>
 
 ## 🛠️ Installation
 ### Method 1: Install Using pip
@@ -278,7 +284,7 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 - **ThirdParty**: Third-party evaluation tasks, such as [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) and [LongBench-Write](https://evalscope.readthedocs.io/en/latest/third_party/longwriter.html).
 
 
-## Model Serving Performance Evaluation
+## 📈 Model Serving Performance Evaluation
 A stress testing tool focused on large language models, which can be customized to support various dataset formats and different API protocol formats.
 
 Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html)
@@ -303,19 +309,32 @@ Speed Benchmark Results:
 +---------------+-----------------+----------------+
 ```
 
-## Custom Dataset Evaluation
+## 🖊️ Custom Dataset Evaluation
 EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/index.html)
 
 
-## Arena Mode
+## 🏟️ Arena Mode
 The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report.
 
 Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html)
 
+## 👷‍♂️ Contribution
 
+EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn), is continuously optimizing its benchmark evaluation features! We invite you to refer to the [Contribution Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html) to easily add your own evaluation benchmarks and share your contributions with the community. Let’s work together to support the growth of EvalScope and make our tools even better! Join us now!
 
+<a href="https://github.com/modelscope/evalscope/graphs/contributors" target="_blank">
+  <table>
+    <tr>
+      <th colspan="2">
+        <br><img src="https://contrib.rocks/image?repo=modelscope/evalscope"><br><br>
+      </th>
+    </tr>
+  </table>
+</a>
 
-## TO-DO List
+## 🔜 Roadmap
+- [ ] Support for better evaluation report visualization
+- [x] Support for mixed evaluations across multiple datasets
 - [x] RAG evaluation
 - [x] VLM evaluation
 - [x] Agents evaluation
@@ -326,8 +345,6 @@ Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/lates
   - [ ] GAIA
   - [ ] GPQA
   - [x] MBPP
-- [ ] Auto-reviewer
-  - [ ] Qwen-max
 
 
 ## Star History

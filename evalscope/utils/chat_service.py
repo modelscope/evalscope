@@ -3,11 +3,10 @@ import time
 import torch
 from contextlib import contextmanager
 from functools import partial
-from modelscope import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel, Field
 from threading import Thread
 from transformers import TextIteratorStreamer
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 
 class Usage(BaseModel):
@@ -66,7 +65,7 @@ class ChatCompletionResponseStreamChoice(BaseModel):
 class ChatCompletionResponse(BaseModel):
     model: str
     object: Literal['chat.completion', 'chat.completion.chunk']
-    choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
+    choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice, Any]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
     usage: Optional[Usage]
 
@@ -96,6 +95,8 @@ class TextCompletionResponse(BaseModel):
 class ChatService:
 
     def __init__(self, model_path, attn_implementation):
+        from modelscope import AutoModelForCausalLM, AutoTokenizer
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,

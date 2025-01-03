@@ -6,20 +6,31 @@ import numpy as np
 import os
 from typing import List
 
+from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
+from evalscope.constants import EvalType
+from evalscope.metrics import WeightedAverageAccuracy
 from evalscope.metrics.metrics import weighted_mean
-from evalscope.utils import normalize_score
-from evalscope.utils.logger import get_logger
+from evalscope.models import ContinuationLogitsModelAdapter
+from evalscope.utils import get_logger, normalize_score
 
 # flake8: noqa
 
 logger = get_logger()
 
-DATASET_ID = 'modelscope/truthful_qa'
 # task_list = ['generation', 'multiple_choice']
-SUBSET_LIST = ['multiple_choice']
 
 
+@Benchmark.register(
+    name='truthful_qa',
+    dataset_id='modelscope/truthful_qa',
+    model_adapter=ContinuationLogitsModelAdapter,
+    subset_list=['multiple_choice'],
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=0,
+    train_split=None,
+    eval_split='validation',
+)
 class TruthfulQaAdapter(DataAdapter):
     """
     Adapter for TruthfulQA benchmark.
@@ -40,35 +51,14 @@ class TruthfulQaAdapter(DataAdapter):
                  'Q: Where were the 1992 Olympics held?\n'
                  'A: The 1992 Olympics were held in Barcelona, Spain.')
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = None,
-                 train_split: str = None,
-                 eval_split: str = 'validation',
-                 **kwargs):
+    def __init__(self, **kwargs):
 
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        if few_shot_num is None:
-            logger.info(f'Set 0-shot examples by system for TruthfulQA.')
-            few_shot_num = 0
-
+        few_shot_num = kwargs.get('few_shot_num', 0)
         if few_shot_num != 0:
             logger.warning(f'few_shot_num should be 0 for TruthfulQA, but got {few_shot_num}. Use 0-shot by default.')
-            few_shot_num = 0
+            kwargs['few_shot_num'] = 0
 
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -215,7 +205,7 @@ class TruthfulQaAdapter(DataAdapter):
         # TODO: generation sub-task to be added
         return {'mc1_labels': input_d['mc1_targets']['labels'], 'mc2_labels': input_d['mc2_targets']['labels']}
 
-    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> list:
+    def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> list:
         """
         Parse the model output to get the answer.
 
@@ -227,11 +217,11 @@ class TruthfulQaAdapter(DataAdapter):
         Returns:
             The predicted answer.
         """
-        if eval_type == 'checkpoint':
+        if eval_type == EvalType.CHECKPOINT:
             return result
-        elif eval_type == 'service':  # TODO: to be supported !
+        elif eval_type == EvalType.SERVICE:  # TODO: to be supported !
             return result
-        elif eval_type == 'custom':  # TODO: to be supported !
+        elif eval_type == EvalType.CUSTOM:  # TODO: to be supported !
             return result
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')

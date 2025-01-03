@@ -160,3 +160,11 @@ def are_paths_same(path1, path2):
     real_path2 = os.path.realpath(os.path.abspath(os.path.expanduser(path2)))
 
     return real_path1 == real_path2
+
+
+def dict_to_json(d: dict, json_file: str):
+    """
+    Dump dict to json file.
+    """
+    with open(json_file, 'w') as f:
+        json.dump(d, f, indent=4, ensure_ascii=False)

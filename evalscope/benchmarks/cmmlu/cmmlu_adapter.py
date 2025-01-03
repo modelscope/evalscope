@@ -3,16 +3,16 @@
 import csv
 import os
 
-from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.metrics.metrics import exact_match, weighted_mean
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import EvalType
+from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser, normalize_score
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
-
-DATASET_ID = 'modelscope/cmmlu'
 
 SUBSET_LIST = [
     'agronomy', 'anatomy', 'ancient_chinese', 'arts', 'astronomy', 'business_ethics', 'chinese_civil_service_exam',
@@ -101,31 +101,23 @@ SUBJECT_MAPPING = {
 }
 
 
+@Benchmark.register(
+    name='cmmlu',
+    dataset_id='modelscope/cmmlu',
+    model_adapter=MultiChoiceModelAdapter,
+    subset_list=SUBSET_LIST,
+    metric_list=[WeightedAverageAccuracy],
+    few_shot_num=5,
+    train_split='dev',
+    eval_split='test',
+)
 class CMMLUAdapter(DataAdapter):
 
     choices = ['A', 'B', 'C', 'D']
 
-    def __init__(self,
-                 subset_list: list = None,
-                 metric_list: list = None,
-                 few_shot_num: int = 5,
-                 train_split: str = 'dev',
-                 eval_split: str = 'test',
-                 **kwargs):
+    def __init__(self, **kwargs):
 
-        if subset_list is None:
-            subset_list = SUBSET_LIST
-
-        if metric_list is None:
-            metric_list = [{'name': 'WeightedAverageAccuracy', 'object': weighted_mean}]
-
-        super().__init__(
-            subset_list=subset_list,
-            metric_list=metric_list,
-            few_shot_num=few_shot_num,
-            train_split=train_split,
-            eval_split=eval_split,
-            **kwargs)
+        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -187,7 +179,7 @@ class CMMLUAdapter(DataAdapter):
         # Get the gold choice
         return input_d.get('Answer', '')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
 
@@ -199,30 +191,17 @@ class CMMLUAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == 'checkpoint':
+        if eval_type == EvalType.CHECKPOINT:
             return result
-        elif eval_type == 'service':
+        elif eval_type == EvalType.SERVICE:
             return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
-        elif eval_type == 'custom':
+        elif eval_type == EvalType.CUSTOM:
             return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
-
-    def compute_metric(self, review_res_list: list) -> float:
-        """
-        Compute evaluation result by specific metric.
-
-        Args:
-            review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-
-        Returns:
-            The metric score.
-        """
-        items = [(score, 1.0) for score in review_res_list]
-        return weighted_mean(items)
 
     def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
         """
