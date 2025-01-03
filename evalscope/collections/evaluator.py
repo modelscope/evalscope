@@ -6,7 +6,7 @@ from tabulate import tabulate
 from tqdm import tqdm
 
 from evalscope.benchmarks import Benchmark
-from evalscope.collections.data_generator import DatasetEntry
+from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalType, ReviewKeys
 from evalscope.evaluator import Evaluator

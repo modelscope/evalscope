@@ -20,7 +20,7 @@ Where:
 - `name` is the name of the data mixing schema.
 - `datasets` is a list of datasets, where each dataset (DatasetInfo) includes attributes such as `name`, `weight`, `task_type`, `tags`, and `args`.
     - `name` is the name of the dataset. Supported dataset names can be found in the [dataset list](../../get_started/supported_dataset.md#1-native-supported-datasets).
-    - `weight` is the weight of the dataset, used for weighted sampling. The default is 1, and all data will be normalized during sampling.
+    - `weight` is the weight of the dataset, used for weighted sampling. The default is 1.0, and all data will be normalized during sampling. (The value must be greater than 0)
     - `task_type` is the task type of the dataset and can be filled in as needed.
     - `tags` are labels for the dataset, which can also be filled in as needed.
     - `args` are parameters for the dataset, and the configurable parameters can be found in the [dataset parameters](../../get_started/parameters.md#dataset-parameters).
@@ -42,7 +42,7 @@ complex_schema = CollectionSchema(name='math&reasoning', datasets=[
     ]),
 ])
 ```
-- `weight` is the weight of the data mixing schema, used for weighted sampling. The default is 1, and all data will be normalized during sampling.
+- `weight` is the weight of the data mixing schema, used for weighted sampling. The default is 1.0, and all data will be normalized during sampling. (The value must be greater than 0)
 - `datasets` can contain CollectionSchema, enabling the nesting of datasets. During evaluation, the name of the `CollectionSchema` will be recursively added to the tags of each sample.
 
 ## Using the Schema

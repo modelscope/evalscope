@@ -7,7 +7,7 @@ from typing import List, Union
 @dataclass
 class DatasetInfo:
     name: str
-    weight: int = 1  # sample weight in each collection
+    weight: float = 1.0  # sample weight in each collection
     task_type: str = ''
     tags: List[str] = field(default_factory=list)
     args: dict = field(default_factory=dict)
@@ -61,7 +61,7 @@ def flatten_datasets(collection: 'CollectionSchema') -> List[DatasetInfo]:
 @dataclass
 class CollectionSchema:
     name: str
-    weight: int = 1
+    weight: float = 1.0
     datasets: List[Union[DatasetInfo, 'CollectionSchema']] = field(default_factory=list)
 
     def __str__(self):

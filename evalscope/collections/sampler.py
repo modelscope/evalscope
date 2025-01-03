@@ -27,7 +27,7 @@ class Sampler(ABC):
 
     @abstractmethod
     def sample(self) -> List[dict]:
-        pass
+        raise NotImplementedError
 
     def _collect_dataset_data(self, dataset_info_list: List[DatasetInfo]) -> List[DatasetEntry]:
         all_data = []

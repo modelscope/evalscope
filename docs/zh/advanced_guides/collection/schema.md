@@ -20,7 +20,7 @@ simple_schema = CollectionSchema(name='reasoning', datasets=[
 - `name` 是数据混合schema的名称
 - `datasets` 是数据集列表，每个数据集(DatasetInfo)包含 `name`、`weight`、`task_type`、`tags` 和 `args` 等属性。
     - `name` 是数据集的名称，支持的数据集名称见[数据集列表](../../get_started/supported_dataset.md#1-原生支持的数据集)
-    - `weight` 是数据集的权重，用于加权采样，默认为1，采样时所有数据会归一化
+    - `weight` 是数据集的权重，类型为float，用于加权采样，默认为1.0，采样时所有数据会归一化（数值需要大于0）
     - `task_type` 是数据集的任务类型，可自行填写
     - `tags` 是数据集的标签，可自行填写
     - `args` 是数据集的参数，可指定的参数见[数据集参数](../../get_started/parameters.md#数据集参数)
@@ -32,17 +32,17 @@ complex_schema = CollectionSchema(name='math&reasoning', datasets=[
     CollectionSchema(name='math', weight=3, datasets=[
         DatasetInfo(name='gsm8k', weight=1, task_type='math', tags=['en']),
         DatasetInfo(name='competition_math', weight=1, task_type='math', tags=['en']),
-        DatasetInfo(name='cmmlu', weight=1, task_type='math', tags=['zh'], args={'subset_list': ['college_mathematics', 'high_school_mathematics']}),
-        DatasetInfo(name='ceval', weight=1, task_type='math', tags=['zh'], args={'subset_list': ['advanced_mathematics', 'high_school_mathematics', 'discrete_mathematics', 'middle_school_mathematics']}),
+        DatasetInfo(name='cmmlu', weight=1, task_type='math_examination', tags=['zh'], args={'subset_list': ['college_mathematics', 'high_school_mathematics']}),
+        DatasetInfo(name='ceval', weight=1, task_type='math_examination', tags=['zh'], args={'subset_list': ['advanced_mathematics', 'high_school_mathematics', 'discrete_mathematics', 'middle_school_mathematics']}),
     ]),
     CollectionSchema(name='reasoning', weight=1, datasets=[
         DatasetInfo(name='arc', weight=1, task_type='reasoning', tags=['en']),
-        DatasetInfo(name='ceval', weight=1, task_type='reasoning', tags=['zh'], args={'subset_list': ['logic']}),
+        DatasetInfo(name='ceval', weight=1, task_type='reasoning_examination', tags=['zh'], args={'subset_list': ['logic']}),
         DatasetInfo(name='race', weight=1, task_type='reasoning', tags=['en']),
     ]),
 ])
 ```
-- `weight` 是数据混合schema的权重，用于加权采样，默认为1，采样时所有数据会归一化
+- `weight` 是数据混合schema的权重，类型为float，用于加权采样，默认为1.0，采样时所有数据会归一化（数值需要大于0）
 - `datasets` 中可以包含CollectionSchema，从而实现数据集的嵌套；在评测时，`CollectionSchema`的名称会递归添加到每个样本的tag中
 
 ## 使用schema

@@ -1,10 +1,8 @@
 import json
 import unittest
 
-from evalscope.collections.data_generator import WeightedSampler
-from evalscope.collections.schema import CollectionSchema, DatasetInfo
+from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
 from evalscope.constants import EvalType
-from evalscope.run import run_task
 from evalscope.utils.io_utils import dump_jsonl_data
 from evalscope.utils.utils import test_level_list
 
