@@ -1,15 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import jieba
-import logging
 from collections import defaultdict
-from pathlib import Path
 from rouge_chinese import Rouge
 from statistics import mean
 from tqdm import tqdm
 
 from evalscope.constants import MetricsConstant
 from evalscope.metrics.bundled_rouge_score import rouge_scorer
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class DummyTokenizer:
@@ -17,10 +18,6 @@ class DummyTokenizer:
     def tokenize(self, text: str):
         return text.split()
 
-
-HERE = Path(__file__).absolute().parent
-
-logger = logging.getLogger(__name__)
 
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=DummyTokenizer())
 zh_scorer = Rouge()
@@ -58,7 +55,11 @@ def compute_rouge_score_one_sample_zh(predict, reference):
         p = ' '.join(jieba.cut(p)) if is_contains_chinese(p) else p
         r = ' '.join(jieba.cut(r)) if is_contains_chinese(r) else r
 
-        score = zh_scorer.get_scores(p, r)[0]
+        try:
+            score = zh_scorer.get_scores(p, r, ignore_empty=True)[0]
+        except Exception as e:
+            logger.warning(f'rouge score error: {p} {r} {e}')
+            continue
         result['rouge-1-r'] = score['rouge-1']['r']
         result['rouge-1-p'] = score['rouge-1']['p']
         result['rouge-1-f'] = score['rouge-1']['f']
@@ -75,7 +76,11 @@ def compute_rouge_score_one_sample_zh(predict, reference):
 def compute_rouge_score_one_sample(predict, reference):
     result = dict()
     for p, r in zip(predict, reference):
-        score = scorer.score(p, r)
+        try:
+            score = scorer.score(p, r)
+        except Exception as e:
+            logger.warning(f'rouge score error: {p} {r} {e}')
+            continue
         result['rouge-1-r'] = score['rouge1'].recall
         result['rouge-1-p'] = score['rouge1'].precision
         result['rouge-1-f'] = score['rouge1'].fmeasure

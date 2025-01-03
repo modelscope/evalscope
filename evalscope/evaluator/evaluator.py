@@ -10,9 +10,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, AnswerKeys, DumpMode, EvalStage, EvalType, HubType,
-                                 ReviewKeys)
-from evalscope.models.model_adapter import BaseModelAdapter, CustomModelAdapter
+from evalscope.constants import AnswerKeys, DumpMode, EvalStage, ReviewKeys
+from evalscope.models import BaseModelAdapter, CustomModelAdapter
 from evalscope.tools.combine_reports import gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
@@ -30,73 +29,63 @@ class Evaluator(object):
                 if the dataset is a local path, e.g. /path/to/your_dataset_name,
                 then the task name will be the basename of the path, which is `your_dataset_name`.
         data_adapter: DataAdapter, the data adapter for the dataset.
-        subset_list: list, the subset list for the dataset.
         model_adapter: BaseModelAdapter, the model adapter for the model.
-        use_cache: str, path to local cache. Default: None
-        outputs_dir: OutputsStructure, the outputs dir. Default: None
-        datasets_dir: str, the datasets dir. Default: DEFAULT_ROOT_CACHE_DIR
-        datasets_hub: str, the datasets hub. `Local`, `ModelScope` or `HuggingFace`. Default: 'ModelScope'
-        stage: str, the stage of evaluation. `all` or `infer` or `review`. Default: 'all'
-        eval_type: str, the evaluation type. `checkpoint` or `service` or `custom`. Default: 'checkpoint'
-        overall_task_cfg: dict, the overall task config. Default: None
+        outputs: OutputsStructure, the outputs dir. Default: None
+        task_cfg: TaskConfig, the overall task config. Default: None
         **kwargs: kwargs.
     """
 
     def __init__(self,
                  dataset_name_or_path: str,
                  data_adapter: DataAdapter,
-                 subset_list: Optional[list] = None,
-                 model_adapter: Optional[BaseModelAdapter] = None,
-                 use_cache: Optional[str] = None,
-                 outputs: Optional[OutputsStructure] = None,
-                 datasets_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-                 datasets_hub: Optional[str] = HubType.MODELSCOPE,
-                 stage: Optional[str] = EvalStage.ALL,
-                 eval_type: Optional[str] = EvalType.CHECKPOINT,
-                 overall_task_cfg: Optional[TaskConfig] = None,
+                 model_adapter: BaseModelAdapter,
+                 outputs: OutputsStructure = None,
+                 task_cfg: TaskConfig = None,
                  **kwargs):
 
         self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
         self.dataset_name = os.path.basename(self.dataset_name_or_path.rstrip(os.sep)).split('.')[0]
-        self.model_name = overall_task_cfg.model_id
+        self.model_name = task_cfg.model_id
         self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
-        self.datasets_dir = os.path.expanduser(datasets_dir)
-        self.kwargs = kwargs
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
-        self.eval_type = eval_type
-        self.stage = stage
-        self.use_cache = use_cache
-        self.overall_task_cfg = overall_task_cfg
-        if isinstance(self.model_adapter, CustomModelAdapter):
-            self.overall_task_cfg.model_args = self.model_adapter.custom_model.config
-
-        self.model_cfg = self.model_adapter.model_cfg
-
+        self.model_cfg = model_adapter.model_cfg
+        self.eval_type = task_cfg.eval_type
+        self.dataset_hub = task_cfg.dataset_hub
+        self.stage = task_cfg.stage
+        self.use_cache = task_cfg.use_cache
+        self.task_cfg = task_cfg
         # Deal with the output paths
         self.outputs_structure = outputs
 
-        # Load dataset
-        self.dataset = self.data_adapter.load(
-            dataset_name_or_path=dataset_name_or_path,
-            subset_list=subset_list,
-            work_dir=self.datasets_dir,
-            datasets_hub=datasets_hub,
-            **kwargs)
+        self.kwargs = kwargs
+
+    def load_dataset(self):
+        dataset = self.data_adapter.load(
+            dataset_name_or_path=self.dataset_name_or_path,
+            subset_list=self.data_adapter.subset_list,
+            work_dir=os.path.expanduser(self.task_cfg.dataset_dir),
+            datasets_hub=self.dataset_hub,
+            **self.kwargs)
 
         # Get prompts from dataset
-        # TODO: support sampler
-        self.prompts = self.data_adapter.gen_prompts(data_dict=self.dataset)
-        del self.dataset
+        prompts = self.data_adapter.gen_prompts(data_dict=dataset)
+        return prompts
 
-    def _pred_answer(self, input_d: dict, infer_cfg: dict, subset_name: str, answer_id: str = None) -> dict:
+    def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
+        model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
+        input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_d).items())), ensure_ascii=False)
+        infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
+        return 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
 
-        ans: dict = self.model_adapter.predict(inputs=input_d, infer_cfg=infer_cfg)
-        ans[AnswerKeys.ANSWER_ID] = answer_id
-        ans[AnswerKeys.SUBSET_NAME] = subset_name
-
-        return ans
+    def _process_answer(self, answer_d, input_d, subset_name, answer_id):
+        answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
+        answer_d[AnswerKeys.ANSWER_ID] = answer_id
+        answer_d[AnswerKeys.SUBSET_NAME] = subset_name
+        answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
+        answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
+        return answer_d
 
     def get_answers(self,
                     subset_name: str,
@@ -147,57 +136,24 @@ class Evaluator(object):
             resp_answers_list: List[Dict[str, Any]] = self.model_adapter.predict(
                 inputs=prompts_list, infer_cfg=infer_cfg)
 
-            assert len(prompts_list) == len(resp_answers_list), \
-                f'Length of prompts_list({len(prompts_list)}) != Length of resp_answers_list({len(resp_answers_list)})'
-
-            for in_d, resp_d in zip(prompts_list, resp_answers_list):
-
-                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-                model_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                    ensure_ascii=False)
-                input_prompt_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(in_d).items())), ensure_ascii=False)
-                infer_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
-                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-                resp_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-                resp_d[AnswerKeys.ANSWER_ID] = answer_id
-                resp_d[AnswerKeys.SUBSET_NAME] = subset_name
-                resp_d[AnswerKeys.RAW_INPUT] = in_d[AnswerKeys.RAW_INPUT]
-                resp_d[AnswerKeys.ORIGIN_PROMPT] = in_d
-
-                answers_list.append(resp_d)
-                dump_jsonl_data(resp_d, pred_file_path, dump_mode=DumpMode.APPEND)
+            for input_prompt, answer_d in zip(prompts_list, resp_answers_list):
+                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
+                answers_list.append(processed_answer)
+                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
 
         else:
             for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
-
-                # Gen answer_id (concat: model_cfg + input_prompt + infer_cfg)
-                model_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(self.model_adapter.model_cfg).items())),
-                    ensure_ascii=False)
-                input_prompt_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(input_prompt).items())), ensure_ascii=False)
-                infer_cfg_str = json.dumps(
-                    OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
-                answer_id = 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-                # Get answers
-                answer_d: dict = self._pred_answer(
-                    input_d=input_prompt, infer_cfg=infer_cfg, subset_name=subset_name, answer_id=answer_id)
-
-                answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-                answer_d[AnswerKeys.RAW_INPUT] = input_prompt[AnswerKeys.RAW_INPUT]
-                answer_d[AnswerKeys.ORIGIN_PROMPT] = input_prompt
+                answer_d: dict = self.model_adapter.predict(inputs=input_prompt, infer_cfg=infer_cfg)
+                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
 
                 if debug:
                     logger.info(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                    logger.info(f'**predicted ans: {json.dumps(answer_d, ensure_ascii=False)} \n')
+                    logger.info(f'**predicted ans: {json.dumps(processed_answer, ensure_ascii=False)} \n')
 
-                answers_list.append(answer_d)
-                dump_jsonl_data(answer_d, pred_file_path, dump_mode=DumpMode.APPEND)
+                answers_list.append(processed_answer)
+                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
 
         logger.info(f'Dump predictions to {pred_file_path}.')
         return answers_list
@@ -241,6 +197,19 @@ class Evaluator(object):
 
         return review_res
 
+    def _generate_review_id(self, answer_d):
+        # Gen review_id (concat: answer_id + reviewer_spec)
+        answer_id = answer_d[AnswerKeys.ANSWER_ID]
+        reviewer_spec = {
+            'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
+            'reviewer': ['Evaluator'],
+            'revision': ['default']
+        }
+        reviewer_spec_str = json.dumps(
+            OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
+        review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
+        return review_id, reviewer_spec
+
     def get_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
         """
         Get reviews from answers.
@@ -264,19 +233,7 @@ class Evaluator(object):
             logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
-
-            # Gen review_id (concat: answer_id + reviewer_spec)
-            answer_id = answer_d[AnswerKeys.ANSWER_ID]
-
-            reviewer_spec: dict = {
-                'metric': [metric_d['name'] for metric_d in self.data_adapter.metric_list],
-                'reviewer': ['Evaluator'],
-                'revision': ['default']
-            }
-            reviewer_spec_str = json.dumps(
-                OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
-            review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
-
+            review_id, reviewer_spec = self._generate_review_id(answer_d)
             # Get review
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
 
@@ -284,7 +241,6 @@ class Evaluator(object):
                 logger.info(review_d)
 
             reviews_list.append(review_d)
-
             # Dump reviews
             dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
 
@@ -380,7 +336,8 @@ class Evaluator(object):
         stage_answers_dict = {}
         stage_reviews_dict = {}
 
-        for subset_name, prompts_list in self.prompts.items():
+        prompts = self.load_dataset()
+        for subset_name, prompts_list in prompts.items():
             limit = kwargs.get('limit', len(prompts_list))
             prompts_list = prompts_list[:limit]
 

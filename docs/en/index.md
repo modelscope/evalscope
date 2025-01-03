@@ -34,6 +34,8 @@ user_guides/arena.md
 :::{toctree}
 :hidden:
 :caption: 🛠️ Advanced Tutorials
+advanced_guides/collection/index.md
+advanced_guides/add_benchmark.md
 advanced_guides/custom_dataset/index.md
 advanced_guides/custom_model.md
 :::
@@ -57,4 +59,10 @@ experiments/speed_benchmark/index.md
 :caption: 📖 Best Practices
 best_practice/swift_integration.md
 best_practice/llm_full_stack.md
+:::
+
+:::{toctree}
+:hidden:
+:caption: 🌟 Blogs
+blog/index.md
 :::

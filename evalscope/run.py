@@ -2,26 +2,22 @@
 """
 Run evaluation for LLMs.
 """
-import logging
 import os.path
-import torch
 from argparse import Namespace
 from datetime import datetime
 from typing import List, Optional, Union
 
 from evalscope.arguments import parse_args
+from evalscope.benchmarks import Benchmark, BenchmarkMeta
 from evalscope.config import TaskConfig, parse_task_config
-from evalscope.constants import DEFAULT_MODEL_REVISION, DEFAULT_WORK_DIR, EvalBackend, EvalType
+from evalscope.constants import DEFAULT_WORK_DIR, EvalBackend
 from evalscope.evaluator import Evaluator
-from evalscope.models.custom import CustomModel
-from evalscope.utils import import_module_util, seed_everything
+from evalscope.models import LocalModel, get_local_model, initialize_model_adapter
+from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure, are_paths_same
 from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
-
-BENCHMARK_PATH_PREFIX = 'evalscope.benchmarks.'
-MEMBERS_TO_IMPORT = ['DATASET_ID', 'SUBSET_LIST', 'DataAdapterClass', 'ModelAdapterClass']
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
@@ -38,15 +34,13 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
 
 def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     """Run a single evaluation task."""
-    seed_everything(task_cfg.seed)
+    if task_cfg.seed is not None:
+        seed_everything(task_cfg.seed)
     outputs = setup_work_directory(task_cfg, run_time)
     configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
-    task_cfg.dump_yaml(outputs.configs_dir)
-    logger.info(task_cfg)
-
     if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg)
+        return run_non_native_backend(task_cfg, outputs)
     else:
         return evaluate_model(task_cfg, outputs)
 
@@ -68,7 +62,7 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     return outputs
 
 
-def run_non_native_backend(task_cfg: TaskConfig) -> dict:
+def run_non_native_backend(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Run evaluation using a non-native backend."""
     eval_backend = task_cfg.eval_backend
     eval_config = task_cfg.eval_config
@@ -78,6 +72,10 @@ def run_non_native_backend(task_cfg: TaskConfig) -> dict:
 
     backend_manager_class = get_backend_manager_class(eval_backend)
     backend_manager = backend_manager_class(config=eval_config)
+
+    task_cfg.dump_yaml(outputs.configs_dir)
+    logger.info(task_cfg)
+
     backend_manager.run()
 
     return dict()
@@ -102,73 +100,46 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     # Initialize evaluator
     eval_results = {}
-
+    base_model = get_local_model(task_cfg)
+    evaluators = []
     for dataset_name in task_cfg.datasets:
-        evaluator = create_evaluator(task_cfg, dataset_name, outputs)
+        evaluator = create_evaluator(task_cfg, dataset_name, outputs, base_model)
+        evaluators.append(evaluator)
+
+    # dump task_cfg to outputs.configs_dir after creating evaluators
+    task_cfg.dump_yaml(outputs.configs_dir)
+    logger.info(task_cfg)
+
+    for evaluator in evaluators:
         res_dict = evaluator.eval(infer_cfg=task_cfg.generation_config, debug=task_cfg.debug, limit=task_cfg.limit)
         eval_results[dataset_name] = res_dict
 
     return eval_results
 
 
-def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure):
+def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure, base_model: LocalModel):
     """Create an evaluator object for the specified dataset."""
-    imported_modules = import_module_util(BENCHMARK_PATH_PREFIX, dataset_name, MEMBERS_TO_IMPORT)
-    model_adapter = initialize_model_adapter(task_cfg, dataset_name, imported_modules)
 
-    dataset_config = task_cfg.dataset_args.get(dataset_name, {})
-    dataset_name_or_path = dataset_config.get('local_path') or imported_modules['DATASET_ID']
-    in_prompt_template = dataset_config.get('prompt_template', '')
-    few_shot_num = dataset_config.get('few_shot_num', None)
-    few_shot_random = dataset_config.get('few_shot_random', True)
+    if dataset_name == 'data_collection':
+        # EvaluatorCollection is a collection of evaluators
+        from evalscope.collections import EvaluatorCollection
+        return EvaluatorCollection(task_cfg, outputs)
 
-    data_adapter = imported_modules['DataAdapterClass'](
-        few_shot_num=few_shot_num,
-        few_shot_random=few_shot_random,
-        prompt_template=in_prompt_template,
-        outputs=outputs,
-    )
-    in_subset_list = dataset_config.get('subset_list', imported_modules['SUBSET_LIST'])
+    benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
 
-    logger.info(f'Evaluating on subsets for {dataset_name}: {in_subset_list}\n')
+    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
+    model_adapter = initialize_model_adapter(task_cfg, benchmark.model_adapter, base_model)
+
+    # update task_cfg.dataset_args
+    task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()
 
     return Evaluator(
-        dataset_name_or_path=dataset_name_or_path,
-        subset_list=in_subset_list,
+        dataset_name_or_path=benchmark.dataset_id,
         data_adapter=data_adapter,
         model_adapter=model_adapter,
-        use_cache=task_cfg.use_cache,
         outputs=outputs,
-        datasets_dir=task_cfg.dataset_dir,
-        datasets_hub=task_cfg.dataset_hub,
-        stage=task_cfg.stage,
-        eval_type=task_cfg.eval_type,
-        overall_task_cfg=task_cfg,
+        task_cfg=task_cfg,
     )
-
-
-def initialize_model_adapter(task_cfg: TaskConfig, dataset_name: str, imported_modules):
-    """Initialize the model adapter based on the task configuration."""
-    if task_cfg.dry_run:
-        from evalscope.models.dummy_chat_model import DummyChatModel
-        return DummyChatModel(model_cfg=dict())
-    elif task_cfg.eval_type == EvalType.CUSTOM:
-        if not isinstance(task_cfg.model, CustomModel):
-            raise ValueError(f'Expected evalscope.models.custom.CustomModel, but got {type(task_cfg.model)}.')
-        from evalscope.models.model_adapter import CustomModelAdapter
-        return CustomModelAdapter(custom_model=task_cfg.model)
-    else:
-        device_map = task_cfg.model_args.get('device_map', 'auto') if torch.cuda.is_available() else None
-        model_precision = task_cfg.model_args.get('precision', torch.float16)
-        if isinstance(model_precision, str) and model_precision != 'auto':
-            model_precision = eval(model_precision)
-        return imported_modules['ModelAdapterClass'](
-            model_id=task_cfg.model,
-            model_revision=task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION),
-            device_map=device_map,
-            torch_dtype=model_precision,
-            generation_config=task_cfg.generation_config,
-            chat_template=task_cfg.chat_template)
 
 
 def main():

@@ -2,24 +2,32 @@
 
 ## 1. Native Supported Datasets
 ```{tip}
-The framework currently supports the following datasets. If the dataset you need is not in the list, please submit an issue, or use the [OpenCompass backend](../user_guides/backend/opencompass_backend.md) for evaluation, or use the [VLMEvalKit backend](../user_guides/backend/vlmevalkit_backend.md) for multi-modal model evaluation.
+The framework currently supports the following datasets natively. If the dataset you need is not on the list, you may submit an [issue](https://github.com/modelscope/evalscope/issues), and we will support it as soon as possible. Alternatively, you can refer to the [Benchmark Addition Guide](../advanced_guides/add_benchmark.md) to add datasets by yourself and submit a [PR](https://github.com/modelscope/evalscope/pulls). Contributions are welcome.
+
+You can also use other tools supported by this framework for evaluation, such as [OpenCompass](../user_guides/backend/opencompass_backend.md) for language model evaluation, or [VLMEvalKit](../user_guides/backend/vlmevalkit_backend.md) for multimodal model evaluation.
 ```
 
-以下是翻译成英文后的表格：
+| Name              | Dataset ID                                                                                           | Task Category    | Remarks                                                                                                                  |
+|-------------------|------------------------------------------------------------------------------------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `arc`             | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                      | Exam             |                                                                                                                          |
+| `bbh`             | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                              | General Reasoning|                                                                                                                          |
+| `ceval`           | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                | Chinese Comprehensive Exam|                                                                                                                          |
+| `cmmlu`           | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                          | Chinese Comprehensive Exam|                                                                                                                          |
+| `competition_math`| [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary)    | Math Competition |                                                                                                                          |
+| `gsm8k`           | [modelscope/gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                          | Math Problems    |                                                                                                                          |
+| `hellaswag`*      | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                  | Commonsense Reasoning|                                                                                                                          |
+| `humaneval`+      | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                  | Code Generation  |  |
+| `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                            | Comprehensive Exam|                                                                                                                          |
+| `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | Comprehensive Exam|                                                                                                                          |
+| `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                            | Reading Comprehension|                                                                                                                          |
+| `trivia_qa`      | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                  | Knowledge Q&A    |                                                                                                                          |
+| `truthful_qa`     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)              | Safety           |                                                                                                                          |
 
-| Name            | Link                                                                                     | Notes |
-|-----------------|------------------------------------------------------------------------------------------|-------|
-| `mmlu`          | [mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                           |       |
-| `ceval`         | [ceval](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)                    |       |
-| `gsm8k`         | [gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                         |       |
-| `arc`           | [arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                         |       |
-| `hellaswag`     | [hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                 |       |
-| `truthful_qa`   | [truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)             |       |
-| `competition_math` | [competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) |       |
-| `humaneval`     | [humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                 | Requires [humaneval](https://github.com/openai/human-eval/tree/master#installation) installation. Since it involves some code execution operations, it is recommended to run in a sandbox environment (docker). |
-| `bbh`           | [bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                             |       |
-| `race`          | [race](https://modelscope.cn/datasets/modelscope/race/summary)                           |       |
-| `trivia_qa`     | [trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                 |       |
+```{note}
+**\*** Evaluation requires calculating logits, etc., and it does not support API service evaluation (`eval-type != server`) at present.
+
+**+** Due to operations involving code execution, it is recommended to run in a sandbox environment (docker) to prevent impacts on the local environment.
+```
 
 ## 2. OpenCompass Backend
 Refer to the [detailed explanation](https://github.com/open-compass/opencompass#-dataset-support)
