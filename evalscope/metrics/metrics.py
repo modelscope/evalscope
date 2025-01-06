@@ -103,10 +103,13 @@ def perplexity(items):
     return math.exp(-mean(items))
 
 
-def weighted_mean(items) -> float:
+def weighted_mean(items: List) -> float:
     # e.g. [(0,1), (0.5,1), (1,1)]
-    a, b = zip(*items)
-    return sum(a) / sum(b)
+    if isinstance(items[0], tuple):
+        a, b = zip(*items)
+        return sum(a) / sum(b)
+    else:
+        return sum(items) / len(items)
 
 
 def weighted_perplexity(items):

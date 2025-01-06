@@ -264,7 +264,14 @@ class Evaluator(object):
                 logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
                 continue
 
-            review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
+            if len(review_d[AnswerKeys.CHOICES]) == 0:
+                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                continue
+            elif len(review_d[AnswerKeys.CHOICES]) == 1:
+                review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
+            else:
+                review_res = [choice[ReviewKeys.REVIEW][ReviewKeys.RESULT] for choice in review_d[AnswerKeys.CHOICES]]
+
             review_res_list.append(review_res)
 
         metric_score: Union[float, dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)

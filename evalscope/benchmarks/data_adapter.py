@@ -185,13 +185,9 @@ class DataAdapter(ABC):
         } for subset_name, (score, num) in subset_score_map.items()]
 
         category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
+        metric_d = dict(name=self.metric_list[0]['name'], score=weighted_avg_acc, num=total_num, category=[category_d])
 
-        res_map = dict(
-            name=report_name or 'DEFAULT',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
+        res_map = dict(name=report_name or 'DEFAULT', metrics=[metric_d])
 
         return res_map
 
@@ -276,7 +272,7 @@ class DataAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def match(self, gold: Any, pred: Any) -> float:
+    def match(self, gold: Any, pred: Any) -> Any:
         """
         Match the gold answer and the predicted answer.
 

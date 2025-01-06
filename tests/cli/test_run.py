@@ -133,7 +133,8 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'mmlu_pro',
+                'ifeval',
+                # 'mmlu_pro',
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',

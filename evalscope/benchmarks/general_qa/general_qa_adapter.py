@@ -1,9 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import glob
-import json
 import os.path
 from collections import defaultdict
-from typing import Any, Optional
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.metrics import (WeightedAverageBLEU, bleu_ngram_one_sample, compute_rouge_score_one_sample_zh,
