@@ -166,11 +166,11 @@ class MMLUAdapter(DataAdapter):
             data_dict[subset_name] = {}
 
             for split_name in [self.train_split, self.eval_split]:
-                if self.train_split == 'train':
+                if split_name == 'train':
                     split_name_suffix = 'dev'
-                elif self.eval_split == 'test':
+                elif split_name == 'test':
                     split_name_suffix = 'test'
-                elif self.eval_split == 'validation':
+                elif split_name == 'validation':
                     split_name_suffix = 'val'
                 else:
                     raise ValueError(f'Invalid split name: {split_name}')
