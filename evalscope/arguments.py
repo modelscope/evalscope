@@ -33,6 +33,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # yapf: disable
     # Model-related arguments
     parser.add_argument('--model', type=str, required=False, help='The model id on modelscope, or local model dir.')
+    parser.add_argument('--model-id', type=str, required=False, help='The model id for model name in report.')
     parser.add_argument('--model-args', type=str, action=ParseStrArgsAction, help='The model args, should be a string.')
 
     # Template-related arguments
