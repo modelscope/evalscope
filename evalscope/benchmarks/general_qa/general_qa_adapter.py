@@ -2,10 +2,10 @@
 import glob
 import os.path
 from collections import defaultdict
+from typing import List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import (WeightedAverageBLEU, bleu_ngram_one_sample, compute_rouge_score_one_sample_zh,
-                               weighted_mean)
+from evalscope.metrics import AverageBLEU, bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -18,7 +18,7 @@ logger = get_logger()
     dataset_id='general_qa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageBLEU],
+    metric_list=[AverageBLEU],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
@@ -90,14 +90,14 @@ class GeneralQAAdapter(DataAdapter):
         """
         return result
 
-    def match(self, gold: str, pred: str) -> float:
+    def match(self, gold: str, pred: str) -> dict:
         """
         Args:
             gold: str
             pred: str
 
         Returns:
-            bleu_score: float
+            bleu_score: dict
 
         """
         res = dict()
@@ -105,10 +105,9 @@ class GeneralQAAdapter(DataAdapter):
         bleu_dict = bleu_ngram_one_sample(pred, gold)
         res.update(rouge_dict)
         res.update(bleu_dict)
-        # return bleu(item)
         return res
 
-    def compute_metric(self, review_res_list: list) -> float:
+    def compute_metric(self, review_res_list: List[dict]) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
 
@@ -116,62 +115,12 @@ class GeneralQAAdapter(DataAdapter):
             review_res_list: [score1, score2, ...]
 
         Returns:
-            avg_res: float
+            avg_res: List[dict]
 
         """
         items = defaultdict(list)
         for scores in review_res_list:
             for k, v in scores.items():
-                items[k].append((v, 1.0))
+                items[k].append(v)
         # items = [(score, 1.0) for score in review_res_list]
-        res = {k: weighted_mean(v) for k, v in items.items()}
-        # return weighted_mean(items)
-        return res
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Args:
-            subset_score_map: {subset_name: (score_dict, num), ...}
-            report_name: str, the user-defined report name.
-
-        Returns:
-        {
-            "name":"GeneralQA",
-            "metric":"WeightedAverageBLEU",
-            "score":0.399,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.399,
-                    "subset":[
-                        {
-                            "name":"default",
-                            "score":0.399
-                        },
-                    ]
-                }
-            ],
-            "total_num":10
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        # weighted_avg_bleu: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': score_dict
-        } for subset_name, (score_dict, _) in subset_score_map.items()]
-        total_avg_list = defaultdict(float)
-        for score_dict, num in subset_score_map.values():
-            for metric, score in score_dict.items():
-                total_avg_list[metric] += score * num / total_num
-
-        category_d = dict(name='DEFAULT', score=total_avg_list, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'general_qa',
-            metric=self.metric_list[0]['name'],
-            score=total_avg_list,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
+        return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]

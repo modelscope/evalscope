@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
+
 import itertools
 import math
 import numpy as np
@@ -8,7 +9,7 @@ import random
 import sacrebleu
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 
 def mean(arr):
@@ -105,11 +106,16 @@ def perplexity(items):
 
 def weighted_mean(items: List) -> float:
     # e.g. [(0,1), (0.5,1), (1,1)]
-    if isinstance(items[0], tuple):
-        a, b = zip(*items)
-        return sum(a) / sum(b)
-    else:
-        return sum(items) / len(items)
+    a, b = zip(*items)
+    return sum(a) / sum(b)
+
+
+def micro_mean(items):
+    return sum([item.score * item.num for item in items]) / sum([item.num for item in items])
+
+
+def macro_mean(items):
+    return sum([item.score for item in items]) / len(items)
 
 
 def weighted_perplexity(items):

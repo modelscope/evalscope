@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.benchmarks.ifeval.utils import agg_inst_level_acc, process_results
 from evalscope.constants import EvalType
-from evalscope.metrics import weighted_mean
+from evalscope.metrics import Metric, mean
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import normalize_score
 
@@ -15,22 +15,10 @@ from evalscope.utils.utils import normalize_score
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=[
-        {
-            'name': 'prompt_level_strict_acc',
-            'object': weighted_mean
-        },
-        {
-            'name': 'inst_level_strict_acc',
-            'object': agg_inst_level_acc
-        },
-        {
-            'name': 'prompt_level_loose_acc',
-            'object': weighted_mean
-        },
-        {
-            'name': 'inst_level_loose_acc',
-            'object': agg_inst_level_acc
-        },
+        Metric(name='prompt_level_strict_acc', object=mean),
+        Metric(name='inst_level_strict_acc', object=agg_inst_level_acc),
+        Metric(name='prompt_level_loose_acc', object=mean),
+        Metric(name='inst_level_loose_acc', object=agg_inst_level_acc),
     ],
     few_shot_num=0,
     train_split=None,
@@ -63,26 +51,7 @@ class IFEvalAdapter(DataAdapter):
 
         metrics = []
         for metric in self.metric_list:
-            metric_name = metric['name']
-            metric_value = res_dict[metric_name]
-            score = metric['object'](metric_value)
-            metrics.append({
-                'name':
-                metric_name,
-                'score':
-                normalize_score(score),
-                'num':
-                len(metric_value),
-                'category': [{
-                    'name': self.subset_list[0],
-                    'score': normalize_score(score),
-                    'num': len(metric_value)
-                }]
-            })
+            metric_name = metric.name
+            pred_value = res_dict[metric_name]
+            metrics.append({'metric_name': metric_name, 'score': metric.object(pred_value), 'num': len(pred_value)})
         return metrics
-
-    def gen_report(self, subset_score_map: List[Dict], report_name: str = None) -> Dict:
-
-        res_map = dict(name=report_name or 'DEFAULT', metrics=subset_score_map)
-
-        return res_map

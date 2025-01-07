@@ -5,7 +5,7 @@ import json
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import WeightedAverageAccuracy
+from evalscope.metrics import AverageAccuracy
 from evalscope.metrics.math_accuracy import is_equiv, last_boxed_only_string, remove_boxed
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
@@ -20,7 +20,7 @@ logger = get_logger()
     dataset_id='modelscope/competition_math',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=4,
     train_split='train',
     eval_split='test',

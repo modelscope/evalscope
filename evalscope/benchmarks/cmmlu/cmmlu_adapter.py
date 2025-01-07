@@ -5,7 +5,7 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.metrics import AverageAccuracy, exact_match
 from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser, normalize_score
 from evalscope.utils.logger import get_logger
@@ -106,7 +106,7 @@ SUBJECT_MAPPING = {
     dataset_id='modelscope/cmmlu',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
@@ -116,8 +116,9 @@ class CMMLUAdapter(DataAdapter):
     choices = ['A', 'B', 'C', 'D']
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
+
+        self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -202,81 +203,6 @@ class CMMLUAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate report for the evaluation.
-
-        Args:
-            subset_score_map: The subset-score mapping. e.g. {subset_name: (score, num), ...}
-            report_name: the user-defined report name. Default: None
-
-        Returns:
-        {
-            "name":"CMMLU",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
-            "category":[
-                {
-                   "name":"STEM",
-                   "score":0.2528,
-                   "subset":[
-                       {
-                           "name":"computer_network",
-                           "score":0.2632
-                       },
-                       {
-                           "name":"operating_system",
-                           "score":0.3157
-                       },
-                       {
-                           "name":"computer_architecture",
-                           "score":0.4285
-                       }
-                   ]
-                }
-            ],
-            "total_num":59
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-
-        # Get domain-subject mapping
-        subject_review_map = {}
-        for subset_name, (subset_score, num) in subset_score_map.items():
-            domain_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
-            if domain_name in subject_review_map:
-                subject_review_map[domain_name].append((subset_name, subset_score, num))
-            else:
-                subject_review_map[domain_name] = [(subset_name, subset_score, num)]
-
-        # Get domain score
-        category_list = []
-        for domain_name, domain_res_list in subject_review_map.items():
-            domain_weighted_avg_acc = sum([score * num for _, score, num in domain_res_list]) / \
-                                     sum([num for _, _, num in domain_res_list])
-            domain_weighted_avg_acc = normalize_score(score=domain_weighted_avg_acc)
-            category_list.append({
-                'name':
-                domain_name,
-                'score':
-                domain_weighted_avg_acc,
-                'subset': [{
-                    'name': subset_name,
-                    'score': normalize_score(subset_score)
-                } for subset_name, subset_score, _ in domain_res_list]
-            })
-
-        # Get final dict of report
-        res_map = dict(
-            name=report_name or 'cmmlu',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=category_list,
-            total_num=total_num)
-
-        return res_map
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, include_answer=True) -> str:

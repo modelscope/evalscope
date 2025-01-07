@@ -2,10 +2,11 @@
 import os.path
 import random
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
-from evalscope.utils import normalize_score
+from evalscope.metrics import Metric
+from evalscope.report import Report, ReportGenerator
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -15,7 +16,7 @@ class DataAdapter(ABC):
 
     def __init__(self,
                  subset_list: list,
-                 metric_list: list,
+                 metric_list: List[Metric],
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
@@ -44,6 +45,7 @@ class DataAdapter(ABC):
         self.eval_split = eval_split
         self.prompt_template = prompt_template
         self.config_kwargs = kwargs
+        self.category_map = kwargs.get('category_map', {})
 
     def load(self,
              dataset_name_or_path: str,
@@ -142,55 +144,6 @@ class DataAdapter(ABC):
 
         return res_dict
 
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate report for the evaluation results for all subsets.
-
-        Args:
-            subset_score_map: The subset-score map.
-                e.g. {subset_name: (score, num)}
-
-            report_name: str, the user-defined report name. Default: None
-
-        Returns: The evaluation report.  Note: should normalize the score by normalize_score method in utils.
-
-        Here is a format example for ARC-Challenge:
-        {
-            "name":"ARC-Challenge",
-            "metric":"WeightedAverageAccuracy",
-            "score": 0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score": 0.3389,
-                    "subset":[
-                        {
-                            "name":"ARC-Challenge",
-                            "score": 0.3389,
-                            "num": 100
-                        },
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """  # noqa: E501
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score),
-            'num': num
-        } for subset_name, (score, num) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-        metric_d = dict(name=self.metric_list[0]['name'], score=weighted_avg_acc, num=total_num, category=[category_d])
-
-        res_map = dict(name=report_name or 'DEFAULT', metrics=[metric_d])
-
-        return res_map
-
     def get_fewshot_examples(self, data_list: list, k: int, few_shot_random: bool = True):
 
         if k > len(data_list):
@@ -200,28 +153,75 @@ class DataAdapter(ABC):
         else:
             return data_list[:k]
 
-    def compute_metric(self, review_res_list: list) -> Any:
+    def compute_metric(self, review_res_list: list) -> List[dict]:
         """
         Compute evaluation result by specific metrics.
 
         Args:
             review_res_list: list, the review result list, each item of which is match result for gold and pred.
 
-        Attributes:
-            DataAdapter.metric_func_map: metric_name -> metric_func mapping,
-                e.g. {'WeightedAverageAccuracy': weighted_average_acc}
-
         Returns:
-            Metric results.
+            Metric results. e.g. [{'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100}]
         """
         if len(self.metric_list) == 0:
             raise ValueError('No metric list found for the benchmark.')
-        elif len(self.metric_list) == 1:
-            # review_res_list: review score list, e.g. [0, 1, 1, 0, ...]
-            items = [(score, 1.0) for score in review_res_list]
-            return self.metric_list[0]['object'](items)
-        else:
-            raise ValueError('Please implement the compute_metric method for multiple metrics.')
+
+        res_list = []
+        for metric in self.metric_list:
+            metric_name = metric.name
+            metric_func = metric.object
+            res_list.append({
+                'metric_name': metric_name,
+                'score': metric_func(review_res_list),
+                'num': len(review_res_list)
+            })
+        return res_list
+
+    def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:
+        """
+        Generate report for the evaluation results for all subsets.
+
+        Args:
+            subset_score_map: The subset-score map.
+                e.g. {subset_name: [{'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100}]}
+
+            report_name: str, the user-defined report name. Default: None
+
+        Returns: The evaluation report.
+
+        Here is a format example for gsm8k:
+        {
+            "name": "qwen2.5_gsm8k",
+            "metrics": [
+                {
+                    "name": "AverageAccuracy",
+                    "categories": [
+                        {
+                            "name": "default",
+                            "subsets": [
+                                {
+                                    "name": "main",
+                                    "score": 0.0,
+                                    "num": 2
+                                }
+                            ],
+                            "num": 2,
+                            "score": 0.0,
+                            "macro_score": 0.0
+                        }
+                    ],
+                    "num": 2,
+                    "score": 0.0,
+                    "macro_score": 0.0
+                }
+            ],
+            "dataset_name": "gsm8k",
+            "model_name": "qwen2.5"
+        }
+        """  # noqa: E501
+        kwargs['category_map'] = self.category_map
+        kwargs['metric_list'] = self.metric_list
+        return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
         """
