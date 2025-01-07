@@ -199,7 +199,7 @@ class NumberOfSentences(Instruction):
             self._comparison_relation = random.choice(_COMPARISON_RELATION)
         elif relation not in _COMPARISON_RELATION:
             raise ValueError('The supported relation for comparison must be in '
-                             f"{_COMPARISON_RELATION}, but {relation} is given.")
+                             f'{_COMPARISON_RELATION}, but {relation} is given.')
         else:
             self._comparison_relation = relation
 
@@ -641,7 +641,7 @@ class RephraseChecker(Instruction):
           A string representing the instruction description.
         """
         if not self.is_change(original_message):
-            raise ValueError(f"Message {original_message} does not contain changes "
+            raise ValueError(f'Message {original_message} does not contain changes '
                              'in the form of *change me*.')
 
         self._reference_without_change = original_message
@@ -670,7 +670,7 @@ class RephraseChecker(Instruction):
         """
 
         if not self.is_change(value):
-            raise ValueError(f"value {value} does not contain "
+            raise ValueError(f'value {value} does not contain '
                              'changes in the form of *change me*.')
 
         response_without_changes = self.strip_changes(value)
@@ -759,7 +759,7 @@ class KeywordFrequencyChecker(Instruction):
             self._comparison_relation = random.choice(_COMPARISON_RELATION)
         elif relation not in _COMPARISON_RELATION:
             raise ValueError('The supported relation for comparison must be in '
-                             f"{_COMPARISON_RELATION}, but {relation} is given.")
+                             f'{_COMPARISON_RELATION}, but {relation} is given.')
         else:
             self._comparison_relation = relation
 
@@ -821,7 +821,7 @@ class NumberOfWords(Instruction):
             self._comparison_relation = random.choice(_COMPARISON_RELATION)
         elif relation not in _COMPARISON_RELATION:
             raise ValueError('The supported relation for comparison must be in '
-                             f"{_COMPARISON_RELATION}, but {relation} is given.")
+                             f'{_COMPARISON_RELATION}, but {relation} is given.')
         else:
             self._comparison_relation = relation
 
@@ -1285,7 +1285,7 @@ class LetterFrequencyChecker(Instruction):
             self._comparison_relation = random.choice(_COMPARISON_RELATION)
         elif let_relation not in _COMPARISON_RELATION:
             raise ValueError('The supported relation for comparison must be in '
-                             f"{_COMPARISON_RELATION}, but {let_relation} is given.")
+                             f'{_COMPARISON_RELATION}, but {let_relation} is given.')
         else:
             self._comparison_relation = let_relation
 
@@ -1424,7 +1424,7 @@ class CapitalWordFrequencyChecker(Instruction):
             self._comparison_relation = random.choice(_COMPARISON_RELATION)
         elif capital_relation not in _COMPARISON_RELATION:
             raise ValueError('The supported relation for comparison must be in '
-                             f"{_COMPARISON_RELATION}, but {capital_relation} is given.")
+                             f'{_COMPARISON_RELATION}, but {capital_relation} is given.')
 
         self._description_pattern = ('In your response, words with all capital letters should appear'
                                      ' {relation} {frequency} times.')
