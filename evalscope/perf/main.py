@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import platform
 from argparse import Namespace

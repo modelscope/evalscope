@@ -1,6 +1,5 @@
 import base64
 from io import BytesIO
-from modelscope.msdatasets import MsDataset
 from PIL import Image
 from typing import Any, Dict, Iterator, List
 
@@ -26,6 +25,7 @@ class FlickrDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
+        from modelscope.msdatasets import MsDataset
         dataset = MsDataset.load('clip-benchmark/wds_flickr8k', split='test')
 
         for item in dataset:
