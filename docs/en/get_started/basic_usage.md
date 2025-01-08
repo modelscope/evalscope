@@ -114,11 +114,15 @@ run_task(task_cfg="config.json")
 
 ### Output Results
 ```text
-+-----------------------+-------------------+-----------------+
-| Model                 | ai2_arc           | gsm8k           |
-+=======================+===================+=================+
-| Qwen2.5-0.5B-Instruct | (ai2_arc/acc) 0.6 | (gsm8k/acc) 0.6 |
-+-----------------------+-------------------+-----------------+ 
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
++=======================+================+=================+=================+===============+=======+=========+
+| Qwen2.5-0.5B-Instruct | gsm8k          | AverageAccuracy | default         | main          |     5 |     0.4 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Easy      |     5 |     0.8 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Challenge |     5 |     0.4 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 
 
@@ -166,8 +170,14 @@ Reference: [All Parameter Descriptions](parameters.md)
 
 ## Model API Service Evaluation
 
-Specify the model API service URL and API Key to evaluate the model API service. In this case, the `eval-type` parameter must be set to `service`. For example:
+Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the `eval-type` parameter must be specified as `service`, for example:
 
+For example, to launch a model service using [vLLM](https://github.com/vllm-project/vllm):
+
+```shell
+export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
+```
+Then, you can use the following command to evaluate the model API service:
 ```shell
 evalscope eval \
  --model qwen2.5 \

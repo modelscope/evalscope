@@ -259,8 +259,13 @@ run_task(task_cfg="config.json")
 
 ## 🌐 指定模型API评测
 
-指定模型API服务地址(api_url)和API Key(api_key)，评测部署的模型API服务，此时eval-type参数必须指定为service，例如：
+指定模型API服务地址(api_url)和API Key(api_key)，评测部署的模型API服务，*此时`eval-type`参数必须指定为`service`*
 
+例如使用[vLLM](https://github.com/vllm-project/vllm)拉起模型服务：
+```shell
+export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
+```
+然后使用以下命令评测模型API服务：
 ```shell
 evalscope eval \
  --model qwen2.5 \

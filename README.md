@@ -253,8 +253,14 @@ run_task(task_cfg="config.json")
 
 ## 🌐 Evaluation of Specified Model API
 
-Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the eval-type parameter must be specified as service, for example:
+Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the `eval-type` parameter must be specified as `service`, for example:
 
+For example, to launch a model service using [vLLM](https://github.com/vllm-project/vllm):
+
+```shell
+export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
+```
+Then, you can use the following command to evaluate the model API service:
 ```shell
 evalscope eval \
  --model qwen2.5 \
