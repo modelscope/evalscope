@@ -46,9 +46,13 @@ class ServerModelAdapter(BaseModelAdapter):
             query = inputs
             system_prompt = None
         elif isinstance(inputs, dict):
-            # TODO: to be supported for continuation list like truthful_qa
-            query = inputs['data'][0]
-            system_prompt = inputs.get('system_prompt', None)
+            data: list = inputs['data']
+            if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
+                query = '\n'.join(''.join(item) for item in data)
+                system_prompt = inputs.get('system_prompt', None)
+            else:
+                query = data[0]
+                system_prompt = inputs.get('system_prompt', None)
         elif isinstance(inputs, list):
             query = '\n'.join(inputs)
             system_prompt = None

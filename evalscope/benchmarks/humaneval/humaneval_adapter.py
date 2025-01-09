@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import re
-from typing import List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.metrics import Pass1

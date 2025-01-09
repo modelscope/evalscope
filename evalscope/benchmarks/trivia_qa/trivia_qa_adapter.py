@@ -1,15 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI Inc, and its affiliates.
 import csv
-import numpy as np
 import os
-from typing import List
 
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import WeightedAverageAccuracy
-from evalscope.metrics.metrics import exact_match
+from evalscope.metrics import AverageAccuracy
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils import get_logger
 
@@ -23,7 +20,7 @@ logger = get_logger()
     dataset_id='modelscope/trivia_qa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
