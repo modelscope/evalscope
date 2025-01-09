@@ -5,10 +5,11 @@ import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.metrics import AverageAccuracy, exact_match
 from evalscope.models import ContinuationLogitsModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
+from evalscope.utils.utils import ResponseParser
 
 # flake8: noqa
 
@@ -20,7 +21,7 @@ logger = get_logger()
     dataset_id='modelscope/hellaswag',
     model_adapter=ContinuationLogitsModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=0,
     train_split='train',
     eval_split='validation',
@@ -87,7 +88,14 @@ class HellaSwagAdapter(DataAdapter):
 
         ctx_continuation_pair_list = [(context.strip(), ' ' + cont.strip()) for cont in endings]
 
-        return {'data': ctx_continuation_pair_list, 'multi_choices': self.choices}
+        return {
+            'data':
+            ctx_continuation_pair_list,
+            'multi_choices':
+            self.choices,
+            'system_prompt':
+            'Respond with the index of sentence that makes the most sense, chose from 0, 1, 2, 3, derive your final answer as `The answer is ...`.'
+        }
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -114,9 +122,9 @@ class HellaSwagAdapter(DataAdapter):
 
             return str(best_choice_idx)
         elif eval_type == EvalType.SERVICE:
-            return result  # TODO: to be supported !
+            return ResponseParser.parse_first_option(result)
         elif eval_type == EvalType.CUSTOM:
-            return result  # TODO: to be supported !
+            return ResponseParser.parse_first_option(result)
         else:
             raise ValueError(f'Invalid eval_type: {eval_type}')
 

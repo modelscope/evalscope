@@ -74,6 +74,7 @@ Please scan the QR code below to join our community groups:
 
 
 ## 🎉 News
+- 🔥 **[2025.01.07]** Native backend: Support for model API evaluation is now available. Refer to the [📖 Model API Evaluation Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html#api) for more details. Additionally, support for the `ifeval` evaluation benchmark has been added.
 - 🔥🔥 **[2024.12.31]** Support for adding benchmark evaluations, refer to the [📖 Benchmark Evaluation Addition Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html); support for custom mixed dataset evaluations, allowing for more comprehensive model evaluations with less data, refer to the [📖 Mixed Dataset Evaluation Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html).
 - 🔥 **[2024.12.13]** Model evaluation optimization: no need to pass the `--template-type` parameter anymore; supports starting evaluation with `evalscope eval --args`. Refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html) for more details.
 - 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html).
@@ -238,15 +239,40 @@ run_task(task_cfg="config.json")
 - `--limit`: Maximum amount of evaluation data for each dataset. If not specified, it defaults to evaluating all data. Can be used for quick validation
 
 ### Output Results
-```
-+-----------------------+-------------------+-----------------+
-| Model                 | ai2_arc           | gsm8k           |
-+=======================+===================+=================+
-| Qwen2.5-0.5B-Instruct | (ai2_arc/acc) 0.6 | (gsm8k/acc) 0.6 |
-+-----------------------+-------------------+-----------------+
+```text
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
++=======================+================+=================+=================+===============+=======+=========+
+| Qwen2.5-0.5B-Instruct | gsm8k          | AverageAccuracy | default         | main          |     5 |     0.4 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Easy      |     5 |     0.8 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Challenge |     5 |     0.4 |
++-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 
-## ⚙️ Complex Evaluation
+## 🌐 Evaluation of Specified Model API
+
+Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the `eval-type` parameter must be specified as `service`, for example:
+
+For example, to launch a model service using [vLLM](https://github.com/vllm-project/vllm):
+
+```shell
+export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
+```
+Then, you can use the following command to evaluate the model API service:
+```shell
+evalscope eval \
+ --model qwen2.5 \
+ --api-url http://127.0.0.1:8801/v1/chat/completions \
+ --api-key EMPTY \
+ --eval-type service \
+ --datasets gsm8k \
+ --limit 10
+```
+
+## ⚙️ Custom Parameter Evaluation
+
 For more customized evaluations, such as customizing model parameters or dataset parameters, you can use the following command. The evaluation startup method is the same as simple evaluation. Below shows how to start the evaluation using the `eval` command:
 
 ```shell

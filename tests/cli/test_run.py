@@ -133,7 +133,9 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'mmlu_pro',
+                # 'ifeval',
+                # 'mmlu',
+                # 'mmlu_pro',
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
@@ -143,9 +145,16 @@ class TestRun(unittest.TestCase):
                 # 'arc',
                 # 'ceval',
                 # 'bbh',
-                # 'hellaswag',
+                'hellaswag',
             ],
-            limit=2,
+            dataset_args={
+                'ceval': {
+                    'subset_list': [
+                        'computer_network', 'operating_system'
+                    ]
+                }
+            },
+            limit=5,
             debug=True
         )
 

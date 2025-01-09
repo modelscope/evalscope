@@ -17,13 +17,14 @@
 | `cmmlu`           | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                        | 中文-综合考试   |                                                                                                                       |
 | `competition_math`| [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary)   | 数学竞赛         |                                                                                                                       |
 | `gsm8k`           | [modelscope/gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                        | 数学问题         |                                                                                                                       |
-| `hellaswag`*       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
+| `hellaswag`       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
 | `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
+| `ifeval`       | [modelscope/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)                | 指令遵循         |  |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
 | `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
 | `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
-| `truthful_qa`     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
+| `truthful_qa`*     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
 
 ```{note}
 **\*** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。

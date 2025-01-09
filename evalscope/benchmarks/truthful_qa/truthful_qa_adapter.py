@@ -9,8 +9,7 @@ from typing import List
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import WeightedAverageAccuracy
-from evalscope.metrics.metrics import weighted_mean
+from evalscope.metrics import AverageAccuracy
 from evalscope.models import ContinuationLogitsModelAdapter
 from evalscope.utils import get_logger, normalize_score
 
@@ -26,7 +25,7 @@ logger = get_logger()
     dataset_id='modelscope/truthful_qa',
     model_adapter=ContinuationLogitsModelAdapter,
     subset_list=['multiple_choice'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=0,
     train_split=None,
     eval_split='validation',
@@ -260,7 +259,7 @@ class TruthfulQaAdapter(DataAdapter):
 
         return {'multiple_choice': {'mc1': mc1(mc1_lls), 'mc2': mc2(mc2_lls)}}  # or {'generation': xxx}
 
-    def compute_metric(self, review_res_list: List[dict]) -> float:
+    def compute_metric(self, review_res_list: List[dict]) -> List[dict]:
         """
         Compute evaluation result by specific metric for each subset.
 
@@ -285,56 +284,8 @@ class TruthfulQaAdapter(DataAdapter):
                 logger.error(f'** Unknown review_res: {review_res_d}')
 
         # To get mc2 score
-        items = [(score, 1.0) for score in mc2_list]
-        return weighted_mean(items)
-
-    def gen_report(self, subset_score_map: dict, report_name: str = None) -> dict:
-        """
-        Generate the report for the model output.
-
-        Args:
-            subset_score_map: {subset_name: (score, num), ...}
-            report_name: The user-defined report name.
-
-        Returns:
-        {
-            "name":"TruthfulQA",
-            "metric":"WeightedAverageAccuracy",
-            "score":0.3389,
-            "category":[
-                {
-                    "name":"DEFAULT",
-                    "score":0.2527,
-                    "subset":[
-                        {
-                            "name":"multiple_choice",
-                            "score":0.3157
-                        },
-                        # {
-                        #     "name":"generation",
-                        #     "score":0.2631
-                        # }
-                    ]
-                }
-            ],
-            "total_num":100
-        }
-        """
-        total_num: int = sum([num for _, num in subset_score_map.values()])
-        weighted_avg_acc: float = sum([score * num for score, num in subset_score_map.values()]) / total_num
-        weighted_avg_acc = normalize_score(score=weighted_avg_acc)
-        cate_avg_list = [{
-            'name': subset_name,
-            'score': normalize_score(score=score)
-        } for subset_name, (score, _) in subset_score_map.items()]
-
-        category_d = dict(name='DEFAULT', score=weighted_avg_acc, subset=cate_avg_list)
-
-        res_map = dict(
-            name=report_name or 'truthful_qa',
-            metric=self.metric_list[0]['name'],
-            score=weighted_avg_acc,
-            category=[category_d],
-            total_num=total_num)
-
-        return res_map
+        return [{
+            'metric_name': self.metric_list[0].name,
+            'score': self.metric_list[0].object(mc2_list),
+            'num': len(mc2_list)
+        }]

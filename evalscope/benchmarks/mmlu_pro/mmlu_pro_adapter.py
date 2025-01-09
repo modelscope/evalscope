@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import WeightedAverageAccuracy, exact_match
+from evalscope.metrics import AverageAccuracy, exact_match
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
@@ -13,7 +13,7 @@ from evalscope.utils.utils import ResponseParser
     dataset_id='modelscope/mmlu-pro',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=[AverageAccuracy],
     few_shot_num=5,
     train_split='validation',
     eval_split='test',
