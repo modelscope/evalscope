@@ -133,19 +133,19 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'ifeval',
+                'ifeval',
                 # 'mmlu',
-                # 'mmlu_pro',
+                'mmlu_pro',
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
                 # 'competition_math',
-                # 'gsm8k',
+                'gsm8k',
                 # 'arc',
-                # 'ceval',
+                'ceval',
                 # 'bbh',
-                'hellaswag',
+                # 'hellaswag',
             ],
             dataset_args={
                 'ceval': {
@@ -154,7 +154,7 @@ class TestRun(unittest.TestCase):
                     ]
                 }
             },
-            limit=5,
+            limit=10,
             debug=True
         )
 

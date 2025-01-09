@@ -59,7 +59,11 @@ class Report:
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
     model_name: str = 'default_model'
+    score: float = 0.0
     metrics: List[Metric] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.score = normalize_score(macro_mean(self.metrics))
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -67,7 +71,12 @@ class Report:
     @classmethod
     def from_dict(cls, data: dict):
         metrics = [Metric.from_dict(metric) for metric in data.get('metrics', [])]
-        return cls(name=data['name'], metrics=metrics, dataset_name=data['dataset_name'], model_name=data['model_name'])
+        return cls(
+            name=data['name'],
+            score=data['score'],
+            metrics=metrics,
+            dataset_name=data['dataset_name'],
+            model_name=data['model_name'])
 
     @classmethod
     def from_json(cls, json_file: str):
