@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Any, List, Union
 
 from evalscope.report import Report, ReportKey, gen_data_frame
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
@@ -38,7 +38,7 @@ def scan_for_report_folders(root_path):
             for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
                 datasets.append(os.path.basename(dataset_item).split('.')[0])
             datasets = ','.join(datasets)
-            reports.append(f"{os.path.basename(folder)}@{os.path.basename(model_item)}:{datasets}")
+            reports.append(f'{os.path.basename(folder)}@{os.path.basename(model_item)}:{datasets}')
 
     reports = sorted(reports, reverse=True)
     logger.debug(f'reports: {reports}')
@@ -110,10 +110,73 @@ def plot_single_dataset_scores(df: pd.DataFrame):
     return plot
 
 
+def dict_to_markdown(data) -> str:
+    markdown_lines = []
+
+    for key, value in data.items():
+        bold_key = f'**{key}**'
+
+        if isinstance(value, list):
+            value_str = '\n' + '\n'.join([f'  - {item}' for item in value])
+        elif isinstance(value, dict):
+            value_str = dict_to_markdown(value)
+        else:
+            value_str = str(value)
+
+        value_str = process_string(value_str)
+        markdown_line = f'{bold_key}: {value_str}'
+        markdown_lines.append(markdown_line)
+
+    return '\n\n'.join(markdown_lines)
+
+
+def process_string(string: str, max_length: int = 200) -> str:
+    if len(string) > max_length:
+        return f'{string[:max_length // 2]}......{string[-max_length // 2:]}'
+    return string
+
+
+def process_model_prediction(item: Any):
+    if isinstance(item, dict):
+        return dict_to_markdown(item)
+    elif isinstance(item, list):
+        return '\n'.join([process_model_prediction(item) for item in item])
+    else:
+        return process_string(str(item))
+
+
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     data_path = os.path.join(work_dir, OutputsStructure.REVIEWS_DIR, model_name)
-    df = pd.read_json(os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl'), lines=True)
-    return df
+    origin_df = pd.read_json(os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl'), lines=True)
+    ds = []
+    for i, item in origin_df.iterrows():
+        raw_input = item['raw_input']
+        raw_pred_answer = item['choices'][0]['message']['content']
+        parsed_gold_answer = item['choices'][0]['review']['gold']
+        parsed_pred_answer = item['choices'][0]['review']['pred']
+        score = item['choices'][0]['review']['result']
+        d = {
+            'Input': process_model_prediction(raw_input),
+            'Generated': process_model_prediction(raw_pred_answer),
+            'Gold':
+            '*Same as Input*' if parsed_gold_answer == raw_input else process_model_prediction(parsed_gold_answer),
+            'Pred': process_model_prediction(parsed_pred_answer),
+            'Score': process_model_prediction(score)
+        }
+        ds.append(d)
+
+    df_subset = pd.DataFrame(ds)
+    return df_subset
+
+
+def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: int = 1) -> pd.DataFrame:
+    if data_review_df is None:
+        return None
+    logger.debug(f'page: {page}, rows_per_page: {rows_per_page}')
+    start = (page - 1) * rows_per_page
+    end = start + rows_per_page
+    df_subset = data_review_df.iloc[start:end]
+    return df_subset
 
 
 @dataclass
@@ -157,21 +220,29 @@ def create_single_model_tab(sidebar: SidebarComponents):
     report_df = gr.State(None)
 
     with gr.Tab('Datasets Overview'):
-        gr.Markdown('### Components')
+        gr.Markdown('### Dataset Components')
         sunburst_plot = gr.Plot(value=None, scale=1, label='Components')
-        gr.Markdown('### Scores')
+        gr.Markdown('### Dataset Scores')
         score_plot = gr.Plot(value=None, scale=1, label='Scores')
-        gr.Markdown('### Scores Table')
+        gr.Markdown('### Dataset Scores Table')
         score_table = gr.DataFrame(value=None)
 
     with gr.Tab('Dataset Details'):
         dataset_radio = gr.Radio(label='Select Dataset', choices=[], show_label=True, interactive=True)
+        gr.Markdown('### Dataset Scores')
         dataset_plot = gr.Plot(value=None, scale=1, label='Scores')
+        gr.Markdown('### Dataset Scores Table')
         dataset_table = gr.DataFrame(value=None)
 
         gr.Markdown('### Model Prediction')
         subset_radio = gr.Radio(label='Select Subset', choices=[], show_label=True, interactive=True)
-        data_review_table = gr.DataFrame(value=None)
+        page_number = gr.Number(value=1, label='Page')
+        data_review_df = gr.State(None)
+        data_review_table = gr.DataFrame(
+            value=None,
+            datatype=['markdown', 'markdown', 'markdown', 'markdown', 'markdown'],
+            column_widths=['35%', '35%', '10%', '10%', '10%'],
+            wrap=True)
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
@@ -199,10 +270,18 @@ def create_single_model_tab(sidebar: SidebarComponents):
         logger.debug(f'subsets: {subsets}')
         return data_score_plot, data_score_df, gr.update(choices=subsets, value=subsets[0])
 
-    @subset_radio.change(inputs=[work_dir, model_name, dataset_radio, subset_radio], outputs=[data_review_table])
+    @subset_radio.change(
+        inputs=[work_dir, model_name, dataset_radio, subset_radio], outputs=[data_review_df, data_review_table])
     def update_single_report_subset(work_dir, model_name, dataset_name, subset_name):
+        if not subset_name:
+            return gr.skip()
         data_review_df = get_model_prediction(work_dir, model_name, dataset_name, subset_name)
-        return data_review_df
+        subset_df = get_table_data(data_review_df, 1)
+        return data_review_df, subset_df
+
+    @page_number.change(inputs=[data_review_df, page_number], outputs=[data_review_table])
+    def update_table(data_review_df, page_number):
+        return get_table_data(data_review_df, page_number)
 
     return SingleModelComponents(report_name=report_name)
 

@@ -24,7 +24,7 @@ def get_model_reports(model_report_dir: str) -> List[Report]:
             report = Report.from_json(file_path)
             report_list.append(report)
         except Exception as e:
-            logger.error(f"Error loading report from {file_path}: {e}")
+            logger.error(f'Error loading report from {file_path}: {e}')
     return report_list
 
 
