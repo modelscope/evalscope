@@ -107,5 +107,5 @@ class Report:
                     table[ReportKey.category_name].append(category.name)
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
-                    table[ReportKey.score].append(subset.score)
+                    table[ReportKey.score].append(subset.score)  # TODO: convert to percentage
         return pd.DataFrame.from_dict(table, orient='columns')
