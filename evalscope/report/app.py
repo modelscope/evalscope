@@ -1,5 +1,6 @@
 import glob
 import gradio as gr
+import logging
 import numpy as np
 import os
 import pandas as pd
@@ -8,13 +9,16 @@ import plotly.graph_objects as go
 from dataclasses import dataclass
 from typing import List, Union
 
-from evalscope.report import Report, gen_data_frame
+from evalscope.report import Report, ReportKey, gen_data_frame
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
+from evalscope.utils.logger import get_logger
+
+logger = get_logger(log_level=logging.DEBUG, force=True)
 
 
 def scan_for_report_folders(root_path):
     """Scan for folders containing reports subdirectories"""
-    print(root_path)
+    logger.debug(f'Scanning for report folders in {root_path}')
     if not os.path.exists(root_path):
         return []
 
@@ -36,7 +40,9 @@ def scan_for_report_folders(root_path):
             datasets = ','.join(datasets)
             reports.append(f"{os.path.basename(folder)}@{os.path.basename(model_item)}:{datasets}")
 
-    return sorted(reports, reverse=True)
+    reports = sorted(reports, reverse=True)
+    logger.debug(f'reports: {reports}')
+    return reports
 
 
 def load_single_report(root_path: str, report_path: str):
@@ -55,29 +61,51 @@ def get_single_report_data(report_list: List[Report]):
     data_dict = []
     for report in report_list:
         data_dict.append({
-            'Model Name': report.model_name,
-            'Dataset Name': report.dataset_name,
-            'Score': report.score,
-            'Num Samples': report.metrics[0].num,
+            ReportKey.model_name: report.model_name,
+            ReportKey.dataset_name: report.dataset_name,
+            ReportKey.score: report.score,
+            ReportKey.num: report.metrics[0].num,
         })
     df = pd.DataFrame.from_dict(data_dict, orient='columns')
     return df
 
 
 def plot_single_report_scores(df: pd.DataFrame):
-    plot = px.bar(df, x='Dataset Name', y='Score', color='Dataset Name', template='plotly_dark')
+    plot = px.bar(
+        df,
+        x=df[ReportKey.dataset_name],
+        y=df[ReportKey.score],
+        color=df[ReportKey.dataset_name],
+        template='plotly_dark')
+    return plot
+
+
+def plot_single_report_sunburst(df: pd.DataFrame):
+    plot = px.sunburst(
+        df,
+        path=[ReportKey.dataset_name, ReportKey.category_name, ReportKey.subset_name],
+        values=ReportKey.num,
+        color=ReportKey.score,
+        color_continuous_scale='RdBu',
+        color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
+        title='Dataset Component',
+        template='plotly_dark')
+    plot.update_traces(insidetextorientation='radial')
     return plot
 
 
 def get_single_dataset_data(df: pd.DataFrame, dataset_name: str):
-    return df[df['Dataset Name'] == dataset_name]
+    return df[df[ReportKey.dataset_name] == dataset_name]
 
 
 def plot_single_dataset_scores(df: pd.DataFrame):
-    if df['Metric Name'].nunique() > 1:
-        plot = px.bar(df, x='Metric Name', y='Score', color='Subset Name', template='plotly_dark')
-    else:
-        plot = px.bar(df, x='Subset Name', y='Score', color='Subset Name', template='plotly_dark')
+    plot = px.bar(
+        df,
+        x=df[ReportKey.metric_name],
+        y=df[ReportKey.score],
+        color=df[ReportKey.subset_name],
+        template='plotly_dark',
+        barmode='group')
     return plot
 
 
@@ -112,6 +140,7 @@ class SingleModelComponents:
     report_list: gr.State
     report_df: gr.State
     score_plot: gr.Plot
+    sunburst_plot: gr.Plot
     score_table: gr.DataFrame
     dataset_radio: gr.Radio
     dataset_plot: gr.Plot
@@ -131,13 +160,17 @@ def create_single_model_tab():
     report_list = gr.State([])
     report_df = gr.State(None)
 
-    with gr.Tab('Dataset Scores'):
-        score_plot = gr.Plot(value=None)
+    with gr.Tab('Datasets Overview'):
+
+        sunburst_plot = gr.Plot(value=None, scale=1, label='Component')
+
+        score_plot = gr.Plot(value=None, scale=1, label='Scores')
+
         score_table = gr.DataFrame(value=None)
 
-    with gr.Tab('Data Review'):
+    with gr.Tab('Dataset Details'):
         dataset_radio = gr.Radio(label='Select Dataset', choices=[], show_label=True, interactive=True)
-        dataset_plot = gr.Plot(value=None)
+        dataset_plot = gr.Plot(value=None, scale=1, label='Scores')
         dataset_table = gr.DataFrame(value=None)
 
         gr.Markdown('### Model Prediction')
@@ -152,6 +185,7 @@ def create_single_model_tab():
         report_list=report_list,
         report_df=report_df,
         score_plot=score_plot,
+        sunburst_plot=sunburst_plot,
         score_table=score_table,
         dataset_radio=dataset_radio,
         dataset_plot=dataset_plot,
@@ -180,10 +214,10 @@ with gr.Blocks(title='Evalscope Dashboard') as demo:
             with gr.Column(visible=True) as content_group:
                 with gr.Tabs():
                     with gr.Tab('Single Model'):
-                        single_model = create_single_model_tab()
+                        single = create_single_model_tab()
 
                     with gr.Tab('Multi Model'):
-                        multi_model_components = create_multi_model_tab()
+                        multi = create_multi_model_tab()
 
     #  Update report dropdown choices
     @sidebar.reports_dropdown.focus(inputs=[sidebar.root_path], outputs=[sidebar.reports_dropdown])
@@ -195,8 +229,7 @@ with gr.Blocks(title='Evalscope Dashboard') as demo:
 
     # Load & View
     @sidebar.load_btn.click(
-        inputs=[sidebar.reports_dropdown],
-        outputs=[initial_message, content_group, single_model.report_name, multi_model_components[0]])
+        inputs=[sidebar.reports_dropdown], outputs=[initial_message, content_group, single.report_name, multi[0]])
     def update_displays(reports_dropdown):
         if not reports_dropdown:
             gr.Warning('No reports found, please check the path', duration=3)
@@ -210,42 +243,44 @@ with gr.Blocks(title='Evalscope Dashboard') as demo:
         )
 
     # load single report data
-    @single_model.report_name.change(
-        inputs=[sidebar.root_path, single_model.report_name],
+    @single.report_name.change(
+        inputs=[sidebar.root_path, single.report_name],
         outputs=[
-            single_model.report_list, single_model.report_df, single_model.task_config, single_model.dataset_radio,
-            single_model.work_dir, single_model.model_name
+            single.report_list, single.report_df, single.task_config, single.dataset_radio, single.work_dir,
+            single.model_name
         ])
     def update_single_report_data(root_path, report_name):
-        report_list, data_frame, task_cfg = load_single_report(root_path, report_name)
+        report_list, report_df, task_cfg = load_single_report(root_path, report_name)
         datasets = [report.dataset_name for report in report_list]
         work_dir = os.path.join(root_path, report_name.split('@')[0])
         model_name = report_name.split('@')[1].split(':')[0]
-        return (report_list, data_frame, task_cfg, gr.update(choices=datasets, value=datasets[0]), work_dir, model_name)
+        return (report_list, report_df, task_cfg, gr.update(choices=datasets, value=datasets[0]), work_dir, model_name)
 
     # update single report score and plot
-    @single_model.report_list.change(
-        inputs=[single_model.report_list], outputs=[single_model.score_plot, single_model.score_table])
-    def update_single_report_score(report_list):
+    @single.report_list.change(
+        inputs=[single.report_list, single.report_df],
+        outputs=[single.score_plot, single.score_table, single.sunburst_plot])
+    def update_single_report_score(report_list, report_df):
         report_score_df = get_single_report_data(report_list)
         report_score_plot = plot_single_report_scores(report_score_df)
-        return report_score_plot, report_score_df
+        report_sunburst_plot = plot_single_report_sunburst(report_df)
+        return report_score_plot, report_df, report_sunburst_plot
 
     # update single report dataset score and plot
-    @single_model.dataset_radio.change(
-        inputs=[single_model.dataset_radio, single_model.report_df],
-        outputs=[single_model.dataset_plot, single_model.dataset_table, single_model.subset_radio])
+    @single.dataset_radio.change(
+        inputs=[single.dataset_radio, single.report_df],
+        outputs=[single.dataset_plot, single.dataset_table, single.subset_radio])
     def update_single_report_dataset(dataset_name, report_df):
-        print(dataset_name)
+        logger.debug(f'Updating single report dataset: {dataset_name}')
         data_score_df = get_single_dataset_data(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)
-        subsets = data_score_df['Subset Name'].unique().tolist()
-        print(f'subsets: {subsets}')
+        subsets = data_score_df[ReportKey.subset_name].unique().tolist()
+        logger.debug(f'subsets: {subsets}')
         return data_score_plot, data_score_df, gr.update(choices=subsets, value=subsets[0])
 
-    @single_model.subset_radio.change(
-        inputs=[single_model.work_dir, single_model.model_name, single_model.dataset_radio, single_model.subset_radio],
-        outputs=[single_model.data_review_table])
+    @single.subset_radio.change(
+        inputs=[single.work_dir, single.model_name, single.dataset_radio, single.subset_radio],
+        outputs=[single.data_review_table])
     def update_single_report_subset(work_dir, model_name, dataset_name, subset_name):
         data_review_df = get_model_prediction(work_dir, model_name, dataset_name, subset_name)
         return data_review_df

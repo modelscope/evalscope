@@ -1,4 +1,6 @@
 import json
+import pandas as pd
+from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List
 
@@ -54,6 +56,16 @@ class Metric:
         return cls(name=data['name'], categories=categories)
 
 
+class ReportKey:
+    model_name = 'Model'
+    dataset_name = 'Dataset'
+    metric_name = 'Metric'
+    category_name = 'Category'
+    subset_name = 'Subset'
+    num = 'Num'
+    score = 'Score'
+
+
 @dataclass
 class Report:
     name: str = 'default_report'
@@ -83,3 +95,17 @@ class Report:
         with open(json_file, 'r') as f:
             data = json.load(f)
         return cls.from_dict(data)
+
+    def to_dataframe(self):
+        table = defaultdict(list)
+        for metric in self.metrics:
+            for category in metric.categories:
+                for subset in category.subsets:
+                    table[ReportKey.model_name].append(self.model_name)
+                    table[ReportKey.dataset_name].append(self.dataset_name)
+                    table[ReportKey.metric_name].append(metric.name)
+                    table[ReportKey.category_name].append(category.name)
+                    table[ReportKey.subset_name].append(subset.name)
+                    table[ReportKey.num].append(subset.num)
+                    table[ReportKey.score].append(subset.score)
+        return pd.DataFrame.from_dict(table, orient='columns')
