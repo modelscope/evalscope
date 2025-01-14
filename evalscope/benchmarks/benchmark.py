@@ -22,7 +22,7 @@ class BenchmarkMeta:
     few_shot_random: bool = False
     train_split: Optional[str] = None
     eval_split: Optional[str] = None
-    prompt_template: str = ''
+    prompt_template: Optional[str] = None
 
     def _update(self, args: dict):
         if args.get('local_path'):

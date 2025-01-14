@@ -20,7 +20,7 @@ class DataAdapter(ABC):
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
-                 prompt_template: str = '',
+                 prompt_template: Optional[str] = None,
                  **kwargs):
         """
         Data Adapter for the benchmark. You need to implement the following methods:
