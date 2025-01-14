@@ -75,9 +75,8 @@ class GSM8KAdapter(DataAdapter):
         use_fewshot = self.few_shot_num > 0
 
         full_prompt = self._generate_prompt(input_d, few_shot_list=few_shot_list, use_fewshot=use_fewshot)
-        full_prompt = f'{self.prompt_template}\n{full_prompt}' if self.prompt_template else full_prompt
 
-        return {'data': [full_prompt]}
+        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

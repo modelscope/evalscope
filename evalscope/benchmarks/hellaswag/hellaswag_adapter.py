@@ -25,7 +25,8 @@ logger = get_logger()
     few_shot_num=0,
     train_split='train',
     eval_split='validation',
-    prompt_template='',
+    prompt_template=
+    'Respond with the index of sentence that makes the most sense, chose from 0, 1, 2, 3, derive your final answer as `The answer is ...`.',  # noqa: E501
 )
 class HellaSwagAdapter(DataAdapter):
 
@@ -89,12 +90,9 @@ class HellaSwagAdapter(DataAdapter):
         ctx_continuation_pair_list = [(context.strip(), ' ' + cont.strip()) for cont in endings]
 
         return {
-            'data':
-            ctx_continuation_pair_list,
-            'multi_choices':
-            self.choices,
-            'system_prompt':
-            'Respond with the index of sentence that makes the most sense, chose from 0, 1, 2, 3, derive your final answer as `The answer is ...`.'
+            'data': ctx_continuation_pair_list,
+            'multi_choices': self.choices,
+            'system_prompt': self.prompt_template
         }
 
     def get_gold_answer(self, input_d: dict) -> str:
