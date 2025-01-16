@@ -15,41 +15,35 @@ Combine and generate table for reports of LLMs.
 """
 
 
-def get_model_reports(model_report_dir: str) -> List[Report]:
-    model_report_dir = os.path.normpath(model_report_dir)
-    report_files = glob.glob(os.path.join(model_report_dir, '**', '*.json'), recursive=True)
-    report_list = []
-    for file_path in report_files:
-        try:
-            report = Report.from_json(file_path)
-            report_list.append(report)
-        except Exception as e:
-            logger.error(f'Error loading report from {file_path}: {e}')
+def get_report_list(reports_path_list: List[str]) -> List[Report]:
+    report_list: List[Report] = []
+    # Iterate over each report path
+    for report_path in reports_path_list:
+        model_report_dir = os.path.normpath(report_path)
+        report_files = glob.glob(os.path.join(model_report_dir, '**', '*.json'), recursive=True)
+        # Iterate over each report file
+        for file_path in report_files:
+            try:
+                report = Report.from_json(file_path)
+                report_list.append(report)
+            except Exception as e:
+                logger.error(f'Error loading report from {file_path}: {e}')
+    report_list = sorted(report_list, key=lambda x: (x.model_name, x.dataset_name))
     return report_list
 
 
-def _get_data(reports_path_list: List[str]) -> Tuple[List[Report], pd.DataFrame]:
-    report_list: List[Report] = []
-    for report_path in reports_path_list:
-        report_list.extend(get_model_reports(report_path))
-
-    report_list = sorted(report_list, key=lambda x: (x.model_name, x.dataset_name))
-
+def get_data_frame(report_list: List[Report]) -> pd.DataFrame:
     tables = []
     for report in report_list:
         df = report.to_dataframe()
         tables.append(df)
-    return report_list, pd.concat(tables, ignore_index=True)
+    return pd.concat(tables, ignore_index=True)
 
 
 def gen_table(reports_path_list: list) -> str:
-    _, table = _get_data(reports_path_list)
+    report_list = get_report_list(reports_path_list)
+    table = get_data_frame(report_list)
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
-
-
-def gen_data_frame(reports_path_list: list) -> pd.DataFrame:
-    report_list, table = _get_data(reports_path_list)
-    return report_list, table
 
 
 class ReportsRecorder:
