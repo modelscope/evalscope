@@ -383,7 +383,7 @@ def create_single_model_tab(sidebar: SidebarComponents):
         pass_count = len(pass_df)
         fail_count = all_count - pass_count
 
-        counts_text = f"### All: {all_count} | Pass: {pass_count} | Fail: {fail_count}"
+        counts_text = f'### All: {all_count} | Pass: {pass_count} | Fail: {fail_count}'
 
         if answer_mode == 'Pass':
             filtered_df = pass_df
