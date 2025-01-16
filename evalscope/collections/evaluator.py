@@ -4,6 +4,7 @@ import pandas as pd
 from collections import defaultdict
 from tabulate import tabulate
 from tqdm import tqdm
+from typing import List
 
 from evalscope.benchmarks import Benchmark
 from evalscope.collections.sampler import DatasetEntry
@@ -37,6 +38,12 @@ class SimpleEvaluator(Evaluator):
         review_id, reviewer_spec = self._generate_review_id(answer_d)
         review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
         return review_d
+
+    def get_score(self, review_d) -> float:
+        metric_score: List[dict] = self.compute_metrics(reviews_list=[review_d])
+        # average score for multiple metrics
+        score = sum([metric['score'] for metric in metric_score]) / len(metric_score)
+        return score
 
 
 class EvaluatorCollection:
@@ -75,14 +82,13 @@ class EvaluatorCollection:
                                                        self.outputs)
         return evaluators
 
-    def get_report(self, reviews):
+    def get_report(self, scores):
         data = []
         for dataset_name, data_map in self.dataset_name_map.items():
             for subset_name, ids in data_map.items():
                 for _id in ids:
-                    review_d = reviews[_id]
                     row_data: DatasetEntry = self.dataset_id_map[_id]
-                    score = self.get_pred_score(review_d)
+                    score = scores[_id]
                     data.append({
                         'task_type': row_data.task,
                         'dataset_name': dataset_name,
@@ -152,14 +158,21 @@ class EvaluatorCollection:
             dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
         return reviews
 
-    @staticmethod
-    def get_pred_score(review_d) -> float:
-        return float(review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT])
+    def get_scores(self, reviews) -> float:
+        scores = defaultdict(dict)
+        for sample in tqdm(self.dataset, desc='Getting scores'):
+            evaluator = self.evaluators[sample.dataset_name]
+            review_d = reviews[sample.index]
+            score = evaluator.get_score(review_d)
+            scores[sample.index] = score
+
+        return scores
 
     def eval(self, **kwargs):
         answers = self.get_answers()
         reviews = self.get_reviews(answers)
-        self.get_report(reviews)
+        scores = self.get_scores(reviews)
+        self.get_report(scores)
 
 
 if __name__ == '__main__':
