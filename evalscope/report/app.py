@@ -176,7 +176,7 @@ def dict_to_markdown(data) -> str:
     return '\n\n'.join(markdown_lines)
 
 
-def process_string(string: str, max_length: int = 20000) -> str:
+def process_string(string: str, max_length: int = 2048) -> str:
     if len(string) > max_length:
         return f'{string[:max_length // 2]}......{string[-max_length // 2:]}'
     return string
@@ -189,6 +189,20 @@ def process_model_prediction(item: Any):
         return '\n'.join([process_model_prediction(item) for item in item])
     else:
         return process_string(str(item))
+
+
+def normalize_score(score):
+    if isinstance(score, bool):
+        return 1.0 if score else 0.0
+    elif isinstance(score, dict):
+        for key in score:
+            return float(score[key])
+        return 0.0
+    else:
+        try:
+            return float(score)
+        except (ValueError, TypeError):
+            return 0.0
 
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
@@ -204,9 +218,10 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
         raw_d = {
             'Input': raw_input,
             'Generated': raw_pred_answer,
-            'Gold': parsed_gold_answer,
-            'Pred': parsed_pred_answer if parsed_pred_answer != raw_input else '*Same as Input*',
-            'Score': score
+            'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
+            'Pred': parsed_pred_answer if parsed_pred_answer != raw_pred_answer else '*Same as Generated*',
+            'Score': score,
+            'NScore': normalize_score(score)
         }
         ds.append(raw_d)
 
@@ -217,11 +232,13 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
 def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: int = 1) -> pd.DataFrame:
     if data_review_df is None:
         return None
+
     logger.debug(f'page: {page}, rows_per_page: {rows_per_page}')
     start = (page - 1) * rows_per_page
     end = start + rows_per_page
     df_subset = data_review_df.iloc[start:end]
-    df_subset = df_subset.map(process_model_prediction)
+    df_subset.loc[:, 'Input'] = df_subset['Input'].map(process_model_prediction)
+    df_subset.loc[:, 'Score'] = df_subset['Score'].map(process_model_prediction).astype(float)
     return df_subset
 
 
@@ -233,12 +250,11 @@ class SidebarComponents:
 
 
 def create_sidebar():
-    with gr.Column(scale=1):
-        gr.Markdown('## ⚙️ Settings')
-        root_path = gr.Textbox(label='Report(s) Root Path', value='./outputs', placeholder='./outputs', lines=1)
-        reports_dropdown = gr.Dropdown(label='Select Report(s)', choices=[], multiselect=True, interactive=True)
-        load_btn = gr.Button('Load & View')
-        gr.Markdown('### Note: Select report(s) and click `Load & View` to view the data!')
+    gr.Markdown('## Settings')
+    root_path = gr.Textbox(label='Report(s) Root Path', value='./outputs', placeholder='./outputs', lines=1)
+    reports_dropdown = gr.Dropdown(label='Select Report(s)', choices=[], multiselect=True, interactive=True)
+    load_btn = gr.Button('Load & View')
+    gr.Markdown('### Note: Select report(s) and click `Load & View` to view the data!')
 
     @reports_dropdown.focus(inputs=[root_path], outputs=[reports_dropdown])
     def update_dropdown_choices(root_path):
@@ -247,7 +263,11 @@ def create_sidebar():
             gr.Warning('No reports found, please check the path', duration=3)
         return gr.update(choices=folders)
 
-    return SidebarComponents(root_path=root_path, reports_dropdown=reports_dropdown, load_btn=load_btn)
+    return SidebarComponents(
+        root_path=root_path,
+        reports_dropdown=reports_dropdown,
+        load_btn=load_btn,
+    )
 
 
 @dataclass
@@ -283,13 +303,36 @@ def create_single_model_tab(sidebar: SidebarComponents):
 
         gr.Markdown('### Model Prediction')
         subset_radio = gr.Radio(label='Select Subset', choices=[], show_label=True, interactive=True)
-        page_number = gr.Number(value=0, label='Page')
+        with gr.Row():
+            answer_mode_radio = gr.Radio(
+                label='Answer Mode', choices=['All', 'Pass', 'Fail'], value='All', interactive=True)
+            page_number = gr.Number(value=1, label='Page', minimum=1, maximum=1, step=1, interactive=True)
+        answer_mode_counts = gr.Markdown('', label='Counts')
         data_review_df = gr.State(None)
+        filtered_review_df = gr.State(None)
         data_review_table = gr.DataFrame(
             value=None,
-            datatype=['markdown', 'markdown', 'markdown', 'markdown', 'markdown'],
-            column_widths=['35%', '35%', '10%', '10%', '10%'],
-            wrap=True)
+            datatype=['markdown', 'markdown', 'markdown', 'markdown', 'markdown', 'number'],
+            # column_widths=['500px', '500px'],
+            wrap=True,
+            latex_delimiters=[{
+                'left': '$$',
+                'right': '$$',
+                'display': True
+            }, {
+                'left': '$',
+                'right': '$',
+                'display': False
+            }, {
+                'left': '\\(',
+                'right': '\\)',
+                'display': False
+            }, {
+                'left': '\\[',
+                'right': '\\]',
+                'display': True
+            }],
+            max_height=500)
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
@@ -307,7 +350,10 @@ def create_single_model_tab(sidebar: SidebarComponents):
         report_sunburst_plot = plot_single_report_sunburst(report_df)
         return report_score_plot, report_score_df, report_sunburst_plot
 
-    @dataset_radio.change(inputs=[dataset_radio, report_df], outputs=[dataset_plot, dataset_table, subset_radio])
+    @gr.on(
+        triggers=[dataset_radio.change, report_list.change],
+        inputs=[dataset_radio, report_df],
+        outputs=[dataset_plot, dataset_table, subset_radio])
     def update_single_report_dataset(dataset_name, report_df):
         logger.debug(f'Updating single report dataset: {dataset_name}')
         data_score_df = get_single_dataset_data(report_df, dataset_name)
@@ -324,9 +370,38 @@ def create_single_model_tab(sidebar: SidebarComponents):
         data_review_df = get_model_prediction(work_dir, model_name, dataset_name, subset_name)
         return data_review_df, 1
 
-    @page_number.change(inputs=[data_review_df, page_number], outputs=[data_review_table])
-    def update_table(data_review_df, page_number):
-        subset_df = get_table_data(data_review_df, page_number)
+    @gr.on(
+        triggers=[data_review_df.change, answer_mode_radio.change],
+        inputs=[data_review_df, answer_mode_radio],
+        outputs=[filtered_review_df, page_number, answer_mode_counts])
+    def filter_data(data_review_df, answer_mode):
+        if data_review_df is None:
+            return None, gr.update(value=1, maximum=1), ''
+
+        all_count = len(data_review_df)
+        pass_df = data_review_df[data_review_df['NScore'] >= 0.99]
+        pass_count = len(pass_df)
+        fail_count = all_count - pass_count
+
+        counts_text = f"### All: {all_count} | Pass: {pass_count} | Fail: {fail_count}"
+
+        if answer_mode == 'Pass':
+            filtered_df = pass_df
+        elif answer_mode == 'Fail':
+            filtered_df = data_review_df[data_review_df['NScore'] < 0.99]
+        else:
+            filtered_df = data_review_df
+
+        max_page = max(1, len(filtered_df))
+
+        return (filtered_df, gr.update(value=1, maximum=max_page), counts_text)
+
+    @gr.on(
+        triggers=[filtered_review_df.change, page_number.change],
+        inputs=[filtered_review_df, page_number],
+        outputs=[data_review_table])
+    def update_table(filtered_df, page_number):
+        subset_df = get_table_data(filtered_df, page_number)
         if subset_df is None:
             return gr.skip()
         return subset_df
@@ -360,15 +435,21 @@ def create_multi_model_tab(sidebar: SidebarComponents):
 
 
 with gr.Blocks(title='Evalscope Dashboard') as demo:
-    gr.Markdown('# Evalscope Dashboard')
+    with gr.Row():
+        with gr.Column(scale=0, min_width=35):
+            toggle_btn = gr.Button('<')  # 按钮列
+        with gr.Column(scale=1):
+            gr.HTML('<h1 style="text-align: left;">Evalscope Dashboard</h1>')  # 文本列
 
     with gr.Row():
-        sidebar = create_sidebar()
+        with gr.Column(scale=1) as sidebar_column:
+            sidebar_visible = gr.State(True)
+            sidebar = create_sidebar()
 
         with gr.Column(scale=5) as main_content:
 
             with gr.Column(visible=True) as content_group:
-                gr.Markdown('## 📈 Visualization')
+                gr.Markdown('## Visualization')
                 with gr.Tabs():
                     with gr.Tab('Single Model'):
                         single = create_single_model_tab(sidebar)
@@ -376,18 +457,22 @@ with gr.Blocks(title='Evalscope Dashboard') as demo:
                     with gr.Tab('Multi Model'):
                         multi = create_multi_model_tab(sidebar)
 
-    @sidebar.load_btn.click(
-        inputs=[sidebar.reports_dropdown], outputs=[content_group, single.report_name, multi.multi_report_name])
+    @sidebar.load_btn.click(inputs=[sidebar.reports_dropdown], outputs=[single.report_name, multi.multi_report_name])
     def update_displays(reports_dropdown):
         if not reports_dropdown:
             gr.Warning('No reports found, please check the path', duration=3)
             return gr.skip()
 
         return (
-            gr.update(visible=True),  # show content area
             gr.update(choices=reports_dropdown, value=reports_dropdown[0]),  # update single model dropdown
             gr.update(choices=reports_dropdown, value=reports_dropdown)  # update multi model dropdown
         )
+
+    @toggle_btn.click(inputs=[sidebar_visible], outputs=[sidebar_column, sidebar_visible, toggle_btn])
+    def toggle_sidebar(visible):
+        new_visible = not visible
+        text = '<' if new_visible else '>'
+        return gr.update(visible=new_visible), new_visible, gr.update(value=text)
 
 
 if __name__ == '__main__':
