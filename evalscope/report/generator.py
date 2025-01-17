@@ -32,13 +32,16 @@ class ReportGenerator:
             subsets = []
             for subset_name, scores in subset_score_map.items():
                 for score_item in scores:
+                    categories = category_map.get(subset_name, ['default'])
+                    if isinstance(categories, str):
+                        categories = [categories]
                     subsets.append(
                         dict(
                             name=subset_name,
                             score=score_item['score'],
                             num=score_item['num'],
                             metric_name=score_item['metric_name'],
-                            categories=tuple(category_map.get(subset_name, ['default']))))
+                            categories=tuple(categories)))
             df = pd.DataFrame(subsets)
             return df
 

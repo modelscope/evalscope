@@ -119,7 +119,7 @@ class Report:
         max_depth = df_categories[ReportKey.category_name].apply(len).max()
         for level in range(max_depth):
             df_categories[f'{ReportKey.category_prefix}{level}'] = df_categories[ReportKey.category_name].apply(
-                lambda x: x[level] if len(x) > level else '')
+                lambda x: x[level] if len(x) > level else None)
 
         df_categories.drop(columns=[ReportKey.category_name], inplace=True)
         return df_categories

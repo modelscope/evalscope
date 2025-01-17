@@ -1,6 +1,5 @@
 import glob
 import gradio as gr
-import logging
 import numpy as np
 import os
 import pandas as pd
@@ -14,7 +13,7 @@ from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
-logger = get_logger(log_level=logging.DEBUG, force=True)
+logger = get_logger()
 
 
 def scan_for_report_folders(root_path):
@@ -257,7 +256,7 @@ def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: i
     end = start + rows_per_page
     df_subset = data_review_df.iloc[start:end]
     df_subset.loc[:, 'Input'] = df_subset['Input'].map(process_model_prediction)
-    df_subset.loc[:, 'Score'] = df_subset['Score'].map(process_model_prediction).astype(float)
+    df_subset.loc[:, 'Score'] = df_subset['Score'].map(lambda x: str(process_model_prediction(x)))
     return df_subset
 
 
@@ -453,46 +452,50 @@ def create_multi_model_tab(sidebar: SidebarComponents):
     return MultiModelComponents(multi_report_name=multi_report_name)
 
 
-with gr.Blocks(title='Evalscope Dashboard') as demo:
-    with gr.Row():
-        with gr.Column(scale=0, min_width=35):
-            toggle_btn = gr.Button('<')  # 按钮列
-        with gr.Column(scale=1):
-            gr.HTML('<h1 style="text-align: left;">Evalscope Dashboard</h1>')  # 文本列
+def create_app():
+    with gr.Blocks(title='Evalscope Dashboard') as demo:
+        with gr.Row():
+            with gr.Column(scale=0, min_width=35):
+                toggle_btn = gr.Button('<')
+            with gr.Column(scale=1):
+                gr.HTML('<h1 style="text-align: left;">Evalscope Dashboard</h1>')  # 文本列
 
-    with gr.Row():
-        with gr.Column(scale=1) as sidebar_column:
-            sidebar_visible = gr.State(True)
-            sidebar = create_sidebar()
+        with gr.Row():
+            with gr.Column(scale=1) as sidebar_column:
+                sidebar_visible = gr.State(True)
+                sidebar = create_sidebar()
 
-        with gr.Column(scale=5) as main_content:
+            with gr.Column(scale=5):
 
-            with gr.Column(visible=True) as content_group:
-                gr.Markdown('## Visualization')
-                with gr.Tabs():
-                    with gr.Tab('Single Model'):
-                        single = create_single_model_tab(sidebar)
+                with gr.Column(visible=True):
+                    gr.Markdown('## Visualization')
+                    with gr.Tabs():
+                        with gr.Tab('Single Model'):
+                            single = create_single_model_tab(sidebar)
 
-                    with gr.Tab('Multi Model'):
-                        multi = create_multi_model_tab(sidebar)
+                        with gr.Tab('Multi Model'):
+                            multi = create_multi_model_tab(sidebar)
 
-    @sidebar.load_btn.click(inputs=[sidebar.reports_dropdown], outputs=[single.report_name, multi.multi_report_name])
-    def update_displays(reports_dropdown):
-        if not reports_dropdown:
-            gr.Warning('No reports found, please check the path', duration=3)
-            return gr.skip()
+        @sidebar.load_btn.click(
+            inputs=[sidebar.reports_dropdown], outputs=[single.report_name, multi.multi_report_name])
+        def update_displays(reports_dropdown):
+            if not reports_dropdown:
+                gr.Warning('No reports found, please check the path', duration=3)
+                return gr.skip()
 
-        return (
-            gr.update(choices=reports_dropdown, value=reports_dropdown[0]),  # update single model dropdown
-            gr.update(choices=reports_dropdown, value=reports_dropdown)  # update multi model dropdown
-        )
+            return (
+                gr.update(choices=reports_dropdown, value=reports_dropdown[0]),  # update single model dropdown
+                gr.update(choices=reports_dropdown, value=reports_dropdown)  # update multi model dropdown
+            )
 
-    @toggle_btn.click(inputs=[sidebar_visible], outputs=[sidebar_column, sidebar_visible, toggle_btn])
-    def toggle_sidebar(visible):
-        new_visible = not visible
-        text = '<' if new_visible else '>'
-        return gr.update(visible=new_visible), new_visible, gr.update(value=text)
+        @toggle_btn.click(inputs=[sidebar_visible], outputs=[sidebar_column, sidebar_visible, toggle_btn])
+        def toggle_sidebar(visible):
+            new_visible = not visible
+            text = '<' if new_visible else '>'
+            return gr.update(visible=new_visible), new_visible, gr.update(value=text)
+
+    demo.launch()
 
 
 if __name__ == '__main__':
-    demo.launch()
+    create_app()
