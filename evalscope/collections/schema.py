@@ -122,5 +122,5 @@ if __name__ == '__main__':
     print(schema)
     # 打印扁平化后的结果
     for dataset in schema.flatten():
-        print(f"Dataset: {dataset.name}")
+        print(f'Dataset: {dataset.name}')
         print(f"Hierarchy: {' -> '.join(dataset.hierarchy)}")
