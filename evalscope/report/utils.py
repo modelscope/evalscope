@@ -20,13 +20,16 @@ class Subset:
 
 @dataclass
 class Category:
-    name: str = 'default_category'
+    name: tuple[str] = field(default_factory=tuple)
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
     subsets: List[Subset] = field(default_factory=list)
 
     def __post_init__(self):
+        if isinstance(self.name, str):
+            # ensure name is tuple format
+            self.name = (self.name, )
         self.num = sum(subset.num for subset in self.subsets)
         self.score = normalize_score(micro_mean(self.subsets))
         self.macro_score = normalize_score(macro_mean(self.subsets))
@@ -61,6 +64,7 @@ class ReportKey:
     dataset_name = 'Dataset'
     metric_name = 'Metric'
     category_name = 'Category'
+    category_prefix = 'Cat.'
     subset_name = 'Subset'
     num = 'Num'
     score = 'Score'
@@ -108,4 +112,14 @@ class Report:
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)  # TODO: convert to percentage
-        return pd.DataFrame.from_dict(table, orient='columns')
+        df = pd.DataFrame.from_dict(table, orient='columns')
+        # expand categories to multiple rows
+        df_categories = df.copy()
+        # multi-level aggregation for categories
+        max_depth = df_categories[ReportKey.category_name].apply(len).max()
+        for level in range(max_depth):
+            df_categories[f'{ReportKey.category_prefix}{level}'] = df_categories[ReportKey.category_name].apply(
+                lambda x: x[level] if len(x) > level else '')
+
+        df_categories.drop(columns=[ReportKey.category_name], inplace=True)
+        return df_categories

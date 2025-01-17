@@ -8,9 +8,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
-from evalscope.constants import DEFAULT_WORK_DIR, EvalBackend
+from evalscope.constants import DataCollection, EvalBackend
 from evalscope.utils import seed_everything
-from evalscope.utils.io_utils import OutputsStructure, are_paths_same
+from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
 
 if TYPE_CHECKING:
@@ -124,7 +124,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     from evalscope.evaluator import Evaluator
     from evalscope.models import initialize_model_adapter
 
-    if dataset_name == 'data_collection':
+    if dataset_name == DataCollection.NAME:
         # EvaluatorCollection is a collection of evaluators
         from evalscope.collections import EvaluatorCollection
         return EvaluatorCollection(task_cfg, outputs)

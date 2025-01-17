@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 from dataclasses import dataclass
 from typing import Any, List, Union
 
+from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -76,12 +77,24 @@ def load_multi_report(root_path: str, report_names: List[str]):
 def get_acc_report_df(report_list: List[Report]):
     data_dict = []
     for report in report_list:
-        data_dict.append({
-            ReportKey.model_name: report.model_name,
-            ReportKey.dataset_name: report.dataset_name,
-            ReportKey.score: report.score,
-            ReportKey.num: report.metrics[0].num,
-        })
+        if report.name == DataCollection.NAME:
+            for metric in report.metrics:
+                for category in metric.categories:
+                    item = {
+                        ReportKey.model_name: report.model_name,
+                        ReportKey.dataset_name: '/'.join(category.name),
+                        ReportKey.score: category.score,
+                        ReportKey.num: category.num,
+                    }
+                    data_dict.append(item)
+        else:
+            item = {
+                ReportKey.model_name: report.model_name,
+                ReportKey.dataset_name: report.dataset_name,
+                ReportKey.score: report.score,
+                ReportKey.num: report.metrics[0].num,
+            }
+            data_dict.append(item)
     df = pd.DataFrame.from_dict(data_dict, orient='columns')
     return df
 
@@ -105,9 +118,14 @@ def plot_single_report_scores(df: pd.DataFrame):
 
 
 def plot_single_report_sunburst(df: pd.DataFrame):
+    categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
+    if df[ReportKey.dataset_name].nunique() > 1:
+        path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
+    else:
+        path = categories + [ReportKey.subset_name]
     plot = px.sunburst(
         df,
-        path=[ReportKey.dataset_name, ReportKey.category_name, ReportKey.subset_name],
+        path=path,
         values=ReportKey.num,
         color=ReportKey.score,
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
@@ -207,6 +225,7 @@ def normalize_score(score):
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     data_path = os.path.join(work_dir, OutputsStructure.REVIEWS_DIR, model_name)
+    subset_name = subset_name.replace('/', '_')  # for collection report
     origin_df = pd.read_json(os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl'), lines=True)
     ds = []
     for i, item in origin_df.iterrows():
