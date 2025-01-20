@@ -174,7 +174,7 @@ class CMMLUAdapter(DataAdapter):
 
         full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

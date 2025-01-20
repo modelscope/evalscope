@@ -109,12 +109,10 @@ class ARCAdapter(DataAdapter):
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
         context: str = '\n'.join(few_shot_prompts)
 
-        context = f'{self.prompt_template}\n{context}' if self.prompt_template else context
-
         # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
         full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
