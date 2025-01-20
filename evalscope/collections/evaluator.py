@@ -42,8 +42,8 @@ class SimpleEvaluator(Evaluator):
 
     def get_score(self, review_d) -> float:
         metric_score: List[dict] = self.compute_metrics(reviews_list=[review_d])
-        # average score for multiple metrics
-        score = sum([metric['score'] for metric in metric_score]) / len(metric_score)
+        # use the first metric by default
+        score = metric_score[0]['score']
         return score
 
 

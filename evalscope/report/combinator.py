@@ -32,10 +32,12 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
     return report_list
 
 
-def get_data_frame(report_list: List[Report]) -> pd.DataFrame:
+def get_data_frame(report_list: List[Report],
+                   flatten_metrics: bool = True,
+                   flatten_categories: bool = True) -> pd.DataFrame:
     tables = []
     for report in report_list:
-        df = report.to_dataframe()
+        df = report.to_dataframe(flatten_metrics=flatten_metrics, flatten_categories=flatten_categories)
         tables.append(df)
     return pd.concat(tables, ignore_index=True)
 

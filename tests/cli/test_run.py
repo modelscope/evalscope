@@ -133,17 +133,18 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'ifeval',
+                'iquiz',
+                # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
-                'humaneval',
+                # 'humaneval',
                 # 'competition_math',
-                'gsm8k',
-                'arc',
-                'ceval',
+                # 'gsm8k',
+                # 'arc',
+                # 'ceval',
                 # 'bbh',
                 # 'hellaswag',
             ],
@@ -154,7 +155,7 @@ class TestRun(unittest.TestCase):
                     ]
                 }
             },
-            limit=10
+            # limit=10
         )
 
         run_task(task_cfg=task_cfg)

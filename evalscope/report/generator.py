@@ -25,9 +25,9 @@ class ReportGenerator:
             Flatten subset score map to a DataFrame.
 
             Example:
-                        name  score  num        categories      metric_name
-            0       ARC-Easy    0.5    2  default_category  AverageAccuracy
-            1  ARC-Challenge    0.5    2  default_category  AverageAccuracy
+                        name  score  num   categories      metric_name
+            0       ARC-Easy    0.5    2    [default]  AverageAccuracy
+            1  ARC-Challenge    0.5    2    [default]  AverageAccuracy
             """
             subsets = []
             for subset_name, scores in subset_score_map.items():
