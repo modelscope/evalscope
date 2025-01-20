@@ -1,5 +1,8 @@
 from enum import Enum
-from transformers import GenerationConfig
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from transformers import GenerationConfig
 
 
 class EvalBackend(Enum):
@@ -11,7 +14,7 @@ class EvalBackend(Enum):
     THIRD_PARTY = 'ThirdParty'
 
 
-def fix_do_sample_warning(generation_config: GenerationConfig) -> None:
+def fix_do_sample_warning(generation_config: 'GenerationConfig') -> None:
     # Use the default values of temperature/top_p/top_k in generation_config.
     if generation_config.temperature == 0:
         generation_config.do_sample = False

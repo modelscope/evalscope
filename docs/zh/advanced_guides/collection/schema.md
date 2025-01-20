@@ -24,6 +24,7 @@ simple_schema = CollectionSchema(name='reasoning', datasets=[
     - `task_type` 是数据集的任务类型，可自行填写
     - `tags` 是数据集的标签，可自行填写
     - `args` 是数据集的参数，可指定的参数见[数据集参数](../../get_started/parameters.md#数据集参数)
+    - `hierarchy` 是数据集的层次，由schema自动生成
 
 **复杂示例**
 

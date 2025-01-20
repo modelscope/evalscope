@@ -2,8 +2,9 @@
 
 import glob
 import os
+import pandas as pd
 from tabulate import tabulate
-from typing import List
+from typing import List, Tuple
 
 from evalscope.report.utils import Report
 from evalscope.utils.logger import get_logger
@@ -14,35 +15,35 @@ Combine and generate table for reports of LLMs.
 """
 
 
-def get_model_reports(model_report_dir: str) -> List[Report]:
-    model_report_dir = os.path.normpath(model_report_dir)
-    report_files = glob.glob(os.path.join(model_report_dir, '**/*.json'))
-
-    report_list = []
-    for file_path in report_files:
-        report = Report.from_json(file_path)
-        report_list.append(report)
+def get_report_list(reports_path_list: List[str]) -> List[Report]:
+    report_list: List[Report] = []
+    # Iterate over each report path
+    for report_path in reports_path_list:
+        model_report_dir = os.path.normpath(report_path)
+        report_files = glob.glob(os.path.join(model_report_dir, '**', '*.json'), recursive=True)
+        # Iterate over each report file
+        for file_path in report_files:
+            try:
+                report = Report.from_json(file_path)
+                report_list.append(report)
+            except Exception as e:
+                logger.error(f'Error loading report from {file_path}: {e}')
+    report_list = sorted(report_list, key=lambda x: (x.model_name, x.dataset_name))
     return report_list
 
 
-def gen_table(reports_path_list: list) -> str:
-    report_list: List[Report] = []
-    for report_path in reports_path_list:
-        report_list.extend(get_model_reports(report_path))
-
-    headers = ['Model Name', 'Dataset Name', 'Metric Name', 'Category Name', 'Subset Name', 'Num', 'Score']
-    table = []
-
+def get_data_frame(report_list: List[Report]) -> pd.DataFrame:
+    tables = []
     for report in report_list:
-        for metric in report.metrics:
-            for category in metric.categories:
-                for subset in category.subsets:
-                    table.append([
-                        report.model_name, report.dataset_name, metric.name, category.name, subset.name, subset.num,
-                        subset.score
-                    ])
+        df = report.to_dataframe()
+        tables.append(df)
+    return pd.concat(tables, ignore_index=True)
 
-    return tabulate(table, headers, tablefmt='grid')
+
+def gen_table(reports_path_list: list) -> str:
+    report_list = get_report_list(reports_path_list)
+    table = get_data_frame(report_list)
+    return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
 
 
 class ReportsRecorder:
@@ -54,10 +55,10 @@ class ReportsRecorder:
 
 
 if __name__ == '__main__':
-    report_dir_1 = '/to/path/20231129_020533_default_ZhipuAI_chatglm2-6b-base_none/reports'
-    report_dir_2 = '/to/path/20231129_020533_default_ZhipuAI_chatglm2-6b_none/reports'
+    report_dir_1 = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250117_151926'
+    # report_dir_2 = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250107_204445/reports'
 
-    report_table = gen_table([report_dir_1, report_dir_2])
+    report_table = gen_table([report_dir_1])
     print(report_table)
 
     # ALL VALUES ONLY FOR EXAMPLE

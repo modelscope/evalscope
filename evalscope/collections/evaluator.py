@@ -9,9 +9,10 @@ from typing import List
 from evalscope.benchmarks import Benchmark
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalType, ReviewKeys
+from evalscope.constants import DataCollection, DumpMode
 from evalscope.evaluator import Evaluator
 from evalscope.models import get_local_model, initialize_model_adapter
+from evalscope.report import ReportGenerator
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -52,16 +53,18 @@ class EvaluatorCollection:
         self.task_cfg = task_cfg
         self.outputs = outputs
         self.model = get_local_model(task_cfg)
-        self.dataset = self.load()
+        self.dataset, self.dataset_name = self.load()
         self.dataset_name_map, self.dataset_id_map = self._parse_dataset()
         self.evaluators = self._initialize_evaluators()
 
-    def load(self) -> list[DatasetEntry]:
-        raw_dataset = jsonl_to_list(self.task_cfg.dataset_args['data_collection']['local_path'])
+    def load(self) -> tuple[list[DatasetEntry], str]:
+        dataset_path = self.task_cfg.dataset_args[DataCollection.NAME]['local_path']
+        dataset_name = os.path.basename(dataset_path).split('.')[0]
+        raw_dataset = jsonl_to_list(dataset_path)
         datasets = []
         for sample in raw_dataset:
             datasets.append(DatasetEntry(**sample))
-        return datasets
+        return datasets, dataset_name
 
     def _parse_dataset(self):
         dataset_name_map = defaultdict(lambda: defaultdict(list))
@@ -83,63 +86,79 @@ class EvaluatorCollection:
         return evaluators
 
     def get_report(self, scores):
-        data = []
-        for dataset_name, data_map in self.dataset_name_map.items():
-            for subset_name, ids in data_map.items():
-                for _id in ids:
-                    row_data: DatasetEntry = self.dataset_id_map[_id]
-                    score = scores[_id]
-                    data.append({
-                        'task_type': row_data.task,
-                        'dataset_name': dataset_name,
-                        'subset_name': subset_name,
-                        'tags': row_data.tags,
-                        'score': score
-                    })
 
-        df = pd.DataFrame(data)
-        # Explode tags to multiple rows
-        df_exploded = df.explode('tags')
+        def get_dataframe(scores):
+            data = []
+            for dataset_name, data_map in self.dataset_name_map.items():
+                for subset_name, ids in data_map.items():
+                    for _id in ids:
+                        row_data: DatasetEntry = self.dataset_id_map[_id]
+                        score = scores[_id]
+                        data.append(
+                            dict(
+                                task_type=row_data.task_type,
+                                categories=tuple(row_data.categories),
+                                dataset_name=dataset_name,
+                                subset_name=subset_name,
+                                tags=row_data.tags,
+                                score=score))
+            return pd.DataFrame(data)
 
-        # Helper function for aggregation and sorting
         def aggregate_and_sort(df, group_by_cols):
+            # aggregate by group_by_cols, and calculate average_score and count
             report_df = df.groupby(group_by_cols) \
                 .agg(average_score=('score', 'mean'), count=('score', 'size')) \
                 .reset_index()
-
-            # Round average_score to 4 decimal places
             report_df['average_score'] = report_df['average_score'].round(4)
-
             report_df = report_df.sort_values(by='count', ascending=False) \
                 .to_dict(orient='records')
             return report_df
 
-        # Multi-level aggregation
+        df = get_dataframe(scores)
+
+        # multi-level aggregation
         subset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name', 'subset_name'])
         dataset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name'])
         task_report_df = aggregate_and_sort(df, ['task_type'])
-        tag_report_df = aggregate_and_sort(df_exploded, ['tags'])
 
-        # Convert sorted DataFrames to Dict
-        report = {
+        # explode tags to multiple rows
+        df_exploded_tags = df.explode('tags')
+        tag_report_df = aggregate_and_sort(df_exploded_tags, ['tags'])
+
+        # process multi-level categories
+        df_categories = df.copy()
+        # multi-level aggregation for categories
+        max_depth = df_categories['categories'].apply(len).max()
+        for level in range(max_depth):
+            df_categories[f'category{level}'] = df_categories['categories'].apply(lambda x: x[level]
+                                                                                  if len(x) > level else '')
+        category_report_df = aggregate_and_sort(df_categories, [f'category{level}' for level in range(max_depth)])
+
+        # convert to dict format
+        report_dict = {
             'subset_level': subset_report_df,
             'dataset_level': dataset_report_df,
             'task_level': task_report_df,
-            'tag_level': tag_report_df
+            'tag_level': tag_report_df,
+            'category_level': category_report_df,
         }
 
-        # Log the report
-        for level, data in report.items():
+        # record report
+        for level, data in report_dict.items():
             table = tabulate(data, headers='keys', tablefmt='pretty', showindex=False)
             logger.info(f'{level} Report:\n{table}')
 
-        # Save the report to a JSON file
-        report_file_path = os.path.join(self.outputs.reports_dir, 'data_collection.json')
+        report = ReportGenerator.gen_collection_report(df, self.dataset_name, self.task_cfg.model_id)
+        # save report to JSON file
+        report_file_path = os.path.join(self.outputs.reports_dir, self.task_cfg.model_id, f'{self.dataset_name}.json')
+        os.makedirs(os.path.dirname(report_file_path), exist_ok=True)
         with open(report_file_path, 'w', encoding='utf-8') as f:
-            json.dump(report, f, ensure_ascii=False, indent=4)
+            json.dump(report.to_dict(), f, ensure_ascii=False, indent=4)
 
     def get_answers(self):
-        pred_file_path = os.path.join(self.outputs.predictions_dir, 'data_collection.jsonl')
+        pred_file_path = os.path.join(self.outputs.predictions_dir, self.task_cfg.model_id,
+                                      f'{self.dataset_name}.jsonl')
+        os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
         answers = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting answers'):
             evaluator = self.evaluators[sample.dataset_name]
@@ -149,13 +168,17 @@ class EvaluatorCollection:
         return answers
 
     def get_reviews(self, answers):
-        review_file_path = os.path.join(self.outputs.reviews_dir, 'data_collection.jsonl')
+        review_file_path = os.path.join(self.outputs.reviews_dir, self.task_cfg.model_id)
+        os.makedirs(review_file_path, exist_ok=True)
         reviews = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting reviews'):
             evaluator = self.evaluators[sample.dataset_name]
             review_d = evaluator.get_review(answers[sample.index])
             reviews[sample.index] = review_d
-            dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
+            dump_jsonl_data(
+                review_d,
+                os.path.join(review_file_path, f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'),
+                dump_mode=DumpMode.APPEND)
         return reviews
 
     def get_scores(self, reviews) -> float:
@@ -173,19 +196,3 @@ class EvaluatorCollection:
         reviews = self.get_reviews(answers)
         scores = self.get_scores(reviews)
         self.get_report(scores)
-
-
-if __name__ == '__main__':
-    task_cfg = TaskConfig(
-        model='qwen2.5',
-        api_url='http://127.0.0.1:8801/v1/chat/completions',
-        api_key='EMPTY',
-        eval_type=EvalType.SERVICE,
-        datasets=['data_collection'],
-        dataset_args={'data_collection': {
-            'local_path': 'outputs/mixed_data.jsonl'
-        }},
-    )
-
-    evaluator_collection = EvaluatorCollection(task_cfg)
-    evaluator_collection.eval()

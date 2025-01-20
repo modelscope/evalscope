@@ -4,17 +4,17 @@
 
 ## 数据格式
 
-采样数据格式为jsonl，每行是一个json对象，包含`index`、`prompt`、`tags`、`task`、`weight`、`dataset_name`、`subset_name`等属性。
+采样数据格式为jsonl，每行是一个json对象，包含`index`、`prompt`、`tags`、`task_type`、`weight`、`dataset_name`、`subset_name`等属性。
 
 ```json
 {
     "index": 0,
     "prompt": {"question": "What is the capital of France?"},
     "tags": ["en", "reasoning"],
-    "task": "question_answering",
+    "task_type": "question_answering",
     "weight": 1.0,
     "dataset_name": "arc",
-    "subset_name": "ARC-Easy"
+    "subset_name": "ARC-Easy",
 }
 ```
 
@@ -28,8 +28,8 @@
 from evalscope.collections import WeightedSampler
 from evalscope.utils.io_utils import dump_jsonl_data
 
-sampler = WeightedSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = WeightedSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/weighted_mixed_data.jsonl')
 ```
 
@@ -42,8 +42,8 @@ dump_jsonl_data(mixed_data, 'outputs/weighted_mixed_data.jsonl')
 ```python
 from evalscope.collections import StratifiedSampler
 
-sampler = StratifiedSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = StratifiedSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/stratified_mixed_data.jsonl')
 ```
 
@@ -56,7 +56,7 @@ dump_jsonl_data(mixed_data, 'outputs/stratified_mixed_data.jsonl')
 ```python
 from evalscope.collections import UniformSampler
 
-sampler = UniformSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = UniformSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/uniform_mixed_data.jsonl')
 ```

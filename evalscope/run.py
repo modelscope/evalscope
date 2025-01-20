@@ -5,17 +5,16 @@ Run evaluation for LLMs.
 import os.path
 from argparse import Namespace
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
-from evalscope.arguments import parse_args
-from evalscope.benchmarks import Benchmark, BenchmarkMeta
 from evalscope.config import TaskConfig, parse_task_config
-from evalscope.constants import DEFAULT_WORK_DIR, EvalBackend
-from evalscope.evaluator import Evaluator
-from evalscope.models import LocalModel, get_local_model, initialize_model_adapter
+from evalscope.constants import DataCollection, EvalBackend
 from evalscope.utils import seed_everything
-from evalscope.utils.io_utils import OutputsStructure, are_paths_same
+from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
+
+if TYPE_CHECKING:
+    from evalscope.models import LocalModel
 
 logger = get_logger()
 
@@ -50,8 +49,8 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
-    elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
-        task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
+    # elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
+    task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
 
@@ -98,6 +97,8 @@ def get_backend_manager_class(eval_backend: EvalBackend):
 
 def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
+    from evalscope.models import get_local_model
+
     # Initialize evaluator
     eval_results = {}
     base_model = get_local_model(task_cfg)
@@ -117,10 +118,13 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     return eval_results
 
 
-def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure, base_model: LocalModel):
+def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure, base_model: 'LocalModel'):
     """Create an evaluator object for the specified dataset."""
+    from evalscope.benchmarks import Benchmark, BenchmarkMeta
+    from evalscope.evaluator import Evaluator
+    from evalscope.models import initialize_model_adapter
 
-    if dataset_name == 'data_collection':
+    if dataset_name == DataCollection.NAME:
         # EvaluatorCollection is a collection of evaluators
         from evalscope.collections import EvaluatorCollection
         return EvaluatorCollection(task_cfg, outputs)
@@ -143,6 +147,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
 
 
 def main():
+    from evalscope.arguments import parse_args
     args = parse_args()
     run_task(args)
 

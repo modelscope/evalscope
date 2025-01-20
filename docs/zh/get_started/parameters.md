@@ -6,8 +6,10 @@
 - `--model`: 被评测的模型名称。
   - 指定为模型在[ModelScope](https://modelscope.cn/)中的`id`，将自动下载模型，例如[Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary)；
   - 指定为模型的本地路径，例如`/path/to/model`，将从本地加载模型；
-  - 评测目标为模型API端点时，需要指定为`model_id`，例如`Qwen2.5-0.5B-Instruct`。
-- `--model-id`: 被评测的模型的别名。默认为`model`的最后一部分，例如`Qwen/Qwen2.5-0.5B-Instruct`的`model-id`为`Qwen2.5-0.5B-Instruct`
+  - 评测目标为模型API服务时，需要指定为服务对应的模型id，例如`Qwen2.5-0.5B-Instruct`。
+- `--model-id`: 被评测的模型的别名，用于报告展示。默认为`model`的最后一部分，例如`Qwen/Qwen2.5-0.5B-Instruct`的`model-id`为`Qwen2.5-0.5B-Instruct`。
+- `--api-url`: (仅在`eval-type=service`时有效) 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1/chat/completions`。
+- `--api-key`: (仅在`eval-type=service`时有效) 模型API端点密钥，默认为`EMPTY`
 - `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
   - `revision`: 模型版本，默认为`master`
   - `precision`: 模型精度，默认为`torch.float16`
@@ -18,8 +20,7 @@
   - `max_new_tokens`: 生成最大长度，默认为512
 - `--chat-template`: 模型推理模板，默认为`None`，表示使用transformers的`apply_chat_template`；支持传入jinjia模版字符串，来自定义推理模板
 - `--template-type`: 模型推理模板，已弃用，参考`--chat-template`
-- `--api-url`: (仅在`eval-type=service`时有效) 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1/chat/completions`
-- `--api-key`: (仅在`eval-type=service`时有效) 模型API端点密钥，默认为`EMPTY`
+
 
 ## 数据集参数
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)

@@ -74,6 +74,7 @@ Please scan the QR code below to join our community groups:
 
 
 ## 🎉 News
+- 🔥 **[2025.01.17]** Support for visualizing evaluation results, refer to the [📖 Visualizing Evaluation Results](https://evalscope.readthedocs.io/en/latest/get_started/visulization.html) for more details.
 - 🔥 **[2025.01.07]** Native backend: Support for model API evaluation is now available. Refer to the [📖 Model API Evaluation Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html#api) for more details. Additionally, support for the `ifeval` evaluation benchmark has been added.
 - 🔥🔥 **[2024.12.31]** Support for adding benchmark evaluations, refer to the [📖 Benchmark Evaluation Addition Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html); support for custom mixed dataset evaluations, allowing for more comprehensive model evaluations with less data, refer to the [📖 Mixed Dataset Evaluation Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html).
 - 🔥 **[2024.12.13]** Model evaluation optimization: no need to pass the `--template-type` parameter anymore; supports starting evaluation with `evalscope eval --args`. Refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html) for more details.
@@ -250,6 +251,51 @@ run_task(task_cfg="config.json")
 | Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Challenge |     5 |     0.4 |
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
+
+## 📈 Visualization of Evaluation Results
+
+1. Install the dependencies required for visualization, including gradio, plotly, etc.
+```bash
+pip install 'evalscope[app]'
+```
+
+2. Start the Visualization Service
+
+Run the following command to start the visualization service.
+```bash
+evalscope app
+```
+You can access the visualization service in the browser if the following output appears.
+```text
+* Running on local URL:  http://127.0.0.1:7861
+
+To create a public link, set `share=True` in `launch()`.
+```
+
+<table>
+  <tr>
+    <td style="text-align: center;">
+      <img src="docs/zh/get_started/images/setting.png" alt="Setting" style="width: 100%;" />
+      <p>Setting Interface</p>
+    </td>
+    <td style="text-align: center;">
+      <img src="docs/zh/get_started/images/model_compare.png" alt="Model Compare" style="width: 100%;" />
+      <p>Model Comparison</p>
+    </td>
+  </tr>
+  <tr>
+    <td style="text-align: center;">
+      <img src="docs/zh/get_started/images/report_overview.png" alt="Report Overview" style="width: 100%;" />
+      <p>Report Overview</p>
+    </td>
+    <td style="text-align: center;">
+      <img src="docs/zh/get_started/images/report_details.png" alt="Report Details" style="width: 100%;" />
+      <p>Report Details</p>
+    </td>
+  </tr>
+</table>
+
+For more details, refer to: [📖 Visualization of Evaluation Results](https://evalscope.readthedocs.io/en/latest/get_started/visulization.html)
 
 ## 🌐 Evaluation of Specified Model API
 

@@ -11,6 +11,7 @@ class DatasetInfo:
     task_type: str = ''
     tags: List[str] = field(default_factory=list)
     args: dict = field(default_factory=dict)
+    hierarchy: List[str] = field(default_factory=list)
 
     def get_data(self) -> dict:
         from evalscope.benchmarks import Benchmark
@@ -34,18 +35,15 @@ def flatten_weight(collection: 'CollectionSchema', base_weight=1):
             dataset.weight = current_weight
 
 
-def flatten_tags(collection: 'CollectionSchema', parent_names=None):
+def flatten_name(collection: 'CollectionSchema', parent_names=None):
     if parent_names is None:
         parent_names = []
     current_names = parent_names + [collection.name]
     for dataset in collection.datasets:
         if isinstance(dataset, CollectionSchema):
-            flatten_tags(dataset, current_names)
+            flatten_name(dataset, current_names)
         else:
-            # Add all parent CollectionSchema names to the tags of each DatasetInfo
-            for name in current_names:
-                if name not in dataset.tags:
-                    dataset.tags.append(name)
+            dataset.hierarchy = current_names.copy()
 
 
 def flatten_datasets(collection: 'CollectionSchema') -> List[DatasetInfo]:
@@ -100,7 +98,7 @@ class CollectionSchema:
 
     def flatten(self) -> List[DatasetInfo]:
         collection = copy.deepcopy(self)
-        flatten_tags(collection)
+        flatten_name(collection)
         flatten_weight(collection)
         return flatten_datasets(collection)
 
@@ -109,8 +107,12 @@ if __name__ == '__main__':
     schema = CollectionSchema(
         name='reasoning',
         datasets=[
-            DatasetInfo(name='arc', weight=1, task_type='reasoning', tags=['en']),
-            DatasetInfo(name='ceval', weight=1, task_type='reasoning', tags=['zh'], args={'subset_list': ['logic']})
+            CollectionSchema(name='english', datasets=[
+                DatasetInfo(name='arc', weight=1, tags=['en']),
+            ]),
+            CollectionSchema(
+                name='chinese',
+                datasets=[DatasetInfo(name='ceval', weight=1, tags=['zh'], args={'subset_list': ['logic']})])
         ])
     print(schema)
     print(schema.flatten())
@@ -118,5 +120,7 @@ if __name__ == '__main__':
 
     schema = CollectionSchema.from_json('outputs/schema.json')
     print(schema)
+    # 打印扁平化后的结果
     for dataset in schema.flatten():
-        print(dataset)
+        print(f'Dataset: {dataset.name}')
+        print(f"Hierarchy: {' -> '.join(dataset.hierarchy)}")
