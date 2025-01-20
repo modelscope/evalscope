@@ -31,7 +31,7 @@ class IFEvalAdapter(DataAdapter):
         super().__init__(**kwargs)
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        return {'data': [input_d['prompt']]}
+        return {'data': [input_d['prompt']], 'system_prompt': self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> str:
         return input_d

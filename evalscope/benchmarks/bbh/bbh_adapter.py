@@ -122,7 +122,7 @@ class BBHAdapter(DataAdapter):
         cot_prompts: str = few_shot_list[0] if len(few_shot_list) > 0 else ''
         full_prompt: str = f"Follow the given examples and answer the question.\n{cot_prompts}\n\nQ: {input_d['input']}\nA: Let's think step by step."
 
-        return {'data': [full_prompt]}
+        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
