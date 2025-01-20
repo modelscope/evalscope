@@ -1,5 +1,6 @@
 import glob
 import gradio as gr
+import logging
 import numpy as np
 import os
 import pandas as pd
@@ -13,7 +14,7 @@ from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
-logger = get_logger()
+logger = get_logger(log_level=logging.DEBUG, force=True)
 
 
 def scan_for_report_folders(root_path):
@@ -56,11 +57,10 @@ def load_single_report(root_path: str, report_name: str):
     prefix, model_name, datasets = process_report_name(report_name)
     report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
     report_list = get_report_list([report_path_list])
-    data_frame = get_data_frame(report_list)
 
     task_cfg_path = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))[0]
     task_cfg = yaml_to_dict(task_cfg_path)
-    return report_list, data_frame, datasets, task_cfg
+    return report_list, datasets, task_cfg
 
 
 def load_multi_report(root_path: str, report_names: List[str]):
@@ -116,12 +116,17 @@ def plot_single_report_scores(df: pd.DataFrame):
     return plot
 
 
-def plot_single_report_sunburst(df: pd.DataFrame):
-    categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
-    if df[ReportKey.dataset_name].nunique() > 1:
-        path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
-    else:
+def plot_single_report_sunburst(report_list: List[Report]):
+    if report_list[0].name == DataCollection.NAME:
+        df = get_data_frame(report_list)
+        categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = categories + [ReportKey.subset_name]
+    else:
+        df = get_data_frame(report_list, flatten_metrics=False)
+        categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
+        path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
+    logger.debug(f'df: {df}')
+    df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
     plot = px.sunburst(
         df,
         path=path,
@@ -129,7 +134,8 @@ def plot_single_report_sunburst(df: pd.DataFrame):
         color=ReportKey.score,
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
-        template='plotly_dark')
+        template='plotly_dark',
+        maxdepth=3)
     plot.update_traces(insidetextorientation='radial')
     plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1))
     return plot
@@ -254,9 +260,9 @@ def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: i
     logger.debug(f'page: {page}, rows_per_page: {rows_per_page}')
     start = (page - 1) * rows_per_page
     end = start + rows_per_page
-    df_subset = data_review_df.iloc[start:end]
-    df_subset.loc[:, 'Input'] = df_subset['Input'].map(process_model_prediction)
-    df_subset.loc[:, 'Score'] = df_subset['Score'].map(lambda x: str(process_model_prediction(x)))
+    df_subset = data_review_df.iloc[start:end].copy()
+    df_subset['Input'] = df_subset['Input'].map(process_model_prediction).astype(str)
+    df_subset['Score'] = df_subset['Score'].map(process_model_prediction).astype(str)
     return df_subset
 
 
@@ -302,7 +308,6 @@ def create_single_model_tab(sidebar: SidebarComponents):
         task_config = gr.JSON(value=None)
 
     report_list = gr.State([])
-    report_df = gr.State(None)
 
     with gr.Tab('Datasets Overview'):
         gr.Markdown('### Dataset Components')
@@ -354,26 +359,27 @@ def create_single_model_tab(sidebar: SidebarComponents):
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
-        outputs=[report_list, report_df, task_config, dataset_radio, work_dir, model_name])
+        outputs=[report_list, task_config, dataset_radio, work_dir, model_name])
     def update_single_report_data(root_path, report_name):
-        report_list, report_df, datasets, task_cfg = load_single_report(root_path, report_name)
+        report_list, datasets, task_cfg = load_single_report(root_path, report_name)
         work_dir = os.path.join(root_path, report_name.split('@')[0])
         model_name = report_name.split('@')[1].split(':')[0]
-        return (report_list, report_df, task_cfg, gr.update(choices=datasets, value=datasets[0]), work_dir, model_name)
+        return (report_list, task_cfg, gr.update(choices=datasets, value=datasets[0]), work_dir, model_name)
 
-    @report_list.change(inputs=[report_list, report_df], outputs=[score_plot, score_table, sunburst_plot])
-    def update_single_report_score(report_list, report_df):
+    @report_list.change(inputs=[report_list], outputs=[score_plot, score_table, sunburst_plot])
+    def update_single_report_score(report_list):
         report_score_df = get_acc_report_df(report_list)
         report_score_plot = plot_single_report_scores(report_score_df)
-        report_sunburst_plot = plot_single_report_sunburst(report_df)
+        report_sunburst_plot = plot_single_report_sunburst(report_list)
         return report_score_plot, report_score_df, report_sunburst_plot
 
     @gr.on(
         triggers=[dataset_radio.change, report_list.change],
-        inputs=[dataset_radio, report_df],
+        inputs=[dataset_radio, report_list],
         outputs=[dataset_plot, dataset_table, subset_radio])
-    def update_single_report_dataset(dataset_name, report_df):
+    def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
+        report_df = get_data_frame(report_list)
         data_score_df = get_single_dataset_data(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)
         subsets = data_score_df[ReportKey.subset_name].unique().tolist()
