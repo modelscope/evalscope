@@ -12,15 +12,19 @@ class TestCollection(unittest.TestCase):
     def test_create_collection(self):
         schema = CollectionSchema(name='math&reasoning', datasets=[
                     CollectionSchema(name='math', datasets=[
+                        CollectionSchema(name='generation', datasets=[
                             DatasetInfo(name='gsm8k', weight=1, task_type='math', tags=['en', 'math']),
                             DatasetInfo(name='competition_math', weight=1, task_type='math', tags=['en', 'math']),
+                        ]),
+                        CollectionSchema(name='multiple_choice', datasets=[
                             DatasetInfo(name='cmmlu', weight=2, task_type='math', tags=['zh', 'math'], args={'subset_list': ['college_mathematics', 'high_school_mathematics']}),
                             DatasetInfo(name='ceval', weight=3, task_type='math', tags=['zh', 'math'], args={'subset_list': ['advanced_mathematics', 'high_school_mathematics', 'discrete_mathematics', 'middle_school_mathematics']}),
+                        ]),
                     ]),
                     CollectionSchema(name='reasoning', datasets=[
-                            DatasetInfo(name='arc', weight=1, task_type='reasoning', tags=['en', 'reasoning']),
-                            DatasetInfo(name='ceval', weight=1, task_type='reasoning', tags=['zh', 'reasoning'], args={'subset_list': ['logic']}),
-                            DatasetInfo(name='race', weight=1, task_type='reasoning', tags=['en', 'reasoning']),
+                        DatasetInfo(name='arc', weight=1, task_type='reasoning', tags=['en', 'reasoning']),
+                        DatasetInfo(name='ceval', weight=1, task_type='reasoning', tags=['zh', 'reasoning'], args={'subset_list': ['logic']}),
+                        DatasetInfo(name='race', weight=1, task_type='reasoning', tags=['en', 'reasoning']),
                     ]),
                 ])
         print(schema.to_dict())

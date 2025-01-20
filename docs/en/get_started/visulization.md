@@ -1,10 +1,15 @@
 # Visualization
 
+Visualization supports single model evaluation results and multi-model comparison, as well as visualization of mixed dataset evaluations.
 ## Install Dependencies
 
 Install the dependencies required for visualization, including gradio, plotly, etc.
 ```bash
 pip install 'evalscope[app]'
+```
+
+```{note}
+Visualization requires `evalscope` version greater than or equal to `0.10.0`. If the version is less than `0.10.0`, please upgrade `evalscope` first.
 ```
 
 ## Start Visualization Service

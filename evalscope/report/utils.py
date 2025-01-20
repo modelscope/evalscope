@@ -79,7 +79,7 @@ class Report:
     metrics: List[Metric] = field(default_factory=list)
 
     def __post_init__(self):
-        self.score = normalize_score(macro_mean(self.metrics))
+        self.score = self.metrics[0].score  # NOTE: only use the first metric by default
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -100,7 +100,7 @@ class Report:
             data = json.load(f)
         return cls.from_dict(data)
 
-    def to_dataframe(self):
+    def to_dataframe(self, flatten_metrics: bool = True, flatten_categories: bool = True):
         table = defaultdict(list)
         for metric in self.metrics:
             for category in metric.categories:
@@ -112,7 +112,15 @@ class Report:
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)  # TODO: convert to percentage
+            # NOTE: only flatten metrics if needed, use the first metric by default
+            if not flatten_metrics:
+                break
         df = pd.DataFrame.from_dict(table, orient='columns')
+        if flatten_categories:
+            df = self._flatten_categories(df)
+        return df
+
+    def _flatten_categories(self, df: pd.DataFrame):
         # expand categories to multiple rows
         df_categories = df.copy()
         # multi-level aggregation for categories
