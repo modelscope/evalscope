@@ -1,4 +1,3 @@
-from modelscope import MsDataset
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
@@ -17,6 +16,7 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
 
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path:
+            from modelscope import MsDataset
             ds = MsDataset.load('AI-ModelScope/LongAlpaca-12k', subset_name='default', split='train')
         else:
             ds = self.dataset_json_list(self.query_parameters.dataset_path)

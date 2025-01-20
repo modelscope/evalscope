@@ -15,6 +15,7 @@ logger = get_logger()
 class DataAdapter(ABC):
 
     def __init__(self,
+                 name: str,
                  subset_list: list,
                  metric_list: List[Metric],
                  few_shot_num: Optional[int] = 0,
@@ -29,6 +30,7 @@ class DataAdapter(ABC):
             - parse_pred_result
             - match
         Args:
+            name: str, the name of the benchmark.
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
             few_shot_num: int, number of few-shot examples. Default: 0
@@ -38,6 +40,7 @@ class DataAdapter(ABC):
                 e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in
                     the form of A or B or C or D, do not output explanation:`
         """
+        self.name = name
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num

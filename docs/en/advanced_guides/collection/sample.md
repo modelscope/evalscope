@@ -4,14 +4,14 @@ In mixed data evaluation, sampling data is the second step, and currently, three
 
 ## Data Format
 
-The sampled data format is JSON Lines (jsonl), where each line is a JSON object containing properties such as `index`, `prompt`, `tags`, `task`, `weight`, `dataset_name`, and `subset_name`.
+The sampled data format is JSON Lines (jsonl), where each line is a JSON object containing properties such as `index`, `prompt`, `tags`, `task_type`, `weight`, `dataset_name`, and `subset_name`.
 
 ```json
 {
     "index": 0,
     "prompt": {"question": "What is the capital of France?"},
     "tags": ["en", "reasoning"],
-    "task": "question_answering",
+    "task_type": "question_answering",
     "weight": 1.0,
     "dataset_name": "arc",
     "subset_name": "ARC-Easy"
@@ -28,8 +28,8 @@ For example, if a total of 100 samples are to be taken, and there are two datase
 from evalscope.collections import WeightedSampler
 from evalscope.utils.io_utils import dump_jsonl_data
 
-sampler = WeightedSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = WeightedSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/weighted_mixed_data.jsonl')
 ```
 
@@ -42,8 +42,8 @@ For example, if a total of 100 samples are to be taken, and there are two datase
 ```python
 from evalscope.collections import StratifiedSampler
 
-sampler = StratifiedSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = StratifiedSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/stratified_mixed_data.jsonl')
 ```
 
@@ -56,7 +56,7 @@ For example, if a total of 100 samples are to be taken, and there are two datase
 ```python
 from evalscope.collections import UniformSampler
 
-sampler = UniformSampler(schema, 100)
-mixed_data = sampler.sample()
+sampler = UniformSampler(schema)
+mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/uniform_mixed_data.jsonl')
 ```
