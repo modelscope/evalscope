@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas import DataFrame
 
+from evalscope.constants import DataCollection
 from evalscope.report.utils import *
 
 
@@ -31,15 +32,17 @@ class ReportGenerator:
             subsets = []
             for subset_name, scores in subset_score_map.items():
                 for score_item in scores:
+                    categories = category_map.get(subset_name, ['default'])
+                    if isinstance(categories, str):
+                        categories = [categories]
                     subsets.append(
                         dict(
                             name=subset_name,
                             score=score_item['score'],
                             num=score_item['num'],
                             metric_name=score_item['metric_name'],
-                            categories=category_map.get(subset_name, ['default'])))
-            # explode categories to multiple rows
-            df = pd.DataFrame(subsets).explode('categories', ignore_index=True)
+                            categories=tuple(categories)))
+            df = pd.DataFrame(subsets)
             return df
 
         df = flatten_subset()
@@ -58,3 +61,20 @@ class ReportGenerator:
 
         report = Report(name=report_name, metrics=metrics_list, dataset_name=dataset_name, model_name=model_name)
         return report
+
+    @staticmethod
+    def gen_collection_report(df: DataFrame, all_dataset_name: str, model_name: str) -> Report:
+        categories = []
+        for category_name, group_category in df.groupby('categories'):
+            subsets = []
+            for (dataset_name, subset_name), group_subset in group_category.groupby(['dataset_name', 'subset_name']):
+                avg_score = group_subset['score'].mean()
+                num = group_subset['score'].count()
+                subsets.append(Subset(name=f'{dataset_name}/{subset_name}', score=float(avg_score), num=int(num)))
+
+            categories.append(Category(name=category_name, subsets=subsets))
+        return Report(
+            name=DataCollection.NAME,
+            metrics=[Metric(name='Average', categories=categories)],
+            dataset_name=all_dataset_name,
+            model_name=model_name)

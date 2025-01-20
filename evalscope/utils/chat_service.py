@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from functools import partial
 from pydantic import BaseModel, Field
 from threading import Thread
-from transformers import TextIteratorStreamer
 from typing import Any, List, Literal, Optional, Union
 
 
@@ -96,6 +95,7 @@ class ChatService:
 
     def __init__(self, model_path, attn_implementation):
         from modelscope import AutoModelForCausalLM, AutoTokenizer
+        from transformers import TextIteratorStreamer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModelForCausalLM.from_pretrained(

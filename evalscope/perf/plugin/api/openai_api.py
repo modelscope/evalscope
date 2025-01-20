@@ -1,6 +1,5 @@
 import json
 import os
-from transformers import AutoTokenizer
 from typing import Any, Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
@@ -25,6 +24,7 @@ class OpenaiPlugin(ApiPluginBase):
         """
         super().__init__(model_path=mode_path)
         if mode_path is not None:
+            from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
         else:
             self.tokenizer = None

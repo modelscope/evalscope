@@ -145,3 +145,7 @@ class EvalBackend:
     VLM_EVAL_KIT = 'VLMEvalKit'
     RAG_EVAL = 'RAGEval'
     THIRD_PARTY = 'ThirdParty'
+
+
+class DataCollection:
+    NAME = 'data_collection'

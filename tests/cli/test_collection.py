@@ -32,7 +32,7 @@ class TestCollection(unittest.TestCase):
     def test_generate_data(self):
         schema = CollectionSchema.from_dict(json.load(open('outputs/schema_test.json', 'r')))
         print(schema.to_dict())
-        mixed_data = WeightedSampler(schema, 100).sample()
+        mixed_data = WeightedSampler(schema).sample(100)
         dump_jsonl_data(mixed_data, 'outputs/mixed_data_test.jsonl')
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
@@ -40,14 +40,14 @@ class TestCollection(unittest.TestCase):
         from evalscope import TaskConfig, run_task
 
         task_cfg = TaskConfig(
-            model='qwen2.5',
+            model='Qwen2.5-7B-Instruct',
             api_url='http://127.0.0.1:8801/v1/chat/completions',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=['data_collection'],
             dataset_args={'data_collection': {
-                # 'local_path': 'outputs/mixed_data_test.jsonl'
-                'local_path': 'outputs/weighted_mixed_data.jsonl'
+                'local_path': 'outputs/mixed_data_test.jsonl'
+                # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
         )
         run_task(task_cfg=task_cfg)

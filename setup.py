@@ -126,6 +126,7 @@ if __name__ == '__main__':
     extra_requires['vlmeval'], _ = parse_requirements('requirements/vlmeval.txt')
     extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
+    extra_requires['app'], _ = parse_requirements('requirements/app.txt')
     extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
 
     all_requires.extend(install_requires)
@@ -133,6 +134,7 @@ if __name__ == '__main__':
     all_requires.extend(extra_requires['vlmeval'])
     all_requires.extend(extra_requires['rag'])
     all_requires.extend(extra_requires['perf'])
+    all_requires.extend(extra_requires['app'])
     extra_requires['all'] = all_requires
 
     setup(

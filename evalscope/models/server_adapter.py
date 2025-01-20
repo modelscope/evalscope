@@ -80,10 +80,13 @@ class ServerModelAdapter(BaseModelAdapter):
     def make_request(self, content: dict, infer_cfg: dict = {}) -> dict:
         """Make request to remote API."""
         # Format request JSON according to OpenAI API format
+        do_sample = infer_cfg.get('do_sample', False)
+        temperature = infer_cfg.get('temperature', 0.0) if do_sample else 0.0
+
         request_json = {
             **content, 'model': self.model_id,
             'max_tokens': infer_cfg.get('max_tokens', 2048),
-            'temperature': infer_cfg.get('temperature', 0.0),
+            'temperature': temperature,
             'top_p': infer_cfg.get('top_p', 1.0),
             'n': infer_cfg.get('num_return_sequences', 1),
             'stop': infer_cfg.get('stop', None)
