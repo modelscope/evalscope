@@ -1,0 +1,100 @@
+{
+    "name": "Qwen2.5-0.5B-Instruct_ifeval",
+    "dataset_name": "ifeval",
+    "model_name": "Qwen2.5-0.5B-Instruct",
+    "score": 0.3055,
+    "metrics": [
+        {
+            "name": "inst_level_loose_acc",
+            "num": 10,
+            "score": 0.3889,
+            "macro_score": 0.3889,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.3889,
+                    "macro_score": 0.3889,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.3889,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "inst_level_strict_acc",
+            "num": 10,
+            "score": 0.3333,
+            "macro_score": 0.3333,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.3333,
+                    "macro_score": 0.3333,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.3333,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "prompt_level_loose_acc",
+            "num": 10,
+            "score": 0.3,
+            "macro_score": 0.3,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.3,
+                    "macro_score": 0.3,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.3,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "prompt_level_strict_acc",
+            "num": 10,
+            "score": 0.2,
+            "macro_score": 0.2,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.2,
+                    "macro_score": 0.2,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.2,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

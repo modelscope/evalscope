@@ -1,11 +1,23 @@
 # Visualization
 
 Visualization supports single model evaluation results and multi-model comparison, as well as visualization of mixed dataset evaluations.
+
+## Quick Start
+
+Run the following command to quickly experience the visualization function, where the evaluation samples of Qwen2.5-0.5B and Qwen2.5-7B models on multiple datasets are included.
+
+```bash
+git clone https://github.com/modelscope/evalscope
+cd evalscope
+pip install -e '.[app]'
+evalscope app --outputs examples/viz
+```
+
 ## Install Dependencies
 
 Install the dependencies required for visualization, including gradio, plotly, etc.
 ```bash
-pip install 'evalscope[app]'
+pip install 'evalscope[app]' -U
 ```
 
 ```{note}
@@ -18,6 +30,14 @@ Run the following command to start the visualization service.
 ```bash
 evalscope app
 ```
+The supported command-line arguments are as follows:
+
+- `--outputs`: A string type used to specify the root directory of the evaluation report, with a default value of `./outputs`.
+- `--share`: A flag indicating whether to share the application.
+- `--server-name`: A string type with a default value of `None`, used to specify the server name.
+- `--server-port`: An integer type with a default value of `None`, used to specify the server port.
+- `--debug`: A flag indicating whether to debug the application.
+
 You can access the visualization service in the browser if the following output appears.
 ```text
 * Running on local URL:  http://127.0.0.1:7861

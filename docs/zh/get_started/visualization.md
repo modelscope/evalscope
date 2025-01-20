@@ -2,6 +2,18 @@
 
 可视化功能支持单模型评测结果和多模型评测结果对比，支持数据集混合评测可视化。
 
+## 快速体验
+
+运行如下命令，即可快速体验可视化功能，样例中包含Qwen2.5-0.5B和Qwen2.5-7B模型在多个数据集上部分示例的评测结果。
+
+```bash
+git clone https://github.com/modelscope/evalscope
+cd evalscope
+pip install -e '.[app]'
+evalscope app --outputs examples/viz
+```
+
+
 ## 安装依赖
 
 安装可视化所需的依赖，包括gradio、plotly等。
@@ -19,6 +31,15 @@ pip install 'evalscope[app]' -U
 ```bash
 evalscope app
 ```
+
+支持的命令行参数如下：
+
+- `--outputs`: 类型为字符串，用于指定评测报告所在的根目录，默认值为`./outputs`。
+- `--share`: 作为标志参数，是否共享应用程序。
+- `--server-name`: 类型为字符串，默认值为`None`，用于指定服务器名称。
+- `--server-port`: 类型为整数，默认值为`None`，用于指定服务器端口。
+- `--debug`: 作为标志参数，是否调试应用程序。
+
 输出如下内容即可在浏览器中访问可视化服务。
 ```text
 * Running on local URL:  http://127.0.0.1:7861
