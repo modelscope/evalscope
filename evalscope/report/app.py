@@ -1,6 +1,5 @@
 import glob
 import gradio as gr
-import logging
 import numpy as np
 import os
 import pandas as pd
@@ -14,7 +13,7 @@ from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
-logger = get_logger(log_level=logging.DEBUG, force=True)
+logger = get_logger()
 
 
 def scan_for_report_folders(root_path):
