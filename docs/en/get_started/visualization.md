@@ -2,17 +2,6 @@
 
 Visualization supports single model evaluation results and multi-model comparison, as well as visualization of mixed dataset evaluations.
 
-## Quick Start
-
-Run the following command to quickly experience the visualization function, where the evaluation samples of Qwen2.5-0.5B and Qwen2.5-7B models on multiple datasets are included.
-
-```bash
-git clone https://github.com/modelscope/evalscope
-cd evalscope
-pip install -e '.[app]'
-evalscope app --outputs examples/viz
-```
-
 ## Install Dependencies
 
 Install the dependencies required for visualization, including gradio, plotly, etc.
@@ -21,7 +10,7 @@ pip install 'evalscope[app]' -U
 ```
 
 ```{note}
-Visualization requires `evalscope` version greater than or equal to `0.10.0`. If the version is less than `0.10.0`, please upgrade `evalscope` first.
+Visualization requires `evalscope>=0.10.0` output evaluation reports. If the version is less than `0.10.0`, please upgrade `evalscope` first.
 ```
 
 ## Start Visualization Service
@@ -43,6 +32,15 @@ You can access the visualization service in the browser if the following output 
 * Running on local URL:  http://127.0.0.1:7861
 
 To create a public link, set `share=True` in `launch()`.
+```
+
+### Quick Start
+
+Run the following commands to download the sample and quickly experience the visualization feature. The sample includes evaluation results of the Qwen2.5-0.5B and Qwen2.5-7B models on several datasets for some examples.
+
+```bash
+git clone https://github.com/modelscope/evalscope
+evalscope app --outputs evalscope/examples/viz
 ```
 
 ## Features Introduction
