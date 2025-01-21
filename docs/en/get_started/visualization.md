@@ -22,14 +22,14 @@ evalscope app
 The supported command-line arguments are as follows:
 
 - `--outputs`: A string type used to specify the root directory of the evaluation report, with a default value of `./outputs`.
-- `--share`: A flag indicating whether to share the application.
-- `--server-name`: A string type with a default value of `None`, used to specify the server name.
-- `--server-port`: An integer type with a default value of `None`, used to specify the server port.
-- `--debug`: A flag indicating whether to debug the application.
+- `--share`: A flag indicating whether to share the application, default value is `False`.
+- `--server-name`: A string type with a default value of `0.0.0.0`, used to specify the server name.
+- `--server-port`: An integer type with a default value of `7860`, used to specify the server port.
+- `--debug`: A flag indicating whether to debug the application, default value is `False`.
 
 You can access the visualization service in the browser if the following output appears.
 ```text
-* Running on local URL:  http://127.0.0.1:7861
+* Running on local URL:  http://127.0.0.1:7860
 
 To create a public link, set `share=True` in `launch()`.
 ```

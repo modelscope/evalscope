@@ -24,14 +24,14 @@ evalscope app
 支持的命令行参数如下：
 
 - `--outputs`: 类型为字符串，用于指定评测报告所在的根目录，默认值为`./outputs`。
-- `--share`: 作为标志参数，是否共享应用程序。
-- `--server-name`: 类型为字符串，默认值为`None`，用于指定服务器名称。
-- `--server-port`: 类型为整数，默认值为`None`，用于指定服务器端口。
-- `--debug`: 作为标志参数，是否调试应用程序。
+- `--share`: 作为标志参数，是否共享应用程序，默认值为`False`。
+- `--server-name`: 类型为字符串，默认值为`0.0.0.0`，用于指定服务器名称。
+- `--server-port`: 类型为整数，默认值为`7860`，用于指定服务器端口。
+- `--debug`: 作为标志参数，是否调试应用程序，默认值为`False`。
 
 输出如下内容即可在浏览器中访问可视化服务。
 ```text
-* Running on local URL:  http://127.0.0.1:7861
+* Running on local URL:  http://127.0.0.1:7860
 
 To create a public link, set `share=True` in `launch()`.
 ```
