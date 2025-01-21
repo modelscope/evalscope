@@ -38,14 +38,14 @@ class GPQAAdapter(DataAdapter):
         Generate model prompt from input data.
         example:
         {
-            "question":"天气预报说本周星期三会下雨，昨天果然下雨了，今天星期几？",
-            "choice1":"星期一",
-            "choice2":"星期二",
-            "choice3":"星期三",
-            "choice4":"星期四",
-            "answer":"D",
+            "question":"Two people are playing the following game. A fair coin is tossed into the air. Person A says that in a single toss of the coin, the tail will come. So it's like the first shot or the third shot or the fifth shot. Person B says that the coin will come with a double toss. So like the second, fourth, sixth or eighth shot. Imagine this game played forever. What is the probability that person A wins this game?",
+            "choice1":"1/2",
+            "choice2":"1/4",
+            "choice3":"2/3",
+            "choice4":"1/8",
+            "answer":"C",
         }
-        """
+        """  # noqa: E501
         processed_input_d = self.__process_input(input_d)
         input_d['answer'] = processed_input_d['answer']  # add answer to input_d for answer extraction
         prompt = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}Let's think step by step: "  # noqa: E501
