@@ -2,17 +2,6 @@
 
 可视化功能支持单模型评测结果和多模型评测结果对比，支持数据集混合评测可视化。
 
-## 快速体验
-
-运行如下命令，即可快速体验可视化功能，样例中包含Qwen2.5-0.5B和Qwen2.5-7B模型在多个数据集上部分示例的评测结果。
-
-```bash
-git clone https://github.com/modelscope/evalscope
-cd evalscope
-pip install -e '.[app]'
-evalscope app --outputs examples/viz
-```
-
 
 ## 安装依赖
 
@@ -22,7 +11,7 @@ evalscope app --outputs examples/viz
 pip install 'evalscope[app]' -U
 ```
 ```{note}
-可视化功能需要`evalscope`版本大于等于`0.10.0`，若版本小于`0.10.0`，请先升级`evalscope`。
+可视化功能需要`evalscope>=0.10.0`输出的评测报告，若版本小于`0.10.0`，请先升级`evalscope`进行模型评测。
 ```
 
 ## 启动可视化服务
@@ -45,6 +34,15 @@ evalscope app
 * Running on local URL:  http://127.0.0.1:7861
 
 To create a public link, set `share=True` in `launch()`.
+```
+
+### 快速体验
+
+运行如下命令，即可下载样例并快速体验可视化功能，样例中包含Qwen2.5-0.5B和Qwen2.5-7B模型在多个数据集上部分示例的评测结果。
+
+```bash
+git clone https://github.com/modelscope/evalscope
+evalscope app --outputs evalscope/examples/viz
 ```
 
 ## 功能介绍
