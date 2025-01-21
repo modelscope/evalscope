@@ -1,0 +1,31 @@
+{
+    "name": "Qwen2.5-7B-Instruct_gsm8k",
+    "dataset_name": "gsm8k",
+    "model_name": "Qwen2.5-7B-Instruct",
+    "score": 0.8,
+    "metrics": [
+        {
+            "name": "AverageAccuracy",
+            "num": 10,
+            "score": 0.8,
+            "macro_score": 0.8,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.8,
+                    "macro_score": 0.8,
+                    "subsets": [
+                        {
+                            "name": "main",
+                            "score": 0.8,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

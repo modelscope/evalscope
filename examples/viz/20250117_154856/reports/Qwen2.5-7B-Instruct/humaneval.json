@@ -1,0 +1,31 @@
+{
+    "name": "Qwen2.5-7B-Instruct_humaneval",
+    "dataset_name": "humaneval",
+    "model_name": "Qwen2.5-7B-Instruct",
+    "score": 0.5,
+    "metrics": [
+        {
+            "name": "Pass@1",
+            "num": 10,
+            "score": 0.5,
+            "macro_score": 0.5,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.5,
+                    "macro_score": 0.5,
+                    "subsets": [
+                        {
+                            "name": "openai_humaneval",
+                            "score": 0.5,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "name": "Qwen2.5-0.5B-Instruct_arc",
+    "dataset_name": "arc",
+    "model_name": "Qwen2.5-0.5B-Instruct",
+    "score": 0.55,
+    "metrics": [
+        {
+            "name": "AverageAccuracy",
+            "num": 20,
+            "score": 0.55,
+            "macro_score": 0.55,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 20,
+                    "score": 0.55,
+                    "macro_score": 0.55,
+                    "subsets": [
+                        {
+                            "name": "ARC-Easy",
+                            "score": 0.9,
+                            "num": 10
+                        },
+                        {
+                            "name": "ARC-Challenge",
+                            "score": 0.2,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

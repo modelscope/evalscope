@@ -76,6 +76,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             # For base model, use the query as the input
             formatted_prompt = query
 
+        logger.debug(f'formatted_prompt: {formatted_prompt}')
+
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
         input_ids = inputs['input_ids']
 
