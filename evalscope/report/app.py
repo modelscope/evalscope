@@ -1,3 +1,4 @@
+import argparse
 import glob
 import gradio as gr
 import numpy as np
@@ -11,7 +12,7 @@ from typing import Any, List, Union
 from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
-from evalscope.utils.logger import get_logger
+from evalscope.utils.logger import configure_logging, get_logger
 
 logger = get_logger()
 
@@ -272,9 +273,9 @@ class SidebarComponents:
     load_btn: gr.Button
 
 
-def create_sidebar():
+def create_sidebar(outputs_dir: str):
     gr.Markdown('## Settings')
-    root_path = gr.Textbox(label='Report(s) Root Path', value='./outputs', placeholder='./outputs', lines=1)
+    root_path = gr.Textbox(label='Report(s) Root Path', value=outputs_dir, placeholder=outputs_dir, lines=1)
     reports_dropdown = gr.Dropdown(label='Select Report(s)', choices=[], multiselect=True, interactive=True)
     load_btn = gr.Button('Load & View')
     gr.Markdown('### Note: Select report(s) and click `Load & View` to view the data!')
@@ -457,7 +458,9 @@ def create_multi_model_tab(sidebar: SidebarComponents):
     return MultiModelComponents(multi_report_name=multi_report_name)
 
 
-def create_app():
+def create_app(args: argparse.Namespace):
+    configure_logging(debug=args.debug)
+
     with gr.Blocks(title='Evalscope Dashboard') as demo:
         with gr.Row():
             with gr.Column(scale=0, min_width=35):
@@ -468,7 +471,7 @@ def create_app():
         with gr.Row():
             with gr.Column(scale=1) as sidebar_column:
                 sidebar_visible = gr.State(True)
-                sidebar = create_sidebar()
+                sidebar = create_sidebar(args.outputs)
 
             with gr.Column(scale=5):
 
@@ -499,8 +502,19 @@ def create_app():
             text = '<' if new_visible else '>'
             return gr.update(visible=new_visible), new_visible, gr.update(value=text)
 
-    demo.launch()
+    demo.launch(share=args.share, server_name=args.server_name, server_port=args.server_port, debug=args.debug)
+
+
+def add_argument(parser: argparse.ArgumentParser):
+    parser.add_argument('--share', action='store_true', help='Share the app.')
+    parser.add_argument('--server-name', type=str, default='0.0.0.0', help='The server name.')
+    parser.add_argument('--server-port', type=int, default=None, help='The server port.')
+    parser.add_argument('--debug', action='store_true', help='Debug the app.')
+    parser.add_argument('--outputs', type=str, default='./outputs', help='The outputs dir.')
 
 
 if __name__ == '__main__':
-    create_app()
+    parser = argparse.ArgumentParser()
+    add_argument(parser)
+    args = parser.parse_args()
+    create_app(args)

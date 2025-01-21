@@ -1,0 +1,100 @@
+{
+    "name": "Qwen2.5-7B-Instruct_ifeval",
+    "dataset_name": "ifeval",
+    "model_name": "Qwen2.5-7B-Instruct",
+    "score": 0.6333,
+    "metrics": [
+        {
+            "name": "inst_level_loose_acc",
+            "num": 10,
+            "score": 0.6667,
+            "macro_score": 0.6667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.6667,
+                    "macro_score": 0.6667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.6667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "inst_level_strict_acc",
+            "num": 10,
+            "score": 0.6667,
+            "macro_score": 0.6667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.6667,
+                    "macro_score": 0.6667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.6667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "prompt_level_loose_acc",
+            "num": 10,
+            "score": 0.6,
+            "macro_score": 0.6,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.6,
+                    "macro_score": 0.6,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.6,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "prompt_level_strict_acc",
+            "num": 10,
+            "score": 0.6,
+            "macro_score": 0.6,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.6,
+                    "macro_score": 0.6,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.6,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
