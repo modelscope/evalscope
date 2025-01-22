@@ -280,7 +280,7 @@ To create a public link, set `share=True` in `launch()`.
 <table>
   <tr>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/setting.png" alt="Setting" style="width: 100%;" />
+      <img src="docs/zh/get_started/images/setting.png" alt="Setting" style="width: 90%;" />
       <p>设置界面</p>
     </td>
     <td style="text-align: center;">
@@ -294,7 +294,7 @@ To create a public link, set `share=True` in `launch()`.
       <p>报告概览</p>
     </td>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/report_details.png" alt="Report Details" style="width: 100%;" />
+      <img src="docs/zh/get_started/images/report_details.png" alt="Report Details" style="width: 91%;" />
       <p>报告详情</p>
     </td>
   </tr>

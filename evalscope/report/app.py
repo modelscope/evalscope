@@ -13,8 +13,11 @@ from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import configure_logging, get_logger
+from evalscope.version import __version__
 
 logger = get_logger()
+
+PLOTLY_THEME = 'plotly_dark'
 
 
 def scan_for_report_folders(root_path):
@@ -95,24 +98,33 @@ def get_acc_report_df(report_list: List[Report]):
             }
             data_dict.append(item)
     df = pd.DataFrame.from_dict(data_dict, orient='columns')
-    return df
+
+    styler = style_df(df, columns=[ReportKey.score])
+    return df, styler
+
+
+def style_df(df: pd.DataFrame, columns: List[str] = None):
+    # Apply background gradient to the specified columns
+    styler = df.style.background_gradient(subset=columns, cmap='RdYlGn', vmin=0.0, vmax=1.0, axis=0)
+    # Format the dataframe with a precision of 4 decimal places
+    styler.format(precision=4)
+    return styler
 
 
 def get_compare_report_df(acc_df: pd.DataFrame):
     df = acc_df.pivot_table(index=ReportKey.model_name, columns=ReportKey.dataset_name, values=ReportKey.score)
     df.reset_index(inplace=True)
-    styler = df.style.background_gradient(cmap='RdYlGn', vmin=0.0, vmax=1.0, axis=0)
-    styler.format(precision=4)
-    return styler
+
+    styler = style_df(df)
+    return df, styler
 
 
 def plot_single_report_scores(df: pd.DataFrame):
-    plot = px.bar(
-        df,
-        x=df[ReportKey.dataset_name],
-        y=df[ReportKey.score],
-        color=df[ReportKey.dataset_name],
-        template='plotly_dark')
+    plot = px.bar(df, x=df[ReportKey.dataset_name], y=df[ReportKey.score], text=df[ReportKey.score])
+
+    width = 0.2 if len(df[ReportKey.dataset_name]) <= 5 else None
+    plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
+    plot.update_layout(uniformtext_minsize=12, uniformtext_mode='hide', yaxis=dict(range=[0, 1]), template=PLOTLY_THEME)
     return plot
 
 
@@ -127,6 +139,7 @@ def plot_single_report_sunburst(report_list: List[Report]):
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
     logger.debug(f'df: {df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
+
     plot = px.sunburst(
         df,
         path=path,
@@ -134,15 +147,17 @@ def plot_single_report_sunburst(report_list: List[Report]):
         color=ReportKey.score,
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
-        template='plotly_dark',
-        maxdepth=3)
+        template=PLOTLY_THEME,
+        maxdepth=4)
     plot.update_traces(insidetextorientation='radial')
-    plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1))
+    plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1), height=600)
     return plot
 
 
-def get_single_dataset_data(df: pd.DataFrame, dataset_name: str):
-    return df[df[ReportKey.dataset_name] == dataset_name]
+def get_single_dataset_df(df: pd.DataFrame, dataset_name: str):
+    df = df[df[ReportKey.dataset_name] == dataset_name]
+    styler = style_df(df, columns=[ReportKey.score])
+    return df, styler
 
 
 def plot_single_dataset_scores(df: pd.DataFrame):
@@ -152,8 +167,12 @@ def plot_single_dataset_scores(df: pd.DataFrame):
         x=df[ReportKey.metric_name],
         y=df[ReportKey.score],
         color=df[ReportKey.subset_name],
-        template='plotly_dark',
+        text=df[ReportKey.score],
         barmode='group')
+
+    width = 0.2 if len(df[ReportKey.subset_name]) <= 5 else None
+    plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
+    plot.update_layout(uniformtext_minsize=12, uniformtext_mode='hide', yaxis=dict(range=[0, 1]), template=PLOTLY_THEME)
     return plot
 
 
@@ -173,7 +192,7 @@ def plot_multi_report_radar(df: pd.DataFrame):
                 fill='toself'))
 
     fig.update_layout(
-        template='plotly_dark',
+        template=PLOTLY_THEME,
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
         margin=dict(t=20, l=20, r=20, b=20))
     return fig
@@ -263,7 +282,8 @@ def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: i
     df_subset = data_review_df.iloc[start:end].copy()
     df_subset['Input'] = df_subset['Input'].map(process_model_prediction).astype(str)
     df_subset['Score'] = df_subset['Score'].map(process_model_prediction).astype(str)
-    return df_subset
+    styler = style_df(df_subset, columns=['NScore'])
+    return df_subset, styler
 
 
 @dataclass
@@ -273,18 +293,47 @@ class SidebarComponents:
     load_btn: gr.Button
 
 
-def create_sidebar(outputs_dir: str):
-    gr.Markdown('## Settings')
-    root_path = gr.Textbox(label='Report(s) Root Path', value=outputs_dir, placeholder=outputs_dir, lines=1)
-    reports_dropdown = gr.Dropdown(label='Select Report(s)', choices=[], multiselect=True, interactive=True)
-    load_btn = gr.Button('Load & View')
-    gr.Markdown('### Note: Select report(s) and click `Load & View` to view the data!')
+def create_sidebar(outputs_dir: str, lang: str):
+    locale_dict = {
+        'settings': {
+            'zh': '设置',
+            'en': 'Settings'
+        },
+        'report_root_path': {
+            'zh': '报告根路径',
+            'en': 'Report Root Path'
+        },
+        'select_reports': {
+            'zh': '请选择报告',
+            'en': 'Select Reports'
+        },
+        'load_btn': {
+            'zh': '加载并查看',
+            'en': 'Load & View'
+        },
+        'note': {
+            'zh': '请选择报告并点击`加载并查看`来查看数据',
+            'en': 'Please select reports and click `Load & View` to view the data'
+        },
+        'warning': {
+            'zh': '没有找到报告，请检查路径',
+            'en': 'No reports found, please check the path'
+        }
+    }
+
+    gr.Markdown(f'## {locale_dict["settings"][lang]}')
+    root_path = gr.Textbox(
+        label=locale_dict['report_root_path'][lang], value=outputs_dir, placeholder=outputs_dir, lines=1)
+    reports_dropdown = gr.Dropdown(
+        label=locale_dict['select_reports'][lang], choices=[], multiselect=True, interactive=True)
+    load_btn = gr.Button(locale_dict['load_btn'][lang])
+    gr.Markdown(f'### {locale_dict["note"][lang]}')
 
     @reports_dropdown.focus(inputs=[root_path], outputs=[reports_dropdown])
     def update_dropdown_choices(root_path):
         folders = scan_for_report_folders(root_path)
         if len(folders) == 0:
-            gr.Warning('No reports found, please check the path', duration=3)
+            gr.Warning(locale_dict['warning'][lang], duration=3)
         return gr.update(choices=folders)
 
     return SidebarComponents(
@@ -295,41 +344,131 @@ def create_sidebar(outputs_dir: str):
 
 
 @dataclass
+class VisualizationComponents:
+    single_model: gr.Tab
+    multi_model: gr.Tab
+
+
+def create_visualization(sidebar: SidebarComponents, lang: str):
+    locale_dict = {
+        'visualization': {
+            'zh': '可视化',
+            'en': 'Visualization'
+        },
+        'single_model': {
+            'zh': '单模型',
+            'en': 'Single Model'
+        },
+        'multi_model': {
+            'zh': '多模型',
+            'en': 'Multi Model'
+        }
+    }
+    with gr.Column(visible=True):
+        gr.Markdown(f'## {locale_dict["visualization"][lang]}')
+        with gr.Tabs():
+            with gr.Tab(locale_dict['single_model'][lang]):
+                single = create_single_model_tab(sidebar, lang)
+
+            with gr.Tab(locale_dict['multi_model'][lang]):
+                multi = create_multi_model_tab(sidebar, lang)
+    return VisualizationComponents(
+        single_model=single,
+        multi_model=multi,
+    )
+
+
+@dataclass
 class SingleModelComponents:
     report_name: gr.Dropdown
 
 
-def create_single_model_tab(sidebar: SidebarComponents):
-    report_name = gr.Dropdown(label='Select Report', choices=[], interactive=True)
+def create_single_model_tab(sidebar: SidebarComponents, lang: str):
+    locale_dict = {
+        'select_report': {
+            'zh': '选择报告',
+            'en': 'Select Report'
+        },
+        'task_config': {
+            'zh': '任务配置',
+            'en': 'Task Config'
+        },
+        'datasets_overview': {
+            'zh': '数据集概览',
+            'en': 'Datasets Overview'
+        },
+        'dataset_components': {
+            'zh': '数据集组成',
+            'en': 'Dataset Components'
+        },
+        'dataset_scores': {
+            'zh': '数据集分数',
+            'en': 'Dataset Scores'
+        },
+        'dataset_scores_table': {
+            'zh': '数据集分数表',
+            'en': 'Dataset Scores Table'
+        },
+        'dataset_details': {
+            'zh': '数据集详情',
+            'en': 'Dataset Details'
+        },
+        'select_dataset': {
+            'zh': '选择数据集',
+            'en': 'Select Dataset'
+        },
+        'model_prediction': {
+            'zh': '模型预测',
+            'en': 'Model Prediction'
+        },
+        'select_subset': {
+            'zh': '选择子集',
+            'en': 'Select Subset'
+        },
+        'answer_mode': {
+            'zh': '答案模式',
+            'en': 'Answer Mode'
+        },
+        'page': {
+            'zh': '页码',
+            'en': 'Page'
+        }
+    }
+
+    # Update the UI components with localized labels
+    report_name = gr.Dropdown(label=locale_dict['select_report'][lang], choices=[], interactive=True)
     work_dir = gr.State(None)
     model_name = gr.State(None)
 
-    with gr.Accordion('Task Config', open=False):
+    with gr.Accordion(locale_dict['task_config'][lang], open=False):
         task_config = gr.JSON(value=None)
 
     report_list = gr.State([])
 
-    with gr.Tab('Datasets Overview'):
-        gr.Markdown('### Dataset Components')
-        sunburst_plot = gr.Plot(value=None, scale=1, label='Components')
-        gr.Markdown('### Dataset Scores')
-        score_plot = gr.Plot(value=None, scale=1, label='Scores')
-        gr.Markdown('### Dataset Scores Table')
+    with gr.Tab(locale_dict['datasets_overview'][lang]):
+        gr.Markdown(f'### {locale_dict["dataset_components"][lang]}')
+        sunburst_plot = gr.Plot(value=None, scale=1, label=locale_dict['dataset_components'][lang])
+        gr.Markdown(f'### {locale_dict["dataset_scores"][lang]}')
+        score_plot = gr.Plot(value=None, scale=1, label=locale_dict['dataset_scores'][lang])
+        gr.Markdown(f'### {locale_dict["dataset_scores_table"][lang]}')
         score_table = gr.DataFrame(value=None)
 
-    with gr.Tab('Dataset Details'):
-        dataset_radio = gr.Radio(label='Select Dataset', choices=[], show_label=True, interactive=True)
-        gr.Markdown('### Dataset Scores')
-        dataset_plot = gr.Plot(value=None, scale=1, label='Scores')
-        gr.Markdown('### Dataset Scores Table')
+    with gr.Tab(locale_dict['dataset_details'][lang]):
+        dataset_radio = gr.Radio(
+            label=locale_dict['select_dataset'][lang], choices=[], show_label=True, interactive=True)
+        gr.Markdown(f'### {locale_dict["dataset_scores"][lang]}')
+        dataset_plot = gr.Plot(value=None, scale=1, label=locale_dict['dataset_scores'][lang])
+        gr.Markdown(f'### {locale_dict["dataset_scores_table"][lang]}')
         dataset_table = gr.DataFrame(value=None)
 
-        gr.Markdown('### Model Prediction')
-        subset_radio = gr.Radio(label='Select Subset', choices=[], show_label=True, interactive=True)
+        gr.Markdown(f'### {locale_dict["model_prediction"][lang]}')
+        subset_select = gr.Dropdown(
+            label=locale_dict['select_subset'][lang], choices=[], show_label=True, interactive=True)
         with gr.Row():
             answer_mode_radio = gr.Radio(
-                label='Answer Mode', choices=['All', 'Pass', 'Fail'], value='All', interactive=True)
-            page_number = gr.Number(value=1, label='Page', minimum=1, maximum=1, step=1, interactive=True)
+                label=locale_dict['answer_mode'][lang], choices=['All', 'Pass', 'Fail'], value='All', interactive=True)
+            page_number = gr.Number(
+                value=1, label=locale_dict['page'][lang], minimum=1, maximum=1, step=1, interactive=True)
         answer_mode_counts = gr.Markdown('', label='Counts')
         data_review_df = gr.State(None)
         filtered_review_df = gr.State(None)
@@ -355,7 +494,7 @@ def create_single_model_tab(sidebar: SidebarComponents):
                 'right': '\\]',
                 'display': True
             }],
-            max_height=500)
+            max_height=600)
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
@@ -368,23 +507,23 @@ def create_single_model_tab(sidebar: SidebarComponents):
 
     @report_list.change(inputs=[report_list], outputs=[score_plot, score_table, sunburst_plot])
     def update_single_report_score(report_list):
-        report_score_df = get_acc_report_df(report_list)
+        report_score_df, styler = get_acc_report_df(report_list)
         report_score_plot = plot_single_report_scores(report_score_df)
         report_sunburst_plot = plot_single_report_sunburst(report_list)
-        return report_score_plot, report_score_df, report_sunburst_plot
+        return report_score_plot, styler, report_sunburst_plot
 
     @gr.on(
         triggers=[dataset_radio.change, report_list.change],
         inputs=[dataset_radio, report_list],
-        outputs=[dataset_plot, dataset_table, subset_radio])
+        outputs=[dataset_plot, dataset_table, subset_select])
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
         report_df = get_data_frame(report_list)
-        data_score_df = get_single_dataset_data(report_df, dataset_name)
+        data_score_df, styler = get_single_dataset_df(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)
         subsets = data_score_df[ReportKey.subset_name].unique().tolist()
         logger.debug(f'subsets: {subsets}')
-        return data_score_plot, data_score_df, gr.update(choices=subsets, value=subsets[0])
+        return data_score_plot, styler, gr.update(choices=subsets, value=subsets[0])
 
     @gr.on(
         triggers=[report_list.change, dataset_radio.change, subset_radio.change],
@@ -427,10 +566,10 @@ def create_single_model_tab(sidebar: SidebarComponents):
         inputs=[filtered_review_df, page_number],
         outputs=[data_review_table])
     def update_table(filtered_df, page_number):
-        subset_df = get_table_data(filtered_df, page_number)
+        subset_df, styler = get_table_data(filtered_df, page_number)
         if subset_df is None:
             return gr.skip()
-        return subset_df
+        return styler
 
     return SingleModelComponents(report_name=report_name)
 
@@ -440,11 +579,26 @@ class MultiModelComponents:
     multi_report_name: gr.Dropdown
 
 
-def create_multi_model_tab(sidebar: SidebarComponents):
-    multi_report_name = gr.Dropdown(label='Select Reports', choices=[], multiselect=True, interactive=True)
-    gr.Markdown('### Model Radar')
+def create_multi_model_tab(sidebar: SidebarComponents, lang: str):
+    locale_dict = {
+        'select_reports': {
+            'zh': '请选择报告',
+            'en': 'Select Reports'
+        },
+        'model_radar': {
+            'zh': '模型对比雷达',
+            'en': 'Model Comparison Radar'
+        },
+        'model_scores': {
+            'zh': '模型对比分数',
+            'en': 'Model Comparison Scores'
+        }
+    }
+    multi_report_name = gr.Dropdown(
+        label=locale_dict['select_reports'][lang], choices=[], multiselect=True, interactive=True)
+    gr.Markdown(locale_dict['model_radar'][lang])
     radar_plot = gr.Plot(value=None)
-    gr.Markdown('### Model Scores')
+    gr.Markdown(locale_dict['model_scores'][lang])
     score_table = gr.DataFrame(value=None)
 
     @multi_report_name.change(inputs=[sidebar.root_path, multi_report_name], outputs=[radar_plot, score_table])
@@ -452,45 +606,58 @@ def create_multi_model_tab(sidebar: SidebarComponents):
         if not multi_report_name:
             return gr.skip()
         report_list = load_multi_report(root_path, multi_report_name)
-        report_df = get_acc_report_df(report_list)
+        report_df, _ = get_acc_report_df(report_list)
         report_radar_plot = plot_multi_report_radar(report_df)
-        report_compare_df = get_compare_report_df(report_df)
-        return report_radar_plot, report_compare_df
+        _, styler = get_compare_report_df(report_df)
+        return report_radar_plot, styler
 
     return MultiModelComponents(multi_report_name=multi_report_name)
 
 
 def create_app(args: argparse.Namespace):
     configure_logging(debug=args.debug)
+    lang = args.lang
+
+    locale_dict = {
+        'title': {
+            'zh': '📈 EvalScope 看板',
+            'en': '📈 Evalscope Dashboard'
+        },
+        'star_beggar': {
+            'zh':
+            '喜欢<a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>就动动手指给我们加个star吧 🥺 ',
+            'en':
+            'If you like <a href=\"https://github.com/modelscope/evalscope\" target=\"_blank\">EvalScope</a>, '
+            'please take a few seconds to star us 🥺 '
+        },
+        'note': {
+            'zh': '请选择报告',
+            'en': 'Please select reports'
+        }
+    }
 
     with gr.Blocks(title='Evalscope Dashboard') as demo:
+        gr.HTML(f'<h1 style="text-align: left;">{locale_dict["title"][lang]} (v{__version__})</h1>')
         with gr.Row():
             with gr.Column(scale=0, min_width=35):
                 toggle_btn = gr.Button('<')
             with gr.Column(scale=1):
-                gr.HTML('<h1 style="text-align: left;">Evalscope Dashboard</h1>')  # 文本列
+                gr.HTML(f'<h3 style="text-align: left;">{locale_dict["star_beggar"][lang]}</h3>')
 
         with gr.Row():
             with gr.Column(scale=1) as sidebar_column:
                 sidebar_visible = gr.State(True)
-                sidebar = create_sidebar(args.outputs)
+                sidebar = create_sidebar(args.outputs, lang)
 
             with gr.Column(scale=5):
-
-                with gr.Column(visible=True):
-                    gr.Markdown('## Visualization')
-                    with gr.Tabs():
-                        with gr.Tab('Single Model'):
-                            single = create_single_model_tab(sidebar)
-
-                        with gr.Tab('Multi Model'):
-                            multi = create_multi_model_tab(sidebar)
+                visualization = create_visualization(sidebar, lang)
 
         @sidebar.load_btn.click(
-            inputs=[sidebar.reports_dropdown], outputs=[single.report_name, multi.multi_report_name])
+            inputs=[sidebar.reports_dropdown],
+            outputs=[visualization.single_model.report_name, visualization.multi_model.multi_report_name])
         def update_displays(reports_dropdown):
             if not reports_dropdown:
-                gr.Warning('No reports found, please check the path', duration=3)
+                gr.Warning(locale_dict['note'][lang], duration=3)
                 return gr.skip()
 
             return (
@@ -512,6 +679,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--server-name', type=str, default='0.0.0.0', help='The server name.')
     parser.add_argument('--server-port', type=int, default=None, help='The server port.')
     parser.add_argument('--debug', action='store_true', help='Debug the app.')
+    parser.add_argument('--lang', type=str, default='zh', help='The locale.', choices=['zh', 'en'])
     parser.add_argument('--outputs', type=str, default='./outputs', help='The outputs dir.')
 
 
