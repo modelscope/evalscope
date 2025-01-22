@@ -148,7 +148,7 @@ def plot_single_report_sunburst(report_list: List[Report]):
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
         template=PLOTLY_THEME,
-        maxdepth=3)
+        maxdepth=4)
     plot.update_traces(insidetextorientation='radial')
     plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1), height=600)
     return plot
