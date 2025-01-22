@@ -525,8 +525,10 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         logger.debug(f'subsets: {subsets}')
         return data_score_plot, styler, gr.update(choices=subsets, value=subsets[0])
 
-    @subset_select.change(
-        inputs=[work_dir, model_name, dataset_radio, subset_select], outputs=[data_review_df, page_number])
+    @gr.on(
+        triggers=[report_list.change, dataset_radio.change, subset_radio.change],
+        inputs=[work_dir, model_name, dataset_radio, subset_radio],
+        outputs=[data_review_df, page_number])
     def update_single_report_subset(work_dir, model_name, dataset_name, subset_name):
         if not subset_name:
             return gr.skip()
