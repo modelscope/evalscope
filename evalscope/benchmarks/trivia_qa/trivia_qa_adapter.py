@@ -101,7 +101,7 @@ class TriviaQaAdapter(DataAdapter):
         context += self._generate_prompt(input_d=input_d, include_answer=False)
         full_prompt = context
 
-        return {'data': [full_prompt], 'system_prompt': prompt}
+        return {'data': [full_prompt], 'system_prompt': prompt or self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> list:
         # Get the gold choice

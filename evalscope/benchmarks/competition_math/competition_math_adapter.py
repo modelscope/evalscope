@@ -24,7 +24,7 @@ logger = get_logger()
     few_shot_num=4,
     train_split='train',
     eval_split='test',
-    prompt_template='',
+    prompt_template='Put the final answer in \\boxed{}.',
 )
 class CompetitionMathAdapter(DataAdapter):
     """ To be tested for all models. """
@@ -77,7 +77,7 @@ class CompetitionMathAdapter(DataAdapter):
         use_fewshot = self.few_shot_num > 0
         full_prompt = self._generate_prompt(input_d, use_fewshot=use_fewshot)
 
-        return {'data': [full_prompt], 'system_prompt': 'Put the final answer in \\boxed{}.'}
+        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

@@ -20,6 +20,7 @@
 | `hellaswag`       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
 | `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
 | `ifeval`       | [modelscope/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)                | 指令遵循         |  |
+| `iquiz`       | [modelscope/iquiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)                | 智商和情商         |  |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
 | `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |

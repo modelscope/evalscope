@@ -15,7 +15,6 @@
 
 import collections
 import json
-import langdetect
 import logging
 import random
 import re
@@ -163,7 +162,7 @@ class ResponseLanguageChecker(Instruction):
           True if the language of `value` follows instruction; otherwise False.
         """
         assert isinstance(value, str)
-
+        import langdetect
         try:
             return langdetect.detect(value) == self._language
         except langdetect.LangDetectException as e:
@@ -1339,7 +1338,7 @@ class CapitalLettersEnglishChecker(Instruction):
     def check_following(self, value):
         """Checks that the response is in English and in all capital letters."""
         assert isinstance(value, str)
-
+        import langdetect
         try:
             return value.isupper() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:
@@ -1367,7 +1366,7 @@ class LowercaseLettersEnglishChecker(Instruction):
     def check_following(self, value):
         """Checks that the response is in English and in all lowercase letters."""
         assert isinstance(value, str)
-
+        import langdetect
         try:
             return value.islower() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:

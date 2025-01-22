@@ -1,0 +1,46 @@
+{
+    "name": "Qwen2.5-7B-Instruct_ceval",
+    "dataset_name": "ceval",
+    "model_name": "Qwen2.5-7B-Instruct",
+    "score": 0.825,
+    "metrics": [
+        {
+            "name": "AverageAccuracy",
+            "num": 40,
+            "score": 0.825,
+            "macro_score": 0.825,
+            "categories": [
+                {
+                    "name": [
+                        "STEM"
+                    ],
+                    "num": 40,
+                    "score": 0.825,
+                    "macro_score": 0.825,
+                    "subsets": [
+                        {
+                            "name": "computer_network",
+                            "score": 0.7,
+                            "num": 10
+                        },
+                        {
+                            "name": "operating_system",
+                            "score": 0.9,
+                            "num": 10
+                        },
+                        {
+                            "name": "computer_architecture",
+                            "score": 0.8,
+                            "num": 10
+                        },
+                        {
+                            "name": "college_programming",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
