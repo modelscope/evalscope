@@ -22,6 +22,7 @@ evalscope app
 The supported command-line arguments are as follows:
 
 - `--outputs`: A string type used to specify the root directory of the evaluation report, with a default value of `./outputs`.
+- `--lang`: A string type used to specify the interface language, with a default value of `zh`, supports `zh` and `en`.
 - `--share`: A flag indicating whether to share the application, default value is `False`.
 - `--server-name`: A string type with a default value of `0.0.0.0`, used to specify the server name.
 - `--server-port`: An integer type with a default value of `7860`, used to specify the server port.
