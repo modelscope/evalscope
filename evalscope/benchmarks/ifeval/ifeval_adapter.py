@@ -6,7 +6,6 @@ from evalscope.benchmarks.ifeval.utils import agg_inst_level_acc, process_result
 from evalscope.constants import EvalType
 from evalscope.metrics import Metric, mean
 from evalscope.models import ChatGenerationModelAdapter
-from evalscope.utils.utils import normalize_score
 
 
 @Benchmark.register(
