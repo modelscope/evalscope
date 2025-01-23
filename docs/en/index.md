@@ -19,7 +19,7 @@ We always welcome PRs and issues from users to improve EvalScope.
 get_started/introduction.md
 get_started/installation.md
 get_started/basic_usage.md
-get_started/visulization.md
+get_started/visualization.md
 get_started/parameters.md
 get_started/supported_dataset.md
 :::

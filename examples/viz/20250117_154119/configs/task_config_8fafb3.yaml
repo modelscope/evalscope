@@ -1,0 +1,94 @@
+api_key: EMPTY
+api_url: http://127.0.0.1:8801/v1/chat/completions
+chat_template: null
+dataset_args:
+  arc:
+    dataset_id: modelscope/ai2_arc
+    eval_split: test
+    few_shot_num: 0
+    few_shot_random: false
+    name: arc
+    prompt_template: ''
+    subset_list:
+    - ARC-Easy
+    - ARC-Challenge
+    train_split: train
+  ceval:
+    dataset_id: modelscope/ceval-exam
+    eval_split: val
+    few_shot_num: 0
+    few_shot_random: false
+    name: ceval
+    prompt_template: null
+    subset_list:
+    - computer_network
+    - operating_system
+    - computer_architecture
+    - college_programming
+    train_split: dev
+  gsm8k:
+    dataset_id: modelscope/gsm8k
+    eval_split: test
+    few_shot_num: 4
+    few_shot_random: false
+    name: gsm8k
+    prompt_template: ''
+    subset_list:
+    - main
+    train_split: train
+  humaneval:
+    dataset_id: modelscope/humaneval
+    eval_split: test
+    few_shot_num: 0
+    few_shot_random: false
+    name: humaneval
+    prompt_template: 'Complete the following python code:
+
+      '
+    subset_list:
+    - openai_humaneval
+    train_split: null
+  ifeval:
+    dataset_id: opencompass/ifeval
+    eval_split: train
+    few_shot_num: 0
+    few_shot_random: false
+    name: ifeval
+    prompt_template: ''
+    subset_list:
+    - default
+    train_split: null
+dataset_dir: /root/.cache/modelscope/datasets
+dataset_hub: modelscope
+datasets:
+- ifeval
+- humaneval
+- gsm8k
+- arc
+- ceval
+debug: false
+dry_run: false
+eval_backend: Native
+eval_config: null
+eval_type: service
+generation_config:
+  do_sample: false
+  max_length: 2048
+  max_new_tokens: 512
+  temperature: 1.0
+  top_k: 50
+  top_p: 1.0
+limit: 10
+mem_cache: false
+model: Qwen2.5-0.5B-Instruct
+model_args:
+  device: auto
+  precision: torch.float16
+  revision: master
+model_id: Qwen2.5-0.5B-Instruct
+outputs: null
+seed: 42
+stage: all
+template_type: null
+use_cache: null
+work_dir: ./outputs/20250117_154119

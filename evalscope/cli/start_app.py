@@ -3,7 +3,7 @@ import os
 from argparse import ArgumentParser
 
 from evalscope.cli.base import CLICommand
-from evalscope.report.app import create_app
+from evalscope.report.app import add_argument, create_app
 
 
 def subparser_func(args):
@@ -23,7 +23,8 @@ class StartAppCMD(CLICommand):
         """ define args for create pipeline template command.
         """
         parser = parsers.add_parser(StartAppCMD.name)
+        add_argument(parser)
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
-        create_app()
+        create_app(self.args)
