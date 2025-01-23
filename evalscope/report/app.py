@@ -250,7 +250,10 @@ def normalize_score(score):
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     data_path = os.path.join(work_dir, OutputsStructure.REVIEWS_DIR, model_name)
     subset_name = subset_name.replace('/', '_')  # for collection report
-    origin_df = pd.read_json(os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl'), lines=True)
+    review_path = os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl')
+    logger.debug(f'review_path: {review_path}')
+    origin_df = pd.read_json(review_path, lines=True)
+
     ds = []
     for i, item in origin_df.iterrows():
         raw_input = item['raw_input']
@@ -274,7 +277,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
 
 def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: int = 1) -> pd.DataFrame:
     if data_review_df is None:
-        return None
+        return pd.DataFrame(), None
 
     logger.debug(f'page: {page}, rows_per_page: {rows_per_page}')
     start = (page - 1) * rows_per_page
@@ -515,7 +518,7 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
     @gr.on(
         triggers=[dataset_radio.change, report_list.change],
         inputs=[dataset_radio, report_list],
-        outputs=[dataset_plot, dataset_table, subset_select])
+        outputs=[dataset_plot, dataset_table, subset_select, data_review_df])
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
         report_df = get_data_frame(report_list)
@@ -523,11 +526,11 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         data_score_plot = plot_single_dataset_scores(data_score_df)
         subsets = data_score_df[ReportKey.subset_name].unique().tolist()
         logger.debug(f'subsets: {subsets}')
-        return data_score_plot, styler, gr.update(choices=subsets, value=subsets[0])
+        return data_score_plot, styler, gr.update(choices=subsets, value=None), None
 
     @gr.on(
-        triggers=[report_list.change, dataset_radio.change, subset_radio.change],
-        inputs=[work_dir, model_name, dataset_radio, subset_radio],
+        triggers=[subset_select.change],
+        inputs=[work_dir, model_name, dataset_radio, subset_select],
         outputs=[data_review_df, page_number])
     def update_single_report_subset(work_dir, model_name, dataset_name, subset_name):
         if not subset_name:
@@ -566,9 +569,9 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         inputs=[filtered_review_df, page_number],
         outputs=[data_review_table])
     def update_table(filtered_df, page_number):
+        if filtered_df is None:
+            return gr.update(value=None)
         subset_df, styler = get_table_data(filtered_df, page_number)
-        if subset_df is None:
-            return gr.skip()
         return styler
 
     return SingleModelComponents(report_name=report_name)
