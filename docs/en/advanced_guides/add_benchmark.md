@@ -1,4 +1,4 @@
-# Adding Benchmark Evaluation
+# 👍 Contribute Benchmark
 
 EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn), is continuously optimizing its benchmark evaluation features! We invite you to refer to this tutorial to easily add your own evaluation benchmarks and share your contributions with the community. Let’s work together to support the growth of EvalScope and make our tools even better!
 
