@@ -86,9 +86,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             infer_cfg['do_sample'] = True
 
         # stop settings
-        stop = infer_cfg.get('stop', None)
-        eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0] \
-            if stop else self.tokenizer.eos_token_id
+        stop = infer_cfg.get('stop', [])
+        if stop:
+            eos_token_id = self.tokenizer.encode(stop, add_special_tokens=False)[0]
+        else:
+            eos_token_id = self.tokenizer.eos_token_id
 
         if eos_token_id is not None:
             infer_cfg['eos_token_id'] = eos_token_id
