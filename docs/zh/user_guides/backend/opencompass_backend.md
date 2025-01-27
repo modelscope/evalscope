@@ -134,7 +134,7 @@ pip install vllm -U
 
 **部署模型服务**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
 ```
 :::
 
@@ -148,7 +148,7 @@ pip install lmdeploy -U
 
 **部署模型服务**
 ```shell
-CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
+LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen/Qwen2-0.5B-Instruct --server-port 8000
 ```
 :::
 
@@ -279,7 +279,7 @@ eval_config:
   - `models`：字典列表，每个字典必须包含以下字段：
     - `path`：OpenAI API 请求模型名称。
       - 若使用`ms-swift`部署，设置为 `--model_type` 的值；
-      - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为 `model_id`；
+      - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为对应的 model ID；
       - 若使用 `Ollama` 部署模型，则设置为 `model_name`，使用`ollama list`命令查看。
     - `openai_api_base`：OpenAI API 的URL。
     - `is_chat`：布尔值，设置为 `True` 表示聊天模型，设置为 `False` 表示基础模型。

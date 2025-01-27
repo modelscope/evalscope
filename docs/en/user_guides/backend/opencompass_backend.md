@@ -122,7 +122,7 @@ pip install vllm -U
 ```
 **Deploy Model Service**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
 ```
 :::
 
@@ -136,7 +136,7 @@ pip install lmdeploy -U
 
 **Deploy Model Service**
 ```shell
-CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
+LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen/Qwen2-0.5B-Instruct --server-port 8000
 ```
 :::
 
@@ -265,7 +265,7 @@ eval_config:
   - `models`: A list of dictionaries, each dictionary must contain the following fields:
     - `path`: The model name for OpenAI API requests.
       - If deploying with `ms-swift`, set to the value of `--model_type`;
-      - If deploying with `vLLM` or `LMDeploy`, set to `model_id`;
+      - If deploying with `vLLM` or `LMDeploy`, set to model ID;
       - If deploying with `Ollama`, set to `model_name`, and use the `ollama list` command to check.
     - `openai_api_base`: The URL for the OpenAI API.
     - `is_chat`: Boolean value, set to `True` indicates a chat model; set to `False` indicates a base model.
