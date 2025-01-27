@@ -128,8 +128,8 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-7B-Instruct',
-            api_url='http://127.0.0.1:8801/v1/chat/completions',
+            model='Qwen/Qwen2-0.5B-Instruct',
+            api_url='http://127.0.0.1:8000/v1/chat/completions',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
@@ -155,7 +155,7 @@ class TestRun(unittest.TestCase):
                     ]
                 }
             },
-            # limit=10
+            limit=10
         )
 
         run_task(task_cfg=task_cfg)

@@ -46,11 +46,13 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
 
 def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     """Set the working directory for the task."""
+    # use cache
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
     # elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
-    task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
+    else:
+        task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
 

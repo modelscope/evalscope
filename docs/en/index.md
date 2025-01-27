@@ -36,9 +36,9 @@ user_guides/arena.md
 :hidden:
 :caption: 🛠️ Advanced Tutorials
 advanced_guides/collection/index.md
-advanced_guides/add_benchmark.md
 advanced_guides/custom_dataset/index.md
 advanced_guides/custom_model.md
+advanced_guides/add_benchmark.md
 :::
 
 :::{toctree}

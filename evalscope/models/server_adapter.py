@@ -89,7 +89,7 @@ class ServerModelAdapter(BaseModelAdapter):
             'temperature': temperature,
             'top_p': infer_cfg.get('top_p', 1.0),
             'n': infer_cfg.get('num_return_sequences', 1),
-            'stop': infer_cfg.get('stop', None)
+            'stop': infer_cfg.get('stop', [])
         }
         if self.seed is not None:
             request_json['seed'] = self.seed
