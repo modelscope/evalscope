@@ -136,7 +136,7 @@ pip install lmdeploy -U
 
 **Deploy Model Service**
 ```shell
-LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen2-0.5B-Instruct --server-port 8000
+LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen/Qwen2-0.5B-Instruct --server-port 8000
 ```
 :::
 
