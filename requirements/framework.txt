@@ -2,7 +2,7 @@ absl-py
 #auto-gptq
 accelerate
 cachetools
-datasets>=3.0.0,<=3.0.1
+datasets>=3.0.0,<=3.2.0
 editdistance
 jieba
 jsonlines
