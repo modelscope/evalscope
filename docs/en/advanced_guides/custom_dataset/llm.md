@@ -1,44 +1,44 @@
 # Large Language Model
 
-This framework supports two predefined dataset formats: multiple-choice questions (MCQ) and question-answering (QA). The workflow is as follows:
+This framework supports multiple-choice questions and question-answering questions, with two predefined dataset formats. The usage process is as follows:
 
 ## Multiple-Choice Question Format (MCQ)
-This format is suitable for scenarios where users are dealing with multiple-choice questions, and the evaluation metric is accuracy.
+Suitable for scenarios where users need multiple-choice questions. The evaluation metric is accuracy.
 
 ### 1. Data Preparation
-Prepare a CSV file in the MCQ format. This directory should contain two files:
+Prepare a CSV file in the multiple-choice question format. The directory structure is as follows:
+
 ```text
 mcq/
-├── example_dev.csv  # Name must be *_dev.csv for few-shot evaluation; this CSV can be empty for zero-shot evaluation.
-└── example_val.csv  # Name must be *_val.csv for the actual evaluation data.
+├── example_dev.csv  # (Optional) Filename should be `{subset_name}_dev.csv`, used for few-shot evaluation. If it's 0-shot evaluation
+└── example_val.csv  # Filename should be `{subset_name}_val.csv`, used for actual evaluation data
 ```
 
-The CSV file must follow this format:
+The CSV file needs to be in the following format:
 
 ```text
-id,question,A,B,C,D,answer,explanation
-1,Generally, the amino acids that make up animal proteins are____,4,22,20,19,C,1. Currently, there are 20 known amino acids that constitute animal proteins.
-2,Among the substances present in the blood, which of the following is not a metabolic end product____?,Urea,Uric acid,Pyruvate,Carbon dioxide,C,"Metabolic end products refer to substances produced during metabolism in the organism that cannot be reused and need to be excreted. Pyruvate is a product of carbohydrate metabolism that can be further metabolized for energy or to synthesize other substances, and is not a metabolic end product."
+id,question,A,B,C,D,answer
+1,The amino acids that make up animal proteins typically include ____,4 types,22 types,20 types,19 types,C
+2,Among the following substances present in the blood, which is not a metabolic end product?____,urea,uric acid,pyruvic acid,carbon dioxide,C
 ```
 Where:
-- `id` is the evaluation sequence number
+- `id` is the sequence number (optional)
 - `question` is the question
-- `A`, `B`, `C`, `D` are the options (leave empty if there are fewer than four options)
+- `A`, `B`, `C`, `D`, etc., are the options, with a maximum of 10 options supported
 - `answer` is the correct option
-- `explanation` is the explanation (optional)
 
 ### 2. Configuration File
 ```python
 from evalscope.config import TaskConfig
 
 task_cfg = TaskConfig(
-    model='qwen/Qwen2-0.5B-Instruct',
-    datasets=['ceval'],  # Dataset format, fixed as 'ceval' for multiple-choice questions
+    model='Qwen/Qwen2-0.5B-Instruct',
+    datasets=['general_mcq'],  # Data format, fixed as 'general_mcq' for multiple-choice format
     dataset_args={
-        'ceval': {
+        'general_mcq': {
             "local_path": "custom_eval/text/mcq",  # Custom dataset path
             "subset_list": [
-                "example"  # Evaluation dataset name, the * in the above *_dev.csv
+                "example"  # Evaluation dataset name, mentioned subset_name
             ]
         }
     },
@@ -46,32 +46,32 @@ task_cfg = TaskConfig(
 run_task(task_cfg=task_cfg)
 ```
 
-Run Result:
+Results:
 ```text
-+---------------------+---------------+
-| Model               | mcq           |
-+=====================+===============+
-| Qwen2-0.5B-Instruct | (mcq/acc) 0.5 |
-+---------------------+---------------+ 
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Model               | Dataset     | Metric          | Subset   |   Num |   Score | Cat.0   |
++=====================+=============+=================+==========+=======+=========+=========+
+| Qwen2-0.5B-Instruct | general_mcq | AverageAccuracy | example  |    12 |  0.5833 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
 ```
 
 ## Question-Answering Format (QA)
-This format is suitable for scenarios where users are dealing with question-answer pairs, and the evaluation metrics are `ROUGE` and `BLEU`.
+Suitable for scenarios where users need question-answering questions. The evaluation metrics are `ROUGE` and `BLEU`.
 
 ### 1. Data Preparation
-Prepare a JSONL file in the QA format. This directory should contain one file:
+Prepare a JSON lines file for the question-answering format. The directory contains a single file:
 
 ```text
 qa/
 └── example.jsonl
 ```
 
-The JSONL file must follow this format:
+The JSON lines file needs to be in the following format:
 
 ```json
-{"query": "What is the capital of China?", "response": "The capital of China is Beijing."}
-{"query": "What is the tallest mountain in the world?", "response": "It is Mount Everest."}
-{"query": "Why can't you find penguins in the Arctic?", "response": "Because most penguins live in the Antarctic."}
+{"query": "What is the capital of China?", "response": "The capital of China is Beijing"}
+{"query": "What is the tallest mountain in the world?", "response": "It is Mount Everest"}
+{"query": "Why can't you see penguins in the Arctic?", "response": "Because penguins mostly live in Antarctica"}
 ```
 
 ### 2. Configuration File
@@ -80,12 +80,12 @@ from evalscope.config import TaskConfig
 
 task_cfg = TaskConfig(
     model='qwen/Qwen2-0.5B-Instruct',
-    datasets=['general_qa'],  # Dataset format, fixed as 'general_qa' for question-answering
+    datasets=['general_qa'],  # Data format, fixed as 'general_qa' for question-answering format
     dataset_args={
         'general_qa': {
             "local_path": "custom_eval/text/qa",  # Custom dataset path
             "subset_list": [
-                "example"       # Evaluation dataset name, the * in the above *.jsonl
+                "example"       # Evaluation dataset name, corresponding to * in the above *.jsonl
             ]
         }
     },
@@ -94,31 +94,35 @@ task_cfg = TaskConfig(
 run_task(task_cfg=task_cfg)
 ```
 
-Run Result:
+Results:
 ```text
-+---------------------+------------------------------------+
-| Model               | qa                                 |
-+=====================+====================================+
-| Qwen2-0.5B-Instruct | (qa/rouge-1-r) 0.888888888888889   |
-|                     | (qa/rouge-1-p) 0.2386966558963222  |
-|                     | (qa/rouge-1-f) 0.3434493794481033  |
-|                     | (qa/rouge-2-r) 0.6166666666666667  |
-|                     | (qa/rouge-2-p) 0.14595543345543344 |
-|                     | (qa/rouge-2-f) 0.20751474380718113 |
-|                     | (qa/rouge-l-r) 0.888888888888889   |
-|                     | (qa/rouge-l-p) 0.23344334652802393 |
-|                     | (qa/rouge-l-f) 0.33456027373987435 |
-|                     | (qa/bleu-1) 0.23344334652802393    |
-|                     | (qa/bleu-2) 0.14571148341640142    |
-|                     | (qa/bleu-3) 0.0625                 |
-|                     | (qa/bleu-4) 0.05555555555555555    |
-+---------------------+------------------------------------+
-```
-
-## (Optional) Custom Evaluation Using the ms-swift Framework
-
-```{seealso}
-Supports two patterns of evaluation sets: Multiple-choice format `CEval` and Question-answering format `General-QA`
-
-Reference: [ms-swift Custom Evaluation Sets](../../best_practice/swift_integration.md#custom-evaluation-sets)
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Model               | Dataset     | Metric          | Subset   |   Num |   Score | Cat.0   |
++=====================+=============+=================+==========+=======+=========+=========+
+| Qwen2-0.5B-Instruct | general_qa  | bleu-1          | default  |    12 |  0.2324 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | bleu-2          | default  |    12 |  0.1451 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | bleu-3          | default  |    12 |  0.0625 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | bleu-4          | default  |    12 |  0.0556 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-f       | default  |    12 |  0.3441 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-p       | default  |    12 |  0.2393 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-r       | default  |    12 |  0.8889 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-f       | default  |    12 |  0.2062 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-p       | default  |    12 |  0.1453 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-r       | default  |    12 |  0.6167 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-f       | default  |    12 |  0.333  | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-p       | default  |    12 |  0.2324 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-r       | default  |    12 |  0.8889 | default |
++---------------------+-------------+-----------------+----------+-------+---------+---------+ 
 ```
