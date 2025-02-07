@@ -119,9 +119,15 @@ class TestRun(unittest.TestCase):
             model='qwen/Qwen2-0.5B-Instruct',
             datasets=[
                 # 'math_500',
-                'aime24'
+                # 'aime24',
+                'competition_math'
             ],
-            limit=10
+            dataset_args={
+                'competition_math': {
+                    'subset_list': ['Level 4', 'Level 5']
+                }
+            },
+            limit=5
         )
 
         run_task(task_cfg=task_cfg)
