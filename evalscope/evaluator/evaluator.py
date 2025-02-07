@@ -87,12 +87,7 @@ class Evaluator(object):
         answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
         return answer_d
 
-    def get_answers(self,
-                    subset_name: str,
-                    prompts_list: List[dict],
-                    infer_cfg: dict = None,
-                    debug: bool = False,
-                    **kwargs) -> list:
+    def get_answers(self, subset_name: str, prompts_list: List[dict], infer_cfg: dict = None, **kwargs) -> list:
         """
         Get answers from model inference.
         It is required to rewrite this method to support your own evaluator.
@@ -110,7 +105,6 @@ class Evaluator(object):
                     max_length: int, the max length of the sequence to be generated.
                     max_new_tokens: int, the max number of new tokens to be generated.
                     repetition_penalty: float, the parameter for repetition penalty. 1.0 means no penalty.
-            debug: whether to run in debug mode.
             **kwargs: kwargs.
 
         Returns: The list of answers.
@@ -148,9 +142,8 @@ class Evaluator(object):
                 answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
                 processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
 
-                if debug:
-                    logger.info(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                    logger.info(f'**predicted ans: {json.dumps(processed_answer, ensure_ascii=False)} \n')
+                logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
+                logger.debug(f'**predicted ans: {json.dumps(processed_answer, ensure_ascii=False)} \n')
 
                 answers_list.append(processed_answer)
                 dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
@@ -210,7 +203,7 @@ class Evaluator(object):
         review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
         return review_id, reviewer_spec
 
-    def get_reviews(self, subset_name: str, answers_list: List[dict], debug: bool = False, **kwargs) -> list:
+    def get_reviews(self, subset_name: str, answers_list: List[dict], **kwargs) -> list:
         """
         Get reviews from answers.
         It is required to rewrite this method to support your own evaluator.
@@ -218,7 +211,6 @@ class Evaluator(object):
         Args:
             subset_name: subset name of benchmark
             answers_list: inference results list.
-            debug: whether to run in debug mode.
             **kwargs: kwargs.
 
         Returns: reviews list.
@@ -237,8 +229,7 @@ class Evaluator(object):
             # Get review
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
 
-            if debug:
-                logger.info(review_d)
+            logger.debug(review_d)
 
             reviews_list.append(review_d)
             # Dump reviews
@@ -315,7 +306,7 @@ class Evaluator(object):
                 logger.error('Failed to generate report table.')
         return report_map
 
-    def eval(self, infer_cfg: dict = None, debug: bool = False, **kwargs) -> dict:
+    def eval(self, infer_cfg: dict = None, **kwargs) -> dict:
         """
         Evaluate the model on the specific benchmark. Streaming & parallel mode is supported.
         It is required to rewrite this method to support your own evaluator.
@@ -329,7 +320,6 @@ class Evaluator(object):
 
         Args:
             infer_cfg: The config for model inference.
-            debug: Whether to run in debug mode. Default: False.
 
         Returns:
             Dict of results. Depends on the stage of evaluation.
@@ -351,13 +341,12 @@ class Evaluator(object):
             prompts_list = prompts_list[:limit]
 
             answers_list: list = self.get_answers(
-                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=infer_cfg, debug=debug, **kwargs)
+                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=infer_cfg, **kwargs)
             if self.stage == EvalStage.INFER:
                 stage_answers_dict[subset_name] = answers_list
                 continue
 
-            reviews_list: list = self.get_reviews(
-                subset_name=subset_name, answers_list=answers_list, debug=debug, **kwargs)
+            reviews_list: list = self.get_reviews(subset_name=subset_name, answers_list=answers_list, **kwargs)
 
             metric_res = self.compute_metrics(reviews_list=reviews_list)
             reviews_score_all[subset_name] = metric_res

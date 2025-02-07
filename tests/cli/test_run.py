@@ -117,8 +117,11 @@ class TestRun(unittest.TestCase):
 
         task_cfg = TaskConfig(
             model='qwen/Qwen2-0.5B-Instruct',
-            datasets=['humaneval'],
-            limit=2
+            datasets=[
+                # 'math_500',
+                'aime24'
+            ],
+            limit=10
         )
 
         run_task(task_cfg=task_cfg)
