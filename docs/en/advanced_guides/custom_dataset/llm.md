@@ -10,7 +10,7 @@ Prepare a CSV file in the multiple-choice question format. The directory structu
 
 ```text
 mcq/
-├── example_dev.csv  # (Optional) Filename should be `{subset_name}_dev.csv`, used for few-shot evaluation. If it's 0-shot evaluation
+├── example_dev.csv  # (Optional) Filename should be `{subset_name}_dev.csv`, used for few-shot evaluation
 └── example_val.csv  # Filename should be `{subset_name}_val.csv`, used for actual evaluation data
 ```
 

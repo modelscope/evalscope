@@ -10,7 +10,7 @@
 
 ```text
 mcq/
-├── example_dev.csv  # （可选）文件名组成为`{subset_name}_dev.csv`，用于fewshot评测，如果是0-shot评测
+├── example_dev.csv  # （可选）文件名组成为`{subset_name}_dev.csv`，用于fewshot评测
 └── example_val.csv  # 文件名组成为`{subset_name}_val.csv`，用于实际评测的数据
 ```
 
