@@ -78,7 +78,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         logger.debug(f'formatted_prompt: {formatted_prompt}')
 
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=False).to(self.device)
         input_ids = inputs['input_ids']
 
         # Process infer_cfg
