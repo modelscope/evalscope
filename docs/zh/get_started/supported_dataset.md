@@ -11,6 +11,7 @@
 
 | 名称              | 数据集ID                                                                                           | 任务类别         | 备注                                                                                                                  |
 |-------------------|----------------------------------------------------------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `aime24`          | [AI-ModelScope/AIME_2024](https://modelscope.cn/datasets/AI-ModelScope/AIME_2024/summary)       | 数学竞赛         |                                                                                                                       |
 | `arc`             | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                    | 考试         |                                                                                                                       |
 | `bbh`             | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                            | 综合推理         |                                                                                                                       |
 | `ceval`           | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)              | 中文-综合考试             |                                                                                                                       |
@@ -22,6 +23,7 @@
 | `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
 | `ifeval`       | [modelscope/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)                | 指令遵循         |  |
 | `iquiz`       | [modelscope/iquiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)                | 智商和情商         |  |
+| `math_500`       | [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary)                | 数学竞赛         |  |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
 | `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
