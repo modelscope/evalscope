@@ -40,7 +40,7 @@ class AIME24Adapter(DataAdapter):
             {'data': [prompt]}
         """
         prompt = input_d['Problem']
-        full_prompt = f"Problem: {prompt}\nMark your solution with \\boxed\nAnswer:"
+        full_prompt = f'Problem: {prompt}\nMark your solution with \\boxed\nAnswer:'
 
         return {'data': [full_prompt], 'system_prompt': self.prompt_template}
 
