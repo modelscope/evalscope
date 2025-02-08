@@ -137,8 +137,8 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen/Qwen2-0.5B-Instruct',
-            api_url='http://127.0.0.1:8000/v1/chat/completions',
+            model='Qwen2.5-0.5B-Instruct',
+            api_url='http://127.0.0.1:8801/v1/chat/completions',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
@@ -164,11 +164,36 @@ class TestRun(unittest.TestCase):
                     ]
                 }
             },
-            limit=10
+            eval_batch_size=10
         )
 
         run_task(task_cfg=task_cfg)
 
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_batch_eval(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='LLM-Research/Llama-3.2-1B-Instruct',
+            datasets=[
+                # 'math_500',
+                # 'aime24',
+                # 'competition_math'
+                'arc',
+                # 'gsm8k'
+                # 'truthful_qa'
+            ],
+            dataset_args={
+                'competition_math': {
+                    'subset_list': ['Level 4', 'Level 5']
+                }
+            },
+            eval_batch_size=2,
+            limit=5
+        )
+
+        run_task(task_cfg=task_cfg)
 
 if __name__ == '__main__':
     unittest.main()

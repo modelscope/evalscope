@@ -1,6 +1,7 @@
 import requests
 import time
-from typing import Optional, Union
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Optional, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.utils.chat_service import ChatMessage
@@ -28,36 +29,53 @@ class ServerModelAdapter(BaseModelAdapter):
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
 
-    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = None) -> dict:
+    def predict(self, inputs: List[Union[str, dict, list]], infer_cfg: dict = None) -> List[dict]:
         """
         Model prediction func.
 
         Args:
-            inputs (Union[str, dict, list]): The input data.
+            inputs (List[Union[str, dict, list]]): The input data.
             infer_cfg (dict): Inference configuration.
 
         Returns:
-            res (dict): The model prediction results.
+            res (List[dict]): The model prediction results.
         """
         infer_cfg = infer_cfg or {}
+        results = []
 
-        # Process inputs
-        if isinstance(inputs, str):
-            query = inputs
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_input = {
+                executor.submit(self.process_single_input, input_item, infer_cfg): input_item
+                for input_item in inputs
+            }
+            for future in as_completed(future_to_input):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as exc:
+                    input_item = future_to_input[future]
+                    logger.error(f"Input {input_item} generated an exception: {exc}")
+
+        return results
+
+    def process_single_input(self, input_item: Union[str, dict, list], infer_cfg: dict) -> dict:
+        """Process a single input item."""
+        if isinstance(input_item, str):
+            query = input_item
             system_prompt = None
-        elif isinstance(inputs, dict):
-            data: list = inputs['data']
+        elif isinstance(input_item, dict):
+            data: list = input_item['data']
             if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
                 query = '\n'.join(''.join(item) for item in data)
-                system_prompt = inputs.get('system_prompt', None)
+                system_prompt = input_item.get('system_prompt', None)
             else:
                 query = data[0]
-                system_prompt = inputs.get('system_prompt', None)
-        elif isinstance(inputs, list):
-            query = '\n'.join(inputs)
+                system_prompt = input_item.get('system_prompt', None)
+        elif isinstance(input_item, list):
+            query = '\n'.join(input_item)
             system_prompt = None
         else:
-            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+            raise TypeError(f'Unsupported input type: {type(input_item)}')
 
         content = self.make_request_content(query, system_prompt)
         request_json = self.make_request(content, infer_cfg)

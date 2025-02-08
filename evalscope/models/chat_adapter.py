@@ -1,7 +1,7 @@
 import os
 import time
 import torch
-from typing import Union
+from typing import List, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
@@ -57,30 +57,15 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return generation_config
 
-    def _model_generate(self, query: str, system_prompt: str = None, infer_cfg: dict = {}) -> str:
+    def _model_generate(self, queries: List[str], system_prompts: List[str] = None, infer_cfg: dict = {}) -> List[str]:
         """
         Args:
-            query: The input query.
-            system_prompt: The system prompt.
+            queries: The input queries.
+            system_prompts: The system prompts.
             infer_cfg: The inference configuration.
         Returns:
-            The prediction result.
+            The prediction results.
         """
-        # For chat model, use the chat template to format the input
-        if self.tokenizer.chat_template is not None:
-            messages = [ChatMessage(role='user', content=query)]
-            if system_prompt:
-                messages = [ChatMessage(role='system', content=system_prompt)] + messages
-            formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        else:
-            # For base model, use the query as the input
-            formatted_prompt = query
-
-        logger.debug(f'formatted_prompt: {formatted_prompt}')
-
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=False).to(self.device)
-        input_ids = inputs['input_ids']
-
         # Process infer_cfg
         if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
             infer_cfg['do_sample'] = True
@@ -94,49 +79,84 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         if eos_token_id is not None:
             infer_cfg['eos_token_id'] = eos_token_id
-            infer_cfg['pad_token_id'] = eos_token_id  # setting eos_token_id as pad token
 
         self.generation_config.update(**infer_cfg)
         fix_do_sample_warning(self.generation_config)
 
+        # For chat model, use the chat template to format the input
+        if self.tokenizer.chat_template is not None:
+            formatted_prompts = []
+            for i, query in enumerate(queries):
+                messages = [ChatMessage(role='user', content=query)]
+                if system_prompts and i < len(system_prompts):
+                    messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
+                formatted_prompts.append(
+                    self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
+        else:
+            # For base model, use the queries as the input
+            formatted_prompts = queries
+
+        logger.debug(f'formatted_prompts: {formatted_prompts}')
+
+        # Get input ids
+        inputs = self.tokenizer(
+            formatted_prompts, return_tensors='pt', padding=True, truncation=True,
+            padding_side='left').to(self.device)  # padding_side='left' is important for chat model
+        input_ids = inputs['input_ids']
+
         # Run inference
         output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
 
-        response = self.tokenizer.decode(output_ids[0, len(input_ids[0]):], skip_special_tokens=True)
-        return response
+        responses = []
+        for i, output in enumerate(output_ids):
+            response = self.tokenizer.decode(output[len(input_ids[i]):], skip_special_tokens=True)
+            responses.append(response)
+
+        return responses
 
     @torch.no_grad()
-    def predict(self, inputs: Union[str, dict, list], infer_cfg: dict = {}) -> dict:
+    def predict(self, inputs: List[Union[str, dict, list]], infer_cfg: dict = {}) -> List[dict]:
         """
         Args:
             inputs: The input data.
             infer_cfg: The inference configuration.
         Returns:
-            The prediction result.
+            The prediction results.
         """
 
         # Process inputs
-        if isinstance(inputs, str):
-            query = inputs
-            system_prompt = None
-        elif isinstance(inputs, dict):
-            query = inputs['data'][0]
-            system_prompt = inputs.get('system_prompt', None)
-        elif isinstance(inputs, list):
-            query = '\n'.join(inputs)
-            system_prompt = None
-        else:
-            raise TypeError(f'Unsupported inputs type: {type(inputs)}')
+        queries = []
+        system_prompts = []
 
-        response = self._model_generate(query, system_prompt, infer_cfg)
+        for input_item in inputs:
+            if isinstance(input_item, str):
+                queries.append(input_item)
+                system_prompts.append(None)
+            elif isinstance(input_item, dict):
+                queries.append(input_item['data'][0])
+                system_prompts.append(input_item.get('system_prompt', None))
+            elif isinstance(input_item, list):
+                queries.append('\n'.join(input_item))
+                system_prompts.append(None)
+            else:
+                raise TypeError(f'Unsupported input type: {type(input_item)}')
 
-        choices_list = [
-            ChatCompletionResponseChoice(
-                index=0, message=ChatMessage(content=response, role='assistant'), finish_reason='stop')
-        ]
+        responses = self._model_generate(queries, system_prompts, infer_cfg)
 
-        res_d = ChatCompletionResponse(
-            model=self.model_id, choices=choices_list, object='chat.completion', created=int(time.time()),
-            usage=None).model_dump(exclude_unset=True)
+        results = []
+        for i, response in enumerate(responses):
+            choices_list = [
+                ChatCompletionResponseChoice(
+                    index=0, message=ChatMessage(content=response, role='assistant'), finish_reason='stop')
+            ]
 
-        return res_d
+            res_d = ChatCompletionResponse(
+                model=self.model_id,
+                choices=choices_list,
+                object='chat.completion',
+                created=int(time.time()),
+                usage=None).model_dump(exclude_unset=True)
+
+            results.append(res_d)
+
+        return results

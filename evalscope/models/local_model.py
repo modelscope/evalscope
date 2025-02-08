@@ -37,6 +37,10 @@ class LocalModel:
             cache_dir=model_cache_dir,
         )
 
+        # Fix no padding
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_id,
             revision=model_revision,

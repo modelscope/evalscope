@@ -17,12 +17,12 @@ class CustomModelAdapter(BaseModelAdapter):
         self.custom_model = custom_model
         super(CustomModelAdapter, self).__init__(model=custom_model)
 
-    def predict(self, inputs: Union[str, dict, list], **kwargs) -> List[Dict[str, Any]]:
+    def predict(self, inputs: List[Union[str, dict, list]], **kwargs) -> List[Dict[str, Any]]:
         """
         Model prediction func.
 
         Args:
-            inputs (Union[str, dict, list]): The input data. Depending on the specific model.
+            inputs (List[Union[str, dict, list]]): The input data. Depending on the specific model.
                 str: 'xxx'
                 dict: {'data': [full_prompt]}
                 list: ['xxx', 'yyy', 'zzz']

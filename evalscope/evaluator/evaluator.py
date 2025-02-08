@@ -117,28 +117,19 @@ class Evaluator(object):
         pred_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
         pred_file_path = os.path.join(self.outputs_structure.predictions_dir, self.model_name, pred_file_name)
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
-
+        # TODO: support batch inference
         if self.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
             logger.info(f'Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
             # Note: assume prediction in order of prompts_list
             prompts_list = prompts_list[len(answers_list):]
 
-        if isinstance(self.model_adapter, CustomModelAdapter):
-            # Batch inference for custom model
-
-            resp_answers_list: List[Dict[str, Any]] = self.model_adapter.predict(
-                inputs=prompts_list, infer_cfg=infer_cfg)
-
-            for input_prompt, answer_d in zip(prompts_list, resp_answers_list):
-                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
-                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
-                answers_list.append(processed_answer)
-                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
-
-        else:
-            for input_prompt in tqdm(prompts_list, total=len(prompts_list), desc=f'Predicting({subset_name}): '):
-                answer_d: dict = self.model_adapter.predict(inputs=input_prompt, infer_cfg=infer_cfg)
+        eval_batch_size = self.task_cfg.eval_batch_size
+        batch_prompts_list = [prompts_list[i:i + eval_batch_size] for i in range(0, len(prompts_list), eval_batch_size)]
+        for batch_prompts in tqdm(
+                batch_prompts_list, total=len(batch_prompts_list), desc=f'Predicting({subset_name}): '):
+            answer_ds: List[dict] = self.model_adapter.predict(inputs=batch_prompts, infer_cfg=infer_cfg)
+            for input_prompt, answer_d in zip(batch_prompts, answer_ds):
                 answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
                 processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
 
@@ -306,7 +297,7 @@ class Evaluator(object):
                 logger.error('Failed to generate report table.')
         return report_map
 
-    def eval(self, infer_cfg: dict = None, **kwargs) -> dict:
+    def eval(self, **kwargs) -> dict:
         """
         Evaluate the model on the specific benchmark. Streaming & parallel mode is supported.
         It is required to rewrite this method to support your own evaluator.
@@ -337,11 +328,11 @@ class Evaluator(object):
 
         prompts = self.load_dataset()
         for subset_name, prompts_list in prompts.items():
-            limit = kwargs.get('limit', len(prompts_list))
+            limit = self.task_cfg.limit or len(prompts_list)
             prompts_list = prompts_list[:limit]
 
             answers_list: list = self.get_answers(
-                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=infer_cfg, **kwargs)
+                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=self.task_cfg.generation_config, **kwargs)
             if self.stage == EvalStage.INFER:
                 stage_answers_dict[subset_name] = answers_list
                 continue
