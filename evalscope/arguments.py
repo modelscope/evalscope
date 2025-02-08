@@ -58,6 +58,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--stage', type=str, default='all', help='The stage of evaluation pipeline.',
                         choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.REVIEW])
     parser.add_argument('--limit', type=int, default=None, help='Max evaluation samples num for each subset.')
+    parser.add_argument('--eval-batch-size', type=int, default=1, help='The batch size for evaluation.')
 
     # Cache and working directory arguments
     parser.add_argument('--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501

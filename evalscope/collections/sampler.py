@@ -44,7 +44,8 @@ class Sampler(ABC):
                         dataset_name=dataset.name,
                         subset_name=subset_name,
                     ))
-        sampled_data = random.choices(all_data, k=count)
+        count = min(count, len(all_data))  # avoid sampling more than the dataset size
+        sampled_data = random.sample(all_data, k=count)
         return sampled_data
 
     def _update_index(self, all_data: List[DatasetEntry]) -> List[dict]:

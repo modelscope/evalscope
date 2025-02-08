@@ -174,7 +174,7 @@ class ChatService:
         )
 
     def _prepare_text_inputs(self, request: TextCompletionRequest):
-        inputs = self.tokenizer(request.prompt, return_tensors='pt', padding=True).to(self.device)
+        inputs = self.tokenizer(request.prompt, return_tensors='pt', padding=False).to(self.device)
         prompt_tokens = len(inputs['input_ids'][0])
         return inputs, prompt_tokens
 
@@ -204,7 +204,7 @@ class ChatService:
     def _prepare_chat_inputs(self, request: ChatCompletionRequest):
         formatted_prompt = self.tokenizer.apply_chat_template(
             request.messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=True).to(self.device)
+        inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=False).to(self.device)
         prompt_tokens = len(inputs['input_ids'][0])
         return formatted_prompt, inputs, prompt_tokens
 

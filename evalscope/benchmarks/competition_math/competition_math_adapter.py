@@ -3,8 +3,10 @@
 import glob
 import json
 import os
+from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import AnswerKeys
 from evalscope.metrics import AverageAccuracy
 from evalscope.metrics.math_accuracy import is_equiv, last_boxed_only_string, remove_boxed
 from evalscope.models import ChatGenerationModelAdapter
@@ -19,7 +21,7 @@ logger = get_logger()
     name='competition_math',
     dataset_id='modelscope/competition_math',
     model_adapter=ChatGenerationModelAdapter,
-    subset_list=['default'],
+    subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     metric_list=[AverageAccuracy],
     few_shot_num=4,
     train_split='train',
@@ -38,6 +40,11 @@ class CompetitionMathAdapter(DataAdapter):
             kwargs['few_shot_num'] = 4
 
         super().__init__(**kwargs)
+
+    def load(self, **kwargs):
+        # default load all levels
+        kwargs['subset_list'] = ['default']
+        return super().load(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict: dict = {}
@@ -59,6 +66,21 @@ class CompetitionMathAdapter(DataAdapter):
                     data_dict[subset_name] = {split_name: split_data}
 
         return data_dict
+
+    def gen_prompts(self, data_dict: dict) -> dict:
+        res_dict: dict = defaultdict(list)
+
+        #  use level as subset
+        for sub_name, sub_data_dict in data_dict.items():
+            for sample_d in sub_data_dict[self.eval_split]:
+                level = sample_d['level']
+                if level not in self.subset_list:
+                    continue
+                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=None)
+                prompt_d[AnswerKeys.RAW_INPUT] = sample_d
+                res_dict[level].append(prompt_d)
+
+        return res_dict
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """

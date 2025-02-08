@@ -114,7 +114,7 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     logger.info(task_cfg)
 
     for evaluator in evaluators:
-        res_dict = evaluator.eval(infer_cfg=task_cfg.generation_config, debug=task_cfg.debug, limit=task_cfg.limit)
+        res_dict = evaluator.eval()
         eval_results[dataset_name] = res_dict
 
     return eval_results
