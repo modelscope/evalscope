@@ -4,13 +4,14 @@ import json
 import os
 import time
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalStage, ReviewKeys
+from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, ReviewKeys
 from evalscope.models import BaseModelAdapter, CustomModelAdapter
 from evalscope.report import Report, gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
@@ -87,6 +88,15 @@ class Evaluator(object):
         answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
         return answer_d
 
+    def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
+        answers_list = []
+        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        for answer_d, input_prompt in zip(answer_ds, input_prompts):
+            answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+            processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
+            answers_list.append(processed_answer)
+        return answers_list
+
     def get_answers(self, subset_name: str, prompts_list: List[dict], infer_cfg: dict = None, **kwargs) -> list:
         """
         Get answers from model inference.
@@ -125,19 +135,28 @@ class Evaluator(object):
             prompts_list = prompts_list[len(answers_list):]
 
         eval_batch_size = self.task_cfg.eval_batch_size
-        batch_prompts_list = [prompts_list[i:i + eval_batch_size] for i in range(0, len(prompts_list), eval_batch_size)]
-        for batch_prompts in tqdm(
-                batch_prompts_list, total=len(batch_prompts_list), desc=f'Predicting({subset_name}): '):
-            answer_ds: List[dict] = self.model_adapter.predict(inputs=batch_prompts, infer_cfg=infer_cfg)
-            for input_prompt, answer_d in zip(batch_prompts, answer_ds):
-                answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
-                processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
-
-                logger.debug(f'**input_prompt: {json.dumps(input_prompt, ensure_ascii=False)} \n')
-                logger.debug(f'**predicted ans: {json.dumps(processed_answer, ensure_ascii=False)} \n')
-
-                answers_list.append(processed_answer)
-                dump_jsonl_data(processed_answer, pred_file_path, dump_mode=DumpMode.APPEND)
+        if self.task_cfg.eval_type == EvalType.SERVICE:
+            with tqdm(total=len(prompts_list), desc=f'Predicting({subset_name}): ') as pbar:
+                with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
+                    futures = []
+                    for input_prompt in prompts_list:
+                        futures.append(executor.submit(self._get_answer, [input_prompt], subset_name, infer_cfg))
+                    for future in as_completed(futures):
+                        answer_ds: List[dict] = future.result()
+                        answers_list.extend(answer_ds)
+                        dump_jsonl_data(answer_ds, pred_file_path, dump_mode=DumpMode.APPEND)
+                        pbar.update(len(answer_ds))
+        else:
+            batch_prompts_list = [
+                prompts_list[i:i + eval_batch_size] for i in range(0, len(prompts_list), eval_batch_size)
+            ]
+            with tqdm(total=len(prompts_list), desc=f'Predicting({subset_name}): ') as pbar:
+                for batch_prompts in batch_prompts_list:
+                    answer_ds: List[dict] = self._get_answer(
+                        input_prompts=batch_prompts, subset_name=subset_name, infer_cfg=infer_cfg)
+                    answers_list.extend(answer_ds)
+                    dump_jsonl_data(answer_ds, pred_file_path, dump_mode=DumpMode.APPEND)
+                    pbar.update(len(batch_prompts))
 
         logger.info(f'Dump predictions to {pred_file_path}.')
         return answers_list

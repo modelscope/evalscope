@@ -1,6 +1,5 @@
 import requests
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
@@ -43,18 +42,9 @@ class ServerModelAdapter(BaseModelAdapter):
         infer_cfg = infer_cfg or {}
         results = []
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            future_to_input = {
-                executor.submit(self.process_single_input, input_item, infer_cfg): input_item
-                for input_item in inputs
-            }
-            for future in as_completed(future_to_input):
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as exc:
-                    input_item = future_to_input[future]
-                    logger.error(f"Input {input_item} generated an exception: {exc}")
+        for input_item in inputs:
+            response = self.process_single_input(input_item, infer_cfg)
+            results.append(response)
 
         return results
 

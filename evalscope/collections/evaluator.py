@@ -2,6 +2,7 @@ import json
 import os
 import pandas as pd
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from tabulate import tabulate
 from tqdm import tqdm
 from typing import List
@@ -9,7 +10,7 @@ from typing import List
 from evalscope.benchmarks import Benchmark
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import DataCollection, DumpMode
+from evalscope.constants import DataCollection, DumpMode, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models import get_local_model, initialize_model_adapter
 from evalscope.report import ReportGenerator
@@ -29,14 +30,16 @@ class SimpleEvaluator(Evaluator):
             task_cfg=task_cfg,
             outputs=outputs)
 
-    def get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
+    def get_answer(self, samples, infer_cfg) -> List[dict]:
+        input_prompts = [sample.prompt for sample in samples]
+        subset_name = samples[0].subset_name
         answers_list = []
         answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
             answers_list.append(processed_answer)
-        return answers_list
+        return answers_list, samples
 
     def get_review(self, answer_d) -> dict:
         review_id, reviewer_spec = self._generate_review_id(answer_d)
@@ -167,22 +170,33 @@ class EvaluatorCollection:
         answers = defaultdict(dict)
         eval_batch_size = self.task_cfg.eval_batch_size
         with tqdm(total=len(self.dataset), desc='Getting answers') as pbar:
-            for dataset_name, data_map in self.dataset_name_map.items():
-                # get evaluator for the dataset
-                evaluator = self.evaluators[dataset_name]
-                for subset_name, ids in data_map.items():
-                    for i in range(0, len(ids), eval_batch_size):
-                        # get batch samples
-                        batch_ids = ids[i:i + eval_batch_size]
-                        batch_samples = [self.dataset_id_map[_id] for _id in batch_ids]
-                        prompts = [sample.prompt for sample in batch_samples]
-                        answer_list = evaluator.get_answer(prompts, subset_name, self.task_cfg.generation_config)
-                        # update answers
-                        for j, _id in enumerate(batch_ids):
-                            answers[_id] = answer_list[j]
+            if self.task_cfg.eval_type == EvalType.SERVICE:
+                with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
+                    futures = []
+                    for sample in self.dataset:
+                        evaluator = self.evaluators[sample.dataset_name]
+                        futures.append(executor.submit(evaluator.get_answer, [sample], self.task_cfg.generation_config))
+                    for future in as_completed(futures):
+                        answer_list, samples = future.result()
+                        answers[samples[0].index] = answer_list[0]
                         dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
+                        pbar.update(1)
+            else:
+                for dataset_name, data_map in self.dataset_name_map.items():
+                    # get evaluator for the dataset
+                    evaluator = self.evaluators[dataset_name]
+                    for subset_name, ids in data_map.items():
+                        for i in range(0, len(ids), eval_batch_size):
+                            # get batch samples
+                            batch_ids = ids[i:i + eval_batch_size]
+                            batch_samples = [self.dataset_id_map[_id] for _id in batch_ids]
+                            answer_list, _ = evaluator.get_answer(batch_samples, self.task_cfg.generation_config)
+                            # update answers
+                            for j, _id in enumerate(batch_ids):
+                                answers[_id] = answer_list[j]
+                            dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
 
-                        pbar.update(len(batch_ids))
+                            pbar.update(len(batch_ids))
         return answers
 
     def get_reviews(self, answers):
