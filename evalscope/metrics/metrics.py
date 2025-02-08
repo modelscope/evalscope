@@ -12,7 +12,9 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Dict, List, Union
 
 
-def mean(arr):
+def mean(arr: list):
+    if isinstance(arr[0], list):
+        arr = np.array(arr).flatten()
     return sum(arr) / len(arr)
 
 

@@ -33,12 +33,12 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         return self._DEFAULT_MAX_LENGTH
 
     @torch.no_grad()
-    def predict(self, inputs: dict, infer_cfg: dict = None) -> dict:
+    def predict(self, inputs: List[dict], infer_cfg: dict = None) -> dict:
         """
         Multi-choice model prediction func.
 
         Args:
-            inputs (dict): The inputs for a doc. Format:
+            inputs (List[dict]): The inputs for a doc. Format:
                 {'data': [full_prompt], 'multi_choices': ['A', 'B', 'C', 'D']}
 
             infer_cfg (dict): inference configuration.
@@ -69,37 +69,39 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         infer_cfg = infer_cfg or {}
         self.model.generation_config.update(**infer_cfg)
 
-        input_data = inputs['data']
-        multi_choices = inputs['multi_choices']
+        input_data = [inp['data'][0] for inp in inputs]
+        multi_choices = [inp['multi_choices'] for inp in inputs]
 
-        output, input_info = self._get_logits(self.tokenizer, self.model, input_data)
-        assert output.shape[0] == 1
-        logits = output.flatten()
+        outputs, input_info = self._get_logits(self.tokenizer, self.model, input_data)
 
-        choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in multi_choices]
-        softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
+        results = []
+        for i, (logits, choices) in enumerate(zip(outputs, multi_choices)):
+            choice_logits = [logits[self.tokenizer(ch)['input_ids'][-1:]] for ch in choices]
+            softval = torch.nn.functional.softmax(torch.tensor(choice_logits).float(), dim=0)
 
-        if softval.dtype in {torch.bfloat16, torch.float16}:
-            softval = softval.to(dtype=torch.float32)
-        probs = softval.detach().cpu().numpy()
-        pred: str = multi_choices[int(np.argmax(probs))]  # Format: A or B or C or D
+            if softval.dtype in {torch.bfloat16, torch.float16}:
+                softval = softval.to(dtype=torch.float32)
+            probs = softval.detach().cpu().numpy()
+            pred: str = choices[int(np.argmax(probs))]  # Format: A or B or C or D
 
-        res_d = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[
-                ChatCompletionResponseChoice(
-                    index=0, message=ChatMessage(content=pred, role='assistant'), finish_reason='stop')
-            ],
-            object='chat.completion',
-            created=int(time.time()),
-            usage=None).model_dump(exclude_unset=True)
+            res_d = ChatCompletionResponse(
+                model=self.model_id,
+                choices=[
+                    ChatCompletionResponseChoice(
+                        index=0, message=ChatMessage(content=pred, role='assistant'), finish_reason='stop')
+                ],
+                object='chat.completion',
+                created=int(time.time()),
+                usage=None).model_dump(exclude_unset=True)
 
-        return res_d
+            results.append(res_d)
+
+        return results
 
     @staticmethod
     def _get_logits(tokenizer, model, inputs: List[str]):
-        input_ids = tokenizer(inputs, padding=False)['input_ids']
-        input_ids = torch.tensor(input_ids, device=model.device)
+        input_ids = tokenizer(
+            inputs, padding=True, return_tensors='pt', padding_side='left')['input_ids'].to(model.device)
         tokens = {'input_ids': input_ids}
 
         outputs = model(input_ids)['logits']
@@ -117,11 +119,11 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
         super().__init__(model, **kwargs)
 
     @torch.no_grad()
-    def predict(self, inputs: dict, infer_cfg: dict = None) -> dict:
+    def predict(self, inputs: List[dict], infer_cfg: dict = None) -> dict:
         """
         Multi-choice model prediction func.
         Args:
-            inputs (dict): The inputs for a doc. Format:
+            inputs (List[dict]): The inputs for a doc. Format:
                 {'data': [(context, continuation), ...]}
             infer_cfg (dict): inference configuration.
         Returns:
@@ -149,24 +151,29 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
         """
         infer_cfg = infer_cfg or {}
 
-        pred_list: list = self.loglikelihood(inputs=inputs['data'], infer_cfg=infer_cfg)
+        pred_list: list = []
+        for inp in inputs:
+            pred_list.append(self.loglikelihood(inputs=inp['data'], infer_cfg=infer_cfg))
 
-        res_d = ChatCompletionResponse(
-            model=self.model_id,
-            choices=[{
-                'index': 0,
-                'message': {
-                    'content': pred_list,
-                    'role': 'assistant'
-                }
-            }],
-            object='chat.completion',
-            created=int(time.time()),
-            usage=None).model_dump(exclude_unset=True)
+        results = []
+        for pred in pred_list:
+            res_d = ChatCompletionResponse(
+                model=self.model_id,
+                choices=[{
+                    'index': 0,
+                    'message': {
+                        'content': pred,
+                        'role': 'assistant'
+                    }
+                }],
+                object='chat.completion',
+                created=int(time.time()),
+                usage=None).model_dump(exclude_unset=True)
+            results.append(res_d)
 
-        return res_d
+        return results
 
-    def loglikelihood(self, inputs: list, infer_cfg: dict = None) -> list:
+    def loglikelihood(self, inputs: List[tuple], infer_cfg: dict = None) -> list:
         self.model.generation_config.update(**infer_cfg)
         # To predict one doc
         doc_ele_pred = []

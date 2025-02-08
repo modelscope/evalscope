@@ -14,10 +14,18 @@
   - `revision`: 模型版本，默认为`master`
   - `precision`: 模型精度，默认为`torch.float16`
   - `device_map`: 模型分配设备，默认为`auto`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_length`: 最大长度，默认为2048
-  - `max_new_tokens`: 生成最大长度，默认为512
+- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式:
+  - 若使用本地模型推理（基于Transformers）包括如下参数（[全部参数指南](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)）：
+    - `do_sample`: 是否使用采样，默认为`false`
+    - `max_length`: 最大长度，默认为2048
+    - `max_new_tokens`: 生成最大长度，默认为512
+    - `num_return_sequences`: 生成序列数量，默认为1；设置大于1时，将生成多个序列，需要设置`do_sample=True`
+    - `temperature`: 生成温度
+    - `top_k`: 生成top-k
+    - `top_p`: 生成top-p
+  - 若使用模型API服务推理（`eval-type`设置为`service`），包括如下参数（具体请参考部署的模型服务）：
+    - `max_tokens`: 生成最大长度，默认为512
+    - `temperature`: 生成温度, 默认为0.0
 - `--chat-template`: 模型推理模板，默认为`None`，表示使用transformers的`apply_chat_template`；支持传入jinjia模版字符串，来自定义推理模板
 - `--template-type`: 模型推理模板，已弃用，参考`--chat-template`
 
@@ -35,7 +43,8 @@
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
 
 ## 评测参数
-- `--eval-stage`: 评测阶段，可选`all`, `infer`, `review`
+- `--eval-batch-size`: 评测批量大小，默认为`1`
+- `--eval-stage`: 评测阶段，可选`all`, `infer`, `review`, 默认为`all`
   - `all`: 完整评测，包含推理和评测
   - `infer`: 仅进行推理，不进行评测
   - `review`: 仅进行数据评测，不进行推理

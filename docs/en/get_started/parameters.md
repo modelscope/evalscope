@@ -12,10 +12,18 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - `revision`: Model version, defaults to `master`
   - `precision`: Model precision, defaults to `torch.float16`
   - `device_map`: Device allocation for the model, defaults to `auto`
-- `--generation-config`: Generation parameters, separated by commas in `key=value` format, with default parameters:
-  - `do_sample`: Whether to use sampling, defaults to `false`
-  - `max_length`: Maximum length, defaults to 2048
-  - `max_new_tokens`: Maximum length of generation, defaults to 512
+- `--generation-config`: Generation parameters, separated by commas, in the form of `key=value`:
+  - If using local model inference (based on Transformers), the following parameters are included ([Full parameter guide](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)):
+    - `do_sample`: Whether to use sampling, default is `false`
+    - `max_length`: Maximum length, default is 2048
+    - `max_new_tokens`: Maximum length of generated text, default is 512
+    - `num_return_sequences`: Number of sequences to generate, default is 1; when set greater than 1, multiple sequences will be generated, requires setting `do_sample=True`
+    - `temperature`: Generation temperature
+    - `top_k`: Top-k for generation
+    - `top_p`: Top-p for generation
+  - If using model API service for inference (`eval-type` set to `service`), the following parameters are included (please refer to the deployed model service for specifics):
+    - `max_tokens`: Maximum length of generated text, default is 512
+    - `temperature`: Generation temperature, default is 0.0
 - `--chat-template`: Model inference template, defaults to `None`, indicating the use of transformers' `apply_chat_template`; supports passing in a jinja template string to customize the inference template.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.
 - `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1/chat/completions`.
@@ -34,7 +42,8 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
 
 ## Evaluation Parameters
-- `--eval-stage`: Evaluation stage, options are `all`, `infer`, `review`
+- `--eval-batch-size`: Evaluation batch size, defaults to `1`.
+- `--eval-stage`: Evaluation stage, options are `all`, `infer`, `review`, defaults to `all`.
   - `all`: Complete evaluation, including inference and evaluation.
   - `infer`: Only perform inference, without evaluation.
   - `review`: Only perform data evaluation, without inference.
