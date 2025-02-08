@@ -180,8 +180,8 @@ class TestRun(unittest.TestCase):
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math'
-                'arc',
-                # 'gsm8k'
+                # 'arc',
+                'gsm8k'
                 # 'truthful_qa'
             ],
             dataset_args={
@@ -190,7 +190,12 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=2,
-            limit=5
+            limit=5,
+            generation_config={
+                'max_new_tokens': 2048,
+                'temperature': 0.7,
+                'num_return_sequences': 2,
+            }
         )
 
         run_task(task_cfg=task_cfg)

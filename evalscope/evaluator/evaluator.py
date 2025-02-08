@@ -117,7 +117,7 @@ class Evaluator(object):
         pred_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
         pred_file_path = os.path.join(self.outputs_structure.predictions_dir, self.model_name, pred_file_name)
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
-        # TODO: support batch inference
+
         if self.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
             logger.info(f'Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')

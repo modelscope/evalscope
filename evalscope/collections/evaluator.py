@@ -29,11 +29,14 @@ class SimpleEvaluator(Evaluator):
             task_cfg=task_cfg,
             outputs=outputs)
 
-    def get_answer(self, input_prompt, subset_name, infer_cfg) -> dict:
-        answer_d: dict = self.model_adapter.predict(inputs=input_prompt, infer_cfg=infer_cfg)
-        answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
-        processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
-        return processed_answer
+    def get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
+        answers_list = []
+        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        for answer_d, input_prompt in zip(answer_ds, input_prompts):
+            answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
+            processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
+            answers_list.append(processed_answer)
+        return answers_list
 
     def get_review(self, answer_d) -> dict:
         review_id, reviewer_spec = self._generate_review_id(answer_d)
@@ -61,6 +64,8 @@ class EvaluatorCollection:
         dataset_path = self.task_cfg.dataset_args[DataCollection.NAME]['local_path']
         dataset_name = os.path.basename(dataset_path).split('.')[0]
         raw_dataset = jsonl_to_list(dataset_path)
+        if self.task_cfg.limit:
+            raw_dataset = raw_dataset[:self.task_cfg.limit]
         datasets = []
         for sample in raw_dataset:
             datasets.append(DatasetEntry(**sample))
@@ -160,11 +165,24 @@ class EvaluatorCollection:
                                       f'{self.dataset_name}.jsonl')
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
         answers = defaultdict(dict)
-        for sample in tqdm(self.dataset, desc='Getting answers'):
-            evaluator = self.evaluators[sample.dataset_name]
-            answer_d = evaluator.get_answer(sample.prompt, sample.subset_name, self.task_cfg.generation_config)
-            answers[sample.index] = answer_d
-            dump_jsonl_data(answer_d, pred_file_path, dump_mode=DumpMode.APPEND)
+        eval_batch_size = self.task_cfg.eval_batch_size
+        with tqdm(total=len(self.dataset), desc='Getting answers') as pbar:
+            for dataset_name, data_map in self.dataset_name_map.items():
+                # get evaluator for the dataset
+                evaluator = self.evaluators[dataset_name]
+                for subset_name, ids in data_map.items():
+                    for i in range(0, len(ids), eval_batch_size):
+                        # get batch samples
+                        batch_ids = ids[i:i + eval_batch_size]
+                        batch_samples = [self.dataset_id_map[_id] for _id in batch_ids]
+                        prompts = [sample.prompt for sample in batch_samples]
+                        answer_list = evaluator.get_answer(prompts, subset_name, self.task_cfg.generation_config)
+                        # update answers
+                        for j, _id in enumerate(batch_ids):
+                            answers[_id] = answer_list[j]
+                        dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
+
+                        pbar.update(len(batch_ids))
         return answers
 
     def get_reviews(self, answers):

@@ -67,7 +67,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             The prediction results.
         """
         # Process infer_cfg
-        if isinstance(infer_cfg.get('num_return_sequences'), int) and infer_cfg['num_return_sequences'] > 1:
+        num_return_sequences = infer_cfg.get('num_return_sequences', 1)
+        if num_return_sequences > 1:
             infer_cfg['do_sample'] = True
 
         # stop settings
@@ -108,9 +109,14 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
 
         responses = []
-        for i, output in enumerate(output_ids):
-            response = self.tokenizer.decode(output[len(input_ids[i]):], skip_special_tokens=True)
-            responses.append(response)
+        for i in range(0, len(output_ids), num_return_sequences):
+            query_responses = []
+            for j in range(num_return_sequences):
+                output = output_ids[i + j]
+                response = self.tokenizer.decode(
+                    output[len(input_ids[i // num_return_sequences]):], skip_special_tokens=True)
+                query_responses.append(response)
+            responses.append(query_responses)
 
         return responses
 
@@ -144,10 +150,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         responses = self._model_generate(queries, system_prompts, infer_cfg)
 
         results = []
-        for i, response in enumerate(responses):
+        for response in responses:
             choices_list = [
                 ChatCompletionResponseChoice(
-                    index=0, message=ChatMessage(content=response, role='assistant'), finish_reason='stop')
+                    index=index, message=ChatMessage(content=one_response, role='assistant'), finish_reason='stop')
+                for index, one_response in enumerate(response)
             ]
 
             res_d = ChatCompletionResponse(
