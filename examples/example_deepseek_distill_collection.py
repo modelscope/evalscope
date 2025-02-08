@@ -36,10 +36,10 @@ task_cfg = TaskConfig(
     },
     eval_batch_size=16,
     generation_config={
-        'max_tokens': 32768,
+        'max_tokens': 30000,  # avoid exceed max length
         'temperature': 0.6,
         'top_p': 0.95,
-        'n': 5,
+        'n': 5,  # num of samples per request
     }
 )
 
