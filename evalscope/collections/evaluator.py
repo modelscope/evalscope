@@ -71,7 +71,7 @@ class EvaluatorCollection:
             raw_dataset = raw_dataset[:self.task_cfg.limit]
         datasets = []
         for sample in raw_dataset:
-            datasets.append(DatasetEntry(**sample))
+            datasets.extend([DatasetEntry(**sample)] * self.task_cfg.repeat)
         return datasets, dataset_name
 
     def _parse_dataset(self):

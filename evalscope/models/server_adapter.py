@@ -96,8 +96,6 @@ class ServerModelAdapter(BaseModelAdapter):
             }
 
         request_json = {'model': self.model_id, **content, **infer_cfg}
-        if self.seed is not None:
-            request_json['seed'] = self.seed
         logger.debug(f'Request to remote API: {request_json}')
         return request_json
 
