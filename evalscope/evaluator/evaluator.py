@@ -73,9 +73,11 @@ class Evaluator(object):
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
 
-        # Repeat prompts
+        # Repeat and limit prompts
         repeated_prompts = defaultdict(list)
         for subset_name, prompts_list in prompts.items():
+            limit = self.task_cfg.limit or len(prompts_list)
+            prompts_list = prompts_list[:limit]
             for prompt in prompts_list:
                 repeated_prompts[subset_name].extend([prompt] * self.task_cfg.repeat)
         return repeated_prompts
@@ -353,8 +355,6 @@ class Evaluator(object):
 
         prompts = self.load_dataset()
         for subset_name, prompts_list in prompts.items():
-            limit = self.task_cfg.limit or len(prompts_list)
-            prompts_list = prompts_list[:limit]
 
             answers_list: list = self.get_answers(
                 subset_name=subset_name, prompts_list=prompts_list, infer_cfg=self.task_cfg.generation_config, **kwargs)
