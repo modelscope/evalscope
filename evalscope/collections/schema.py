@@ -19,8 +19,7 @@ class DatasetInfo:
         benchmark_meta = Benchmark.get(self.name)
 
         data_adapter = benchmark_meta.get_data_adapter(config=self.args)
-        data_dict = data_adapter.load(
-            dataset_name_or_path=benchmark_meta.dataset_id, subset_list=benchmark_meta.subset_list)
+        data_dict = data_adapter.load()
         prompts = data_adapter.gen_prompts(data_dict)
         return prompts
 

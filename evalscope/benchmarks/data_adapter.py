@@ -16,6 +16,7 @@ class DataAdapter(ABC):
 
     def __init__(self,
                  name: str,
+                 dataset_id: str,
                  subset_list: list,
                  metric_list: List[Metric],
                  few_shot_num: Optional[int] = 0,
@@ -31,6 +32,7 @@ class DataAdapter(ABC):
             - match
         Args:
             name: str, the name of the benchmark.
+            dataset_id: str, the dataset id on ModelScope or local path for the benchmark.
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
             few_shot_num: int, number of few-shot examples. Default: 0
@@ -41,6 +43,7 @@ class DataAdapter(ABC):
                     the form of A or B or C or D, do not output explanation:`
         """
         self.name = name
+        self.dataset_id = dataset_id
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num
@@ -51,7 +54,7 @@ class DataAdapter(ABC):
         self.category_map = kwargs.get('category_map', {})
 
     def load(self,
-             dataset_name_or_path: str,
+             dataset_name_or_path: str = None,
              subset_list: list = None,
              work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
              datasets_hub: str = HubType.MODELSCOPE,
@@ -64,7 +67,7 @@ class DataAdapter(ABC):
             train_dataset, test_dataset: Iterable dataset, object each item of which is a dict.
 
         """
-        dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
+        dataset_name_or_path = os.path.expanduser(dataset_name_or_path or self.dataset_id)
         subset_list = subset_list or self.subset_list
 
         # Try to load dataset from local disk
