@@ -3,7 +3,7 @@
 import json
 import os
 import time
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from tqdm import tqdm
@@ -72,7 +72,15 @@ class Evaluator(object):
 
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
-        return prompts
+
+        # Repeat and limit prompts
+        repeated_prompts = defaultdict(list)
+        for subset_name, prompts_list in prompts.items():
+            limit = self.task_cfg.limit or len(prompts_list)
+            prompts_list = prompts_list[:limit]
+            for prompt in prompts_list:
+                repeated_prompts[subset_name].extend([prompt] * self.task_cfg.repeat)
+        return repeated_prompts
 
     def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
         model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
@@ -347,8 +355,6 @@ class Evaluator(object):
 
         prompts = self.load_dataset()
         for subset_name, prompts_list in prompts.items():
-            limit = self.task_cfg.limit or len(prompts_list)
-            prompts_list = prompts_list[:limit]
 
             answers_list: list = self.get_answers(
                 subset_name=subset_name, prompts_list=prompts_list, infer_cfg=self.task_cfg.generation_config, **kwargs)

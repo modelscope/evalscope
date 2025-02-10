@@ -40,6 +40,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.
 - `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
+- `--repeat`: The number of times to repeat the evaluation for each sample. The default is 1, meaning no repetition. When set to a value greater than 1, model sampling must be enabled.
 
 ## Evaluation Parameters
 - `--eval-batch-size`: Evaluation batch size, defaults to `1`.

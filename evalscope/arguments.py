@@ -59,6 +59,7 @@ def add_argument(parser: argparse.ArgumentParser):
                         choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.REVIEW])
     parser.add_argument('--limit', type=int, default=None, help='Max evaluation samples num for each subset.')
     parser.add_argument('--eval-batch-size', type=int, default=1, help='The batch size for evaluation.')
+    parser.add_argument('--repeat', type=int, default=1, help='The repetition of datasets.')
 
     # Cache and working directory arguments
     parser.add_argument('--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501

@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import re
 from dataclasses import dataclass
 from typing import Any, List, Union
 
@@ -218,7 +219,16 @@ def dict_to_markdown(data) -> str:
     return '\n\n'.join(markdown_lines)
 
 
+def convert_html_tags(text):
+    # match begin label
+    text = re.sub(r'<(\w+)>', r'[\1]', text)
+    # match end label
+    text = re.sub(r'</(\w+)>', r'[/\1]', text)
+    return text
+
+
 def process_string(string: str, max_length: int = 2048) -> str:
+    string = convert_html_tags(string)  # for display labels e.g. `<think>`
     if len(string) > max_length:
         return f'{string[:max_length // 2]}......{string[-max_length // 2:]}'
     return string
@@ -257,19 +267,20 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     ds = []
     for i, item in origin_df.iterrows():
         raw_input = item['raw_input']
-        raw_pred_answer = item['choices'][0]['message']['content']
-        parsed_gold_answer = item['choices'][0]['review']['gold']
-        parsed_pred_answer = item['choices'][0]['review']['pred']
-        score = item['choices'][0]['review']['result']
-        raw_d = {
-            'Input': raw_input,
-            'Generated': raw_pred_answer,
-            'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
-            'Pred': parsed_pred_answer if parsed_pred_answer != raw_pred_answer else '*Same as Generated*',
-            'Score': score,
-            'NScore': normalize_score(score)
-        }
-        ds.append(raw_d)
+        for choice in item['choices']:
+            raw_pred_answer = choice['message']['content']
+            parsed_gold_answer = choice['review']['gold']
+            parsed_pred_answer = choice['review']['pred']
+            score = choice['review']['result']
+            raw_d = {
+                'Input': raw_input,
+                'Generated': raw_pred_answer,
+                'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
+                'Pred': parsed_pred_answer if parsed_pred_answer != raw_pred_answer else '*Same as Generated*',
+                'Score': score,
+                'NScore': normalize_score(score)
+            }
+            ds.append(raw_d)
 
     df_subset = pd.DataFrame(ds)
     return df_subset
@@ -284,6 +295,8 @@ def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: i
     end = start + rows_per_page
     df_subset = data_review_df.iloc[start:end].copy()
     df_subset['Input'] = df_subset['Input'].map(process_model_prediction).astype(str)
+    df_subset['Generated'] = df_subset['Generated'].map(process_model_prediction).astype(str)
+    df_subset['Pred'] = df_subset['Pred'].map(process_model_prediction).astype(str)
     df_subset['Score'] = df_subset['Score'].map(process_model_prediction).astype(str)
     styler = style_df(df_subset, columns=['NScore'])
     return df_subset, styler
