@@ -16,7 +16,7 @@ task_cfg = TaskConfig(
     eval_type=EvalType.SERVICE,
     datasets=['data_collection'],
     dataset_args={'data_collection': {
-        'local_path': 'outputs/mixed_data.jsonl'
+        'dataset_id': 'outputs/mixed_data.jsonl'
     }},
 )
 run_task(task_cfg=task_cfg)
@@ -24,7 +24,7 @@ run_task(task_cfg=task_cfg)
 
 需要注意的是，其中：
 - `datasets` 中指定的数据集名称固定为 `data_collection`，表示评测混合数据集
-- `dataset_args` 中需要指定 `local_path`，表示评测数据集的本地路径
+- `dataset_args` 中需要指定 `dataset_id`，表示评测数据集的路径，可以是本地路径，也可以是modelscope上的数据集id
 
 ## 评测结果
 

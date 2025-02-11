@@ -236,9 +236,11 @@ def process_string(string: str, max_length: int = 2048) -> str:
 
 def process_model_prediction(item: Any):
     if isinstance(item, dict):
-        return dict_to_markdown(item)
+        res = dict_to_markdown(item)
+        return process_string(res)
     elif isinstance(item, list):
-        return '\n'.join([process_model_prediction(item) for item in item])
+        res = '\n'.join([process_model_prediction(item) for item in item])
+        return process_string(res)
     else:
         return process_string(str(item))
 

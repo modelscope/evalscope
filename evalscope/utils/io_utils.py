@@ -135,7 +135,7 @@ def dict_to_yaml(d: dict, yaml_file: str):
     Dump dict to yaml file.
     """
     with open(yaml_file, 'w') as f:
-        yaml.dump(d, f, default_flow_style=False)
+        yaml.dump(d, f, default_flow_style=False, allow_unicode=True)
 
 
 def json_to_dict(json_file) -> dict:

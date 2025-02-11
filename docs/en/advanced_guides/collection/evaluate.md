@@ -16,7 +16,7 @@ task_cfg = TaskConfig(
     eval_type=EvalType.SERVICE,
     datasets=['data_collection'],
     dataset_args={'data_collection': {
-        'local_path': 'outputs/mixed_data.jsonl'
+        'dataset_id': 'outputs/mixed_data.jsonl'
     }},
 )
 run_task(task_cfg=task_cfg)
@@ -24,7 +24,7 @@ run_task(task_cfg=task_cfg)
 
 It is important to note that:
 - The dataset name specified in `datasets` is fixed as `data_collection`, indicating the evaluation of the mixed dataset.
-- In `dataset_args`, you need to specify `local_path`, which indicates the local path to the evaluation dataset.
+- In `dataset_args`, you need to specify `dataset_id`, which indicates the local path to the evaluation dataset or the dataset ID on ModelScope.
 
 ## Evaluation Results
 

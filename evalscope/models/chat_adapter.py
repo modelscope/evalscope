@@ -89,7 +89,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             formatted_prompts = []
             for i, query in enumerate(queries):
                 messages = [ChatMessage(role='user', content=query)]
-                if system_prompts and i < len(system_prompts):
+                if i < len(system_prompts) and system_prompts[i]:
                     messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
                 formatted_prompts.append(
                     self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
