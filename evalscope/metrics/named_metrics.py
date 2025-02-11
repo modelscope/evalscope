@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Callable, Dict
 
-from evalscope.metrics.metrics import mean, weighted_mean
+from evalscope.metrics.metrics import mean, pass_at_k, weighted_mean
 
 
 @dataclass
@@ -32,4 +33,7 @@ metric_registry.register(Metric(name='AverageAccuracy', object=mean))
 metric_registry.register(Metric(name='WeightedAverageAccuracy', object=weighted_mean))
 metric_registry.register(Metric(name='AverageBLEU', object=mean))
 metric_registry.register(Metric(name='WeightedAverageBLEU', object=weighted_mean))
-metric_registry.register(Metric(name='Pass@1', object=mean))
+metric_registry.register(Metric(name='AveragePass@1', object=mean))
+for num in range(7):
+    k = 2**num
+    metric_registry.register(Metric(name=f'Pass@{k}', object=partial(pass_at_k, k=k)))

@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.benchmarks.ifeval.utils import agg_inst_level_acc, process_results
+from evalscope.benchmarks.ifeval.utils import process_results
 from evalscope.constants import EvalType
 from evalscope.metrics import Metric, mean, metric_registry
 from evalscope.models import ChatGenerationModelAdapter
@@ -31,9 +31,9 @@ class IFEvalAdapter(DataAdapter):
 
         # register metrics
         metric_registry.register(Metric(name='prompt_level_strict_acc', object=mean))
-        metric_registry.register(Metric(name='inst_level_strict_acc', object=agg_inst_level_acc))
+        metric_registry.register(Metric(name='inst_level_strict_acc', object=mean))
         metric_registry.register(Metric(name='prompt_level_loose_acc', object=mean))
-        metric_registry.register(Metric(name='inst_level_loose_acc', object=agg_inst_level_acc))
+        metric_registry.register(Metric(name='inst_level_loose_acc', object=mean))
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
         return {'data': [input_d['prompt']], 'system_prompt': self.system_prompt}

@@ -13,7 +13,7 @@ from evalscope.models import ChatGenerationModelAdapter
     dataset_id='modelscope/gpqa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
-    metric_list=['Pass@1'],
+    metric_list=['AveragePass@1'],
     few_shot_num=5,
     train_split='train',
     eval_split='train',  # only have train split

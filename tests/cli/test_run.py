@@ -80,7 +80,7 @@ class TestRun(unittest.TestCase):
                         # 'arc',
                         # 'race',
                         'ifeval',
-                        'truthful_qa',
+                        # 'truthful_qa',
                         # 'trivia_qa',
                         ],
                     'limit': 2,
