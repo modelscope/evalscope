@@ -8,7 +8,7 @@ from collections import defaultdict
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
 from evalscope.metrics import AverageAccuracy
-from evalscope.metrics.math_accuracy import is_equiv, last_boxed_only_string, remove_boxed
+from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
@@ -103,7 +103,7 @@ class CompetitionMathAdapter(DataAdapter):
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.
-        return remove_boxed(last_boxed_only_string(input_d['solution']))
+        return strip_answer_string(extract_answer(input_d['solution']))
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
@@ -118,18 +118,11 @@ class CompetitionMathAdapter(DataAdapter):
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
         # Note: Use same extraction method for both of checkpoint/service/custom
-        try:
-            result = remove_boxed(last_boxed_only_string(result))
-        except Exception:
-            return None
+        result = strip_answer_string(extract_answer(result))
         return result
 
     def match(self, gold: str, pred: str) -> float:
-        res = 0
-        if is_equiv(pred, gold):
-            res = 1
-
-        return res
+        return math_equal(pred, gold)
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, use_fewshot: bool = True) -> str:

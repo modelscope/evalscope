@@ -6,7 +6,6 @@ from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
 from evalscope.metrics import Pass1, exact_match
 from evalscope.models import ChatGenerationModelAdapter
-from evalscope.utils.utils import ResponseParser
 
 
 @Benchmark.register(
@@ -16,7 +15,7 @@ from evalscope.utils.utils import ResponseParser
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
     metric_list=[Pass1],
     few_shot_num=5,
-    train_split=None,
+    train_split='train',
     eval_split='train',  # only have train split
     prompt_template='',
 )
@@ -94,10 +93,28 @@ class GPQAAdapter(DataAdapter):
         """
         Parse the predicted result and extract proper answer.
         """
-        return ResponseParser.parse_first_option_with_choices(result, self.choices)
+        return GPQAAdapter.get_multiple_choice_answer(result)
 
     def match(self, gold: str, pred: str) -> float:
         """
         Match the gold answer and the predicted answer.
         """
         return exact_match(gold=gold, pred=pred)
+
+    @staticmethod
+    def get_multiple_choice_answer(pred: str):
+        tmp = re.findall(r'\b(A|B|C|D)\b', pred.upper())
+        if tmp:
+            pred = tmp
+        else:
+            pred = [pred.strip().strip('.')]
+
+        if len(pred) == 0:
+            pred = ''
+        else:
+            pred = pred[-1]
+
+        # Remove the period at the end, again!
+        pred = pred.rstrip('.').rstrip('/')
+
+        return pred

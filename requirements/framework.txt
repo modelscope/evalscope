@@ -6,6 +6,8 @@ datasets>=3.0.0,<=3.2.0
 editdistance
 jieba
 jsonlines
+langdetect
+latex2sympy2
 matplotlib
 modelscope[framework]
 nltk>=3.9
@@ -25,6 +27,8 @@ scikit-learn
 seaborn
 sentencepiece
 simple-ddl-parser
+# for evaluation
+sympy
 # streamlit
 tabulate
 tiktoken
@@ -33,4 +37,4 @@ torch
 tqdm
 transformers>=4.33
 transformers_stream_generator
-# wandb
+word2number
