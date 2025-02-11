@@ -70,14 +70,11 @@ class EvaluatorCollection:
         # limit the dataset
         if self.task_cfg.limit:
             raw_dataset = raw_dataset[:self.task_cfg.limit]
-        # repeat and reindex the dataset
+
         datasets = []
-        next_index = 0
         for sample in raw_dataset:
-            for _ in range(self.task_cfg.repeat):
-                sample['index'] = next_index
-                datasets.append(DatasetEntry(**sample))
-                next_index += 1
+            datasets.append(DatasetEntry(**sample))
+
         return datasets, dataset_name
 
     def _parse_dataset(self):

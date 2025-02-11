@@ -26,6 +26,7 @@
   - 若使用模型API服务推理（`eval-type`设置为`service`），包括如下参数（具体请参考部署的模型服务）：
     - `max_tokens`: 生成最大长度，默认为512
     - `temperature`: 生成温度, 默认为0.0
+    - `n`: 生成序列数量，默认为1（注意：lmdeploy目前仅支持n=1）
   ```bash
   # 例如
   --model-args revision=master,precision=torch.float16,device_map=auto
@@ -51,7 +52,6 @@
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
-- `--repeat`: 每个样本重复评测的次数，默认为1，即不重复；设置大于1时，需开启模型采样
 
 ## 评测参数
 - `--eval-batch-size`: 评测批量大小，默认为`1`

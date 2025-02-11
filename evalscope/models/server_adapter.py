@@ -76,7 +76,7 @@ class ServerModelAdapter(BaseModelAdapter):
         """
         Make request content for API.
         """
-        if system_prompt is not None:
+        if system_prompt:
             messages = [
                 ChatMessage(role='system', content=system_prompt).model_dump(exclude_unset=True),
                 ChatMessage(role='user', content=query).model_dump(exclude_unset=True)

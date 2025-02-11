@@ -68,14 +68,12 @@ class Evaluator(object):
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
 
-        # Repeat and limit prompts
-        repeated_prompts = defaultdict(list)
+        # Limit prompts
+        limited_prompts = defaultdict(list)
         for subset_name, prompts_list in prompts.items():
             limit = self.task_cfg.limit or len(prompts_list)
-            prompts_list = prompts_list[:limit]
-            for prompt in prompts_list:
-                repeated_prompts[subset_name].extend([prompt] * self.task_cfg.repeat)
-        return repeated_prompts
+            limited_prompts[subset_name].extend(prompts_list[:limit])
+        return limited_prompts
 
     def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
         model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
