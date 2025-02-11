@@ -10,11 +10,11 @@ from typing import List
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import DataCollection, DumpMode, EvalType
+from evalscope.constants import DumpMode, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models import get_local_model, initialize_model_adapter
 from evalscope.report import ReportGenerator
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

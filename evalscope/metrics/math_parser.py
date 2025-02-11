@@ -447,10 +447,10 @@ def math_equal(
 
     if prediction.count('=') == 1 and reference.count('=') == 1:
         pred = prediction.split('=')
-        pred = f"{pred[0].strip()} - ({pred[1].strip()})"
+        pred = f'{pred[0].strip()} - ({pred[1].strip()})'
         ref = reference.split('=')
-        ref = f"{ref[0].strip()} - ({ref[1].strip()})"
-        if symbolic_equal(pred, ref) or symbolic_equal(f"-({pred})", ref):
+        ref = f'{ref[0].strip()} - ({ref[1].strip()})'
+        if symbolic_equal(pred, ref) or symbolic_equal(f'-({pred})', ref):
             return True
     elif (prediction.count('=') == 1 and len(prediction.split('=')[0].strip()) <= 2 and '=' not in reference):
         if math_equal(prediction.split('=')[1], reference, include_percentage, is_close):
