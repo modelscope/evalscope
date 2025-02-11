@@ -7,7 +7,6 @@ from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
-from evalscope.metrics import AverageAccuracy
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
@@ -22,7 +21,7 @@ logger = get_logger()
     dataset_id='modelscope/competition_math',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=4,
     train_split='train',
     eval_split='test',

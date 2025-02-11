@@ -17,7 +17,7 @@ class BenchmarkMeta:
     data_adapter: 'DataAdapter'
     model_adapter: BaseModelAdapter
     subset_list: List[str] = field(default_factory=list)
-    metric_list: List[dict] = field(default_factory=list)
+    metric_list: List[str] = field(default_factory=list)
     few_shot_num: int = 0
     few_shot_random: bool = False
     train_split: Optional[str] = None
@@ -41,7 +41,6 @@ class BenchmarkMeta:
         # cur_dict['metric_list'] = [metric['name'] for metric in self.metric_list]
         del cur_dict['data_adapter']
         del cur_dict['model_adapter']
-        del cur_dict['metric_list']
         return cur_dict
 
     def get_data_adapter(self, config: dict = {}) -> 'DataAdapter':

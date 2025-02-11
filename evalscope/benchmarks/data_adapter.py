@@ -2,10 +2,10 @@
 import os.path
 import random
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
-from evalscope.metrics import Metric
+from evalscope.metrics.named_metrics import metric_registry
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils.logger import get_logger
 
@@ -18,7 +18,7 @@ class DataAdapter(ABC):
                  name: str,
                  dataset_id: str,
                  subset_list: list,
-                 metric_list: List[Metric],
+                 metric_list: List[str],
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
@@ -161,7 +161,7 @@ class DataAdapter(ABC):
         else:
             return data_list[:k]
 
-    def compute_metric(self, review_res_list: list) -> List[dict]:
+    def compute_metric(self, review_res_list: Union[dict, list]) -> List[dict]:
         """
         Compute evaluation result by specific metrics.
 
@@ -175,14 +175,15 @@ class DataAdapter(ABC):
             raise ValueError('No metric list found for the benchmark.')
 
         res_list = []
-        for metric in self.metric_list:
+        for metric_str in self.metric_list:
+            metric = metric_registry.get(metric_str)
             metric_name = metric.name
             metric_func = metric.object
-            res_list.append({
-                'metric_name': metric_name,
-                'score': metric_func(review_res_list),
-                'num': len(review_res_list)
-            })
+            if isinstance(review_res_list, dict):
+                review_res = review_res_list.get(metric_name, [])
+            else:
+                review_res = review_res_list
+            res_list.append({'metric_name': metric_name, 'score': metric_func(review_res), 'num': len(review_res)})
         return res_list
 
     def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:

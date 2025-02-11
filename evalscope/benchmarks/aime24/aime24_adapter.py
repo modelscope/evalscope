@@ -1,5 +1,4 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import Pass1
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
@@ -14,7 +13,7 @@ logger = get_logger()
     dataset_id='HuggingFaceH4/aime_2024',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[Pass1],
+    metric_list=['Pass@1'],
     few_shot_num=0,
     train_split=None,
     eval_split='train',  # Only train set is available

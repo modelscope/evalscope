@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import AverageBLEU, bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
+from evalscope.metrics import bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -18,7 +18,7 @@ logger = get_logger()
     dataset_id='general_qa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[AverageBLEU],
+    metric_list=['AverageBLEU'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',

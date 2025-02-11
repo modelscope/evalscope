@@ -5,7 +5,7 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
@@ -20,7 +20,7 @@ logger = get_logger()
     dataset_id='modelscope/ai2_arc',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=['ARC-Easy', 'ARC-Challenge'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='train',
     eval_split='test',

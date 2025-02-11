@@ -4,10 +4,9 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy
-from evalscope.metrics.metrics import exact_match, weighted_mean
+from evalscope.metrics.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -130,7 +129,7 @@ SUBJECT_MAPPING = {
     dataset_id='modelscope/ceval-exam',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='dev',
     eval_split='val',

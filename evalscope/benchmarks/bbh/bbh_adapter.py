@@ -7,7 +7,7 @@ import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models.chat_adapter import ChatGenerationModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
@@ -63,7 +63,7 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
     dataset_id='modelscope/bbh',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=3,
     train_split=None,
     eval_split='test',

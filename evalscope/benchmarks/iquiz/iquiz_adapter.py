@@ -1,6 +1,6 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.constants import EvalType
+from evalscope.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
@@ -10,7 +10,7 @@ from evalscope.utils.utils import ResponseParser
     dataset_id='AI-ModelScope/IQuiz',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['IQ', 'EQ'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',

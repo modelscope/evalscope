@@ -4,7 +4,7 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.io_utils import jsonl_to_list
@@ -20,7 +20,7 @@ logger = get_logger()
     dataset_id='modelscope/race',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=['high', 'middle'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=3,
     train_split='train',
     eval_split='test',

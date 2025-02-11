@@ -6,7 +6,6 @@ import os
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import AverageAccuracy
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -19,7 +18,7 @@ logger = get_logger()
     dataset_id='modelscope/gsm8k',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['main'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=4,
     train_split='train',
     eval_split='test',

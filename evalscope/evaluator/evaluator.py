@@ -204,11 +204,7 @@ class Evaluator(object):
     def _generate_review_id(self, answer_d):
         # Gen review_id (concat: answer_id + reviewer_spec)
         answer_id = answer_d[AnswerKeys.ANSWER_ID]
-        reviewer_spec = {
-            'metric': [metric.name for metric in self.data_adapter.metric_list],
-            'reviewer': ['Evaluator'],
-            'revision': ['default']
-        }
+        reviewer_spec = {'metric': self.data_adapter.metric_list, 'reviewer': ['Evaluator'], 'revision': ['default']}
         reviewer_spec_str = json.dumps(
             OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
         review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)

@@ -3,8 +3,8 @@ import random
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import Pass1, exact_match
+from evalscope.constants import EvalType
+from evalscope.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 
 
@@ -13,7 +13,7 @@ from evalscope.models import ChatGenerationModelAdapter
     dataset_id='modelscope/gpqa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
-    metric_list=[Pass1],
+    metric_list=['Pass@1'],
     few_shot_num=5,
     train_split='train',
     eval_split='train',  # only have train split
