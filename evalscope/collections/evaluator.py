@@ -7,14 +7,14 @@ from tabulate import tabulate
 from tqdm import tqdm
 from typing import List
 
-from evalscope.benchmarks import Benchmark
+from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import DataCollection, DumpMode, EvalType
+from evalscope.constants import DumpMode, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models import get_local_model, initialize_model_adapter
 from evalscope.report import ReportGenerator
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -55,8 +55,9 @@ class SimpleEvaluator(Evaluator):
 
 class EvaluatorCollection:
 
-    def __init__(self, task_cfg: TaskConfig, outputs: OutputsStructure):
+    def __init__(self, task_cfg: TaskConfig, data_adapter: DataAdapter, outputs: OutputsStructure):
         self.task_cfg = task_cfg
+        self.data_adapter = data_adapter
         self.outputs = outputs
         self.model = get_local_model(task_cfg)
         self.dataset, self.dataset_name = self.load()
@@ -64,14 +65,19 @@ class EvaluatorCollection:
         self.evaluators = self._initialize_evaluators()
 
     def load(self) -> tuple[list[DatasetEntry], str]:
-        dataset_path = self.task_cfg.dataset_args[DataCollection.NAME]['local_path']
-        dataset_name = os.path.basename(dataset_path).split('.')[0]
-        raw_dataset = jsonl_to_list(dataset_path)
+        dataset_name = os.path.basename(self.data_adapter.dataset_id).split('.')[0]
+        raw_dataset = self.data_adapter.load()
+        # limit the dataset
         if self.task_cfg.limit:
             raw_dataset = raw_dataset[:self.task_cfg.limit]
+        # repeat and reindex the dataset
         datasets = []
+        next_index = 0
         for sample in raw_dataset:
-            datasets.extend([DatasetEntry(**sample)] * self.task_cfg.repeat)
+            for _ in range(self.task_cfg.repeat):
+                sample['index'] = next_index
+                datasets.append(DatasetEntry(**sample))
+                next_index += 1
         return datasets, dataset_name
 
     def _parse_dataset(self):

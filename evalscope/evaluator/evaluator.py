@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, ReviewKeys
-from evalscope.models import BaseModelAdapter, CustomModelAdapter
+from evalscope.models import BaseModelAdapter
 from evalscope.report import Report, gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
@@ -37,7 +37,6 @@ class Evaluator(object):
     """
 
     def __init__(self,
-                 dataset_name_or_path: str,
                  data_adapter: DataAdapter,
                  model_adapter: BaseModelAdapter,
                  outputs: OutputsStructure = None,
@@ -45,7 +44,7 @@ class Evaluator(object):
                  **kwargs):
 
         self.dataset_name = data_adapter.name
-        self.dataset_name_or_path = os.path.expanduser(dataset_name_or_path)
+        self.dataset_name_or_path = os.path.expanduser(data_adapter.dataset_id)
         self.model_name = task_cfg.model_id
         self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
@@ -64,11 +63,7 @@ class Evaluator(object):
 
     def load_dataset(self):
         dataset = self.data_adapter.load(
-            dataset_name_or_path=self.dataset_name_or_path,
-            subset_list=self.data_adapter.subset_list,
-            work_dir=os.path.expanduser(self.task_cfg.dataset_dir),
-            datasets_hub=self.dataset_hub,
-            **self.kwargs)
+            work_dir=os.path.expanduser(self.task_cfg.dataset_dir), datasets_hub=self.dataset_hub, **self.kwargs)
 
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)

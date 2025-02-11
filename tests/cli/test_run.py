@@ -76,13 +76,13 @@ class TestRun(unittest.TestCase):
                         'mmlu_pro',
                         # 'bbh',
                         'hellaswag',
-                        # 'gsm8k',
-                        # 'arc'
-                        # 'race',
+                        'gsm8k',
+                        'arc',
+                        'race',
                         # 'truthful_qa',
                         # 'trivia_qa',
                         ],
-                    'limit': 20,
+                    'limit': 2,
                     'debug': True}
         run_task(task_cfg=task_cfg)
 

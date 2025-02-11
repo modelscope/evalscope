@@ -24,6 +24,11 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - If using model API service for inference (`eval-type` set to `service`), the following parameters are included (please refer to the deployed model service for specifics):
     - `max_tokens`: Maximum length of generated text, default is 512
     - `temperature`: Generation temperature, default is 0.0
+  ```bash
+  # For example
+  --model-args revision=master,precision=torch.float16,device_map=auto
+  --generation-config do_sample=true,temperature=0.5
+  ```
 - `--chat-template`: Model inference template, defaults to `None`, indicating the use of transformers' `apply_chat_template`; supports passing in a jinja template string to customize the inference template.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.
 - `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1/chat/completions`.
@@ -32,11 +37,16 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 ## Dataset Parameters
 - `--datasets`: Dataset name, supports inputting multiple datasets separated by spaces, datasets will automatically be downloaded from ModelScope, supported datasets refer to [Dataset List](./supported_dataset.md#supported-datasets).
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
-  - `local_path`: Local path for the dataset, once specified, it will attempt to load local data.
+  - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: Prompt template for the evaluation dataset, once specified, it will be concatenated before each evaluation data entry.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.
   - `few_shot_random`: Whether to randomly sample few-shot data, defaults to `False`.
+  ```bash
+  # For example
+  --datasets gsm8k arc
+  --dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}'
+  ```
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.
 - `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.

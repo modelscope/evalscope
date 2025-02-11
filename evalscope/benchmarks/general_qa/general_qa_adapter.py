@@ -30,16 +30,16 @@ class GeneralQAAdapter(DataAdapter):
 
         super().__init__(**kwargs)
 
-    def load(self, dataset_name_or_path: str, subset_list: list = None, **kwargs) -> dict:
+    def load(self, **kwargs) -> dict:
 
-        data_file_list = glob.glob(os.path.join(dataset_name_or_path, '*.jsonl'))
+        data_file_list = glob.glob(os.path.join(self.dataset_id, '*.jsonl'))
         data_list = []
 
         try:
             for file_path in data_file_list:
                 data_list.extend(jsonl_to_list(file_path))
         except Exception as e:
-            raise ValueError(f'Failed to load data from {dataset_name_or_path}, got error: {e}')
+            raise ValueError(f'Failed to load data from {self.dataset_id}, got error: {e}')
 
         data_dict = {'default': {'test': data_list}}
 
