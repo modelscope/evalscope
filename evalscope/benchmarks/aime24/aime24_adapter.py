@@ -11,7 +11,7 @@ logger = get_logger()
 
 @Benchmark.register(
     name='aime24',
-    dataset_id='AI-ModelScope/AIME_2024',
+    dataset_id='HuggingFaceH4/aime_2024',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=[Pass1],
@@ -39,14 +39,14 @@ class AIME24Adapter(DataAdapter):
         Returns:
             {'data': [prompt]}
         """
-        prompt = input_d['Problem']
+        prompt = input_d['problem']
         full_prompt = f'Problem: {prompt}\nMark your solution with \\boxed\nAnswer:'
 
         return {'data': [full_prompt], 'system_prompt': self.prompt_template}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.
-        return input_d['Answer']
+        return input_d['answer']
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
