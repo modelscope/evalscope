@@ -16,7 +16,7 @@ from evalscope.utils.utils import ResponseParser
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
     metric_list=[Pass1],
     few_shot_num=5,
-    train_split='train',
+    train_split=None,
     eval_split='train',  # only have train split
     prompt_template='',
 )
