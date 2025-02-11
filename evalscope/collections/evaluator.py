@@ -48,9 +48,7 @@ class SimpleEvaluator(Evaluator):
 
     def get_score(self, review_d) -> float:
         metric_score: List[dict] = self.compute_metrics(reviews_list=[review_d])
-        # use the first metric by default
-        score = metric_score[0]['score']
-        return score
+        return metric_score
 
 
 class EvaluatorCollection:
@@ -104,15 +102,16 @@ class EvaluatorCollection:
                 for subset_name, ids in data_map.items():
                     for _id in ids:
                         row_data: DatasetEntry = self.dataset_id_map[_id]
-                        score = scores[_id]
-                        data.append(
-                            dict(
-                                task_type=row_data.task_type,
-                                categories=tuple(row_data.categories),
-                                dataset_name=dataset_name,
-                                subset_name=subset_name,
-                                tags=row_data.tags,
-                                score=score))
+                        for metric in scores[_id]:
+                            data.append(
+                                dict(
+                                    task_type=row_data.task_type,
+                                    categories=tuple(row_data.categories),
+                                    dataset_name=dataset_name,
+                                    subset_name=subset_name,
+                                    tags=row_data.tags,
+                                    metric=metric['metric_name'],
+                                    score=metric['score']))
             return pd.DataFrame(data)
 
         def aggregate_and_sort(df, group_by_cols):
@@ -128,13 +127,13 @@ class EvaluatorCollection:
         df = get_dataframe(scores)
 
         # multi-level aggregation
-        subset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name', 'subset_name'])
-        dataset_report_df = aggregate_and_sort(df, ['task_type', 'dataset_name'])
-        task_report_df = aggregate_and_sort(df, ['task_type'])
+        subset_report_df = aggregate_and_sort(df, ['task_type', 'metric', 'dataset_name', 'subset_name'])
+        dataset_report_df = aggregate_and_sort(df, ['task_type', 'metric', 'dataset_name'])
+        task_report_df = aggregate_and_sort(df, ['task_type', 'metric'])
 
         # explode tags to multiple rows
         df_exploded_tags = df.explode('tags')
-        tag_report_df = aggregate_and_sort(df_exploded_tags, ['tags'])
+        tag_report_df = aggregate_and_sort(df_exploded_tags, ['tags', 'metric'])
 
         # process multi-level categories
         df_categories = df.copy()
@@ -143,7 +142,8 @@ class EvaluatorCollection:
         for level in range(max_depth):
             df_categories[f'category{level}'] = df_categories['categories'].apply(lambda x: x[level]
                                                                                   if len(x) > level else '')
-        category_report_df = aggregate_and_sort(df_categories, [f'category{level}' for level in range(max_depth)])
+        category_report_df = aggregate_and_sort(df_categories,
+                                                [f'category{level}' for level in range(max_depth)] + ['metric'])
 
         # convert to dict format
         report_dict = {

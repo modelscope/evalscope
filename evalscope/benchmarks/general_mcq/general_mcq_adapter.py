@@ -84,7 +84,7 @@ class GeneralMCQAdapter(DataAdapter):
 
         full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

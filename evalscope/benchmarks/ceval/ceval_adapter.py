@@ -206,7 +206,7 @@ class CEVALAdapter(DataAdapter):
         subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
         full_prompt = f'以下是中国关于{subject_name}考试的单项选择题，请选出其中的正确答案。\n' + full_prompt
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

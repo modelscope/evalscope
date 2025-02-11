@@ -17,7 +17,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='',
+    prompt_template='Return your final response within \\boxed{{}}. {problem}',
 )
 class Math500Adapter(DataAdapter):
 
@@ -29,9 +29,9 @@ class Math500Adapter(DataAdapter):
         Generate the prompt for the model input.
         """
         problem = input_d['problem']
-        full_prompt = f'Return your final response within \\boxed{{}}. {problem}'
+        full_prompt = self.prompt_template.format(problem=problem)
 
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

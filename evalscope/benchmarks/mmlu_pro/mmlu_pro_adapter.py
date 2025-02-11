@@ -17,7 +17,7 @@ from evalscope.utils.utils import ResponseParser
     few_shot_num=5,
     train_split='validation',
     eval_split='test',
-    prompt_template=
+    system_prompt=
     'You are an knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',  # noqa: E501
 )
 class MMLUProAdapter(DataAdapter):
@@ -48,7 +48,7 @@ class MMLUProAdapter(DataAdapter):
             query = prefix + 'Q: ' + entry['question'] + '\n' + \
                 self.__form_options(entry['options']) + '\n'
 
-            prompt_d = {'data': [query], 'system_prompt': self.prompt_template, AnswerKeys.RAW_INPUT: entry}
+            prompt_d = {'data': [query], 'system_prompt': self.system_prompt, AnswerKeys.RAW_INPUT: entry}
 
             res_dict[entry['category']].append(prompt_d)
         return res_dict

@@ -66,7 +66,7 @@ class GeneralQAAdapter(DataAdapter):
 
         # if len(history) > 0:
         #     prompt = '\n'.join(history) + '\n' + prompt
-        return {'data': [prompt], 'system_prompt': self.prompt_template}
+        return {'data': [prompt], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         """

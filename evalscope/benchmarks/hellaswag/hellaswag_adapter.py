@@ -89,11 +89,7 @@ class HellaSwagAdapter(DataAdapter):
 
         ctx_continuation_pair_list = [(context.strip(), ' ' + cont.strip()) for cont in endings]
 
-        return {
-            'data': ctx_continuation_pair_list,
-            'multi_choices': self.choices,
-            'system_prompt': self.prompt_template
-        }
+        return {'data': ctx_continuation_pair_list, 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

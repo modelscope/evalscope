@@ -36,7 +36,7 @@ class IQuizAdapter(DataAdapter):
         """
         prompt = f"问题: {input_d['question']}\n"
         prompt += self.__form_options(input_d['choices'])
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def __form_options(self, options: list):
         option_str = '选项:\n'

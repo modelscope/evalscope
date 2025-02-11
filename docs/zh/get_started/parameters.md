@@ -41,6 +41,7 @@
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据
   - `prompt_template`: 评测数据集的prompt模板，指定后将拼接在每个评测数据内容之前
+  - `system_prompt`: 评测数据集的系统prompt
   - `subset_list`: 评测数据子集列表，指定后将只使用子集数据
   - `few_shot_num`: few-shot的数量
   - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`

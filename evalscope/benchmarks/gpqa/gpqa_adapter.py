@@ -49,7 +49,7 @@ class GPQAAdapter(DataAdapter):
         input_d['answer'] = processed_input_d['answer']  # add answer to input_d for answer extraction
         prompt = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}Let's think step by step: "  # noqa: E501
 
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def __process_input(self, input_d: dict) -> dict:
 

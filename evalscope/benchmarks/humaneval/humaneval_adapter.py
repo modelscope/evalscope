@@ -66,7 +66,7 @@ class HumanevalAdapter(DataAdapter):
         full_prompt = input_d['prompt']
         full_prompt = f'Complete the following python code:\n{full_prompt}' if self.prompt_template else full_prompt
 
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     @classmethod
     def _postprocess(cls, text: str) -> str:

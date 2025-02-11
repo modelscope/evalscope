@@ -151,7 +151,7 @@ class MMLUProAdapter(DataAdapter):
             
             prompt_d = {
                 'data': [query],
-                'system_prompt': self.prompt_template,
+                'system_prompt': self.system_prompt,
                 AnswerKeys.RAW_INPUT: entry
             }
             

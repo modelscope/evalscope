@@ -40,6 +40,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
   - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: Prompt template for the evaluation dataset, once specified, it will be concatenated before each evaluation data entry.
+  - `system_prompt`: System prompt for the evaluation dataset.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.
   - `few_shot_random`: Whether to randomly sample few-shot data, defaults to `False`.
