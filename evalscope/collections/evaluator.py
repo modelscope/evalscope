@@ -10,11 +10,11 @@ from typing import List
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import DumpMode, EvalType
+from evalscope.constants import AnswerKeys, DumpMode, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models import get_local_model, initialize_model_adapter
 from evalscope.report import ReportGenerator
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data
+from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -58,8 +58,10 @@ class EvaluatorCollection:
         self.data_adapter = data_adapter
         self.outputs = outputs
         self.model = get_local_model(task_cfg)
+
         self.dataset, self.dataset_name = self.load()
-        self.dataset_name_map, self.dataset_id_map = self._parse_dataset()
+        self.dataset_name_map = EvaluatorCollection._init_name_map(self.dataset)
+        self.dataset_id_map = EvaluatorCollection._init_id_map(self.dataset)
         self.evaluators = self._initialize_evaluators()
 
     def load(self) -> tuple[list[DatasetEntry], str]:
@@ -68,21 +70,28 @@ class EvaluatorCollection:
         # limit the dataset
         if self.task_cfg.limit:
             raw_dataset = raw_dataset[:self.task_cfg.limit]
-
+        # index dataset
         datasets = []
         for sample in raw_dataset:
+            sample['prompt'].update({'index': sample['index']})
             datasets.append(DatasetEntry(**sample))
 
         return datasets, dataset_name
 
-    def _parse_dataset(self):
+    @staticmethod
+    def _init_name_map(dataset):
         dataset_name_map = defaultdict(lambda: defaultdict(list))
-        dataset_id_map = {}
-        for sample in self.dataset:
+        for sample in dataset:
             dataset_name, subset_name = sample.dataset_name, sample.subset_name
             dataset_name_map[dataset_name][subset_name].append(sample.index)
+        return dataset_name_map
+
+    @staticmethod
+    def _init_id_map(dataset):
+        dataset_id_map = {}
+        for sample in dataset:
             dataset_id_map[sample.index] = sample
-        return dataset_name_map, dataset_id_map
+        return dataset_id_map
 
     def _initialize_evaluators(self):
         evaluators = {}
@@ -166,17 +175,37 @@ class EvaluatorCollection:
         with open(report_file_path, 'w', encoding='utf-8') as f:
             json.dump(report.to_dict(), f, ensure_ascii=False, indent=4)
 
+    def _filter_answer(self, pred_file_path):
+        answer_dict = defaultdict(dict)
+        if self.task_cfg.use_cache and os.path.exists(pred_file_path):
+            answers_list = jsonl_to_list(pred_file_path)
+            indices = set()
+            for answer in answers_list:
+                index = answer[AnswerKeys.ORIGIN_PROMPT].get('index')
+                answer_dict[index] = answer
+                indices.add(index)
+            data = []
+            for sample in self.dataset:
+                if sample.index not in indices:
+                    data.append(sample)
+            data_map = self._init_name_map(data)
+
+            return answer_dict, data, data_map
+        return answer_dict, self.dataset, self.dataset_name_map
+
     def get_answers(self):
         pred_file_path = os.path.join(self.outputs.predictions_dir, self.task_cfg.model_id,
                                       f'{self.dataset_name}.jsonl')
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
-        answers = defaultdict(dict)
+
+        answers, dataset, dataset_name_map = self._filter_answer(pred_file_path)
+
         eval_batch_size = self.task_cfg.eval_batch_size
-        with tqdm(total=len(self.dataset), desc='Getting answers') as pbar:
+        with tqdm(total=len(dataset), desc='Getting answers') as pbar:
             if self.task_cfg.eval_type == EvalType.SERVICE:
                 with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
                     futures = []
-                    for sample in self.dataset:
+                    for sample in dataset:
                         evaluator = self.evaluators[sample.dataset_name]
                         futures.append(executor.submit(evaluator.get_answer, [sample], self.task_cfg.generation_config))
                     for future in as_completed(futures):
@@ -185,7 +214,7 @@ class EvaluatorCollection:
                         dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
                         pbar.update(1)
             else:
-                for dataset_name, data_map in self.dataset_name_map.items():
+                for dataset_name, data_map in dataset_name_map.items():
                     # get evaluator for the dataset
                     evaluator = self.evaluators[dataset_name]
                     for subset_name, ids in data_map.items():
