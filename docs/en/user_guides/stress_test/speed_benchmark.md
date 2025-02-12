@@ -16,7 +16,7 @@ For speed testing, the `--url` should use the `/v1/completions` endpoint instead
 
 ```bash
 evalscope perf \
- --rate 1 \
+ --parallel 1 \
  --url http://127.0.0.1:8000/v1/completions \
  --model qwen2.5 \
  --log-every-n-query 5 \
@@ -32,7 +32,7 @@ evalscope perf \
 ## Local Transformer Inference
 ```bash
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
- --rate 1 \
+ --parallel 1 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --attn-implementation flash_attention_2 \
  --log-every-n-query 5 \
@@ -61,7 +61,7 @@ Speed Benchmark Results:
 ## Local vLLM Inference
 ```bash
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
- --rate 1 \
+ --parallel 1 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
@@ -74,7 +74,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
 
 Example Output:
 ```{tip}
-vLLM will pre-allocate GPU memory, so GPU usage is not displayed here.
+The GPU usage is obtained through the `torch.cuda.max_memory_allocated` function, so GPU usage is not displayed here.
 ```
 ```text
 Speed Benchmark Results:

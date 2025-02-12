@@ -11,7 +11,7 @@ evalscope perf \
  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
  --attn-implementation flash_attention_2 \  # Optional, or choose from [flash_attention_2|eager|sdpa]
  --number 20 \
- --rate 2 \
+ --parallel 2 \
  --api local \
  --dataset openqa
 ```
@@ -21,7 +21,7 @@ evalscope perf \
 evalscope perf \
  --model 'Qwen/Qwen2.5-0.5B-Instruct' \
  --number 20 \
- --rate 2 \
+ --parallel 2 \
  --api local_vllm \
  --dataset openqa
 ```
@@ -30,7 +30,7 @@ evalscope perf \
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --rate 2 \
+ --parallel 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --number 20 \
@@ -43,7 +43,7 @@ You can also use a local file as a prompt:
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --rate 2 \
+ --parallel 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --number 20 \
@@ -59,7 +59,7 @@ Using `stop`, `stream`, `temperature`, etc.:
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --rate 2 \
+ --parallel 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --read-timeout 120 \
@@ -82,7 +82,7 @@ You can set request parameters in the `query-template`:
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --rate 2 \
+ --parallel 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --read-timeout 120 \
@@ -121,7 +121,7 @@ You can set request parameters in the query-template:
 ```bash
 evalscope perf \
  --url 'http://127.0.0.1:8000/v1/chat/completions' \
- --rate 2 \
+ --parallel 2 \
  --model 'qwen2.5' \
  --log-every-n-query 10 \
  --read-timeout 120 \
