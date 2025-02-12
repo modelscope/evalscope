@@ -3,8 +3,8 @@ import random
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import Pass1, exact_match
+from evalscope.constants import EvalType
+from evalscope.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 
 
@@ -13,11 +13,11 @@ from evalscope.models import ChatGenerationModelAdapter
     dataset_id='modelscope/gpqa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
-    metric_list=[Pass1],
+    metric_list=['AveragePass@1'],
     few_shot_num=5,
     train_split='train',
     eval_split='train',  # only have train split
-    prompt_template='',
+    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class GPQAAdapter(DataAdapter):
 
@@ -47,9 +47,10 @@ class GPQAAdapter(DataAdapter):
         """  # noqa: E501
         processed_input_d = self.__process_input(input_d)
         input_d['answer'] = processed_input_d['answer']  # add answer to input_d for answer extraction
-        prompt = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}Let's think step by step: "  # noqa: E501
+        query = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}"  # noqa: E501
 
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        prompt = self.prompt_template.format(query=query)
+        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def __process_input(self, input_d: dict) -> dict:
 

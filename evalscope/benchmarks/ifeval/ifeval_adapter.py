@@ -2,9 +2,9 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.benchmarks.ifeval.utils import agg_inst_level_acc, process_results
+from evalscope.benchmarks.ifeval.utils import process_results
 from evalscope.constants import EvalType
-from evalscope.metrics import Metric, mean
+from evalscope.metrics import Metric, mean, metric_registry
 from evalscope.models import ChatGenerationModelAdapter
 
 
@@ -14,10 +14,10 @@ from evalscope.models import ChatGenerationModelAdapter
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=[
-        Metric(name='prompt_level_strict_acc', object=mean),
-        Metric(name='inst_level_strict_acc', object=agg_inst_level_acc),
-        Metric(name='prompt_level_loose_acc', object=mean),
-        Metric(name='inst_level_loose_acc', object=agg_inst_level_acc),
+        'prompt_level_strict_acc',
+        'inst_level_strict_acc',
+        'prompt_level_loose_acc',
+        'inst_level_loose_acc',
     ],
     few_shot_num=0,
     train_split=None,
@@ -29,8 +29,14 @@ class IFEvalAdapter(DataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # register metrics
+        metric_registry.register(Metric(name='prompt_level_strict_acc', object=mean))
+        metric_registry.register(Metric(name='inst_level_strict_acc', object=mean))
+        metric_registry.register(Metric(name='prompt_level_loose_acc', object=mean))
+        metric_registry.register(Metric(name='inst_level_loose_acc', object=mean))
+
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        return {'data': [input_d['prompt']], 'system_prompt': self.prompt_template}
+        return {'data': [input_d['prompt']], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         return input_d
@@ -48,9 +54,4 @@ class IFEvalAdapter(DataAdapter):
             for k, v in res.items():
                 res_dict[k].append(v)
 
-        metrics = []
-        for metric in self.metric_list:
-            metric_name = metric.name
-            pred_value = res_dict[metric_name]
-            metrics.append({'metric_name': metric_name, 'score': metric.object(pred_value), 'num': len(pred_value)})
-        return metrics
+        return super().compute_metric(res_dict)

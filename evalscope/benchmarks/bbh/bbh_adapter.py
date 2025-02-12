@@ -7,7 +7,7 @@ import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models.chat_adapter import ChatGenerationModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
@@ -63,11 +63,11 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
     dataset_id='modelscope/bbh',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=3,
     train_split=None,
     eval_split='test',
-    prompt_template='',
+    prompt_template="Q: {query}\nA: Let's think step by step.",
 )
 class BBHAdapter(DataAdapter):
     """
@@ -119,10 +119,13 @@ class BBHAdapter(DataAdapter):
             {'data': ['xxx']}
         """
         # few_shot_list: should be ['xxxx']
-        cot_prompts: str = few_shot_list[0] if len(few_shot_list) > 0 else ''
-        full_prompt: str = f"Follow the given examples and answer the question.\n{cot_prompts}\n\nQ: {input_d['input']}\nA: Let's think step by step."
+        if len(few_shot_list) > 0:
+            cot_prompts = 'Follow the given examples and answer the question.\n' + few_shot_list[0]
+        else:
+            cot_prompts = ''
+        full_prompt = cot_prompts + self.prompt_template.format(query=input_d['input'])
 
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
@@ -177,9 +180,11 @@ class BBHAdapter(DataAdapter):
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
-        gold = input_d.get('target')
+        gold = input_d.get('target', '')
+        # remove brackets
         if gold is None:
             logger.error(f'BBHAdapter: gold is None.')
+        gold = gold.replace('(', '').replace(')', '')
         return gold
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
@@ -228,8 +233,11 @@ class BBHAdapter(DataAdapter):
         """
         Extract the answer from the model output for Free-form task.
         """
-        res = ResponseParser.parse_first_option(ans)
-        if res:
+        pattern = r'answer is\s+(.*?)\.'
+
+        match = re.search(pattern, ans)
+        if match:
+            res = match.group(1)
             return res
 
         ans_line = ans.split('answer is ')

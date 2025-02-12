@@ -4,7 +4,7 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.io_utils import jsonl_to_list
@@ -20,7 +20,7 @@ logger = get_logger()
     dataset_id='modelscope/race',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=['high', 'middle'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=3,
     train_split='train',
     eval_split='test',
@@ -82,7 +82,7 @@ class RACEAdapter(DataAdapter):
 
         full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

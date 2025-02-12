@@ -5,7 +5,6 @@ from typing import Any, Optional
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, EvalType, HubType
-from evalscope.metrics import AverageAccuracy
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -18,7 +17,7 @@ logger = get_logger()
     dataset_id='',  # dataset_id need to be set
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',

@@ -48,24 +48,15 @@ class ServerModelAdapter(BaseModelAdapter):
 
         return results
 
-    def process_single_input(self, input_item: Union[str, dict, list], infer_cfg: dict) -> dict:
+    def process_single_input(self, input_item: dict, infer_cfg: dict) -> dict:
         """Process a single input item."""
-        if isinstance(input_item, str):
-            query = input_item
-            system_prompt = None
-        elif isinstance(input_item, dict):
-            data: list = input_item['data']
-            if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
-                query = '\n'.join(''.join(item) for item in data)
-                system_prompt = input_item.get('system_prompt', None)
-            else:
-                query = data[0]
-                system_prompt = input_item.get('system_prompt', None)
-        elif isinstance(input_item, list):
-            query = '\n'.join(input_item)
-            system_prompt = None
+        data: list = input_item['data']
+        if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
+            query = '\n'.join(''.join(item) for item in data)
+            system_prompt = input_item.get('system_prompt', None)
         else:
-            raise TypeError(f'Unsupported input type: {type(input_item)}')
+            query = data[0]
+            system_prompt = input_item.get('system_prompt', None)
 
         content = self.make_request_content(query, system_prompt)
         request_json = self.make_request(content, infer_cfg)
@@ -76,7 +67,7 @@ class ServerModelAdapter(BaseModelAdapter):
         """
         Make request content for API.
         """
-        if system_prompt is not None:
+        if system_prompt:
             messages = [
                 ChatMessage(role='system', content=system_prompt).model_dump(exclude_unset=True),
                 ChatMessage(role='user', content=query).model_dump(exclude_unset=True)

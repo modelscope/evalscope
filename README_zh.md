@@ -79,7 +79,7 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 
 
 ## 🎉 新闻
-- 🔥 **[2025.02.08]** 支持DeepSeek蒸馏模型评测，包括AIME24, MATH-500, GPQA-Diamond数据集，参考[example](https://github.com/modelscope/evalscope/blob/main/examples/example_deepseek_distill_collection.py)；支持指定`eval_batch_size`参数，加速模型评测；支持指定`repeat`参数，用于重复评测同一数据样本
+- 🔥 **[2025.02.08]** 支持DeepSeek蒸馏模型评测，包括AIME24, MATH-500, GPQA-Diamond数据集，参考[example](https://github.com/modelscope/evalscope/blob/main/examples/example_deepseek_distill_collection.py)；支持指定`eval_batch_size`参数，加速模型评测
 - 🔥 **[2025.01.20]** 支持可视化评测结果，包括单模型评测结果和多模型评测结果对比，参考[📖可视化评测结果](https://evalscope.readthedocs.io/zh-cn/latest/get_started/visualization.html)；新增[`iquiz`](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)评测样例，评测模型的IQ和EQ。
 - 🔥 **[2025.01.07]** Native backend: 支持模型API评测，参考[📖模型API评测指南](https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#api)；新增支持`ifeval`评测基准。
 - 🔥🔥 **[2024.12.31]** 支持基准评测添加，参考[📖基准评测添加指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html)；支持自定义混合数据集评测，用更少的数据，更全面的评测模型，参考[📖混合数据集评测指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)

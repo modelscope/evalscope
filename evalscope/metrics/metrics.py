@@ -14,8 +14,21 @@ from typing import TYPE_CHECKING, Dict, List, Union
 
 def mean(arr: list):
     if isinstance(arr[0], list):
-        arr = np.array(arr).flatten()
+        arr = [item for sublist in arr for item in sublist]
     return sum(arr) / len(arr)
+
+
+def pass_at_k(arr: Union[List[int], List[List[int]]], k: int = 1) -> float:
+    if not arr:
+        return 0.0
+
+    def sub_pass_at_k(sub_arr: List[int]) -> float:
+        return 1.0 if any(sub_arr[:k]) else 0.0
+
+    if isinstance(arr[0], list):
+        return sum(sub_pass_at_k(sub_arr) for sub_arr in arr) / len(arr)
+    else:
+        return sum(arr) / len(arr)
 
 
 def pop_stddev(arr):

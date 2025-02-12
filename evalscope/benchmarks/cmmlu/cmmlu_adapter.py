@@ -5,9 +5,9 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -106,10 +106,11 @@ SUBJECT_MAPPING = {
     dataset_id='modelscope/cmmlu',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
+    prompt_template='以下是关于{subset_name}的单项选择题，请直接给出正确答案的选项。\n{query}',
 )
 class CMMLUAdapter(DataAdapter):
 
@@ -165,16 +166,13 @@ class CMMLUAdapter(DataAdapter):
             {'data': [(context, continuation), ...]}
 
         """
-        prompt = '以下是关于{}的单项选择题。\n\n'.format(self._format_subject(subset_name))
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-
-        context: str = '\n'.join(few_shot_prompts) + '\n'
+        context = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
-        context = prompt + context
 
-        full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=context.strip())
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': prompt}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

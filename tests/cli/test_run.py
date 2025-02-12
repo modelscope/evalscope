@@ -73,16 +73,18 @@ class TestRun(unittest.TestCase):
     def test_run_task(self):
         task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
                     'datasets': [
-                        'mmlu_pro',
+                        # 'mmlu_pro',
                         # 'bbh',
-                        'hellaswag',
-                        'gsm8k',
-                        'arc',
-                        'race',
+                        # 'hellaswag',
+                        # 'gsm8k',
+                        # 'arc',
+                        # 'race',
+                        'ifeval',
                         # 'truthful_qa',
                         # 'trivia_qa',
                         ],
                     'limit': 2,
+                    'eval_batch_size': 2,
                     'debug': True}
         run_task(task_cfg=task_cfg)
 
@@ -142,7 +144,7 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -150,21 +152,57 @@ class TestRun(unittest.TestCase):
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
-                # 'competition_math',
                 # 'gsm8k',
+                # 'bbh',
+                'competition_math',
+                'math_500',
+                'aime24',
+                'gpqa',
                 # 'arc',
                 # 'ceval',
-                # 'bbh',
                 # 'hellaswag',
             ],
             dataset_args={
+                'mmlu': {
+                    'subset_list': ['elementary_mathematics'],
+                    'few_shot_num': 0
+                },
+                'mmlu_pro': {
+                    'subset_list': ['math'],
+                    'few_shot_num': 0
+                },
                 'ceval': {
                     'subset_list': [
-                        'computer_network', 'operating_system', 'computer_architecture', 'college_programming'
-                    ]
-                }
+                        'computer_network', 'operating_system', 'computer_architecture'
+                    ],
+                    'few_shot_num': 0
+                },
+                'cmmlu': {
+                    'subset_list': ['elementary_chinese'],
+                    'few_shot_num': 0
+                },
+                'bbh': {
+                    'subset_list': ['word_sorting', 'movie_recommendation'],
+                },
+                'gpqa': {
+                    'subset_list': ['gpqa_diamond'],
+                    'few_shot_num': 0
+                },
+                'humaneval': {
+                    'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
+                },
+                'competition_math': {
+                    'subset_list': ['Level 1']
+                },
             },
-            eval_batch_size=10
+            eval_batch_size=5,
+            limit=10,
+            debug=True,
+            generation_config={
+                'temperature': 0.7,
+                'n': 5
+            },
+            use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525'
         )
 
         run_task(task_cfg=task_cfg)

@@ -1,6 +1,4 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import Pass1
-# from evalscope.metrics.math_accuracy import is_equiv, last_boxed_only_string, remove_boxed
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
@@ -15,11 +13,11 @@ logger = get_logger()
     dataset_id='AI-ModelScope/MATH-500',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[Pass1],
+    metric_list=['AveragePass@1'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='',
+    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class Math500Adapter(DataAdapter):
 
@@ -31,9 +29,9 @@ class Math500Adapter(DataAdapter):
         Generate the prompt for the model input.
         """
         problem = input_d['problem']
-        full_prompt = f'Return your final response within \\boxed{{}}. {problem}'
+        full_prompt = self.prompt_template.format(query=problem)
 
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

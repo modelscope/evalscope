@@ -2,7 +2,6 @@
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import Pass1
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
@@ -17,11 +16,11 @@ logger = get_logger()
     dataset_id='modelscope/humaneval',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['openai_humaneval'],
-    metric_list=[Pass1],
+    metric_list=['Pass@1'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='',
+    prompt_template='Complete the following python code:\n{query}',
 )
 class HumanevalAdapter(DataAdapter):
     """
@@ -64,10 +63,10 @@ class HumanevalAdapter(DataAdapter):
             input_d (dict): The raw input. A single data format of the Humaneval:
             {'task_id': '', 'prompt': '', 'entry_point': '', 'canonical_solution': '', 'test': ''}
         """
-        full_prompt = input_d['prompt']
-        full_prompt = f'Complete the following python code:\n{full_prompt}' if self.prompt_template else full_prompt
+        query = input_d['prompt']
+        full_prompt = self.prompt_template.format(query=query)
 
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     @classmethod
     def _postprocess(cls, text: str) -> str:

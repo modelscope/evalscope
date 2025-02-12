@@ -4,16 +4,14 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
-
-DATASET_ID = 'modelscope/mmlu'
 
 SUBSET_LIST = [
     'high_school_european_history',
@@ -141,11 +139,11 @@ SUBJECT_MAPPING = {
     dataset_id='modelscope/mmlu',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=SUBSET_LIST,
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=5,
     train_split='train',
     eval_split='test',
-    prompt_template='',
+    prompt_template='The following are multiple choice questions (with answers) about {subset_name}. \n{query}',
 )
 class MMLUAdapter(DataAdapter):
 
@@ -221,17 +219,15 @@ class MMLUAdapter(DataAdapter):
             {'data': [full_prompt], 'multi_choices': self.choices}
 
         """
-        prompt = 'The following are multiple choice questions (with answers) about {}.\n\n'.format(
-            self._format_subject(subset_name))
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
 
         context: str = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
-        context = prompt + context
+        query = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=query)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

@@ -6,7 +6,6 @@ import os
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils import get_logger
 
@@ -20,7 +19,7 @@ logger = get_logger()
     dataset_id='modelscope/trivia_qa',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
