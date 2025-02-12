@@ -133,6 +133,7 @@ SUBJECT_MAPPING = {
     few_shot_num=0,
     train_split='dev',
     eval_split='val',
+    prompt_template='以下是中国关于{subset_name}考试的单项选择题，请选出其中的正确答案。\n{query}',
 )
 class CEVALAdapter(DataAdapter):
 
@@ -201,10 +202,10 @@ class CEVALAdapter(DataAdapter):
         else:
             context = ''
 
-        full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
+        query: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
 
         subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
-        full_prompt = f'以下是中国关于{subject_name}考试的单项选择题，请选出其中的正确答案。\n' + full_prompt
+        full_prompt = self.prompt_template.format(subset_name=subject_name, query=query)
 
         return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 

@@ -20,7 +20,10 @@ class MetricRegistry:
         self.metrics[metric.name] = metric
 
     def get(self, name: str) -> Metric:
-        return self.metrics.get(name)
+        try:
+            return self.metrics[name]
+        except KeyError:
+            raise KeyError(f'Metric {name} not found in the registry. Available metrics: {self.list_metrics()}')
 
     def list_metrics(self):
         return list(self.metrics.keys())
@@ -34,6 +37,5 @@ metric_registry.register(Metric(name='WeightedAverageAccuracy', object=weighted_
 metric_registry.register(Metric(name='AverageBLEU', object=mean))
 metric_registry.register(Metric(name='WeightedAverageBLEU', object=weighted_mean))
 metric_registry.register(Metric(name='AveragePass@1', object=mean))
-for num in range(7):
-    k = 2**num
+for k in range(1, 17):
     metric_registry.register(Metric(name=f'Pass@{k}', object=partial(pass_at_k, k=k)))

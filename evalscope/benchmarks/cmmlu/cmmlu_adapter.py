@@ -110,6 +110,7 @@ SUBJECT_MAPPING = {
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
+    prompt_template='以下是关于{subset_name}的单项选择题，请直接给出正确答案的选项。\n{query}',
 )
 class CMMLUAdapter(DataAdapter):
 
@@ -165,16 +166,13 @@ class CMMLUAdapter(DataAdapter):
             {'data': [(context, continuation), ...]}
 
         """
-        prompt = '以下是关于{}的单项选择题。\n\n'.format(self._format_subject(subset_name))
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-
-        context: str = '\n'.join(few_shot_prompts) + '\n'
+        context = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
-        context = prompt + context
 
-        full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=context.strip())
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': prompt}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

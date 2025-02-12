@@ -7,18 +7,23 @@ from evalscope.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
+SUBSET_LIST = [
+    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
+    'philosophy', 'economics', 'other', 'psychology', 'history'
+]
+
 
 @Benchmark.register(
     name='mmlu_pro',
     dataset_id='modelscope/mmlu-pro',
     model_adapter=ChatGenerationModelAdapter,
-    subset_list=['default'],
+    subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=5,
     train_split='validation',
     eval_split='test',
-    system_prompt=
-    'You are an knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',  # noqa: E501
+    prompt_template=
+    'The following are multiple choice questions (with answers) about {subset_name}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n{query}',  # noqa: E501
 )
 class MMLUProAdapter(DataAdapter):
 
@@ -26,10 +31,11 @@ class MMLUProAdapter(DataAdapter):
         super().__init__(**kwargs)
 
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-        self.categories = [
-            'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
-            'philosophy', 'economics', 'other', 'psychology', 'history'
-        ]
+
+    def load(self, **kwargs):
+        # default load all data
+        kwargs['subset_list'] = ['default']
+        return super().load(**kwargs)
 
     def gen_prompts(self, data_dict: dict, **kwargs) -> Dict[str, list]:
         """
@@ -37,26 +43,32 @@ class MMLUProAdapter(DataAdapter):
         Return a dict with category as key and list of prompts as value.
         """
 
-        data_dict = data_dict[self.subset_list[0]]  # Only one subset for MMLU-Pro
+        data_dict = data_dict['default']  # Only one subset for MMLU-Pro
         fewshot_prompts = self.get_fewshot_examples(data_dict)
 
         #  Use the category as key to group the prompts
         res_dict = defaultdict(list)
         # generate prompts for each test sample
         for entry in data_dict[self.eval_split]:
-            prefix = fewshot_prompts[entry['category']]
+            subset_name = entry['category']
+            if subset_name not in self.subset_list:
+                continue
+            prefix = fewshot_prompts[subset_name]
             query = prefix + 'Q: ' + entry['question'] + '\n' + \
                 self.__form_options(entry['options']) + '\n'
 
-            prompt_d = {'data': [query], 'system_prompt': self.system_prompt, AnswerKeys.RAW_INPUT: entry}
+            full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
+            prompt_d = {'data': [full_prompt], 'system_prompt': self.system_prompt, AnswerKeys.RAW_INPUT: entry}
 
-            res_dict[entry['category']].append(prompt_d)
+            res_dict[subset_name].append(prompt_d)
         return res_dict
 
     def get_fewshot_examples(self, data_dict: dict):
-        # load 5-shot prompts for each category
-        prompts = {c: '' for c in self.categories}
-        for d in data_dict[self.train_split]:
+        # load few-shot prompts for each category
+        prompts = {c: '' for c in self.subset_list}
+        for index, d in enumerate(data_dict[self.train_split]):
+            if index >= self.few_shot_num:
+                break
             prompts[d['category']] += 'Q:' + ' ' + d['question'] + '\n' + \
                 self.__form_options(d['options']) + '\n' + \
                 d['cot_content'] + '\n\n'

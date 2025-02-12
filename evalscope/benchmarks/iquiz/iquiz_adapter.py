@@ -14,7 +14,7 @@ from evalscope.utils.utils import ResponseParser
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。',  # noqa: E501
+    system_prompt='你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。',  # noqa: E501
 )
 class IQuizAdapter(DataAdapter):
 

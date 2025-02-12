@@ -89,7 +89,7 @@ from evalscope.models import ChatGenerationModelAdapter
     few_shot_num=0,
     train_split='validation',
     eval_split='test',
-    prompt_template='You are an knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',
+    system_prompt='You are an knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',
 )
 class MMLUProAdapter(DataAdapter):
 

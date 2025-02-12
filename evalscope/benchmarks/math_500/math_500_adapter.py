@@ -17,7 +17,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='Return your final response within \\boxed{{}}. {problem}',
+    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class Math500Adapter(DataAdapter):
 
@@ -29,7 +29,7 @@ class Math500Adapter(DataAdapter):
         Generate the prompt for the model input.
         """
         problem = input_d['problem']
-        full_prompt = self.prompt_template.format(problem=problem)
+        full_prompt = self.prompt_template.format(query=problem)
 
         return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 

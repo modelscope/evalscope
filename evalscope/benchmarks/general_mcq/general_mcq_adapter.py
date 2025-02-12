@@ -23,7 +23,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split='dev',
     eval_split='val',
-    prompt_template='请回答问题，并选出其中的正确答案',
+    prompt_template='请回答问题，并选出其中的正确答案\n{query}',
 )
 class GeneralMCQAdapter(DataAdapter):
 
@@ -81,8 +81,9 @@ class GeneralMCQAdapter(DataAdapter):
             context: str = '\n'.join(few_shot_prompts) + '\n'
         else:
             context = ''
+        context = context.strip() + self._format_example(input_d=input_d, include_answer=False)
 
-        full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(query=context)
 
         return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 

@@ -28,7 +28,7 @@ def pass_at_k(arr: Union[List[int], List[List[int]]], k: int = 1) -> float:
     if isinstance(arr[0], list):
         return sum(sub_pass_at_k(sub_arr) for sub_arr in arr) / len(arr)
     else:
-        return sub_pass_at_k(arr)
+        return sum(arr) / len(arr)
 
 
 def pop_stddev(arr):

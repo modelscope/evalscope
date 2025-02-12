@@ -20,7 +20,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='',
+    prompt_template='Complete the following python code:\n{query}',
 )
 class HumanevalAdapter(DataAdapter):
     """
@@ -63,8 +63,8 @@ class HumanevalAdapter(DataAdapter):
             input_d (dict): The raw input. A single data format of the Humaneval:
             {'task_id': '', 'prompt': '', 'entry_point': '', 'canonical_solution': '', 'test': ''}
         """
-        full_prompt = input_d['prompt']
-        full_prompt = f'Complete the following python code:\n{full_prompt}' if self.prompt_template else full_prompt
+        query = input_d['prompt']
+        full_prompt = self.prompt_template.format(query=query)
 
         return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 

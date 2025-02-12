@@ -34,12 +34,12 @@ task_cfg = TaskConfig(
             'local_path': 'outputs/deepseek_distill_test.jsonl'
         }
     },
-    eval_batch_size=16,
+    eval_batch_size=32,
     generation_config={
         'max_tokens': 30000,  # avoid exceed max length
         'temperature': 0.6,
         'top_p': 0.95,
-        'n': 5,  # num of responses per sample, note that lmdeploy only supports n=1
+        'n': 1,  # num of responses per sample, note that lmdeploy only supports n=1
     },
 )
 
