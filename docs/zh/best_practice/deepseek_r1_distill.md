@@ -1,8 +1,8 @@
 # R1类模型推理能力评测最佳实践
 
-随着DeepSeek-R1模型的广泛应用，越来越多的开发者开始尝试复现类似的模型，以提升其推理能力。目前已经涌现出不少令人瞩目的成果。然而，这些新模型的推理能力是否真的提高了呢？本文将使用EvalScope框架对R1类模型的推理性能进行评测。
+随着DeepSeek-R1模型的广泛应用，越来越多的开发者开始尝试复现类似的模型，以提升其推理能力。目前已经涌现出不少令人瞩目的成果。然而，这些新模型的推理能力是否真的提高了呢？EvalScope框架是魔搭社区上开源的评估工具，提供了对R1类模型的推理性能的评测能力。
 
-在本最佳实践中，我们将以DeepSeek-R1-Distill-Qwen-1.5B模型为例，通过728道推理题目（与R1技术报告一致）进行演示。评测数据具体包括：
+在本最佳实践中，我们通过728道推理题目（与R1技术报告一致）进行演示。评测数据具体包括：
 
 - [MATH-500](https://www.modelscope.cn/datasets/HuggingFaceH4/aime_2024)：一组具有挑战性的高中数学竞赛问题数据集，涵盖七个科目（如初等代数、代数、数论）共500道题。
 - [GPQA-Diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary)：该数据集包含物理、化学和生物学子领域的硕士水平多项选择题，共198道题。
@@ -20,13 +20,9 @@ pip install 'evalscope[app,perf]' -U
 
 ## 模型准备
 
-接下来，我们需要准备一个兼容OpenAI API的推理服务作为评测目标（EvalScope也支持transformers本地推理模型评测），原因如下：
-- R1类模型的输出包含较长的思维链，输出token数量往往超过1万，使用推理框架部署模型可以提高推理速度；
-- 可以并发多个请求，以加速评测过程。
+接下来，我们以DeepSeek-R1-Distill-Qwen-1.5B模型为例，介绍评估的过程。首先将模型的能力通过一个OpenAI API兼容的推理服务接入，来进行模型的评测。EvalScope也支持通过transformers推理来进行模型评测，具体可见EvalScope文档。
 
-在此，我们以DeepSeek-R1-Distill-Qwen-1.5B模型为例，介绍如何使用[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)推理框架。读者可以根据自身需求选择其他部署工具。
-
-下面的命令中已配置了modelscope相关环境变量，将自动下载模型：
+除了将模型部署到云端支持OpenAI接口的服务使用以外，也可以在本地直接用vLLM，ollama等框架直接拉起模型。这里介绍基于[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)推理框架的使用，因为这些推理框架能较好的支持并发多个请求，以加速评测过程，同时R1类模型的输出包含较长的思维链，输出token数量往往超过1万，使用高效的推理框架部署模型，可以提高推理速度。
 
 **使用vLLM**:
 
@@ -214,3 +210,20 @@ evalscope app
 <p align="center">
   <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/distill/detail.png" alt="alt text" width="100%">
 </p>
+
+## Tips
+
+在这里分享一下评测时可能会踩的一些“坑”：
+
+1. 模型生成配置：
+    - max_tokens设置：确保将max_tokens设置为较大的值（通常需要在8000以上）。如果设置过低，模型可能会在输出完整答案前被截断。
+    - 回复数量n配置：在本次评测中，每个请求生成的回复数量n设置为5，而在R1报告中，n为64。读者可以根据需求调整此参数来平衡评测速度与结果的多样性。
+2. 数据集的提示模版设置：
+    - 本文采用了R1报告中的推荐设置，提示模版为："Please reason step by step, and put your final answer within \boxed{}."；同时，未设置system prompt。确保提示模版的正确性对于生成预期的结果至关重要。
+    - 评测Reasoning模型需要设置0-shot，过于复杂的prompt或者few-shot都有可能降低模型的性能。
+3. 生成答案的解析和匹配：
+    - 我们复用了Qwen-Math工作中的解析方法，该方法基于规则进行答案解析。然而，这种基于规则的解析可能会导致匹配错误，从而对报告的指标产生轻微影响。建议在使用结果时，多使用评测结果可视化功能，查看解析结果是否存在误差。
+
+## 总结
+
+通过这个流程，开发者可以有效地评测R1类模型在多个数学和科学推理数据集上的表现，从而客观评估具体模型的实际表现，共同推动R1类模型的进一步发展与应用。
