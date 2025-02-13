@@ -104,8 +104,9 @@ class Evaluator(object):
     @staticmethod
     def filter_answer(use_cache, prompts_list, pred_file_path) -> dict:
         # Filter prompts that have been answered
+        answers_list = []
         if not use_cache or not os.path.exists(pred_file_path):
-            return prompts_list
+            return answers_list, prompts_list
 
         def get_answered_indices(answers_list: List[Dict]) -> List[int]:
             indices = [answer[AnswerKeys.ORIGIN_PROMPT].get('index') for answer in answers_list]
