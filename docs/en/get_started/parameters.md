@@ -24,6 +24,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - If using model API service for inference (`eval-type` set to `service`), the following parameters are included (please refer to the deployed model service for specifics):
     - `max_tokens`: Maximum length of generated text, default is 512
     - `temperature`: Generation temperature, default is 0.0
+    - `n`: number of generated sequences, default is 1 (Note: currently, lmdeploy only supports n=1)
   ```bash
   # For example
   --model-args revision=master,precision=torch.float16,device_map=auto
@@ -39,6 +40,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
   - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: Prompt template for the evaluation dataset, once specified, it will be concatenated before each evaluation data entry.
+  - `system_prompt`: System prompt for the evaluation dataset.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.
   - `few_shot_random`: Whether to randomly sample few-shot data, defaults to `False`.
@@ -50,7 +52,6 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.
 - `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
-- `--repeat`: The number of times to repeat the evaluation for each sample. The default is 1, meaning no repetition. When set to a value greater than 1, model sampling must be enabled.
 
 ## Evaluation Parameters
 - `--eval-batch-size`: Evaluation batch size, defaults to `1`.

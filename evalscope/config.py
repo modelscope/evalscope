@@ -55,7 +55,6 @@ class TaskConfig:
     stage: str = EvalStage.ALL
     limit: Optional[int] = None
     eval_batch_size: int = 1
-    repeat: int = 1
 
     # Cache and working directory arguments
     mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.

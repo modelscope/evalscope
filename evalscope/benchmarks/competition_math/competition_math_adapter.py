@@ -7,7 +7,6 @@ from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
-from evalscope.metrics import AverageAccuracy
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
@@ -22,11 +21,11 @@ logger = get_logger()
     dataset_id='modelscope/competition_math',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AveragePass@1'],
     few_shot_num=4,
     train_split='train',
     eval_split='test',
-    prompt_template='Put the final answer in \\boxed{}.',
+    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class CompetitionMathAdapter(DataAdapter):
     """ To be tested for all models. """
@@ -47,7 +46,7 @@ class CompetitionMathAdapter(DataAdapter):
         return super().load(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict: dict = {}
+        data_dict = defaultdict(dict)
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
                 if os.path.exists(dataset_name_or_path):
@@ -60,10 +59,7 @@ class CompetitionMathAdapter(DataAdapter):
                     if os.path.exists(file_path):
                         with open(file_path, 'r') as f:
                             split_data.append(json.load(f))
-                if subset_name in data_dict:
-                    data_dict[subset_name].update({split_name: split_data})
-                else:
-                    data_dict[subset_name] = {split_name: split_data}
+                data_dict[subset_name][split_name] = split_data
 
         return data_dict
 
@@ -97,9 +93,9 @@ class CompetitionMathAdapter(DataAdapter):
             {'data': [prompt]}
         """
         use_fewshot = self.few_shot_num > 0
-        full_prompt = self._generate_prompt(input_d, use_fewshot=use_fewshot)
-
-        return {'data': [full_prompt], 'system_prompt': self.prompt_template}
+        query = self._generate_prompt(input_d, use_fewshot=use_fewshot)
+        full_prompt = self.prompt_template.format(query=query)
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

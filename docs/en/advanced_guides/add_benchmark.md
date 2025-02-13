@@ -78,7 +78,6 @@ The sample code is as follows:
 
 ```python
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import WeightedAverageAccuracy
 from evalscope.models import ChatGenerationModelAdapter
 
 
@@ -87,11 +86,11 @@ from evalscope.models import ChatGenerationModelAdapter
     dataset_id='modelscope/mmlu-pro',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
-    metric_list=[WeightedAverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='validation',
     eval_split='test',
-    prompt_template='You are a knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',
+    system_prompt='You are a knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',
 )
 class MMLUProAdapter(DataAdapter):
 
@@ -152,7 +151,7 @@ class MMLUProAdapter(DataAdapter):
             
             prompt_d = {
                 'data': [query],
-                'system_prompt': self.prompt_template,
+                'system_prompt': self.system_prompt,
                 AnswerKeys.RAW_INPUT: entry
             }
             
