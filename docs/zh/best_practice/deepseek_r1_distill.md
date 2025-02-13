@@ -1,33 +1,28 @@
-# DeepSeek-R1类模型数学能力测试
+# R1类模型推理能力评测最佳实践
 
-随着DeepSeek-R1模型的爆火，越来越多的用户开始复现类似的模型，以提升模型的推理能力，目前也出现了许多惊艳的工作。但是，这些模型的推理能力是否真的有所提升呢？本文将通过数学能力测试来验证类DeepSeek-R1模型的推理能力。
+随着DeepSeek-R1模型的广泛应用，越来越多的开发者开始尝试复现类似的模型，以提升其推理能力。目前已经涌现出不少令人瞩目的成果。然而，这些新模型的推理能力是否真的提高了呢？EvalScope框架是魔搭社区上开源的评估工具，提供了对R1类模型的推理性能的评测能力。
 
-本最佳实践将以DeepSeek-R1-Distill-Qwen-1.5B模型为例，使用共728道数学推理题目（与R1技术报告一致）进行演示，数据具体包括：
+在本最佳实践中，我们通过728道推理题目（与R1技术报告一致）进行演示。评测数据具体包括：
 
-- [MATH-500](https://www.modelscope.cn/datasets/HuggingFaceH4/aime_2024) 500道数学推理题目
-- [GPQA-Diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) 198道数学推理题目
-- [AIME-2024](https://modelscope.cn/datasets/AI-ModelScope/AIME_2024) 30道数学推理题目
+- [MATH-500](https://www.modelscope.cn/datasets/HuggingFaceH4/aime_2024)：一组具有挑战性的高中数学竞赛问题数据集，涵盖七个科目（如初等代数、代数、数论）共500道题。
+- [GPQA-Diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary)：该数据集包含物理、化学和生物学子领域的硕士水平多项选择题，共198道题。
+- [AIME-2024](https://modelscope.cn/datasets/AI-ModelScope/AIME_2024)：美国邀请数学竞赛的数据集，包含30道数学题。
 
-我们构建了这三个数据集的混合，放在[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中。
+本最佳实践的流程包括安装相关依赖、准备模型、评测模型以及评测结果的可视化。让我们开始吧。
 
 ## 安装依赖
 
-安装[EvalScope](https://github.com/modelscope/evalscope)模型评估框架：
+首先，安装[EvalScope](https://github.com/modelscope/evalscope)模型评估框架：
 
-由于框架在快速迭代中，pip包更新可能不及时，推荐通过源码安装：
-```bash
-git clone https://github.com/modelscope/evalscope.git
-cd evalscope/
-pip install -e '.[app,perf]'
-```
-或者通过pip安装：
 ```bash
 pip install 'evalscope[app,perf]' -U
 ```
 
-## 部署模型
+## 模型准备
 
-由于R1类模型的输出一般很长（包含较长的思维链），需要使用推理框架部署模型来加速评测，这里我们介绍使用[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)，读者可以根据自己的需求选择其他部署工具。
+接下来，我们以DeepSeek-R1-Distill-Qwen-1.5B模型为例，介绍评估的过程。首先将模型的能力通过一个OpenAI API兼容的推理服务接入，来进行模型的评测。EvalScope也支持通过transformers推理来进行模型评测，具体可见EvalScope文档。
+
+除了将模型部署到云端支持OpenAI接口的服务使用以外，也可以在本地直接用vLLM，ollama等框架直接拉起模型。这里介绍基于[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)推理框架的使用，因为这些推理框架能较好的支持并发多个请求，以加速评测过程，同时R1类模型的输出包含较长的思维链，输出token数量往往超过1万，使用高效的推理框架部署模型，可以提高推理速度。
 
 **使用vLLM**:
 
@@ -41,9 +36,9 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.opena
 LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --model-name DeepSeek-R1-Distill-Qwen-1.5B --server-port 8801
 ```
 
-### (可选) 测试推理服务性能
+**(可选) 测试推理服务性能**
 
-如果需要测试推理服务性能，可以使用`evalscope`的`perf`子命令，具体可参考[教程](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)：
+在开始正式模型评测前可以测试推理服务的性能，以选择性能更好的推理引擎，使用`evalscope`的`perf`子命令即可测试：
 
 ```bash
 evalscope perf \
@@ -58,9 +53,9 @@ evalscope perf \
  -n 100
 ```
 
-输出如下：
+参数说明具体可参考[性能评测快速开始](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)
 
-<details>
+<details><summary>推理服务性能测试结果</summary>
 
 ```text
 Benchmarking summary:
@@ -121,34 +116,13 @@ Percentile results:
 
 ## 评测模型
 
-### (可选) 自定义混合数据
+我们将MATH-500、GPQA-Diamond和AIME-2024三个数据集整合为一个数据集合，放置于[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中。读者可以直接使用该数据集的ID进行评测操作。
 
-使用EvalScope框架可以自定义混合数据集合，将其保存在本地或推送到modelscope上，参考[使用教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)。
+如果希望了解数据集的生成过程或者自行定制数据集合，可以参考[使用教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)。
 
-下面是一个例子，将`math_500`、`gpqa_diamond`和`aime24`三个数据集混合在一起，并放在了[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中，读者可跳过此步骤直接使用数据集：
+**配置评测任务**
 
-```python
-from evalscope.collections import WeightedSampler, CollectionSchema, DatasetInfo
-from evalscope.utils.io_utils import dump_jsonl_data
-
-# 定义数据混合schema
-schema = CollectionSchema(name='DeepSeekDistill', datasets=[
-            CollectionSchema(name='Math', datasets=[
-                DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-                DatasetInfo(name='gpqa', weight=1, task_type='math', tags=['en'],  args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0}),
-                DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-            ])
-        ])
-
-#  混合数据
-mixed_data = WeightedSampler(schema).sample(100000)  # 设置一个较大的数目，确保所有数据都被采样到
-# 保存数据到本地
-dump_jsonl_data(mixed_data, 'test.jsonl')
-```
-
-### 配置评测任务
-
-运行下面的python代码评测DeepSeek-R1-Distill-Qwen-1.5B模型在数学推理数据集上的表现：
+通过以下Python代码，您可以评测DeepSeek-R1-Distill-Qwen-1.5B模型在推理数据集上的表现：
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -187,9 +161,9 @@ run_task(task_cfg=task_cfg)
 +-----------+--------------+---------------+-------+
 | task_type | dataset_name | average_score | count |
 +-----------+--------------+---------------+-------+
-|   math    |   math_500   |    0.7832     | 2500  |
-|   math    |     gpqa     |    0.3434     |  990  |
-|   math    |    aime24    |      0.2      |  150  |
+|   math    |   math_500   |    0.7832     |  500  |
+|   math    |     gpqa     |    0.3434     |  198  |
+|   math    |    aime24    |      0.2      |   30  |
 +-----------+--------------+---------------+-------+
 ```
 
@@ -212,12 +186,14 @@ dataset_args={ # EvalScope内置支持，无需指定数据集ID
 
 ## 评测结果可视化
 
-EvalScope支持可视化结果，可以查看模型具体的输出。运行以下命令，可以启动可视化界面：
+EvalScope支持可视化结果，可以查看模型具体的输出。
+
+运行以下命令，可以启动可视化界面：
 ```bash
 evalscope app
 ```
 
-将输出如下链接内容：
+终端将输出如下链接内容：
 ```text
 * Running on local URL:  http://0.0.0.0:7860
 ```
@@ -234,3 +210,20 @@ evalscope app
 <p align="center">
   <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/distill/detail.png" alt="alt text" width="100%">
 </p>
+
+## Tips
+
+在这里分享一下评测时可能会踩的一些“坑”：
+
+1. 模型生成配置：
+    - max_tokens设置：确保将max_tokens设置为较大的值（通常需要在8000以上）。如果设置过低，模型可能会在输出完整答案前被截断。
+    - 回复数量n配置：在本次评测中，每个请求生成的回复数量n设置为5，而在R1报告中，n为64。读者可以根据需求调整此参数来平衡评测速度与结果的多样性。
+2. 数据集的提示模版设置：
+    - 本文采用了R1报告中的推荐设置，提示模版为："Please reason step by step, and put your final answer within \boxed{}."；同时，未设置system prompt。确保提示模版的正确性对于生成预期的结果至关重要。
+    - 评测Reasoning模型需要设置0-shot，过于复杂的prompt或者few-shot都有可能降低模型的性能。
+3. 生成答案的解析和匹配：
+    - 我们复用了Qwen-Math工作中的解析方法，该方法基于规则进行答案解析。然而，这种基于规则的解析可能会导致匹配错误，从而对报告的指标产生轻微影响。建议在使用结果时，多使用评测结果可视化功能，查看解析结果是否存在误差。
+
+## 总结
+
+通过这个流程，开发者可以有效地评测R1类模型在多个数学和科学推理数据集上的表现，从而客观评估具体模型的实际表现，共同推动R1类模型的进一步发展与应用。
