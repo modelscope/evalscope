@@ -40,11 +40,12 @@
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据
-  - `prompt_template`: 评测数据集的prompt模板，指定后将拼接在每个评测数据内容之前
+  - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中
   - `system_prompt`: 评测数据集的系统prompt
   - `subset_list`: 评测数据子集列表，指定后将只使用子集数据
   - `few_shot_num`: few-shot的数量
   - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`
+  - `metrics_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前支持`AverageAccuracy`, `AveragePass@1`, `Pass@[1-16]`。例如`humaneval`数据集可指定`["Pass@1", "Pass@5"]`，注意此时需要指定`n=5`让模型返回5个结果
   ```bash
   # 例如
   --datasets gsm8k arc
