@@ -4,10 +4,9 @@ import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy
-from evalscope.metrics.metrics import exact_match, weighted_mean
+from evalscope.metrics.metrics import exact_match
 from evalscope.models import MultiChoiceModelAdapter
-from evalscope.utils import ResponseParser, normalize_score
+from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -20,11 +19,11 @@ logger = get_logger()
     dataset_id='general_mcq',
     model_adapter=MultiChoiceModelAdapter,
     subset_list=['default'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='dev',
     eval_split='val',
-    prompt_template='请回答问题，并选出其中的正确答案',
+    prompt_template='请回答问题，并选出其中的正确答案\n{query}',
 )
 class GeneralMCQAdapter(DataAdapter):
 
@@ -82,10 +81,11 @@ class GeneralMCQAdapter(DataAdapter):
             context: str = '\n'.join(few_shot_prompts) + '\n'
         else:
             context = ''
+        context = context.strip() + self._format_example(input_d=input_d, include_answer=False)
 
-        full_prompt: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(query=context)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

@@ -68,14 +68,15 @@ class Evaluator(object):
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)
 
-        # Repeat and limit prompts
-        repeated_prompts = defaultdict(list)
+        # Limit and index prompts
+        limited_prompts = defaultdict(list)
         for subset_name, prompts_list in prompts.items():
             limit = self.task_cfg.limit or len(prompts_list)
-            prompts_list = prompts_list[:limit]
-            for prompt in prompts_list:
-                repeated_prompts[subset_name].extend([prompt] * self.task_cfg.repeat)
-        return repeated_prompts
+            for index, prompt in enumerate(prompts_list[:limit]):
+                prompt['index'] = index
+                limited_prompts[subset_name].append(prompt)
+
+        return limited_prompts
 
     def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
         model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
@@ -99,6 +100,28 @@ class Evaluator(object):
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
             answers_list.append(processed_answer)
         return answers_list
+
+    @staticmethod
+    def filter_answer(use_cache, prompts_list, pred_file_path) -> dict:
+        # Filter prompts that have been answered
+        answers_list = []
+        if not use_cache or not os.path.exists(pred_file_path):
+            return answers_list, prompts_list
+
+        def get_answered_indices(answers_list: List[Dict]) -> List[int]:
+            indices = [answer[AnswerKeys.ORIGIN_PROMPT].get('index') for answer in answers_list]
+
+            if all(index is None for index in indices):
+                return list(range(len(answers_list)))
+
+            return [index for index in indices if index is not None]
+
+        answers_list = jsonl_to_list(pred_file_path)
+        answered_indices = set(get_answered_indices(answers_list))
+        logger.info(f'Reusing predictions from {pred_file_path}, got {len(answered_indices)} answers.')
+
+        prompts = [prompt for i, prompt in enumerate(prompts_list) if i not in answered_indices]
+        return answers_list, prompts
 
     def get_answers(self, subset_name: str, prompts_list: List[dict], infer_cfg: dict = None, **kwargs) -> list:
         """
@@ -126,16 +149,11 @@ class Evaluator(object):
         assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
         assert len(prompts_list) > 0, 'prompts_list must not be empty when calling func get_answers() !'
 
-        answers_list = []
         pred_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
         pred_file_path = os.path.join(self.outputs_structure.predictions_dir, self.model_name, pred_file_name)
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
 
-        if self.use_cache and os.path.exists(pred_file_path):
-            answers_list = jsonl_to_list(pred_file_path)
-            logger.info(f'Reusing predictions from {pred_file_path}, got {len(answers_list)} answers.')
-            # Note: assume prediction in order of prompts_list
-            prompts_list = prompts_list[len(answers_list):]
+        answers_list, prompts_list = Evaluator.filter_answer(self.use_cache, prompts_list, pred_file_path)
 
         eval_batch_size = self.task_cfg.eval_batch_size
         if self.task_cfg.eval_type == EvalType.SERVICE:
@@ -206,11 +224,7 @@ class Evaluator(object):
     def _generate_review_id(self, answer_d):
         # Gen review_id (concat: answer_id + reviewer_spec)
         answer_id = answer_d[AnswerKeys.ANSWER_ID]
-        reviewer_spec = {
-            'metric': [metric.name for metric in self.data_adapter.metric_list],
-            'reviewer': ['Evaluator'],
-            'revision': ['default']
-        }
+        reviewer_spec = {'metric': self.data_adapter.metric_list, 'reviewer': ['Evaluator'], 'revision': ['default']}
         reviewer_spec_str = json.dumps(
             OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
         review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)

@@ -121,7 +121,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         return responses
 
     @torch.no_grad()
-    def predict(self, inputs: List[Union[str, dict, list]], infer_cfg: dict = {}) -> List[dict]:
+    def predict(self, inputs: List[dict], infer_cfg: dict = {}) -> List[dict]:
         """
         Args:
             inputs: The input data.
@@ -135,17 +135,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         system_prompts = []
 
         for input_item in inputs:
-            if isinstance(input_item, str):
-                queries.append(input_item)
-                system_prompts.append(None)
-            elif isinstance(input_item, dict):
-                queries.append(input_item['data'][0])
-                system_prompts.append(input_item.get('system_prompt', None))
-            elif isinstance(input_item, list):
-                queries.append('\n'.join(input_item))
-                system_prompts.append(None)
-            else:
-                raise TypeError(f'Unsupported input type: {type(input_item)}')
+            queries.append(input_item['data'][0])
+            system_prompts.append(input_item.get('system_prompt', None))
 
         responses = self._model_generate(queries, system_prompts, infer_cfg)
 

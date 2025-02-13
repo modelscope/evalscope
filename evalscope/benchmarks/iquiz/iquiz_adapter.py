@@ -1,6 +1,6 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import AverageAccuracy, exact_match
+from evalscope.constants import EvalType
+from evalscope.metrics import exact_match
 from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
@@ -10,11 +10,11 @@ from evalscope.utils.utils import ResponseParser
     dataset_id='AI-ModelScope/IQuiz',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['IQ', 'EQ'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。',  # noqa: E501
+    system_prompt='你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。',  # noqa: E501
 )
 class IQuizAdapter(DataAdapter):
 
@@ -36,7 +36,7 @@ class IQuizAdapter(DataAdapter):
         """
         prompt = f"问题: {input_d['question']}\n"
         prompt += self.__form_options(input_d['choices'])
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.prompt_template}
+        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
 
     def __form_options(self, options: list):
         option_str = '选项:\n'

@@ -9,9 +9,8 @@ from typing import List
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import AverageAccuracy
 from evalscope.models import ContinuationLogitsModelAdapter
-from evalscope.utils import get_logger, normalize_score
+from evalscope.utils import get_logger
 
 # flake8: noqa
 
@@ -25,7 +24,7 @@ logger = get_logger()
     dataset_id='modelscope/truthful_qa',
     model_adapter=ContinuationLogitsModelAdapter,
     subset_list=['multiple_choice'],
-    metric_list=[AverageAccuracy],
+    metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split=None,
     eval_split='validation',
@@ -284,8 +283,9 @@ class TruthfulQaAdapter(DataAdapter):
                 logger.error(f'** Unknown review_res: {review_res_d}')
 
         # To get mc2 score
-        return [{
-            'metric_name': self.metric_list[0].name,
-            'score': self.metric_list[0].object(mc2_list),
-            'num': len(mc2_list)
-        }]
+        # return [{
+        #     'metric_name': self.metric_list[0].name,
+        #     'score': self.metric_list[0].object(mc2_list),
+        #     'num': len(mc2_list)
+        # }]
+        return super().compute_metric(mc2_list)
