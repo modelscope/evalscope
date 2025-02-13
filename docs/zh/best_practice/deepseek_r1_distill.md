@@ -1,33 +1,32 @@
-# DeepSeek-R1类模型数学能力测试
+# R1类模型推理能力评测最佳实践
 
-随着DeepSeek-R1模型的爆火，越来越多的用户开始复现类似的模型，以提升模型的推理能力，目前也出现了许多惊艳的工作。但是，这些模型的推理能力是否真的有所提升呢？本文将通过数学能力测试来验证类DeepSeek-R1模型的推理能力。
+随着DeepSeek-R1模型的广泛应用，越来越多的开发者开始尝试复现类似的模型，以提升其推理能力。目前已经涌现出不少令人瞩目的成果。然而，这些新模型的推理能力是否真的提高了呢？本文将使用EvalScope框架对R1类模型的推理性能进行评测。
 
-本最佳实践将以DeepSeek-R1-Distill-Qwen-1.5B模型为例，使用共728道数学推理题目（与R1技术报告一致）进行演示，数据具体包括：
+在本最佳实践中，我们将以DeepSeek-R1-Distill-Qwen-1.5B模型为例，通过728道推理题目（与R1技术报告一致）进行演示。评测数据具体包括：
 
-- [MATH-500](https://www.modelscope.cn/datasets/HuggingFaceH4/aime_2024) 500道数学推理题目
-- [GPQA-Diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) 198道数学推理题目
-- [AIME-2024](https://modelscope.cn/datasets/AI-ModelScope/AIME_2024) 30道数学推理题目
+- [MATH-500](https://www.modelscope.cn/datasets/HuggingFaceH4/aime_2024)：一组具有挑战性的高中数学竞赛问题数据集，涵盖七个科目（如初等代数、代数、数论）共500道题。
+- [GPQA-Diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary)：该数据集包含物理、化学和生物学子领域的硕士水平多项选择题，共198道题。
+- [AIME-2024](https://modelscope.cn/datasets/AI-ModelScope/AIME_2024)：美国邀请数学竞赛的数据集，包含30道数学题。
 
-我们构建了这三个数据集的混合，放在[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中。
+本最佳实践的流程包括安装相关依赖、准备模型、评测模型以及评测结果的可视化。让我们开始吧。
 
 ## 安装依赖
 
-安装[EvalScope](https://github.com/modelscope/evalscope)模型评估框架：
+首先，安装[EvalScope](https://github.com/modelscope/evalscope)模型评估框架：
 
-由于框架在快速迭代中，pip包更新可能不及时，推荐通过源码安装：
-```bash
-git clone https://github.com/modelscope/evalscope.git
-cd evalscope/
-pip install -e '.[app,perf]'
-```
-或者通过pip安装：
 ```bash
 pip install 'evalscope[app,perf]' -U
 ```
 
-## 部署模型
+## 模型准备
 
-由于R1类模型的输出一般很长（包含较长的思维链），需要使用推理框架部署模型来加速评测，这里我们介绍使用[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)，读者可以根据自己的需求选择其他部署工具。
+接下来，我们需要准备一个兼容OpenAI API的推理服务作为评测目标（EvalScope也支持transformers本地推理模型评测），原因如下：
+- R1类模型的输出包含较长的思维链，输出token数量往往超过1万，使用推理框架部署模型可以提高推理速度；
+- 可以并发多个请求，以加速评测过程。
+
+在此，我们以DeepSeek-R1-Distill-Qwen-1.5B模型为例，介绍如何使用[vLLM](https://github.com/vllm-project/vllm)和[lmdeploy](https://github.com/InternLM/lmdeploy)推理框架。读者可以根据自身需求选择其他部署工具。
+
+下面的命令中已配置了modelscope相关环境变量，将自动下载模型：
 
 **使用vLLM**:
 
@@ -41,9 +40,9 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.opena
 LMDEPLOY_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --model-name DeepSeek-R1-Distill-Qwen-1.5B --server-port 8801
 ```
 
-### (可选) 测试推理服务性能
+**(可选) 测试推理服务性能**
 
-如果需要测试推理服务性能，可以使用`evalscope`的`perf`子命令，具体可参考[教程](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)：
+在开始正式模型评测前可以测试推理服务的性能，以选择性能更好的推理引擎，使用`evalscope`的`perf`子命令即可测试：
 
 ```bash
 evalscope perf \
@@ -58,9 +57,9 @@ evalscope perf \
  -n 100
 ```
 
-输出如下：
+参数说明具体可参考[性能评测快速开始](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html)
 
-<details>
+<details><summary>推理服务性能测试结果</summary>
 
 ```text
 Benchmarking summary:
@@ -121,34 +120,13 @@ Percentile results:
 
 ## 评测模型
 
-### (可选) 自定义混合数据
+我们将MATH-500、GPQA-Diamond和AIME-2024三个数据集整合为一个数据集合，放置于[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中。读者可以直接使用该数据集的ID进行评测操作。
 
-使用EvalScope框架可以自定义混合数据集合，将其保存在本地或推送到modelscope上，参考[使用教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)。
+如果希望了解数据集的生成过程或者自行定制数据集合，可以参考[使用教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)。
 
-下面是一个例子，将`math_500`、`gpqa_diamond`和`aime24`三个数据集混合在一起，并放在了[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中，读者可跳过此步骤直接使用数据集：
+**配置评测任务**
 
-```python
-from evalscope.collections import WeightedSampler, CollectionSchema, DatasetInfo
-from evalscope.utils.io_utils import dump_jsonl_data
-
-# 定义数据混合schema
-schema = CollectionSchema(name='DeepSeekDistill', datasets=[
-            CollectionSchema(name='Math', datasets=[
-                DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-                DatasetInfo(name='gpqa', weight=1, task_type='math', tags=['en'],  args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0}),
-                DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-            ])
-        ])
-
-#  混合数据
-mixed_data = WeightedSampler(schema).sample(100000)  # 设置一个较大的数目，确保所有数据都被采样到
-# 保存数据到本地
-dump_jsonl_data(mixed_data, 'test.jsonl')
-```
-
-### 配置评测任务
-
-运行下面的python代码评测DeepSeek-R1-Distill-Qwen-1.5B模型在数学推理数据集上的表现：
+通过以下Python代码，您可以评测DeepSeek-R1-Distill-Qwen-1.5B模型在推理数据集上的表现：
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -187,9 +165,9 @@ run_task(task_cfg=task_cfg)
 +-----------+--------------+---------------+-------+
 | task_type | dataset_name | average_score | count |
 +-----------+--------------+---------------+-------+
-|   math    |   math_500   |    0.7832     | 2500  |
-|   math    |     gpqa     |    0.3434     |  990  |
-|   math    |    aime24    |      0.2      |  150  |
+|   math    |   math_500   |    0.7832     |  500  |
+|   math    |     gpqa     |    0.3434     |  198  |
+|   math    |    aime24    |      0.2      |   30  |
 +-----------+--------------+---------------+-------+
 ```
 
@@ -212,12 +190,14 @@ dataset_args={ # EvalScope内置支持，无需指定数据集ID
 
 ## 评测结果可视化
 
-EvalScope支持可视化结果，可以查看模型具体的输出。运行以下命令，可以启动可视化界面：
+EvalScope支持可视化结果，可以查看模型具体的输出。
+
+运行以下命令，可以启动可视化界面：
 ```bash
 evalscope app
 ```
 
-将输出如下链接内容：
+终端将输出如下链接内容：
 ```text
 * Running on local URL:  http://0.0.0.0:7860
 ```
