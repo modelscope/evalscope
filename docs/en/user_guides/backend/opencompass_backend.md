@@ -99,16 +99,26 @@ Here are four ways to deploy model services:
 
 ::::{tab-set}
 :::{tab-item} ms-swift (Recommended)
-Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/LLM/VLLM-inference-acceleration-and-deployment.html).
+Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Instruction/Inference-and-deployment.html).
 
 **Install ms-swift**
 ```shell
 pip install ms-swift -U
 ```
 **Deploy Model Service**
+
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-0.5B-Instruct --port 8000
+```
+
+<details><summary>ms-swift v2.x</summary>
+
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 ```
+
+</details>
+
 :::
 
 :::{tab-item} vLLM
