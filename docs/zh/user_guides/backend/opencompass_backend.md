@@ -109,7 +109,7 @@ OpenCompass 评测后端使用统一的OpenAI API调用来进行评测，因此�
 ::::{tab-set}
 :::{tab-item} ms-swift部署 （推荐）
 
-使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html#vllm)。
+使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Instruction/%E6%8E%A8%E7%90%86%E5%92%8C%E9%83%A8%E7%BD%B2.html#id1)。
 
 **安装ms-swift**
 ```shell
@@ -118,8 +118,17 @@ pip install ms-swift -U
 
 **部署模型服务**
 ```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-0.5B-Instruct --port 8000
+```
+
+<details><summary>ms-swift v2.x</summary>
+
+```shell
 CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 ```
+
+</details>
+
 :::
 
 :::{tab-item} vLLM 部署
