@@ -59,7 +59,7 @@ class Benchmark:
     @classmethod
     def get(cls, name: str) -> 'BenchmarkMeta':
         if name not in BENCHMARK_MAPPINGS:
-            raise Exception(f'Unknown benchmark: {name}. Available tasks: {BENCHMARK_MAPPINGS.keys()}')
+            raise Exception(f'Unknown benchmark: {name}. Available tasks: {list(BENCHMARK_MAPPINGS.keys())}')
         benchmark = BENCHMARK_MAPPINGS[name]
         return benchmark
 
