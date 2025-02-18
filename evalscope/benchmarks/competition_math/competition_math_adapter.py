@@ -64,7 +64,7 @@ class CompetitionMathAdapter(DataAdapter):
         return data_dict
 
     def gen_prompts(self, data_dict: dict) -> dict:
-        res_dict: dict = defaultdict(list)
+        res_dict: dict = defaultdict(list, {key: [] for key in self.subset_list})
 
         #  use level as subset
         for sub_name, sub_data_dict in data_dict.items():
