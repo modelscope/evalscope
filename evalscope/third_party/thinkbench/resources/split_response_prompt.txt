@@ -1,0 +1,37 @@
+**Task:** Analyze and deconstruct the given problem and solution.
+
+**Problem:** {problem}
+**Solution:** {solution}
+**Correct Answer:** {expected_answer}
+
+**Instructions:**
+1. Break down the solution into smaller logical steps, referred to as sub-solutions.
+2. Identify and return the *original text* of the first sub-solution that leads to the correct answer.
+3. If no sub-solution is correct, deconstruct the solution into sub-thoughts instead.
+4. Provide the total number of sub-thoughts and the *original text* of the first correct sub-thought.
+5. If no sub-thought is correct, put -1 in the `first_correct_content_index`
+
+**Example:**
+**Problem:** 2 + 3 = ?
+**Solution:** The problem is straightforward arithmetic: adding 2 and 3. Initially, understand that 2 plus 3 results in 5. However, let's explore this further. Addition involves combining numbers to get a total. Here, adding 3 to 2 involves moving three steps forward on the number line. Start at 2, move one step to reach 3, another to reach 4, and one more to reach 5. Thus, 2 plus 3 equals 5. Alternatively, visualize this with objects: having two apples and gaining three more results in five apples.
+**Correct Answer:** 5
+
+<answer>
+{{
+  "sub_content_list": [
+    "The problem is straightforward arithmetic: adding 2 and 3. Initially, understand that 2 plus 3 results in 5.",
+    "Initially, understand that 2 plus 3 results in 5. However, let's explore this further. Addition involves combining numbers to get a total. Here, adding 3 to 2 involves moving three steps forward on the number line. Start at 2, move one step to reach 3, another to reach 4, and one more to reach 5. Thus, 2 plus 3 equals 5.",
+    "Alternatively, visualize this with objects: having two apples and gaining three more results in five apples."
+  ],
+  "first_correct_content_index": "0"
+}}
+</answer>
+
+**Formatting Guidelines:**
+- Your response must be enclosed within `<answer>` and `</answer>` tags.
+- Use the following JSON template for your response:
+
+{{
+  "sub_content_list": "",
+  "first_correct_content_index": ""
+}}
