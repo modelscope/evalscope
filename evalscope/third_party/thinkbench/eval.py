@@ -100,6 +100,9 @@ class EvalThink:
                 row=1, col=i
             )
             fig.update_yaxes(title_text=metrics[i-1].replace('_', ' ').title(), row=1, col=i)
+        # Update y-axis ranges
+        fig.update_yaxes(range=[0, 1], row=1, col=1)  # Token Efficiency
+        fig.update_yaxes(range=[0, 13], row=1, col=3)  # Switch Frequency
 
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f'{self.model_name}_{self.dataset_name}_metrics.png')
@@ -134,7 +137,7 @@ distill_qwen_config = dict(
 )
 
 math_qwen_config = dict(
-    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250218_180219',
+    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250219_202358',
     model_name = 'Qwen2.5-Math-7B-Instruct',
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
@@ -143,5 +146,6 @@ math_qwen_config = dict(
 
 if __name__ == '__main__':
     evaluator = EvalThink(**distill_qwen_config)
+    # evaluator = EvalThink(**math_qwen_config)
     results = evaluator.evaluate('outputs')
     print(results)
