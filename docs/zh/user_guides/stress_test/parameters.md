@@ -61,6 +61,7 @@
 - `--stop-token-ids` 设置停止生成的token的ID。
 - `--temperature` 采样温度。
 - `--top-p` top_p采样。
+- `--top-k` top_k采样。
 
 ## 数据存储
 - `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
