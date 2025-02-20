@@ -61,6 +61,7 @@ class Arguments:
     stream: Optional[bool] = None  # Whether to stream the response
     temperature: Optional[float] = None  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
+    top_k: Optional[int] = None  # Top-k sampling setting for the response
 
     @staticmethod
     def from_args(args):
@@ -99,7 +100,9 @@ class Arguments:
             stop_token_ids=args.stop_token_ids,
             stream=args.stream,
             temperature=args.temperature,
-            top_p=args.top_p)
+            top_p=args.top_p,
+            top_k=args.top_k,
+        )
 
     def __post_init__(self):
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -183,6 +186,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
+    parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
 
     # yapf: enable
 

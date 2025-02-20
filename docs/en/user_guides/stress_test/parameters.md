@@ -60,6 +60,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--stop-token-ids`: Set stop token IDs.
 - `--temperature`: Sampling temperature.
 - `--top-p`: Top_p sampling.
+- `--top-k`: Top_k sampling.
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
