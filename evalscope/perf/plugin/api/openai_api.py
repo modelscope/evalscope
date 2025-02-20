@@ -92,6 +92,8 @@ class OpenaiPlugin(ApiPluginBase):
             payload['temperature'] = param.temperature
         if param.top_p is not None:
             payload['top_p'] = param.top_p
+        if param.top_k is not None:
+            payload['top_k'] = param.top_k
         return payload
 
     def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
