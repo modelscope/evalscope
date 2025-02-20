@@ -16,3 +16,18 @@ def request_qwen(content):
         return completion.choices[0].message.content
     except Exception as e:
         print(e)
+
+
+def request_local(content):
+    try:
+        client = OpenAI(
+            api_key='EMPTY',
+            base_url='http://0.0.0.0:8801/v1',
+        )
+        completion = client.chat.completions.create(
+            model='Qwen2.5-72B-Instruct',
+            messages=[{'role': 'user', 'content': content}]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(e)

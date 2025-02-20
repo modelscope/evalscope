@@ -7,15 +7,20 @@ from collections import defaultdict
 from functools import lru_cache
 from modelscope import AutoTokenizer
 from plotly.subplots import make_subplots
+from tqdm.contrib.concurrent import thread_map
+from typing import List
 
-from evalscope.third_party.thinkbench.tools.llm import request_qwen
+from evalscope.third_party.thinkbench.tools.llm import request_local, request_qwen
+from evalscope.third_party.thinkbench.tools.utils import extract_answer
+from evalscope.utils.io_utils import dump_jsonl_data
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
 class EvalThink:
-    def __init__(self, report_path, tokenizer_path, model_name, dataset_name, subsets):
+    def __init__(self, report_path, tokenizer_path, model_name, dataset_name, subsets, split_strategies='llm'):
         self.report_path = report_path
-        self.split_response_prompt = open(os.path.join(cur_path, 'resources/split_response_prompt.txt'), 'r').read()
+        self.reformat_template = open(os.path.join(cur_path, 'resources/reformat_template.txt'), 'r').read()
+        self.critique_template = open(os.path.join(cur_path, 'resources/critique_template.txt'), 'r').read()
         self.switch_tokens = ['alternatively', 'but wait', 'let me reconsider', 'another way', 'another approach', 'another method', 'another angle']
         self.subset_dict = defaultdict(lambda: defaultdict(list))
         self.think_end_token = '</think>'
@@ -23,7 +28,8 @@ class EvalThink:
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.subsets = subsets
-        self.metrics = ['token_efficiency', 'completion_len', 'switch_freq', 'accuracy']
+        self.metrics = ['token_efficiency', 'completion_len', 'thought_num', 'accuracy']
+        self.split_strategies = split_strategies  # split by llm, keywords, separator
 
     @lru_cache(maxsize=None)
     def get_think_part(self, text):
@@ -34,33 +40,38 @@ class EvalThink:
     def cal_tokens(self, text: str):
         return len(self.tokenizer.encode(text, add_special_tokens=False))
 
-    def process_choice(self, choice):
+    def process_choice(self, choice, problem):
         think_part = self.get_think_part(choice['message']['content'])
+        answer = choice['review']['gold']
         tokens = self.cal_tokens(think_part)
         switch_count = sum(think_part.count(token) for token in self.switch_tokens)
-        useful_tokens = self.cal_tokens(self.get_first_correct(think_part))
+        useful_tokens = self.cal_tokens(self.get_first_correct(think_part, problem, answer))
         score = choice['review']['result']
         return tokens, switch_count, useful_tokens, score
 
     def process_item(self, item):
-        results = [self.process_choice(choice) for choice in item['choices']]
+        problem = item['raw_input'].get('question') or item['raw_input'].get('problem') or ''
+        results = []
+        for choice in item['choices']:
+            results.append(self.process_choice(choice, problem))
+            break  # only process the first choice
+
         tokens, switch_counts, useful_tokens, scores = zip(*results)
 
         avg_tokens = sum(tokens) / len(tokens)
-        avg_switch_freq = sum(switch_counts) / len(switch_counts)
+        avg_thought_num = sum(switch_counts) / len(switch_counts)
         avg_token_efficiency = sum(useful_tokens) / sum(tokens)
         avg_accuracy = sum(scores) / len(scores)
 
-        return avg_tokens, avg_switch_freq, avg_token_efficiency, avg_accuracy
+        return avg_tokens, avg_thought_num, avg_token_efficiency, avg_accuracy
 
-    def split_by_llm(self, problem, solution, expected_answer):
-        prompt = self.split_response_prompt.format(problem=problem, solution=solution, expected_answer=expected_answer)
-        llm_response = request_qwen(prompt)
-        start_idx = llm_response.find('<answer>') + len('<answer>')
-        end_idx = llm_response.find('</answer>')
-        return json.loads(llm_response[start_idx:end_idx].strip())
+    def split_by_llm(self, response, problem) -> List[str]:
+        response = response.replace('\n', ' ') # remove newline characters
+        prompt = self.reformat_template.format(problem=problem, response=response)
+        llm_response = request_local(prompt)
+        return llm_response.split('\n\n')
 
-    def split_by_rule(self, text):
+    def split_by_keywords(self, text) -> List[str]:
         pattern = r'(?=\b(?:{})\b)'.format('|'.join(map(re.escape, self.switch_tokens)))
         segments = re.split(pattern, text)
         # remove empty segments
@@ -68,14 +79,42 @@ class EvalThink:
 
         return segments if segments else [text]
 
-    def get_first_correct(self, text: str):
-        text_list = self.split_by_rule(text)
-        # text_list = self.split_by_llm(text)
-        return text_list[0]
+    def split_by_separator(self, text) -> List[str]:
+        return text.split('\n\n')
+
+    def get_answer_index(self, response: List[str], problem: str, answer: str) -> int:
+        tagged_response = ''
+        for sdx, step in enumerate(response):
+            tagged_response += f'<paragraph_{sdx}>\n{step}\n</paragraph_{sdx}>\n\n'
+        tagged_response = tagged_response.strip()
+
+        prompt = self.critique_template.format(problem=problem, answer=answer, tagged_response=tagged_response)
+        llm_response = request_local(prompt)
+        answer_index = extract_answer(llm_response)
+
+        dump_jsonl_data({'prompt': prompt, 'response': llm_response, 'answer_index': answer_index},
+                        os.path.join(self.report_path, 'answer_index.jsonl'),
+                        dump_mode='append')
+        if answer_index is None:
+            return -1
+        else:
+            return int(answer_index)
+
+    def get_first_correct(self, response: str, problem: str, answer: str) -> str:
+        if self.split_strategies == 'llm':
+            text_list = self.split_by_llm(response, problem)
+        elif self.split_strategies == 'keywords':
+            text_list = self.split_by_keywords(response)
+        else:
+            text_list = self.split_by_separator(response)
+
+        answer_index = self.get_answer_index(text_list, problem, answer)
+        first_correct = '\n\n'.join(text_list[: answer_index])
+        return first_correct
 
     def plot_metrics(self, results, output_dir):
         fig = make_subplots(rows=1, cols=len(self.metrics),
-                            subplot_titles=('Token Efficiency', 'Completion Length', 'Switch Frequency', 'Accuracy'),
+                            subplot_titles=('Token Efficiency', 'Completion Length', 'Thought Num', 'Accuracy'),
                             shared_xaxes=True, x_title='Subsets')
 
 
@@ -112,16 +151,36 @@ class EvalThink:
         fig.write_image(output_path)
         print(f'save figure to: {output_path}')
 
+
+
+    def filter_df(self, df, response_len: int = 8000, count: int=10):
+        def is_valid_row(row):
+            return all(self.cal_tokens(choice['message']['content']) <= response_len for choice in row['choices'])
+
+        bools = df.apply(is_valid_row, axis=1)
+
+        return df[bools].head(count)
+
+
     def evaluate(self, output_dir):
         for subset in self.subsets:
             review_path = os.path.join(self.report_path, 'reviews', self.model_name, f'{self.dataset_name}_{subset}.jsonl')
             review_df = pd.read_json(review_path, lines=True)
 
-            results = [self.process_item(item) for _, item in review_df.iterrows()]
-            avg_tokens, avg_switch_freq, avg_token_efficiency, avg_accuracy = zip(*results)
+            review_df = self.filter_df(review_df, response_len=8000, count=50)
+
+            results = thread_map(
+                self.process_item,
+                (item for _, item in review_df.iterrows()),
+                desc=f'Evaluating {subset}',
+                total=len(review_df),
+                max_workers=16
+            )
+
+            avg_tokens, avg_thought_num, avg_token_efficiency, avg_accuracy = zip(*results)
 
             self.subset_dict[subset]['completion_len'] = sum(avg_tokens) / len(avg_tokens)
-            self.subset_dict[subset]['switch_freq'] = sum(avg_switch_freq) / len(avg_switch_freq)
+            self.subset_dict[subset]['thought_num'] = sum(avg_thought_num) / len(avg_thought_num)
             self.subset_dict[subset]['token_efficiency'] = sum(avg_token_efficiency) / len(avg_token_efficiency)
             self.subset_dict[subset]['accuracy'] = sum(avg_accuracy) / len(avg_accuracy)
 
@@ -150,7 +209,9 @@ math_qwen_config = dict(
 )
 
 if __name__ == '__main__':
-    # evaluator = EvalThink(**distill_qwen_config)
-    evaluator = EvalThink(**math_qwen_config)
+    evaluator = EvalThink(**distill_qwen_config, split_strategies='separator')
+    results = evaluator.evaluate('outputs')
+    print(results)
+    evaluator = EvalThink(**math_qwen_config, split_strategies='separator')
     results = evaluator.evaluate('outputs')
     print(results)

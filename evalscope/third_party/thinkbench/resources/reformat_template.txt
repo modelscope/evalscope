@@ -1,0 +1,31 @@
+I will present you with a solution to a math problem. Unfortunately, the solution lacks proper paragraphing, making it hard to read. Your task is to improve readability by reformatting the solution into well-structured paragraphs. Follow these specific guidelines:
+
+* Insert \n\n for paragraph breaks within the original solution. Do **NOT** alter any content of the original solution (the only exception is for itemized lists; see below).
+
+  - Each paragraph should represent a distinct, concise reasoning step that logically advances the solution.
+
+  - Reasoning steps can include case discussions, formula simplifications, or formula derivations. Each of these should be treated as an individual reasoning step and paragraphed accordingly.
+
+  - If an introductory analysis exists in the original solution, treat it as an initial reasoning step and place it as the first paragraph.
+
+  - Do **NOT** place any mathematical formulas in their own separate paragraphs; instead, include them within the same paragraph as the preceding text to form a cohesive reasoning step.
+
+* For any itemized lists (ordered or unordered), convert them into a written format, such as "First/Second/Third." This is the **ONLY** content modification allowed.
+
+* Avoid making paragraphs too lengthy, as long paragraphs might contain multiple reasoning steps that should be paragraphed separately.
+
+* Disregard the accuracy of the solution content. Do **NOT** alter any of the original solution's content; focus solely on structuring it into logical, readable paragraphs.
+
+* Reply with the reformatted solution directly.
+
+--------------------------------------------------
+
+Here is the math problem, and the solution that needs to be reformatted:
+
+[Math Problem]
+
+{problem}
+
+[Solution]
+
+{response}
