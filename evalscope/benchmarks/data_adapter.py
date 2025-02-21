@@ -24,6 +24,7 @@ class DataAdapter(ABC):
                  eval_split: Optional[str] = None,
                  prompt_template: Optional[str] = None,
                  system_prompt: Optional[str] = None,
+                 query_template: Optional[str] = None,
                  **kwargs):
         """
         Data Adapter for the benchmark. You need to implement the following methods:
@@ -52,6 +53,7 @@ class DataAdapter(ABC):
         self.eval_split = eval_split
         self.prompt_template = prompt_template
         self.system_prompt = system_prompt
+        self.query_template = query_template
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
 

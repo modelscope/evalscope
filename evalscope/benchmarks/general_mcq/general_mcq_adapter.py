@@ -24,7 +24,7 @@ logger = get_logger()
     train_split='dev',
     eval_split='val',
     prompt_template='请回答问题，并选出其中的正确答案\n{query}',
-)
+    query_template='问题：{question}\n{choices}\n答案: {answer}\n\n')
 class GeneralMCQAdapter(DataAdapter):
 
     choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
@@ -115,15 +115,11 @@ class GeneralMCQAdapter(DataAdapter):
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
 
-    @classmethod
-    def _format_example(cls, input_d: dict, include_answer=True):
-        example = '问题：' + input_d['question']
-        for choice in cls.choices:
-            if choice in input_d:
-                example += f'\n{choice}. {input_d[f"{choice}"]}'
+    def _format_example(self, input_d: dict, include_answer=True):
+        choices_str = '\n'.join([f'{choice}. {input_d[choice]}' for choice in self.choices if choice in input_d])
 
         if include_answer:
-            example += '\n答案: ' + input_d['answer'] + '\n\n'
+            return self.query_template.format(
+                question=input_d['question'], choices=choices_str, answer=input_d['answer'])
         else:
-            example += '\n答案: '
-        return example
+            return self.query_template.format(question=input_d['question'], choices=choices_str, answer='').rstrip()
