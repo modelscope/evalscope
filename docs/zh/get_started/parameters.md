@@ -41,6 +41,7 @@
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据
   - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中
+  - `query_template`: 评测数据集的query模板，指定后将使用模板生成query。例如`general_mcq`的模版为`问题：{question}\n{choices}\n答案: {answer}\n\n`，数据集的问题将填充到模板`question`字段中，选项填充到`choices`字段中，答案填充到`answer`字段中（答案填充仅对few-shot生效）
   - `system_prompt`: 评测数据集的系统prompt
   - `subset_list`: 评测数据子集列表，指定后将只使用子集数据
   - `few_shot_num`: few-shot的数量

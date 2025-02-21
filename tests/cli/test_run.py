@@ -101,7 +101,8 @@ class TestRun(unittest.TestCase):
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
                     'subset_list': [
                         'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
-                    ]
+                    ],
+                    'query_template': 'Question: {question}\n{choices}\nAnswer: {answer}'  # 问题模板
                 },
                 'general_qa': {
                     'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
@@ -148,16 +149,16 @@ class TestRun(unittest.TestCase):
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
-                # 'race',
+                'race',
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
                 # 'gsm8k',
                 # 'bbh',
-                'competition_math',
-                'math_500',
-                'aime24',
-                'gpqa',
+                # 'competition_math',
+                # 'math_500',
+                # 'aime24',
+                # 'gpqa',
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',

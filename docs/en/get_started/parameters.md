@@ -40,6 +40,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
   - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: The prompt template for the evaluation dataset. When specified, it will be used to generate prompts. For example, the template for the `gsm8k` dataset is `Question: {query}\nLet's think step by step\nAnswer:`. The question from the dataset will be filled into the `query` field of the template.
+  - `query_template`: The query template for the evaluation dataset. When specified, it will be used to generate queries. For example, the template for `general_mcq` is `Question: {question}\n{choices}\nAnswer: {answer}\n\n`. The questions from the dataset will be inserted into the `question` field of the template, options will be inserted into the `choices` field, and answers will be inserted into the `answer` field (answer insertion is only effective for few-shot scenarios).
   - `system_prompt`: System prompt for the evaluation dataset.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.

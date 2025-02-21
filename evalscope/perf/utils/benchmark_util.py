@@ -23,6 +23,7 @@ class BenchmarkData:
     n_chunks: int = 0
     n_chunks_time: float = 0.0
     max_gpu_memory_cost = 0
+    time_per_output_token: float = 0.0
 
     prompt_tokens = None
     completion_tokens = None
@@ -37,6 +38,7 @@ class BenchmarkData:
             self.first_chunk_latency = self.query_latency
             self.n_chunks = 1
             self.n_chunks_time = self.query_latency
+        self.time_per_output_token = self.query_latency / self.completion_tokens
 
     def _calculate_tokens(self, api_plugin):
         self.prompt_tokens, self.completion_tokens = \
@@ -63,6 +65,7 @@ class BenchmarkMetrics:
     start_time: Optional[float] = None
     total_time: float = 1.0
     n_total_queries: int = 0
+    n_time_per_output_token: float = 0.0
 
     avg_first_chunk_latency: float = -1
     avg_latency: float = -1
@@ -92,6 +95,7 @@ class BenchmarkMetrics:
             self.total_first_chunk_latency += benchmark_data.first_chunk_latency
             self.n_total_chunks += benchmark_data.n_chunks
             self.total_chunks_time += benchmark_data.n_chunks_time
+            self.n_time_per_output_token += benchmark_data.time_per_output_token
         else:
             self.n_failed_queries += 1
 
@@ -108,7 +112,7 @@ class BenchmarkMetrics:
             self.avg_prompt_tokens = self.n_total_prompt_tokens / self.n_succeed_queries
             self.avg_completion_tokens = self.n_total_completion_tokens / self.n_succeed_queries
             self.avg_token_per_seconds = self.n_total_completion_tokens / self.total_time
-            self.avg_time_per_token = self.total_time / self.n_total_completion_tokens
+            self.avg_time_per_token = self.n_time_per_output_token / self.n_succeed_queries
             self.qps = self.n_succeed_queries / self.total_time
         except ZeroDivisionError as e:
             logger.exception(e)
@@ -125,7 +129,7 @@ class BenchmarkMetrics:
             'Average QPS': round(self.qps, default_ndigits),
             'Average latency (s)': round(self.avg_latency, default_ndigits),
             'Average time to first token (s)': round(self.avg_first_chunk_latency, default_ndigits),
-            'Average time per output token (s)': round(self.avg_time_per_token, 5),
+            'Average time per output token (s)': round(self.avg_time_per_token, default_ndigits),
             'Average input tokens per request': round(self.avg_prompt_tokens, default_ndigits),
             'Average output tokens per request': round(self.avg_completion_tokens, default_ndigits),
             'Average package latency (s)': round(self.avg_chunk_time, default_ndigits),
