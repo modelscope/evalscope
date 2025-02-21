@@ -95,10 +95,11 @@ class EvalThink:
         dump_jsonl_data({'prompt': prompt, 'response': llm_response, 'answer_index': answer_index},
                         os.path.join(self.report_path, 'answer_index.jsonl'),
                         dump_mode='append')
-        if answer_index is None:
-            return -1
-        else:
-            return int(answer_index)
+        try:
+            answer_index = int(answer_index)
+        except Exception:
+            answer_index = -1
+        return answer_index
 
     def get_first_correct(self, response: str, problem: str, answer: str) -> str:
         if self.split_strategies == 'llm':
@@ -126,6 +127,17 @@ class EvalThink:
                            name=metric.replace('_', ' ').title()),
                 row=1, col=i
             )
+            # Add annotations for each data point
+            for j, y in enumerate(y_values):
+                fig.add_annotation(
+                    x=j,
+                    y=y,
+                    text=f'{y:.2f}',
+                    showarrow=False,
+                    yshift=10,
+                    row=1,
+                    col=i
+                )
 
         fig.update_layout(
             height=500,
@@ -192,6 +204,11 @@ class EvalThink:
 
         return results
 
+def evaluate(config):
+    evaluator = EvalThink(**config, split_strategies='separator')
+    results = evaluator.evaluate('outputs')
+    print(results)
+
 distill_qwen_config = dict(
     report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250218_180219',
     model_name = 'DeepSeek-R1-Distill-Qwen-7B',
@@ -208,10 +225,24 @@ math_qwen_config = dict(
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
 )
 
+r1_config = dict(
+    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_104202',
+    model_name = 'deepseek-r1',
+    tokenizer_path = 'deepseek-ai/DeepSeek-R1',
+    dataset_name = 'math_500',
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+)
+
+qwq_config = dict(
+    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_105911',
+    model_name = 'qwq-32b-preview',
+    tokenizer_path = 'Qwen/QwQ-32B-Preview',
+    dataset_name = 'math_500',
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+)
+
 if __name__ == '__main__':
-    evaluator = EvalThink(**distill_qwen_config, split_strategies='separator')
-    results = evaluator.evaluate('outputs')
-    print(results)
-    evaluator = EvalThink(**math_qwen_config, split_strategies='separator')
-    results = evaluator.evaluate('outputs')
-    print(results)
+    # evaluate(distill_qwen_config)
+    evaluate(math_qwen_config)
+    # evaluate(r1_config)
+    # evaluate(qwq_config)

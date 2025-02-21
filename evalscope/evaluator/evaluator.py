@@ -250,6 +250,7 @@ class Evaluator(object):
 
         if self.use_cache and os.path.exists(review_file_path):
             logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
+            os.remove(review_file_path)
 
         for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
             review_id, reviewer_spec = self._generate_review_id(answer_d)
