@@ -19,6 +19,9 @@ from evalscope.version import __version__
 logger = get_logger()
 
 PLOTLY_THEME = 'plotly_dark'
+REPORT_TOKEN = '@@'
+MODEL_TOKEN = '::'
+DATASET_TOKEN = ', '
 
 
 def scan_for_report_folders(root_path):
@@ -42,8 +45,9 @@ def scan_for_report_folders(root_path):
             datasets = []
             for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
                 datasets.append(os.path.basename(dataset_item).split('.')[0])
-            datasets = ','.join(datasets)
-            reports.append(f'{os.path.basename(folder)}@{os.path.basename(model_item)}:{datasets}')
+            datasets = DATASET_TOKEN.join(datasets)
+            reports.append(
+                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}')
 
     reports = sorted(reports, reverse=True)
     logger.debug(f'reports: {reports}')
@@ -51,9 +55,9 @@ def scan_for_report_folders(root_path):
 
 
 def process_report_name(report_name: str):
-    prefix, report_name = report_name.split('@')
-    model_name, datasets = report_name.split(':')
-    datasets = datasets.split(',')
+    prefix, report_name = report_name.split(REPORT_TOKEN)
+    model_name, datasets = report_name.split(MODEL_TOKEN)
+    datasets = datasets.split(DATASET_TOKEN)
     return prefix, model_name, datasets
 
 
@@ -519,8 +523,8 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         outputs=[report_list, task_config, dataset_radio, work_dir, model_name])
     def update_single_report_data(root_path, report_name):
         report_list, datasets, task_cfg = load_single_report(root_path, report_name)
-        work_dir = os.path.join(root_path, report_name.split('@')[0])
-        model_name = report_name.split('@')[1].split(':')[0]
+        work_dir = os.path.join(root_path, report_name.split(REPORT_TOKEN)[0])
+        model_name = report_name.split(REPORT_TOKEN)[1].split(MODEL_TOKEN)[0]
         return (report_list, task_cfg, gr.update(choices=datasets, value=datasets[0]), work_dir, model_name)
 
     @report_list.change(inputs=[report_list], outputs=[score_plot, score_table, sunburst_plot])
