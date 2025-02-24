@@ -112,7 +112,8 @@ class TestRun(unittest.TestCase):
                 }
             },
         )
-        run_task(task_cfg=task_cfg)
+        res = run_task(task_cfg=task_cfg)
+        print(res)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_humaneval(self):
