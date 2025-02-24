@@ -8,8 +8,6 @@
   - 指定为模型的本地路径，例如`/path/to/model`，将从本地加载模型；
   - 评测目标为模型API服务时，需要指定为服务对应的模型id，例如`Qwen2.5-0.5B-Instruct`。
 - `--model-id`: 被评测的模型的别名，用于报告展示。默认为`model`的最后一部分，例如`Qwen/Qwen2.5-0.5B-Instruct`的`model-id`为`Qwen2.5-0.5B-Instruct`。
-- `--api-url`: (仅在`eval-type=service`时有效) 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1/chat/completions`。
-- `--api-key`: (仅在`eval-type=service`时有效) 模型API端点密钥，默认为`EMPTY`
 - `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，，将解析为字典，默认参数：
   - `revision`: 模型版本，默认为`master`
   - `precision`: 模型精度，默认为`torch.float16`
@@ -34,13 +32,16 @@
   ```
 - `--chat-template`: 模型推理模板，默认为`None`，表示使用transformers的`apply_chat_template`；支持传入jinjia模版字符串，来自定义推理模板
 - `--template-type`: 模型推理模板，已弃用，参考`--chat-template`
-
+- `--api-url`: (仅在`eval-type=service`时有效) 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1/chat/completions`。
+- `--api-key`: (仅在`eval-type=service`时有效) 模型API端点密钥，默认为`EMPTY`
+- `--timeout`: (仅在`eval-type=service`时有效) 模型API请求超时时间，默认为`60`秒
 
 ## 数据集参数
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据
   - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中
+  - `query_template`: 评测数据集的query模板，指定后将使用模板生成query。例如`general_mcq`的模版为`问题：{question}\n{choices}\n答案: {answer}\n\n`，数据集的问题将填充到模板`question`字段中，选项填充到`choices`字段中，答案填充到`answer`字段中（答案填充仅对few-shot生效）
   - `system_prompt`: 评测数据集的系统prompt
   - `subset_list`: 评测数据子集列表，指定后将只使用子集数据
   - `few_shot_num`: few-shot的数量
