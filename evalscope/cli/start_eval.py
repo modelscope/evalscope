@@ -1,10 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from argparse import ArgumentParser
 
-from evalscope.arguments import add_argument
 from evalscope.cli.base import CLICommand
-from evalscope.run import run_task
 
 
 def subparser_func(args):
@@ -23,9 +20,13 @@ class EvalCMD(CLICommand):
     def define_args(parsers: ArgumentParser):
         """ define args for create pipeline template command.
         """
+        from evalscope.arguments import add_argument
+
         parser = parsers.add_parser(EvalCMD.name)
         add_argument(parser)
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
+        from evalscope.run import run_task
+
         run_task(self.args)
