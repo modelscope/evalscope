@@ -15,7 +15,7 @@ from evalscope.models import ChatGenerationModelAdapter
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
     metric_list=['AveragePass@1'],
     few_shot_num=5,
-    train_split='train',
+    train_split=None,
     eval_split='train',  # only have train split
     prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )

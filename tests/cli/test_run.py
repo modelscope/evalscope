@@ -149,7 +149,8 @@ class TestRun(unittest.TestCase):
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
-                'race',
+                'musr',
+                # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
@@ -169,8 +170,8 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
                 'mmlu_pro': {
-                    'subset_list': ['math'],
-                    'few_shot_num': 0
+                    'subset_list': ['math', 'health'],
+                    'few_shot_num': 4
                 },
                 'ceval': {
                     'subset_list': [
@@ -201,10 +202,10 @@ class TestRun(unittest.TestCase):
             debug=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 1
+                'n': 1,
+                'max_tokens': 512,
             },
             # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
-            timeout=60
         )
 
         run_task(task_cfg=task_cfg)
