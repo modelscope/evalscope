@@ -32,7 +32,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   ```
 - `--chat-template`: Model inference template, defaults to `None`, indicating the use of transformers' `apply_chat_template`; supports passing in a jinja template string to customize the inference template.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.
-- `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1/chat/completions`.
+- `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1`.
 - `--api-key`: (Valid only when `eval-type=service`) Model API endpoint key, defaults to `EMPTY`.
 - `--timeout`: (only effective when `eval-type=service`) The timeout duration for model API requests, defaulting to `60` seconds.
 

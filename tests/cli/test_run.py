@@ -142,15 +142,15 @@ class TestRun(unittest.TestCase):
 
         task_cfg = TaskConfig(
             model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1/chat/completions',
+            api_url='http://127.0.0.1:8801/v1',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'iquiz',
+                'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
-                'race',
+                # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
