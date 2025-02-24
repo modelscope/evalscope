@@ -115,7 +115,7 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
 
     for evaluator in evaluators:
         res_dict = evaluator.eval()
-        eval_results[dataset_name] = res_dict
+        eval_results[evaluator.dataset_name] = res_dict
 
     return eval_results
 
