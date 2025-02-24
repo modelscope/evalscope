@@ -71,6 +71,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')
     parser.add_argument('--api-key', type=str, default='EMPTY', help='The API key for the remote API model.')
     parser.add_argument('--api-url', type=str, default=None, help='The API url for the remote API model.')
+    parser.add_argument('--timeout', type=float, default=60, help='The timeout for the remote API model.')
     # yapf: enable
 
 

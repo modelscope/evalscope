@@ -68,6 +68,7 @@ class TaskConfig:
     seed: Optional[int] = 42
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
+    timeout: Optional[float] = 60  # Only used for server model
 
     def __post_init__(self):
         if (not self.model_id) and self.model:
