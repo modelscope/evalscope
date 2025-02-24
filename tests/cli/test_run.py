@@ -201,9 +201,10 @@ class TestRun(unittest.TestCase):
             debug=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 5
+                'n': 1
             },
-            use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525'
+            # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
+            timeout=60
         )
 
         run_task(task_cfg=task_cfg)

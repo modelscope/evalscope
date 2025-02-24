@@ -34,6 +34,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.
 - `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1/chat/completions`.
 - `--api-key`: (Valid only when `eval-type=service`) Model API endpoint key, defaults to `EMPTY`.
+- `--timeout`: (only effective when `eval-type=service`) The timeout duration for model API requests, defaulting to `60` seconds.
 
 ## Dataset Parameters
 - `--datasets`: Dataset name, supports inputting multiple datasets separated by spaces, datasets will automatically be downloaded from ModelScope, supported datasets refer to [Dataset List](./supported_dataset.md#supported-datasets).

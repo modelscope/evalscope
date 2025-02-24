@@ -25,6 +25,7 @@ class ServerModelAdapter(BaseModelAdapter):
         self.model_id = model_id
         self.api_key = api_key
         self.seed = kwargs.get('seed', None)
+        self.timeout = kwargs.get('timeout', 60)
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
 
@@ -93,7 +94,10 @@ class ServerModelAdapter(BaseModelAdapter):
     def send_request(self, request_json: dict, max_retries: int = 3) -> dict:
         for attempt in range(max_retries):
             response = requests.post(
-                self.api_url, json=request_json, headers={'Authorization': f'Bearer {self.api_key}'})
+                self.api_url,
+                json=request_json,
+                headers={'Authorization': f'Bearer {self.api_key}'},
+                timeout=self.timeout)
             if response.status_code == 200:
                 response_data = response.json()
                 return response_data
