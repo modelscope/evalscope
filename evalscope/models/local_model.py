@@ -29,7 +29,7 @@ class LocalModel:
 
         self.model_id = model_id
         self.model_revision = model_revision
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device_map
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,
