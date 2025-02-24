@@ -50,7 +50,9 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', model_adapter_cls: 'BaseMod
             model_id=task_cfg.model,
             api_key=task_cfg.api_key,
             seed=task_cfg.seed,
-            timeout=task_cfg.timeout)
+            timeout=task_cfg.timeout,
+            stream=task_cfg.stream,
+        )
     else:
         return model_adapter_cls(
             model=base_model, generation_config=task_cfg.generation_config, chat_template=task_cfg.chat_template)

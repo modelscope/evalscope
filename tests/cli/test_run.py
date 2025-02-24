@@ -197,15 +197,16 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['Level 1']
                 },
             },
-            eval_batch_size=5,
+            eval_batch_size=1,
             limit=10,
             debug=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 1
+                'n': 2
             },
             # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
-            timeout=60
+            timeout=60,
+            stream=True
         )
 
         run_task(task_cfg=task_cfg)

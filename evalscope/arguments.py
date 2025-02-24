@@ -72,6 +72,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--api-key', type=str, default='EMPTY', help='The API key for the remote API model.')
     parser.add_argument('--api-url', type=str, default=None, help='The API url for the remote API model.')
     parser.add_argument('--timeout', type=float, default=60, help='The timeout for the remote API model.')
+    parser.add_argument('--stream', action='store_true', default=False, help='Whether to stream the response.')
     # yapf: enable
 
 

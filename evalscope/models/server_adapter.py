@@ -1,5 +1,7 @@
 import openai
-from openai.types.chat import ChatCompletion
+from collections import defaultdict
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from typing import List, Optional, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
@@ -31,6 +33,7 @@ class ServerModelAdapter(BaseModelAdapter):
 
         self.seed = kwargs.get('seed', None)
         self.timeout = kwargs.get('timeout', 60)
+        self.stream = kwargs.get('stream', False)
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
 
@@ -92,13 +95,62 @@ class ServerModelAdapter(BaseModelAdapter):
             }
 
         request_json = {'model': self.model_id, 'messages': content, **infer_cfg}
+
+        if self.timeout:
+            request_json['timeout'] = self.timeout
+
+        if self.stream:
+            request_json['stream'] = self.stream
+            request_json['stream_options'] = {'include_usage': True}
+
         logger.debug(f'Request to remote API: {request_json}')
         return request_json
 
     def send_request(self, request_json: dict) -> dict:
         try:
-            response: ChatCompletion = self.client.chat.completions.create(**request_json, timeout=self.timeout)
+            response = self.client.chat.completions.create(**request_json)
+
+            if self.stream:
+                response = self._collect_stream_response(response)
+
             return response.model_dump(exclude_unset=True)
         except Exception as e:
             logger.error(f'Error when calling OpenAI API: {str(e)}')
             raise
+
+    def _collect_stream_response(self, response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
+        collected_chunks = []
+        collected_messages = defaultdict(list)
+
+        for chunk in response_stream:
+            collected_chunks.append(chunk)
+            for choice in chunk.choices:
+                if choice.delta.content is not None:
+                    collected_messages[choice.index].append(choice.delta.content)
+
+        choices = []
+        for index, messages in collected_messages.items():
+            full_reply_content = ''.join(messages)
+
+            # use the finish_reason from the last chunk that generated this choice
+            finish_reason = None
+            for chunk in reversed(collected_chunks):
+                if chunk.choices and chunk.choices[0].index == index:
+                    finish_reason = chunk.choices[0].finish_reason
+                    break
+
+            choice = Choice(
+                finish_reason=finish_reason,
+                index=index,
+                message=ChatCompletionMessage(role='assistant', content=full_reply_content))
+            choices.append(choice)
+
+        # build the final completion object
+        return ChatCompletion(
+            id=collected_chunks[0].id,
+            choices=choices,
+            created=collected_chunks[0].created,
+            model=collected_chunks[0].model,
+            object='chat.completion',
+            usage=collected_chunks[-1].usage  # use the usage from the last chunk
+        )
