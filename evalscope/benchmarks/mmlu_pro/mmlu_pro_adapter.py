@@ -15,7 +15,7 @@ SUBSET_LIST = [
 
 @Benchmark.register(
     name='mmlu_pro',
-    dataset_id='modelscope/mmlu-pro',
+    dataset_id='modelscope/MMLU-Pro',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
@@ -35,41 +35,25 @@ class MMLUProAdapter(DataAdapter):
     def load(self, **kwargs):
         # default load all data
         kwargs['subset_list'] = ['default']
-        return super().load(**kwargs)
+        data_dict = super().load(**kwargs)
+        return self.reformat_subset(data_dict, subset_key='category')
 
-    def gen_prompts(self, data_dict: dict, **kwargs) -> Dict[str, list]:
-        """
-        Generate model prompt from raw input, unify the prompt format for MMLU-Pro benchmark.
-        Return a dict with category as key and list of prompts as value.
-        """
+    def gen_prompt(self, input_d: Dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
+        if self.few_shot_num > 0:
+            prefix = self.format_fewshot_examples(few_shot_list)
+        else:
+            prefix = ''
+        query = prefix + 'Q: ' + input_d['question'] + '\n' + \
+            self.__form_options(input_d['options']) + '\n'
 
-        data_dict = data_dict['default']  # Only one subset for MMLU-Pro
-        fewshot_prompts = self.get_fewshot_examples(data_dict)
+        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
+        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
 
-        #  Use the category as key to group the prompts
-        res_dict = defaultdict(list)
-        # generate prompts for each test sample
-        for entry in data_dict[self.eval_split]:
-            subset_name = entry['category']
-            if subset_name not in self.subset_list:
-                continue
-            prefix = fewshot_prompts[subset_name]
-            query = prefix + 'Q: ' + entry['question'] + '\n' + \
-                self.__form_options(entry['options']) + '\n'
-
-            full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-            prompt_d = {'data': [full_prompt], 'system_prompt': self.system_prompt, AnswerKeys.RAW_INPUT: entry}
-
-            res_dict[subset_name].append(prompt_d)
-        return res_dict
-
-    def get_fewshot_examples(self, data_dict: dict):
+    def format_fewshot_examples(self, few_shot_list):
         # load few-shot prompts for each category
-        prompts = {c: '' for c in self.subset_list}
-        for index, d in enumerate(data_dict[self.train_split]):
-            if index >= self.few_shot_num:
-                break
-            prompts[d['category']] += 'Q:' + ' ' + d['question'] + '\n' + \
+        prompts = ''
+        for index, d in enumerate(few_shot_list):
+            prompts += 'Q: ' + d['question'] + '\n' + \
                 self.__form_options(d['options']) + '\n' + \
                 d['cot_content'] + '\n\n'
         return prompts

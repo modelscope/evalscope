@@ -147,22 +147,24 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 'iquiz',
-                # 'ifeval',
-                # 'mmlu',
-                # 'mmlu_pro',
-                # 'race',
-                # 'trivia_qa',
-                # 'cmmlu',
-                # 'humaneval',
-                # 'gsm8k',
-                # 'bbh',
-                # 'competition_math',
-                # 'math_500',
-                # 'aime24',
-                # 'gpqa',
-                # 'arc',
-                # 'ceval',
-                # 'hellaswag',
+                'ifeval',
+                'mmlu',
+                'mmlu_pro',
+                'musr',
+                'process_bench',
+                'race',
+                'trivia_qa',
+                'cmmlu',
+                'humaneval',
+                'gsm8k',
+                'bbh',
+                'competition_math',
+                'math_500',
+                'aime24',
+                'gpqa',
+                'arc',
+                'ceval',
+                'hellaswag',
             ],
             dataset_args={
                 'mmlu': {
@@ -170,8 +172,8 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
                 'mmlu_pro': {
-                    'subset_list': ['math'],
-                    'few_shot_num': 0
+                    'subset_list': ['math', 'health'],
+                    'few_shot_num': 4
                 },
                 'ceval': {
                     'subset_list': [
@@ -196,17 +198,22 @@ class TestRun(unittest.TestCase):
                 'competition_math': {
                     'subset_list': ['Level 1']
                 },
+                'process_bench': {
+                    'subset_list': ['gsm8k'],
+                },
+                'musr': {
+                    'subset_list': ['murder_mysteries']
+                },
             },
-            eval_batch_size=1,
-            limit=10,
+            eval_batch_size=5,
+            limit=5,
             debug=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 2
+                'n': 1,
+                'max_tokens': 512,
             },
             # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
-            timeout=60,
-            stream=True
         )
 
         run_task(task_cfg=task_cfg)

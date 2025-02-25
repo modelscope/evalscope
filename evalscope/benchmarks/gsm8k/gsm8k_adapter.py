@@ -20,7 +20,7 @@ logger = get_logger()
     subset_list=['main'],
     metric_list=['AverageAccuracy'],
     few_shot_num=4,
-    train_split='train',
+    train_split=None,
     eval_split='test',
     prompt_template="Question: {query}\nLet's think step by step\nAnswer:",
 )

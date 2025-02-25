@@ -47,7 +47,7 @@ class IFEvalAdapter(DataAdapter):
     def match(self, gold: Any, pred: Any) -> Dict:
         return process_results(gold, [pred])
 
-    def compute_metric(self, review_res_list: List[dict]) -> Any:
+    def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:
         # aggregate review results
         res_dict = defaultdict(list)
         for res in review_res_list:

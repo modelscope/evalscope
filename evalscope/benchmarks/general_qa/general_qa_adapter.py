@@ -106,7 +106,7 @@ class GeneralQAAdapter(DataAdapter):
         res.update(bleu_dict)
         return res
 
-    def compute_metric(self, review_res_list: List[dict]) -> List[dict]:
+    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
 
