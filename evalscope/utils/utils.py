@@ -166,8 +166,8 @@ class ResponseParser:
             text: The text to parse.
         """
         patterns = [
-            r'[Aa]nswer:\s*(\w+)',
             r'answer is \(?(\w+)\)?',
+            r'[Aa]nswer:\s*(\w+)',
             r'[Tt]he correct answer is:\s*(\w+)',
             r'[Tt]he correct answer is:\n\s*(\w+)',
             r'[Tt]he correct answer is:\n\n-\s*(\w+)',

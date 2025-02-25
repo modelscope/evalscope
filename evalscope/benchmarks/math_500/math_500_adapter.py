@@ -30,22 +30,8 @@ class Math500Adapter(DataAdapter):
     def load(self, **kwargs):
         # default load all levels
         kwargs['subset_list'] = ['default']
-        return super().load(**kwargs)
-
-    def gen_prompts(self, data_dict: dict) -> dict:
-        res_dict: dict = defaultdict(list, {key: [] for key in self.subset_list})
-
-        #  use level as subset
-        for sub_name, sub_data_dict in data_dict.items():
-            for sample_d in sub_data_dict[self.eval_split]:
-                level = f"Level {sample_d['level']}"
-                if level not in self.subset_list:
-                    continue
-                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=None)
-                prompt_d[AnswerKeys.RAW_INPUT] = sample_d
-                res_dict[level].append(prompt_d)
-
-        return res_dict
+        data_dict = super().load(**kwargs)
+        return self.reformat_subset(data_dict, subset_key='level', format='Level {}')
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """

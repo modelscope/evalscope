@@ -171,11 +171,6 @@ class BBHAdapter(DataAdapter):
                 prompt_d[AnswerKeys.RAW_INPUT] = sample_d_new
                 res_dict[sub_name].append(prompt_d)
 
-        rnd = random.Random()
-        rnd.seed(42)
-        for k, v in res_dict.items():
-            rnd.shuffle(v)
-
         return res_dict
 
     def get_gold_answer(self, input_d: dict) -> str:
