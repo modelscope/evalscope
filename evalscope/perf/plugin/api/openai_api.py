@@ -85,7 +85,7 @@ class OpenaiPlugin(ApiPluginBase):
             payload['stop'] = param.stop
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
-            payload['stream_options'] = {'include_usage': True}
+            payload['stream_options'] = {'include_usage': False}
         if param.stop_token_ids is not None:
             payload['stop_token_ids'] = param.stop_token_ids
         if param.temperature is not None:
@@ -157,5 +157,13 @@ class OpenaiPlugin(ApiPluginBase):
                 input_tokens += len(self.tokenizer.encode(request['messages'][0]['content']))
                 output_tokens += len(self.tokenizer.encode(full_response_content))
         else:
-            logger.warning('No usage information found. Please specify `--tokenizer-path` to generate usage details.')
+            raise ValueError('Error: Unable to retrieve usage information\n\n'
+                             'This error occurs when:\n'
+                             '1. The API response does not contain usage data, AND\n'
+                             '2. No tokenizer has been specified or found.\n\n'
+                             'To resolve this issue, do ONE of the following:\n'
+                             "a) Ensure that the API you're using supports and returns usage information, OR\n"
+                             'b) Specify a tokenizer using the `--tokenizer-path` parameter.\n\n'
+                             'If you continue to experience issues, '
+                             'please open an issue on our GitHub repository https://github.com/modelscope/evalscope .')
         return input_tokens, output_tokens
