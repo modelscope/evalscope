@@ -258,7 +258,7 @@ class TruthfulQaAdapter(DataAdapter):
 
         return {'multiple_choice': {'mc1': mc1(mc1_lls), 'mc2': mc2(mc2_lls)}}  # or {'generation': xxx}
 
-    def compute_metric(self, review_res_list: List[dict]) -> List[dict]:
+    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
         """
         Compute evaluation result by specific metric for each subset.
 

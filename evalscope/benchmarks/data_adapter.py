@@ -26,6 +26,7 @@ class DataAdapter(ABC):
                  prompt_template: Optional[str] = None,
                  system_prompt: Optional[str] = None,
                  query_template: Optional[str] = None,
+                 pretty_name: Optional[str] = None,
                  **kwargs):
         """
         Data Adapter for the benchmark. You need to implement the following methods:
@@ -55,6 +56,7 @@ class DataAdapter(ABC):
         self.prompt_template = prompt_template
         self.system_prompt = system_prompt
         self.query_template = query_template
+        self.pretty_name = pretty_name
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
 
@@ -212,7 +214,7 @@ class DataAdapter(ABC):
         else:
             return data_list[:k]
 
-    def compute_metric(self, review_res_list: Union[dict, list]) -> List[dict]:
+    def compute_metric(self, review_res_list: Union[dict, list], **kwargs) -> List[dict]:
         """
         Compute evaluation result by specific metrics.
 

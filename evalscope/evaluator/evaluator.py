@@ -292,7 +292,8 @@ class Evaluator(object):
 
             review_res_list.append(review_res)
 
-        metric_score: List[dict] = self.data_adapter.compute_metric(review_res_list=review_res_list)
+        metric_score: List[dict] = self.data_adapter.compute_metric(
+            review_res_list=review_res_list, reviews_list=reviews_list)
 
         return metric_score
 

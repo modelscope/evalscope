@@ -25,6 +25,7 @@ class BenchmarkMeta:
     prompt_template: Optional[str] = None
     system_prompt: Optional[str] = None
     query_template: Optional[str] = None
+    pretty_name: Optional[str] = None
 
     def _update(self, args: dict):
         if args.get('local_path'):

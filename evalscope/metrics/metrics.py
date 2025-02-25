@@ -13,6 +13,9 @@ from typing import TYPE_CHECKING, Dict, List, Union
 
 
 def mean(arr: list):
+    if not arr:
+        return 0.0
+
     if isinstance(arr[0], list):
         arr = [item for sublist in arr for item in sublist]
     return sum(arr) / len(arr)
@@ -56,6 +59,18 @@ def matthews_corrcoef(items):
     golds = unzipped_list[0]
     preds = unzipped_list[1]
     return sklearn.metrics.matthews_corrcoef(golds, preds)
+
+
+def simple_f1_score(scores: tuple) -> float:
+    score1 = scores[0]
+    score2 = scores[1]
+    score1 = np.mean(score1) if len(score1) > 0 else 0.0
+    score2 = np.mean(score2) if len(score2) > 0 else 0.0
+
+    if score1 == 0 and score2 == 0:
+        return 0.0
+    else:
+        return 2 * score1 * score2 / (score1 + score2)
 
 
 def f1_score(items):
@@ -126,11 +141,17 @@ def weighted_mean(items: List) -> float:
 
 
 def micro_mean(items):
-    return sum([item.score * item.num for item in items]) / sum([item.num for item in items])
+    try:
+        return sum([item.score * item.num for item in items]) / sum([item.num for item in items])
+    except ZeroDivisionError:
+        return 0.0
 
 
 def macro_mean(items):
-    return sum([item.score for item in items]) / len(items)
+    try:
+        return sum([item.score for item in items]) / len(items)
+    except ZeroDivisionError:
+        return 0.0
 
 
 def weighted_perplexity(items):

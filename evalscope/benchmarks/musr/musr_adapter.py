@@ -10,6 +10,7 @@ from evalscope.utils.utils import ResponseParser
 
 @Benchmark.register(
     name='musr',
+    pretty_name='MuSR',
     dataset_id='AI-ModelScope/MuSR',
     model_adapter=ChatGenerationModelAdapter,
     subset_list=['murder_mysteries', 'object_placements', 'team_allocation'],
