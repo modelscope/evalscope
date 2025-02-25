@@ -319,7 +319,7 @@ export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server 
 ```shell
 evalscope eval \
  --model qwen2.5 \
- --api-url http://127.0.0.1:8801/v1/chat/completions \
+ --api-url http://127.0.0.1:8801/v1 \
  --api-key EMPTY \
  --eval-type service \
  --datasets gsm8k \

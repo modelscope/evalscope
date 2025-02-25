@@ -32,9 +32,12 @@
   ```
 - `--chat-template`: 模型推理模板，默认为`None`，表示使用transformers的`apply_chat_template`；支持传入jinjia模版字符串，来自定义推理模板
 - `--template-type`: 模型推理模板，已弃用，参考`--chat-template`
-- `--api-url`: (仅在`eval-type=service`时有效) 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1/chat/completions`。
-- `--api-key`: (仅在`eval-type=service`时有效) 模型API端点密钥，默认为`EMPTY`
-- `--timeout`: (仅在`eval-type=service`时有效) 模型API请求超时时间，默认为`60`秒
+
+**以下参数仅在`eval-type=service`时有效：**
+- `--api-url`: 模型API端点，默认为`None`；支持传入本地或远端的OpenAI API格式端点，例如`http://127.0.0.1:8000/v1`。
+- `--api-key`: 模型API端点密钥，默认为`EMPTY`
+- `--timeout`: 模型API请求超时时间，默认为`None`
+- `--stream`:  是否使用流式传输，默认为`False`
 
 ## 数据集参数
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
