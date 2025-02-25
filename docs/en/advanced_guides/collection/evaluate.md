@@ -11,7 +11,7 @@ from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen2.5',
-    api_url='http://127.0.0.1:8801/v1/chat/completions',
+    api_url='http://127.0.0.1:8801/v1',
     api_key='EMPTY',
     eval_type=EvalType.SERVICE,
     datasets=['data_collection'],
