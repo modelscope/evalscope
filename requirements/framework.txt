@@ -4,6 +4,7 @@ accelerate
 cachetools
 datasets>=3.0.0,<=3.2.0
 editdistance
+immutabledict
 jieba
 jsonlines
 langdetect

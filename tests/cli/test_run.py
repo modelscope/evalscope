@@ -112,7 +112,8 @@ class TestRun(unittest.TestCase):
                 }
             },
         )
-        run_task(task_cfg=task_cfg)
+        res = run_task(task_cfg=task_cfg)
+        print(res)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_humaneval(self):
@@ -141,7 +142,7 @@ class TestRun(unittest.TestCase):
 
         task_cfg = TaskConfig(
             model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1/chat/completions',
+            api_url='http://127.0.0.1:8801/v1',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from evalscope.constants import DEFAULT_MODEL_CACHE_DIR, DEFAULT_MODEL_REVISION, EvalType
 from evalscope.utils.logger import get_logger
+from evalscope.utils.model_utils import get_device
 
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
@@ -28,7 +29,7 @@ class LocalModel:
 
         self.model_id = model_id
         self.model_revision = model_revision
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device_map
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,
@@ -64,7 +65,7 @@ def get_local_model(task_cfg: 'TaskConfig') -> Optional[LocalModel]:
     if task_cfg.eval_type != EvalType.CHECKPOINT:
         return None
     else:
-        device_map = task_cfg.model_args.get('device_map', 'auto')
+        device_map = task_cfg.model_args.get('device_map', get_device())
         cache_dir = task_cfg.model_args.get('cache_dir', None)
         model_precision = task_cfg.model_args.get('precision', 'torch.float16')
         model_revision = task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION)
