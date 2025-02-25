@@ -85,7 +85,7 @@ class OpenaiPlugin(ApiPluginBase):
             payload['stop'] = param.stop
         if param.stream is not None and param.stream:
             payload['stream'] = param.stream
-            payload['stream_options'] = {'include_usage': False}
+            payload['stream_options'] = {'include_usage': True}
         if param.stop_token_ids is not None:
             payload['stop_token_ids'] = param.stop_token_ids
         if param.temperature is not None:
