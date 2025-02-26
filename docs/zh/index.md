@@ -63,6 +63,7 @@ experiments/speed_benchmark/index.md
 :::{toctree}
 :hidden:
 :caption: 📖 最佳实践
+best_practice/think_eval.md
 best_practice/deepseek_r1_distill.md
 best_practice/swift_integration.md
 best_practice/llm_full_stack.md

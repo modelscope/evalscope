@@ -10,14 +10,14 @@ from plotly.subplots import make_subplots
 from tqdm.contrib.concurrent import thread_map
 from typing import List
 
-from evalscope.third_party.thinkbench.tools.llm import request_local, request_qwen
+from evalscope.third_party.thinkbench.tools.llm import request_url
 from evalscope.third_party.thinkbench.tools.utils import extract_answer
 from evalscope.utils.io_utils import dump_jsonl_data
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
 class EvalThink:
-    def __init__(self, report_path, tokenizer_path, model_name, dataset_name, subsets, split_strategies='llm'):
+    def __init__(self, report_path, tokenizer_path, model_name, dataset_name, subsets, split_strategies='llm', judge_config=None):
         self.report_path = report_path
         self.reformat_template = open(os.path.join(cur_path, 'resources/reformat_template.txt'), 'r').read()
         self.critique_template = open(os.path.join(cur_path, 'resources/critique_template.txt'), 'r').read()
@@ -30,6 +30,7 @@ class EvalThink:
         self.subsets = subsets
         self.metrics = ['token_efficiency', 'completion_len', 'thought_num', 'accuracy']
         self.split_strategies = split_strategies  # split by llm, keywords, separator
+        self.judge_config = judge_config
 
     @lru_cache(maxsize=None)
     def get_think_part(self, text):
@@ -68,7 +69,7 @@ class EvalThink:
     def split_by_llm(self, response, problem) -> List[str]:
         response = response.replace('\n', ' ') # remove newline characters
         prompt = self.reformat_template.format(problem=problem, response=response)
-        llm_response = request_local(prompt)
+        llm_response = request_url(self.judge_config, prompt)
         return llm_response.split('\n\n')
 
     def split_by_keywords(self, text) -> List[str]:
@@ -89,7 +90,7 @@ class EvalThink:
         tagged_response = tagged_response.strip()
 
         prompt = self.critique_template.format(problem=problem, answer=answer, tagged_response=tagged_response)
-        llm_response = request_local(prompt)
+        llm_response = request_url(self.judge_config, prompt)
         answer_index = extract_answer(llm_response)
 
         dump_jsonl_data({'prompt': prompt, 'response': llm_response, 'answer_index': answer_index},
@@ -110,7 +111,11 @@ class EvalThink:
             text_list = self.split_by_separator(response)
 
         answer_index = self.get_answer_index(text_list, problem, answer)
-        first_correct = '\n\n'.join(text_list[: answer_index])
+
+        if answer_index == -1:  # no correct answer found
+            first_correct = ''
+        else:
+            first_correct = '\n\n'.join(text_list[: answer_index])
         return first_correct
 
     def plot_metrics(self, results, output_dir):
@@ -174,12 +179,12 @@ class EvalThink:
         return df[bools].head(count)
 
 
-    def evaluate(self, output_dir):
+    def evaluate(self, output_dir, max_tokens=8000, count=50):
         for subset in self.subsets:
             review_path = os.path.join(self.report_path, 'reviews', self.model_name, f'{self.dataset_name}_{subset}.jsonl')
             review_df = pd.read_json(review_path, lines=True)
 
-            review_df = self.filter_df(review_df, response_len=8000, count=50)
+            review_df = self.filter_df(review_df, response_len=max_tokens, count=count)
 
             results = thread_map(
                 self.process_item,
@@ -204,17 +209,25 @@ class EvalThink:
 
         return results
 
-def evaluate(config):
-    evaluator = EvalThink(**config, split_strategies='separator')
-    results = evaluator.evaluate('outputs')
+def run_task(config, output_dir='outputs', max_tokens=8000, count=50):
+    evaluator = EvalThink(**config,)
+    results = evaluator.evaluate(output_dir, max_tokens, count)
     print(results)
+
+judge_config = dict(
+    api_key='EMPTY',
+    base_url='http://0.0.0.0:8801/v1',
+    model_name='Qwen2.5-72B-Instruct',
+)
 
 distill_qwen_config = dict(
     report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250218_180219',
     model_name = 'DeepSeek-R1-Distill-Qwen-7B',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
     dataset_name = 'math_500',
-    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 math_qwen_config = dict(
@@ -222,7 +235,8 @@ math_qwen_config = dict(
     model_name = 'Qwen2.5-Math-7B-Instruct',
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
-    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator'
 )
 
 r1_config = dict(
@@ -230,7 +244,8 @@ r1_config = dict(
     model_name = 'deepseek-r1',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1',
     dataset_name = 'math_500',
-    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator'
 )
 
 qwq_config = dict(
@@ -238,11 +253,12 @@ qwq_config = dict(
     model_name = 'qwq-32b-preview',
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
     dataset_name = 'math_500',
-    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator'
 )
 
 if __name__ == '__main__':
-    # evaluate(distill_qwen_config)
-    evaluate(math_qwen_config)
-    # evaluate(r1_config)
-    # evaluate(qwq_config)
+    run_task(distill_qwen_config)
+    # run_task(math_qwen_config)
+    # run_task(r1_config)
+    # run_task(qwq_config)

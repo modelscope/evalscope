@@ -2,6 +2,20 @@ import os
 from openai import OpenAI
 
 
+def request_url(llm_config, content):
+    try:
+        client = OpenAI(
+            api_key=llm_config['api_key'],
+            base_url=llm_config['base_url'],
+        )
+        completion = client.chat.completions.create(
+            model=llm_config['model_name'],
+            messages=[{'role': 'user', 'content': content}]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(e)
+
 def request_qwen(content):
     try:
         client = OpenAI(
@@ -10,7 +24,7 @@ def request_qwen(content):
         )
 
         completion = client.chat.completions.create(
-            model='qwen-plus',
+            model='qwen-max',
             messages=[{'role': 'user', 'content': content}]
         )
         return completion.choices[0].message.content

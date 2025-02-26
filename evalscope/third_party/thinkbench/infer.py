@@ -19,7 +19,7 @@ def eval_distill_qwen():
             'max_tokens': 20000,  # avoid exceed max length
             'temperature': 0.6,
             'top_p': 0.95,
-            'n': 3,
+            'n': 1,
         },
     )
     run_task(task_config)
