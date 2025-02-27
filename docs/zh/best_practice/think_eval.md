@@ -152,6 +152,25 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
   
 - **子思维链数量**：Qwen2.5-Math-7B-Instruct未生成多余的子思维链，显示出较高的专注度。而QwQ-32B-Preview和DeepSeek-R1-Distill-Qwen-7B则产生了更多的子思维链，显示出其在推理过程中尝试了多种思维路径。
 
+## Tips
+
+:::{card}
+
+💡 在撰写这篇最佳实践的过程中，我积累了一些心得与大家分享：
+
+1. **关于思考效率评测指标的定义**：
+    - 本文借鉴了文献[^1]和文献[^2]对“过度思考”（overthinking）和“思考不足”（underthinking）的定义，提出了token效率这一指标。然而，这个指标主要关注生成token数量这一方面，未能涵盖模型思考过程的全部细节。
+    - 子思维链数量的计算采用了启发式方法，即通过预定义一些常见关键词来识别。需要注意的是，不同模型可能需要不同的关键词集合，以准确捕捉其思考方式。
+
+2. **关于指标的适用范围**：
+    - 目前，这些指标主要在数学推理数据集上应用，因此可能无法全面反映模型在其他应用场景下的表现。例如，在开放性问答或需要创造性回复的场景中，这些指标可能不够充分。
+
+3. **关于token效率指标的计算**：
+    - 在实现过程中，我们依赖一个额外的Judge模型来判断模型推理步骤的正确性。参考ProcessBench[^4]的工作，这一任务对现有模型来说颇具挑战性，通常需要一个能力较强的模型来进行判断。
+    - 如果Judge模型做出错误判断，可能会影响到token效率指标的准确性，这也意味着在选择Judge模型时需格外谨慎。
+
+:::
+
 ## 总结
 
 通过本最佳实践，我们了解了如何使用EvalScope评测模型的思考效率。希望本最佳实践能够帮助大家更好地理解模型的思考效率，并为大家的科研工作提供参考，训练出更高效的模型。
@@ -161,3 +180,4 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 [^1]: Wang, Y. et al. Thoughts Are All Over the Place: On the Underthinking of o1-Like LLMs. Preprint at https://doi.org/10.48550/arXiv.2501.18585 (2025).
 [^2]: Chen, X. et al. Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs. Preprint at https://doi.org/10.48550/arXiv.2412.21187 (2025).
 [^3]: Think Less, Achieve More: Cut Reasoning Costs by 50% Without Sacrificing Accuracy. https://novasky-ai.github.io/posts/reduce-overthinking/.
+[^4]: Zheng, C. et al. ProcessBench: Identifying Process Errors in Mathematical Reasoning. Preprint at https://doi.org/10.48550/arXiv.2412.06559(2024).
