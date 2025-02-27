@@ -102,7 +102,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         # Get input ids
         inputs = self.tokenizer(
             formatted_prompts, return_tensors='pt', padding=True, truncation=True,
-            padding_side='left').to(self.device)  # padding_side='left' is important for chat model
+            padding_side='left').to(self.model.device)  # padding_side='left' is important for chat model
         input_ids = inputs['input_ids']
 
         # Run inference
