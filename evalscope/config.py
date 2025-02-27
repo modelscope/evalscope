@@ -69,6 +69,7 @@ class TaskConfig:
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
     timeout: Optional[float] = None  # Only used for server model
+    stream: bool = False  # Only used for server model
 
     def __post_init__(self):
         if (not self.model_id) and self.model:
