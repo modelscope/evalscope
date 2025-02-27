@@ -8,7 +8,7 @@
 
 - **Overthinking（过度思考）**[^2] 现象则表现为模型在不必要的情况下生成过长的思维链，浪费了大量的计算资源。例如，对于简单的"2+3=？"这样的问题，某些长推理模型可能会消耗超过900个token来探索多种解题策略。尽管这种思维链策略对于复杂问题的解答非常有帮助，但在应对简单问题时，反复验证已有的答案和进行过于宽泛的探索显然是一种计算资源的浪费。[^3]
 
-这两种现象都凸显了一个关键问题：如何在保证答案质量的同时，提高模型的思考效率？换句话说，**我们希望模型能够在尽可能短的输出中获取正确的答案**。而在本最佳实践中，我们将在使用[MATH-500](https://www.modelscope.cn/datasets/AI-ModelScope/MATH-500)数据集上衡量QwQ-32B-Preview、Qwen2.5-Math-7B-Instruct、DeepSeek-R1-Distill-Qwen-7B等模型的思考效率，从token效率、模型思考长度、子思维链数量和准确率四个维度来评估模型的表现，让我们一起开始吧。
+这两种现象都凸显了一个关键问题：如何在保证答案质量的同时，提高模型的思考效率？换句话说，**我们希望模型能够在尽可能短的输出中获取正确的答案**。而在本最佳实践中，我们将在使用[MATH-500](https://www.modelscope.cn/datasets/AI-ModelScope/MATH-500)数据集上衡量DeepSeek-R1-Distill-Qwen-7B等模型的思考效率，从token效率、模型思考长度、子思维链数量和准确率四个维度来评估模型的表现，让我们一起开始吧。
 
 
 ## 安装依赖
@@ -85,7 +85,7 @@ run_task(task_config)
 
 在获取模型的推理结果后，我们便可以着手评估其思考效率。在开始之前，我们需要介绍评估过程中涉及的几个关键指标：token效率、模型思考长度以及子思维链数量。
 
-- **模型思考长度**：这是指模型在推理过程中生成的长思维链的token数量。对于O1/R1类型的推理模型，该指标表示`</think>`标志前的token数量；而对于像Qwen2.5-Math-7B-Instruct这样的非推理模型，则使用模型输出的所有token数量。
+- **模型思考长度**：这是指模型在推理过程中生成的长思维链的token数量。对于O1/R1类型的推理模型，该指标表示`</think>`标志前的token数量。
 
 - **子思维链数量**：这一指标表示模型在推理过程中生成的不同思维路径的数量。具体来说，是通过统计模型生成的标志词（如`alternatively`、`but wait`、`let me reconsider`等）的出现次数来计算的。这反映了模型在推理中切换思路的频率。
 
@@ -136,7 +136,7 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 ![DeepSeek-R1-Distill-Qwen-7B思考效率](./images/DeepSeek-R1-Distill-Qwen-7B_math_500_metrics.png)
 *图1：DeepSeek-R1-Distill-Qwen-7B思考效率*
 
-此外，我们还评测了QwQ-32B-Preview和Qwen2.5-Math-7B-Instruct的思考效率，结果如下：
+使用相同的方法，我们还对另一款推理模型QwQ-32B-Preview进行了评测。此外，我们也评测了一个非推理模型Qwen2.5-Math-7B-Instruct（将模型输出的所有token视为思考过程），以便观察不同类型模型的表现。具体结果如下：
 
 ![QwQ-32B-Preview思考效率](./images/qwq-32b-preview_math_500_metrics.png)
 *图2：QwQ-32B-Preview思考效率*
@@ -144,13 +144,13 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 ![Qwen2.5-Math-7B-Instruct思考效率](./images/Qwen2.5-Math-7B-Instruct_math_500_metrics.png)
 *图3：Qwen2.5-Math-7B-Instruct思考效率*
 
-从评测结果可以看出，三个模型的表现与已有研究[^1] [^2]的结论一致，即模型的输出长度会随着问题难度的增加而增加，推理模型在复杂问题上能够逐渐提高其token效率。具体表现如下：
+通过分析这些折线图，我们可以得出一些有趣的结论：
 
-- **Token效率**：Qwen2.5-Math-7B-Instruct表现最佳，其次是QwQ-32B-Preview，而DeepSeek-R1-Distill-Qwen-7B稍逊一筹。这表明Qwen2.5-Math-7B-Instruct在解题过程中更能高效地接近正确答案。
-  
-- **模型思考长度**：Qwen2.5-Math-7B-Instruct作为非推理模型，其输出长度最短，这意味着它在提供答案时更为简洁直接。相比之下，QwQ-32B-Preview和DeepSeek-R1-Distill-Qwen-7B则生成了较长的推理路径，可能是由于对问题的多重分析和策略探索所致。
-  
-- **子思维链数量**：Qwen2.5-Math-7B-Instruct未生成多余的子思维链，显示出较高的专注度。而QwQ-32B-Preview和DeepSeek-R1-Distill-Qwen-7B则产生了更多的子思维链，显示出其在推理过程中尝试了多种思维路径。
+- **问题难度与模型表现**：随着问题难度的增加，三个模型的正确率都有所下降，同时输出长度不断增加。这表明模型在解答更复杂的问题时需要更长的“思考时间”，这与Inference-Time Scaling现象一致。
+
+- **O1/R1类推理模型的表现**：对于O1/R1推理模型，随着问题难度的提升，token效率也有所提高（DeepSeek-R1-Distill-Qwen-7B从35%增长到51%，QwQ-32B-Preview从44%增长到61%）。这表明模型在简单问题上容易出现过度思考，即对答案进行反复验证。在复杂问题上，模型生成更多的子思维链，显示其尝试多种不同方法来解决问题。这提示我们需要让模型在简单问题上更加高效，避免资源浪费；同时，在复杂问题上，可以探索多种推理策略，以便更快锁定正确解答路径并提升整体解题效率。
+
+- **非推理模型的表现**：非推理模型的token效率没有表现出明显的递增趋势，但由于缺乏子思维链，其token效率相比推理模型更高，输出token数量仅为推理模型的三分之一。这表明，像Qwen2.5-Math-7B-Instruct这样专门训练的数学模型在数学问题上效率上优于通用推理模型，这提示我们在特定领域中训练垂直领域模型可能是一种更有效的方法。通过专注于特定任务和领域，这些模型能够更高效地完成任务，避免不必要的复杂推理过程。
 
 ## Tips
 
