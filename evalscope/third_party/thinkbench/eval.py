@@ -148,8 +148,8 @@ class EvalThink:
                 )
 
         fig.update_layout(
-            height=800,  # Adjust height for 2x2 layout
-            width=800,   # Adjust width for 2x2 layout
+            height=1200,  # Adjust height for 2x2 layout
+            width=1200,   # Adjust width for 2x2 layout
             title_text=f'Evaluation Metrics for {self.model_name} on {self.dataset_name}',
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
         )
