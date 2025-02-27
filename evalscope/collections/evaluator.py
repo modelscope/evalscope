@@ -234,6 +234,12 @@ class EvaluatorCollection:
     def get_reviews(self, answers):
         review_file_path = os.path.join(self.outputs.reviews_dir, self.task_cfg.model_id)
         os.makedirs(review_file_path, exist_ok=True)
+
+        if self.task_cfg.use_cache and os.path.exists(review_file_path):
+            logger.warning(
+                f'Ignore use_cache={self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
+            os.remove(review_file_path)
+
         reviews = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting reviews'):
             evaluator = self.evaluators[sample.dataset_name]

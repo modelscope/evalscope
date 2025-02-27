@@ -185,6 +185,8 @@ dataset_args={ # EvalScope内置支持，无需指定数据集ID
 },
 ```
 
+其他可用的数据集包括`gsm8k`, `aime25`等，详情参考[支持的数据集](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
+
 ## 评测结果可视化
 
 EvalScope支持可视化结果，可以查看模型具体的输出。
@@ -212,19 +214,23 @@ evalscope app
   <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/distill/detail.png" alt="alt text" width="100%">
 </p>
 
+
 ## Tips
 
-在这里分享一下评测时可能会踩的一些“坑”：
+:::{card}
 
-1. 模型生成配置：
+💡 在这里分享一下评测时可能会踩的一些“坑”：
+
+1. **模型生成配置**：
     - max_tokens设置：确保将max_tokens设置为较大的值（通常需要在8000以上）。如果设置过低，模型可能会在输出完整答案前被截断。
     - 回复数量n配置：在本次评测中，每个请求生成的回复数量n设置为5，而在R1报告中，n为64。读者可以根据需求调整此参数来平衡评测速度与结果的多样性。
     - 配置stream：stream参数设置为True，避免模型在生成较长答案时超时。
-2. 数据集的提示模版设置：
+2. **数据集的提示模版设置**：
     - 本文采用了R1报告中的推荐设置，提示模版为："Please reason step by step, and put your final answer within \boxed{}."；同时，未设置system prompt。确保提示模版的正确性对于生成预期的结果至关重要。
     - 评测Reasoning模型需要设置0-shot，过于复杂的prompt或者few-shot都有可能降低模型的性能。
-3. 生成答案的解析和匹配：
+3. **生成答案的解析和匹配**：
     - 我们复用了Qwen-Math工作中的解析方法，该方法基于规则进行答案解析。然而，这种基于规则的解析可能会导致匹配错误，从而对报告的指标产生轻微影响。建议在使用结果时，多使用评测结果可视化功能，查看解析结果是否存在误差。
+:::
 
 ## 总结
 
