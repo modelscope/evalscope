@@ -22,6 +22,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
+    prompt_template='请回答问题\n{query}',
 )
 class GeneralQAAdapter(DataAdapter):
     # TODO: set few_shot_num
@@ -62,10 +63,8 @@ class GeneralQAAdapter(DataAdapter):
             logger.warning('The history is not included in the prompt for GeneralQA. \
                            To be supported in the future.')
 
-        prompt = input_d.get('question', '') or input_d.get('query', '')
-
-        # if len(history) > 0:
-        #     prompt = '\n'.join(history) + '\n' + prompt
+        query = input_d.get('question', '') or input_d.get('query', '')
+        prompt = self.prompt_template.format(query=query)
         return {'data': [prompt], 'system_prompt': self.system_prompt}
 
     def get_gold_answer(self, input_d: dict) -> str:
@@ -107,7 +106,7 @@ class GeneralQAAdapter(DataAdapter):
         res.update(bleu_dict)
         return res
 
-    def compute_metric(self, review_res_list: List[dict]) -> List[dict]:
+    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
 

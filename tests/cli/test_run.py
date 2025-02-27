@@ -101,7 +101,8 @@ class TestRun(unittest.TestCase):
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
                     'subset_list': [
                         'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
-                    ]
+                    ],
+                    'query_template': 'Question: {question}\n{choices}\nAnswer: {answer}'  # 问题模板
                 },
                 'general_qa': {
                     'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
@@ -111,7 +112,8 @@ class TestRun(unittest.TestCase):
                 }
             },
         )
-        run_task(task_cfg=task_cfg)
+        res = run_task(task_cfg=task_cfg)
+        print(res)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_humaneval(self):
@@ -140,27 +142,29 @@ class TestRun(unittest.TestCase):
 
         task_cfg = TaskConfig(
             model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1/chat/completions',
+            api_url='http://127.0.0.1:8801/v1',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'iquiz',
-                # 'ifeval',
-                # 'mmlu',
-                # 'mmlu_pro',
-                # 'race',
-                # 'trivia_qa',
-                # 'cmmlu',
-                # 'humaneval',
-                # 'gsm8k',
-                # 'bbh',
+                'iquiz',
+                'ifeval',
+                'mmlu',
+                'mmlu_pro',
+                'musr',
+                'process_bench',
+                'race',
+                'trivia_qa',
+                'cmmlu',
+                'humaneval',
+                'gsm8k',
+                'bbh',
                 'competition_math',
                 'math_500',
                 'aime24',
                 'gpqa',
-                # 'arc',
-                # 'ceval',
-                # 'hellaswag',
+                'arc',
+                'ceval',
+                'hellaswag',
             ],
             dataset_args={
                 'mmlu': {
@@ -168,8 +172,8 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
                 'mmlu_pro': {
-                    'subset_list': ['math'],
-                    'few_shot_num': 0
+                    'subset_list': ['math', 'health'],
+                    'few_shot_num': 4
                 },
                 'ceval': {
                     'subset_list': [
@@ -194,15 +198,22 @@ class TestRun(unittest.TestCase):
                 'competition_math': {
                     'subset_list': ['Level 1']
                 },
+                'process_bench': {
+                    'subset_list': ['gsm8k'],
+                },
+                'musr': {
+                    'subset_list': ['murder_mysteries']
+                },
             },
             eval_batch_size=5,
-            limit=10,
+            limit=5,
             debug=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 5
+                'n': 1,
+                'max_tokens': 512,
             },
-            use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525'
+            # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
         )
 
         run_task(task_cfg=task_cfg)

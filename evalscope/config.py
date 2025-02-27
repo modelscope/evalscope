@@ -17,7 +17,7 @@ logger = get_logger()
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
-DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'torch.float16', 'device': 'auto'}
+DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'torch.float16'}
 DEFAULT_GENERATION_CONFIG = {
     'max_length': 2048,
     'max_new_tokens': 512,
@@ -68,6 +68,7 @@ class TaskConfig:
     seed: Optional[int] = 42
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
+    timeout: Optional[float] = None  # Only used for server model
 
     def __post_init__(self):
         if (not self.model_id) and self.model:

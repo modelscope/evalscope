@@ -143,9 +143,9 @@ async def test_connection(args: Arguments) -> bool:
         client = AioHttpClient(args)
         async with client:
             if 'chat/completions' in args.url:
-                request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model}
+                request = {'messages': [{'role': 'user', 'content': 'hello'}], 'model': args.model, 'max_tokens': 10}
             else:
-                request = {'prompt': 'hello', 'model': args.model}
+                request = {'prompt': 'hello', 'model': args.model, 'max_tokens': 10}
             async for is_error, state_code, response_data in client.post(request):
                 return is_error, state_code, response_data
 

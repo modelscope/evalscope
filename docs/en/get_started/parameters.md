@@ -32,14 +32,19 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   ```
 - `--chat-template`: Model inference template, defaults to `None`, indicating the use of transformers' `apply_chat_template`; supports passing in a jinja template string to customize the inference template.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.
-- `--api-url`: (Valid only when `eval-type=service`) Model API endpoint, defaults to `None`; supports passing in local or remote OpenAI API format endpoints, for example, `http://127.0.0.1:8000/v1/chat/completions`.
-- `--api-key`: (Valid only when `eval-type=service`) Model API endpoint key, defaults to `EMPTY`.
+
+**The following parameters are only valid when `eval-type=service`:**
+- `--api-url`: Model API endpoint, default is `None`; supports local or remote OpenAI API format endpoints, for example `http://127.0.0.1:8000/v1`.
+- `--api-key`: Model API endpoint key, default is `EMPTY`
+- `--timeout`: Model API request timeout, default is `None`
+- `--stream`: Whether to use streaming transmission, default is `False`
 
 ## Dataset Parameters
 - `--datasets`: Dataset name, supports inputting multiple datasets separated by spaces, datasets will automatically be downloaded from ModelScope, supported datasets refer to [Dataset List](./supported_dataset.md#supported-datasets).
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
   - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: The prompt template for the evaluation dataset. When specified, it will be used to generate prompts. For example, the template for the `gsm8k` dataset is `Question: {query}\nLet's think step by step\nAnswer:`. The question from the dataset will be filled into the `query` field of the template.
+  - `query_template`: The query template for the evaluation dataset. When specified, it will be used to generate queries. For example, the template for `general_mcq` is `Question: {question}\n{choices}\nAnswer: {answer}\n\n`. The questions from the dataset will be inserted into the `question` field of the template, options will be inserted into the `choices` field, and answers will be inserted into the `answer` field (answer insertion is only effective for few-shot scenarios).
   - `system_prompt`: System prompt for the evaluation dataset.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.

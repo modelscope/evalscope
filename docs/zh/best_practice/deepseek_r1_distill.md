@@ -130,7 +130,7 @@ from evalscope.constants import EvalType
 
 task_cfg = TaskConfig(
     model='DeepSeek-R1-Distill-Qwen-1.5B',   # 模型名称 (需要与部署时的模型名称一致)
-    api_url='http://127.0.0.1:8801/v1/chat/completions',  # 推理服务地址
+    api_url='http://127.0.0.1:8801/v1',  # 推理服务地址
     api_key='EMPTY',
     eval_type=EvalType.SERVICE,   # 评测类型，SERVICE表示评测推理服务
     datasets=[
@@ -148,6 +148,7 @@ task_cfg = TaskConfig(
         'top_p': 0.95,        # top-p采样 (deepseek 报告推荐值)
         'n': 5                # 每个请求产生的回复数量 (注意 lmdeploy 目前只支持 n=1)
     },
+    stream=True               # 是否使用流式请求，推荐设置为True防止请求超时
 )
 
 run_task(task_cfg=task_cfg)
@@ -223,6 +224,7 @@ evalscope app
 1. **模型生成配置**：
     - max_tokens设置：确保将max_tokens设置为较大的值（通常需要在8000以上）。如果设置过低，模型可能会在输出完整答案前被截断。
     - 回复数量n配置：在本次评测中，每个请求生成的回复数量n设置为5，而在R1报告中，n为64。读者可以根据需求调整此参数来平衡评测速度与结果的多样性。
+    - 配置stream：stream参数设置为True，避免模型在生成较长答案时超时。
 2. **数据集的提示模版设置**：
     - 本文采用了R1报告中的推荐设置，提示模版为："Please reason step by step, and put your final answer within \boxed{}."；同时，未设置system prompt。确保提示模版的正确性对于生成预期的结果至关重要。
     - 评测Reasoning模型需要设置0-shot，过于复杂的prompt或者few-shot都有可能降低模型的性能。

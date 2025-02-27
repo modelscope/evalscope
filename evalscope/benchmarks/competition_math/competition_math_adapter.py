@@ -23,7 +23,7 @@ logger = get_logger()
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     metric_list=['AveragePass@1'],
     few_shot_num=4,
-    train_split='train',
+    train_split=None,
     eval_split='test',
     prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
@@ -43,7 +43,8 @@ class CompetitionMathAdapter(DataAdapter):
     def load(self, **kwargs):
         # default load all levels
         kwargs['subset_list'] = ['default']
-        return super().load(**kwargs)
+        data_dict = super().load(**kwargs)
+        return self.reformat_subset(data_dict, subset_key='level')
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = defaultdict(dict)
@@ -62,21 +63,6 @@ class CompetitionMathAdapter(DataAdapter):
                 data_dict[subset_name][split_name] = split_data
 
         return data_dict
-
-    def gen_prompts(self, data_dict: dict) -> dict:
-        res_dict: dict = defaultdict(list, {key: [] for key in self.subset_list})
-
-        #  use level as subset
-        for sub_name, sub_data_dict in data_dict.items():
-            for sample_d in sub_data_dict[self.eval_split]:
-                level = sample_d['level']
-                if level not in self.subset_list:
-                    continue
-                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=None)
-                prompt_d[AnswerKeys.RAW_INPUT] = sample_d
-                res_dict[level].append(prompt_d)
-
-        return res_dict
 
     def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
         """

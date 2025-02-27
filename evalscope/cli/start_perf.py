@@ -3,8 +3,6 @@ import os
 from argparse import ArgumentParser
 
 from evalscope.cli.base import CLICommand
-from evalscope.perf.arguments import add_argument
-from evalscope.perf.main import run_perf_benchmark
 
 
 def subparser_func(args):
@@ -23,9 +21,13 @@ class PerfBenchCMD(CLICommand):
     def define_args(parsers: ArgumentParser):
         """ define args for create pipeline template command.
         """
+        from evalscope.perf.arguments import add_argument
+
         parser = parsers.add_parser(PerfBenchCMD.name)
         add_argument(parser)
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
+        from evalscope.perf.main import run_perf_benchmark
+
         run_perf_benchmark(self.args)
