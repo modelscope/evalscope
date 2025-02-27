@@ -241,7 +241,8 @@ math_qwen_config = dict(
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 r1_config = dict(
@@ -250,7 +251,8 @@ r1_config = dict(
     tokenizer_path = 'deepseek-ai/DeepSeek-R1',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 qwq_config = dict(
@@ -259,7 +261,8 @@ qwq_config = dict(
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 if __name__ == '__main__':
