@@ -33,7 +33,7 @@ Where:
 
 Place this file in the `~/LMUData` path, and you can use the filename for evaluation. For example, if the filename is `custom_mcq.tsv`, you can use `custom_mcq` for evaluation.
 
-### 2. Configuration File
+### 2. Configuration Task
 The configuration file can be in `python dict`, `yaml`, or `json` format, for example, the following `config.yaml` file:
 ```yaml
 eval_backend: VLMEvalKit
@@ -58,6 +58,7 @@ VLMEvalKit [Parameter Description](../../user_guides/backend/vlmevalkit_backend.
 ```
 ### 3. Running Evaluation
 
+Run the following code to start the evaluation:
 ```python
 from evalscope.run import run_task
 
