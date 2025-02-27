@@ -113,6 +113,7 @@ Parameter Explanation:
 
 ### 3. Run the Conversion Task
 
+Run the following code to start the conversion:
 ```python
 from evalscope.run import run_task
 run_task(task_cfg=task_cfg)
