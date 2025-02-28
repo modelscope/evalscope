@@ -27,7 +27,9 @@ Where:
 - `A`, `B`, `C`, `D`, etc., are the options, with a maximum of 10 options supported
 - `answer` is the correct option
 
-### 2. Configuration File
+### 2. Configuration Task
+
+Run the following code to start the evaluation:
 ```python
 from evalscope.config import TaskConfig
 
@@ -74,7 +76,9 @@ The JSON lines file needs to be in the following format:
 {"query": "Why can't you see penguins in the Arctic?", "response": "Because penguins mostly live in Antarctica"}
 ```
 
-### 2. Configuration File
+### 2. Configuration Task
+
+Run the following code to start the evaluation:
 ```python
 from evalscope.config import TaskConfig
 
