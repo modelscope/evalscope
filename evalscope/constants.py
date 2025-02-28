@@ -139,6 +139,11 @@ class EvalType:
     SERVICE = 'service'  # model service
 
 
+class OutputType:
+    LOGITS = 'logits'  # for multiple choice tasks
+    GENERATION = 'generation'  # for text generation tasks and general tasks
+
+
 class EvalBackend:
     NATIVE = 'Native'
     OPEN_COMPASS = 'OpenCompass'

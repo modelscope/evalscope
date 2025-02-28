@@ -5,6 +5,7 @@ from typing import List, Union
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
+from evalscope.models.register import register_model_adapter
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import fix_do_sample_warning
@@ -12,6 +13,7 @@ from evalscope.utils.model_utils import fix_do_sample_warning
 logger = get_logger()
 
 
+@register_model_adapter('chat')
 class ChatGenerationModelAdapter(BaseModelAdapter):
     """
     Chat generation model adapter.

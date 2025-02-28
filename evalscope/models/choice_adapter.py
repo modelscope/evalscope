@@ -5,9 +5,11 @@ from typing import List
 
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
+from evalscope.models.register import register_model_adapter
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 
 
+@register_model_adapter('multi_choice')
 class MultiChoiceModelAdapter(BaseModelAdapter):
     """ The multi-choice model adapter. """
 
@@ -110,6 +112,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         return log_probs, {'tokens': tokens}
 
 
+@register_model_adapter('continuation_logits')
 class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
     """
     Continuation-logits model adapter.

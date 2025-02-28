@@ -7,7 +7,8 @@ from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType
+from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
+                                 OutputType)
 from evalscope.models.custom import CustomModel
 from evalscope.utils import gen_hash
 from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
@@ -47,6 +48,7 @@ class TaskConfig:
 
     # Generation configuration arguments
     generation_config: Optional[Dict] = field(default_factory=lambda: DEFAULT_GENERATION_CONFIG | {})
+    output_type: str = OutputType.GENERATION
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT

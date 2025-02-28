@@ -5,11 +5,13 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from evalscope.constants import EvalType
 from evalscope.models.custom import CustomModel
 from evalscope.models.local_model import LocalModel
+from evalscope.models.register import register_model_adapter
 
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
 
+@register_model_adapter('base')
 class BaseModelAdapter(ABC):
 
     def __init__(self, model: Optional[Union[LocalModel, CustomModel]], **kwargs):
