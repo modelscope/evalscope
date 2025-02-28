@@ -119,18 +119,23 @@ class EvalThink:
         return first_correct
 
     def plot_metrics(self, results, output_dir):
-        fig = make_subplots(rows=1, cols=len(self.metrics),
+        # Change layout to 2x2
+        fig = make_subplots(rows=2, cols=2,
                             subplot_titles=('Token Efficiency', 'Completion Length', 'Thought Num', 'Accuracy'),
-                            shared_xaxes=True, x_title='Subsets')
-
+                            shared_xaxes=True, x_title='Subsets',
+                            vertical_spacing=0.1,  # Decrease vertical spacing between subplots
+                            horizontal_spacing=0.1)  # Decrease horizontal spacing between subplots
 
         for i, metric in enumerate(self.metrics, start=1):
             y_values = [results[metric][subset] for subset in self.subsets]
+            # Determine row and column for 2x2 layout
+            row = (i - 1) // 2 + 1
+            col = (i - 1) % 2 + 1
             fig.add_trace(
                 go.Scatter(x=list(range(len(self.subsets))), y=y_values,
                            mode='lines+markers',
                            name=metric.replace('_', ' ').title()),
-                row=1, col=i
+                row=row, col=col
             )
             # Add annotations for each data point
             for j, y in enumerate(y_values):
@@ -140,28 +145,30 @@ class EvalThink:
                     text=f'{y:.2f}',
                     showarrow=False,
                     yshift=10,
-                    row=1,
-                    col=i
+                    row=row,
+                    col=col
                 )
 
         fig.update_layout(
-            height=500,
-            width=1500,
+            height=800,  # Adjust height for 2x2 layout
+            width=800,   # Adjust width for 2x2 layout
             title_text=f'Evaluation Metrics for {self.model_name} on {self.dataset_name}',
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
         )
 
         for i in range(1, len(self.metrics) + 1):
+            row = (i - 1) // 2 + 1
+            col = (i - 1) % 2 + 1
             fig.update_xaxes(
                 ticktext=self.subsets,
                 tickvals=list(range(len(self.subsets))),
-                row=1, col=i
+                row=row, col=col
             )
-            fig.update_yaxes(title_text=self.metrics[i-1].replace('_', ' ').title(), row=1, col=i)
+            fig.update_yaxes(title_text=self.metrics[i-1].replace('_', ' ').title(), row=row, col=col)
         # Update y-axis ranges
         fig.update_yaxes(range=[0, 1], row=1, col=1)  # Token Efficiency
-        fig.update_yaxes(range=[0, 13], row=1, col=3)  # Switch Frequency
-        fig.update_yaxes(range=[0, 1], row=1, col=4)  # Accuracy
+        fig.update_yaxes(range=[0, 13], row=2, col=1)  # Switch Frequency
+        fig.update_yaxes(range=[0, 1], row=2, col=2)  # Accuracy
 
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f'{self.model_name}_{self.dataset_name}_metrics.png')
@@ -236,7 +243,8 @@ math_qwen_config = dict(
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 r1_config = dict(
@@ -245,7 +253,8 @@ r1_config = dict(
     tokenizer_path = 'deepseek-ai/DeepSeek-R1',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 qwq_config = dict(
@@ -254,11 +263,12 @@ qwq_config = dict(
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    split_strategies='separator'
+    split_strategies='separator',
+    judge_config=judge_config
 )
 
 if __name__ == '__main__':
-    run_task(distill_qwen_config)
+    run_task(distill_qwen_config, count=80)
     # run_task(math_qwen_config)
     # run_task(r1_config)
-    # run_task(qwq_config)
+    # run_task(qwq_config, count=80)
