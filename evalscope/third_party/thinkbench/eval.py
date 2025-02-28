@@ -122,7 +122,9 @@ class EvalThink:
         # Change layout to 2x2
         fig = make_subplots(rows=2, cols=2,
                             subplot_titles=('Token Efficiency', 'Completion Length', 'Thought Num', 'Accuracy'),
-                            shared_xaxes=True, x_title='Subsets')
+                            shared_xaxes=True, x_title='Subsets',
+                            vertical_spacing=0.1,  # Decrease vertical spacing between subplots
+                            horizontal_spacing=0.1)  # Decrease horizontal spacing between subplots
 
         for i, metric in enumerate(self.metrics, start=1):
             y_values = [results[metric][subset] for subset in self.subsets]
@@ -148,8 +150,8 @@ class EvalThink:
                 )
 
         fig.update_layout(
-            height=1200,  # Adjust height for 2x2 layout
-            width=1200,   # Adjust width for 2x2 layout
+            height=800,  # Adjust height for 2x2 layout
+            width=800,   # Adjust width for 2x2 layout
             title_text=f'Evaluation Metrics for {self.model_name} on {self.dataset_name}',
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
         )
@@ -266,7 +268,7 @@ qwq_config = dict(
 )
 
 if __name__ == '__main__':
-    run_task(distill_qwen_config)
+    run_task(distill_qwen_config, count=80)
     # run_task(math_qwen_config)
     # run_task(r1_config)
-    # run_task(qwq_config)
+    # run_task(qwq_config, count=80)
