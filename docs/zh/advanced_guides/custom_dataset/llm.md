@@ -27,7 +27,10 @@ id,question,A,B,C,D,answer
 - `A`, `B`, `C`, `D`等是可选项，最大支持10个选项
 - `answer`是正确选项
 
-### 2. 配置文件
+### 2. 配置评测任务
+
+运行下面的代码，即可开始评测：
+
 ```python
 from evalscope.config import TaskConfig
 
@@ -74,7 +77,9 @@ qa/
 {"query": "为什么北极见不到企鹅？", "response": "因为企鹅大多生活在南极"}
 ```
 
-### 2. 配置文件
+### 2. 配置评测任务
+
+运行下面的代码，即可开始评测：
 ```python
 from evalscope.config import TaskConfig
 

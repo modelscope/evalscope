@@ -58,6 +58,7 @@ VLMEvalKit[参数说明](../../user_guides/backend/vlmevalkit_backend.md#参数�
 ```
 ### 3. 运行评测
 
+运行下面的代码，即可开始评测：
 ```python
 from evalscope.run import run_task
 

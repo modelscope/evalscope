@@ -101,6 +101,7 @@ The basic parameters are consistent with the [default configuration](../../user_
 
 ### 3. Run Evaluation
 
+Run the following code to start the evaluation:
 ```python
 from evalscope.run import run_task
 

@@ -51,6 +51,8 @@ task_cfg = {
 - `data_dir`: 数据集目录，包含 `image_queries.jsonl`文件。
 
 ### 3. 运行评测任务
+
+运行下面的代码，即可开始评测：
 ```python
 from evalscope.run import run_task
 
