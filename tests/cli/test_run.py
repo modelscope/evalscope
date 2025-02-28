@@ -146,7 +146,7 @@ class TestRun(unittest.TestCase):
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -165,6 +165,8 @@ class TestRun(unittest.TestCase):
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',
+                # 'general_mcq',
+                'general_qa'
             ],
             dataset_args={
                 'mmlu': {
@@ -204,6 +206,21 @@ class TestRun(unittest.TestCase):
                 'musr': {
                     'subset_list': ['murder_mysteries']
                 },
+                'general_mcq': {
+                    'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
+                    'subset_list': [
+                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
+                    ],
+                    'query_template': 'Question: {question}\n{choices}\nAnswer: {answer}'  # 问题模板
+                },
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
+                    'subset_list': [
+                        'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
+                        # 'test'
+                    ],
+                    'metric_list': ['AverageBLEU']
+                }
             },
             eval_batch_size=5,
             limit=5,

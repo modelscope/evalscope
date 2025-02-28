@@ -105,30 +105,30 @@ run_task(task_cfg=task_cfg)
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
 | Model               | Dataset     | Metric          | Subset   |   Num |   Score | Cat.0   |
 +=====================+=============+=================+==========+=======+=========+=========+
-| Qwen2-0.5B-Instruct | general_qa  | bleu-1          | default  |    12 |  0.2324 | default |
+| Qwen2-0.5B-Instruct | general_qa  | bleu-1          | example  |    12 |  0.2324 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | bleu-2          | default  |    12 |  0.1451 | default |
+| Qwen2-0.5B-Instruct | general_qa  | bleu-2          | example  |    12 |  0.1451 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | bleu-3          | default  |    12 |  0.0625 | default |
+| Qwen2-0.5B-Instruct | general_qa  | bleu-3          | example  |    12 |  0.0625 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | bleu-4          | default  |    12 |  0.0556 | default |
+| Qwen2-0.5B-Instruct | general_qa  | bleu-4          | example  |    12 |  0.0556 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-1-f       | default  |    12 |  0.3441 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-f       | example  |    12 |  0.3441 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-1-p       | default  |    12 |  0.2393 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-p       | example  |    12 |  0.2393 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-1-r       | default  |    12 |  0.8889 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-1-r       | example  |    12 |  0.8889 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-2-f       | default  |    12 |  0.2062 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-f       | example  |    12 |  0.2062 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-2-p       | default  |    12 |  0.1453 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-p       | example  |    12 |  0.1453 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-2-r       | default  |    12 |  0.6167 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-2-r       | example  |    12 |  0.6167 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-l-f       | default  |    12 |  0.333  | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-f       | example  |    12 |  0.333  | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-l-p       | default  |    12 |  0.2324 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-p       | example  |    12 |  0.2324 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Qwen2-0.5B-Instruct | general_qa  | rouge-l-r       | default  |    12 |  0.8889 | default |
+| Qwen2-0.5B-Instruct | general_qa  | rouge-l-r       | example  |    12 |  0.8889 | default |
 +---------------------+-------------+-----------------+----------+-------+---------+---------+ 
 ```
