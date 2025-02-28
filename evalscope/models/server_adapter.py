@@ -115,7 +115,7 @@ class ServerModelAdapter(BaseModelAdapter):
 
             return response.model_dump(exclude_unset=True)
         except Exception as e:
-            logger.error(f'Error when calling OpenAI API: {str(e)}')
+            logger.error(f'Error when calling remote API: {str(e)}')
             raise
 
     def _collect_stream_response(self, response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
@@ -133,7 +133,7 @@ class ServerModelAdapter(BaseModelAdapter):
             full_reply_content = ''.join(messages)
 
             # use the finish_reason from the last chunk that generated this choice
-            finish_reason = None
+            finish_reason = 'stop'
             for chunk in reversed(collected_chunks):
                 if chunk.choices and chunk.choices[0].index == index:
                     finish_reason = chunk.choices[0].finish_reason
