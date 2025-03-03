@@ -1,4 +1,5 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import OutputType
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
 from evalscope.utils.logger import get_logger
 
@@ -10,7 +11,7 @@ logger = get_logger()
 @Benchmark.register(
     name='aime25',
     dataset_id='TIGER-Lab/AIME25',
-    model_adapter='chat_generation',
+    output_types=[OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,

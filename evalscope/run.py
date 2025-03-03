@@ -136,7 +136,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
         return EvaluatorCollection(task_cfg, data_adapter, outputs)
 
     # Initialize model adapter
-    model_adapter = initialize_model_adapter(task_cfg, benchmark.model_adapter, base_model)
+    model_adapter = initialize_model_adapter(task_cfg, benchmark.output_types, base_model)
 
     # update task_cfg.dataset_args
     task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()

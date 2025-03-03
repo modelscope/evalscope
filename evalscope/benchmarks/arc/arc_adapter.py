@@ -23,7 +23,8 @@ logger = get_logger()
     few_shot_num=0,
     train_split='train',
     eval_split='test',
-    prompt_template='',
+    prompt_template=
+    'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n{query}',
 )
 class ARCAdapter(DataAdapter):
 
@@ -106,10 +107,9 @@ class ARCAdapter(DataAdapter):
             {'data': ['xxx'], 'multi_choices': ['A', 'B', 'C', 'D']}
         """
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-        context: str = '\n'.join(few_shot_prompts)
+        context = '\n'.join(few_shot_prompts) + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
-        full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(query=context)
 
         return self.gen_prompt_data(full_prompt)
 

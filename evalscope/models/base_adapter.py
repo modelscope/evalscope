@@ -48,7 +48,7 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', model_adapter_cls: str, bas
             raise ValueError(f'Expected evalscope.models.custom.CustomModel, but got {type(task_cfg.model)}.')
         from evalscope.models import CustomModelAdapter
         return CustomModelAdapter(custom_model=task_cfg.model)
-    elif task_cfg.eval_type == EvalType.SERVICE:
+    elif task_cfg.eval_type == EvalType.SERVICE or task_cfg.api_url is not None:
         from evalscope.models import ServerModelAdapter
 
         if task_cfg.output_type == OutputType.LOGITS:
