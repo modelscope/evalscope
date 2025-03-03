@@ -9,7 +9,13 @@
 
 可以点击[这里](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/dataPeview)看看你能答对多少，再期待一下AI模型的表现吧。
 
-下面教程开始，请先安装EvalScope框架。
+本教程包括以下内容：
+
+- [安装EvalScope相关依赖](#安装-evalscope)
+- [评测本地模型checkpoint](#评测本地模型checkpoint)
+- [评测API模型服务](#评测api模型服务)
+- [可视化模型评测结果](#可视化模型评测结果)
+
 
 ```{note}
 本教程可以直接在ModelScope的免费Notebook环境中运行，请点击[这里](https://modelscope.cn/notebook/share/ipynb/9431c588/iquiz.ipynb)
@@ -21,7 +27,7 @@
 pip install 'evalscope[app]' -U
 ```
 
-## 评测模型
+## 评测本地模型checkpoint
 
 运行下面的命令将自动从modelscope下载对应模型，并使用IQuiz数据集进行评测，根据模型输出结果和标准答案对模型进行评分，评测结果将保存在当前目录下的`outputs`文件夹中。
 
@@ -83,9 +89,9 @@ evalscope eval \
 
 从初步评测结果可以看出7B大小的模型在IQ和EQ上都远超0.5B大小的模型。
 
-### 评测Qwen2.5-72B-Instruct API
+## 评测API模型服务
 
-EvalScope还支持API评测，下面我们使用API评测Qwen2.5-72B-Instruct-GPTQ-Int4模型。
+EvalScope还支持API评测，下面我们使用API评测[Qwen2.5-72B-Instruct-GPTQ-Int4](https://modelscope.cn/models/Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4)模型。
 
 首先使用vLLM启动Qwen2.5-72B-Instruct-GPTQ-Int4模型，并使用API评测。
 
