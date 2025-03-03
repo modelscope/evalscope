@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, List, Optional, Union
 
+from evalscope.benchmarks.utils import PromptData
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics.named_metrics import metric_registry
 from evalscope.report import Report, ReportGenerator
@@ -59,6 +60,7 @@ class DataAdapter(ABC):
         self.pretty_name = pretty_name
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
+        self.choices = kwargs.get('choices', None)
 
     def load(self,
              dataset_name_or_path: str = None,
@@ -284,6 +286,10 @@ class DataAdapter(ABC):
         kwargs['category_map'] = self.category_map
         kwargs['metric_list'] = self.metric_list
         return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
+
+    def gen_prompt_data(self, prompt: str, **kwargs) -> dict:
+        prompt_data = PromptData(data=[prompt], multiple_choices=self.choices, system_prompt=self.system_prompt)
+        return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
         """

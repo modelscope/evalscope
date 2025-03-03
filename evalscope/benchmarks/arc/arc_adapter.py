@@ -6,7 +6,6 @@ import os
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
 from evalscope.metrics import exact_match
-from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
@@ -18,7 +17,7 @@ logger = get_logger()
 @Benchmark.register(
     name='arc',
     dataset_id='modelscope/ai2_arc',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter='multi_choice',
     subset_list=['ARC-Easy', 'ARC-Challenge'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -27,8 +26,6 @@ logger = get_logger()
     prompt_template='',
 )
 class ARCAdapter(DataAdapter):
-
-    choices = ['A', 'B', 'C', 'D']
 
     def __init__(self, **kwargs):
         few_shot_num = kwargs.get('few_shot_num', None)
@@ -41,6 +38,8 @@ class ARCAdapter(DataAdapter):
             logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
         super().__init__(**kwargs)
+
+        self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         """
@@ -112,7 +111,7 @@ class ARCAdapter(DataAdapter):
         # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
         full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice

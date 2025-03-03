@@ -160,13 +160,13 @@ class TestRun(unittest.TestCase):
                 # 'bbh',
                 # 'competition_math',
                 # 'math_500',
-                # 'aime24',
+                'aime24',
                 # 'gpqa',
-                # 'arc',
+                'arc',
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                'general_qa'
+                # 'general_qa'
             ],
             dataset_args={
                 'mmlu': {

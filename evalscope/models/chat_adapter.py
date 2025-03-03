@@ -13,7 +13,7 @@ from evalscope.utils.model_utils import fix_do_sample_warning
 logger = get_logger()
 
 
-@register_model_adapter('chat')
+@register_model_adapter('chat_generation')
 class ChatGenerationModelAdapter(BaseModelAdapter):
     """
     Chat generation model adapter.

@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 if TYPE_CHECKING:
     from evalscope.benchmarks import DataAdapter
 
-from evalscope.models import BaseModelAdapter
-
 BENCHMARK_MAPPINGS = {}
 
 
@@ -15,7 +13,7 @@ class BenchmarkMeta:
     name: str
     dataset_id: str
     data_adapter: 'DataAdapter'
-    model_adapter: BaseModelAdapter
+    model_adapter: str
     subset_list: List[str] = field(default_factory=list)
     metric_list: List[str] = field(default_factory=list)
     few_shot_num: int = 0
@@ -39,10 +37,7 @@ class BenchmarkMeta:
     def to_string_dict(self) -> dict:
         cur_dict = copy.deepcopy(self.__dict__)
         # cur_dict['data_adapter'] = self.data_adapter.__name__
-        # cur_dict['model_adapter'] = self.model_adapter.__name__
-        # cur_dict['metric_list'] = [metric['name'] for metric in self.metric_list]
         del cur_dict['data_adapter']
-        del cur_dict['model_adapter']
         return cur_dict
 
     def get_data_adapter(self, config: dict = {}) -> 'DataAdapter':
@@ -66,7 +61,7 @@ class Benchmark:
         return benchmark
 
     @classmethod
-    def register(cls, name: str, dataset_id: str, model_adapter: BaseModelAdapter, **kwargs):
+    def register(cls, name: str, dataset_id: str, model_adapter: str, **kwargs):
 
         def register_wrapper(data_adapter):
             if name in BENCHMARK_MAPPINGS:
