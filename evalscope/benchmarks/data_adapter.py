@@ -19,6 +19,7 @@ class DataAdapter(ABC):
     def __init__(self,
                  name: str,
                  dataset_id: str,
+                 model_adapter: str,
                  subset_list: list,
                  metric_list: List[str],
                  few_shot_num: Optional[int] = 0,
@@ -49,6 +50,7 @@ class DataAdapter(ABC):
         """
         self.name = name
         self.dataset_id = dataset_id
+        self.model_adapter = model_adapter
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num
@@ -288,7 +290,9 @@ class DataAdapter(ABC):
         return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
 
     def gen_prompt_data(self, prompt: str, **kwargs) -> dict:
-        prompt_data = PromptData(data=[prompt], multiple_choices=self.choices, system_prompt=self.system_prompt)
+        if not isinstance(prompt, list):
+            prompt = [prompt]
+        prompt_data = PromptData(data=prompt, multi_choices=self.choices, system_prompt=self.system_prompt)
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:

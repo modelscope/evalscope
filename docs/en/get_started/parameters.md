@@ -46,6 +46,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - `prompt_template`: The prompt template for the evaluation dataset. When specified, it will be used to generate prompts. For example, the template for the `gsm8k` dataset is `Question: {query}\nLet's think step by step\nAnswer:`. The question from the dataset will be filled into the `query` field of the template.
   - `query_template`: The query template for the evaluation dataset. When specified, it will be used to generate queries. For example, the template for `general_mcq` is `Question: {question}\n{choices}\nAnswer: {answer}\n\n`. The questions from the dataset will be inserted into the `question` field of the template, options will be inserted into the `choices` field, and answers will be inserted into the `answer` field (answer insertion is only effective for few-shot scenarios).
   - `system_prompt`: System prompt for the evaluation dataset.
+  - `model_adapter`: The model adapter for the evaluation dataset. Once specified, the given model adapter will be used for evaluation. Currently, it supports `generation`, `multiple_choice_logits`, and `continuous_logits`. For service evaluation, only `generation` is supported at the moment. Some multiple-choice datasets support `logits` output.
   - `subset_list`: List of subsets for the evaluation dataset, once specified, only subset data will be used.
   - `few_shot_num`: Number of few-shots.
   - `few_shot_random`: Whether to randomly sample few-shot data, defaults to `False`.

@@ -3,6 +3,7 @@ import time
 import torch
 from typing import List, Union
 
+from evalscope.constants import OutputType
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
 from evalscope.models.register import register_model_adapter
@@ -13,7 +14,7 @@ from evalscope.utils.model_utils import fix_do_sample_warning
 logger = get_logger()
 
 
-@register_model_adapter('chat_generation')
+@register_model_adapter(OutputType.GENERATION)
 class ChatGenerationModelAdapter(BaseModelAdapter):
     """
     Chat generation model adapter.

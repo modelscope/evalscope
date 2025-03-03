@@ -142,6 +142,8 @@ class EvalType:
 class OutputType:
     LOGITS = 'logits'  # for multiple choice tasks
     GENERATION = 'generation'  # for text generation tasks and general tasks
+    MULTIPLE_CHOICE = 'multiple_choice_logits'  # for multiple choice tasks
+    CONTINUOUS = 'continuous_logits'  # for continuous tasks
 
 
 class EvalBackend:

@@ -4,7 +4,7 @@ import json
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
@@ -16,8 +16,10 @@ logger = get_logger()
 
 @Benchmark.register(
     name='arc',
+    pretty_name='ARC',
     dataset_id='modelscope/ai2_arc',
-    model_adapter='multi_choice',
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['ARC-Easy', 'ARC-Challenge'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -129,14 +131,10 @@ class ARCAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
         else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)

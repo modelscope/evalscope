@@ -127,16 +127,17 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
     from evalscope.models import initialize_model_adapter
 
     benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
-    # Initialize data adapter
-    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
 
     if dataset_name == DataCollection.NAME:
         # EvaluatorCollection is a collection of evaluators
         from evalscope.collections import EvaluatorCollection
+        data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
         return EvaluatorCollection(task_cfg, data_adapter, outputs)
 
     # Initialize model adapter
-    model_adapter = initialize_model_adapter(task_cfg, benchmark.output_types, base_model)
+    model_adapter = initialize_model_adapter(task_cfg, benchmark, base_model)
+    # Initialize data adapter
+    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
 
     # update task_cfg.dataset_args
     task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()

@@ -2,6 +2,8 @@ import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from evalscope.constants import OutputType
+
 if TYPE_CHECKING:
     from evalscope.benchmarks import DataAdapter
 
@@ -13,7 +15,8 @@ class BenchmarkMeta:
     name: str
     dataset_id: str
     data_adapter: 'DataAdapter'
-    output_types: List[str] = field(default_factory=list)
+    model_adapter: Optional[str] = OutputType.GENERATION
+    output_types: Optional[List[str]] = field(default_factory=lambda: [OutputType.GENERATION])
     subset_list: List[str] = field(default_factory=list)
     metric_list: List[str] = field(default_factory=list)
     few_shot_num: int = 0
@@ -61,13 +64,13 @@ class Benchmark:
         return benchmark
 
     @classmethod
-    def register(cls, name: str, dataset_id: str, output_types: List[str], **kwargs):
+    def register(cls, name: str, dataset_id: str, **kwargs):
 
         def register_wrapper(data_adapter):
             if name in BENCHMARK_MAPPINGS:
                 raise Exception(f'Benchmark {name} already registered')
             BENCHMARK_MAPPINGS[name] = BenchmarkMeta(
-                name=name, data_adapter=data_adapter, output_types=output_types, dataset_id=dataset_id, **kwargs)
+                name=name, data_adapter=data_adapter, dataset_id=dataset_id, **kwargs)
             return data_adapter
 
         return register_wrapper

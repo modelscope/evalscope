@@ -48,7 +48,6 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Generation configuration arguments
     parser.add_argument('--generation-config', type=str, action=ParseStrArgsAction, help='The generation config, should be a string.')  # noqa: E501
-    parser.add_argument('--output-type', type=str, default=OutputType.GENERATION, choices=[OutputType.LOGITS, OutputType.GENERATION], help='The output type for evaluation.')  # noqa: E501
 
     # Evaluation-related arguments
     parser.add_argument('--eval-type', type=str, help='The type for evaluating.',

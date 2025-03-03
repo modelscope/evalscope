@@ -48,7 +48,6 @@ class TaskConfig:
 
     # Generation configuration arguments
     generation_config: Optional[Dict] = field(default_factory=lambda: DEFAULT_GENERATION_CONFIG | {})
-    output_type: str = OutputType.GENERATION
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT

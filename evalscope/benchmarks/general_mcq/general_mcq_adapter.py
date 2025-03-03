@@ -3,9 +3,8 @@ import csv
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics.metrics import exact_match
-from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
@@ -16,8 +15,10 @@ logger = get_logger()
 
 @Benchmark.register(
     name='general_mcq',
+    pretty_name='General MCQ',
     dataset_id='general_mcq',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -27,10 +28,10 @@ logger = get_logger()
     query_template='问题：{question}\n{choices}\n答案: {answer}\n\n')
 class GeneralMCQAdapter(DataAdapter):
 
-    choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -85,7 +86,7 @@ class GeneralMCQAdapter(DataAdapter):
 
         full_prompt = self.prompt_template.format(query=context)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -103,14 +104,10 @@ class GeneralMCQAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)
         else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)

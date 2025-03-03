@@ -16,7 +16,6 @@ logger = get_logger()
 @Benchmark.register(
     name='general_qa',
     dataset_id='general_qa',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=['AverageBLEU', 'AverageRouge'],
     few_shot_num=0,
@@ -78,7 +77,7 @@ class GeneralQAAdapter(DataAdapter):
 
         query = input_d.get('question', '') or input_d.get('query', '')
         prompt = self.prompt_template.format(query=query)
-        return {'data': [prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """

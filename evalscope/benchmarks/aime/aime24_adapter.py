@@ -10,8 +10,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='aime24',
+    pretty_name='AIME-2024',
     dataset_id='HuggingFaceH4/aime_2024',
-    output_types=[OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,

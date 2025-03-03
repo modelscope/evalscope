@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from evalscope.constants import EvalType, OutputType
 from evalscope.models.custom import CustomModel
@@ -11,6 +11,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 if TYPE_CHECKING:
+    from evalscope.benchmarks import BenchmarkMeta
     from evalscope.config import TaskConfig
 
 
@@ -38,7 +39,7 @@ class BaseModelAdapter(ABC):
         raise NotImplementedError
 
 
-def initialize_model_adapter(task_cfg: 'TaskConfig', model_adapter_cls: str, base_model: 'LocalModel'):
+def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'BenchmarkMeta', base_model: 'LocalModel'):
     """Initialize the model adapter based on the task configuration."""
     if task_cfg.dry_run:
         from evalscope.models.model import DummyChatModel
@@ -51,10 +52,10 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', model_adapter_cls: str, bas
     elif task_cfg.eval_type == EvalType.SERVICE or task_cfg.api_url is not None:
         from evalscope.models import ServerModelAdapter
 
-        if task_cfg.output_type == OutputType.LOGITS:
+        if benchmark.model_adapter in [OutputType.CONTINUOUS, OutputType.MULTIPLE_CHOICE]:
             logger.warning('Output type is set to logits. This is not supported for service evaluation. '
                            'Setting output type to generation by default.')
-            task_cfg.output_type = OutputType.GENERATION
+            benchmark.model_adapter = OutputType.GENERATION
 
         return ServerModelAdapter(
             api_url=task_cfg.api_url,
@@ -65,6 +66,13 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', model_adapter_cls: str, bas
             stream=task_cfg.stream,
         )
     else:
+        # for local model, we need to determine the model adapter class based on the output type
+        model_adapter_cls = benchmark.model_adapter
+        if model_adapter_cls not in benchmark.output_types:
+            logger.warning(f'Output type {model_adapter_cls} is not supported for benchmark {benchmark.name}. '
+                           f'Using {benchmark.output_types[0]} instead.')
+            model_adapter_cls = benchmark.output_types[0]
+
         model_adapter = get_model_adapter(model_adapter_cls)
         return model_adapter(
             model=base_model, generation_config=task_cfg.generation_config, chat_template=task_cfg.chat_template)

@@ -18,8 +18,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='competition_math',
+    pretty_name='MATH',
     dataset_id='modelscope/competition_math',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     metric_list=['AveragePass@1'],
     few_shot_num=4,
@@ -81,7 +81,7 @@ class CompetitionMathAdapter(DataAdapter):
         use_fewshot = self.few_shot_num > 0
         query = self._generate_prompt(input_d, use_fewshot=use_fewshot)
         full_prompt = self.prompt_template.format(query=query)
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

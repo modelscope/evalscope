@@ -5,13 +5,12 @@ from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.benchmarks.ifeval.utils import process_results
 from evalscope.constants import EvalType
 from evalscope.metrics import Metric, mean, metric_registry
-from evalscope.models import ChatGenerationModelAdapter
 
 
 @Benchmark.register(
     name='ifeval',
+    pretty_name='IFEval',
     dataset_id='opencompass/ifeval',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=[
         'prompt_level_strict_acc',
@@ -36,7 +35,7 @@ class IFEvalAdapter(DataAdapter):
         metric_registry.register(Metric(name='inst_level_loose_acc', object=mean))
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        return {'data': [input_d['prompt']], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(input_d['prompt'])
 
     def get_gold_answer(self, input_d: dict) -> str:
         return input_d

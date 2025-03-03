@@ -10,8 +10,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='aime25',
+    pretty_name='AIME-2025',
     dataset_id='TIGER-Lab/AIME25',
-    output_types=[OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,

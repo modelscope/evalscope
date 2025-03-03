@@ -4,9 +4,8 @@ import os
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import ContinuationLogitsModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 from evalscope.utils.utils import ResponseParser
@@ -18,8 +17,10 @@ logger = get_logger()
 
 @Benchmark.register(
     name='hellaswag',
+    pretty_name='HellaSwag',
     dataset_id='modelscope/hellaswag',
-    model_adapter=ContinuationLogitsModelAdapter,
+    model_adapter=OutputType.CONTINUOUS,
+    output_types=[OutputType.CONTINUOUS, OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -30,8 +31,6 @@ logger = get_logger()
 )
 class HellaSwagAdapter(DataAdapter):
 
-    choices = ['0', '1', '2', '3']
-
     def __init__(self, **kwargs):
 
         few_shot_num = kwargs.get('few_shot_num', 0)
@@ -40,6 +39,7 @@ class HellaSwagAdapter(DataAdapter):
             kwargs['few_shot_num'] = 0
 
         super().__init__(**kwargs)
+        self.choices = ['0', '1', '2', '3']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -89,7 +89,7 @@ class HellaSwagAdapter(DataAdapter):
 
         ctx_continuation_pair_list = [(context.strip(), ' ' + cont.strip()) for cont in endings]
 
-        return {'data': ctx_continuation_pair_list, 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(ctx_continuation_pair_list)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -107,7 +107,7 @@ class HellaSwagAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.CONTINUOUS:
             # answer: in the form of [-2.3, -4.5, ...], len of self.choices
             result = np.array(result)
             endings: list = [self._preprocess(ending) for ending in raw_input_d['endings']]
@@ -115,12 +115,8 @@ class HellaSwagAdapter(DataAdapter):
             best_choice_idx = np.argmax(result / completion_len)
 
             return str(best_choice_idx)
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option(result)
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option(result)
         else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+            return ResponseParser.parse_first_option(result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))

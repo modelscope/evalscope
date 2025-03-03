@@ -4,7 +4,8 @@ import subprocess
 import torch
 import unittest
 
-from evalscope.constants import EvalType
+from evalscope.config import TaskConfig
+from evalscope.constants import EvalType, OutputType
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
@@ -71,21 +72,89 @@ class TestRun(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
-        task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
-                    'datasets': [
-                        # 'mmlu_pro',
-                        # 'bbh',
-                        # 'hellaswag',
-                        'gsm8k',
-                        # 'arc',
-                        # 'race',
-                        # 'ifeval',
-                        # 'truthful_qa',
-                        # 'trivia_qa',
-                        ],
-                    'limit': 2,
-                    'eval_batch_size': 2,
-                    'debug': True}
+        task_cfg = TaskConfig(
+            model='qwen/Qwen2.5-0.5B-Instruct',
+            datasets=[
+                # 'iquiz',
+                # 'ifeval',
+                # 'mmlu',
+                # 'mmlu_pro',
+                # 'musr',
+                # 'process_bench',
+                # 'race',
+                # 'trivia_qa',
+                # 'cmmlu',
+                # 'humaneval',
+                # 'gsm8k',
+                # 'bbh',
+                # 'competition_math',
+                # 'math_500',
+                # 'aime24',
+                # 'gpqa',
+                # 'arc',
+                'ceval',
+                # 'hellaswag',
+                # 'general_mcq',
+                # 'general_qa'
+            ],
+            dataset_args={
+                'mmlu': {
+                    'subset_list': ['elementary_mathematics'],
+                    'few_shot_num': 0
+                },
+                'mmlu_pro': {
+                    'subset_list': ['math', 'health'],
+                    'few_shot_num': 4
+                },
+                'ceval': {
+                    'subset_list': [
+                        'computer_network', 'operating_system', 'computer_architecture'
+                    ],
+                    'few_shot_num': 0
+                },
+                'cmmlu': {
+                    'subset_list': ['elementary_chinese'],
+                    'few_shot_num': 0
+                },
+                'bbh': {
+                    'subset_list': ['word_sorting', 'movie_recommendation'],
+                },
+                'gpqa': {
+                    'subset_list': ['gpqa_diamond'],
+                    'few_shot_num': 0
+                },
+                'humaneval': {
+                    'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
+                },
+                'competition_math': {
+                    'subset_list': ['Level 1']
+                },
+                'process_bench': {
+                    'subset_list': ['gsm8k'],
+                },
+                'musr': {
+                    'subset_list': ['murder_mysteries']
+                },
+                'general_mcq': {
+                    'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
+                    'subset_list': [
+                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
+                    ],
+                    'query_template': 'Question: {question}\n{choices}\nAnswer: {answer}'  # 问题模板
+                },
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
+                    'subset_list': [
+                        'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
+                        # 'test'
+                    ],
+                    'metric_list': ['AverageBLEU']
+                }
+            },
+            limit=2,
+            eval_batch_size=2,
+            # debug=True
+        )
         run_task(task_cfg=task_cfg)
 
 
@@ -154,16 +223,16 @@ class TestRun(unittest.TestCase):
                 # 'process_bench',
                 # 'race',
                 # 'trivia_qa',
-                # 'cmmlu',
+                'cmmlu',
                 # 'humaneval',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
                 # 'math_500',
-                'aime24',
+                # 'aime24',
                 # 'gpqa',
-                'arc',
-                # 'ceval',
+                # 'arc',
+                'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
@@ -223,7 +292,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=5,
-            limit=5,
+            limit=10,
             debug=True,
             stream=True,
             generation_config={

@@ -8,8 +8,6 @@ import re
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
 from evalscope.metrics import exact_match
-from evalscope.models.chat_adapter import ChatGenerationModelAdapter
-from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -60,8 +58,8 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
 @Benchmark.register(
     name='bbh',
+    pretty_name='BBH',
     dataset_id='modelscope/bbh',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=3,
@@ -125,7 +123,7 @@ class BBHAdapter(DataAdapter):
             cot_prompts = ''
         full_prompt = cot_prompts + self.prompt_template.format(query=input_d['input'])
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
