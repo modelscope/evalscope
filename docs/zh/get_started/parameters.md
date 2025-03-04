@@ -61,11 +61,8 @@
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
 
 ## 评测参数
-- `--eval-batch-size`: 评测批量大小，默认为`1`
-- `--eval-stage`: 评测阶段，可选`all`, `infer`, `review`, 默认为`all`
-  - `all`: 完整评测，包含推理和评测
-  - `infer`: 仅进行推理，不进行评测
-  - `review`: 仅进行数据评测，不进行推理
+- `--eval-batch-size`: 评测批量大小，默认为`1`；在`eval-type=service`时，表示并发评测的请求数，默认为`8`
+- `--eval-stage`: （已弃用，参考`--use-cache`）评测阶段，可选`all`, `infer`, `review`, 默认为`all`
 - `--eval-type`: 评测类型，可选`checkpoint`, `custom`, `service`；默认为`checkpoint`
 - `--eval-backend`: 评测后端，可选`Native`, `OpenCompass`, `VLMEvalKit`, `RAGEval`, `ThirdParty`，默认为`Native`
   - `OpenCompass`用于评测大语言模型

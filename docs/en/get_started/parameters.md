@@ -61,11 +61,9 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
 
 ## Evaluation Parameters
-- `--eval-batch-size`: Evaluation batch size, defaults to `1`.
-- `--eval-stage`: Evaluation stage, options are `all`, `infer`, `review`, defaults to `all`.
-  - `all`: Complete evaluation, including inference and evaluation.
-  - `infer`: Only perform inference, without evaluation.
-  - `review`: Only perform data evaluation, without inference.
+
+- `--eval-batch-size`: Evaluation batch size, default is `1`; when `eval-type=service`, it indicates the number of concurrent evaluation requests, default is `8`.
+- `--eval-stage`: (Deprecated, refer to `--use-cache`) Evaluation stage, options are `all`, `infer`, `review`, default is `all`.
 - `--eval-type`: Evaluation type, options are `checkpoint`, `custom`, `service`; defaults to `checkpoint`.
 - `--eval-backend`: Evaluation backend, options are `Native`, `OpenCompass`, `VLMEvalKit`, `RAGEval`, `ThirdParty`, defaults to `Native`.
   - `OpenCompass` is used for evaluating large language models.

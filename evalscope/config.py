@@ -55,7 +55,7 @@ class TaskConfig:
     eval_config: Union[str, Dict, None] = None
     stage: str = EvalStage.ALL
     limit: Optional[int] = None
-    eval_batch_size: int = 1
+    eval_batch_size: Optional[int] = None
 
     # Cache and working directory arguments
     mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
@@ -78,6 +78,10 @@ class TaskConfig:
                 self.model_id = type(self.model).__name__
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
+
+        # Set default eval_batch_size based on eval_type
+        if self.eval_batch_size is None:
+            self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
 
     def to_dict(self):
         return self.__dict__

@@ -84,7 +84,7 @@ class TestRun(unittest.TestCase):
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
-                # 'humaneval',
+                'humaneval',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
@@ -92,7 +92,7 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'gpqa',
                 # 'arc',
-                'ceval',
+                # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
@@ -232,7 +232,7 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'gpqa',
                 # 'arc',
-                'ceval',
+                # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
@@ -291,8 +291,8 @@ class TestRun(unittest.TestCase):
                     'metric_list': ['AverageBLEU']
                 }
             },
-            eval_batch_size=5,
-            limit=10,
+            eval_batch_size=32,
+            # limit=10,
             debug=True,
             stream=True,
             generation_config={

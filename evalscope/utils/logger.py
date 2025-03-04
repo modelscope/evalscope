@@ -16,7 +16,7 @@ logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
 
 # disable datasets logging
 logging.getLogger('datasets').setLevel(logging.WARNING)
-logging.getLogger('modelscope').setLevel(logging.WARNING)
+logging.getLogger('modelscope').setLevel(logging.ERROR)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
