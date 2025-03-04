@@ -137,21 +137,7 @@ class DataAdapter(ABC):
         If you want to support local dataset, please rewrite this method in xxx_data_adapter.
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
-        from modelscope.msdatasets import MsDataset
-
-        logger.info(f'Loading dataset from work_dir: {work_dir}: > dataset_name: {dataset_name_or_path} > \
-                subsets: {subset_list}')
-        data_dict = {}
-        subset_list = subset_list or self.subset_list
-        split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
-        for sub_name in subset_list:
-            data_dict[sub_name] = {}
-            # e.g. train: few-shot, test: target dataset to evaluate
-            for split in split_list:
-                dataset = MsDataset.load(
-                    dataset_name=dataset_name_or_path, subset_name=sub_name, split=split, cache_dir=work_dir, **kwargs)
-                data_dict[sub_name].update({split: dataset})
-        return data_dict
+        return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
 
     def reformat_subset(self, data_dict: dict, subset_key: str, format: str = '{}') -> dict:
         """
