@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import pandas as pd
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -246,7 +245,7 @@ class EvaluatorCollection:
                         if os.path.isfile(file_path):
                             os.remove(file_path)
                     except Exception as e:
-                        logger.error(f"Error deleting file {file_path}: {e}")
+                        logger.error(f'Error deleting file {file_path}: {e}')
             else:
                 os.remove(review_file_path)
 
