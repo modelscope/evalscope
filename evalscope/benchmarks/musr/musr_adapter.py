@@ -2,9 +2,8 @@ import ast
 from typing import Any
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
 
@@ -12,7 +11,8 @@ from evalscope.utils.utils import ResponseParser
     name='musr',
     pretty_name='MuSR',
     dataset_id='AI-ModelScope/MuSR',
-    model_adapter=ChatGenerationModelAdapter,
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['murder_mysteries', 'object_placements', 'team_allocation'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -41,7 +41,7 @@ class MuSRAdapter(DataAdapter):
         full_prompt = self.prompt_template.format(
             narrative=input_d['narrative'], question=input_d['question'], choices=choices)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def format_choice(self, options: list):
         option_str = ''
@@ -59,7 +59,10 @@ class MuSRAdapter(DataAdapter):
         """
         Parse the predicted result and extract proper answer.
         """
-        return ResponseParser.parse_first_option(result)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
+        else:
+            return ResponseParser.parse_first_option(result)
 
     def match(self, gold: str, pred: str) -> float:
         """

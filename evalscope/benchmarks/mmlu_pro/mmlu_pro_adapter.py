@@ -2,9 +2,8 @@ from collections import defaultdict
 from typing import Any, Dict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
 SUBSET_LIST = [
@@ -15,8 +14,10 @@ SUBSET_LIST = [
 
 @Benchmark.register(
     name='mmlu_pro',
+    pretty_name='MMLU-Pro',
     dataset_id='modelscope/MMLU-Pro',
-    model_adapter=ChatGenerationModelAdapter,
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=5,
@@ -47,7 +48,7 @@ class MMLUProAdapter(DataAdapter):
             self.__form_options(input_d['options']) + '\n'
 
         full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def format_fewshot_examples(self, few_shot_list):
         # load few-shot prompts for each category
@@ -88,7 +89,10 @@ class MMLUProAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return ResponseParser.parse_first_option(result)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
+        else:
+            return ResponseParser.parse_first_option(result)
 
     def match(self, gold: str, pred: str) -> float:
         """

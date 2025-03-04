@@ -1,6 +1,6 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import OutputType
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -10,8 +10,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='aime25',
+    pretty_name='AIME-2025',
     dataset_id='TIGER-Lab/AIME25',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,
@@ -31,7 +31,7 @@ class AIME25Adapter(DataAdapter):
         problem = input_d['question']
         full_prompt = self.prompt_template.format(query=problem)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

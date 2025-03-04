@@ -14,7 +14,6 @@ cur_path = os.path.dirname(os.path.abspath(__file__))
     name='process_bench',
     pretty_name='ProcessBench',
     dataset_id='Qwen/ProcessBench',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
     metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],
     few_shot_num=0,
@@ -50,7 +49,7 @@ class ProcessBenchAdapter(DataAdapter):
 
         full_prompt = self.prompt_template.format(problem=problem, tagged_response=tagged_response)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
@@ -84,7 +83,12 @@ class ProcessBenchAdapter(DataAdapter):
                 correct_data.append(res)
             else:
                 error_data.append(res)
-        data = {'error_acc': error_data, 'correct_acc': correct_data, 'simple_f1_score': (correct_data, error_data)}
+        data = {}
+        if len(correct_data) != 0:
+            data.update({'correct_acc': correct_data})
+        if len(error_data) != 0:
+            data.update({'error_acc': error_data})
+        data.update({'simple_f1_score': (correct_data, error_data)})
         return super().compute_metric(data)
 
     @staticmethod

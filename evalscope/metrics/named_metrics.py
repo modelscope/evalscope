@@ -35,6 +35,7 @@ metric_registry = MetricRegistry()
 metric_registry.register(Metric(name='AverageAccuracy', object=mean))
 metric_registry.register(Metric(name='WeightedAverageAccuracy', object=weighted_mean))
 metric_registry.register(Metric(name='AverageBLEU', object=mean))
+metric_registry.register(Metric(name='AverageRouge', object=mean))
 metric_registry.register(Metric(name='WeightedAverageBLEU', object=weighted_mean))
 metric_registry.register(Metric(name='AveragePass@1', object=mean))
 for k in range(1, 17):

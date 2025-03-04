@@ -1,9 +1,5 @@
-from collections import defaultdict
-
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys
 from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -13,8 +9,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='math_500',
+    pretty_name='MATH-500',
     dataset_id='AI-ModelScope/MATH-500',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,
@@ -40,7 +36,7 @@ class Math500Adapter(DataAdapter):
         problem = input_d['problem']
         full_prompt = self.prompt_template.format(query=problem)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

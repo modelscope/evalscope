@@ -97,8 +97,8 @@ class EvaluatorCollection:
         evaluators = {}
         for dataset_name in self.dataset_name_map.keys():
             benchmark = Benchmark.get(dataset_name)
+            model_adapter = initialize_model_adapter(self.task_cfg, benchmark, self.model)
             data_adapter = benchmark.get_data_adapter()
-            model_adapter = initialize_model_adapter(self.task_cfg, benchmark.model_adapter, self.model)
             evaluators[dataset_name] = SimpleEvaluator(dataset_name, data_adapter, model_adapter, self.task_cfg,
                                                        self.outputs)
         return evaluators
