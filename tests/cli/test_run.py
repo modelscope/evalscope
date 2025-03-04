@@ -84,7 +84,8 @@ class TestRun(unittest.TestCase):
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
-                'humaneval',
+                # 'humaneval',
+                'super_gpqa',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
@@ -149,10 +150,19 @@ class TestRun(unittest.TestCase):
                         # 'test'
                     ],
                     'metric_list': ['AverageBLEU']
+                },
+                'super_gpqa': {
+                    'subset_list': ['Philosophy', 'Education'],
+                    'few_shot_num': 0
                 }
             },
             limit=2,
             eval_batch_size=2,
+            generation_config={
+                'max_new_tokens': 2048,
+                'temperature': 0.7,
+                'num_return_sequences': 2,
+            },
             # debug=True
         )
         run_task(task_cfg=task_cfg)
@@ -236,6 +246,7 @@ class TestRun(unittest.TestCase):
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
+                # 'super_gpqa',
             ],
             dataset_args={
                 'mmlu': {
@@ -289,6 +300,10 @@ class TestRun(unittest.TestCase):
                         # 'test'
                     ],
                     'metric_list': ['AverageBLEU']
+                },
+                'super_gpqa': {
+                    'subset_list': ['Philosophy', 'Education'],
+                    'few_shot_num': 0
                 }
             },
             eval_batch_size=32,
@@ -297,7 +312,7 @@ class TestRun(unittest.TestCase):
             stream=True,
             generation_config={
                 'temperature': 0.7,
-                'n': 1,
+                'n': 2,
                 'max_tokens': 512,
             },
             # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
