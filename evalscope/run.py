@@ -2,7 +2,7 @@
 """
 Run evaluation for LLMs.
 """
-import os.path
+import os
 from argparse import Namespace
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Union

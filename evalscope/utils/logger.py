@@ -12,12 +12,12 @@ detailed_formatter = logging.Formatter(detailed_format)
 simple_formatter = logging.Formatter(simple_format)
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL)
+logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL, force=True)
 
-# disable datasets logging
+# set logging level
 logging.getLogger('datasets').setLevel(logging.WARNING)
-logging.getLogger('modelscope').setLevel(logging.ERROR)
 logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('modelscope').setLevel(logging.ERROR)
 
 
 def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):

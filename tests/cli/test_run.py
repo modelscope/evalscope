@@ -223,7 +223,7 @@ class TestRun(unittest.TestCase):
                 # 'process_bench',
                 # 'race',
                 # 'trivia_qa',
-                'cmmlu',
+                # 'cmmlu',
                 # 'humaneval',
                 # 'gsm8k',
                 # 'bbh',
@@ -232,7 +232,7 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'gpqa',
                 # 'arc',
-                # 'ceval',
+                'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
@@ -292,8 +292,8 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=32,
-            # limit=10,
-            debug=True,
+            limit=10,
+            # debug=True,
             stream=True,
             generation_config={
                 'temperature': 0.7,

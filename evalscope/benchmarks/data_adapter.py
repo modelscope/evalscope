@@ -95,8 +95,7 @@ class DataAdapter(ABC):
         datasets_hub: str = kwargs.pop('datasets_hub', HubType.MODELSCOPE)
         split_as_subset: bool = kwargs.pop('split_as_subset', False)
         # Load dataset from remote
-        logger.info(
-            f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
+        logger.info(f'Loading dataset : > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
 
         data_dict = {}
         split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
