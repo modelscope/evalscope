@@ -42,14 +42,15 @@
 ## 数据集参数
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
-  - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据
-  - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中
-  - `query_template`: 评测数据集的query模板，指定后将使用模板生成query。例如`general_mcq`的模版为`问题：{question}\n{choices}\n答案: {answer}\n\n`，数据集的问题将填充到模板`question`字段中，选项填充到`choices`字段中，答案填充到`answer`字段中（答案填充仅对few-shot生效）
-  - `system_prompt`: 评测数据集的系统prompt
-  - `subset_list`: 评测数据子集列表，指定后将只使用子集数据
-  - `few_shot_num`: few-shot的数量
-  - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`
-  - `metrics_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前支持`AverageAccuracy`, `AveragePass@1`, `Pass@[1-16]`。例如`humaneval`数据集可指定`["Pass@1", "Pass@5"]`，注意此时需要指定`n=5`让模型返回5个结果
+  - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据。
+  - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中。
+  - `query_template`: 评测数据集的query模板，指定后将使用模板生成query。例如`general_mcq`的模版为`问题：{question}\n{choices}\n答案: {answer}\n\n`，数据集的问题将填充到模板`question`字段中，选项填充到`choices`字段中，答案填充到`answer`字段中（答案填充仅对few-shot生效）。
+  - `system_prompt`: 评测数据集的系统prompt。
+  - `model_adapter`: 评测数据集的模型适配器，指定后将使用给定的模型适配器评测，目前支持`generation`, `multiple_choice_logits`, `continuous_logits`；对于service评测，目前仅支持`generation`；部分多选题数据集支持`logits`输出。
+  - `subset_list`: 评测数据子集列表，指定后将只使用子集数据。
+  - `few_shot_num`: few-shot的数量。
+  - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`。
+  - `metrics_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前支持`AverageAccuracy`, `AveragePass@1`, `Pass@[1-16]`。例如`humaneval`数据集可指定`["Pass@1", "Pass@5"]`，注意此时需要指定`n=5`让模型返回5个结果。
   ```bash
   # 例如
   --datasets gsm8k arc
@@ -60,11 +61,8 @@
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
 
 ## 评测参数
-- `--eval-batch-size`: 评测批量大小，默认为`1`
-- `--eval-stage`: 评测阶段，可选`all`, `infer`, `review`, 默认为`all`
-  - `all`: 完整评测，包含推理和评测
-  - `infer`: 仅进行推理，不进行评测
-  - `review`: 仅进行数据评测，不进行推理
+- `--eval-batch-size`: 评测批量大小，默认为`1`；在`eval-type=service`时，表示并发评测的请求数，默认为`8`
+- `--eval-stage`: （已弃用，参考`--use-cache`）评测阶段，可选`all`, `infer`, `review`, 默认为`all`
 - `--eval-type`: 评测类型，可选`checkpoint`, `custom`, `service`；默认为`checkpoint`
 - `--eval-backend`: 评测后端，可选`Native`, `OpenCompass`, `VLMEvalKit`, `RAGEval`, `ThirdParty`，默认为`Native`
   - `OpenCompass`用于评测大语言模型

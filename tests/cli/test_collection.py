@@ -44,7 +44,7 @@ class TestCollection(unittest.TestCase):
         from evalscope import TaskConfig, run_task
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-7B-Instruct',
+            model='Qwen2.5-0.5B-Instruct',
             api_url='http://127.0.0.1:8801/v1/chat/completions',
             api_key='EMPTY',
             eval_type=EvalType.SERVICE,

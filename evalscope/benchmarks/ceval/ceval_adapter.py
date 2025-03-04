@@ -3,9 +3,8 @@ import csv
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics.metrics import exact_match
-from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
@@ -126,8 +125,10 @@ SUBJECT_MAPPING = {
 
 @Benchmark.register(
     name='ceval',
+    pretty_name='C-Eval',
     dataset_id='modelscope/ceval-exam',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -136,8 +137,6 @@ SUBJECT_MAPPING = {
     prompt_template='以下是中国关于{subset_name}考试的单项选择题，请选出其中的正确答案。\n{query}',
 )
 class CEVALAdapter(DataAdapter):
-
-    choices = ['A', 'B', 'C', 'D']
 
     def __init__(self, **kwargs):
 
@@ -148,6 +147,7 @@ class CEVALAdapter(DataAdapter):
         super().__init__(**kwargs)
 
         self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
+        self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -207,7 +207,7 @@ class CEVALAdapter(DataAdapter):
         subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
         full_prompt = self.prompt_template.format(subset_name=subject_name, query=query)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -225,22 +225,17 @@ class CEVALAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)
         else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
 
-    @classmethod
-    def _format_example(cls, input_d: dict, include_answer=True):
+    def _format_example(self, input_d: dict, include_answer=True):
         example = '问题：' + input_d['question']
-        for choice in cls.choices:
+        for choice in self.choices:
             example += f'\n{choice}. {input_d[f"{choice}"]}'
 
         if include_answer:

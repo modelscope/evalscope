@@ -1,14 +1,15 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.utils import ResponseParser
 
 
 @Benchmark.register(
     name='iquiz',
+    pretty_name='IQuiz',
     dataset_id='AI-ModelScope/IQuiz',
-    model_adapter=ChatGenerationModelAdapter,
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['IQ', 'EQ'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -36,7 +37,7 @@ class IQuizAdapter(DataAdapter):
         """
         prompt = f"问题: {input_d['question']}\n"
         prompt += self.__form_options(input_d['choices'])
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(prompt)
 
     def __form_options(self, options: list):
         option_str = '选项:\n'
@@ -54,7 +55,10 @@ class IQuizAdapter(DataAdapter):
         """
         Parse the predicted result and extract proper answer.
         """
-        return ResponseParser.parse_first_option_with_choices(result, self.choices)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
+        else:
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         """

@@ -8,8 +8,7 @@ from typing import List
 
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.constants import EvalType
-from evalscope.models import ContinuationLogitsModelAdapter
+from evalscope.constants import EvalType, OutputType
 from evalscope.utils import get_logger
 
 # flake8: noqa
@@ -21,8 +20,10 @@ logger = get_logger()
 
 @Benchmark.register(
     name='truthful_qa',
+    pretty_name='TruthfulQA',
     dataset_id='modelscope/truthful_qa',
-    model_adapter=ContinuationLogitsModelAdapter,
+    model_adapter=OutputType.CONTINUOUS,
+    output_types=[OutputType.CONTINUOUS, OutputType.GENERATION],
     subset_list=['multiple_choice'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
@@ -195,8 +196,7 @@ class TruthfulQaAdapter(DataAdapter):
         else:
             raise ValueError(f'** Unknown subset_name: {subset_name}')
 
-        prompt_d = {'data': ctx_continuation_pair_list}
-        return prompt_d
+        return self.gen_prompt_data(ctx_continuation_pair_list)
 
     def get_gold_answer(self, input_d: dict) -> dict:
         # Get the gold choice
@@ -215,14 +215,7 @@ class TruthfulQaAdapter(DataAdapter):
         Returns:
             The predicted answer.
         """
-        if eval_type == EvalType.CHECKPOINT:
-            return result
-        elif eval_type == EvalType.SERVICE:  # TODO: to be supported !
-            return result
-        elif eval_type == EvalType.CUSTOM:  # TODO: to be supported !
-            return result
-        else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+        return result
 
     def match(self, gold: dict, pred: list) -> dict:
         """
