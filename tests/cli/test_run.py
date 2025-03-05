@@ -273,7 +273,7 @@ class TestRun(unittest.TestCase):
                 'gpqa': {
                     # 'subset_list': ['gpqa_diamond'],
                     'few_shot_num': 0,
-                    'local_path': '/mnt/data/data/user/maoyunlin.myl/eval-scope/data/data/gpqa',
+                    'local_path': './data/data/gpqa',
                 },
                 'humaneval': {
                     'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
@@ -316,7 +316,7 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
+            # use_cache='./outputs/20250212_150525',
         )
 
         run_task(task_cfg=task_cfg)

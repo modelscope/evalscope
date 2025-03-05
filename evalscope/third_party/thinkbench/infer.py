@@ -66,7 +66,7 @@ def eval_r1():
             'n': 1,
         },
         limit=50,
-        use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_104202'
+        use_cache='./outputs/20250221_104202'
     )
     run_task(task_config)
 
@@ -89,7 +89,7 @@ def eval_qwq():
             'top_p': 0.95,
             'n': 1,
         },
-        use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_105911'
+        use_cache='./outputs/20250221_105911'
     )
     run_task(task_config)
 
