@@ -108,7 +108,7 @@ class Arguments:
         self.headers = self.headers or {}  # Default to empty dictionary
         if self.api_key:
             # Assuming the API key is used as a Bearer token
-            self.headers['Authorization'] = f'Bearer {self.api_key}'
+            self.headers['Authorization'] = f'{self.api_key}'
         self.model_id = os.path.basename(self.model)
 
     def __str__(self):
