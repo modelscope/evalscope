@@ -194,13 +194,50 @@ By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) 
 
 Assume the current local working path is `/path/to/workdir`.
 
-### Download the Dataset Locally
-Execute the following commands:
+### Download Dataset to Local
+
+```{important}
+Before downloading the dataset, please confirm whether the dataset you want to use is stored in a `zip` file or available on modelscope.
+```
+
+#### Download Zip Dataset
+
+Due to historical reasons, some datasets are loaded by executing Python scripts. We have organized these datasets into a `zip` file, which includes the following datasets:
+```text
+.
+├── arc
+├── bbh
+├── ceval
+├── cmmlu
+├── competition_math
+├── general_qa
+├── gsm8k
+├── hellaswag
+├── humaneval
+├── mmlu
+├── race
+├── trivia_qa
+└── truthful_qa
+```
+
+For these datasets, execute the following commands:
 ```shell
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
 ```
-The extracted dataset will be in the `/path/to/workdir/data` directory. This directory will be passed as the value of the `local_path` parameter in subsequent steps.
+The unzipped datasets will be located in the `/path/to/workdir/data` directory, which will be used as the value for the `local_path` parameter in subsequent steps.
+
+#### Download Modelscope Dataset
+
+For datasets that are not in a `zip` file, such as the [mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro) dataset, refer to the dataset address in the [Supported Datasets](./supported_dataset.md#1-native-supported-datasets) document and execute the following commands:
+
+```bash
+git lfs install
+git clone https://www.modelscope.cn/datasets/modelscope/MMLU-Pro.git
+```
+
+Use the directory `/path/to/MMLU-Pro` as the value for the `local_path` parameter.
+
 
 ### Download the Model Locally
 Model files are hosted on the ModelScope Hub and require internet access for loading. If you need to create evaluation tasks in an offline environment, you can download the model to your local machine in advance:

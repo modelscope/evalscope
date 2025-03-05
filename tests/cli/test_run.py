@@ -240,7 +240,7 @@ class TestRun(unittest.TestCase):
                 # 'competition_math',
                 # 'math_500',
                 # 'aime24',
-                # 'gpqa',
+                'gpqa',
                 # 'arc',
                 'ceval',
                 # 'hellaswag',
@@ -271,8 +271,9 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['word_sorting', 'movie_recommendation'],
                 },
                 'gpqa': {
-                    'subset_list': ['gpqa_diamond'],
-                    'few_shot_num': 0
+                    # 'subset_list': ['gpqa_diamond'],
+                    'few_shot_num': 0,
+                    'local_path': './data/data/gpqa',
                 },
                 'humaneval': {
                     'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
@@ -302,20 +303,20 @@ class TestRun(unittest.TestCase):
                     'metric_list': ['AverageBLEU']
                 },
                 'super_gpqa': {
-                    'subset_list': ['Philosophy', 'Education'],
+                    # 'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
                 }
             },
             eval_batch_size=32,
             limit=10,
             # debug=True,
-            stream=True,
+            stream=False,
             generation_config={
-                'temperature': 0.7,
-                'n': 2,
-                'max_tokens': 512,
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
             },
-            # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
+            # use_cache='./outputs/20250212_150525',
         )
 
         run_task(task_cfg=task_cfg)

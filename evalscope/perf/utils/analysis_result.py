@@ -3,7 +3,7 @@ import json
 import pickle
 import sqlite3
 
-result_db_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/qwen2.5_benchmark_20241111_160543.db'
+result_db_path = './outputs/qwen2.5_benchmark_20241111_160543.db'
 con = sqlite3.connect(result_db_path)
 query_sql = "SELECT request, response_messages, prompt_tokens, completion_tokens \
                 FROM result WHERE success='1'"

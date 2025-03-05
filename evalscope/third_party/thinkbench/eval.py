@@ -228,7 +228,7 @@ judge_config = dict(
 )
 
 distill_qwen_config = dict(
-    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250218_180219',
+    report_path = './outputs/20250218_180219',
     model_name = 'DeepSeek-R1-Distill-Qwen-7B',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
     dataset_name = 'math_500',
@@ -238,7 +238,7 @@ distill_qwen_config = dict(
 )
 
 math_qwen_config = dict(
-    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250219_202358',
+    report_path = './outputs/20250219_202358',
     model_name = 'Qwen2.5-Math-7B-Instruct',
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
@@ -248,7 +248,7 @@ math_qwen_config = dict(
 )
 
 r1_config = dict(
-    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_104202',
+    report_path = './outputs/20250221_104202',
     model_name = 'deepseek-r1',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1',
     dataset_name = 'math_500',
@@ -258,7 +258,7 @@ r1_config = dict(
 )
 
 qwq_config = dict(
-    report_path = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250221_105911',
+    report_path = './outputs/20250221_105911',
     model_name = 'qwq-32b-preview',
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
     dataset_name = 'math_500',

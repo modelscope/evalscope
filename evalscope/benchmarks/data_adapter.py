@@ -82,11 +82,15 @@ class DataAdapter(ABC):
 
         # Try to load dataset from local disk
         if os.path.exists(dataset_name_or_path):
-            data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
+            logger.info(f'Loading dataset from local disk: {dataset_name_or_path}')
+            data_dict = self.load_from_disk(
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=False, **kwargs)
         else:
-            data_dict = self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
-        if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
-            raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
+            logger.info(f'Loading dataset from hub: {dataset_name_or_path}')
+            data_dict = self.load_from_hub(
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=True, **kwargs)
+        if len(data_dict) == 0:
+            raise ValueError(f'Dataset is empty: {dataset_name_or_path}')
         return data_dict
 
     def load_from_hub(self, dataset_name_or_path: str, subset_list: list, work_dir: str, **kwargs) -> dict:
@@ -95,7 +99,7 @@ class DataAdapter(ABC):
         datasets_hub: str = kwargs.pop('datasets_hub', HubType.MODELSCOPE)
         split_as_subset: bool = kwargs.pop('split_as_subset', False)
         # Load dataset from remote
-        logger.info(f'Loading dataset : > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
+        logger.info(f'Loading dataset: dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
 
         data_dict = {}
         split_list = [split for split in [self.train_split, self.eval_split] if split is not None]

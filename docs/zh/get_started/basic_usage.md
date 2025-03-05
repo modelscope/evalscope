@@ -193,13 +193,48 @@ evalscope eval \
 假如当前本地工作路径为 `/path/to/workdir`。
 
 ### 下载数据集到本地
-执行以下命令：
+
+```{important}
+在下载数据集之前请确认你想使用的数据集是存放在`zip`中，还是在modelscope中。
+```
+
+#### 下载zip数据集
+
+由于历史原因，部分数据集是通过执行python脚本的方式进行加载的，这部分数据集我们将其整理到了一个`zip`文件中，包括如下数据集：
+```text
+.
+├── arc
+├── bbh
+├── ceval
+├── cmmlu
+├── competition_math
+├── general_qa
+├── gsm8k
+├── hellaswag
+├── humaneval
+├── mmlu
+├── race
+├── trivia_qa
+└── truthful_qa
+```
+
+对于这部分数据集，执行以下命令：
 ```shell
 wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
 unzip data.zip
 ```
-解压后的数据集在：`/path/to/workdir/data` 目录下，该目录在后续步骤将会作为`local_path`参数的值传入
+解压后的数据集在：`/path/to/workdir/data` 目录下，该目录在后续步骤将会作为`local_path`参数的值传入。
 
+#### 下载modelscope数据集
+
+对于不在`zip`中的数据集，例如[mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro)数据集，数据集地址参考[支持的数据集](./supported_dataset.md#1-原生支持的数据集)，执行以下命令：
+
+```bash
+git lfs install
+git clone https://www.modelscope.cn/datasets/modelscope/MMLU-Pro.git
+```
+
+使用目录`/path/to/MMLU-Pro`作为`local_path`参数的值传入即可。
 
 ### 下载模型到本地
 模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评测任务时，可提前将模型下载到本地：
