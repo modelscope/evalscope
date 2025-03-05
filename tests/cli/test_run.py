@@ -242,11 +242,11 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'gpqa',
                 # 'arc',
-                'ceval',
+                # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
-                # 'super_gpqa',
+                'super_gpqa',
             ],
             dataset_args={
                 'mmlu': {
@@ -302,18 +302,18 @@ class TestRun(unittest.TestCase):
                     'metric_list': ['AverageBLEU']
                 },
                 'super_gpqa': {
-                    'subset_list': ['Philosophy', 'Education'],
+                    # 'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
                 }
             },
             eval_batch_size=32,
             limit=10,
             # debug=True,
-            stream=True,
+            stream=False,
             generation_config={
-                'temperature': 0.7,
-                'n': 2,
-                'max_tokens': 512,
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
             },
             # use_cache='/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250212_150525',
         )

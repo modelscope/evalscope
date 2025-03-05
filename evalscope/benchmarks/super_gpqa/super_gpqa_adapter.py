@@ -114,16 +114,17 @@ SUBSET_MAPPING = {
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
     metric_list=['AveragePass@1'],
-    few_shot_num=5,
+    few_shot_num=0,
     train_split=None,
     eval_split='train',  # only have train split
 )
 class SuperGPQAAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
-        few_shot_num = kwargs.get('few_shot_num', 5)
-        if few_shot_num > 5:
-            logger.warning(f'few_shot_num <= 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.')
+        few_shot_num = kwargs.get('few_shot_num', 0)
+        if few_shot_num > 0 and few_shot_num != 5:
+            logger.warning(
+                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.')
             kwargs['few_shot_num'] = 5
         super().__init__(**kwargs)
 
