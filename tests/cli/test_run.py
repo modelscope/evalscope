@@ -240,13 +240,13 @@ class TestRun(unittest.TestCase):
                 # 'competition_math',
                 # 'math_500',
                 # 'aime24',
-                # 'gpqa',
+                'gpqa',
                 # 'arc',
-                # 'ceval',
+                'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
-                'super_gpqa',
+                # 'super_gpqa',
             ],
             dataset_args={
                 'mmlu': {
@@ -271,8 +271,9 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['word_sorting', 'movie_recommendation'],
                 },
                 'gpqa': {
-                    'subset_list': ['gpqa_diamond'],
-                    'few_shot_num': 0
+                    # 'subset_list': ['gpqa_diamond'],
+                    'few_shot_num': 0,
+                    'local_path': '/mnt/data/data/user/maoyunlin.myl/eval-scope/data/data/gpqa',
                 },
                 'humaneval': {
                     'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
