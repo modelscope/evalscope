@@ -57,8 +57,8 @@ class ReportsRecorder:
 
 
 if __name__ == '__main__':
-    report_dir_1 = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250117_151926'
-    # report_dir_2 = '/mnt/data/data/user/maoyunlin.myl/eval-scope/outputs/20250107_204445/reports'
+    report_dir_1 = './outputs/20250117_151926'
+    # report_dir_2 = './outputs/20250107_204445/reports'
 
     report_table = gen_table([report_dir_1])
     print(report_table)
