@@ -32,6 +32,7 @@ class ModelList(BaseModel):
 class ChatMessage(BaseModel):
     role: Literal['user', 'assistant', 'system']
     content: str
+    reasoning_content: Optional[str] = None
 
 
 class DeltaMessage(BaseModel):

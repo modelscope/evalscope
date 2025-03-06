@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, List, Optional, Union
 
-from evalscope.benchmarks.utils import PromptData
+from evalscope.benchmarks.utils import PromptData, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics.named_metrics import metric_registry
 from evalscope.report import Report, ReportGenerator
@@ -63,6 +63,14 @@ class DataAdapter(ABC):
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        # find and decorate parse_pred_result method
+        if hasattr(cls, 'parse_pred_result'):
+            original_method = cls.parse_pred_result
+            cls.parse_pred_result = preprocess_decorator(original_method)
 
     def load(self,
              dataset_name_or_path: str = None,

@@ -1,4 +1,5 @@
 import copy
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -27,6 +28,7 @@ class BenchmarkMeta:
     system_prompt: Optional[str] = None
     query_template: Optional[str] = None
     pretty_name: Optional[str] = None
+    filters: Optional[OrderedDict] = None
 
     def _update(self, args: dict):
         if args.get('local_path'):
