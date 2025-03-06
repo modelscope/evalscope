@@ -51,10 +51,14 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - `few_shot_num`: Number of few-shots.
   - `few_shot_random`: Whether to randomly sample few-shot data, defaults to `False`.
   - `metrics_list`: A list of metrics for evaluating the dataset. When specified, the evaluation will use the given metrics. Currently supported metrics include `AverageAccuracy`, `AveragePass@1`, and `Pass@[1-16]`. For example, for the `humaneval` dataset, you can specify `["Pass@1", "Pass@5"]`. Note that in this case, you need to set `n=5` to make the model return 5 results.
+  - `filters`: Filters for the evaluation dataset. When specified, these filters will be used to process the evaluation results. They can be used to handle the output of inference models. Currently supported filters are:
+    - `remove_until {string}`: Removes the part of the model's output before the specified string.
+    - `extract {regex}`: Extracts the part of the model's output that matches the specified regular expression.
+    For example, the `ifeval` dataset can specify `{"remove_until": "</think>"}`, which will filter out the part of the model's output before `</think>`, avoiding interference with scoring.
   ```bash
   # For example
   --datasets gsm8k arc
-  --dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}'
+  --dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}, "ifeval": {"filters": {"remove_until": "</think>"}}'
   ```
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.

@@ -45,12 +45,12 @@ class ServerModelAdapter(BaseModelAdapter):
         sig = signature(self.client.chat.completions.create)
         return list(sig.parameters.keys())
 
-    def predict(self, inputs: List[Union[str, dict, list]], infer_cfg: dict = None) -> List[dict]:
+    def predict(self, inputs: List[dict], infer_cfg: dict = None) -> List[dict]:
         """
         Model prediction func.
 
         Args:
-            inputs (List[Union[str, dict, list]]): The input data.
+            inputs (List[dict]): The input data.
             infer_cfg (dict): Inference configuration.
 
         Returns:
@@ -133,7 +133,7 @@ class ServerModelAdapter(BaseModelAdapter):
             parsed_request = self._parse_extra_params(request_json)
             response = self.client.chat.completions.create(**parsed_request)
 
-            if self.stream:
+            if response and self.stream:
                 response = self._collect_stream_response(response)
 
             return response.model_dump(exclude_unset=True)
@@ -159,14 +159,14 @@ class ServerModelAdapter(BaseModelAdapter):
             full_reply_content = ''.join(messages)
             reasoning = ''.join(collected_reasoning[index])
             # use the finish_reason from the last chunk that generated this choice
-            finish_reason = 'stop'
+            finish_reason = None
             for chunk in reversed(collected_chunks):
                 if chunk.choices and chunk.choices[0].index == index:
                     finish_reason = chunk.choices[0].finish_reason
                     break
 
             choice = Choice(
-                finish_reason=finish_reason,
+                finish_reason=finish_reason or 'stop',
                 index=index,
                 message=ChatCompletionMessage(
                     role='assistant', content=full_reply_content, reasoning_content=reasoning))
