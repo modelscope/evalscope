@@ -198,7 +198,7 @@ class EvalThink:
                 (item for _, item in review_df.iterrows()),
                 desc=f'Evaluating {subset}',
                 total=len(review_df),
-                max_workers=16
+                max_workers=128
             )
 
             avg_tokens, avg_thought_num, avg_token_efficiency, avg_accuracy = zip(*results)
@@ -223,7 +223,7 @@ def run_task(config, output_dir='outputs', max_tokens=8000, count=50):
 
 judge_config = dict(
     api_key='EMPTY',
-    base_url='http://0.0.0.0:8801/v1',
+    base_url='http://0.0.0.0:8803/v1',
     model_name='Qwen2.5-72B-Instruct',
 )
 
@@ -257,7 +257,7 @@ r1_config = dict(
     judge_config=judge_config
 )
 
-qwq_config = dict(
+qwq_preview_config = dict(
     report_path = './outputs/20250221_105911',
     model_name = 'qwq-32b-preview',
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
@@ -267,8 +267,18 @@ qwq_config = dict(
     judge_config=judge_config
 )
 
+qwq_config = dict(
+    report_path = './outputs/20250306_181550',
+    model_name = 'QwQ-32B',
+    tokenizer_path = 'Qwen/QwQ-32B',
+    dataset_name = 'math_500',
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator',
+    judge_config=judge_config
+)
+
 if __name__ == '__main__':
-    run_task(distill_qwen_config, count=80)
+    # run_task(distill_qwen_config, count=80)
     # run_task(math_qwen_config)
     # run_task(r1_config)
-    # run_task(qwq_config, count=80)
+    run_task(qwq_config, count=100)
