@@ -1,5 +1,6 @@
 import openai
 from collections import defaultdict
+from inspect import signature
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from typing import List, Optional, Union
@@ -32,12 +33,17 @@ class ServerModelAdapter(BaseModelAdapter):
             api_key=api_key,
             base_url=self.api_url,
         )
+        self.supported_params = self._get_supported_params()
 
         self.seed = kwargs.get('seed', None)
         self.timeout = kwargs.get('timeout', 60)
         self.stream = kwargs.get('stream', False)
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
+
+    def _get_supported_params(self):
+        sig = signature(self.client.chat.completions.create)
+        return list(sig.parameters.keys())
 
     def predict(self, inputs: List[Union[str, dict, list]], infer_cfg: dict = None) -> List[dict]:
         """
@@ -106,11 +112,26 @@ class ServerModelAdapter(BaseModelAdapter):
             request_json['stream_options'] = {'include_usage': True}
 
         logger.debug(f'Request to remote API: {request_json}')
+
         return request_json
+
+    def _parse_extra_params(self, request_json):
+        api_params = {}
+        extra_body = {}
+        for key, value in request_json.items():
+            if key in self.supported_params:
+                api_params[key] = value
+            else:
+                extra_body[key] = value
+
+        if extra_body:
+            api_params['extra_body'] = extra_body
+        return api_params
 
     def send_request(self, request_json: dict) -> dict:
         try:
-            response = self.client.chat.completions.create(**request_json)
+            parsed_request = self._parse_extra_params(request_json)
+            response = self.client.chat.completions.create(**parsed_request)
 
             if self.stream:
                 response = self._collect_stream_response(response)
@@ -123,17 +144,20 @@ class ServerModelAdapter(BaseModelAdapter):
     def _collect_stream_response(self, response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
         collected_chunks = []
         collected_messages = defaultdict(list)
+        collected_reasoning = defaultdict(list)
 
         for chunk in response_stream:
             collected_chunks.append(chunk)
             for choice in chunk.choices:
+                if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
+                    collected_reasoning[choice.index].append(choice.delta.reasoning_content)
                 if choice.delta.content is not None:
                     collected_messages[choice.index].append(choice.delta.content)
 
         choices = []
         for index, messages in collected_messages.items():
             full_reply_content = ''.join(messages)
-
+            reasoning = ''.join(collected_reasoning[index])
             # use the finish_reason from the last chunk that generated this choice
             finish_reason = 'stop'
             for chunk in reversed(collected_chunks):
@@ -144,7 +168,8 @@ class ServerModelAdapter(BaseModelAdapter):
             choice = Choice(
                 finish_reason=finish_reason,
                 index=index,
-                message=ChatCompletionMessage(role='assistant', content=full_reply_content))
+                message=ChatCompletionMessage(
+                    role='assistant', content=full_reply_content, reasoning_content=reasoning))
             choices.append(choice)
 
         # build the final completion object
