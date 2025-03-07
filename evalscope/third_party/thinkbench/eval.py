@@ -323,8 +323,6 @@ def combine_results(configs: List[dict], output_path: str):
             fig.update_yaxes(range=[0.2, 0.7], row=row, col=col)
         elif metric == 'accuracy':
             fig.update_yaxes(range=[0.8, 1], row=row, col=col)
-        elif metric == 'thought_num':
-            fig.update_yaxes(range=[0, 13], row=row, col=col)
 
         fig.update_yaxes(title_text=metric.replace('_', ' ').title(), row=row, col=col)
 

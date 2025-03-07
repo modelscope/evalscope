@@ -157,14 +157,12 @@ model_config = dict(
     judge_config=judge_config
 )
 
-max_tokens = 8000  # 筛选token数量小于max_tokens的输出，用于提升评测效率
-count = 100  # 每个子集筛选count条输出，用于提升评测效率
+max_tokens = 20000  # 筛选token数量小于max_tokens的输出，用于提升评测效率
+count = 200  # 每个子集筛选count条输出，用于提升评测效率
 
 # 评测模型思考效率
 run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 ```
-
-**注意：这里设置了`max_tokens`为8000，`count`为100，用于提升评测效率，缩短评测时间。如果需要更精确的评测结果，可以设置更大的`max_tokens`和`count`。**
 
 结果如下图所示：
 
@@ -177,11 +175,9 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 根据这张图表，我可以分析出QwQ-32B模型相比其他两个模型的一些优势和劣势：
 
 优势：
-- 在准确性方面，QwQ-32B在大多数级别上表现最好，尤其是在Level 5这种高难度问题上领先幅度较大。
-- 在首次正确token数方面，QwQ-32B整体表现良好，特别是在高难度问题上表现出色，能更快的获取到正确答案。
+- 在准确性方面，QwQ-32B在大多数级别上表现最好，尤其是在Level 5这种高难度问题上也能保持较高正确率。
 
 劣势：
-- 在推理效率方面，QwQ-32B在低级别（Level 1-3）时使用的token数较多，有较多的反思验证token数，可能意味着在简单任务上效率较低，存在过度分析的问题。
-
+- 在推理效率方面，QwQ-32B在推理时使用的token数较多，有较多的反思验证token数，存在过度分析的问题。
 
 总的来说，QwQ-32B模型似乎在处理高难度任务时表现更好，具有较高的准确性和深度思考能力。然而，在处理较简单的任务时，它可能不如其他模型高效。这个模型可能更适合用于复杂的推理任务，而在日常或简单查询上可能会显得有些"过度"。
