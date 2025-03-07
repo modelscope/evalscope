@@ -134,7 +134,7 @@ class ARCAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
+            return ResponseParser.parse_first_capital(text=result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
