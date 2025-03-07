@@ -421,10 +421,10 @@ distill_qwen_32b = dict(
 if __name__ == '__main__':
     # run_task(distill_qwen_config, count=80)
     # run_task(math_qwen_config)
-    run_task(qwq_preview_config, max_tokens=12000, count=200, workers=128)
-    run_task(r1_config, max_tokens=12000, count=200, workers=128)
-    run_task(qwq_config, max_tokens=12000, count=200, workers=128)
-    run_task(distill_qwen_32b, max_tokens=12000, count=200, workers=128)
+    run_task(qwq_preview_config, max_tokens=20000, count=200, workers=128)
+    run_task(r1_config, max_tokens=20000, count=200, workers=128)
+    run_task(qwq_config, max_tokens=20000, count=200, workers=128)
+    run_task(distill_qwen_32b, max_tokens=20000, count=200, workers=128)
 
     combine_results([qwq_config, r1_config, qwq_preview_config,  distill_qwen_32b], output_path='outputs/model_comparison_metrics.png')
     combine_results([qwq_config, r1_config, distill_qwen_32b], output_path='outputs/model_comparison_metrics_3models.png')
