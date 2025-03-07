@@ -15,6 +15,7 @@ def request_url(llm_config, content):
         return completion.choices[0].message.content
     except Exception as e:
         print(e)
+        return None
 
 def request_qwen(content):
     try:
