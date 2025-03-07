@@ -23,7 +23,7 @@ class Arguments:
     headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
     connect_timeout: int = 120  # Connection timeout in seconds
     read_timeout: int = 120  # Read timeout in seconds
-    api_key: str = 'EMPTY'
+    api_key: Optional[str] = None
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -108,7 +108,7 @@ class Arguments:
         self.headers = self.headers or {}  # Default to empty dictionary
         if self.api_key:
             # Assuming the API key is used as a Bearer token
-            self.headers['Authorization'] = f'{self.api_key}'
+            self.headers['Authorization'] = f'Bearer {self.api_key}'
         self.model_id = os.path.basename(self.model)
 
     def __str__(self):
@@ -144,7 +144,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--url', type=str, default='http://127.0.0.1:8877/v1/chat/completions')
     parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
-    parser.add_argument('--api-key', type=str, required=False, default='EMPTY', help='The API key for authentication')
+    parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=120, help='The network connection timeout')
     parser.add_argument('--read-timeout', type=int, default=120, help='The network read timeout')
 
