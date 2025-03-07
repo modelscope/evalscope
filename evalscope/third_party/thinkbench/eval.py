@@ -61,7 +61,8 @@ class EvalThink:
         switch_count = sum(think_part.lower().count(token) for token in self.switch_tokens)
         useful_tokens = self.cal_tokens(self.get_first_correct(think_part, problem, answer))
         reflection_tokens = tokens - useful_tokens
-        score = choice['review']['result']
+        # score = choice['review']['result']
+        score = 0 if useful_tokens == 0 else 1
         return tokens, switch_count, useful_tokens, reflection_tokens, score
 
     def process_item(self, item):
@@ -420,10 +421,10 @@ distill_qwen_32b = dict(
 if __name__ == '__main__':
     # run_task(distill_qwen_config, count=80)
     # run_task(math_qwen_config)
-    # run_task(qwq_preview_config, count=100, workers=128)
-    # run_task(r1_config, count=100, workers=128)
-    # run_task(qwq_config, count=100, workers=128)
-    # run_task(distill_qwen_32b, count=100, workers=128)
+    run_task(qwq_preview_config, max_tokens=12000, count=200, workers=128)
+    run_task(r1_config, max_tokens=12000, count=200, workers=128)
+    run_task(qwq_config, max_tokens=12000, count=200, workers=128)
+    run_task(distill_qwen_32b, max_tokens=12000, count=200, workers=128)
 
-    # combine_results([qwq_config, r1_config, qwq_preview_config,  distill_qwen_32b], output_path='outputs/model_comparison_metrics.png')
+    combine_results([qwq_config, r1_config, qwq_preview_config,  distill_qwen_32b], output_path='outputs/model_comparison_metrics.png')
     combine_results([qwq_config, r1_config, distill_qwen_32b], output_path='outputs/model_comparison_metrics_3models.png')
