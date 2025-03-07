@@ -125,7 +125,16 @@ evalscope app --lang en
 
 - **Overthinking（过度思考）** 现象则表现为模型在不必要的情况下生成过长的思维链，浪费了大量的计算资源。例如，对于简单的"2+3=？"这样的问题，某些长推理模型可能会消耗超过900个token来探索多种解题策略。尽管这种思维链策略对于复杂问题的解答非常有帮助，但在应对简单问题时，反复验证已有的答案和进行过于宽泛的探索显然是一种计算资源的浪费。
 
-这两种现象都凸显了一个关键问题：如何在保证答案质量的同时，提高模型的思考效率？换句话说，**我们希望模型能够在尽可能短的输出中获取正确的答案**。我们接下来将在使用[MATH-500](https://www.modelscope.cn/datasets/AI-ModelScope/MATH-500)数据集上衡量QwQ-32B等模型的思考效率，从token效率、模型思考长度、子思维链数量和准确率四个维度来评估模型的表现，具体指标定义参考[ThinkEval](./think_eval.md)。
+这两种现象都凸显了一个关键问题：如何在保证答案质量的同时，提高模型的思考效率？换句话说，**我们希望模型能够在尽可能短的输出中获取正确的答案**。我们接下来将在使用[MATH-500](https://www.modelscope.cn/datasets/AI-ModelScope/MATH-500)数据集上衡量QwQ-32B等模型的思考效率，从以下六个维度来评估模型的表现：
+
+- 模型推理总token数（Reasoning Tokens） $T$：模型推理过程中reasoning content总数，一般为`</think>`标签之前到部分。
+- 首次正确token数（First Correct Tokens） $\hat{T}$：模型推理过程中，从起始位置到第一个可以识别为正确答案位置的token数。
+- 剩余反思token数（Reflection Tokens）：$T-\hat{T}$，即从第一个正确答案位置到推理结束的token数。
+- 反思验证效率（Token Efficiency）：$\hat{T}/T$，即从起始位置到第一个正确答案位置的token数占总token数的比例。
+- 子思维链数量（Thought Num）：模型推理过程中，子思维链的数量，通过统计一些关键词（如`alternatively`、`but wait`、`let me reconsider`等）来判断。
+- 准确率（Accuracy）：模型推理过程中，正确样本的数量占总样本数量的比例。
+
+具体评测方法可参考[ThinkEval](./think_eval.md)。
 
 运行以下命令，即可启动思考效率评测：
 
@@ -149,19 +158,30 @@ model_config = dict(
 )
 
 max_tokens = 8000  # 筛选token数量小于max_tokens的输出，用于提升评测效率
-count = 50  # 每个子集筛选count条输出，用于提升评测效率
+count = 100  # 每个子集筛选count条输出，用于提升评测效率
 
 # 评测模型思考效率
 run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 ```
 
+**注意：这里设置了`max_tokens`为8000，`count`为100，用于提升评测效率，缩短评测时间。如果需要更精确的评测结果，可以设置更大的`max_tokens`和`count`。**
+
 结果如下图所示：
 
 ![QwQ-32B-Final](./images/QwQ-32B_math_500_metrics.png)
 
-同时我们也测试了QwQ-32B-Preview模型，结果如下图所示：
+同时我们也测试了DeepSeek-R1-671B模型，DeepSeek-R1-Distill-Qwen-32B模型，整合结果如下图所示：
 
-![QwQ-32B-Preview](./images/qwq-32b-preview_math_500_metrics.png)
+![model_comparison_metrics_3models](./images/model_comparison_metrics_3models.png)
 
-对比QwQ-32B-Preview模型，QwQ-32B模型能力变强了，与此同时在推理过程中有较多的Overthinking现象，思考长度较长，且存在较多的子思维链。
+根据这张图表，我可以分析出QwQ-32B模型相比其他两个模型的一些优势和劣势：
 
+优势：
+- 在准确性方面，QwQ-32B在大多数级别上表现最好，尤其是在Level 5这种高难度问题上领先幅度较大。
+- 在首次正确token数方面，QwQ-32B整体表现良好，特别是在高难度问题上表现出色，能更快的获取到正确答案。
+
+劣势：
+- 在推理效率方面，QwQ-32B在低级别（Level 1-3）时使用的token数较多，有较多的反思验证token数，可能意味着在简单任务上效率较低，存在过度分析的问题。
+
+
+总的来说，QwQ-32B模型似乎在处理高难度任务时表现更好，具有较高的准确性和深度思考能力。然而，在处理较简单的任务时，它可能不如其他模型高效。这个模型可能更适合用于复杂的推理任务，而在日常或简单查询上可能会显得有些"过度"。
