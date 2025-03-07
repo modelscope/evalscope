@@ -2,7 +2,7 @@ import os
 
 from evalscope import TaskConfig, run_task
 
-DASHSCOPE_API_KEY = 'sk-723135c241a544719ffc2cd7f8062ce7'
+DASHSCOPE_API_KEY = 'sk-723135c241x'
 
 def eval_distill_qwen():
     model_name = 'DeepSeek-R1-Distill-Qwen-7B'
