@@ -23,10 +23,7 @@ class AioHttpClient:
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
         self.client = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(
-                total=self.read_timeout + self.connect_timeout,
-                connect=self.connect_timeout,
-                sock_read=self.read_timeout),
+            timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
             connector=aiohttp.TCPConnector(limit=1),
             trace_configs=[self._create_trace_config()] if args.debug else [])
 
@@ -102,6 +99,11 @@ class AioHttpClient:
             async with self.client.request('POST', url=self.url, data=data, headers=headers) as response:
                 async for rsp in self._handle_response(response):
                     yield rsp
+        except asyncio.TimeoutError:
+            logger.error(
+                f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longger timeout.'  # noqa: E501
+            )
+            yield (True, None, 'Timeout')
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
             yield (True, None, e)
