@@ -76,7 +76,7 @@ class TestRun(unittest.TestCase):
             model='qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
                 # 'iquiz',
-                # 'ifeval',
+                'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
@@ -85,7 +85,7 @@ class TestRun(unittest.TestCase):
                 # 'trivia_qa',
                 # 'cmmlu',
                 # 'humaneval',
-                'super_gpqa',
+                # 'super_gpqa',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
@@ -154,6 +154,11 @@ class TestRun(unittest.TestCase):
                 'super_gpqa': {
                     'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
+                },
+                'ifeval': {
+                    'filters': {
+                        'remove_until': '</think>'
+                    }
                 }
             },
             limit=2,
@@ -161,7 +166,7 @@ class TestRun(unittest.TestCase):
             generation_config={
                 'max_new_tokens': 2048,
                 'temperature': 0.7,
-                'num_return_sequences': 2,
+                'num_return_sequences': 1,
             },
             # debug=True
         )

@@ -51,10 +51,14 @@
   - `few_shot_num`: few-shot的数量。
   - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`。
   - `metrics_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前支持`AverageAccuracy`, `AveragePass@1`, `Pass@[1-16]`。例如`humaneval`数据集可指定`["Pass@1", "Pass@5"]`，注意此时需要指定`n=5`让模型返回5个结果。
+  - `filters`: 评测数据集的过滤器，指定后将使用给定的过滤器过滤评测结果，可用来处理推理模型的输出，目前支持：
+    - `remove_until {string}`: 过滤掉模型输出结果中指定字符串之前的部分。
+    - `extract {regex}`: 提取模型输出结果中指定正则表达式匹配的部分。
+    例如`ifeval`数据集可指定`{"remove_until": "</think>"}`，将过滤掉模型输出结果中`</think>`之前的部分，避免影响打分。
   ```bash
   # 例如
   --datasets gsm8k arc
-  --dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}'
+  --dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}, "ifeval": {"filters": {"remove_until": "</think>"}}'
   ```
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`
