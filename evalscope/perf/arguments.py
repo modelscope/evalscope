@@ -23,7 +23,7 @@ class Arguments:
     headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
     connect_timeout: int = 600  # Connection timeout in seconds
     read_timeout: int = 600  # Read timeout in seconds
-    api_key: str = 'EMPTY'
+    api_key: Optional[str] = None
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -125,7 +125,13 @@ class ParseKVAction(argparse.Action):
             setattr(namespace, self.dest, {})
         else:
             try:
-                kv_dict = dict(kv.split('=') for kv in values)
+                kv_dict = {}
+                for kv in values:
+                    parts = kv.split('=', 1)  # only split the first '='
+                    if len(parts) != 2:
+                        raise ValueError(f'Invalid key-value pair: {kv}')
+                    key, value = parts
+                    kv_dict[key.strip()] = value.strip()
                 setattr(namespace, self.dest, kv_dict)
             except ValueError as e:
                 parser.error(f'Error parsing key-value pairs: {e}')
@@ -144,7 +150,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--url', type=str, default='http://127.0.0.1:8877/v1/chat/completions')
     parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
-    parser.add_argument('--api-key', type=str, required=False, default='EMPTY', help='The API key for authentication')
+    parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=600, help='The network connection timeout')
     parser.add_argument('--read-timeout', type=int, default=600, help='The network read timeout')
 

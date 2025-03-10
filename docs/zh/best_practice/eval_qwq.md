@@ -170,14 +170,14 @@ run_task(model_config, output_dir='outputs', max_tokens=max_tokens, count=count)
 
 同时我们也测试了DeepSeek-R1-671B模型，DeepSeek-R1-Distill-Qwen-32B模型，整合结果如下图所示：
 
-![model_comparison_metrics_3models](./images/model_comparison_metrics_3models.png)
+![model_comparison_metrics_3models](./images/model_comparison_metrics_6models.png)
 
-根据这张图表，我可以分析出QwQ-32B模型相比其他两个模型的一些优势和劣势：
 
-优势：
-- 在准确性方面，QwQ-32B在大多数级别上表现最好，尤其是在Level 5这种高难度问题上也能保持较高正确率。
+使用相同的方法，我们还对另外4个款推理模型QwQ-32B、QwQ-32B-Preview、DeepSeek-R1、DeepSeek-R1-Distill-Qwen-32B，以及一个非推理模型Qwen2.5-Math-7B-Instruct（将模型输出的所有token视为思考过程），以便观察不同类型模型的表现。具体结果整理如下：
 
-劣势：
-- 在推理效率方面，QwQ-32B在推理时使用的token数较多，有较多的反思验证token数，存在过度分析的问题。
-
-总的来说，QwQ-32B模型似乎在处理高难度任务时表现更好，具有较高的准确性和深度思考能力。然而，在处理较简单的任务时，它可能不如其他模型高效。这个模型可能更适合用于复杂的推理任务，而在日常或简单查询上可能会显得有些"过度"。
+1. 随着问题难度的增加，大多数模型的正确率呈现下降趋势，但QwQ-32B和DeepSeek-R1表现出色，在高难度问题上仍保持很高的准确率，其中QwQ-32B在最高难度级别上取得了最佳表现。
+2. 对于o1/R1类的推理模型，随着问题难度的提升，虽然输出长度稳定变长，但token的效率也有所提高（DeepSeek-R1从36%增长到54%，QwQ-32B从31%增长到49%）
+3. 所有模型的输出长度都随问题难度增加而增加，这表明模型在解答更复杂问题时需要更长的"思考时间"，与Inference-Time Scaling现象相符。 
+4. 在相对简单的问题中，各类Reasoning模型均存在一定程度的token浪费现象，对已输出的答案进行反复验证
+    
+综上，如何更准确、更细粒度的评估模型的Reasoning效率，是一个非常值得深入探讨的问题；同时，相关的测试结论，也对GRPO和SFT训练过程有非常重要的参考意义，有助于开发出"更高效"且能根据问题难度"自适应推理"的模型。

@@ -355,3 +355,6 @@ class DataAdapter(ABC):
             The match result. Usually a score (float) for chat/multiple-choice-questions.
         """
         raise NotImplementedError
+
+    def llm_match(self, *args, **kwargs):
+        pass
