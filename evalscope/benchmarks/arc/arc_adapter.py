@@ -62,7 +62,7 @@ class ARCAdapter(DataAdapter):
             for split_name in ['Train', 'Test']:
                 split_path = os.path.join(subset_path, f'{subset_name}-{split_name}.jsonl')
                 if os.path.exists(split_path):
-                    with open(split_path, 'r', errors='ignore') as in_f:
+                    with open(split_path, 'r', errors='ignore', encoding='utf-8') as in_f:
                         rows = []
                         for line in in_f:
                             item = json.loads(line.strip())

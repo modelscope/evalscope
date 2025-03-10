@@ -24,7 +24,7 @@ class ProcessBenchAdapter(DataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.prompt_template = open(os.path.join(cur_path, 'critique_template.txt')).read()
+        self.prompt_template = open(os.path.join(cur_path, 'critique_template.txt'), encoding='utf-8').read()
 
         # register metrics
         metric_registry.register(Metric(name='error_acc', object=mean))

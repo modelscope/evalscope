@@ -79,6 +79,8 @@ class TaskConfig:
                 self.model_id = type(self.model).__name__
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
+            # fix path error, see http://github.com/modelscope/evalscope/issues/377
+            self.model_id = self.model_id.replace(':', '-')
 
         # Set default eval_batch_size based on eval_type
         if self.eval_batch_size is None:

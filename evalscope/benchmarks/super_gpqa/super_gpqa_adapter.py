@@ -130,8 +130,8 @@ class SuperGPQAAdapter(DataAdapter):
 
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
         self.category_map = SUBSET_MAPPING
-        self.few_shot_prompt = open(os.path.join(current_dir, 'five_shot_prompt.txt')).read()
-        self.zero_shot_prompt = open(os.path.join(current_dir, 'zero_shot_prompt.txt')).read()
+        self.few_shot_prompt = open(os.path.join(current_dir, 'five_shot_prompt.txt'), encoding='utf-8').read()
+        self.zero_shot_prompt = open(os.path.join(current_dir, 'zero_shot_prompt.txt'), encoding='utf-8').read()
 
     def load(self, **kwargs):
         kwargs['subset_list'] = ['default']

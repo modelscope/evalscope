@@ -58,7 +58,7 @@ class CompetitionMathAdapter(DataAdapter):
                 split_data = []
                 for file_path in split_files:
                     if os.path.exists(file_path):
-                        with open(file_path, 'r') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             split_data.append(json.load(f))
                 data_dict[subset_name][split_name] = split_data
 
