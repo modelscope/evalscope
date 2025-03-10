@@ -28,8 +28,9 @@ class GPQAAdapter(DataAdapter):
         self.choices = ['A', 'B', 'C', 'D']
         if self.few_shot_num and self.few_shot_num > 0:
             self.prompt_prefix = 'Here are some example questions from experts. Answer the final question yourself, following the format of the previous questions exactly.\n'  # noqa: E501
-            self.prompt_prefix += open(os.path.join(os.path.dirname(__file__), 'chain_of_thought.txt'),
-                                       'r').read() + '\nQuestion: '
+            self.prompt_prefix += open(
+                os.path.join(os.path.dirname(__file__), 'chain_of_thought.txt'), 'r',
+                encoding='utf-8').read() + '\nQuestion: '
         else:
             self.prompt_prefix = 'What is the correct answer to this question:'
 

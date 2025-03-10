@@ -75,8 +75,8 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
-                # 'iquiz',
-                'ifeval',
+                'iquiz',
+                # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
@@ -90,8 +90,8 @@ class TestRun(unittest.TestCase):
                 # 'bbh',
                 # 'competition_math',
                 # 'math_500',
-                # 'aime24',
-                # 'gpqa',
+                'aime24',
+                'gpqa',
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',
