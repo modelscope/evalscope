@@ -125,7 +125,13 @@ class ParseKVAction(argparse.Action):
             setattr(namespace, self.dest, {})
         else:
             try:
-                kv_dict = dict(kv.split('=') for kv in values)
+                kv_dict = {}
+                for kv in values:
+                    parts = kv.split('=', 1)  # only split the first '='
+                    if len(parts) != 2:
+                        raise ValueError(f'Invalid key-value pair: {kv}')
+                    key, value = parts
+                    kv_dict[key.strip()] = value.strip()
                 setattr(namespace, self.dest, kv_dict)
             except ValueError as e:
                 parser.error(f'Error parsing key-value pairs: {e}')
