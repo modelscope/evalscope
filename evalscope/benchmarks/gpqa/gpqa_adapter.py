@@ -3,15 +3,16 @@ import random
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import ChatGenerationModelAdapter
 
 
 @Benchmark.register(
     name='gpqa',
+    pretty_name='GPQA',
     dataset_id='modelscope/gpqa',
-    model_adapter=ChatGenerationModelAdapter,
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
     metric_list=['AveragePass@1'],
     few_shot_num=5,
@@ -27,8 +28,9 @@ class GPQAAdapter(DataAdapter):
         self.choices = ['A', 'B', 'C', 'D']
         if self.few_shot_num and self.few_shot_num > 0:
             self.prompt_prefix = 'Here are some example questions from experts. Answer the final question yourself, following the format of the previous questions exactly.\n'  # noqa: E501
-            self.prompt_prefix += open(os.path.join(os.path.dirname(__file__), 'chain_of_thought.txt'),
-                                       'r').read() + '\nQuestion: '
+            self.prompt_prefix += open(
+                os.path.join(os.path.dirname(__file__), 'chain_of_thought.txt'), 'r',
+                encoding='utf-8').read() + '\nQuestion: '
         else:
             self.prompt_prefix = 'What is the correct answer to this question:'
 
@@ -50,7 +52,7 @@ class GPQAAdapter(DataAdapter):
         query = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}"  # noqa: E501
 
         prompt = self.prompt_template.format(query=query)
-        return {'data': [prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(prompt)
 
     def __process_input(self, input_d: dict) -> dict:
 
@@ -94,7 +96,10 @@ class GPQAAdapter(DataAdapter):
         """
         Parse the predicted result and extract proper answer.
         """
-        return GPQAAdapter.get_multiple_choice_answer(result)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
+        else:
+            return GPQAAdapter.get_multiple_choice_answer(result)
 
     def match(self, gold: str, pred: str) -> float:
         """

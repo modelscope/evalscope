@@ -8,8 +8,6 @@ import re
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys
 from evalscope.metrics import exact_match
-from evalscope.models.chat_adapter import ChatGenerationModelAdapter
-from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -60,8 +58,8 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
 @Benchmark.register(
     name='bbh',
+    pretty_name='BBH',
     dataset_id='modelscope/bbh',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=3,
@@ -94,7 +92,7 @@ class BBHAdapter(DataAdapter):
                 else:
                     file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
                 if os.path.exists(file_path):
-                    with open(file_path, 'r') as f:
+                    with open(file_path, 'r', encoding='utf-8') as f:
                         examples = json.load(f)['examples']
                         if subset_name in data_dict:
                             data_dict[subset_name].update({split_name: examples})
@@ -125,7 +123,7 @@ class BBHAdapter(DataAdapter):
             cot_prompts = ''
         full_prompt = cot_prompts + self.prompt_template.format(query=input_d['input'])
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def gen_prompts(self, data_dict: dict) -> dict:
         """
@@ -153,7 +151,9 @@ class BBHAdapter(DataAdapter):
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
             if self.few_shot_num > 0:
-                with open(os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r') as f:
+                with open(
+                        os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r',
+                        encoding='utf-8') as f:
                     cot_prompt_str = f.read()
                 few_shot_data = [cot_prompt_str]
 

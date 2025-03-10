@@ -5,8 +5,7 @@ import os
 
 from evalscope.benchmarks import Benchmark
 from evalscope.benchmarks.data_adapter import DataAdapter
-from evalscope.constants import EvalType
-from evalscope.models import ChatGenerationModelAdapter
+from evalscope.constants import EvalType, OutputType
 from evalscope.utils import get_logger
 
 # flake8: noqa
@@ -16,8 +15,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='trivia_qa',
+    pretty_name='TriviaQA',
     dataset_id='modelscope/trivia_qa',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
     few_shot_num=5,
@@ -100,7 +99,7 @@ class TriviaQaAdapter(DataAdapter):
         context += self._generate_prompt(input_d=input_d, include_answer=False)
         full_prompt = context
 
-        return {'data': [full_prompt], 'system_prompt': prompt or self.prompt_template}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> list:
         # Get the gold choice

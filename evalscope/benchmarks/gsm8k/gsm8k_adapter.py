@@ -6,7 +6,6 @@ import os
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -15,8 +14,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='gsm8k',
+    pretty_name='GSM8K',
     dataset_id='modelscope/gsm8k',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['main'],
     metric_list=['AverageAccuracy'],
     few_shot_num=4,
@@ -76,7 +75,7 @@ class GSM8KAdapter(DataAdapter):
 
         full_prompt = context + self.prompt_template.format(query=input_d['question'])
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.

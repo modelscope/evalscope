@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, List, Optional, Union
 
+from evalscope.benchmarks.utils import PromptData, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics.named_metrics import metric_registry
 from evalscope.report import Report, ReportGenerator
@@ -18,6 +19,7 @@ class DataAdapter(ABC):
     def __init__(self,
                  name: str,
                  dataset_id: str,
+                 model_adapter: str,
                  subset_list: list,
                  metric_list: List[str],
                  few_shot_num: Optional[int] = 0,
@@ -48,6 +50,7 @@ class DataAdapter(ABC):
         """
         self.name = name
         self.dataset_id = dataset_id
+        self.model_adapter = model_adapter
         self.subset_list = subset_list
         self.metric_list = metric_list
         self.few_shot_num = few_shot_num
@@ -59,6 +62,15 @@ class DataAdapter(ABC):
         self.pretty_name = pretty_name
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
+        self.choices = kwargs.get('choices', None)
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        # find and decorate parse_pred_result method
+        if hasattr(cls, 'parse_pred_result'):
+            original_method = cls.parse_pred_result
+            cls.parse_pred_result = preprocess_decorator(original_method)
 
     def load(self,
              dataset_name_or_path: str = None,
@@ -78,11 +90,15 @@ class DataAdapter(ABC):
 
         # Try to load dataset from local disk
         if os.path.exists(dataset_name_or_path):
-            data_dict = self.load_from_disk(dataset_name_or_path, subset_list, work_dir, **kwargs)
+            logger.info(f'Loading dataset from local disk: {dataset_name_or_path}')
+            data_dict = self.load_from_disk(
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=False, **kwargs)
         else:
-            data_dict = self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
-        if len(data_dict) == 0 or len(next(iter(data_dict.values()))) == 0:
-            raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
+            logger.info(f'Loading dataset from hub: {dataset_name_or_path}')
+            data_dict = self.load_from_hub(
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=True, **kwargs)
+        if len(data_dict) == 0:
+            raise ValueError(f'Dataset is empty: {dataset_name_or_path}')
         return data_dict
 
     def load_from_hub(self, dataset_name_or_path: str, subset_list: list, work_dir: str, **kwargs) -> dict:
@@ -91,8 +107,7 @@ class DataAdapter(ABC):
         datasets_hub: str = kwargs.pop('datasets_hub', HubType.MODELSCOPE)
         split_as_subset: bool = kwargs.pop('split_as_subset', False)
         # Load dataset from remote
-        logger.info(
-            f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
+        logger.info(f'Loading dataset: dataset_name: {dataset_name_or_path} > subsets: {subset_list}')
 
         data_dict = {}
         split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
@@ -133,21 +148,7 @@ class DataAdapter(ABC):
         If you want to support local dataset, please rewrite this method in xxx_data_adapter.
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
-        from modelscope.msdatasets import MsDataset
-
-        logger.info(f'Loading dataset from work_dir: {work_dir}: > dataset_name: {dataset_name_or_path} > \
-                subsets: {subset_list}')
-        data_dict = {}
-        subset_list = subset_list or self.subset_list
-        split_list = [split for split in [self.train_split, self.eval_split] if split is not None]
-        for sub_name in subset_list:
-            data_dict[sub_name] = {}
-            # e.g. train: few-shot, test: target dataset to evaluate
-            for split in split_list:
-                dataset = MsDataset.load(
-                    dataset_name=dataset_name_or_path, subset_name=sub_name, split=split, cache_dir=work_dir, **kwargs)
-                data_dict[sub_name].update({split: dataset})
-        return data_dict
+        return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
 
     def reformat_subset(self, data_dict: dict, subset_key: str, format: str = '{}') -> dict:
         """
@@ -285,6 +286,12 @@ class DataAdapter(ABC):
         kwargs['metric_list'] = self.metric_list
         return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
 
+    def gen_prompt_data(self, prompt: str, **kwargs) -> dict:
+        if not isinstance(prompt, list):
+            prompt = [prompt]
+        prompt_data = PromptData(data=prompt, multi_choices=self.choices, system_prompt=self.system_prompt)
+        return prompt_data.to_dict()
+
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
         """
         Generate model prompt from raw input, unify the prompt format for different datasets.
@@ -348,3 +355,6 @@ class DataAdapter(ABC):
             The match result. Usually a score (float) for chat/multiple-choice-questions.
         """
         raise NotImplementedError
+
+    def llm_match(self, *args, **kwargs):
+        pass

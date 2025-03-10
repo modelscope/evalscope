@@ -15,7 +15,6 @@ logger = get_logger()
 @Benchmark.register(
     name='data_collection',
     dataset_id='',  # dataset_id need to be set
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,

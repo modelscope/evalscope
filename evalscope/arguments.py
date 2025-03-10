@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from evalscope.constants import EvalBackend, EvalStage, EvalType
+from evalscope.constants import EvalBackend, EvalStage, EvalType, OutputType
 
 
 class ParseStrArgsAction(argparse.Action):

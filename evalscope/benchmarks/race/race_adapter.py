@@ -3,9 +3,8 @@
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -17,8 +16,10 @@ logger = get_logger()
 
 @Benchmark.register(
     name='race',
+    pretty_name='RACE',
     dataset_id='modelscope/race',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['high', 'middle'],
     metric_list=['AverageAccuracy'],
     few_shot_num=3,
@@ -27,8 +28,6 @@ logger = get_logger()
 )
 class RACEAdapter(DataAdapter):
 
-    choices = ['A', 'B', 'C', 'D']
-
     def __init__(self, **kwargs):
         few_shot_num = kwargs.get('few_shot_num', 3)
         if few_shot_num > 3:
@@ -36,6 +35,8 @@ class RACEAdapter(DataAdapter):
             kwargs['few_shot_num'] = 3
 
         super().__init__(**kwargs)
+
+        self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -82,7 +83,7 @@ class RACEAdapter(DataAdapter):
 
         full_prompt: str = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -100,26 +101,21 @@ class RACEAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(result, self.choices)  # TODO: to be checked !
         else:
-            raise ValueError(f'Unknown eval_type: {eval_type}')
+            return ResponseParser.parse_first_option_with_choices(result, self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
 
-    @classmethod
-    def _generate_prompt(cls, input_d: dict, include_answer=True) -> str:
+    def _generate_prompt(self, input_d: dict, include_answer=True) -> str:
 
         input_choices: list = input_d['options']
 
         example: str = 'Article:\n{}\nQuestion:\n{}'.format(input_d['article'], input_d['question'])
-        for j in range(len(cls.choices)):
-            example += '\n{}. {}'.format(cls.choices[j], input_choices[j])
+        for j in range(len(self.choices)):
+            example += '\n{}. {}'.format(self.choices[j], input_choices[j])
 
         example += '\nAnswer:'
         if include_answer:

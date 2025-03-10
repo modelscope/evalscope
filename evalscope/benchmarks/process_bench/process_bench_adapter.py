@@ -5,7 +5,6 @@ from typing import Any, List
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
 from evalscope.metrics import Metric, mean, metric_registry, simple_f1_score
-from evalscope.models import ChatGenerationModelAdapter
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,7 +13,6 @@ cur_path = os.path.dirname(os.path.abspath(__file__))
     name='process_bench',
     pretty_name='ProcessBench',
     dataset_id='Qwen/ProcessBench',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
     metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],
     few_shot_num=0,
@@ -26,7 +24,7 @@ class ProcessBenchAdapter(DataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.prompt_template = open(os.path.join(cur_path, 'critique_template.txt')).read()
+        self.prompt_template = open(os.path.join(cur_path, 'critique_template.txt'), encoding='utf-8').read()
 
         # register metrics
         metric_registry.register(Metric(name='error_acc', object=mean))
@@ -50,7 +48,7 @@ class ProcessBenchAdapter(DataAdapter):
 
         full_prompt = self.prompt_template.format(problem=problem, tagged_response=tagged_response)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
@@ -84,7 +82,12 @@ class ProcessBenchAdapter(DataAdapter):
                 correct_data.append(res)
             else:
                 error_data.append(res)
-        data = {'error_acc': error_data, 'correct_acc': correct_data, 'simple_f1_score': (correct_data, error_data)}
+        data = {}
+        if len(correct_data) != 0:
+            data.update({'correct_acc': correct_data})
+        if len(error_data) != 0:
+            data.update({'error_acc': error_data})
+        data.update({'simple_f1_score': (correct_data, error_data)})
         return super().compute_metric(data)
 
     @staticmethod

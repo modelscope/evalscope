@@ -3,11 +3,14 @@ import time
 import torch
 from typing import List
 
+from evalscope.constants import OutputType
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
+from evalscope.models.register import register_model_adapter
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 
 
+@register_model_adapter(OutputType.MULTIPLE_CHOICE)
 class MultiChoiceModelAdapter(BaseModelAdapter):
     """ The multi-choice model adapter. """
 
@@ -110,6 +113,7 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         return log_probs, {'tokens': tokens}
 
 
+@register_model_adapter(OutputType.CONTINUOUS)
 class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
     """
     Continuation-logits model adapter.

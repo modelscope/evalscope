@@ -13,8 +13,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='humaneval',
+    pretty_name='HumanEval',
     dataset_id='modelscope/humaneval',
-    model_adapter=ChatGenerationModelAdapter,
     subset_list=['openai_humaneval'],
     metric_list=['Pass@1'],
     few_shot_num=0,
@@ -66,7 +66,7 @@ class HumanevalAdapter(DataAdapter):
         query = input_d['prompt']
         full_prompt = self.prompt_template.format(query=query)
 
-        return {'data': [full_prompt], 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     @classmethod
     def _postprocess(cls, text: str) -> str:

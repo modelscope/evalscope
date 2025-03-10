@@ -4,9 +4,8 @@ import json
 import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.models import MultiChoiceModelAdapter
 from evalscope.utils import ResponseParser
 from evalscope.utils.logger import get_logger
 
@@ -17,18 +16,19 @@ logger = get_logger()
 
 @Benchmark.register(
     name='arc',
+    pretty_name='ARC',
     dataset_id='modelscope/ai2_arc',
-    model_adapter=MultiChoiceModelAdapter,
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['ARC-Easy', 'ARC-Challenge'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='train',
     eval_split='test',
-    prompt_template='',
+    prompt_template=
+    'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n{query}',
 )
 class ARCAdapter(DataAdapter):
-
-    choices = ['A', 'B', 'C', 'D']
 
     def __init__(self, **kwargs):
         few_shot_num = kwargs.get('few_shot_num', None)
@@ -41,6 +41,8 @@ class ARCAdapter(DataAdapter):
             logger.warning(f'few_shot_num is recommended to set 0 for ARC, got {few_shot_num}.')
 
         super().__init__(**kwargs)
+
+        self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         """
@@ -60,7 +62,7 @@ class ARCAdapter(DataAdapter):
             for split_name in ['Train', 'Test']:
                 split_path = os.path.join(subset_path, f'{subset_name}-{split_name}.jsonl')
                 if os.path.exists(split_path):
-                    with open(split_path, 'r', errors='ignore') as in_f:
+                    with open(split_path, 'r', errors='ignore', encoding='utf-8') as in_f:
                         rows = []
                         for line in in_f:
                             item = json.loads(line.strip())
@@ -107,12 +109,11 @@ class ARCAdapter(DataAdapter):
             {'data': ['xxx'], 'multi_choices': ['A', 'B', 'C', 'D']}
         """
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-        context: str = '\n'.join(few_shot_prompts)
+        context = '\n'.join(few_shot_prompts) + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        # context = f'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n {context}'
-        full_prompt: str = context + self._generate_prompt(input_d=input_d, include_answer=False)
+        full_prompt = self.prompt_template.format(query=context)
 
-        return {'data': [full_prompt], 'multi_choices': self.choices, 'system_prompt': self.system_prompt}
+        return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice
@@ -130,14 +131,10 @@ class ARCAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if eval_type == EvalType.CHECKPOINT:
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
-        elif eval_type == EvalType.SERVICE:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
-        elif eval_type == EvalType.CUSTOM:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
         else:
-            raise ValueError(f'Invalid eval_type: {eval_type}')
+            return ResponseParser.parse_first_capital(text=result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)

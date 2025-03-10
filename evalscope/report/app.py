@@ -125,6 +125,9 @@ def get_compare_report_df(acc_df: pd.DataFrame):
 
 
 def plot_single_report_scores(df: pd.DataFrame):
+    if df is None:
+        return None
+    logger.debug(f'df: {df}')
     plot = px.bar(df, x=df[ReportKey.dataset_name], y=df[ReportKey.score], text=df[ReportKey.score])
 
     width = 0.2 if len(df[ReportKey.dataset_name]) <= 5 else None

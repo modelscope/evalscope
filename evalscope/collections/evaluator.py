@@ -97,8 +97,8 @@ class EvaluatorCollection:
         evaluators = {}
         for dataset_name in self.dataset_name_map.keys():
             benchmark = Benchmark.get(dataset_name)
+            model_adapter = initialize_model_adapter(self.task_cfg, benchmark, self.model)
             data_adapter = benchmark.get_data_adapter()
-            model_adapter = initialize_model_adapter(self.task_cfg, benchmark.model_adapter, self.model)
             evaluators[dataset_name] = SimpleEvaluator(dataset_name, data_adapter, model_adapter, self.task_cfg,
                                                        self.outputs)
         return evaluators
@@ -238,7 +238,16 @@ class EvaluatorCollection:
         if self.task_cfg.use_cache and os.path.exists(review_file_path):
             logger.warning(
                 f'Ignore use_cache={self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
-            os.remove(review_file_path)
+            if os.path.isdir(review_file_path):
+                for filename in os.listdir(review_file_path):
+                    file_path = os.path.join(review_file_path, filename)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                    except Exception as e:
+                        logger.error(f'Error deleting file {file_path}: {e}')
+            else:
+                os.remove(review_file_path)
 
         reviews = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting reviews'):
