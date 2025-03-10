@@ -21,8 +21,8 @@ class Arguments:
     # Connection settings
     url: str = 'http://127.0.0.1:8877/v1/chat/completions'  # URL for the API connection
     headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
-    connect_timeout: int = 120  # Connection timeout in seconds
-    read_timeout: int = 120  # Read timeout in seconds
+    connect_timeout: int = 600  # Connection timeout in seconds
+    read_timeout: int = 600  # Read timeout in seconds
     api_key: Optional[str] = None
 
     # Performance and parallelism
@@ -151,8 +151,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
     parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
-    parser.add_argument('--connect-timeout', type=int, default=120, help='The network connection timeout')
-    parser.add_argument('--read-timeout', type=int, default=120, help='The network read timeout')
+    parser.add_argument('--connect-timeout', type=int, default=600, help='The network connection timeout')
+    parser.add_argument('--read-timeout', type=int, default=600, help='The network read timeout')
 
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=None, help='How many requests to be made')
