@@ -86,6 +86,7 @@ C:【未尝试】
 
 SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应用科学', '生活、艺术与文化', '社会', '自然与自然科学']
 
+
 @Benchmark.register(
     name='chinese_simple_qa',
     pretty_name='Chinese SimpleQA',
@@ -107,7 +108,7 @@ class ChineseSimpleQAAdapter(DataAdapter):
 
         # whether to use LLM as a judge
         self.llm_as_a_judge = True
-        
+
     def load(self, **kwargs):
         kwargs['subset_list'] = ['default']
         data_dict = super().load(**kwargs)
@@ -140,7 +141,7 @@ class ChineseSimpleQAAdapter(DataAdapter):
         question = raw_input['question']
         # get grading response
         prompt = GRADER_TEMPLATE.format(question=question, target=gold, predicted_answer=pred)
-        system_prompt = "你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。"
+        system_prompt = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
         grading_response = judge(prompt, system_prompt)
         # parse grading response
         match = re.search(r'(A|B|C)', grading_response)

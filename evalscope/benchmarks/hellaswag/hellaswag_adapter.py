@@ -89,7 +89,6 @@ class HellaSwagAdapter(DataAdapter):
         full_prompt = self.prompt_template.format(query=query)
         return self.gen_prompt_data(full_prompt)
 
-
     def get_gold_answer(self, input_d: dict) -> str:
         # Get the gold choice from the label
         return self.choices[int(input_d['label'])]
@@ -114,14 +113,12 @@ class HellaSwagAdapter(DataAdapter):
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))
 
-
     def _preprocess(self, text):
         text = text.strip()
         text = text.replace(' [title]', '. ')
         text = re.sub('\\[.*?\\]', '', text)
         text = text.replace('  ', ' ')
         return text
-
 
     def _generate_prompt(self, input_d: dict, endings: list, include_answer=True) -> str:
         """
@@ -140,10 +137,10 @@ class HellaSwagAdapter(DataAdapter):
         # example: str = cls._preprocess(input_d['activity_label'] + ': ' + ctx)
         example: str = self._preprocess(ctx)
 
-        example += "\nQuestion: Which ending makes the most sense?"
+        example += '\nQuestion: Which ending makes the most sense?'
         for i, ending in enumerate(endings):
             example += f'\n{self.choices[i]}. {ending}'
-        example += "\nYou may choose from A, B, C, D. Derive your final answer as `The answer is ...`."
+        example += '\nYou may choose from A, B, C, D. Derive your final answer as `The answer is ...`.'
 
         if include_answer:
             example += '{}\n\n'.format(endings[int(input_d['label'])])

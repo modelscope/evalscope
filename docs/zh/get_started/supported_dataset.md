@@ -16,6 +16,7 @@
 | `arc`             | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                    | 考试         |                                                                                                                       |
 | `bbh`             | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                            | 综合推理         |                                                                                                                       |
 | `ceval`           | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)              | 中文-综合考试             |                                                                                                                       |
+| `chinese_simpleqa`^           | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)                     | 中文知识问答        |                使用 `primary_category`字段作为子数据集           |
 | `cmmlu`           | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                        | 中文-综合考试   |                                                                                                                       |
 | `competition_math`| [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary)   | 数学竞赛         |             使用`level`字段作为子数据集                                                                                                          |
 | `gpqa`| [modelscope/gpqa](https://modelscope.cn/datasets/modelscope/gpqa/summary)   | 专家级考试         |                                                                                                                       |
@@ -30,6 +31,7 @@
 | `musr`            | [AI-ModelScope/MuSR](https://www.modelscope.cn/datasets/AI-ModelScope/MuSR/summary)                          | 多步软推理         |                                                                                                                       |
 | `process_bench`   | [Qwen/ProcessBench](https://www.modelscope.cn/datasets/Qwen/ProcessBench/summary)        | 数学过程推理         |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
+| `simple_qa`^        | [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)               | 知识问答      |
 | `super_gpqa`      | [m-a-p/SuperGPQA](https://www.modelscope.cn/datasets/m-a-p/SuperGPQA/dataPeview)                | 专家级考试         |       使用`field`字段作为子数据集                                                                                                              |
 | `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
 | `truthful_qa`*     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
@@ -38,6 +40,8 @@
 **\*** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。
 
 **+** 因为涉及到代码运行的操作，建议在沙盒环境(docker)中运行，防止对本地环境造成影响。
+
+**^** 该数据集需要指定Judge Model进行评测，参考[Judge参数](./parameters.md#judge参数)。
 ```
 
 

@@ -185,6 +185,39 @@ evalscope eval \
  --limit 10
 ```
 
+## 使用裁判模型
+
+在评测时，可以使用裁判模型对模型的输出进行评估，此外有些数据集需要使用裁判模型进行评测，例如`simple_qa`数据集，使用以下命令启动评测：
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType, JudgeStrategy
+
+task_cfg = TaskConfig(
+    model='qwen2.5-7b-instruct',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key= os.getenv('DASHSCOPE_API_KEY'),
+    eval_type=EvalType.SERVICE,
+    datasets=[
+        # 'simple_qa',
+        'chinese_simpleqa',
+    ],
+    eval_batch_size=5,
+    limit=5,
+    judge_strategy=JudgeStrategy.DEFAULT,
+    judge_model_args={
+        'model_id': 'qwen2.5-7b-instruct',
+        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    }
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+```{seealso}
+参考：[裁判模型参数](./parameters.md#judge参数)
+```
 
 ## 离线评测
 
