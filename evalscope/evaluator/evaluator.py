@@ -213,7 +213,7 @@ class Evaluator(object):
             # Get review result based on judge strategy
             use_llm = (
                 self.task_cfg.judge_strategy == JudgeStrategy.LLM
-                or (self.task_cfg.judge_strategy == JudgeStrategy.DEFAULT and self.data_adapter.llm_as_a_judge))
+                or (self.task_cfg.judge_strategy == JudgeStrategy.AUTO and self.data_adapter.llm_as_a_judge))
 
             if use_llm:
                 # Use LLM as judge

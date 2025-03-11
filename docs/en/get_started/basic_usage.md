@@ -207,7 +207,7 @@ task_cfg = TaskConfig(
     ],
     eval_batch_size=5,
     limit=5,
-    judge_strategy=JudgeStrategy.DEFAULT,
+    judge_strategy=JudgeStrategy.AUTO,
     judge_model_args={
         'model_id': 'qwen2.5-7b-instruct',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

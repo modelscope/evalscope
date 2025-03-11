@@ -159,7 +159,7 @@ class DataCollection:
 
 
 class JudgeStrategy:
-    DEFAULT = 'default'
+    AUTO = 'auto'
     RULE = 'rule'
     LLM = 'llm'
     LLM_RECALL = 'llm_recall'

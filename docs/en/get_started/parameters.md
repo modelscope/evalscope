@@ -84,7 +84,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 The LLM-as-a-Judge evaluation parameters use a judge model to determine correctness, including the following parameters:
 
 - `--judge-strategy`: The strategy for using the judge model, options include:
-  - `default`: The default strategy, which decides whether to use the judge model based on the dataset requirements
+  - `auto`: The default strategy, which decides whether to use the judge model based on the dataset requirements
   - `llm`: Always use the judge model
   - `rule`: Do not use the judge model, use rule-based judgment instead
   - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model

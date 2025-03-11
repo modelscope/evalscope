@@ -74,7 +74,7 @@ class TaskConfig:
     stream: bool = False  # Only used for server model
 
     # LLMJudge arguments
-    judge_strategy: str = JudgeStrategy.DEFAULT
+    judge_strategy: str = JudgeStrategy.AUTO
     judge_worker_num: int = 8
     judge_model_args: Optional[Dict] = field(default_factory=lambda: {})
 
