@@ -134,7 +134,7 @@ SUBJECT_MAPPING = {
     few_shot_num=0,
     train_split='dev',
     eval_split='val',
-    prompt_template='以下是中国关于{subset_name}考试的单项选择题，请选出其中的正确答案。\n{query}',
+    prompt_template='以下是中国关于{subset_name}考试的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。\n{query}',
 )
 class CEVALAdapter(DataAdapter):
 

@@ -225,14 +225,14 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1',
-            api_key='EMPTY',
+            model='qwen2.5-7b-instruct',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= os.getenv('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'iquiz',
                 # 'ifeval',
-                # 'mmlu',
+                'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
                 # 'process_bench',
@@ -245,9 +245,9 @@ class TestRun(unittest.TestCase):
                 # 'competition_math',
                 # 'math_500',
                 # 'aime24',
-                'gpqa',
+                # 'gpqa',
                 # 'arc',
-                'ceval',
+                # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
@@ -255,7 +255,7 @@ class TestRun(unittest.TestCase):
             ],
             dataset_args={
                 'mmlu': {
-                    'subset_list': ['elementary_mathematics'],
+                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
                     'few_shot_num': 0
                 },
                 'mmlu_pro': {
@@ -313,7 +313,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=32,
-            limit=10,
+            limit=15,
             # debug=True,
             stream=False,
             generation_config={

@@ -111,7 +111,7 @@ SUBJECT_MAPPING = {
     few_shot_num=5,
     train_split='dev',
     eval_split='test',
-    prompt_template='以下是关于{subset_name}的单项选择题，请直接给出正确答案的选项。\n{query}',
+    prompt_template="以下是关于{subset_name}的单项选择题，请给出正确答案的选项。你的回答的最后一行应该是这样的格式：“答案：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。\n{query}",
 )
 class CMMLUAdapter(DataAdapter):
 

@@ -144,7 +144,7 @@ SUBJECT_MAPPING = {
     few_shot_num=5,
     train_split='train',
     eval_split='test',
-    prompt_template='The following are multiple choice questions (with answers) about {subset_name}. \n{query}',
+    prompt_template='Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
 )
 class MMLUAdapter(DataAdapter):
 
@@ -248,7 +248,7 @@ class MMLUAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return ResponseParser.parse_first_option(result, self.choices)
+            return ResponseParser.parse_first_option(result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
