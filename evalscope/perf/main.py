@@ -4,7 +4,7 @@ import platform
 from argparse import Namespace
 
 from evalscope.perf.arguments import Arguments, parse_args
-from evalscope.perf.benchmark import benchmark, query_send_completed_event, data_process_completed_event
+from evalscope.perf.benchmark import benchmark, data_process_completed_event, query_send_completed_event
 from evalscope.perf.utils.db_util import get_output_path
 from evalscope.perf.utils.handler import add_signal_handlers
 from evalscope.utils.logger import configure_logging, get_logger
@@ -35,11 +35,11 @@ def run_perf_benchmark(args):
     loop = asyncio.get_event_loop()
     if platform.system() != 'Windows':
         add_signal_handlers(loop)
-    
+
     # reset event
     query_send_completed_event.clear()
     data_process_completed_event.clear()
-    
+
     loop.run_until_complete(benchmark(args))
 
 

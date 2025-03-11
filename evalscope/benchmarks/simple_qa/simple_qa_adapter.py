@@ -126,7 +126,7 @@ class SimpleQAAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         # simple match
-        logger.warning(f"Please use LLMJudge to match the result for SimpleQA")
+        logger.warning(f'Please use LLMJudge to match the result for SimpleQA')
         is_correct = 1 if gold.lower().strip() == pred.lower().strip() else 0
         is_incorrect = not is_correct
         is_not_attempted = 0
