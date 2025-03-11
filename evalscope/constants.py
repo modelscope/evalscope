@@ -156,3 +156,10 @@ class EvalBackend:
 
 class DataCollection:
     NAME = 'data_collection'
+
+
+class JudgeStrategy:
+    DEFAULT = 'default'
+    RULE = 'rule'
+    LLM = 'llm'
+    LLM_RECALL = 'llm_recall'

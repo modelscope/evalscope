@@ -1,8 +1,9 @@
 import json
+import os
 import unittest
 
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.utils.io_utils import dump_jsonl_data
 from evalscope.utils.utils import test_level_list
 
@@ -53,5 +54,30 @@ class TestCollection(unittest.TestCase):
                 'local_path': 'outputs/mixed_data_test.jsonl'
                 # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
+        )
+        run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_evaluate_collection_with_judge(self):
+        from evalscope import TaskConfig, run_task
+
+        task_cfg = TaskConfig(
+            model='qwen2.5-7b-instruct',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= os.getenv('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=['data_collection'],
+            dataset_args={'data_collection': {
+                'local_path': 'outputs/mixed_data_test.jsonl'
+                # 'local_path': 'outputs/weighted_mixed_data.jsonl'
+            }},
+            limit=10,
+            judge_strategy=JudgeStrategy.LLM_RECALL,
+            judge_model_args={
+                'model_id': 'qwen2.5-7b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': os.getenv('DASHSCOPE_API_KEY'),
+            }
         )
         run_task(task_cfg=task_cfg)

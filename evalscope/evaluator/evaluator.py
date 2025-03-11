@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, ReviewKeys
+from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
 from evalscope.models import BaseModelAdapter
 from evalscope.report import Report, gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
@@ -58,8 +58,16 @@ class Evaluator(object):
         self.task_cfg = task_cfg
         # Deal with the output paths
         self.outputs_structure = outputs
-
         self.kwargs = kwargs
+        
+        self._init_judge()
+        
+    def _init_judge(self):
+        if self.task_cfg.judge_strategy == JudgeStrategy.RULE:
+            self.judge = None
+        else:
+            from evalscope.metrics.llm_judge import LLMJudge
+            self.judge = LLMJudge(**self.task_cfg.judge_model_args)
 
     def load_dataset(self):
         dataset = self.data_adapter.load(
@@ -200,17 +208,37 @@ class Evaluator(object):
         for choice in choices:
             raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
-            answer_content = self.data_adapter.parse_pred_result(
-                result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
-
-            review_result = self.data_adapter.match(gold_content, answer_content)
+            
+            # Get review result based on judge strategy
+            use_llm = (self.task_cfg.judge_strategy == JudgeStrategy.LLM or 
+                      (self.task_cfg.judge_strategy == JudgeStrategy.DEFAULT and self.data_adapter.llm_as_a_judge))
+            
+            if use_llm:
+                # Use LLM as judge
+                assert self.judge is not None, f'Judge model is required for LLM judging {self.data_adapter.name}'
+                review_result = self.data_adapter.llm_match(gold_content, answer_content, self.judge, raw_input=raw_input_d)
+                pred = answer_content
+            else:
+                # Use rule-based judging
+                pred_content = self.data_adapter.parse_pred_result(
+                    result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
+                review_result = self.data_adapter.match(gold_content, pred_content)
+                
+                # For LLM_RECALL strategy, use LLM to re-judge if rule-based result is not good
+                if (self.task_cfg.judge_strategy == JudgeStrategy.LLM_RECALL and
+                    isinstance(review_result, (bool, int, float)) and not bool(review_result)):
+                    assert self.judge is not None, f'Judge model is required for LLM_RECALL strategy {self.data_adapter.name}'
+                    review_result = self.data_adapter.llm_match(gold_content, answer_content, self.judge, raw_input=raw_input_d)
+                    pred = answer_content
+                else:
+                    pred = pred_content
+                
             choice[ReviewKeys.REVIEW] = {
                 ReviewKeys.GOLD: gold_content,
-                ReviewKeys.PRED: answer_content,
+                ReviewKeys.PRED: pred,
                 ReviewKeys.RESULT: review_result
             }
-
             rev_choices.append(choice)
 
         review_res[AnswerKeys.CHOICES] = rev_choices
@@ -251,17 +279,24 @@ class Evaluator(object):
         if self.use_cache and os.path.exists(review_file_path):
             logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
             os.remove(review_file_path)
-
-        for answer_d in tqdm(answers_list, total=len(answers_list), desc=f'Reviewing({subset_name}): '):
+        
+        def process_single_review(answer_d):
             review_id, reviewer_spec = self._generate_review_id(answer_d)
-            # Get review
+            # Get review 
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
-
             logger.debug(review_d)
-
-            reviews_list.append(review_d)
-            # Dump reviews
-            dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
+            return review_d
+            
+        with ThreadPoolExecutor(max_workers=self.task_cfg.judge_worker_num) as executor:
+            # Submit all tasks and get futures
+            futures = [executor.submit(process_single_review, answer_d) for answer_d in answers_list]
+            
+            # Process completed futures with progress bar
+            for future in tqdm(as_completed(futures), total=len(futures), desc=f'Reviewing({subset_name}): '):
+                review_d = future.result()
+                reviews_list.append(review_d)
+                # Dump reviews
+                dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
 
         return reviews_list
 

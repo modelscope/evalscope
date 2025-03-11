@@ -12,7 +12,7 @@ from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalType
 from evalscope.evaluator import Evaluator
-from evalscope.models import get_local_model, initialize_model_adapter
+from evalscope.models import initialize_model_adapter
 from evalscope.report import ReportGenerator
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -53,11 +53,11 @@ class SimpleEvaluator(Evaluator):
 
 class EvaluatorCollection:
 
-    def __init__(self, task_cfg: TaskConfig, data_adapter: DataAdapter, outputs: OutputsStructure):
+    def __init__(self, task_cfg: TaskConfig, data_adapter: DataAdapter, outputs: OutputsStructure, base_model):
         self.task_cfg = task_cfg
         self.data_adapter = data_adapter
         self.outputs = outputs
-        self.model = get_local_model(task_cfg)
+        self.model = base_model
 
         self.dataset, self.dataset_name = self.load()
         self.dataset_name_map = EvaluatorCollection._init_name_map(self.dataset)

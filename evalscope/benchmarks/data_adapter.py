@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Union
 from evalscope.benchmarks.utils import PromptData, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics.named_metrics import metric_registry
+from evalscope.metrics.llm_judge import LLMJudge
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils.logger import get_logger
 
@@ -22,6 +23,7 @@ class DataAdapter(ABC):
                  model_adapter: str,
                  subset_list: list,
                  metric_list: List[str],
+                 llm_as_a_judge: bool = False,
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
@@ -61,6 +63,7 @@ class DataAdapter(ABC):
         self.query_template = query_template
         self.pretty_name = pretty_name
         self.config_kwargs = kwargs
+        self.llm_as_a_judge = llm_as_a_judge
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)
 
@@ -356,5 +359,22 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    def llm_match(self, *args, **kwargs):
-        pass
+    def llm_match(self, gold: Any, pred: Any, judge: Optional[LLMJudge] = None, **kwargs) -> float:
+        """
+        Use LLM as a judge to evaluate the predicted answer against the gold answer.
+        
+        Args:
+            gold (Any): The golden answer.
+            pred (Any): The predicted answer.
+        
+        Returns:
+            The match result as a float score between 0 and 1.
+        """
+        # default judge
+        if judge is None:
+            logger.warning("No judge LLM provided, please specify a judge LLM in the config.")
+            return 0
+        prompt = judge.build_prompt(pred, gold)
+        score = judge(prompt)
+        return judge.get_score(score)
+        
