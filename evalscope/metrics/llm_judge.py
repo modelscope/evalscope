@@ -20,7 +20,7 @@ A: CORRECT
 B: INCORRECT
 
 Just return the letters "A" or "B", with no text around it.
-"""
+"""  # noqa: E501
 
 
 class LLMJudge:
@@ -48,7 +48,7 @@ class LLMJudge:
             generation_config (dict, optional): Generation configuration for the judge
         """
         self.api_key = api_key or os.environ.get('OPENAI_API_KEY', 'EMPTY')
-        self.api_base = api_url or os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1')
+        self.api_url = api_url or os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1')
         self.model_id = model_id or os.environ.get('LOCAL_LLM', 'gpt-3.5-turbo')
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
@@ -57,7 +57,7 @@ class LLMJudge:
         from evalscope.models.server_adapter import ServerModelAdapter
 
         # Initialize ServerModelAdapter
-        self.server_adapter = ServerModelAdapter(api_url=self.api_base, model_id=self.model_id, api_key=self.api_key)
+        self.server_adapter = ServerModelAdapter(api_url=self.api_url, model_id=self.model_id, api_key=self.api_key)
 
     def __call__(self, prompt: str, system_prompt: Optional[str] = None) -> float:
         """

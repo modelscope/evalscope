@@ -230,7 +230,7 @@ class Evaluator(object):
                 # For LLM_RECALL strategy, use LLM to re-judge if rule-based result is not good
                 if (self.task_cfg.judge_strategy == JudgeStrategy.LLM_RECALL
                         and isinstance(review_result, (bool, int, float)) and not bool(review_result)):
-                    assert self.judge is not None, f'Judge model is required for LLM_RECALL strategy {self.data_adapter.name}'
+                    assert self.judge is not None, f'Judge model is required for LLM_RECALL strategy {self.data_adapter.name}'  # noqa: E501
                     review_result = self.data_adapter.llm_match(
                         gold_content, answer_content, self.judge, raw_input=raw_input_d)
                     pred = answer_content

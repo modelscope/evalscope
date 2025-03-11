@@ -374,7 +374,7 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                'chinese_simple_qa',
+                'chinese_simpleqa',
             ],
             dataset_args={
                 'competition_math': {

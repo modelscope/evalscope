@@ -14,6 +14,7 @@ You can also use other tools supported by this framework for evaluation, such as
 | `arc`              | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                   | Exam              |                                                                                                                  |
 | `bbh`              | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                           | Comprehensive Reasoning |                                                                                                                  |
 | `ceval`            | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)             | Chinese Comprehensive Exam |                                                                                                                  |
+| `chinese_simpleqa`           | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)                     | Chinese Knowledge Q&A        |                Use `primary_category` field as a sub-dataset                                                                      |
 | `cmmlu`            | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                       | Chinese Comprehensive Exam |                                                                                                                  |
 | `competition_math` | [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary) | Math Competition   | Use `level` field as a sub-dataset                                                                                |
 | `gpqa`             | [modelscope/gpqa](https://modelscope.cn/datasets/modelscope/gpqa/summary)                         | Expert-Level Exam  |                                                                                                                  |
@@ -28,6 +29,7 @@ You can also use other tools supported by this framework for evaluation, such as
 | `musr`             | [AI-ModelScope/MuSR](https://www.modelscope.cn/datasets/AI-ModelScope/MuSR/summary)              | Multi-step Soft Reasoning |                                                                                                                  |
 | `process_bench`    | [Qwen/ProcessBench](https://www.modelscope.cn/datasets/Qwen/ProcessBench/summary)                | Math Process Reasoning |                                                                                                                  |
 | `race`             | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                         | Reading Comprehension |                                                                                                                  |
+| `simple_qa`        | [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)               | Knowledge Q&A      |                                                                                                                  |
 | `super_gpqa`       | [m-a-p/SuperGPQA](https://www.modelscope.cn/datasets/m-a-p/SuperGPQA/dataPeview)                | Expert-Level Exam  | Use `field` field as a sub-dataset                                                                                |
 | `trivia_qa`        | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)              | Knowledge Q&A      |                                                                                                                  |
 | `truthful_qa`*      | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)          | Safety            |                                                                                                                  |
@@ -36,6 +38,8 @@ You can also use other tools supported by this framework for evaluation, such as
 **\*** Evaluation requires calculating logits, etc., and it does not support API service evaluation (`eval-type != server`) at present.
 
 **+** Due to operations involving code execution, it is recommended to run in a sandbox environment (docker) to prevent impacts on the local environment.
+
+**^** The dataset requires a specified Judge Model for evaluation. Please refer to the [Judge Parameters](./parameters.md#judge-parameters).
 ```
 
 ## 2. OpenCompass Backend

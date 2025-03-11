@@ -88,7 +88,7 @@ SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应�
 
 
 @Benchmark.register(
-    name='chinese_simple_qa',
+    name='chinese_simpleqa',
     pretty_name='Chinese SimpleQA',
     subset_list=SUBSET_LIST,
     dataset_id='AI-ModelScope/Chinese-SimpleQA',
