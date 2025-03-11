@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
-                                 OutputType, JudgeStrategy)
+                                 JudgeStrategy, OutputType)
 from evalscope.models.custom import CustomModel
 from evalscope.utils import gen_hash
 from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
@@ -72,7 +72,7 @@ class TaskConfig:
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
     timeout: Optional[float] = None  # Only used for server model
     stream: bool = False  # Only used for server model
-    
+
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.DEFAULT
     judge_worker_num: int = 8

@@ -144,7 +144,8 @@ SUBJECT_MAPPING = {
     few_shot_num=5,
     train_split='train',
     eval_split='test',
-    prompt_template='Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
+    prompt_template=
+    'Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
 )
 class MMLUAdapter(DataAdapter):
 

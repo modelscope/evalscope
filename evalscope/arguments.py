@@ -73,7 +73,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--api-url', type=str, default=None, help='The API url for the remote API model.')
     parser.add_argument('--timeout', type=float, default=None, help='The timeout for the remote API model.')
     parser.add_argument('--stream', action='store_true', default=False, help='Stream mode.')  # noqa: E501
-    
+
     # LLMJudge arguments
     parser.add_argument('--judge-strategy', type=str, default=JudgeStrategy.DEFAULT, help='The judge strategy.')
     parser.add_argument('--judge-model-args', type=json.loads, default='{}', help='The judge model args, should be a json string.')  # noqa: E501

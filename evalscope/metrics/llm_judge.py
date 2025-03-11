@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from evalscope.utils.logger import get_logger
 
@@ -14,19 +14,21 @@ Reference Answer: {gold}
 
 Model Answer: {pred}
 
-Evaluate the model's answer based on correctness compared to the reference answer. 
+Evaluate the model's answer based on correctness compared to the reference answer.
 Grade the predicted answer of this new question as one of:
 A: CORRECT
 B: INCORRECT
 
 Just return the letters "A" or "B", with no text around it.
 """
+
+
 class LLMJudge:
     """
     A metric that uses LLM to judge the quality of model predictions by comparing them with reference answers.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  api_key: Optional[str] = None,
                  api_url: Optional[str] = None,
                  model_id: Optional[str] = None,
@@ -36,7 +38,7 @@ class LLMJudge:
                  **kwargs):
         """
         Initialize LLMJudge metric.
-        
+
         Args:
             api_key (str, optional): API key for OpenAI or compatible service
             api_base (str, optional): API base URL
@@ -51,57 +53,47 @@ class LLMJudge:
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
         self.generation_config = generation_config
-        
+
         from evalscope.models.server_adapter import ServerModelAdapter
+
         # Initialize ServerModelAdapter
-        self.server_adapter = ServerModelAdapter(
-            api_url=self.api_base,
-            model_id=self.model_id,
-            api_key=self.api_key
-        )
-        
-        
+        self.server_adapter = ServerModelAdapter(api_url=self.api_base, model_id=self.model_id, api_key=self.api_key)
+
     def __call__(self, prompt: str) -> float:
         """
         """
-        input_data = {
-            'data': [prompt],
-            'system_prompt': self.system_prompt
-        }
-        
+        input_data = {'data': [prompt], 'system_prompt': self.system_prompt}
+
         # Inference configuration
-        infer_cfg = {
-            'temperature': 0.0,
-            'max_tokens': 1024
-        }
+        infer_cfg = {'temperature': 0.0, 'max_tokens': 1024}
         if self.generation_config:
             infer_cfg.update(self.generation_config)
-        
+
         try:
             # Send request using ServerModelAdapter
             response = self.server_adapter.process_single_input(input_data, infer_cfg)
-            
+
             # Extract content from response
-            llm_response = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+            llm_response = response.get('choices', [{}])[0].get('message', {}).get('content', '')
             return llm_response
         except Exception as e:
             logger.error(f"Error during LLM evaluation: {e}")
             return None
-    
-    def build_prompt(self, pred: str, gold: str, question: Optional[str]=None):
+
+    def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):
         if question is None:
-            question = "Not provided"
+            question = 'Not provided'
         return self.prompt_template.format(question=question, pred=pred, gold=gold)
-    
+
     def get_score(self, response: str) -> float:
         if response is None:
             return 0
-        match = re.search(r"(A|B)", response)
+        match = re.search(r'(A|B)', response)
         if match:
             answer = match.group(0)
-            if answer == "A":
+            if answer == 'A':
                 return 1
-            elif answer == "B":
+            elif answer == 'B':
                 return 0
         else:
             return 0
