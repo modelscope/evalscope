@@ -232,7 +232,7 @@ class TestRun(unittest.TestCase):
             datasets=[
                 # 'iquiz',
                 # 'ifeval',
-                'mmlu',
+                # 'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
                 # 'process_bench',
@@ -248,7 +248,7 @@ class TestRun(unittest.TestCase):
                 # 'gpqa',
                 # 'arc',
                 # 'ceval',
-                # 'hellaswag',
+                'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
                 # 'super_gpqa',
@@ -369,11 +369,12 @@ class TestRun(unittest.TestCase):
             datasets=[
                 # 'math_500',
                 # 'aime24',
-                'competition_math',
+                # 'competition_math',
                 # 'arc',
                 # 'gsm8k'
                 # 'truthful_qa',
-                'simple_qa',
+                # 'simple_qa',
+                'chinese_simple_qa',
             ],
             dataset_args={
                 'competition_math': {

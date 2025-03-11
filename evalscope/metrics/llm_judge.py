@@ -59,10 +59,15 @@ class LLMJudge:
         # Initialize ServerModelAdapter
         self.server_adapter = ServerModelAdapter(api_url=self.api_base, model_id=self.model_id, api_key=self.api_key)
 
-    def __call__(self, prompt: str) -> float:
+    def __call__(self, prompt: str, system_prompt: Optional[str] = None) -> float:
         """
+        Args:
+            prompt (str): The prompt to evaluate
+            system_prompt (str, optional): The system prompt to use for the evaluation
+        Returns:
+            float: The score of the evaluation
         """
-        input_data = {'data': [prompt], 'system_prompt': self.system_prompt}
+        input_data = {'data': [prompt], 'system_prompt': system_prompt or self.system_prompt}
 
         # Inference configuration
         infer_cfg = {'temperature': 0.0, 'max_tokens': 1024}

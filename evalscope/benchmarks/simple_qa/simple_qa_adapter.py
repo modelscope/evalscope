@@ -115,11 +115,11 @@ class SimpleQAAdapter(DataAdapter):
         self.llm_as_a_judge = True
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        question = input_d.get('problem', '')
+        question = input_d['problem']
         return self.gen_prompt_data(question)
 
     def get_gold_answer(self, input_d: dict) -> str:
-        return input_d.get('answer', '')
+        return input_d['answer']
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, **kwargs) -> str:
         return result.strip()
@@ -138,7 +138,7 @@ class SimpleQAAdapter(DataAdapter):
 
     def llm_match(self, gold: Any, pred: Any, judge: LLMJudge, **kwargs) -> dict:
         raw_input = kwargs.get('raw_input', None)
-        question = raw_input.get('problem', '')
+        question = raw_input['problem']
         # get grading response
         prompt = GRADER_TEMPLATE.format(question=question, target=gold, predicted_answer=pred)
         grading_response = judge(prompt)

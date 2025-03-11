@@ -19,15 +19,14 @@ logger = get_logger()
     name='hellaswag',
     pretty_name='HellaSwag',
     dataset_id='modelscope/hellaswag',
-    model_adapter=OutputType.CONTINUOUS,
-    output_types=[OutputType.CONTINUOUS, OutputType.GENERATION],
+    model_adapter=OutputType.MULTIPLE_CHOICE,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split='train',
     eval_split='validation',
-    prompt_template=
-    'Respond with the index of sentence that makes the most sense, chose from 0, 1, 2, 3, derive your final answer as `The answer is ...`.',  # noqa: E501
+    prompt_template='{query}',  # noqa: E501
 )
 class HellaSwagAdapter(DataAdapter):
 
@@ -39,7 +38,7 @@ class HellaSwagAdapter(DataAdapter):
             kwargs['few_shot_num'] = 0
 
         super().__init__(**kwargs)
-        self.choices = ['0', '1', '2', '3']
+        self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -85,15 +84,15 @@ class HellaSwagAdapter(DataAdapter):
             self._generate_prompt(input_d=sample, endings=endings, include_answer=True) for sample in few_shot_list
         ]
         context: str = '\n'.join(few_shot_prompts) + '\n'
-        context += self._generate_prompt(input_d=input_d, endings=endings, include_answer=False)
+        query = context.strip() + self._generate_prompt(input_d=input_d, endings=endings, include_answer=False)
 
-        ctx_continuation_pair_list = [(context.strip(), ' ' + cont.strip()) for cont in endings]
+        full_prompt = self.prompt_template.format(query=query)
+        return self.gen_prompt_data(full_prompt)
 
-        return self.gen_prompt_data(ctx_continuation_pair_list)
 
     def get_gold_answer(self, input_d: dict) -> str:
-        # Get the gold choice
-        return input_d['label']
+        # Get the gold choice from the label
+        return self.choices[int(input_d['label'])]
 
     def parse_pred_result(self, result: list, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
@@ -107,30 +106,24 @@ class HellaSwagAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        if self.model_adapter == OutputType.CONTINUOUS:
-            # answer: in the form of [-2.3, -4.5, ...], len of self.choices
-            result = np.array(result)
-            endings: list = [self._preprocess(ending) for ending in raw_input_d['endings']]
-            completion_len = np.array([float(len(i)) for i in endings])
-            best_choice_idx = np.argmax(result / completion_len)
-
-            return str(best_choice_idx)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
         else:
             return ResponseParser.parse_first_option(result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))
 
-    @classmethod
-    def _preprocess(cls, text):
+
+    def _preprocess(self, text):
         text = text.strip()
         text = text.replace(' [title]', '. ')
         text = re.sub('\\[.*?\\]', '', text)
         text = text.replace('  ', ' ')
         return text
 
-    @classmethod
-    def _generate_prompt(cls, input_d: dict, endings: list, include_answer=True) -> str:
+
+    def _generate_prompt(self, input_d: dict, endings: list, include_answer=True) -> str:
         """
         Generate prompt for HellaSwag dataset.
 
@@ -144,7 +137,13 @@ class HellaSwagAdapter(DataAdapter):
         """
 
         ctx = input_d['ctx_a'] + ' ' + input_d['ctx_b'].capitalize()
-        example: str = cls._preprocess(input_d['activity_label'] + ': ' + ctx)
+        # example: str = cls._preprocess(input_d['activity_label'] + ': ' + ctx)
+        example: str = self._preprocess(ctx)
+
+        example += "\nQuestion: Which ending makes the most sense?"
+        for i, ending in enumerate(endings):
+            example += f'\n{self.choices[i]}. {ending}'
+        example += "\nYou may choose from A, B, C, D. Derive your final answer as `The answer is ...`."
 
         if include_answer:
             example += '{}\n\n'.format(endings[int(input_d['label'])])
