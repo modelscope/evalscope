@@ -208,9 +208,14 @@ async def benchmark(args: Arguments) -> None:
     if platform.system() != 'Windows':
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
-
+    
+    # init queue
     request_queue = asyncio.Queue()
     benchmark_data_queue = asyncio.Queue()
+    
+    # reset event
+    query_send_completed_event.clear()
+    data_process_completed_event.clear()
 
     async def create_send_request_tasks():
         tasks: List[asyncio.Task] = []
