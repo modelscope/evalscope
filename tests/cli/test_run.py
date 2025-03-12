@@ -5,7 +5,7 @@ import torch
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, OutputType
+from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
@@ -225,9 +225,9 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1',
-            api_key='EMPTY',
+            model='qwen2.5-7b-instruct',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= os.getenv('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'iquiz',
@@ -245,17 +245,17 @@ class TestRun(unittest.TestCase):
                 # 'competition_math',
                 # 'math_500',
                 # 'aime24',
-                'gpqa',
+                # 'gpqa',
                 # 'arc',
-                'ceval',
-                # 'hellaswag',
+                # 'ceval',
+                'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
                 # 'super_gpqa',
             ],
             dataset_args={
                 'mmlu': {
-                    'subset_list': ['elementary_mathematics'],
+                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
                     'few_shot_num': 0
                 },
                 'mmlu_pro': {
@@ -313,7 +313,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=32,
-            limit=10,
+            limit=15,
             # debug=True,
             stream=False,
             generation_config={
@@ -352,6 +352,42 @@ class TestRun(unittest.TestCase):
                 'max_new_tokens': 2048,
                 'temperature': 0.7,
                 'num_return_sequences': 2,
+            }
+        )
+
+        run_task(task_cfg=task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_judge_model(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen2.5-7b-instruct',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= os.getenv('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                # 'math_500',
+                # 'aime24',
+                # 'competition_math',
+                # 'arc',
+                # 'gsm8k'
+                # 'truthful_qa',
+                # 'simple_qa',
+                'chinese_simpleqa',
+            ],
+            dataset_args={
+                'competition_math': {
+                    'subset_list': ['Level 4']
+                }
+            },
+            eval_batch_size=5,
+            limit=5,
+            judge_strategy=JudgeStrategy.AUTO,
+            judge_model_args={
+                'model_id': 'qwen2.5-7b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': os.getenv('DASHSCOPE_API_KEY'),
             }
         )
 

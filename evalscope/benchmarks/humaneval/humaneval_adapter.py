@@ -2,7 +2,6 @@
 import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

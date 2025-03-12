@@ -78,6 +78,22 @@
   - `ThirdParty` 用于其他特殊任务评测，例如[ToolBench](../third_party/toolbench.md), [LongBench](../third_party/longwriter.md)
 - `--eval-config`: 使用非`Native`评测后端时，需要传入该参数
 
+## Judge参数
+LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参数：
+
+- `--judge-strategy`: 使用裁判模型的策略，可选：
+  - `auto`: 默认策略，根据数据集是否需要judge来决定是否使用裁判模型
+  - `llm`: 总是使用裁判模型
+  - `rule`: 不使用裁判模型，使用规则判断
+  - `llm_recall`: 先使用规则判断，若规则判断失败再使用裁判模型
+- `--judge-worker-num`: 裁判模型并发数，默认为`8`
+- `--judge-model-args`: 设置裁判模型参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
+  - `api_key`: 模型API端点密钥，默认为`EMPTY`
+  - `api_url`: 模型API端点，默认为`https://api.openai.com/v1`
+  - `model_id`: 模型ID，默认为`gpt-3.5-turbo`
+  - `system_prompt`: (可选) 评测数据集的系统prompt
+  - `prompt_template`: (可选) 评测数据集的prompt模板
+  - `generation_config`: (可选) 生成参数
 
 ## 其他参数
 

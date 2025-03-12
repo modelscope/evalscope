@@ -188,6 +188,41 @@ evalscope eval \
  --limit 10
 ```
 
+## Using the Judge Model
+
+During evaluation, the judge model can be used to assess the output of a model. Some datasets require the use of a judge model for evaluation, such as the `simple_qa` dataset. Use the following command to start the evaluation:
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType, JudgeStrategy
+
+task_cfg = TaskConfig(
+    model='qwen2.5-7b-instruct',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    eval_type=EvalType.SERVICE,
+    datasets=[
+        # 'simple_qa',
+        'chinese_simpleqa',
+    ],
+    eval_batch_size=5,
+    limit=5,
+    judge_strategy=JudgeStrategy.AUTO,
+    judge_model_args={
+        'model_id': 'qwen2.5-72b-instruct',
+        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    }
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+```{seealso}
+See also: [Judge Model Parameters](./parameters.md#judge-parameters)
+```
+
+
 ## Using Local Datasets and Models
 
 By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:

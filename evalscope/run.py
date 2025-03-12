@@ -132,7 +132,7 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
         # EvaluatorCollection is a collection of evaluators
         from evalscope.collections import EvaluatorCollection
         data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
-        return EvaluatorCollection(task_cfg, data_adapter, outputs)
+        return EvaluatorCollection(task_cfg, data_adapter, outputs, base_model)
 
     # Initialize model adapter
     model_adapter = initialize_model_adapter(task_cfg, benchmark, base_model)

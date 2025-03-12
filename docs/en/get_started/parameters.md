@@ -79,6 +79,24 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - `ThirdParty` is used for other special task evaluations, such as [ToolBench](../third_party/toolbench.md), [LongBench](../third_party/longwriter.md).
 - `--eval-config`: This parameter needs to be passed when using a non-`Native` evaluation backend.
 
+## Judge Parameters
+
+The LLM-as-a-Judge evaluation parameters use a judge model to determine correctness, including the following parameters:
+
+- `--judge-strategy`: The strategy for using the judge model, options include:
+  - `auto`: The default strategy, which decides whether to use the judge model based on the dataset requirements
+  - `llm`: Always use the judge model
+  - `rule`: Do not use the judge model, use rule-based judgment instead
+  - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model
+- `--judge-worker-num`: The concurrency number for the judge model, default is `8`
+- `--judge-model-args`: Sets the parameters for the judge model, passed in as a `json` string and parsed as a dictionary, supporting the following fields:
+  - `api_key`: API endpoint key for the model, default is `EMPTY`
+  - `api_url`: API endpoint for the model, default is `https://api.openai.com/v1`
+  - `model_id`: Model ID, default is `gpt-3.5-turbo`
+  - `system_prompt`: (Optional) System prompt for evaluating the dataset
+  - `prompt_template`: (Optional) Prompt template for evaluating the dataset
+  - `generation_config`: (Optional) Generation parameters
+
 ## Other Parameters
 - `--work-dir`: Output path for model evaluation, default is `./outputs/{timestamp}`.
 - `--use-cache`: Use local cache path, default is `None`; if a path is specified, such as `outputs/20241210_194434`, it will reuse the model inference results from that path. If inference is not completed, it will continue inference and then proceed to evaluation.

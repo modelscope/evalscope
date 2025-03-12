@@ -24,16 +24,29 @@
 > ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
 ## 📋 Contents
-- [Introduction](#-introduction)
-- [News](#-news)
-- [Installation](#️-installation)
-- [Quick Start](#-quick-start)
+- [📋 Contents](#-contents)
+- [📝 Introduction](#-introduction)
+- [☎ User Groups](#-user-groups)
+- [🎉 News](#-news)
+- [🛠️ Installation](#️-installation)
+  - [Method 1: Install Using pip](#method-1-install-using-pip)
+  - [Method 2: Install from Source](#method-2-install-from-source)
+- [🚀 Quick Start](#-quick-start)
+  - [Method 1. Using Command Line](#method-1-using-command-line)
+  - [Method 2. Using Python Code](#method-2-using-python-code)
+  - [Basic Parameter](#basic-parameter)
+  - [Output Results](#output-results)
+- [📈 Visualization of Evaluation Results](#-visualization-of-evaluation-results)
+- [🌐 Evaluation of Specified Model API](#-evaluation-of-specified-model-api)
+- [⚙️ Custom Parameter Evaluation](#️-custom-parameter-evaluation)
+  - [Parameter](#parameter)
 - [Evaluation Backend](#evaluation-backend)
-- [Custom Dataset Evaluation](#️-custom-dataset-evaluation)
-- [Model Serving Performance Evaluation](#-model-serving-performance-evaluation)
-- [Arena Mode](#-arena-mode)
-- [Contribution](#️-contribution)
-- [Roadmap](#-roadmap)
+- [📈 Model Serving Performance Evaluation](#-model-serving-performance-evaluation)
+- [🖊️ Custom Dataset Evaluation](#️-custom-dataset-evaluation)
+- [🏟️ Arena Mode](#️-arena-mode)
+- [👷‍♂️ Contribution](#️-contribution)
+- [🔜 Roadmap](#-roadmap)
+- [Star History](#star-history)
 
 
 ## 📝 Introduction
@@ -75,6 +88,7 @@ Please scan the QR code below to join our community groups:
 
 ## 🎉 News
 
+- 🔥 **[2025.03.11]** Added support for the [SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary) and [Chinese SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) evaluation benchmarks. These are used to assess the factual accuracy of models, and you can specify `simple_qa` and `chinese_simpleqa` for use. Support for specifying a judge model is also available. For more details, refer to the [relevant parameter documentation](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html).
 - 🔥 **[2025.03.07]** Added support for the [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B/summary) model, evaluate the model's reasoning ability and reasoning efficiency, refer to [📖 Best Practices for QwQ-32B Evaluation](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html) for more details.
 - 🔥 **[2025.03.04]** Added support for the [SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) dataset, which covers 13 categories, 72 first-level disciplines, and 285 second-level disciplines, totaling 26,529 questions. You can use it by specifying `super_gpqa`.
 - 🔥 **[2025.03.03]** Added support for evaluating the IQ and EQ of models. Refer to [📖 Best Practices for IQ and EQ Evaluation](https://evalscope.readthedocs.io/en/latest/best_practice/iquiz.html) to find out how smart your AI is!

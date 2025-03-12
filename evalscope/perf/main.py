@@ -35,6 +35,7 @@ def run_perf_benchmark(args):
     loop = asyncio.get_event_loop()
     if platform.system() != 'Windows':
         add_signal_handlers(loop)
+
     loop.run_until_complete(benchmark(args))
 
 
