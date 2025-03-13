@@ -30,7 +30,7 @@ class BenchmarkMeta:
     pretty_name: Optional[str] = None
     filters: Optional[OrderedDict] = None
     extra_params: Optional[Dict] = field(default_factory=dict)
-    
+
     def _update(self, args: dict):
         if args.get('local_path'):
             self.dataset_id = args['local_path']
