@@ -372,10 +372,17 @@ class DataAdapter(ABC):
         Returns:
             The match result as a float score between 0 and 1.
         """
-        # default judge
+        # Default judge handling
         if judge is None:
             logger.warning('No judge LLM provided, please specify a judge LLM in the config.')
             return 0
-        prompt = judge.build_prompt(pred, gold)
+
+        # Extract question from raw_input if available
+        raw_input = kwargs.get('raw_input', {})
+        question_keys = ['question', 'prompt', 'query', 'problem']
+        question = next((raw_input.get(key) for key in question_keys if raw_input.get(key)), None)
+
+        # Request judge and obtain score
+        prompt = judge.build_prompt(pred, gold, question)
         score = judge(prompt)
         return judge.get_score(score)

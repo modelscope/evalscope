@@ -377,9 +377,10 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                # 'chinese_simpleqa',
+                # # 'chinese_simpleqa',
                 'live_code_bench',
                 # 'humaneval'
+                'general_qa'
             ],
             dataset_args={
                 'competition_math': {
@@ -392,7 +393,14 @@ class TestRun(unittest.TestCase):
                         'end_date': '2025-01-01'
                     },
                     'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
-                }
+                },
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
+                    'subset_list': [
+                        'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
+                        # 'test'
+                    ]
+                },
             },
             eval_batch_size=5,
             limit=20,

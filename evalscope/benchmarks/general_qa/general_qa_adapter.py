@@ -131,7 +131,10 @@ class GeneralQAAdapter(DataAdapter):
         """
         items = defaultdict(list)
         for scores in review_res_list:
-            for k, v in scores.items():
-                items[k].append(v)
+            if isinstance(scores, dict):
+                for k, v in scores.items():
+                    items[k].append(v)
+            else:
+                items['AverageAccuracy'].append(scores)
         # items = [(score, 1.0) for score in review_res_list]
         return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]
