@@ -1,7 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from dotenv import dotenv_values
+
+env = dotenv_values('.env')
+
 import os
 import subprocess
-import torch
 import unittest
 
 from evalscope.config import TaskConfig
@@ -362,9 +365,9 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='qwen2.5-coder-32b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-            api_key= os.getenv('DASHSCOPE_API_KEY'),
+            api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
@@ -374,20 +377,30 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                'chinese_simpleqa',
+                # 'chinese_simpleqa',
+                'live_code_bench',
+                # 'humaneval'
             ],
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4']
+                },
+                'live_code_bench': {
+                    'subset_list': ['v4_v5'],
+                    'extra_params': {
+                        'start_date': '2024-12-01',
+                        'end_date': '2025-01-01'
+                    },
+                    'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
                 }
             },
             eval_batch_size=5,
-            limit=5,
+            limit=20,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                'api_key': os.getenv('DASHSCOPE_API_KEY'),
+                'api_key': env.get('DASHSCOPE_API_KEY'),
             }
         )
 

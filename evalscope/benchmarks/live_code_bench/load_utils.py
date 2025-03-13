@@ -1,10 +1,14 @@
+import base64
 import json
 import pickle
 import zlib
-import base64
 from datetime import datetime
 
 from evalscope.benchmarks.live_code_bench.prompts import CodeGenerationPromptConstants
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def transform(item):
     # Define the dataitem mapping logic
@@ -28,40 +32,40 @@ def transform(item):
         private_test_cases = json.loads(item['private_test_cases'])
     except Exception as e:  # noqa: F841
         private_test_cases = json.loads(
-            pickle.loads(
-                zlib.decompress(
-                    base64.b64decode(private_test_cases.encode(
-                        'utf-8'))  # type: ignore
-                )))  # type: ignore
+            pickle.loads(zlib.decompress(base64.b64decode(private_test_cases.encode('utf-8'))  # type: ignore
+                                         )))  # type: ignore
 
     # load metadata
     metadata = json.loads(item['metadata'])
     evaluation_sample = json.dumps({
-        'inputs':
-        [t['input'] for t in public_test_cases + private_test_cases],
-        'outputs':
-        [t['output'] for t in public_test_cases + private_test_cases],
-        'fn_name':
-        metadata.get('func_name', None),
+        'inputs': [t['input'] for t in public_test_cases + private_test_cases],
+        'outputs': [t['output'] for t in public_test_cases + private_test_cases],
+        'fn_name': metadata.get('func_name', None),
     })
     item['evaluation_sample'] = evaluation_sample
 
     return item
 
-def filter_data(dataset, start_date=None, end_date=None):
+
+def filter_date(dataset, start_date=None, end_date=None):
     new_dataset = []
+
     for item in dataset:
         contest_date = datetime.fromisoformat(item['contest_date'])
         if start_date is not None:
-            p_start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            p_start_date = datetime.strptime(start_date, '%Y-%m-%d')
             if p_start_date > contest_date:
                 continue
 
         if end_date is not None:
-            p_end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            p_end_date = datetime.strptime(end_date, '%Y-%m-%d')
             if p_end_date < contest_date:
                 continue
 
         new_dataset.append(item)
 
-    return dataset
+    if start_date or end_date:
+        logger.info(
+            f'Filtered dataset with start_date: {start_date}, end_date: {end_date}, remaining items: {len(new_dataset)}'
+        )
+    return new_dataset

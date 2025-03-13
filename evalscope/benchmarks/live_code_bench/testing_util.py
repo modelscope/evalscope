@@ -13,7 +13,12 @@ from datetime import datetime
 from enum import Enum
 # for capturing the stdout
 from io import StringIO
-from pyext import RuntimeModule
+
+try:
+    from pyext import RuntimeModule
+except Exception:
+    print('pyext not found, please install with `pip install pyext`')
+    pyext = None
 # used for testing the code that reads from input
 from unittest.mock import mock_open, patch
 
