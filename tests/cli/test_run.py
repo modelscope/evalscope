@@ -374,16 +374,24 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                'chinese_simpleqa',
+                # 'chinese_simpleqa',
+                'general_qa'
             ],
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4']
-                }
+                },
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
+                    'subset_list': [
+                        'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
+                        # 'test'
+                    ]
+                },
             },
             eval_batch_size=5,
             limit=5,
-            judge_strategy=JudgeStrategy.AUTO,
+            judge_strategy=JudgeStrategy.LLM,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
