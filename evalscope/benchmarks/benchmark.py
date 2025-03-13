@@ -1,6 +1,6 @@
 import copy
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from evalscope.constants import OutputType
@@ -29,7 +29,8 @@ class BenchmarkMeta:
     query_template: Optional[str] = None
     pretty_name: Optional[str] = None
     filters: Optional[OrderedDict] = None
-
+    extra_params: Optional[Dict] = field(default_factory=dict)
+    
     def _update(self, args: dict):
         if args.get('local_path'):
             self.dataset_id = args['local_path']
@@ -40,7 +41,7 @@ class BenchmarkMeta:
         return self.__dict__
 
     def to_string_dict(self) -> dict:
-        cur_dict = copy.deepcopy(self.__dict__)
+        cur_dict = copy.deepcopy(self.to_dict())
         # cur_dict['data_adapter'] = self.data_adapter.__name__
         del cur_dict['data_adapter']
         return cur_dict

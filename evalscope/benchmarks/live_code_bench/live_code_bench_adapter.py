@@ -1,7 +1,5 @@
-import re
-from lark import v_args
-
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -16,9 +14,12 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='Complete the following python code:\n{query}',
+    extra_params={'start_date': None, 'end_date': None},
 )
 class LiveCodeBenchAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def load(self, **kwargs) -> dict:
+        datasets = super().load(**kwargs)
