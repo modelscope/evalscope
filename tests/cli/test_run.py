@@ -230,7 +230,7 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='qwen2.5-7b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-            api_key= os.getenv('DASHSCOPE_API_KEY'),
+            api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'iquiz',
@@ -373,14 +373,14 @@ class TestRun(unittest.TestCase):
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math',
-                # 'arc',
+                'arc',
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
                 # # 'chinese_simpleqa',
-                'live_code_bench',
+                # 'live_code_bench',
                 # 'humaneval'
-                'general_qa'
+                # 'general_qa'
             ],
             dataset_args={
                 'competition_math': {

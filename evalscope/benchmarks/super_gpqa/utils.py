@@ -1,15 +1,10 @@
 # flake8: noqa
 import re
-import timeout_decorator
 
 
-@timeout_decorator.timeout(5)  # 5 seconds timeout
 def safe_regex_search(pattern, text, flags=0):
     try:
         return re.search(pattern, text, flags)
-    except timeout_decorator.TimeoutError:
-        print(f'Regex match timeout: pattern={pattern}, text={text[:100]}...')
-        return None
     except Exception as e:
         print(f'Regex match error: {str(e)}')
         return None
