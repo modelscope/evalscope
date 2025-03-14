@@ -365,15 +365,15 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-coder-32b-instruct',
+            model='qwen2.5-7b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
-                # 'aime24',
+                'aime24',
                 # 'competition_math',
-                'arc',
+                # 'arc',
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
@@ -403,12 +403,17 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=5,
-            limit=20,
+            limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
+            },
+            generation_config={
+                'max_new_tokens': 2048,
+                'temperature': 0.0,
+                'seed': 42,
             }
         )
 
