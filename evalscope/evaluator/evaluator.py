@@ -70,8 +70,10 @@ class Evaluator(object):
             self.judge = LLMJudge(**self.task_cfg.judge_model_args)
 
     def load_dataset(self):
+        print("herehere")
+        print(self.task_cfg)
         dataset = self.data_adapter.load(
-            work_dir=os.path.expanduser(self.task_cfg.dataset_dir), datasets_hub=self.dataset_hub, **self.kwargs)
+            dataset_name_or_path =self.task_cfg.datasets[0], work_dir=os.path.expanduser(self.task_cfg.dataset_dir), datasets_hub=self.dataset_hub, **self.kwargs)
 
         # Get prompts from dataset
         prompts = self.data_adapter.gen_prompts(data_dict=dataset)

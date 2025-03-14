@@ -92,7 +92,7 @@ class DataAdapter(ABC):
         subset_list = subset_list or self.subset_list
 
         # Try to load dataset from local disk
-        if os.path.exists(dataset_name_or_path):
+        if kwargs.get("datasets_hub") == HubType.LOCAL:
             logger.info(f'Loading dataset from local disk: {dataset_name_or_path}')
             data_dict = self.load_from_disk(
                 dataset_name_or_path, subset_list, work_dir, trust_remote_code=False, **kwargs)

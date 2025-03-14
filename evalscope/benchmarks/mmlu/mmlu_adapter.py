@@ -141,9 +141,9 @@ SUBJECT_MAPPING = {
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
-    few_shot_num=5,
-    train_split='train',
-    eval_split='test',
+    few_shot_num=0,
+    train_split='dev',
+    eval_split='val',
     prompt_template=
     'Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
 )
@@ -151,7 +151,7 @@ class MMLUAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
 
-        few_shot_num = kwargs.get('few_shot_num', 5)
+        few_shot_num = kwargs.get('few_shot_num', 0)
         if few_shot_num > 5:
             logger.warning(f'few_shot_num <= 5 for MMLU, but got {few_shot_num}. Use 5-shot by default.')
             kwargs['few_shot_num'] = 5
@@ -167,19 +167,10 @@ class MMLUAdapter(DataAdapter):
             data_dict[subset_name] = {}
 
             for split_name in [self.train_split, self.eval_split]:
-                if split_name == 'train':
-                    split_name_suffix = 'dev'
-                elif split_name == 'test':
-                    split_name_suffix = 'test'
-                elif split_name == 'validation':
-                    split_name_suffix = 'val'
-                else:
-                    raise ValueError(f'Invalid split name: {split_name}')
-
                 if os.path.exists(dataset_name_or_path):
-                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}.csv')
                 else:
-                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
 
                 if os.path.exists(file_path):
                     with open(file_path, encoding='utf-8') as f:
