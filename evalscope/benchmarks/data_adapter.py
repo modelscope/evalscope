@@ -94,12 +94,14 @@ class DataAdapter(ABC):
         # Try to load dataset from local disk
         if os.path.exists(dataset_name_or_path):
             logger.info(f'Loading dataset from local disk: {dataset_name_or_path}')
+            trust_remote_code = kwargs.pop('trust_remote_code', False)
             data_dict = self.load_from_disk(
-                dataset_name_or_path, subset_list, work_dir, trust_remote_code=False, **kwargs)
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs)
         else:
             logger.info(f'Loading dataset from hub: {dataset_name_or_path}')
+            trust_remote_code = kwargs.pop('trust_remote_code', True)
             data_dict = self.load_from_hub(
-                dataset_name_or_path, subset_list, work_dir, trust_remote_code=True, **kwargs)
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs)
         if len(data_dict) == 0:
             raise ValueError(f'Dataset is empty: {dataset_name_or_path}')
         return data_dict

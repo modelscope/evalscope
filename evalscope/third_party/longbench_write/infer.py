@@ -8,7 +8,7 @@ import random
 import torch
 from typing import List
 
-from evalscope.models.api import OpenaiApi
+from evalscope.third_party.longbench_write.tools.openai_api import OpenaiApi
 from evalscope.third_party.longbench_write.utils import count_words
 from evalscope.utils import get_logger
 

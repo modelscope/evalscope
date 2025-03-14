@@ -26,7 +26,7 @@ logger = get_logger()
     train_split='train',
     eval_split='test',
     prompt_template=
-    'The following are multiple choice questions, please output correct answer in the form of A or B or C or D, do not output explanation:\n{query}',
+    'Given the following question and four candidate answers (A, B, C and D), choose the best answer.\n{query}\nYour response should end with "The best answer is [the_answer_letter]" where the [the_answer_letter] is one of A, B, C or D.',  # noqa
 )
 class ARCAdapter(DataAdapter):
 
@@ -134,7 +134,7 @@ class ARCAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return ResponseParser.parse_first_capital(text=result, options=self.choices)
+            return ResponseParser.parse_first_option(text=result)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -149,8 +149,8 @@ class ARCAdapter(DataAdapter):
         choices_prompts: str = '\n'.join([label + '. ' + text for text, label in zip(choices_texts, choices_labels)])
         example += '\n' + choices_prompts
 
-        example += '\nAnswer:'
         if include_answer:
+            example += '\nAnswer:'
             example += ' {}\n\n'.format(input_d['answerKey'])
 
         return example

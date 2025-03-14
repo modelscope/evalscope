@@ -20,6 +20,10 @@ logger = get_logger()
     train_split=None,
     eval_split='test',
     prompt_template='Complete the following python code:\n{query}',
+    extra_params={
+        'num_workers': 4,
+        'timeout': 4
+    },
 )
 class HumanevalAdapter(DataAdapter):
     """
@@ -34,16 +38,16 @@ class HumanevalAdapter(DataAdapter):
             raise ImportError('Please install human_eval:'
                               'https://github.com/openai/human-eval/tree/master#installation , '
                               'Note that you need to enable the execution code in the human_eval/execution.py first.')
+        super().__init__(**kwargs)
 
+        extra_params = kwargs.get('extra_params', {})
         self.k = [1]
-        self.num_workers = 4
-        self.timeout = 4.0
+        self.num_workers = extra_params.get('num_workers', 4)
+        self.timeout = extra_params.get('timeout', 4)
 
         self.read_problems_func = stream_jsonl
         self.write_jsonl_func = write_jsonl
         self.eval_func = check_correctness
-
-        super().__init__(**kwargs)
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
