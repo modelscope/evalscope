@@ -19,7 +19,7 @@ logger = get_logger()
     dataset_id='modelscope/trivia_qa',
     subset_list=['default'],
     metric_list=['AverageAccuracy'],
-    few_shot_num=5,
+    few_shot_num=0,
     train_split='dev',
     eval_split='test',
 )

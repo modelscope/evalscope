@@ -1,4 +1,5 @@
 import os
+import csv
 import random
 import re
 
@@ -15,7 +16,7 @@ from evalscope.metrics import exact_match
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
     metric_list=['AveragePass@1'],
-    few_shot_num=5,
+    few_shot_num=0,
     train_split=None,
     eval_split='train',  # only have train split
     prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
@@ -33,6 +34,27 @@ class GPQAAdapter(DataAdapter):
                 encoding='utf-8').read() + '\nQuestion: '
         else:
             self.prompt_prefix = 'What is the correct answer to this question:'
+
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            if os.path.exists(dataset_name_or_path):
+                file_path = os.path.join(dataset_name_or_path, f'{subset_name}.csv')
+            else:
+                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.csv')
+            if os.path.exists(file_path):
+                with open(file_path, encoding='utf-8') as f:
+                    rows = []
+                    reader = csv.reader(f)
+                    header = next(reader)
+                    for row in reader:
+                        item = dict(zip(header, row))
+                        item.setdefault('answer', '')
+                        rows.append(item)
+
+                    data_dict[subset_name] = {self.eval_split: rows}
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

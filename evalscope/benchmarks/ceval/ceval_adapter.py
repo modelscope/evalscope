@@ -161,7 +161,6 @@ class CEVALAdapter(DataAdapter):
                     print(subset_name)
                     print(f"split_name: {split_name}")
                     file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
-                print(f"file_path: {file_path}")
                 if os.path.exists(file_path):
                     with open(file_path, encoding='utf-8') as f:
                         rows = []
