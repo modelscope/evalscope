@@ -10,6 +10,7 @@ eval_config:
       img_size: 224
       img_detail: low
       video_llm: false
+      system_prompt: "xxx"
   data:
     # - MVBench_MP4
     # - MLVU

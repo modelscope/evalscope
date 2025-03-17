@@ -204,6 +204,8 @@ eval_config:
       key: EMPTY
       temperature: 0.0
       img_size: -1
+      max_tokens: 1024
+      video_llm: false
   data:
     - SEEDBench_IMG
     - ChartQA_TEST
@@ -211,27 +213,36 @@ eval_config:
   limit: 20
   reuse: false
   nproc: 16
+  judge: exact_matching
 ```
 :::
 
-:::{tab-item} Python 字典
+:::{tab-item} TaskConfig 字典
 
 ```python
-task_cfg_dict = {
-    'work_dir': 'outputs',
-    'eval_backend': 'VLMEvalKit',
-    'eval_config': 
-            {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
-            'limit': 20,
-            'mode': 'all',
-            'model': [ 
-                {'api_base': 'http://localhost:8000/v1/chat/completions',
-                'key': 'EMPTY',
-                'name': 'CustomAPIModel',
-                'temperature': 0.0,
-                'type': 'qwen-vl-chat'}
-                ],
-            'reuse': False,}}
+from evalscope import TaskConfig
+
+task_cfg_dict = TaskConfig(
+    work_dir='outputs',
+    eval_backend='VLMEvalKit',
+    eval_config={
+        'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
+        'limit': 20,
+        'mode': 'all',
+        'model': [ 
+            {'api_base': 'http://localhost:8000/v1/chat/completions',
+            'key': 'EMPTY',
+            'name': 'CustomAPIModel',
+            'temperature': 0.0,
+            'type': 'qwen-vl-chat',
+            'img_size': -1,
+            'video_llm': False,
+            'max_tokens': 1024,}
+            ],
+        'reuse': False,
+        'nproc': 16,
+        'judge': 'exact_matching'}
+)
 ```
 :::
 ::::
@@ -265,21 +276,27 @@ eval_config:
 ```
 :::
 
-:::{tab-item} Python 字典
+:::{tab-item} TaskConfig 字典
 
 ```python
-task_cfg_dict = {
-    'work_dir': 'outputs',
-    'eval_backend': 'VLMEvalKit',
-    'eval_config': 
-            {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
-            'limit': 20,
-            'mode': 'all',
-            'model': [ 
-                {'name': 'qwen_chat',
-                'model_path': 'models/Qwen-VL-Chat'}
-                ],
-            'reuse': False}}
+from evalscope import TaskConfig
+
+task_cfg_dict = TaskConfig(
+    work_dir='outputs',
+    eval_backend='VLMEvalKit',
+    eval_config=
+        {'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
+        'limit': 20,
+        'mode': 'all',
+        'model': [ 
+            {'name': 'qwen_chat',
+            'model_path': 'models/Qwen-VL-Chat',
+            'video_llm': False,
+            'max_tokens': 1024,
+            }
+          ],
+        'reuse': False}
+ )
 ```
 :::
 ::::
@@ -300,6 +317,7 @@ task_cfg_dict = {
       - `name`：固定值，必须为 `CustomAPIModel`。
       - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
       - `temperature`：模型推理的温度系数，默认值为 `0.0`。
+      - `max_tokens`：模型推理的最大 token 数，默认值为 `2048`。
       - `img_size`：模型推理的图像大小，默认值为 `-1`，表示使用原始大小；设置为其他值，例如 `224`，表示将图像缩放到 224x224 大小。
       - `video_llm`：布尔值，默认为`False`，在评测视频数据集时，如需传递 `video_url` 参数，请设置为 `True`。
     - 使用本地模型推理时：
@@ -331,11 +349,13 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-7b-instruct --model_id_or
 ```
 
 #### 配置裁判员模型环境变量
-在yaml配置文件中增加如下配置：
+在yaml配置文件的`eval_config`中增加如下配置：
 ```yaml
-OPENAI_API_KEY: EMPTY 
-OPENAI_API_BASE: http://127.0.0.1:8866/v1/chat/completions # 裁判员模型的 api_base
-LOCAL_LLM: qwen2-7b-instruct #裁判员模型的 model_id
+eval_config:
+  # ... 其他配置
+  OPENAI_API_KEY: EMPTY 
+  OPENAI_API_BASE: http://127.0.0.1:8866/v1/chat/completions # 裁判员模型的 api_base
+  LOCAL_LLM: qwen2-7b-instruct #裁判员模型的 model_id
 ```
 
 ## 4. 执行评测任务
