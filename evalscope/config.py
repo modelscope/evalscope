@@ -75,7 +75,7 @@ class TaskConfig:
 
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.AUTO
-    judge_worker_num: int = 8
+    judge_worker_num: int = 1
     judge_model_args: Optional[Dict] = field(default_factory=lambda: {})
 
     def __post_init__(self):

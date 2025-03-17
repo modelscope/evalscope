@@ -234,7 +234,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'iquiz',
-                # 'ifeval',
+                'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
@@ -251,7 +251,7 @@ class TestRun(unittest.TestCase):
                 # 'gpqa',
                 # 'arc',
                 # 'ceval',
-                'hellaswag',
+                # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa'
                 # 'super_gpqa',
@@ -316,7 +316,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=32,
-            limit=15,
+            limit=50,
             # debug=True,
             stream=False,
             generation_config={

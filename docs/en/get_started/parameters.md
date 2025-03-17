@@ -88,7 +88,7 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
   - `llm`: Always use the judge model
   - `rule`: Do not use the judge model, use rule-based judgment instead
   - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model
-- `--judge-worker-num`: The concurrency number for the judge model, default is `8`
+- `--judge-worker-num`: The concurrency number for the judge model, default is `1`
 - `--judge-model-args`: Sets the parameters for the judge model, passed in as a `json` string and parsed as a dictionary, supporting the following fields:
   - `api_key`: API endpoint key for the model, default is `EMPTY`
   - `api_url`: API endpoint for the model, default is `https://api.openai.com/v1`

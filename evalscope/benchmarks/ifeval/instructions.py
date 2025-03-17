@@ -15,13 +15,15 @@
 
 import collections
 import json
-import logging
 import random
 import re
 import string
 from typing import Dict, Optional, Sequence, Union
 
 from evalscope.benchmarks.ifeval import instructions_util
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 _InstructionArgsDtype = Optional[Dict[str, Union[int, str, Sequence[str]]]]
 
@@ -167,7 +169,7 @@ class ResponseLanguageChecker(Instruction):
             return langdetect.detect(value) == self._language
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            logging.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
+            logger.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
             return True
 
 
@@ -1343,7 +1345,7 @@ class CapitalLettersEnglishChecker(Instruction):
             return value.isupper() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            logging.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
+            logger.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
             return True
 
 
@@ -1371,7 +1373,7 @@ class LowercaseLettersEnglishChecker(Instruction):
             return value.islower() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            logging.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
+            logger.error('Unable to detect language for text %s due to %s', value, e)  # refex: disable=pytotw.037
             return True
 
 
