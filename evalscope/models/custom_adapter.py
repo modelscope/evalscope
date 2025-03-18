@@ -66,4 +66,4 @@ class CustomModelAdapter(BaseModelAdapter):
             else:
                 raise TypeError(f'Unsupported inputs type: {type(input_prompt)}')
 
-        return self.custom_model.predict(prompts=in_prompts, **kwargs)
+        return self.custom_model.predict(prompts=in_prompts, origin_inputs=inputs, **kwargs)

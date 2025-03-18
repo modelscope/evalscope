@@ -81,7 +81,7 @@ class TaskConfig:
     def __post_init__(self):
         if (not self.model_id) and self.model:
             if isinstance(self.model, CustomModel):
-                self.model_id = type(self.model).__name__
+                self.model_id = self.model.config.get('model_id', 'custom_model')
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
             # fix path error, see http://github.com/modelscope/evalscope/issues/377
