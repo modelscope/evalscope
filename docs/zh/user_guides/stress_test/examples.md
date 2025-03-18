@@ -137,6 +137,33 @@ evalscope perf \
  --dataset openqa 
 ```
 
+## 使用random数据集
+
+执行以下命令，将随机生成指定长度范围类的prompt：
+
+```python
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.main import run_perf_benchmark
+
+task_cfg = Arguments(
+   parallel=5,
+   model='qwen2.5-7b-instruct',
+   api='openai',
+   url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+   api_key=env.get('DASHSCOPE_API_KEY'),
+   dataset='random',                         # 必须指定
+   min_tokens=128,
+   max_tokens=128,
+   prefix_length=128,                        # 仅对random数据集有效，指定前缀长度
+   min_prompt_length=1024,                   # 最小输入长度
+   max_prompt_length=2048,                   # 最大输入长度
+   number=20,
+   tokenizer_path='Qwen/Qwen2.5-7B-Instruct',  # 必须指定
+   seed=None,                                  # 建议设置为 None
+   debug= True,
+)
+run_perf_benchmark(task_cfg)
+```
 
 ## 使用wandb记录测试结果
 
