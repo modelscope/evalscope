@@ -134,6 +134,34 @@ evalscope perf \
  --dataset openqa 
 ```
 
+## Using the Random Dataset
+
+To execute the following command and randomly generate prompts within a specified length range:
+
+```python
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.main import run_perf_benchmark
+
+task_cfg = Arguments(
+   parallel=5,
+   model='qwen2.5-7b-instruct',
+   api='openai',
+   url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+   api_key=env.get('DASHSCOPE_API_KEY'),
+   dataset='random',                         # Must be specified
+   min_tokens=128,
+   max_tokens=128,
+   prefix_length=128,                        # Only effective for the random dataset, specifies the prefix length
+   min_prompt_length=1024,                   # Minimum input length
+   max_prompt_length=2048,                   # Maximum input length
+   number=20,
+   tokenizer_path='Qwen/Qwen2.5-7B-Instruct',  # Must be specified
+   seed=None,                                  # Recommended to set as None
+   debug=True,
+)
+run_perf_benchmark(task_cfg)
+```
+
 ## Using wandb to Record Test Results
 
 Please install wandb:

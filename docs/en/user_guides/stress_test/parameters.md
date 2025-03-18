@@ -35,32 +35,34 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--stream`: Use SSE stream output, default is False.
 
 ## Prompt Settings
-- `--max-prompt-length`: Maximum input prompt length, default is `sys.maxsize`. Prompts exceeding this length will be discarded.
-- `--min-prompt-length`: Minimum input prompt length, default is 0. Prompts shorter than this will be discarded.
-- `--prompt`: Specify request prompt, a string or local file, taking precedence over `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
-- `--query-template`: Specify query template, a `JSON` string or local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
+- `--max-prompt-length`: The maximum input prompt length, default is `131072`. Prompts exceeding this length will be discarded.
+- `--min-prompt-length`: The minimum input prompt length, default is 0. Prompts shorter than this will be discarded.
+- `--prefix-length`: The length of the prompt prefix, default is 0. This is only effective for the `random` dataset.
+- `--prompt`: Specifies the request prompt, which can be a string or a local file. This has higher priority than `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
+- `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
 
 ## Dataset Configuration
-- `--dataset` specifies the dataset [openqa|longalpaca|line_by_line|flickr8k]. You can also use a custom dataset parser in Python; refer to the [Custom Dataset Guide](./custom.md#custom-dataset).
-  - `line_by_line` treats each line as a separate prompt and requires a `dataset_path`.
-  - `longalpaca` will use `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
-  - `openqa` will use `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
-  - `flickr8k` will construct image-text inputs, making it suitable for evaluating multimodal models; the dataset will be automatically downloaded from modelscope, and specifying `dataset_path` is not supported.
-- `--dataset-path`: Path to the dataset file, used in combination with the dataset. `openqa` and `longalpaca` do not need a specified dataset path and will be downloaded automatically; `line_by_line` requires a local dataset file, which will be loaded line by line.
+- `--dataset`: You can specify datasets as follows, and you can also use a Python custom dataset parser. Refer to the [Custom Dataset Guide](custom.md/#自定义数据集).
+  - `openqa`: Uses `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
+  - `longalpaca`: Uses `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
+  - `flickr8k`: Constructs image-text input suitable for evaluating multimodal models; the dataset is automatically downloaded from modelscope, and specifying `dataset_path` is not supported.
+  - `line_by_line`: Treats each line as a prompt, requiring `dataset_path` to be provided.
+  - `random`: Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. Must specify `tokenizer-path`.
+- `--dataset-path`: The path to the dataset file, used in conjunction with the dataset. For openqa and longalpaca, the dataset path is optional and will be automatically downloaded; for line_by_line, a local dataset file must be specified and loaded line by line.
 
 ## Model Settings
-- `--tokenizer-path`: Optional, specify the path to tokenizer weights for calculating the number of input and output tokens, usually in the same directory as the model weights.
-- `--frequency-penalty`: Frequency penalty value.
-- `--logprobs`: Log probabilities.
-- `--max-tokens`: Maximum number of tokens that can be generated.
-- `--min-tokens`: Minimum number of tokens to be generated.
-- `--n-choices`: Number of completion choices generated.
-- `--seed`: Random seed, default is 42.
-- `--stop`: Tokens that stop generation.
-- `--stop-token-ids`: Set stop token IDs.
+- `--tokenizer-path`: Optional. Specifies the tokenizer weights path, used to calculate the number of tokens in the input and output, usually located in the same directory as the model weights.
+- `--frequency-penalty`: The frequency_penalty value.
+- `--logprobs`: Logarithmic probabilities.
+- `--max-tokens`: The maximum number of tokens that can be generated.
+- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter, please refer to the respective API documentation.
+- `--n-choices`: The number of completion choices to generate.
+- `--seed`: The random seed, default is 42.
+- `--stop`: Tokens that stop the generation.
+- `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
 - `--temperature`: Sampling temperature.
-- `--top-p`: Top_p sampling.
-- `--top-k`: Top_k sampling.
+- `--top-p`: Top-p sampling.
+- `--top-k`: Top-k sampling.
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.

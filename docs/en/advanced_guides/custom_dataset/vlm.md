@@ -54,7 +54,7 @@ eval_config:
   nproc: 1
 ```
 ```{seealso}
-VLMEvalKit [Parameter Description](../../user_guides/backend/vlmevalkit_backend.md#parameters)
+VLMEvalKit [Parameter Description](../../user_guides/backend/vlmevalkit_backend.md#parameter-description)
 ```
 ### 3. Running Evaluation
 
