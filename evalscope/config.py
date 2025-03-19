@@ -92,7 +92,10 @@ class TaskConfig:
             self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
 
     def to_dict(self):
-        return self.__dict__
+        result = self.__dict__.copy()
+        if isinstance(self.model, CustomModel):
+            result['model'] = self.model.__class__.__name__
+        return result
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
