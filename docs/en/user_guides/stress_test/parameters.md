@@ -42,13 +42,15 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
 
 ## Dataset Configuration
-- `--dataset`: You can specify datasets as follows, and you can also use a Python custom dataset parser. Refer to the [Custom Dataset Guide](custom.md/#custom-dataset).
-  - `openqa`: Uses `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
-  - `longalpaca`: Uses `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
-  - `flickr8k`: Constructs image-text input suitable for evaluating multimodal models; the dataset is automatically downloaded from modelscope, and specifying `dataset_path` is not supported.
-  - `line_by_line`: Treats each line as a prompt, requiring `dataset_path` to be provided.
-  - `random`: Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. Must specify `tokenizer-path`. [Example of use](./examples.md#using-the-random-dataset).
-- `--dataset-path`: The path to the dataset file, used in conjunction with the dataset. For openqa and longalpaca, the dataset path is optional and will be automatically downloaded; for line_by_line, a local dataset file must be specified and loaded line by line.
+Here's the English translation:
+
+- `--dataset` can specify the following dataset modes. You can also use a custom Python dataset parser, refer to the [Custom Dataset Guide](./custom.md#custom-dataset).
+  - `openqa` uses the `question` field of a jsonl file as the prompt. If `dataset_path` is not specified, it will automatically download the [dataset](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope. The prompt length is relatively short, generally under 100 tokens.
+  - `longalpaca` uses the `instruction` field of a jsonl file as the prompt. If `dataset_path` is not specified, it will automatically download the [dataset](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope. The prompt length is relatively long, generally over 6000 tokens.
+  - `flickr8k` will construct image-text input, suitable for evaluating multimodal models; it automatically downloads the [dataset](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope and does not support specifying `dataset_path`.
+  - `line_by_line` requires providing `dataset_path`, and uses each line of the txt file as a prompt.
+  - `random` generates prompts randomly based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It requires specifying `tokenizer-path`. [Usage example](./examples.md#using-the-random-dataset).
+- `--dataset-path` is the path to the dataset file, used in conjunction with the dataset.
 
 ## Model Settings
 - `--tokenizer-path`: Optional. Specifies the tokenizer weights path, used to calculate the number of tokens in the input and output, usually located in the same directory as the model weights.

@@ -43,13 +43,13 @@
 - `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./query_template.json`。
 
 ## 数据集配置
-- `--dataset` 可以指定如下数据集，您也可以使用python自定义数据集解析器，参考[自定义数据集指南](custom.md/#自定义数据集)。
-  - `openqa` 将获取 `item['question']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
-  - `longalpaca` 将获取 `item['instruction']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
-  - `flickr8k` 将构建图文输入，适合评测多模态模型；从modelscope自动下载数据集，不支持指定`dataset_path`。
-  - `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
+- `--dataset` 可以指定如下数据集模式，您也可以使用python自定义数据集解析器，参考[自定义数据集指南](custom.md/#自定义数据集)。
+  - `openqa` 使用jsonl文件的 `question` 字段作为prompt。不指定`dataset_path`将从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)，prompt长度较短，一般在 100 token 以下。
+  - `longalpaca` 使用jsonl文件的 `instruction` 字段作为prompt。不指定`dataset_path`将从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)，prompt长度较长，一般在 6000 token 以上。
+  - `flickr8k` 将构建图文输入，适合评测多模态模型；从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)，不支持指定`dataset_path`。
+  - `line_by_line` 必需提供`dataset_path`，逐行将txt文件的每一行作为一个提示，。
   - `random` 根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`，[使用示例](./examples.md#使用random数据集)。
-- `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
+- `--dataset-path` 数据集文件的路径，与数据集结合使用。
 
 ## 模型设置
 - `--tokenizer-path` 可选，指定分词器权重路径，用于计算输入和输出的token数量，通常与模型权重在同一目录下。
