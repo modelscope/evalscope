@@ -40,8 +40,9 @@ class Arguments:
     outputs_dir: str = DEFAULT_WORK_DIR
 
     # Prompt settings
-    max_prompt_length: int = sys.maxsize  # Maximum length of the prompt
+    max_prompt_length: int = 131072  # Maximum length of the prompt
     min_prompt_length: int = 0  # Minimum length of the prompt
+    prefix_length: int = 0  # Length of the prefix, only for random dataset
     prompt: Optional[str] = None  # The prompt text
     query_template: Optional[str] = None  # Template for the query
 
@@ -86,6 +87,7 @@ class Arguments:
             api=args.api,
             max_prompt_length=args.max_prompt_length,
             min_prompt_length=args.min_prompt_length,
+            prefix_length=args.prefix_length,
             prompt=args.prompt,
             query_template=args.query_template,
             dataset=args.dataset,
@@ -168,6 +170,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Prompt settings
     parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
+    parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
 

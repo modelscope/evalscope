@@ -113,6 +113,11 @@ pip install vllm -U
 ```shell
 CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
 ```
+
+```{tip}
+If you encounter the error `ValueError: At most 1 image(s) may be provided in one request`, try setting the parameter `--limit-mm-per-prompt "image=5"`. You may also increase the value for the image parameter.
+```
+
 :::
 
 :::{tab-item} LMDeploy 
