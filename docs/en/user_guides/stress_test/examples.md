@@ -136,30 +136,29 @@ evalscope perf \
 
 ## Using the Random Dataset
 
-To execute the following command and randomly generate prompts within a specified length range:
+Randomly generate prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It is necessary to specify `tokenizer-path`. The number of tokens in the generated prompt is uniformly distributed between `prefix_length + min-prompt-length` and `prefix_length + max-prompt-length`. In a single test, all requests have the same prefix portion.
 
-```python
-from evalscope.perf.arguments import Arguments
-from evalscope.perf.main import run_perf_benchmark
+```{note}
+Due to the influence of chat_template and tokenization algorithms, there may be some discrepancies in the number of tokens in the generated prompts, and it is not an exact specified token count.
+```
 
-task_cfg = Arguments(
-   parallel=5,
-   model='qwen2.5-7b-instruct',
-   api='openai',
-   url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-   api_key=env.get('DASHSCOPE_API_KEY'),
-   dataset='random',                         # Must be specified
-   min_tokens=128,
-   max_tokens=128,
-   prefix_length=128,                        # Only effective for the random dataset, specifies the prefix length
-   min_prompt_length=1024,                   # Minimum input length
-   max_prompt_length=2048,                   # Maximum input length
-   number=20,
-   tokenizer_path='Qwen/Qwen2.5-7B-Instruct',  # Must be specified
-   seed=None,                                  # Recommended to set as None
-   debug=True,
-)
-run_perf_benchmark(task_cfg)
+Execute the following command:
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 64 \
+  --min-prompt-length 1024 \
+  --max-prompt-length 2048 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --debug
 ```
 
 ## Using wandb to Record Test Results

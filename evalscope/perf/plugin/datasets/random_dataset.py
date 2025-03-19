@@ -18,7 +18,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         from modelscope import AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.query_parameters.tokenizer_path, trust_remote_code=True)
         self.prefix_length = self.query_parameters.prefix_length
-        self.prefix = self.get_random_inputs(self.prefix_length)
+        self.prefix_ids = self.get_random_inputs(self.prefix_length)
         self.template_len = self.get_template_len()
         self.number = self.query_parameters.number or 1
 
@@ -29,11 +29,15 @@ class RandomDatasetPlugin(DatasetPluginBase):
         assert min_prompt_length >= 0, f'min_prompt_length should be greater than or equal to the template length {self.template_len}.'  # noqa: E501
         assert max_prompt_length >= min_prompt_length, 'max_prompt_length should be greater than or equal to min_prompt_length.'  # noqa: E501
 
-        for _ in range(self.number):
-            prompt_length = np.random.randint(min_prompt_length, max_prompt_length)
-            prompt = self.get_random_inputs(prompt_length)
-            prompt_str = self.tokenizer.decode(self.prefix + prompt, skip_special_tokens=False)
-            yield [{'role': 'user', 'content': prompt_str}]
+        # refer to https://github.com/vllm-project/vllm/blob/ed6e9075d31e32c8548b480a47d1ffb77da1f54c/benchmarks/benchmark_serving.py#L366C1-L399C1  # noqa: E501
+        input_lens = np.random.randint(min_prompt_length, max_prompt_length, size=self.number)
+        offsets = np.random.randint(0, self.tokenizer.vocab_size, size=self.number)
+
+        for i in range(self.number):
+            prompt_ids = (offsets[i] + i + np.arange(input_lens[i])) % self.tokenizer.vocab_size
+            prompt = self.tokenizer.decode(
+                self.prefix_ids + prompt_ids.tolist(), skip_special_tokens=False, clean_up_tokenization_spaces=False)
+            yield [{'role': 'user', 'content': prompt}]
 
     def get_random_inputs(self, length: int) -> List[int]:
         if length <= 0:

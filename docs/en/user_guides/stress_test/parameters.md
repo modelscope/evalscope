@@ -42,12 +42,12 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
 
 ## Dataset Configuration
-- `--dataset`: You can specify datasets as follows, and you can also use a Python custom dataset parser. Refer to the [Custom Dataset Guide](custom.md/#自定义数据集).
+- `--dataset`: You can specify datasets as follows, and you can also use a Python custom dataset parser. Refer to the [Custom Dataset Guide](custom.md/#custom-dataset).
   - `openqa`: Uses `item['question']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
   - `longalpaca`: Uses `item['instruction']` as the prompt. If `dataset_path` is not specified, it will be automatically downloaded from modelscope.
   - `flickr8k`: Constructs image-text input suitable for evaluating multimodal models; the dataset is automatically downloaded from modelscope, and specifying `dataset_path` is not supported.
   - `line_by_line`: Treats each line as a prompt, requiring `dataset_path` to be provided.
-  - `random`: Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. Must specify `tokenizer-path`.
+  - `random`: Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. Must specify `tokenizer-path`. [Example of use](./examples.md#using-the-random-dataset).
 - `--dataset-path`: The path to the dataset file, used in conjunction with the dataset. For openqa and longalpaca, the dataset path is optional and will be automatically downloaded; for line_by_line, a local dataset file must be specified and loaded line by line.
 
 ## Model Settings

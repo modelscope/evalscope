@@ -102,19 +102,18 @@ class TestPerf(unittest.TestCase):
     def test_run_perf_local_random(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
-            parallel=5,
-            model='qwen2.5-7b-instruct',
+            parallel=20,
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/chat/completions',
             api='openai',
-            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-            api_key=env.get('DASHSCOPE_API_KEY'),
             dataset='random',
             min_tokens=128,
             max_tokens=128,
-            prefix_length=128,
+            prefix_length=0,
             min_prompt_length=1024,
-            max_prompt_length=2048,
-            number=20,
-            tokenizer_path='Qwen/Qwen2.5-7B-Instruct',
+            max_prompt_length=1024,
+            number=100,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             seed=None,
             debug= True,
         )

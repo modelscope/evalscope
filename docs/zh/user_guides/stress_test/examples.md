@@ -139,30 +139,29 @@ evalscope perf \
 
 ## 使用random数据集
 
-执行以下命令，将随机生成指定长度范围类的prompt：
+根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`。生成prompt的token数量在`prefix_length + min-prompt-length`和`prefix_length + max-prompt-length`之间均匀分布，在一次测试中所有请求prefix部分相同。
 
-```python
-from evalscope.perf.arguments import Arguments
-from evalscope.perf.main import run_perf_benchmark
+```{note}
+由于chat_template以及tokenize算法的影响，生成的prompt的token数量可能有些误差，不是精确的指定token数量。
+```
 
-task_cfg = Arguments(
-   parallel=5,
-   model='qwen2.5-7b-instruct',
-   api='openai',
-   url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-   api_key=env.get('DASHSCOPE_API_KEY'),
-   dataset='random',                         # 必须指定
-   min_tokens=128,
-   max_tokens=128,
-   prefix_length=128,                        # 仅对random数据集有效，指定前缀长度
-   min_prompt_length=1024,                   # 最小输入长度
-   max_prompt_length=2048,                   # 最大输入长度
-   number=20,
-   tokenizer_path='Qwen/Qwen2.5-7B-Instruct',  # 必须指定
-   seed=None,                                  # 建议设置为 None
-   debug= True,
-)
-run_perf_benchmark(task_cfg)
+执行以下命令即可：
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 64 \
+  --min-prompt-length 1024 \
+  --max-prompt-length 2048 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --debug
 ```
 
 ## 使用wandb记录测试结果

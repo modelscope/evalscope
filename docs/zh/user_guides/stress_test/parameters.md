@@ -48,7 +48,7 @@
   - `longalpaca` 将获取 `item['instruction']` 作为提示，不指定`dataset_path`将从modelscope自动下载。
   - `flickr8k` 将构建图文输入，适合评测多模态模型；从modelscope自动下载数据集，不支持指定`dataset_path`。
   - `line_by_line`逐行将每一行作为一个提示，需提供`dataset_path`。
-  - `random` 根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`。注意：由于chat_template的影响，生成的prompt token数量可能有些误差。
+  - `random` 根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`，[使用示例](./examples.md#使用random数据集)。
 - `--dataset-path` 数据集文件的路径，与数据集结合使用。openqa与longalpaca可不指定数据集路径，将自动下载；line_by_line必须指定本地数据集文件，将一行一行加载。
 
 ## 模型设置
