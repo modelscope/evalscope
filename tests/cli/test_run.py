@@ -371,14 +371,14 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
-                'aime24',
+                # 'aime24',
                 # 'competition_math',
                 # 'arc',
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
                 # # 'chinese_simpleqa',
-                # 'live_code_bench',
+                'live_code_bench',
                 # 'humaneval'
                 # 'general_qa'
             ],
@@ -387,10 +387,9 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['Level 4']
                 },
                 'live_code_bench': {
-                    'subset_list': ['v4_v5'],
                     'extra_params': {
-                        'start_date': '2024-12-01',
-                        'end_date': '2025-01-01'
+                        'start_date': '2024-09-01',
+                        'end_date': '2024-09-30'
                     },
                     'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
                 },
@@ -402,9 +401,10 @@ class TestRun(unittest.TestCase):
                     ]
                 },
             },
-            eval_batch_size=5,
-            limit=5,
+            eval_batch_size=10,
+            # limit=5,
             judge_strategy=JudgeStrategy.AUTO,
+            judge_worker_num=8,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -414,7 +414,8 @@ class TestRun(unittest.TestCase):
                 'max_new_tokens': 2048,
                 'temperature': 0.0,
                 'seed': 42,
-            }
+            },
+            use_cache='outputs/20250320_143658'
         )
 
         run_task(task_cfg=task_cfg)

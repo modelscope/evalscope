@@ -164,7 +164,7 @@ evalscope perf \
   --debug
 ```
 
-## 使用wandb记录测试结果
+## 使用wandb可视化测试结果
 
 请安装wandb：
 ```bash

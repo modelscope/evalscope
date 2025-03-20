@@ -77,6 +77,7 @@ class ArenaMode:
 
 
 class AnswerKeys:
+    INDEX = 'index'
     ANSWER_ID = 'answer_id'
     RAW_INPUT = 'raw_input'
     ORIGIN_PROMPT = 'origin_prompt'
