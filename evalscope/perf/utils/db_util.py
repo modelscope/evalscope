@@ -2,6 +2,8 @@ import base64
 import json
 import os
 import pickle
+import platform
+import re
 import sqlite3
 import sys
 from datetime import datetime
@@ -91,6 +93,8 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
 def get_output_path(args: Arguments) -> str:
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
     output_path = os.path.join(args.outputs_dir, current_time, f'{args.name or args.model_id}')
+    # Filter illegal characters
+    output_path = re.sub(r'[<>:"|?*]', '_', output_path)
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
     logger.info(f'Save the result to: {output_path}')

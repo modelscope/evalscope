@@ -32,7 +32,7 @@ def run_perf_benchmark(args):
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     if platform.system() != 'Windows':
         add_signal_handlers(loop)
 
