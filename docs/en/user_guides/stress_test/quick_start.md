@@ -60,6 +60,11 @@ Parameter Descriptions:
 - `dataset`: The name of the dataset
 - `stream`: Whether to enable streaming
 
+
+```{important}
+To accurately measure the Time to First Token (TTFT) metric, you need to include the `--stream` parameter in your request. Otherwise, TTFT will be the same as Latency.
+```
+
 ### Output Results
 ```text
 Benchmarking summary: 
