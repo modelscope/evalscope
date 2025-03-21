@@ -2,7 +2,6 @@ import base64
 import json
 import os
 import pickle
-import platform
 import re
 import sqlite3
 import sys
