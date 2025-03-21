@@ -125,6 +125,7 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
         import torch
 
         del base_model
+        del evaluators
         torch.cuda.empty_cache()
         gc.collect()
 
