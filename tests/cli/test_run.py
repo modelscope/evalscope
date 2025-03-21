@@ -365,7 +365,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='deepseek-r1-distill-qwen-32b',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -411,11 +411,14 @@ class TestRun(unittest.TestCase):
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             },
             generation_config={
-                'max_new_tokens': 2048,
+                'max_new_tokens': 10000,
                 'temperature': 0.0,
                 'seed': 42,
             },
-            use_cache='outputs/20250320_143658'
+            timeout=60000,
+            stream=True,
+            limit=10,
+            # use_cache='outputs/20250320_143658'
         )
 
         run_task(task_cfg=task_cfg)
