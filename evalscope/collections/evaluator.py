@@ -181,7 +181,7 @@ class EvaluatorCollection:
             answers_list = jsonl_to_list(pred_file_path)
             indices = set()
             for answer in answers_list:
-                index = answer[AnswerKeys.ORIGIN_PROMPT].get('index')
+                index = answer.get(AnswerKeys.INDEX)
                 answer_dict[index] = answer
                 indices.add(index)
             data = []

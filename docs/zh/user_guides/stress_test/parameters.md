@@ -33,7 +33,7 @@
   `--parallel`参数用于控制发送请求的worker数量，worker将从请求队列获取请求并发送，且在上一请求回复后才发送下一请求。 两个参数不建议同时设置，也即在本工具中，`--rate`参数仅对`--parallel`为1时有效。
   ```
 - `--log-every-n-query` 每n个查询记录日志，默认为10。
-- `--stream` 使用SSE流输出，默认为False。
+- `--stream` 使用SSE流输出，默认为False。需要设置`stream`参数以测量Time to First Token (TTFT)指标。
 
 ## Prompt设置
 - `--max-prompt-length` 最大输入prompt长度，默认为`131072`，大于该值时，将丢弃prompt。

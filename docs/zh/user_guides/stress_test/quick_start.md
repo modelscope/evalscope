@@ -60,6 +60,9 @@ run_perf_benchmark(task_cfg)
 - `dataset`: 数据集名称
 - `stream`: 是否启用流式处理
 
+```{important}
+要准确统计Time to First Token (TTFT)指标，需要在请求中包含`--stream`参数，否则TTFT将与Latency相同。
+```
 
 ### 输出结果
 ```text

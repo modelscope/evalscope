@@ -288,7 +288,7 @@ task_cfg_dict = TaskConfig(
             {'name': 'qwen_chat',
             'model_path': 'models/Qwen-VL-Chat',
             'video_llm': False,
-            'max_tokens': 1024,
+            'max_new_tokens': 1024,
             }
           ],
         'reuse': False}

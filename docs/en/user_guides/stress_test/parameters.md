@@ -32,7 +32,7 @@ Execute `evalscope perf --help` to get a full parameter description:
   The `--parallel` parameter is used to control the number of workers sending requests; workers will take requests from the queue and send them, only sending the next request after receiving a response for the previous one. It is not recommended to set both parameters simultaneously; thus, in this tool, the `--rate` parameter is only effective when `--parallel` is set to 1.
   ```
 - `--log-every-n-query`: Log every n queries, default is 10.
-- `--stream`: Use SSE stream output, default is False.
+- `--stream`: Use SSE stream output, default is False. Need to set the `stream` parameter to measure the Time to First Token (TTFT) metric.
 
 ## Prompt Settings
 - `--max-prompt-length`: The maximum input prompt length, default is `131072`. Prompts exceeding this length will be discarded.

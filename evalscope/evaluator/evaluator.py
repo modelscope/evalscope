@@ -81,7 +81,7 @@ class Evaluator(object):
         for subset_name, prompts_list in prompts.items():
             limit = self.task_cfg.limit or len(prompts_list)
             for index, prompt in enumerate(prompts_list[:limit]):
-                prompt['index'] = index
+                prompt[AnswerKeys.INDEX] = index
                 limited_prompts[subset_name].append(prompt)
 
         return limited_prompts
@@ -97,7 +97,8 @@ class Evaluator(object):
         answer_d[AnswerKeys.ANSWER_ID] = answer_id
         answer_d[AnswerKeys.SUBSET_NAME] = subset_name
         answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
-        answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
+        # answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
+        answer_d[AnswerKeys.INDEX] = input_d[AnswerKeys.INDEX]
         return answer_d
 
     def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
@@ -117,7 +118,7 @@ class Evaluator(object):
             return answers_list, prompts_list
 
         def get_answered_indices(answers_list: List[Dict]) -> List[int]:
-            indices = [answer[AnswerKeys.ORIGIN_PROMPT].get('index') for answer in answers_list]
+            indices = [answer.get(AnswerKeys.INDEX) for answer in answers_list]
 
             if all(index is None for index in indices):
                 return list(range(len(answers_list)))
@@ -238,7 +239,7 @@ class Evaluator(object):
                     pred = pred_content
 
             choice[ReviewKeys.REVIEW] = {
-                ReviewKeys.GOLD: gold_content,
+                ReviewKeys.GOLD: gold_content if gold_content != raw_input_d else '*Same as Input*',
                 ReviewKeys.PRED: pred,
                 ReviewKeys.RESULT: review_result
             }
