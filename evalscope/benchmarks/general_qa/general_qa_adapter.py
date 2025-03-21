@@ -73,7 +73,6 @@ class GeneralQAAdapter(DataAdapter):
             print(file_path)
             if os.path.exists(file_path):
                 data_dict[subset_name][self.eval_split] = jsonl_to_list(file_path)
-        print(json.dumps(data_dict, ensure_ascii=False))
 
         return data_dict
 
