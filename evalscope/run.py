@@ -39,9 +39,11 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
 
     if task_cfg.eval_backend != EvalBackend.NATIVE:
-        return run_non_native_backend(task_cfg, outputs)
+        result = run_non_native_backend(task_cfg, outputs)
     else:
-        return evaluate_model(task_cfg, outputs)
+        result = evaluate_model(task_cfg, outputs)
+
+    return result
 
 
 def setup_work_directory(task_cfg: TaskConfig, run_time: str):
@@ -116,6 +118,15 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     for evaluator in evaluators:
         res_dict = evaluator.eval()
         eval_results[evaluator.dataset_name] = res_dict
+
+    # Clean up
+    if base_model is not None:
+        import gc
+        import torch
+
+        del base_model
+        torch.cuda.empty_cache()
+        gc.collect()
 
     return eval_results
 

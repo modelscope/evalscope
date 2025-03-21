@@ -203,7 +203,7 @@ class TestRun(unittest.TestCase):
         print(res)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_humaneval(self):
+    def test_run_one_task(self):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
@@ -222,6 +222,33 @@ class TestRun(unittest.TestCase):
         )
 
         run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_task_loop(self):
+        os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+        from evalscope.config import TaskConfig
+
+        task_cfg1 = TaskConfig(
+            model='Qwen/Qwen2.5-7B-Instruct',
+            model_id='model1',
+            datasets=['iquiz'],
+            limit=10
+        )
+        task_cfg2 = TaskConfig(
+            model='Qwen/Qwen2.5-7B-Instruct',
+            model_id='model2',
+            datasets=['iquiz'],
+            limit=10
+        )
+        task_cfg3 = TaskConfig(
+            model='Qwen/Qwen2.5-7B-Instruct',
+            model_id='model3',
+            datasets=['iquiz'],
+            limit=10
+        )
+
+        run_task(task_cfg=[task_cfg1, task_cfg2, task_cfg3])
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_server_model(self):
