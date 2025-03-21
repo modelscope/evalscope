@@ -205,7 +205,7 @@ async def start_server(args: Arguments) -> bool:
         else:
             args.url = f'http://127.0.0.1:{args.port}/v1/chat/completions'
 
-    if not await test_connection(args):
+    if (not args.no_test_connection) and (not await test_connection(args)):
         raise TimeoutError('Test connection failed')
 
 
