@@ -392,7 +392,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='deepseek-r1-distill-qwen-32b',
+            model='qwq-32b',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -415,8 +415,8 @@ class TestRun(unittest.TestCase):
                 },
                 'live_code_bench': {
                     'extra_params': {
-                        'start_date': '2024-09-01',
-                        'end_date': '2024-09-30'
+                        'start_date': '2024-08-01',
+                        'end_date': '2025-02-28'
                     },
                     'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
                 },
@@ -438,13 +438,12 @@ class TestRun(unittest.TestCase):
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             },
             generation_config={
-                'max_new_tokens': 10000,
+                'max_new_tokens': 20000,
                 'temperature': 0.0,
                 'seed': 42,
             },
             timeout=60000,
             stream=True,
-            limit=10,
             # use_cache='outputs/20250320_143658'
         )
 
