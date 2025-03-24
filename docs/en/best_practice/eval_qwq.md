@@ -34,7 +34,7 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.opena
 [QwQ-32B-Preview Model Inference Speed Test](../experiments/speed_benchmark/QwQ-32B-Preview.md)
 ```
 
-### Evaluating the Model Using EvalScope
+### Evaluating the Model for Mathematical Reasoning
 
 Run the following command to have the model reason through the MATH-500 dataset and obtain output results for each question, as well as the overall accuracy:
 
@@ -102,6 +102,34 @@ The results will be:
 +---------+-----------+---------------+--------------+-------+---------+---------+
 | QwQ-32B | gpqa      | AveragePass@1 | gpqa_diamond |   198 |  0.6717 | default |
 +---------+-----------+---------------+--------------+-------+---------+---------+
+```
+
+### Evaluating Code Capability
+
+We use [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite) to evaluate the model's code capability. The following configuration is required:
+
+```python
+# ...
+datasets=['live_code_bench'],
+dataset_args={
+    'live_code_bench': {
+        'extra_params': {
+            'start_date': '2024-08-01',
+            'end_date': '2025-02-28'
+        },
+        "filters": {"remove_until": "</think>"}  # Filter out the thinking part of the model inference process
+    }
+},
+```
+
+The output results are as follows:
+
+```text
++---------+-----------------+----------+----------------+-------+---------+---------+
+| Model   | Dataset         | Metric   | Subset         |   Num |   Score | Cat.0   |
++=========+=================+==========+================+=======+=========+=========+
+| qwq-32b | live_code_bench | Pass@1   | release_latest |   279 |  0.6237 | default |
++---------+-----------------+----------+----------------+-------+---------+---------+
 ```
 
 ## Visualizing Evaluation Results
