@@ -1,5 +1,5 @@
 import json
-import subprocess
+import os
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
@@ -18,16 +18,11 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
 
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path:
-            subprocess.call([
-                'modelscope',
-                'download',
-                '--dataset',
-                'AI-ModelScope/HC3-Chinese',
-                'open_qa.jsonl',
-                '--local_dir',
-                './data',
-            ])
-            self.query_parameters.dataset_path = './data/open_qa.jsonl'
+            from modelscope import dataset_snapshot_download
+
+            file_name = 'open_qa.jsonl'
+            local_path = dataset_snapshot_download('AI-ModelScope/HC3-Chinese', allow_patterns=[file_name])
+            self.query_parameters.dataset_path = os.path.join(local_path, file_name)
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

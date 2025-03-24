@@ -203,7 +203,7 @@ class TestRun(unittest.TestCase):
         print(res)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_humaneval(self):
+    def test_run_one_task(self):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
@@ -222,6 +222,33 @@ class TestRun(unittest.TestCase):
         )
 
         run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_task_loop(self):
+        os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+        from evalscope.config import TaskConfig
+
+        task_cfg1 = TaskConfig(
+            model='Qwen/Qwen2.5-0.5B-Instruct',
+            model_id='model1',
+            datasets=['iquiz'],
+            limit=10
+        )
+        task_cfg2 = TaskConfig(
+            model='Qwen/Qwen2.5-0.5B-Instruct',
+            model_id='model2',
+            datasets=['iquiz'],
+            limit=10
+        )
+        task_cfg3 = TaskConfig(
+            model='Qwen/Qwen2.5-0.5B-Instruct',
+            model_id='model3',
+            datasets=['iquiz'],
+            limit=10
+        )
+
+        run_task(task_cfg=[task_cfg1, task_cfg2, task_cfg3])
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_server_model(self):
@@ -365,20 +392,20 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='deepseek-r1-distill-qwen-32b',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
-                'aime24',
+                # 'aime24',
                 # 'competition_math',
                 # 'arc',
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
                 # # 'chinese_simpleqa',
-                # 'live_code_bench',
+                'live_code_bench',
                 # 'humaneval'
                 # 'general_qa'
             ],
@@ -387,10 +414,9 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['Level 4']
                 },
                 'live_code_bench': {
-                    'subset_list': ['v4_v5'],
                     'extra_params': {
-                        'start_date': '2024-12-01',
-                        'end_date': '2025-01-01'
+                        'start_date': '2024-09-01',
+                        'end_date': '2024-09-30'
                     },
                     'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/code_generation_lite'
                 },
@@ -402,19 +428,24 @@ class TestRun(unittest.TestCase):
                     ]
                 },
             },
-            eval_batch_size=5,
-            limit=5,
+            eval_batch_size=10,
+            # limit=5,
             judge_strategy=JudgeStrategy.AUTO,
+            judge_worker_num=8,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             },
             generation_config={
-                'max_new_tokens': 2048,
+                'max_new_tokens': 10000,
                 'temperature': 0.0,
                 'seed': 42,
-            }
+            },
+            timeout=60000,
+            stream=True,
+            limit=10,
+            # use_cache='outputs/20250320_143658'
         )
 
         run_task(task_cfg=task_cfg)

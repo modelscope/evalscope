@@ -137,8 +137,34 @@ evalscope perf \
  --dataset openqa 
 ```
 
+## 使用random数据集
 
-## 使用wandb记录测试结果
+根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`。生成prompt的token数量在`prefix_length + min-prompt-length`和`prefix_length + max-prompt-length`之间均匀分布，在一次测试中所有请求prefix部分相同。
+
+```{note}
+由于chat_template以及tokenize算法的影响，生成的prompt的token数量可能有些误差，不是精确的指定token数量。
+```
+
+执行以下命令即可：
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 64 \
+  --min-prompt-length 1024 \
+  --max-prompt-length 2048 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --debug
+```
+
+## 使用wandb可视化测试结果
 
 请安装wandb：
 ```bash

@@ -60,6 +60,9 @@ run_perf_benchmark(task_cfg)
 - `dataset`: 数据集名称
 - `stream`: 是否启用流式处理
 
+```{important}
+要准确统计Time to First Token (TTFT)指标，需要在请求中包含`--stream`参数，否则TTFT将与Latency相同。
+```
 
 ### 输出结果
 ```text
@@ -118,29 +121,33 @@ Percentile results:
 ```
 
 ### 指标说明
+| 指标 | 英文名称 | 解释 | 公式 |
+|------|----------|------|------|
+| 测试总时长 | Time taken for tests | 整个测试过程从开始到结束所花费的总时间 | 最后一个请求结束时间 - 第一个请求开始时间 |
+| 并发数 | Number of concurrency | 同时发送请求的客户端数量 | 预设值 |
+| 总请求数 | Total requests | 在整个测试过程中发送的所有请求的数量 | 成功请求数 + 失败请求数 |
+| 成功请求数 | Succeed requests | 成功完成并返回预期结果的请求数量 | 直接统计 |
+| 失败请求数 | Failed requests | 由于各种原因未能成功完成的请求数量 | 直接统计 |
+| 平均吞吐量 | Throughput (average tokens/s) | 每秒钟处理的平均标记（token）数 | 总输出token数 / 测试总时长 |
+| 平均 QPS | Average QPS | 每秒钟成功处理的平均查询数 | 成功请求数 / 测试总时长 |
+| 总延迟时间 | Total latency | 所有成功请求的延迟时间总和 | 所有成功请求的延迟时间之和 |
+| 平均延迟 | Average latency | 从发送请求到接收完整响应的平均时间 | 总延迟时间 / 成功请求数 |
+| 平均首token时间 | Average time to first token | 从发送请求到接收到第一个响应标记的平均时间 | 总首chunk延迟 / 成功请求数 |
+| 平均每输出token时间 | Average time per output token | 生成每个输出标记所需的平均时间 | 总每输出token时间 / 成功请求数 |
+| 平均输入token数 | Average input tokens per request | 每个请求的平均输入标记数 | 总输入token数 / 成功请求数 |
+| 平均输出token数 | Average output tokens per request | 每个请求的平均输出标记数 | 总输出token数 / 成功请求数 |
+| 平均数据包延迟 | Average package latency | 接收每个数据包的平均延迟时间 | 总数据包时间 / 总数据包数 |
+| 平均每请求数据包数 | Average package per request | 每个请求平均接收的数据包数量 | 总数据包数 / 成功请求数 |
 
-| 指标                               | 说明                                                                                  |
-|------------------------------------|---------------------------------------------------------------------------------------|
-| Time taken for tests (s)           | 测试所用的时间（秒）                                                                  |
-| Number of concurrency              | 并发数量                                                                              |
-| Total requests                     | 总请求数                                                                              |
-| Succeed requests                   | 成功的请求数                                                                          |
-| Failed requests                    | 失败的请求数                                                                          |
-| Throughput(average tokens/s)       | 吞吐量（平均每秒处理的token数）                                                        |
-| Average QPS                        | 平均每秒请求数（Queries Per Second）                                                  |
-| Average latency (s)                | 平均延迟时间（秒）                                                                    |
-| Average time to first token (s)    | 平均首次token时间（秒）                                                               |
-| Average time per output token (s)  | 平均每个输出token的时间（秒）                                                         |
-| Average input tokens per request   | 每个请求的平均输入token数                                                             |
-| Average output tokens per request  | 每个请求的平均输出token数                                                             |
-| Average package latency (s)        | 平均包延迟时间（秒）                                                                  |
-| Average package per request        | 每个请求的平均包数                                                                    |
-| Expected number of requests        | 预期的请求数                                                                          |
-| Result DB path                     | 结果数据库路径                                                                        |
-| **Percentile**                        | **数据被分为100个相等部分，第n百分位表示n%的数据点在此值之下**                             |
-| TTFT (s)                           | Time to First Token，首次生成token的时间                                              |
-| TPOT (s)                           | Time Per Output Token，生成每个输出token的时间                                        |
-| Latency (s)                        | 延迟时间，指请求到响应之间的时间                                                      |
-| Input tokens                       | 输入的token数量                                                                        |
-| Output tokens                      | 输出的token数量                                                                        |
-| Throughput (tokens/s)              | 吞吐量，指每秒处理token的数量                                                          |
+**百分位指标 (Percentile)**
+
+> 以单个请求为单位进行统计，数据被分为100个相等部分，第n百分位表示n%的数据点在此值之下。
+
+| 指标 | 英文名称 | 解释 |
+|------|----------|------|
+| 首次生成token时间 | TTFT (Time to First Token) | 从发送请求到生成第一个token的时间（以秒为单位） |
+| 每输出token时间 | TPOT (Time Per Output Token) | 生成每个输出token所需的时间（以秒为单位） |
+| 延迟时间 | Latency | 从发送请求到接收完整响应的时间（以秒为单位） |
+| 输入token数 | Input tokens | 请求中输入的token数量 |
+| 输出token数 | Output tokens | 响应中生成的token数量 |
+| 吞吐量 | Throughput | 每秒输出的token数量（tokens/s） |
