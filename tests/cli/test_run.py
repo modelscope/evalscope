@@ -278,10 +278,11 @@ class TestRun(unittest.TestCase):
                 # 'gpqa',
                 # 'arc',
                 # 'ceval',
-                'hellaswag',
+                # 'hellaswag',
                 # 'general_mcq',
-                # 'general_qa'
+                'general_qa'
                 # 'super_gpqa',
+                # 'mmlu_redux'
             ],
             dataset_args={
                 'mmlu': {
@@ -335,16 +336,19 @@ class TestRun(unittest.TestCase):
                         'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
                         # 'test'
                     ],
-                    'metric_list': ['AverageBLEU']
+                    'metric_list': ['AverageRouge']
                 },
                 'super_gpqa': {
                     # 'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
-                }
+                },
+                'mmlu_redux':{
+                    'subset_list': ['abstract_algebra']
+                },
             },
             eval_batch_size=32,
             limit=15,
-            # debug=True,
+            debug=True,
             stream=False,
             generation_config={
                 'temperature': 0,
