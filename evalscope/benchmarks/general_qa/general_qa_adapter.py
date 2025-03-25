@@ -1,16 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import json
 import os.path
 from collections import defaultdict
 from typing import List, Optional
-from evalscope.constants import DEFAULT_DATASET_CACHE_DIR
 
 from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import DEFAULT_DATASET_CACHE_DIR
 from evalscope.metrics import (
     bleu_ngram_one_sample,
     compute_rouge_score_one_sample_zh,
     mean,
 )
+from evalscope.utils import get_real_answer_with_think
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -70,7 +70,6 @@ class GeneralQAAdapter(DataAdapter):
                 task_cfg.get("dataset_args").get("general_qa").get("dataset_id"),
                 f"{subset_name}.jsonl",
             )
-            print(file_path)
             if os.path.exists(file_path):
                 data_dict[subset_name][self.eval_split] = jsonl_to_list(file_path)
 
@@ -112,7 +111,8 @@ class GeneralQAAdapter(DataAdapter):
             gold_answer: str
 
         """
-        return input_d.get("answer", "") or input_d.get("response", "")
+        gold_answer = input_d.get("answer", "") or input_d.get("response", "")
+        return get_real_answer_with_think(gold_answer)
 
     def parse_pred_result(
         self, result: str, raw_input_d: dict = None, eval_type: str = "checkpoint"
@@ -125,7 +125,7 @@ class GeneralQAAdapter(DataAdapter):
             pred_result: str
 
         """
-        return result
+        return get_real_answer_with_think(result)
 
     def match(self, gold: str, pred: str) -> dict:
         """

@@ -299,3 +299,10 @@ def seed_everything(seed: int):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+def get_real_answer_with_think(answer: str) -> str:
+    if answer and answer.startswith("<think>") and "</think>" in answer:
+        real_answer = answer.split("</think>", 1)[1].strip()
+        return real_answer
+    else:
+        return answer
