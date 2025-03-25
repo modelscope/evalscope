@@ -1,9 +1,13 @@
 import json
+import os
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
+from evalscope.metrics.math_parser import (
+    extract_answer,
+    math_equal,
+    strip_answer_string,
+)
 from evalscope.utils.logger import get_logger
-import os
 
 # flake8: noqa
 
@@ -11,15 +15,15 @@ logger = get_logger()
 
 
 @Benchmark.register(
-    name='math_500',
-    pretty_name='MATH-500',
-    dataset_id='AI-ModelScope/MATH-500',
-    subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    metric_list=['AveragePass@1'],
+    name="math_500",
+    pretty_name="MATH-500",
+    dataset_id="AI-ModelScope/MATH-500",
+    subset_list=["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"],
+    metric_list=["AveragePass@1"],
     few_shot_num=0,
     train_split=None,
-    eval_split='test',
-    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+    eval_split="test",
+    prompt_template="{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
 )
 class Math500Adapter(DataAdapter):
 
@@ -28,20 +32,24 @@ class Math500Adapter(DataAdapter):
 
     def load(self, **kwargs):
         # default load all levels
-        kwargs['subset_list'] = ['default']
+        kwargs["subset_list"] = ["default"]
         data_dict = super().load(**kwargs)
-        return self.reformat_subset(data_dict, subset_key='level', format='Level {}')
+        return self.reformat_subset(data_dict, subset_key="level", format="Level {}")
 
-    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+    def load_from_disk(
+        self, dataset_name_or_path, subset_list, work_dir, **kwargs
+    ) -> dict:
         data_dict = {}
-        subset_list = ['test']
+        subset_list = ["test"]
         for subset_name in subset_list:
             if os.path.exists(dataset_name_or_path):
-                file_path = os.path.join(dataset_name_or_path, f'{subset_name}.jsonl')
+                file_path = os.path.join(dataset_name_or_path, f"{subset_name}.jsonl")
             else:
-                file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.jsonl')
+                file_path = os.path.join(
+                    work_dir, dataset_name_or_path, f"{subset_name}.jsonl"
+                )
             if os.path.exists(file_path):
-                with open(file_path, encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     rows = []
                     for line in f.readlines():
                         item = json.loads(line)
@@ -55,16 +63,18 @@ class Math500Adapter(DataAdapter):
         """
         Generate the prompt for the model input.
         """
-        problem = input_d['problem']
+        problem = input_d["problem"]
         full_prompt = self.prompt_template.format(query=problem)
 
         return self.gen_prompt_data(full_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         # Extract the gold answer from the input dict.
-        return strip_answer_string(input_d['answer'])
+        return strip_answer_string(input_d["answer"])
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
+    def parse_pred_result(
+        self, result: str, raw_input_d: dict = None, eval_type: str = "checkpoint"
+    ) -> str:
         """
         Parse the model output to get the answer. Could be the best choice index.
         """
