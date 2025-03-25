@@ -34,6 +34,7 @@ class Math500Adapter(DataAdapter):
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
+        subset_list = ['test']
         for subset_name in subset_list:
             if os.path.exists(dataset_name_or_path):
                 file_path = os.path.join(dataset_name_or_path, f'{subset_name}.jsonl')
