@@ -142,8 +142,8 @@ SUBJECT_MAPPING = {
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
-    train_split='dev',
-    eval_split='val',
+    train_split='train',
+    eval_split='test',
     prompt_template=
     'Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
 )
@@ -166,7 +166,7 @@ class MMLUAdapter(DataAdapter):
         for subset_name in subset_list:
             data_dict[subset_name] = {}
 
-            for split_name in [self.train_split, self.eval_split]:
+            for split_name in ["dev", "test"]:
                 if os.path.exists(dataset_name_or_path):
                     file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}.csv')
                 else:
