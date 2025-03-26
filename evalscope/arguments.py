@@ -77,7 +77,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # LLMJudge arguments
     parser.add_argument('--judge-strategy', type=str, default=JudgeStrategy.AUTO, help='The judge strategy.')
     parser.add_argument('--judge-model-args', type=json.loads, default='{}', help='The judge model args, should be a json string.')  # noqa: E501
-    parser.add_argument('--judge-worker-num', type=int, default=8, help='The number of workers for the judge model.')
+    parser.add_argument('--judge-worker-num', type=int, default=1, help='The number of workers for the judge model.')
     # yapf: enable
 
 
