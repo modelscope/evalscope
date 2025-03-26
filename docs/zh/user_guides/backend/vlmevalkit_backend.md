@@ -82,7 +82,6 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 ````
 
 
-
 ## 3. 模型评测
 模型评测有两种方式可以选择，一种是部署模型服务评测，另一种是本地模型推理评测。具体如下：
 
@@ -92,6 +91,28 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 
 下面介绍四种方式部署模型服务：
 ::::{tab-set}
+
+:::{tab-item} vLLM 部署
+
+参考[vLLM 教程](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
+
+**安装vLLM**
+```shell
+pip install vllm -U
+```
+
+**部署模型服务**
+```shell
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096 --served-model-name Qwen2.5-VL-3B-Instruct
+```
+
+```{tip}
+如遇到`ValueError: At most 1 image(s) may be provided in one request`错误，可尝试将设置`--limit-mm-per-prompt "image=5"`参数，并可以将image设置为更大的值。
+```
+:::
+
 :::{tab-item} ms-swift部署
 
 使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Instruction/%E6%8E%A8%E7%90%86%E5%92%8C%E9%83%A8%E7%BD%B2.html#id3)。
@@ -107,26 +128,6 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-VL-3B-Instruct --port 8
 ```
 :::
 
-:::{tab-item} vLLM 部署
-
-参考[vLLM 教程](https://docs.vllm.ai/en/latest/index.html) for more details.
-
-[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
-
-**安装vLLM**
-```shell
-pip install vllm -U
-```
-
-**部署模型服务**
-```shell
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096
-```
-
-```{tip}
-如遇到`ValueError: At most 1 image(s) may be provided in one request`错误，可尝试将设置`--limit-mm-per-prompt "image=5"`参数，并可以将image设置为更大的值。
-```
-:::
 
 :::{tab-item} LMDeploy 部署
 参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).

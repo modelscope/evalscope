@@ -88,21 +88,6 @@ Here are four ways to deploy model services:
 
 ::::{tab-set}
 
-:::{tab-item} ms-swift Deployment
-
-Deploy model services using ms-swift. For more details, refer to the [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Instruction/Inference-and-deployment.html#deployment).
-
-**Install ms-swift**
-```shell
-pip install ms-swift -U
-```
-
-**Deploy Model Service**
-```shell
-CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000
-```
-:::
-
 :::{tab-item} vLLM Deployment
 
 Refer to the [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
@@ -116,11 +101,26 @@ pip install vllm -U
 
 **Deploy Model Service**
 ```shell
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096 --served-model-name Qwen2.5-VL-3B-Instruct
 ```
 
 ```{tip}
 If you encounter the error `ValueError: At most 1 image(s) may be provided in one request`, try setting the parameter `--limit-mm-per-prompt "image=5"` and you can set the image to a larger value.
+```
+:::
+
+:::{tab-item} ms-swift Deployment
+
+Deploy model services using ms-swift. For more details, refer to the [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Instruction/Inference-and-deployment.html#deployment).
+
+**Install ms-swift**
+```shell
+pip install ms-swift -U
+```
+
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000
 ```
 :::
 
