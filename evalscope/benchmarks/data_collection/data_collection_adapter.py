@@ -5,7 +5,6 @@ from typing import Any, Optional
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, EvalType, HubType
-from evalscope.models import ChatGenerationModelAdapter
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 

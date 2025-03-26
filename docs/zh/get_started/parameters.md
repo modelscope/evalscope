@@ -86,7 +86,7 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
   - `llm`: 总是使用裁判模型
   - `rule`: 不使用裁判模型，使用规则判断
   - `llm_recall`: 先使用规则判断，若规则判断失败再使用裁判模型
-- `--judge-worker-num`: 裁判模型并发数，默认为`8`
+- `--judge-worker-num`: 裁判模型并发数，默认为`1`
 - `--judge-model-args`: 设置裁判模型参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
   - `api_key`: 模型API端点密钥，默认为`EMPTY`
   - `api_url`: 模型API端点，默认为`https://api.openai.com/v1`
