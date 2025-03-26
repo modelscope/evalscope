@@ -361,7 +361,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
                         nl = '\n'
                         if not isinstance(inputs, list):
                             print(
-                                f"not passed output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl,' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]}"  # noqa: E501
+                                f"not passed output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl, ' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]}"  # noqa: E501
                             )
                         else:
                             print(
@@ -431,7 +431,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
                     nl = '\n'
                     if not isinstance(inputs, list):
                         print(
-                            f"@1 output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl,' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]} {tmp_result=}"  # noqa: E501
+                            f"@1 output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl, ' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]} {tmp_result=}"  # noqa: E501
                         )
                     else:
                         print(
@@ -581,7 +581,7 @@ def run_test(sample, test=None, debug=False, timeout=6):
                     nl = '\n'
                     if not isinstance(inputs, list):
                         print(
-                            f"@2 output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl,' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]}"  # noqa: E501
+                            f"@2 output = {output}, test outputs = {in_outs['outputs'][index]}, inputs = {inputs.replace(nl, ' new-line ')}, {type(inputs)}, {output == [in_outs['outputs'][index]]}"  # noqa: E501
                         )
                     else:
                         print(
