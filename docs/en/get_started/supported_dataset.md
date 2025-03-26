@@ -42,7 +42,7 @@ You can also use other tools supported by this framework for evaluation, such as
 
 **2.** Due to operations involving code execution, it is recommended to run in a sandbox environment (e.g., Docker) to prevent impact on the local environment.
 
-**3.** This dataset requires specifying a Judge Model for evaluation. Refer to [Judge Parameters](./parameters.md#judge参数).
+**3.** This dataset requires specifying a Judge Model for evaluation. Refer to [Judge Parameters](./parameters.md#judge-parameters).
 
 **4.** For better evaluation results, it is recommended that reasoning models set post-processing corresponding to the dataset, such as `{"filters": {"remove_until": "</think>"}}`.
 ```
