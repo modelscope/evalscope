@@ -244,7 +244,7 @@ class DataAdapter(ABC):
                 review_res = review_res_list
             res_list.append({'metric_name': metric_name, 'score': metric_func(review_res), 'num': len(review_res)})
         return res_list
-    
+
     def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
@@ -258,7 +258,7 @@ class DataAdapter(ABC):
         """
         if isinstance(review_res_list[0], list):
             review_res_list = [item for sublist in review_res_list for item in sublist]
-        
+
         items = defaultdict(list)
         for scores in review_res_list:
             if isinstance(scores, dict):
@@ -267,7 +267,6 @@ class DataAdapter(ABC):
             else:
                 items['AverageAccuracy'].append(scores)
         return items
-    
 
     def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:
         """
