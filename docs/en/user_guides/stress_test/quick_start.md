@@ -153,3 +153,22 @@ Percentile results:
 | Input tokens | Number of tokens inputted in the request |
 | Output tokens | Number of tokens generated in the response |
 | Throughput | Number of tokens outputted per second (tokens/s) |
+
+
+## Visualizing Test Results
+
+First, install wandb and obtain the corresponding [API Key](https://wandb.ai/settings):
+```bash
+pip install wandb
+```
+
+To upload the test results to the wandb server and visualize them, add the following parameters when launching the evaluation:
+```bash
+# ...
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```
+
+For example:
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
