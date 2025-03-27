@@ -64,6 +64,7 @@ class Arguments:
     temperature: Optional[float] = None  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
+    extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
 
     @staticmethod
     def from_args(args):
@@ -165,6 +166,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
+    parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
     # yapf: enable
 
 

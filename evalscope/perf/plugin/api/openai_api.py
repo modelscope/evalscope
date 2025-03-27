@@ -94,9 +94,11 @@ class OpenaiPlugin(ApiPluginBase):
             payload['top_p'] = param.top_p
         if param.top_k is not None:
             payload['top_k'] = param.top_k
+        if param.extra_args is not None:
+            payload.update(param.extra_args)
         return payload
 
-    def parse_responses(self, responses, request: Any = None, **kwargs) -> Dict:
+    def parse_responses(self, responses, request: Any = None, **kwargs) -> tuple[int, int]:
         """Parser responses and return number of request and response tokens.
         Only one response for non-stream, multiple responses for stream.
         """

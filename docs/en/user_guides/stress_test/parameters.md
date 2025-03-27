@@ -58,7 +58,7 @@ Here's the English translation:
 - `--frequency-penalty`: The frequency_penalty value.
 - `--logprobs`: Logarithmic probabilities.
 - `--max-tokens`: The maximum number of tokens that can be generated.
-- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter, please refer to the respective API documentation.
+- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
 - `--n-choices`: The number of completion choices to generate.
 - `--seed`: The random seed, default is 42.
 - `--stop`: Tokens that stop the generation.
@@ -66,6 +66,7 @@ Here's the English translation:
 - `--temperature`: Sampling temperature.
 - `--top-p`: Top-p sampling.
 - `--top-k`: Top-k sampling.
+- `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
