@@ -11,29 +11,31 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+GRADER_SYSTEM_PROMPT = """You are a highly efficient assistant, who evaluates and selects the best large language model (LLMs) based on the quality of their responses to a given instruction. This process will be used to create a leaderboard reflecting the most accurate and human-preferred answers."""
+
 GRADER_TEMPLATE = """
 I require a leaderboard for various large language models. I'll provide you with prompts given to these models and their corresponding outputs. Your task is to assess these responses, and select the model that produces the best output from a human perspective.
 
 ## Instruction
 
-{
-    "instruction": "{question}",
-}
+{{
+    "instruction": "{instruction}"
+}}
 
 ## Model Outputs
 
 Here are the unordered outputs from the models. Each output is associated with a specific model, identified by a unique model identifier.
 
-{
-    {
+{{
+    {{
         "model_identifier": "m",
-        "output": "{prediction}"
-    },
-    {
+        "output": "{output_1}"
+    }},
+    {{
         "model_identifier": "M",
-        "output": "{prediction2}"
-    }
-}
+        "output": "{output_2}"
+    }}
+}}
 
 ## Task
 
@@ -58,51 +60,43 @@ class AlpacaEvalAdapter(DataAdapter):
         super().__init__(*args, **kwargs)
 
         # register metrics
-        metric_registry.register(Metric(name='is_correct', object=mean))
-        metric_registry.register(Metric(name='is_incorrect', object=mean))
-        metric_registry.register(Metric(name='is_not_attempted', object=mean))
+        metric_registry.register(Metric(name='winrate', object=mean))
 
         # whether to use LLM as a judge
         self.llm_as_a_judge = True
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        question = input_d['problem']
+        question = input_d['instruction']
         return self.gen_prompt_data(question)
 
     def get_gold_answer(self, input_d: dict) -> str:
-        return input_d['answer']
+        return input_d['output']
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, **kwargs) -> str:
         return result.strip()
 
-    def match(self, gold: str, pred: str) -> float:
+    def match(self, gold: str, pred: str):
         # simple match
-        logger.warning(f'Please use LLMJudge to match the result for SimpleQA')
-        is_correct = 1 if gold.lower().strip() == pred.lower().strip() else 0
-        is_incorrect = not is_correct
-        is_not_attempted = 0
-        return {
-            'is_correct': is_correct,
-            'is_incorrect': is_incorrect,
-            'is_not_attempted': is_not_attempted,
-        }
+        logger.warning(f'Please use LLMJudge to match the result for {self.name}')
+        return None
 
-    def llm_match(self, gold: Any, pred: Any, judge: LLMJudge, **kwargs) -> dict:
+    def llm_match(self, gold: Any, pred: Any, judge: LLMJudge, **kwargs) -> bool:
         raw_input = kwargs.get('raw_input', None)
-        question = raw_input['problem']
+        instruction = raw_input['instruction']
+        # gold is baseline answer 'm', pred is model answer 'M'
+        prompt = GRADER_TEMPLATE.format(instruction=instruction, output_1=gold, output_2=pred)
         # get grading response
-        prompt = GRADER_TEMPLATE.format(question=question, target=gold, predicted_answer=pred)
-        grading_response = judge(prompt)
+        grading_response = judge(prompt, system_prompt=GRADER_SYSTEM_PROMPT)
         # parse grading response
-        match = re.search(r'(A|B|C)', grading_response)
-        res = match.group(0) if match else 'C'
-        return {
-            'is_correct': 1 if res == 'A' else 0,
-            'is_incorrect': 1 if res == 'B' else 0,
-            'is_not_attempted': 1 if res == 'C' else 0,
-        }
+        match = re.search(r'(m|M)', grading_response)
+        res = match.group(0) if match else None
+        if res:
+            return res == 'M'
+        else:
+            logger.info(f'Failed to parse grading response: {prompt=}\n {grading_response=}')
+            return None
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
+    def compute_metric(self, review_res_list: List[bool], **kwargs) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
 
@@ -110,9 +104,6 @@ class AlpacaEvalAdapter(DataAdapter):
             review_res_list: [{'is_correct': 1, 'is_incorrect': 0, 'is_not_attempted': 0}, ...]
         """
         # zip dict answers
-        res_dict = defaultdict(list)
-        for res in review_res_list:
-            for key, value in res.items():
-                res_dict[key].append(value)
+        res_list = [res for res in review_res_list if res is not None]
 
-        return super().compute_metric(res_dict, **kwargs)
+        return super().compute_metric(res_list, **kwargs)
