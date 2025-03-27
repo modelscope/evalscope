@@ -43,6 +43,8 @@ datasets=[
         'live_code_bench',
         'simple_qa',
         'chinese_simpleqa',
+        'alpaca_eval',
+        'arena_hard',
 ]
 
 dataset_args={
