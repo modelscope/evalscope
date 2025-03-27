@@ -160,9 +160,6 @@ class ChineseSimpleQAAdapter(DataAdapter):
             review_res_list: [{'is_correct': 1, 'is_incorrect': 0, 'is_not_attempted': 0}, ...]
         """
         # zip dict answers
-        res_dict = defaultdict(list)
-        for res in review_res_list:
-            for key, value in res.items():
-                res_dict[key].append(value)
+        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
 
         return super().compute_metric(res_dict, **kwargs)
