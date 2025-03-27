@@ -74,8 +74,9 @@ class GeneralQAAdapter(DataAdapter):
                            To be supported in the future.')
 
         query = input_d.get('question', '') or input_d.get('query', '')
+        system_prompt = input_d.get('system')
         prompt = self.prompt_template.format(query=query)
-        return self.gen_prompt_data(prompt)
+        return self.gen_prompt_data(prompt, system_prompt=system_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
