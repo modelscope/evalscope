@@ -60,7 +60,7 @@ class Arguments:
     seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
-    stream: Optional[bool] = None  # Whether to stream the response
+    stream: Optional[bool] = False  # Whether to stream the response
     temperature: Optional[float] = None  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
@@ -161,7 +161,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, help='The random seed', default=42)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
-    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)
+    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=False)
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
