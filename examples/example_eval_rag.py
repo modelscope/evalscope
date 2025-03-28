@@ -33,7 +33,7 @@ def run_eval():
                     'reasoning': 0.4
                 },
                 'generator_llm': {
-                    'model_name_or_path': 'qwen/Qwen2-7B-Instruct',
+                    'model_name_or_path': 'Qwen/Qwen2.5-72B-Instruct',
                 },
                 'embeddings': {
                     'model_name_or_path': 'AI-ModelScope/m3e-base',

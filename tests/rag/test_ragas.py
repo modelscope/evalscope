@@ -1,5 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+from dotenv import dotenv_values
+
+env = dotenv_values('.env')
 import unittest
 
 from evalscope.run import run_task
@@ -63,7 +66,7 @@ class TestRAGAS(unittest.TestCase):
                 'eval': {
                     'testset_file': 'outputs/testset_chinese_with_answer.json',
                     'critic_llm': {
-                        'model_name_or_path': 'qwen/Qwen2-7B-Instruct',
+                        'model_name_or_path': 'Qwen/Qwen2.5-7B-Instruct',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',

@@ -207,11 +207,12 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen/Qwen2-0.5B-Instruct',
+            model='Qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
+                'iquiz',
                 # 'math_500',
                 # 'aime24',
-                'competition_math'
+                # 'competition_math'
             ],
             dataset_args={
                 'competition_math': {
@@ -255,7 +256,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -352,10 +353,10 @@ class TestRun(unittest.TestCase):
             stream=False,
             generation_config={
                 'temperature': 0,
-                'n': 1,
+                'n': 2,
                 'max_tokens': 4096,
             },
-            # use_cache='./outputs/20250212_150525',
+            use_cache='outputs/20250326_202848',
         )
 
         run_task(task_cfg=task_cfg)
@@ -396,7 +397,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwq-32b',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -408,8 +409,8 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                # # 'chinese_simpleqa',
-                'live_code_bench',
+                'chinese_simpleqa',
+                # 'live_code_bench',
                 # 'humaneval'
                 # 'general_qa'
             ],
@@ -431,11 +432,16 @@ class TestRun(unittest.TestCase):
                         # 'test'
                     ]
                 },
+                'chinese_simpleqa': {
+                    'subset_list': [
+                        '中华文化'
+                    ]
+                },
             },
-            eval_batch_size=10,
-            # limit=5,
+            eval_batch_size=5,
+            limit=5,
             judge_strategy=JudgeStrategy.AUTO,
-            judge_worker_num=8,
+            judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -445,6 +451,7 @@ class TestRun(unittest.TestCase):
                 'max_new_tokens': 20000,
                 'temperature': 0.0,
                 'seed': 42,
+                'n': 2
             },
             timeout=60000,
             stream=True,

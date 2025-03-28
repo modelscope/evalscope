@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os.path
 from collections import defaultdict
-from typing import List
+from typing import List, Optional, Union
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.metrics import bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
@@ -74,8 +74,9 @@ class GeneralQAAdapter(DataAdapter):
                            To be supported in the future.')
 
         query = input_d.get('question', '') or input_d.get('query', '')
+        system_prompt = input_d.get('system')
         prompt = self.prompt_template.format(query=query)
-        return self.gen_prompt_data(prompt)
+        return self.gen_prompt_data(prompt, system_prompt=system_prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
@@ -118,7 +119,7 @@ class GeneralQAAdapter(DataAdapter):
             res.update(bleu_dict)
         return res
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
+    def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
         """
         compute weighted mean of the bleu score of all samples
 
@@ -129,12 +130,5 @@ class GeneralQAAdapter(DataAdapter):
             avg_res: List[dict]
 
         """
-        items = defaultdict(list)
-        for scores in review_res_list:
-            if isinstance(scores, dict):
-                for k, v in scores.items():
-                    items[k].append(v)
-            else:
-                items['AverageAccuracy'].append(scores)
-        # items = [(score, 1.0) for score in review_res_list]
+        items = super().compute_dict_metric(review_res_list, **kwargs)
         return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]

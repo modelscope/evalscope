@@ -82,24 +82,14 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 Model evaluation can be conducted in two ways: through deployed model services or local model inference. Details are as follows:
 
 ### Method 1: Deployed Model Service Evaluation
-#### Model Deployment
+### Model Deployment
+
 Here are four ways to deploy model services:
 
 ::::{tab-set}
-:::{tab-item} ms-swift (Recommended)
-Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Multi-Modal/mutlimodal-deployment.html).
 
-**Install ms-swift**
-```shell
-pip install ms-swift -U
-```
-**Deploy Model Service**
-```shell
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
-```
-:::
+:::{tab-item} vLLM Deployment
 
-:::{tab-item} vLLM 
 Refer to the [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
 
 [List of Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html#multimodal-language-models)
@@ -111,90 +101,70 @@ pip install vllm -U
 
 **Deploy Model Service**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096 --served-model-name Qwen2.5-VL-3B-Instruct
 ```
 
 ```{tip}
-If you encounter the error `ValueError: At most 1 image(s) may be provided in one request`, try setting the parameter `--limit-mm-per-prompt "image=5"`. You may also increase the value for the image parameter.
+If you encounter the error `ValueError: At most 1 image(s) may be provided in one request`, try setting the parameter `--limit-mm-per-prompt "image=5"` and you can set the image to a larger value.
 ```
-
 :::
 
-:::{tab-item} LMDeploy 
-Refer to [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md) for more details.
+:::{tab-item} ms-swift Deployment
+
+Deploy model services using ms-swift. For more details, refer to the [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Instruction/Inference-and-deployment.html#deployment).
+
+**Install ms-swift**
+```shell
+pip install ms-swift -U
+```
+
+**Deploy Model Service**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000
+```
+:::
+
+:::{tab-item} LMDeploy Deployment
+
+Refer to the [LMDeploy Tutorial](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).
 
 **Install LMDeploy**
 ```shell
 pip install lmdeploy -U
 ```
-**Deploy Model Service**s
+
+**Deploy Model Service**
 ```shell
 CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
 ```
 :::
 
-:::{tab-item} Ollama
-```{note}
-Support for OpenAI API by Ollama is currently in an experimental state. This tutorial provides an example only; please modify it according to your actual situation.
-```
+:::{tab-item} Ollama Deployment
 
-Refer to the [Ollama Tutorial](https://github.com/ollama/ollama/blob/main/README.md#quickstart).
-
-**Install Ollama**
+Run ModelScope hosted models with Ollama in one click. Refer to the [documentation](https://www.modelscope.cn/docs/models/advanced-usage/ollama-integration).
 
 ```shell
-# For Linux
-curl -fsSL https://ollama.com/install.sh | sh
+ollama run modelscope.cn/IAILabs/Qwen2.5-VL-7B-Instruct-GGUF
 ```
 
-**Start Ollama**
-```shell
-# Default port is 11434
-ollama serve
-```
-
-```{tip}
-If using `ollama pull` to fetch a model, you can skip the following steps for creating a model; if using `ollama import` to import a model, you will need to manually create a model configuration file.
-```
-
-**Create Model Configuration File `Modelfile`**
-
-[Supported Model Formats](https://github.com/ollama/ollama/blob/main/docs/import.md)
-
-```text
-# Model path
-FROM models/LLaVA
-
-# Temperature coefficient
-PARAMETER temperature 1
-
-# System prompt
-SYSTEM """
-You are a helpful assistant.
-"""
-```
-
-**Create Model**
-
-This command will automatically convert the model to a format supported by Ollama, with support for various quantization methods.
-```shell
-ollama create llava -f ./Modelfile
-```
 :::
 
 ::::
 
 #### Configure Model Evaluation Parameters
 
-Write configuration
+Write configuration:
+
 ::::{tab-set}
-:::{tab-item} yaml configuration file
+
+:::{tab-item} YAML Configuration File
+
 ```yaml
 work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
-    - type: qwen-vl-chat
+    - type: Qwen2.5-VL-3B-Instruct
       name: CustomAPIModel 
       api_base: http://localhost:8000/v1/chat/completions
       key: EMPTY
@@ -213,7 +183,7 @@ eval_config:
 ```
 :::
 
-:::{tab-item} TaskConfig dictionary
+:::{tab-item} TaskConfig Dictionary
 
 ```python
 from evalscope import TaskConfig
@@ -230,7 +200,7 @@ task_cfg_dict = TaskConfig(
             'key': 'EMPTY',
             'name': 'CustomAPIModel',
             'temperature': 0.0,
-            'type': 'qwen-vl-chat',
+            'type': 'Qwen2.5-VL-3B-Instruct',
             'img_size': -1,
             'video_llm': False,
             'max_tokens': 1024,}
@@ -241,16 +211,18 @@ task_cfg_dict = TaskConfig(
 )
 ```
 :::
+
 ::::
 
+### Method 2: Local Model Inference Evaluation
 
-### Method 2. Local Model Inference Evaluation
-
-Instead of starting a model service, directly configure model evaluation parameters for local inference
+Configure model evaluation parameters directly for local inference without starting the model service.
 
 #### Configure Model Evaluation Parameters
+
 ::::{tab-set}
-:::{tab-item} yaml configuration file
+
+:::{tab-item} YAML Configuration File
 
 ```{code-block} yaml 
 :caption: eval_openai_api.json
@@ -272,7 +244,7 @@ eval_config:
 ```
 :::
 
-:::{tab-item} TaskConfig dictionary
+:::{tab-item} TaskConfig Dictionary
 
 ```python
 from evalscope import TaskConfig
@@ -295,40 +267,39 @@ task_cfg_dict = TaskConfig(
  )
 ```
 :::
+
 ::::
 
-### Parameter Description
+### Parameter Explanation
 
-- `eval_backend`: Default value is `VLMEvalKit`, indicating the use of VLMEvalKit evaluation backend.
-- `work_dir`: String, directory to save evaluation results, logs, and summaries. Default value is `outputs`.
+- `eval_backend`: Default value is `VLMEvalKit`, indicating the use of VLMEvalKit as the evaluation backend.
+- `work_dir`: String, the directory for saving evaluation results, logs, and summaries. Default value is `outputs`.
 - `eval_config`: Dictionary containing the following fields:
-  - `data`: List, refer to [Currently Supported Datasets](#2-data-preparation)
-  - `model`: List of dictionaries, each dictionary can specify the following fields:
-    - When using remote API calls:
-      - `api_base`: URL of the OpenAI API, i.e., the URL of the model service.
-      - `type`: OpenAI API request model name.
-        - If using `ms-swift` deployment, set to the value of `--model_type`;
-        - If using `vLLM` or `LMDeploy` to deploy the model, set to `model_id`;
-        - If using `Ollama` to deploy the model, set to `model_name`, use the `ollama list` command to view.
+  - `data`: List, refer to the [currently supported datasets](#2-data-preparation)
+  - `model`: List of dictionaries, each specifying the following fields:
+    - For remote API calls:
+      - `api_base`: URL of the model service.
+      - `type`: API request model name, e.g., `Qwen2.5-VL-3B-Instruct`.
       - `name`: Fixed value, must be `CustomAPIModel`.
-      - `key`: OpenAI API key for the model API, default value is `EMPTY`.
-      - `temperature`: Temperature coefficient for model inference, default value is `0.0`.
-      - `max_tokens`: Maximum number of tokens for model inference, default value is `2048`.
-      - `img_size`: Image size for model inference, default value is `-1`, indicating use of original size; set to other values, e.g., `224`, to resize the image to 224x224.
-      - `video_llm`: Boolean, default is `False`. When evaluating video datasets, set to `True` if you need to pass the `video_url` parameter.
-    - When using local model inference:
-      - `name`: Model name, refer to [Models supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
-      - `model_path` and other parameters: Refer to [Model parameters supported by VLMEvalKit](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py)
-  - `mode`: Options: `['all', 'infer']`, `all` includes inference and evaluation; `infer` only performs inference.
-  - `limit`: Integer, number of data samples to evaluate, default value is `None`, indicating running all examples.
+      - `key`: OpenAI API key for the model API, default is `EMPTY`.
+      - `temperature`: Temperature coefficient for model inference, default is `0.0`.
+      - `max_tokens`: Maximum number of tokens for model inference, default is `2048`.
+      - `img_size`: Image size for model inference, default is `-1`, meaning use the original size; set to other values, e.g., `224`, to scale the image to 224x224.
+      - `video_llm`: Boolean, default is `False`. Set to `True` to pass `video_url` parameter when evaluating video datasets.
+    - For local model inference:
+      - `name`: Model name, refer to [VLMEvalKit supported models](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
+      - `model_path` and other parameters: refer to [VLMEvalKit supported model parameters](https://github.com/open-compass/VLMEvalKit/blob/main/vlmeval/config.py).
+  - `mode`: Options: `['all', 'infer']`, `all` includes inference and evaluation; `infer` performs inference only.
+  - `limit`: Integer, number of data items to evaluate, default is `None`, meaning run all examples.
   - `reuse`: Boolean, whether to reuse evaluation results, otherwise all evaluation temporary files will be deleted.
     ```{note}
-    For `ms-vlmeval>=0.0.11`, the parameter `rerun` is renamed to `reuse`, with a default value of `False`. When set to `True`, you need to add `use_cache` in task_cfg_dict to specify the cache directory to use.
+    For `ms-vlmeval>=0.0.11`, the parameter `rerun` is renamed to `reuse`, default is `False`. When set to `True`, you need to add `use_cache` in `task_cfg_dict` to specify the cache directory.
     ```
-  - `nproc`: Integer, number of parallel API calls.
-  - `nframe`: Integer, number of video frames for video datasets, default value is `8`.
-  - `fps`: Integer, frame rate for video datasets, default value is `-1`, indicating use of `nframe`; set to a value greater than 0 to use `fps` to calculate the number of video frames.
-  - `use_subtitle`: Boolean, whether to use subtitles for video datasets, default value is `False`.
+  - `nproc`: Integer, number of API calls to be made in parallel.
+  - `nframe`: Integer, number of video frames for video datasets, default is `8`.
+  - `fps`: Integer, frame rate for video datasets, default is `-1`, meaning use `nframe`; set greater than 0 to use `fps` to calculate the number of video frames.
+  - `use_subtitle`: Boolean, whether to use subtitles for video datasets, default is `False`.
+
 
 ### (Optional) Deploy Judge Model
 Deploy a local language model as a judge / choice extractor, also using ms-swift to deploy the model service. For details, refer to: [ms-swift LLM Deployment Guide](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html).

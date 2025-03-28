@@ -57,7 +57,7 @@
 - `--frequency-penalty` frequency_penalty值。
 - `--logprobs` 对数概率。
 - `--max-tokens` 可以生成的最大token数量。
-- `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。
+- `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。对于`vLLM>=0.8.1`版本，需要额外设置`--extra-args '{"ignore_eos": true}'`。
 - `--n-choices` 生成的补全选择数量。
 - `--seed` 随机种子，默认为42。
 - `--stop` 停止生成的tokens。
@@ -65,6 +65,7 @@
 - `--temperature` 采样温度。
 - `--top-p` top_p采样。
 - `--top-k` top_k采样。
+- `--extra-args` 额外传入请求体的参数，格式为json字符串，例如`'{"ignore_eos": true}'`。
 
 ## 数据存储
 - `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。

@@ -151,3 +151,22 @@ Percentile results:
 | 输入token数 | Input tokens | 请求中输入的token数量 |
 | 输出token数 | Output tokens | 响应中生成的token数量 |
 | 吞吐量 | Throughput | 每秒输出的token数量（tokens/s） |
+
+
+## 可视化测试结果
+
+请先安装wandb，并获取对应的[API Key](https://wandb.ai/settings)：
+```bash
+pip install wandb
+```
+
+在评测启动时，额外添加以下参数，即可将测试结果上传wandb server并进行可视化：
+```bash
+# ...
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```  
+
+例如：
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
