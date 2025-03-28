@@ -1,7 +1,7 @@
 import os
 import time
 import torch
-from typing import List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.constants import OutputType
 from evalscope.models.base_adapter import BaseModelAdapter
@@ -62,8 +62,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
     def _model_generate(self,
                         queries: List[str],
-                        system_prompts: List[str] = [],
-                        infer_cfg: dict = {}) -> tuple[List[List[str]], List[int]]:
+                        system_prompts: List[str] = None,
+                        infer_cfg: Dict[str, Any] = None) -> Tuple[List[List[str]], List[int]]:
         """
         Args:
             queries: The input queries.
@@ -72,6 +72,11 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         Returns:
             The prediction results.
         """
+        if system_prompts is None:
+            system_prompts = []
+        if infer_cfg is None:
+            infer_cfg = {}
+
         # Process infer_cfg
         num_return_sequences = infer_cfg.get('num_return_sequences', 1)
         if num_return_sequences > 1:
