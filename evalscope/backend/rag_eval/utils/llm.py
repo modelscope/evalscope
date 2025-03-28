@@ -52,8 +52,8 @@ class LocalLLM(BaseLLM):
         """Run the LLM on the given input."""
         infer_cfg = {'stop': stop}
 
-        response = self.model._model_generate(prompt, infer_cfg)
-        return response
+        response, _ = self.model._model_generate([prompt], infer_cfg=infer_cfg)
+        return response[0][0]
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:

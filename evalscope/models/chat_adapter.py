@@ -7,7 +7,7 @@ from evalscope.constants import OutputType
 from evalscope.models.base_adapter import BaseModelAdapter
 from evalscope.models.local_model import LocalModel
 from evalscope.models.register import register_model_adapter
-from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
+from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, Usage
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import fix_do_sample_warning
 
@@ -60,7 +60,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return generation_config
 
-    def _model_generate(self, queries: List[str], system_prompts: List[str] = None, infer_cfg: dict = {}) -> List[str]:
+    def _model_generate(self,
+                        queries: List[str],
+                        system_prompts: List[str] = [],
+                        infer_cfg: dict = {}) -> tuple[List[List[str]], List[int]]:
         """
         Args:
             queries: The input queries.
@@ -111,7 +114,9 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         # Run inference
         output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
 
+        # Decode output
         responses = []
+        input_lengths = [len(self.tokenizer.encode(prompt)) for prompt in formatted_prompts]
         for i in range(0, len(output_ids), num_return_sequences):
             query_responses = []
             for j in range(num_return_sequences):
@@ -121,7 +126,7 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                 query_responses.append(response)
             responses.append(query_responses)
 
-        return responses
+        return responses, input_lengths
 
     @torch.no_grad()
     def predict(self, inputs: List[dict], infer_cfg: dict = {}) -> List[dict]:
@@ -141,22 +146,33 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             queries.append(input_item['data'][0])
             system_prompts.append(input_item.get('system_prompt', None))
 
-        responses = self._model_generate(queries, system_prompts, infer_cfg)
+        # Run inference
+        responses, input_lengths = self._model_generate(queries, system_prompts, infer_cfg)
 
+        # Process outputs
         results = []
-        for response in responses:
-            choices_list = [
-                ChatCompletionResponseChoice(
+        for response, input_length in zip(responses, input_lengths):
+            choices_list = []
+            completion_tokens = 0
+
+            for index, one_response in enumerate(response):
+                choice = ChatCompletionResponseChoice(
                     index=index, message=ChatMessage(content=one_response, role='assistant'), finish_reason='stop')
-                for index, one_response in enumerate(response)
-            ]
+                choices_list.append(choice)
+
+                completion_tokens += len(self.tokenizer.encode(one_response))
+
+            usage = Usage(
+                prompt_tokens=input_length,
+                completion_tokens=completion_tokens,
+                total_tokens=input_length + completion_tokens)
 
             res_d = ChatCompletionResponse(
                 model=self.model_id,
                 choices=choices_list,
                 object='chat.completion',
                 created=int(time.time()),
-                usage=None).model_dump(exclude_unset=True)
+                usage=usage).model_dump(exclude_unset=True)
 
             results.append(res_d)
 
