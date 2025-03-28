@@ -207,11 +207,12 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen/Qwen2-0.5B-Instruct',
+            model='Qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
+                'iquiz',
                 # 'math_500',
                 # 'aime24',
-                'competition_math'
+                # 'competition_math'
             ],
             dataset_args={
                 'competition_math': {

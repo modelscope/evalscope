@@ -66,7 +66,7 @@ class TestRAGAS(unittest.TestCase):
                 'eval': {
                     'testset_file': 'outputs/testset_chinese_with_answer.json',
                     'critic_llm': {
-                        'model_name_or_path': 'Qwen/Qwen2.5-0.5B-Instruct',
+                        'model_name_or_path': 'Qwen/Qwen2.5-7B-Instruct',
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
