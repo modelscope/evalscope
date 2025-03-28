@@ -314,10 +314,11 @@ class DataAdapter(ABC):
         kwargs['metric_list'] = self.metric_list
         return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
 
-    def gen_prompt_data(self, prompt: str, **kwargs) -> dict:
+    def gen_prompt_data(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> dict:
         if not isinstance(prompt, list):
             prompt = [prompt]
-        prompt_data = PromptData(data=prompt, multi_choices=self.choices, system_prompt=self.system_prompt)
+        prompt_data = PromptData(
+            data=prompt, multi_choices=self.choices, system_prompt=system_prompt or self.system_prompt)
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:

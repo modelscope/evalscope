@@ -71,10 +71,15 @@ qa/
 The JSON lines file needs to be in the following format:
 
 ```json
-{"query": "What is the capital of China?", "response": "The capital of China is Beijing"}
-{"query": "What is the tallest mountain in the world?", "response": "It is Mount Everest"}
-{"query": "Why can't you see penguins in the Arctic?", "response": "Because penguins mostly live in Antarctica"}
+{"system": "You are a geographer", "query": "What is the capital of China?", "response": "The capital of China is Beijing"}
+{"query": "What is the highest mountain in the world?", "response": "It's Mount Everest"}
+{"query": "Why can't penguins be seen in the Arctic?", "response": "Because penguins mostly live in Antarctica"}
 ```
+
+Where:
+- `system` is the system prompt (optional field)
+- `query` is the question (required)
+- `response` is the correct answer (required)
 
 ### 2. Configuration Task
 
