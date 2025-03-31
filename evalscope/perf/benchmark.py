@@ -150,39 +150,45 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
         name = args.name if args.name else f'{args.model_id}_{current_time}'
         wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
 
+    collected_benchmark_data = []
+
+    with tqdm(desc='Processing') as pbar:
+        while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
+            try:
+                # Attempt to get benchmark data from the queue with a timeout
+                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
+                benchmark_data_queue.task_done()
+            except asyncio.TimeoutError:
+                # If timeout, continue to the next iteration
+                continue
+
+            # Update metrics based on the benchmark data
+            metrics.update_metrics(benchmark_data, api_plugin)
+
+            # Collect benchmark data for later database insertion
+            collected_benchmark_data.append(benchmark_data)
+
+            # Create a message with the updated metrics
+            message = metrics.create_message()
+
+            # Log the message to wandb if the api key is provided
+            if args.wandb_api_key:
+                wandb.log(message)
+
+            # Log the message to the logger every n queries
+            if int(metrics.n_total_queries) % args.log_every_n_query == 0:
+                msg = json.dumps(message, ensure_ascii=False, indent=2)
+                logger.info(msg)
+
+            pbar.update(1)  # Update the progress bar
+
+    # Now perform database operations after all benchmark data has been processed
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
         create_result_table(cursor)
-        with tqdm(desc='Processing') as pbar:
-            while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
-                try:
-                    # Attempt to get benchmark data from the queue with a timeout
-                    benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
-                    benchmark_data_queue.task_done()
-                except asyncio.TimeoutError:
-                    # If timeout, continue to the next iteration
-                    continue
-
-                # Update metrics based on the benchmark data
-                metrics.update_metrics(benchmark_data, api_plugin)
-
-                # Insert benchmark data into the database and commit the transaction
-                insert_benchmark_data(cursor, benchmark_data)
-                con.commit()
-
-                # Create a message with the updated metrics
-                message = metrics.create_message()
-
-                # Log the message to wandb if the api key is provided
-                if args.wandb_api_key:
-                    wandb.log(message)
-
-                # Log the message to the logger every n queries
-                if int(metrics.n_total_queries) % args.log_every_n_query == 0:
-                    msg = json.dumps(message, ensure_ascii=False, indent=2)
-                    logger.info(msg)
-
-                pbar.update(1)  # Update the progress bar
+        for benchmark_data in collected_benchmark_data:
+            insert_benchmark_data(cursor, benchmark_data)
+        con.commit()
 
     return metrics, result_db_path
 
@@ -199,7 +205,7 @@ async def start_server(args: Arguments) -> bool:
         else:
             args.url = f'http://127.0.0.1:{args.port}/v1/chat/completions'
 
-    if not await test_connection(args):
+    if (not args.no_test_connection) and (not await test_connection(args)):
         raise TimeoutError('Test connection failed')
 
 

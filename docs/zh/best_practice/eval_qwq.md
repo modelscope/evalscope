@@ -34,7 +34,7 @@ VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.opena
 [QwQ-32B-Preview模型推理速度测试](../experiments/speed_benchmark/QwQ-32B-Preview.md)
 ```
 
-### 使用EvalScope评测模型
+### 评测模型数学推理能力
 
 运行以下命令，即可让模型在MATH-500数据集上进行推理，并获得模型在每个问题上的输出结果，以及整体答题正确率：
 
@@ -80,6 +80,7 @@ run_task(task_config)
 如果想运行[其他数据集](../get_started/supported_dataset.md#1-原生支持的数据集)，可以修改上述配置中的`datasets`和`dataset_args`参数，例如：
 
 ```python
+# ...
 datasets=[
     # 'math_500',  # 数据集名称
     'gpqa',
@@ -101,6 +102,34 @@ dataset_args={
 +---------+-----------+---------------+--------------+-------+---------+---------+ 
 | QwQ-32B | gpqa      | AveragePass@1 | gpqa_diamond |   198 |  0.6717 | default |
 +---------+-----------+---------------+--------------+-------+---------+---------+
+```
+
+### 评测代码能力
+
+我们使用[LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite)来评测模型的代码能力，需进行如下配置：
+
+```python
+# ...
+datasets=['live_code_bench'],
+dataset_args={
+    'live_code_bench': {
+        'extra_params': {
+            'start_date': '2024-08-01',
+            'end_date': '2025-02-28'
+        },
+        "filters": {"remove_until": "</think>"}  # 过滤掉模型推理过程中的思考部分
+    }
+},
+```
+
+输出结果如下：
+
+```text
++---------+-----------------+----------+----------------+-------+---------+---------+
+| Model   | Dataset         | Metric   | Subset         |   Num |   Score | Cat.0   |
++=========+=================+==========+================+=======+=========+=========+
+| qwq-32b | live_code_bench | Pass@1   | release_latest |   279 |  0.6237 | default |
++---------+-----------------+----------+----------------+-------+---------+---------+
 ```
 
 ## 评测结果可视化

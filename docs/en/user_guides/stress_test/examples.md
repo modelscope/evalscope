@@ -134,6 +134,33 @@ evalscope perf \
  --dataset openqa 
 ```
 
+## Using the Random Dataset
+
+Randomly generate prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It is necessary to specify `tokenizer-path`. The number of tokens in the generated prompt is uniformly distributed between `prefix_length + min-prompt-length` and `prefix_length + max-prompt-length`. In a single test, all requests have the same prefix portion.
+
+```{note}
+Due to the influence of chat_template and tokenization algorithms, there may be some discrepancies in the number of tokens in the generated prompts, and it is not an exact specified token count.
+```
+
+Execute the following command:
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-0.5B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 64 \
+  --min-prompt-length 1024 \
+  --max-prompt-length 2048 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-0.5B-Instruct \
+  --debug
+```
+
 ## Using wandb to Record Test Results
 
 Please install wandb:

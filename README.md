@@ -88,7 +88,8 @@ Please scan the QR code below to join our community groups:
 
 ## 🎉 News
 
-- 🔥 **[2025.03.13]** Added support for the [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) code evaluation benchmark. You can use it by specifying `live_code_bench`.
+- 🔥 **[2025.03.20]** The model inference service stress testing now supports generating prompts of specified length using random values. Refer to the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#using-the-random-dataset) for more details.
+- 🔥 **[2025.03.13]** Added support for the [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) code evaluation benchmark, which can be used by specifying `live_code_bench`. Supports evaluating QwQ-32B on LiveCodeBench, refer to the [best practices](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html).
 - 🔥 **[2025.03.11]** Added support for the [SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary) and [Chinese SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) evaluation benchmarks. These are used to assess the factual accuracy of models, and you can specify `simple_qa` and `chinese_simpleqa` for use. Support for specifying a judge model is also available. For more details, refer to the [relevant parameter documentation](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html).
 - 🔥 **[2025.03.07]** Added support for the [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B/summary) model, evaluate the model's reasoning ability and reasoning efficiency, refer to [📖 Best Practices for QwQ-32B Evaluation](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html) for more details.
 - 🔥 **[2025.03.04]** Added support for the [SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) dataset, which covers 13 categories, 72 first-level disciplines, and 285 second-level disciplines, totaling 26,529 questions. You can use it by specifying `super_gpqa`.
@@ -126,23 +127,24 @@ Please scan the QR code below to join our community groups:
 We recommend using conda to manage your environment and installing dependencies with pip:
 
 1. Create a conda environment (optional)
-   ```shell
-   # It is recommended to use Python 3.10
-   conda create -n evalscope python=3.10
-   # Activate the conda environment
-   conda activate evalscope
-   ```
+    ```shell
+    # It is recommended to use Python 3.10
+    conda create -n evalscope python=3.10
+    # Activate the conda environment
+    conda activate evalscope
+    ```
 
 2. Install dependencies using pip
-   ```shell
-   pip install evalscope                # Install Native backend (default)
-   # Additional options
-   pip install evalscope[opencompass]   # Install OpenCompass backend
-   pip install evalscope[vlmeval]       # Install VLMEvalKit backend
-   pip install evalscope[rag]           # Install RAGEval backend
-   pip install evalscope[perf]          # Install Perf dependencies
-   pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-   ```
+    ```shell
+    pip install evalscope                # Install Native backend (default)
+    # Additional options
+    pip install 'evalscope[opencompass]'   # Install OpenCompass backend
+    pip install 'evalscope[vlmeval]'       # Install VLMEvalKit backend
+    pip install 'evalscope[rag]'           # Install RAGEval backend
+    pip install 'evalscope[perf]'          # Install dependencies for the model performance testing module
+    pip install 'evalscope[app]'           # Install dependencies for visualization
+    pip install 'evalscope[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+    ```
 
 > [!WARNING]
 > As the project has been renamed to `evalscope`, for versions `v0.4.3` or earlier, you can install using the following command:
@@ -156,21 +158,22 @@ We recommend using conda to manage your environment and installing dependencies 
 
 ### Method 2: Install from Source
 1. Download the source code
-   ```shell
-   git clone https://github.com/modelscope/evalscope.git
-   ```
+    ```shell
+    git clone https://github.com/modelscope/evalscope.git
+    ```
 
 2. Install dependencies
-   ```shell
-   cd evalscope/
-   pip install -e .                  # Install Native backend
-   # Additional options
-   pip install -e '.[opencompass]'   # Install OpenCompass backend
-   pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-   pip install -e '.[rag]'           # Install RAGEval backend
-   pip install -e '.[perf]'          # Install Perf dependencies
-   pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-   ```
+    ```shell
+    cd evalscope/
+    pip install -e .                  # Install Native backend
+    # Additional options
+    pip install -e '.[opencompass]'   # Install OpenCompass backend
+    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
+    pip install -e '.[rag]'           # Install RAGEval backend
+    pip install -e '.[perf]'          # Install Perf dependencies
+    pip install -e '.[app]'           # Install visualization dependencies
+    pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+    ```
 
 
 ## 🚀 Quick Start

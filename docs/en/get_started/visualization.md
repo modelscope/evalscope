@@ -2,6 +2,10 @@
 
 Visualization supports single model evaluation results and multi-model comparison, as well as visualization of mixed dataset evaluations.
 
+```{important}
+This visualization tool is specifically designed for displaying model evaluation results. It is not intended for visualizing stress test results of model inference services. For visualization of stress test results for model inference services, please refer to the [Stress Test Visualization Guide](../user_guides/stress_test/quick_start.md#visualizing-test-results).
+```
+
 ## Install Dependencies
 
 Install the dependencies required for visualization, including gradio, plotly, etc.

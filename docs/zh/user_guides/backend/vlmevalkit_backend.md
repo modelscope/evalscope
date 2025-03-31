@@ -82,7 +82,6 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 ````
 
 
-
 ## 3. 模型评测
 模型评测有两种方式可以选择，一种是部署模型服务评测，另一种是本地模型推理评测。具体如下：
 
@@ -92,20 +91,6 @@ print(f'** All models from VLMEvalKit backend: {VLMEvalKitBackendManager.list_su
 
 下面介绍四种方式部署模型服务：
 ::::{tab-set}
-:::{tab-item} ms-swift部署 （推荐）
-
-使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Multi-Modal/MLLM%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.html)。
-
-**安装ms-swift**
-```shell
-pip install ms-swift -U
-```
-
-**部署模型服务**
-```shell
-CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen-vl-chat --port 8000
-```
-:::
 
 :::{tab-item} vLLM 部署
 
@@ -120,9 +105,29 @@ pip install vllm -U
 
 **部署模型服务**
 ```shell
-CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model InternVL2-8B --port 8000 --trust-remote-code --max_model_len 4096
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000 --trust-remote-code --max_model_len 4096 --served-model-name Qwen2.5-VL-3B-Instruct
+```
+
+```{tip}
+如遇到`ValueError: At most 1 image(s) may be provided in one request`错误，可尝试将设置`--limit-mm-per-prompt "image=5"`参数，并可以将image设置为更大的值。
 ```
 :::
+
+:::{tab-item} ms-swift部署
+
+使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Instruction/%E6%8E%A8%E7%90%86%E5%92%8C%E9%83%A8%E7%BD%B2.html#id3)。
+
+**安装ms-swift**
+```shell
+pip install ms-swift -U
+```
+
+**部署模型服务**
+```shell
+CUDA_VISIBLE_DEVICES=0 swift deploy --model Qwen/Qwen2.5-VL-3B-Instruct --port 8000
+```
+:::
+
 
 :::{tab-item} LMDeploy 部署
 参考 [LMDeploy 教程](https://github.com/InternLM/lmdeploy/blob/main/docs/en/multi_modal/api_server_vl.md).
@@ -140,50 +145,12 @@ CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server Qwen-VL-Chat --server-port 8000
 
 :::{tab-item} Ollama 部署
 
-```{note}
-Ollama 对于 OpenAI API 的支持目前处于实验性状态，本教程仅提供示例，请根据实际情况修改。
-```
+使用Ollama一键运行ModelScope上托管的模型，参考[文档](https://www.modelscope.cn/docs/models/advanced-usage/ollama-integration)
 
-参考 [Ollama 教程](https://github.com/ollama/ollama/blob/main/README.md#quickstart)。
-
-**安装Ollama**
 ```shell
-# Linux 系统
-curl -fsSL https://ollama.com/install.sh | sh
+ollama run modelscope.cn/IAILabs/Qwen2.5-VL-7B-Instruct-GGUF
 ```
 
-**启动Ollama**
-```shell
-# 默认端口为 11434
-ollama serve
-```
-
-```{tip}
-若使用`ollama pull`拉取模型，可跳过以下创建模型的步骤；若使用`ollama import`导入模型，则需要手动创建模型配置文件。
-```
-
-**创建模型配置文件 `Modelfile`**
-
-[支持的模型格式](https://github.com/ollama/ollama/blob/main/docs/import.md)
-```text
-# 模型路径
-FROM models/LLaVA
-
-# 温度系数
-PARAMETER temperature 1
-
-# system prompt
-SYSTEM """
-You are a helpful assistant.
-"""
-```
-
-**创建模型**
-
-会将模型自动转为ollama支持的格式，同时支持多种量化方式。
-```shell
-ollama create llava -f ./Modelfile
-```
 :::
 ::::
 
@@ -198,7 +165,7 @@ work_dir: outputs
 eval_backend: VLMEvalKit
 eval_config:
   model: 
-    - type: qwen-vl-chat
+    - type: Qwen2.5-VL-3B-Instruct
       name: CustomAPIModel 
       api_base: http://localhost:8000/v1/chat/completions
       key: EMPTY
@@ -234,7 +201,7 @@ task_cfg_dict = TaskConfig(
             'key': 'EMPTY',
             'name': 'CustomAPIModel',
             'temperature': 0.0,
-            'type': 'qwen-vl-chat',
+            'type': 'Qwen2.5-VL-3B-Instruct',
             'img_size': -1,
             'video_llm': False,
             'max_tokens': 1024,}
@@ -292,7 +259,7 @@ task_cfg_dict = TaskConfig(
             {'name': 'qwen_chat',
             'model_path': 'models/Qwen-VL-Chat',
             'video_llm': False,
-            'max_tokens': 1024,
+            'max_new_tokens': 1024,
             }
           ],
         'reuse': False}
@@ -309,11 +276,8 @@ task_cfg_dict = TaskConfig(
   - `data`：列表，参考[目前支持的数据集](#2-数据准备)
   - `model`：字典列表，每个字典可以指定以下字段：
     - 使用远程API调用时：
-      - `api_base`：OpenAI API 的URL，即模型服务的 URL。
-      - `type`：OpenAI API 请求模型名称。
-        - 若使用`ms-swift`部署，设置为 `--model_type` 的值；
-        - 若使用 `vLLM` 或 `LMDeploy` 部署模型，则设置为 `model_id`；
-        - 若使用 `Ollama` 部署模型，则设置为 `model_name`，使用`ollama list`命令查看。
+      - `api_base`：模型服务的 URL。
+      - `type`：API 请求模型名称，例如 `Qwen2.5-VL-3B-Instruct`。
       - `name`：固定值，必须为 `CustomAPIModel`。
       - `key`：模型 API 的 OpenAI API 密钥，默认值为 `EMPTY`。
       - `temperature`：模型推理的温度系数，默认值为 `0.0`。

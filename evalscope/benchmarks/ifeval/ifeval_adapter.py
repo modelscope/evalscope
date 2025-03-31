@@ -48,9 +48,6 @@ class IFEvalAdapter(DataAdapter):
 
     def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:
         # aggregate review results
-        res_dict = defaultdict(list)
-        for res in review_res_list:
-            for k, v in res.items():
-                res_dict[k].append(v)
+        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
 
-        return super().compute_metric(res_dict)
+        return super().compute_metric(res_dict, **kwargs)

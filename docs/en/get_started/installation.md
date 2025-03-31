@@ -15,11 +15,12 @@ conda activate evalscope
 ```shell
 pip install evalscope                # Install Native backend (default)
 # Additional options
-pip install evalscope[opencompass]   # Install OpenCompass backend
-pip install evalscope[vlmeval]       # Install VLMEvalKit backend
-pip install evalscope[rag]           # Install RAGEval backend
-pip install evalscope[perf]          # Install Perf dependencies
-pip install evalscope[all]           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+pip install 'evalscope[opencompass]'   # Install OpenCompass backend
+pip install 'evalscope[vlmeval]'       # Install VLMEvalKit backend
+pip install 'evalscope[rag]'           # Install RAGEval backend
+pip install 'evalscope[perf]'          # Install dependencies for the model performance testing module
+pip install 'evalscope[app]'           # Install dependencies for visualization
+pip install 'evalscope[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 ````{warning}
@@ -48,5 +49,10 @@ pip install -e '.[opencompass]'   # Install OpenCompass backend
 pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
 pip install -e '.[rag]'           # Install RAGEval backend
 pip install -e '.[perf]'          # Install Perf dependencies
+pip install -e '.[app]'           # Install visualization dependencies
 pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
+
+## Docker Image
+
+You can use the official ModelScope Docker image, which includes the EvalScope library. For more information, refer to [here](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F).

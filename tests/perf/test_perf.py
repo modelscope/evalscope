@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+from dotenv import dotenv_values
 
+env = dotenv_values('.env')
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import unittest
 
@@ -94,6 +96,27 @@ class TestPerf(unittest.TestCase):
             'max_tokens': 2048,
             'debug': True,
         }
+        run_perf_benchmark(task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_perf_local_random(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=20,
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/chat/completions',
+            api='openai',
+            dataset='random',
+            min_tokens=1024,
+            max_tokens=1024,
+            prefix_length=0,
+            min_prompt_length=1024,
+            max_prompt_length=1024,
+            number=40,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            seed=None,
+            debug= True,
+        )
         run_perf_benchmark(task_cfg)
 
 

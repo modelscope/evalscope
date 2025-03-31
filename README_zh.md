@@ -79,7 +79,9 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 
 
 ## 🎉 新闻
-- 🔥 **[2025.03.13]** 新增支持[LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)代码评测基准，指定`live_code_bench`即可使用。
+
+- 🔥 **[2025.03.20]** 模型推理服务压测支持random生成指定范围长度的prompt，参考[使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/examples.html#random)
+- 🔥 **[2025.03.13]** 新增支持[LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)代码评测基准，指定`live_code_bench`即可使用；支持QwQ-32B 在LiveCodeBench上评测，参考[最佳实践](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html)。
 - 🔥 **[2025.03.11]** 新增支持[SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)和[Chinese SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)评测基准，用与评测模型的事实正确性，指定`simple_qa`和`chinese_simpleqa`使用。同时支持指定裁判模型，参考[相关参数说明](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html)。
 - 🔥 **[2025.03.07]** 新增QwQ-32B模型评测最佳实践，评测了模型的推理能力以及推理效率，参考[📖QwQ-32B模型评测最佳实践](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html)。
 - 🔥 **[2025.03.04]** 新增支持[SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary)数据集，其覆盖 13 个门类、72 个一级学科和 285 个二级学科，共 26,529 个问题，指定`super_gpqa`即可使用。
@@ -125,11 +127,12 @@ conda activate evalscope
 ```shell
 pip install evalscope                # 安装 Native backend (默认)
 # 额外选项
-pip install evalscope[opencompass]   # 安装 OpenCompass backend
-pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
-pip install evalscope[rag]           # 安装 RAGEval backend
-pip install evalscope[perf]          # 安装 模型压测模块 依赖
-pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+pip install 'evalscope[opencompass]'   # 安装 OpenCompass backend
+pip install 'evalscope[vlmeval]'       # 安装 VLMEvalKit backend
+pip install 'evalscope[rag]'           # 安装 RAGEval backend
+pip install 'evalscope[perf]'          # 安装 模型压测模块 依赖
+pip install 'evalscope[app]'           # 安装 可视化 相关依赖
+pip install 'evalscope[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 
@@ -160,6 +163,7 @@ pip install -e '.[opencompass]'   # 安装 OpenCompass backend
 pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
 pip install -e '.[rag]'           # 安装 RAGEval backend
 pip install -e '.[perf]'          # 安装 模型压测模块 依赖
+pip install -e '.[app]'           # 安装 可视化 相关依赖
 pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 

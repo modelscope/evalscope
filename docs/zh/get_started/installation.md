@@ -15,11 +15,12 @@ conda activate evalscope
 ```shell
 pip install evalscope                # 安装 Native backend (默认)
 # 额外选项
-pip install evalscope[opencompass]   # 安装 OpenCompass backend
-pip install evalscope[vlmeval]       # 安装 VLMEvalKit backend
-pip install evalscope[rag]           # 安装 RAGEval backend
-pip install evalscope[perf]          # 安装 模型压测模块 依赖
-pip install evalscope[all]           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+pip install 'evalscope[opencompass]'   # 安装 OpenCompass backend
+pip install 'evalscope[vlmeval]'       # 安装 VLMEvalKit backend
+pip install 'evalscope[rag]'           # 安装 RAGEval backend
+pip install 'evalscope[perf]'          # 安装 模型压测模块 依赖
+pip install 'evalscope[app]'           # 安装 可视化 相关依赖
+pip install 'evalscope[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
 
 ````{warning}
@@ -52,5 +53,10 @@ pip install -e '.[opencompass]'   # 安装 OpenCompass backend
 pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
 pip install -e '.[rag]'           # 安装 RAGEval backend
 pip install -e '.[perf]'          # 安装 模型压测模块 依赖
+pip install -e '.[app]'           # 安装 可视化 相关依赖
 pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
 ```
+
+## 镜像
+
+使用镜像可以查看ModelScope官方镜像，其中包含了EvalScope库，参考[这里](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F)

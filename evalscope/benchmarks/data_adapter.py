@@ -245,6 +245,29 @@ class DataAdapter(ABC):
             res_list.append({'metric_name': metric_name, 'score': metric_func(review_res), 'num': len(review_res)})
         return res_list
 
+    def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
+        """
+        compute weighted mean of the bleu score of all samples
+
+        Args:
+            review_res_list: [score1, score2, ...]
+
+        Returns:
+            avg_res: List[dict]
+
+        """
+        if isinstance(review_res_list[0], list):
+            review_res_list = [item for sublist in review_res_list for item in sublist]
+
+        items = defaultdict(list)
+        for scores in review_res_list:
+            if isinstance(scores, dict):
+                for k, v in scores.items():
+                    items[k].append(v)
+            else:
+                items['AverageAccuracy'].append(scores)
+        return items
+
     def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:
         """
         Generate report for the evaluation results for all subsets.
@@ -291,10 +314,11 @@ class DataAdapter(ABC):
         kwargs['metric_list'] = self.metric_list
         return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
 
-    def gen_prompt_data(self, prompt: str, **kwargs) -> dict:
+    def gen_prompt_data(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> dict:
         if not isinstance(prompt, list):
             prompt = [prompt]
-        prompt_data = PromptData(data=prompt, multi_choices=self.choices, system_prompt=self.system_prompt)
+        prompt_data = PromptData(
+            data=prompt, multi_choices=self.choices, system_prompt=system_prompt or self.system_prompt)
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:

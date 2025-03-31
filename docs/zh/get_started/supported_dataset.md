@@ -16,33 +16,36 @@
 | `arc`             | [modelscope/ai2_arc](https://modelscope.cn/datasets/modelscope/ai2_arc/summary)                    | 考试         |                                                                                                                       |
 | `bbh`             | [modelscope/bbh](https://modelscope.cn/datasets/modelscope/bbh/summary)                            | 综合推理         |                                                                                                                       |
 | `ceval`           | [modelscope/ceval-exam](https://modelscope.cn/datasets/modelscope/ceval-exam/summary)              | 中文-综合考试             |                                                                                                                       |
-| `chinese_simpleqa`^           | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)                     | 中文知识问答        |                使用 `primary_category`字段作为子数据集           |
+| `chinese_simpleqa`<sup>3</sup>             | [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)                     | 中文知识问答        |                使用 `primary_category`字段作为子数据集           |
 | `cmmlu`           | [modelscope/cmmlu](https://modelscope.cn/datasets/modelscope/cmmlu/summary)                        | 中文-综合考试   |                                                                                                                       |
 | `competition_math`| [modelscope/competition_math](https://modelscope.cn/datasets/modelscope/competition_math/summary)   | 数学竞赛         |             使用`level`字段作为子数据集                                                                                                          |
 | `gpqa`| [modelscope/gpqa](https://modelscope.cn/datasets/modelscope/gpqa/summary)   | 专家级考试         |                                                                                                                       |
 | `gsm8k`           | [modelscope/gsm8k](https://modelscope.cn/datasets/modelscope/gsm8k/summary)                        | 数学问题         |                                                                                                                       |
 | `hellaswag`       | [modelscope/hellaswag](https://modelscope.cn/datasets/modelscope/hellaswag/summary)                | 常识推理         |                                                                                                                       |
-| `humaneval`+       | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
-| `ifeval`       | [modelscope/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)                | 指令遵循         |  |
+| `humaneval`<sup>2</sup>        | [modelscope/humaneval](https://modelscope.cn/datasets/modelscope/humaneval/summary)                | 代码生成         |  |
+| `ifeval`<sup>4</sup>       | [modelscope/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)                | 指令遵循         |  |
 | `iquiz`       | [modelscope/iquiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)                | 智商和情商         |  |
-| `live_code_bench`+ | [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) |  代码生成         |    <details><summary>参数说明</summary>   子数据集支持 `release_v1`,`release_v5`, `v1`, `v4_v5` 等版本标签；`datase-args`中支持设置`'extra_params': {'start_date': '2024-12-01','end_date': '2025-01-01'} `来筛选特定时间范围题目 </details>                              |
+| `live_code_bench`<sup>2,4</sup>   | [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) |  代码生成         |    <details><summary>参数说明</summary>   子数据集支持 `release_v1`,`release_v5`, `v1`, `v4_v5` 等版本标签；`datase-args`中支持设置`'extra_params': {'start_date': '2024-12-01','end_date': '2025-01-01'} `来筛选特定时间范围题目 </details>                              |
 | `math_500`       | [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary)                | 数学竞赛         | 使用`level`字段作为子数据集                                                                                                          |
 | `mmlu`            | [modelscope/mmlu](https://modelscope.cn/datasets/modelscope/mmlu/summary)                          | 综合考试   |                                                                                                                       |
 | `mmlu_pro`        | [modelscope/mmlu-pro](https://modelscope.cn/datasets/modelscope/mmlu-pro/summary)                    | 综合考试   |                   使用`category`字段作为子数据集                                                                                                    |
+| `mmlu_redux`      | [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary)                | 综合考试   |                                                                                                                       |
 | `musr`            | [AI-ModelScope/MuSR](https://www.modelscope.cn/datasets/AI-ModelScope/MuSR/summary)                          | 多步软推理         |                                                                                                                       |
 | `process_bench`   | [Qwen/ProcessBench](https://www.modelscope.cn/datasets/Qwen/ProcessBench/summary)        | 数学过程推理         |                                                                                                                       |
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
-| `simple_qa`^        | [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)               | 知识问答      |
+| `simple_qa`<sup>3</sup>          | [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)               | 知识问答      |
 | `super_gpqa`      | [m-a-p/SuperGPQA](https://www.modelscope.cn/datasets/m-a-p/SuperGPQA/dataPeview)                | 专家级考试         |       使用`field`字段作为子数据集                                                                                                              |
 | `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
-| `truthful_qa`*     | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
+| `truthful_qa`<sup>1</sup>       | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
 
 ```{note}
-**\*** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。
+**1.** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。
 
-**+** 因为涉及到代码运行的操作，建议在沙盒环境(docker)中运行，防止对本地环境造成影响。
+**2.** 因为涉及到代码运行的操作，建议在沙盒环境(docker)中运行，防止对本地环境造成影响。
 
-**^** 该数据集需要指定Judge Model进行评测，参考[Judge参数](./parameters.md#judge参数)。
+**3.** 该数据集需要指定Judge Model进行评测，参考[Judge参数](./parameters.md#judge参数)。
+
+**4.** 建议reasoning模型设置对应数据集的后处理，例如`{"filters": {"remove_until": "</think>"}}`，以获得更好的评测结果。
 ```
 
 

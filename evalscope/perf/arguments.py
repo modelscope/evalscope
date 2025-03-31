@@ -24,6 +24,7 @@ class Arguments:
     connect_timeout: int = 600  # Connection timeout in seconds
     read_timeout: int = 600  # Read timeout in seconds
     api_key: Optional[str] = None
+    no_test_connection: bool = False  # Test the connection before starting the benchmark
 
     # Performance and parallelism
     number: Optional[int] = None  # Number of requests to be made
@@ -40,8 +41,9 @@ class Arguments:
     outputs_dir: str = DEFAULT_WORK_DIR
 
     # Prompt settings
-    max_prompt_length: int = sys.maxsize  # Maximum length of the prompt
+    max_prompt_length: int = 131072  # Maximum length of the prompt
     min_prompt_length: int = 0  # Minimum length of the prompt
+    prefix_length: int = 0  # Length of the prefix, only for random dataset
     prompt: Optional[str] = None  # The prompt text
     query_template: Optional[str] = None  # Template for the query
 
@@ -58,51 +60,20 @@ class Arguments:
     seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
-    stream: Optional[bool] = None  # Whether to stream the response
+    stream: Optional[bool] = False  # Whether to stream the response
     temperature: Optional[float] = None  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
+    extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
 
     @staticmethod
     def from_args(args):
-        return Arguments(
-            model=args.model,
-            attn_implementation=args.attn_implementation,
-            url=args.url,
-            port=args.port,
-            api_key=args.api_key,
-            connect_timeout=args.connect_timeout,
-            read_timeout=args.read_timeout,
-            number=args.number,
-            parallel=args.parallel,
-            rate=args.rate,
-            log_every_n_query=args.log_every_n_query,
-            headers=args.headers,
-            wandb_api_key=args.wandb_api_key,
-            name=args.name,
-            outputs_dir=args.outputs_dir,
-            debug=args.debug,
-            tokenizer_path=args.tokenizer_path,
-            api=args.api,
-            max_prompt_length=args.max_prompt_length,
-            min_prompt_length=args.min_prompt_length,
-            prompt=args.prompt,
-            query_template=args.query_template,
-            dataset=args.dataset,
-            dataset_path=args.dataset_path,
-            frequency_penalty=args.frequency_penalty,
-            logprobs=args.logprobs,
-            max_tokens=args.max_tokens,
-            min_tokens=args.min_tokens,
-            n_choices=args.n_choices,
-            seed=args.seed,
-            stop=args.stop,
-            stop_token_ids=args.stop_token_ids,
-            stream=args.stream,
-            temperature=args.temperature,
-            top_p=args.top_p,
-            top_k=args.top_k,
-        )
+        # Convert Namespace to a dictionary and filter out None values
+        args_dict = {k: v for k, v in vars(args).items() if v is not None}
+
+        if 'func' in args_dict:
+            del args_dict['func']  # Note: compat CLI arguments
+        return Arguments(**args_dict)
 
     def __post_init__(self):
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -153,6 +124,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=600, help='The network connection timeout')
     parser.add_argument('--read-timeout', type=int, default=600, help='The network read timeout')
+    parser.add_argument('--no-test-connection', action='store_false', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=None, help='How many requests to be made')
@@ -168,6 +140,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Prompt settings
     parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
+    parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
 
@@ -189,11 +162,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, help='The random seed', default=42)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
-    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)
+    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=False)
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
-
+    parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
     # yapf: enable
 
 

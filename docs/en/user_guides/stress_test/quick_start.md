@@ -60,6 +60,11 @@ Parameter Descriptions:
 - `dataset`: The name of the dataset
 - `stream`: Whether to enable streaming
 
+
+```{important}
+To accurately measure the Time to First Token (TTFT) metric, you need to include the `--stream` parameter in your request. Otherwise, TTFT will be the same as Latency.
+```
+
 ### Output Results
 ```text
 Benchmarking summary: 
@@ -118,28 +123,52 @@ Percentile results:
 
 ### Metric Descriptions
 
-| Metric                                | Description                                                                                 |
-|--------------------------------------|-------------------------------------------------------------------------------------------|
-| Time taken for tests (s)             | Time used for tests (seconds)                                                             |
-| Number of concurrency                | Number of concurrent requests                                                             |
-| Total requests                       | Total number of requests                                                                  |
-| Succeed requests                     | Number of successful requests                                                             |
-| Failed requests                      | Number of failed requests                                                                 |
-| Throughput (average tokens/s)        | Throughput (average number of tokens processed per second)                                |
-| Average QPS                          | Average number of queries per second (Queries Per Second)                                 |
-| Average latency (s)                  | Average latency time (seconds)                                                            |
-| Average time to first token (s)      | Average time to first token (seconds)                                                     |
-| Average time per output token (s)    | Average time per output token (seconds)                                                   |
-| Average input tokens per request     | Average number of input tokens per request                                                |
-| Average output tokens per request    | Average number of output tokens per request                                               |
-| Average package latency (s)          | Average package latency time (seconds)                                                    |
-| Average package per request          | Average number of packages per request                                                    |
-| Expected number of requests          | Expected number of requests                                                               |
-| Result DB path                       | Result database path                                                                      |
-| **Percentile**                       | **Data is divided into 100 equal parts, and the nth percentile indicates that n% of the data points are below this value** |
-| TTFT (s)                             | Time to First Token, the time to generate the first token                                 |
-| TPOT (s)                             | Time Per Output Token, the time to generate each output token                             |
-| Latency (s)                          | Latency time, the time between request and response                                       |
-| Input tokens                         | Number of input tokens                                                                    |
-| Output tokens                        | Number of output tokens                                                                   |
-| Throughput (tokens/s)                | Throughput, the number of tokens processed per second                                     |
+**Metrics**
+
+| Metric | Explanation | Formula |
+|--------|-------------|---------|
+| Time taken for tests | Total time from the start to the end of the test process | Last request end time - First request start time |
+| Number of concurrency | Number of clients sending requests simultaneously | Preset value |
+| Total requests | Total number of requests sent during the testing process | Successful requests + Failed requests |
+| Succeed requests | Number of requests completed successfully and returning expected results | Direct count |
+| Failed requests | Number of requests that failed to complete successfully | Direct count |
+| Throughput (average tokens/s) | Average number of tokens processed per second | Total output tokens / Time taken for tests |
+| Average QPS | Average number of successful queries processed per second | Successful requests / Time taken for tests |
+| Total latency | Sum of latency times for all successful requests | Sum of all successful request latencies |
+| Average latency | Average time from sending a request to receiving a complete response | Total latency / Successful requests |
+| Average time to first token | Average time from sending a request to receiving the first response token | Total first chunk latency / Successful requests |
+| Average time per output token | Average time required to generate each output token | Total time per output token / Successful requests |
+| Average input tokens per request | Average number of input tokens per request | Total input tokens / Successful requests |
+| Average output tokens per request | Average number of output tokens per request | Total output tokens / Successful requests |
+| Average package latency | Average delay time for receiving each data package | Total package time / Total packages |
+| Average package per request | Average number of data packages received per request | Total packages / Successful requests |
+
+**Percentile Metrics**
+
+| Metric | Explanation |
+|--------|-------------|
+| Time to First Token | Time from sending a request to generating the first token (in seconds) |
+| Time Per Output Token | Time needed to generate each output token (in seconds) |
+| Latency | Time from sending a request to receiving a complete response (in seconds) |
+| Input tokens | Number of tokens inputted in the request |
+| Output tokens | Number of tokens generated in the response |
+| Throughput | Number of tokens outputted per second (tokens/s) |
+
+
+## Visualizing Test Results
+
+First, install wandb and obtain the corresponding [API Key](https://wandb.ai/settings):
+```bash
+pip install wandb
+```
+
+To upload the test results to the wandb server and visualize them, add the following parameters when launching the evaluation:
+```bash
+# ...
+--wandb-api-key 'wandb_api_key'
+--name 'name_of_wandb_log'
+```
+
+For example:
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
