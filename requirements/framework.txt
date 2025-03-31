@@ -1,9 +1,5 @@
-absl-py
-#auto-gptq
 accelerate
-cachetools
 datasets>=3.0.0,<=3.2.0
-editdistance
 immutabledict
 jieba
 jsonlines
@@ -14,13 +10,9 @@ modelscope[framework]
 nltk>=3.9
 openai
 pandas
-plotly
 pyarrow
-pympler
 pyyaml
-regex
 requests
-requests-toolbelt
 rouge-chinese
 rouge-score>=0.1.0
 sacrebleu
@@ -32,10 +24,8 @@ simple-ddl-parser
 sympy
 # streamlit
 tabulate
-tiktoken
 # pip3 install --no-dependencies -r requirements/framework.txt
 torch
 tqdm
 transformers>=4.33
-transformers_stream_generator
 word2number
