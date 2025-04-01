@@ -62,7 +62,7 @@
 - `--seed` 随机种子，默认为42。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
-- `--temperature` 采样温度。
+- `--temperature` 采样温度，默认为0。
 - `--top-p` top_p采样。
 - `--top-k` top_k采样。
 - `--extra-args` 额外传入请求体的参数，格式为json字符串，例如`'{"ignore_eos": true}'`。

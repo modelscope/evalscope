@@ -63,7 +63,7 @@ Here's the English translation:
 - `--seed`: The random seed, default is 42.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
-- `--temperature`: Sampling temperature.
+- `--temperature`: Sampling temperature, default is 0.0
 - `--top-p`: Top-p sampling.
 - `--top-k`: Top-k sampling.
 - `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
