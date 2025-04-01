@@ -18,31 +18,34 @@ os.environ['LOG_LEVEL'] = 'DEBUG'
 logger = get_logger()
 
 datasets=[
-        # 'iquiz',
-        # 'ifeval',
-        # 'mmlu',
-        # 'mmlu_pro',
-        # 'musr',
-        # 'process_bench',
-        # 'race',
-        # 'trivia_qa',
-        # 'cmmlu',
-        # 'humaneval',
-        # 'gsm8k',
-        # 'bbh',
-        # 'competition_math',
-        # 'math_500',
-        # 'aime24',
-        # 'gpqa',
-        # 'arc',
-        # 'ceval',
-        # 'hellaswag',
-        # 'general_mcq',
-        # 'general_qa',
+        'iquiz',
+        'ifeval',
+        'mmlu',
+        'mmlu_pro',
+        'musr',
+        'process_bench',
+        'race',
+        'trivia_qa',
+        'cmmlu',
+        'humaneval',
+        'gsm8k',
+        'bbh',
+        'competition_math',
+        'math_500',
+        'aime24',
+        'gpqa',
+        'arc',
+        'ceval',
+        'hellaswag',
+        'general_mcq',
+        'general_qa',
         'super_gpqa',
         'live_code_bench',
         'simple_qa',
         'chinese_simpleqa',
+        'alpaca_eval',
+        'arena_hard',
+        'mmlu_redux',
 ]
 
 dataset_args={
@@ -110,7 +113,13 @@ dataset_args={
             'start_date': '2024-12-01',
             'end_date': '2025-01-01'
         },
-    }
+    },
+    'chinese_simpleqa': {
+        'subset_list': ['中华文化']
+    },
+    'mmlu_redux':{
+        'subset_list': ['abstract_algebra']
+    },
 }
 
 class TestRun(unittest.TestCase):
@@ -119,13 +128,13 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='qwen2.5-0.5b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=datasets,
             dataset_args=dataset_args,
-            eval_batch_size=32,
+            eval_batch_size=2,
             limit=2,
             stream=True,
             generation_config={

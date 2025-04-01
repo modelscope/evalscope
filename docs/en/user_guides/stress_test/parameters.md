@@ -18,13 +18,13 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--debug`: Output debug information.
 
 ## Network Configuration
-- `--connect-timeout`: Network connection timeout, default is 120 seconds.
-- `--read-timeout`: Network read timeout, default is 120 seconds.
+- `--connect-timeout`: Network connection timeout, default is 600 seconds.
+- `--read-timeout`: Network read timeout, default is 600 seconds.
 - `--headers`: Additional HTTP headers, formatted as `key1=value1 key2=value2`. This header will be used for each query.
 - `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
 
 ## Request Control
-- `--number`: Number of requests sent, default is None, meaning requests are sent based on the dataset size.
+- `--number`: Number of requests sent, default is 1000.
 - `--parallel` sets the number of workers for concurrent requests, with a default of 1.
 - `--rate` specifies the number of requests generated per second (not sent), with a default of -1, indicating that all requests will be generated at time 0 with no interval; otherwise, we use a Poisson process to generate request intervals.
   ```{tip}
@@ -58,14 +58,15 @@ Here's the English translation:
 - `--frequency-penalty`: The frequency_penalty value.
 - `--logprobs`: Logarithmic probabilities.
 - `--max-tokens`: The maximum number of tokens that can be generated.
-- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter, please refer to the respective API documentation.
+- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
 - `--n-choices`: The number of completion choices to generate.
 - `--seed`: The random seed, default is 42.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
-- `--temperature`: Sampling temperature.
+- `--temperature`: Sampling temperature, default is 0.0
 - `--top-p`: Top-p sampling.
 - `--top-k`: Top-k sampling.
+- `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.

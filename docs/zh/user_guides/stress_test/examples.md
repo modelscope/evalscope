@@ -164,22 +164,6 @@ evalscope perf \
   --debug
 ```
 
-## 使用wandb可视化测试结果
-
-请安装wandb：
-```bash
-pip install wandb
-```
-
-在启动时，添加以下参数，即可：
-```bash
---wandb-api-key 'wandb_api_key'
---name 'name_of_wandb_log'
-```  
-
-![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
-
-
 ## 调试请求
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
 

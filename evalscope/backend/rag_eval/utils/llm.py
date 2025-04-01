@@ -6,7 +6,7 @@ from modelscope.utils.hf_util import GenerationConfig
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from evalscope.constants import DEFAULT_MODEL_REVISION
-from evalscope.models import ChatGenerationModelAdapter
+from evalscope.models import ChatGenerationModelAdapter, LocalModel
 
 
 class LLM:
@@ -38,8 +38,7 @@ class LocalLLM(BaseLLM):
         super().__init__(**kw)
         self.model_name = os.path.basename(self.model_name_or_path)
         self.model = ChatGenerationModelAdapter(
-            model_id=self.model_name_or_path,
-            model_revision=self.model_revision,
+            model=LocalModel(model_id=self.model_name_or_path, model_revision=self.model_revision),
             generation_config=GenerationConfig(**self.generation_config) if self.generation_config else None,
         )
 
@@ -53,8 +52,8 @@ class LocalLLM(BaseLLM):
         """Run the LLM on the given input."""
         infer_cfg = {'stop': stop}
 
-        response = self.model._model_generate(prompt, infer_cfg)
-        return response
+        response, _ = self.model._model_generate([prompt], infer_cfg=infer_cfg)
+        return response[0][0]
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:

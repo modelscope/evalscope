@@ -11,6 +11,9 @@ assignees: ''
 
 请简要描述您遇到的问题。 / Please briefly describe the issue you encountered.
 
+## EvalScope 版本 / Version (必须)
+v0.xx.x
+
 ## 使用的工具 / Tools Used
 - [ ] Native / 原生框架
 - [ ] Opencompass backend

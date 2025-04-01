@@ -194,12 +194,12 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     return results
 
 
-def summary_result(args: Arguments, metrics: BenchmarkMetrics, expected_number_of_queries: int, result_db_path: str):
+def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: str):
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
     data = metrics.create_message()
-    data.update({'Expected number of requests': expected_number_of_queries, 'Result DB path': result_db_path})
+    data.update({'Expected number of requests': args.number, 'Result DB path': result_db_path})
     write_json_file(data, os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table

@@ -27,7 +27,7 @@ class Arguments:
     no_test_connection: bool = False  # Test the connection before starting the benchmark
 
     # Performance and parallelism
-    number: Optional[int] = None  # Number of requests to be made
+    number: int = 1000  # Number of requests to be made
     parallel: int = 1  # Number of parallel requests
     rate: int = -1  # Rate limit for requests (default: -1, no limit)
 
@@ -60,10 +60,11 @@ class Arguments:
     seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
-    stream: Optional[bool] = None  # Whether to stream the response
-    temperature: Optional[float] = None  # Temperature setting for the response
+    stream: Optional[bool] = False  # Whether to stream the response
+    temperature: float = 0.0  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
+    extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
 
     @staticmethod
     def from_args(args):
@@ -126,7 +127,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--no-test-connection', action='store_false', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism
-    parser.add_argument('-n', '--number', type=int, default=None, help='How many requests to be made')
+    parser.add_argument('-n', '--number', type=int, default=1000, help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, help='Set number of concurrency requests, default 1')
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
 
@@ -161,10 +162,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, help='The random seed', default=42)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
-    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=None)
-    parser.add_argument('--temperature', type=float, help='The sample temperature', default=None)
+    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=False)
+    parser.add_argument('--temperature', type=float, help='The sample temperature', default=0.0)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
+    parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
     # yapf: enable
 
 

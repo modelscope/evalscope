@@ -19,13 +19,13 @@
 - `--debug` 输出调试信息。
 
 ## 网络配置
-- `--connect-timeout` 网络连接超时，默认为120s。
-- `--read-timeout` 网络读取超时，默认为120s。
+- `--connect-timeout` 网络连接超时，默认为600s。
+- `--read-timeout` 网络读取超时，默认为600s。
 - `--headers` 额外的HTTP头，格式为`key1=value1 key2=value2`。该头将用于每个查询。
 - `--no-test-connection` 不发送连接测试，直接开始压测，默认为False。
 
 ## 请求控制
-- `--number` 发出的请求的总数量；默认为None，表示基于数据集数量发送请求。
+- `--number` 发出的请求的总数量；默认为1000。
 - `--parallel` 并发请求的数量，默认为1。
 - `--rate` 每秒生成的请求数量（并不发送请求），默认为-1，表示所有请求将在时间0生成，没有间隔；否则，我们使用泊松过程生成请求间隔。
   ```{tip}
@@ -57,14 +57,15 @@
 - `--frequency-penalty` frequency_penalty值。
 - `--logprobs` 对数概率。
 - `--max-tokens` 可以生成的最大token数量。
-- `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。
+- `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。对于`vLLM>=0.8.1`版本，需要额外设置`--extra-args '{"ignore_eos": true}'`。
 - `--n-choices` 生成的补全选择数量。
 - `--seed` 随机种子，默认为42。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
-- `--temperature` 采样温度。
+- `--temperature` 采样温度，默认为0。
 - `--top-p` top_p采样。
 - `--top-k` top_k采样。
+- `--extra-args` 额外传入请求体的参数，格式为json字符串，例如`'{"ignore_eos": true}'`。
 
 ## 数据存储
 - `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
