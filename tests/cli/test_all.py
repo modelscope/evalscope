@@ -41,11 +41,11 @@ datasets=[
         'general_qa',
         'super_gpqa',
         'live_code_bench',
+        'mmlu_redux',
         'simple_qa',
         'chinese_simpleqa',
         'alpaca_eval',
         'arena_hard',
-        'mmlu_redux',
 ]
 
 dataset_args={
