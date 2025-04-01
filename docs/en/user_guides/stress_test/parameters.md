@@ -24,7 +24,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
 
 ## Request Control
-- `--number`: Number of requests sent, default is 1000, meaning requests are sent based on the dataset size.
+- `--number`: Number of requests sent, default is 1000.
 - `--parallel` sets the number of workers for concurrent requests, with a default of 1.
 - `--rate` specifies the number of requests generated per second (not sent), with a default of -1, indicating that all requests will be generated at time 0 with no interval; otherwise, we use a Poisson process to generate request intervals.
   ```{tip}
