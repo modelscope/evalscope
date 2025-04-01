@@ -18,8 +18,6 @@ rouge-score>=0.1.0
 sacrebleu
 scikit-learn
 seaborn
-sentencepiece
-simple-ddl-parser
 # for evaluation
 sympy
 # streamlit
