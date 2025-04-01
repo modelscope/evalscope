@@ -70,7 +70,7 @@ class OpenaiPlugin(ApiPluginBase):
     def __compose_query_from_parameter(self, payload: Dict, param: Arguments):
         payload['model'] = param.model
         if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
+            payload['max_completion_tokens'] = param.max_tokens
         if param.min_tokens is not None:
             payload['min_tokens'] = param.min_tokens
         if param.frequency_penalty is not None:

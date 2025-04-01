@@ -24,7 +24,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
 
 ## Request Control
-- `--number`: Number of requests sent, default is None, meaning requests are sent based on the dataset size.
+- `--number`: Number of requests sent, default is 1000, meaning requests are sent based on the dataset size.
 - `--parallel` sets the number of workers for concurrent requests, with a default of 1.
 - `--rate` specifies the number of requests generated per second (not sent), with a default of -1, indicating that all requests will be generated at time 0 with no interval; otherwise, we use a Poisson process to generate request intervals.
   ```{tip}
@@ -63,7 +63,7 @@ Here's the English translation:
 - `--seed`: The random seed, default is 42.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
-- `--temperature`: Sampling temperature.
+- `--temperature`: Sampling temperature, default is 0.0
 - `--top-p`: Top-p sampling.
 - `--top-k`: Top-k sampling.
 - `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
