@@ -127,7 +127,6 @@ if __name__ == '__main__':
     extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
-    extra_requires['inner'], _ = parse_requirements('requirements/inner.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])
