@@ -49,7 +49,7 @@ class LLMJudge:
         """
         self.api_key = api_key or os.environ.get('OPENAI_API_KEY', 'EMPTY')
         self.api_url = api_url or os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1')
-        self.model_id = model_id or os.environ.get('LOCAL_LLM', 'gpt-3.5-turbo')
+        self.model_id = model_id or os.environ.get('LOCAL_LLM', 'gpt-4')
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
         self.generation_config = generation_config

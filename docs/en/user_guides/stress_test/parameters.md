@@ -18,8 +18,8 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--debug`: Output debug information.
 
 ## Network Configuration
-- `--connect-timeout`: Network connection timeout, default is 120 seconds.
-- `--read-timeout`: Network read timeout, default is 120 seconds.
+- `--connect-timeout`: Network connection timeout, default is 600 seconds.
+- `--read-timeout`: Network read timeout, default is 600 seconds.
 - `--headers`: Additional HTTP headers, formatted as `key1=value1 key2=value2`. This header will be used for each query.
 - `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
 
