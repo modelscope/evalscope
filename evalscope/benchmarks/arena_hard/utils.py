@@ -98,7 +98,12 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
 
     if len(np.unique(Y)) < 2:
         logger.info('Warning: Only one class in the data')
-        return None
+        elo_scores = pd.Series(INIT_RATING, index=models.index)
+        if np.all(Y == 1.0):
+            elo_scores[df['model_a'].iloc[0]] += SCALE  # Boost the winning model
+        elif np.all(Y == 0.0):
+            elo_scores[df['model_b'].iloc[0]] += SCALE  # Boost the winning model
+        return elo_scores.sort_values(ascending=False)
 
     lr = LogisticRegression(
         fit_intercept=False, penalty=None, tol=1e-8)  # May need to set a small value when not use GPT4 as judge model
