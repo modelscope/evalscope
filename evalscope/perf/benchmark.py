@@ -21,7 +21,7 @@ from evalscope.perf.utils.local_server import start_app
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-query_send_completed_event = asyncio.Event()
+
 data_process_completed_event = asyncio.Event()
 
 
