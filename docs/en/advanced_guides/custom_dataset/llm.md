@@ -31,7 +31,7 @@ Where:
 
 Run the following code to start the evaluation:
 ```python
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2-0.5B-Instruct',
@@ -85,7 +85,7 @@ Where:
 
 Run the following code to start the evaluation:
 ```python
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen/Qwen2-0.5B-Instruct',

@@ -32,7 +32,7 @@ id,question,A,B,C,D,answer
 运行下面的代码，即可开始评测：
 
 ```python
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2-0.5B-Instruct',
@@ -86,7 +86,7 @@ qa/
 
 运行下面的代码，即可开始评测：
 ```python
-from evalscope.config import TaskConfig
+from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen/Qwen2-0.5B-Instruct',
