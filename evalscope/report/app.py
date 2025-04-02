@@ -44,7 +44,7 @@ def scan_for_report_folders(root_path):
                 continue
             datasets = []
             for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
-                datasets.append(os.path.basename(dataset_item).split('.')[0])
+                datasets.append(os.path.splitext(os.path.basename(dataset_item))[0])
             datasets = DATASET_TOKEN.join(datasets)
             reports.append(
                 f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}')
@@ -253,17 +253,17 @@ def process_model_prediction(item: Any):
 
 
 def normalize_score(score):
-    if isinstance(score, bool):
-        return 1.0 if score else 0.0
-    elif isinstance(score, dict):
-        for key in score:
-            return float(score[key])
-        return 0.0
-    else:
-        try:
-            return float(score)
-        except (ValueError, TypeError):
+    try:
+        if isinstance(score, bool):
+            return 1.0 if score else 0.0
+        elif isinstance(score, dict):
+            for key in score:
+                return float(score[key])
             return 0.0
+        else:
+            return float(score)
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):

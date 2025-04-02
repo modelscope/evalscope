@@ -105,7 +105,8 @@ class Summarizer:
                             summary_res: dict = csv_to_list(summary_file_path)[0]
                         elif summary_file_path.endswith('json'):
                             summary_res: dict = json_to_dict(summary_file_path)
-                        file_name = os.path.basename(summary_file_path).split('.')[0]
+                        base_name = os.path.basename(summary_file_path)
+                        file_name = os.path.splitext(base_name)[0]
                         final_res_list.append({file_name: summary_res})
 
             elif eval_backend == EvalBackend.THIRD_PARTY:

@@ -40,7 +40,7 @@ class GeneralQAAdapter(DataAdapter):
             for subset_name in subset_list:
                 data_file_dict[subset_name] = os.path.join(dataset_name_or_path, f'{subset_name}.jsonl')
         elif os.path.isfile(dataset_name_or_path):
-            cur_subset_name = os.path.basename(dataset_name_or_path).split('.')[0]
+            cur_subset_name = os.path.splitext(os.path.basename(dataset_name_or_path))[0]
             data_file_dict[cur_subset_name] = dataset_name_or_path
         else:
             raise ValueError(f'Invalid dataset path: {dataset_name_or_path}')
