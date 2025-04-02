@@ -8,7 +8,6 @@ EvalScope: pip install evalscope[vlmeval]
 3. Run eval task
 """
 from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
-from evalscope.backend.vlm_eval_kit.custom_dataset import CustomDataset
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 from evalscope.utils.logger import get_logger
