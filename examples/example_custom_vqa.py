@@ -5,6 +5,7 @@ from vlmeval.dataset.image_vqa import CustomVQADataset
 from vlmeval.smp import d2df, dump, load
 
 
+# define a custom dataset class
 class CustomDataset:
 
     def load_data(self, dataset):
@@ -44,3 +45,34 @@ class CustomDataset:
 CustomVQADataset.load_data = CustomDataset.load_data
 CustomVQADataset.build_prompt = CustomDataset.build_prompt
 CustomVQADataset.evaluate = CustomDataset.evaluate
+
+
+from dotenv import dotenv_values
+
+# run the task
+from evalscope import TaskConfig, run_task
+
+env = dotenv_values('.env')
+
+task_cfg = TaskConfig(
+    eval_backend='VLMEvalKit',
+    eval_config={
+        'data': ['custom_vqa'],
+        'limit': 5,
+        'mode': 'all',
+        'model': [
+            {'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            'key': env.get('DASHSCOPE_API_KEY'),
+            'name': 'CustomAPIModel',
+            'temperature': 0.0,
+            'type': 'qwen2.5-vl-7b-instruct',
+            'img_size': -1,
+            'video_llm': False,
+            'max_tokens': 512,}
+            ],
+        'nproc': 1,
+        'reuse': False,
+    },
+)
+
+run_task(task_cfg=task_cfg)

@@ -212,7 +212,7 @@ def parse_task_config(task_cfg) -> TaskConfig:
         logger.info('Args: Task config is provided with CommandLine type.')
         task_cfg = TaskConfig.from_args(task_cfg)
     elif isinstance(task_cfg, str):
-        extension = task_cfg.split('.')[-1]
+        extension = os.path.splitext(task_cfg)[-1]
         logger.info(f'Args: Task config is provided with {extension} file type.')
         if extension in ['yaml', 'yml']:
             task_cfg = TaskConfig.from_yaml(task_cfg)

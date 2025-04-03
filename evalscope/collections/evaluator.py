@@ -65,7 +65,7 @@ class EvaluatorCollection:
         self.evaluators = self._initialize_evaluators()
 
     def load(self) -> tuple[list[DatasetEntry], str]:
-        dataset_name = os.path.basename(self.data_adapter.dataset_id).split('.')[0]
+        dataset_name = os.path.splitext(os.path.basename(self.data_adapter.dataset_id))[0]
         raw_dataset = self.data_adapter.load()
         # limit the dataset
         if self.task_cfg.limit:
