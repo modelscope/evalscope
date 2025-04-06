@@ -35,6 +35,7 @@ class Arguments:
     log_every_n_query: int = 10  # Log every N queries
     debug: bool = False  # Debug mode
     wandb_api_key: Optional[str] = None  # WandB API key for logging
+    swanlab_api_key: Optional[str] = None  # SwanLab API key for logging
     name: Optional[str] = None  # Name for the run
 
     # Output settings
@@ -135,7 +136,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
-    parser.add_argument('--name', type=str, help='The wandb db result name and result db name')
+    parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
+    parser.add_argument('--name', type=str, help='The wandb/swanlab db result name and result db name')
 
     # Prompt settings
     parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')

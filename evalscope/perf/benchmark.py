@@ -113,7 +113,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args)
-    # Initialize wandb
+    # Initialize wandb if the api key is provided
     if args.wandb_api_key:
         import datetime
         import wandb
@@ -124,6 +124,17 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
         current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         name = args.name if args.name else f'{args.model_id}_{current_time}'
         wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
+    # Initialize SwanLab if the api key is provided
+    if args.swanlab_api_key:
+        import datetime
+        import swanlab
+        os.environ['SWANLAB_SAVE_DIR'] = args.outputs_dir
+
+        swanlab.login(api_key=args.swanlab_api_key)
+        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        name = args.name if args.name else f'{args.model_id}_{current_time}'
+        swanlab.init(project='perf_benchmark', name=name, config=args.to_dict())
+
 
     collected_benchmark_data = []
 
@@ -146,9 +157,11 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             # Create a message with the updated metrics
             message = metrics.create_message()
 
-            # Log the message to wandb if the api key is provided
+            # Log the message to wandb\swanlab if the api key is provided
             if args.wandb_api_key:
                 wandb.log(message)
+            if args.swanlab_api_key:
+                swanlab.log(message)
 
             # Log the message to the logger every n queries
             if int(metrics.n_total_queries) % args.log_every_n_query == 0:
