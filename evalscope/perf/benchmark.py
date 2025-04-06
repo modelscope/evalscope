@@ -139,11 +139,11 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
                 "Cannot import swanlab. Please install it with command: \n pip install swanlab"
             )
         os.environ['SWANLAB_LOG_DIR'] = args.outputs_dir
-
-        swanlab.login(api_key=args.swanlab_api_key)
+        if not args.swanlab_api_key=="local":
+            swanlab.login(api_key=args.swanlab_api_key)
         current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         name = args.name if args.name else f'{args.model_id}_{current_time}'
-        swanlab.init(project='perf_benchmark', name=name, config=args.to_dict(),)
+        swanlab.init(project='perf_benchmark', name=name, config=args.to_dict(), mode="local" if args.swanlab_api_key=="local" else None)
 
 
     collected_benchmark_data = []
