@@ -116,7 +116,12 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     # Initialize wandb if the api key is provided
     if args.wandb_api_key:
         import datetime
-        import wandb
+        try:
+            import wandb
+        except ImportError:
+            raise RuntimeError(
+                "Cannot import wandb. Please install it with command: \n pip install wandb"
+            )
         os.environ['WANDB_SILENT'] = 'true'
         os.environ['WANDB_DIR'] = args.outputs_dir
 
@@ -127,7 +132,12 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     # Initialize SwanLab if the api key is provided
     if args.swanlab_api_key:
         import datetime
-        import swanlab
+        try:
+            import swanlab
+        except ImportError:
+            raise RuntimeError(
+                "Cannot import swanlab. Please install it with command: \n pip install swanlab"
+            )
         os.environ['SWANLAB_SAVE_DIR'] = args.outputs_dir
 
         swanlab.login(api_key=args.swanlab_api_key)
