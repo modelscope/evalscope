@@ -192,7 +192,7 @@ To upload the test results to the wandb server and visualize them, add the follo
 
 For example:
 
-![swanlab sample](waiting for link)
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
 
 If you prefer to use [SwanLab in local dashboard mode](https://docs.swanlab.cn/guide_cloud/self_host/offline-board.html), install swanlab dashboard first:
 

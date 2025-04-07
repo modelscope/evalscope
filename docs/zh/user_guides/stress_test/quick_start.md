@@ -190,7 +190,7 @@ pip install swanlab
 
 例如：
 
-![swanlab sample](waiting for link)
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
 
 如果希望仅[使用SwanLab本地看板模式](https://docs.swanlab.cn/guide_cloud/self_host/offline-board.html)，先安装swanlab离线看板：
 
