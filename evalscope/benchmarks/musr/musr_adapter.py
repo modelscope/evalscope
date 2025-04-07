@@ -62,7 +62,7 @@ class MuSRAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return ResponseParser.parse_first_option(result)
+            return ResponseParser.parse_first_option(result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         """

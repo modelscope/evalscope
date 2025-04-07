@@ -145,7 +145,7 @@ SUBJECT_MAPPING = {
     train_split='train',
     eval_split='test',
     prompt_template=
-    'Answer the following multiple choice question about {subset_name}. There is only one correct answer. The last line of your response should be in the format "Answer: LETTER" (without quotes), where LETTER is one of A, B, C, D. \n{query}',
+    """Answer the following multiple choice question about {subset_name}. The last line of your response should be of the following format: 'Answer: $LETTER' (without quotes) where LETTER is one of ABCD. Think step by step before answering.\n\n{query}""",  # noqa: E501
 )
 class MMLUAdapter(DataAdapter):
 
@@ -224,9 +224,8 @@ class MMLUAdapter(DataAdapter):
 
         context: str = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
-        query = context.strip() + self._generate_prompt(input_d=input_d, include_answer=False)
 
-        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=query)
+        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=context.strip())
 
         return self.gen_prompt_data(full_prompt)
 
@@ -249,7 +248,7 @@ class MMLUAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return ResponseParser.parse_first_option(result)
+            return ResponseParser.parse_first_option(result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -260,11 +259,10 @@ class MMLUAdapter(DataAdapter):
 
         example: str = input_d['input']
         for j in range(len(self.choices)):
-            example += '\n{}. {}'.format(self.choices[j], input_choices[j])
+            example += f'\n{self.choices[j]}) {input_choices[j]}'
 
-        example += '\nAnswer:'
         if include_answer:
-            example += ' {}\n\n'.format(input_d['target'])
+            example += f"\nAnswer: {input_d['target']}\n\n"
 
         return example
 
