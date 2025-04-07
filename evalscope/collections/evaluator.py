@@ -174,6 +174,7 @@ class EvaluatorCollection:
         os.makedirs(os.path.dirname(report_file_path), exist_ok=True)
         with open(report_file_path, 'w', encoding='utf-8') as f:
             json.dump(report.to_dict(), f, ensure_ascii=False, indent=4)
+        return report
 
     def _filter_answer(self, pred_file_path):
         answer_dict = defaultdict(dict)
@@ -274,4 +275,5 @@ class EvaluatorCollection:
         answers = self.get_answers()
         reviews = self.get_reviews(answers)
         scores = self.get_scores(reviews)
-        self.get_report(scores)
+        report = self.get_report(scores)
+        return report

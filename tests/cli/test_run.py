@@ -137,7 +137,7 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['gsm8k'],
                 },
                 'musr': {
-                    'subset_list': ['murder_mysteries']
+                    'subset_list': ['murder_mysteries'],
                 },
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -265,7 +265,7 @@ class TestRun(unittest.TestCase):
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
-                # 'musr',
+                'musr',
                 # 'process_bench',
                 # 'race',
                 # 'trivia_qa',
@@ -281,7 +281,7 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                'general_qa'
+                # 'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux'
             ],
@@ -322,7 +322,8 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['gsm8k'],
                 },
                 'musr': {
-                    'subset_list': ['murder_mysteries']
+                    'subset_list': ['murder_mysteries'],
+                    'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/MuSR'
                 },
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
