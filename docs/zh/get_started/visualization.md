@@ -55,9 +55,12 @@ evalscope app --outputs evalscope/examples/viz
 
 按下图所示步骤选择评测报告：
 
-<p align="center">
-  <img src="./images/setting.png" alt="alt text" width="60%">
-</p>
+```{image} ./images/setting.png
+:alt: alt text
+:width: 60%
+:align: center
+```
+
 
 1. 输入评测报告的根目录，默认值为`./outputs`，会根据如下目录结构来寻找评测报告json文件：
    ```text

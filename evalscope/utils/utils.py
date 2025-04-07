@@ -90,7 +90,7 @@ class ResponseParser:
         return ''
 
     @staticmethod
-    def parse_first_option_with_choices(text: str, options: list) -> str:
+    def parse_first_option_with_choices(text: str, options: list[str]) -> str:
         """
         Find first valid option for text.
 
@@ -98,7 +98,7 @@ class ResponseParser:
             text: The text to parse.
             options: The options to find. e.g. ['A', 'B', 'C', 'D']
         """
-        options_concat = '|'.join([str(i) for i in options])
+        options_concat = ResponseParser.process_options(options)
 
         patterns = [
             rf'答案是?\s?([{options_concat}])',
@@ -155,54 +155,52 @@ class ResponseParser:
                 for i in options:
                     if i in outputs:
                         return i
-        return ''
+        return 'No valid option found'
 
     @staticmethod
-    def parse_first_option(text: str) -> str:
+    def parse_first_option(text: str, options: list[str]) -> str:
         """
         Find first valid option for text.
 
         Args:
             text: The text to parse.
         """
+        options_pattern = ResponseParser.process_options(options)
+
         patterns = [
-            r'answer is \(?(\w+)\)?',
-            r'[Aa]nswer:\s*(\w+)',
-            r'[Tt]he correct answer is:\s*(\w+)',
-            r'[Tt]he correct answer is:\n\s*(\w+)',
-            r'[Tt]he correct answer is:\n\n-\s*(\w+)',
-            r'[Tt]he answer might be:\n\n-\s*(\w+)',
-            r'[Tt]he answer is \s*(\w+)',
+            rf'answer is \(?({options_pattern})\)?',
+            rf'[Aa]nswer:\s*({options_pattern})',
+            rf'[Tt]he correct answer is:\s*({options_pattern})',
+            rf'[Tt]he correct answer is:\n\s*({options_pattern})',
+            rf'[Tt]he correct answer is:\n\n-\s*({options_pattern})',
+            rf'[Tt]he answer might be:\n\n-\s*({options_pattern})',
+            rf'[Tt]he answer is \s*({options_pattern})',
         ]
 
         regexes = [re.compile(pattern) for pattern in patterns]
         for regex in regexes:
-            match = regex.search(text)
-            if match:
-                return match.group(1)
-        return ''
+            matches = regex.search(text)
+            if matches:
+                return matches.group(1)
+        return 'No valid option found'
+
 
     @staticmethod
-    def parse_first_capital_multi(text: str) -> str:
-        match = re.search(r'([A-D]+)', text)
-        if match:
-            return match.group(1)
-        return ''
-
-    @staticmethod
-    def parse_last_option(text: str, options: str) -> str:
-        match = re.findall(rf'([{options}])', text)
-        if match:
-            return match[-1]
-        return ''
-
-    @staticmethod
-    def parse_bracketed_answer(text: str, options: str) -> str:
+    def parse_bracketed_answer(text: str, options: list[str]) -> str:
+        options = ResponseParser.process_options(options)
+        # Match the first occurrence of the options in angle brackets
         match = re.search(rf'<({options})>', text)
         if match:
             return match.group(1)
-        return ''
+        return 'No valid option found'
 
+    @staticmethod
+    def process_options(options: list[str]) -> str:
+        # Escape each option to ensure special characters in options are treated literally
+        escaped_options = [re.escape(option) for option in options]
+        # Join options into a regex pattern separated by '|', to match any of the options
+        options_pattern = '|'.join(escaped_options)
+        return options_pattern
 
 def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
     """

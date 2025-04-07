@@ -4,13 +4,12 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 import os
-import subprocess
 import unittest
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils import test_level_list
 from evalscope.utils.logger import get_logger
 
 os.environ['LOG_LEVEL'] = 'DEBUG'
@@ -46,6 +45,7 @@ datasets=[
         'chinese_simpleqa',
         'alpaca_eval',
         'arena_hard',
+        'maritime_bench',
 ]
 
 dataset_args={
@@ -134,8 +134,8 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=datasets,
             dataset_args=dataset_args,
-            eval_batch_size=2,
-            limit=2,
+            eval_batch_size=1,
+            limit=1,
             stream=True,
             generation_config={
                 'temperature': 0,

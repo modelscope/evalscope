@@ -263,9 +263,9 @@ class TestRun(unittest.TestCase):
             datasets=[
                 # 'iquiz',
                 # 'ifeval',
-                # 'mmlu',
+                'mmlu',
                 # 'mmlu_pro',
-                'musr',
+                # 'musr',
                 # 'process_bench',
                 # 'race',
                 # 'trivia_qa',

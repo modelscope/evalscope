@@ -54,9 +54,11 @@ evalscope app --outputs evalscope/examples/viz
 
 Follow the steps shown below to select an evaluation report:
 
-<p align="center">
-  <img src="./images/setting.png" alt="alt text" width="50%">
-</p>
+```{image} ./images/setting.png
+:alt: alt text
+:width: 60%
+:align: center
+```
 
 1. Enter the root directory of the evaluation report. The default value is `./outputs`. The directory structure to locate the evaluation report JSON files is as follows:
    ```text
