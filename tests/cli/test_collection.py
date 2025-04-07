@@ -80,4 +80,5 @@ class TestCollection(unittest.TestCase):
                 'api_key': os.getenv('DASHSCOPE_API_KEY'),
             }
         )
-        run_task(task_cfg=task_cfg)
+        res = run_task(task_cfg=task_cfg)
+        print(res)
