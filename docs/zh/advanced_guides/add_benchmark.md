@@ -55,10 +55,12 @@ evalscope/benchmarks/
 - 注册`Benchmark`，指定：
     - `name`：基准测试名称
     - `dataset_id`：基准测试数据集ID，用于加载基准测试数据集
-    - `model_adapter`：基准测试模型适配器。改模型适配器用于本地加载模型推理，支持三种：
-        - `ChatGenerationModelAdapter`：通用文本生成模型评测，通过输入prompt，返回模型生成的文本
-        - `MultiChoiceModelAdapter`：多选题评测，通过logits来计算选项的概率，返回最大概率选项
-        - `ContinuationLogitsModelAdapter`：多选文本评测，通过loglikelihood来计算每个上下文-延续对的对数似然值，返回对数似然值列表
+    - `model_adapter`：基准测试模型默认适配器。支持两种：
+        - `OutputType.GENERATION`：通用文本生成模型评测，通过输入prompt，返回模型生成的文本
+        - `OutputType.MULTIPLE_CHOICE`：多选题评测，通过logits来计算选项的概率，返回最大概率选项
+    - `output_types`：基准测试输出类型，支持多选：
+        - `OutputType.GENERATION`：通用文本生成模型评测
+        - `OutputType.MULTIPLE_CHOICE`：多选题评测输出logits
     - `subset_list`：基准测试数据集的子数据集
     - `metric_list`：基准测试评估指标
     - `few_shot_num`：评测的In Context Learning样本数量
@@ -68,7 +70,7 @@ evalscope/benchmarks/
 - 创建`MMLUProAdapter`类，继承自`DataAdapter`。
 
 ```{tip}
-`subset_list`, `train_split`, `eval_split` 可以从数据集预览中获取，例如[MMLU-Pro预览](https://modelscope.cn/datasets/modelscope/MMLU-Pro/dataPeview)
+默认`subset_list`, `train_split`, `eval_split` 可以从数据集预览中获取，例如[MMLU-Pro预览](https://modelscope.cn/datasets/modelscope/MMLU-Pro/dataPeview)
 
 ![MMLU-Pro预览](./images/mmlu_pro_preview.png)
 ```
@@ -77,24 +79,30 @@ evalscope/benchmarks/
 
 ```python
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.models import ChatGenerationModelAdapter
+from evalscope.constants import EvalType, OutputType
 
+SUBSET_LIST = [
+    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
+    'philosophy', 'economics', 'other', 'psychology', 'history'
+]  # 自定义的子数据集列表
 
 @Benchmark.register(
     name='mmlu_pro',
-    dataset_id='modelscope/mmlu-pro',
-    model_adapter=ChatGenerationModelAdapter,
-    subset_list=['default'],
+    pretty_name='MMLU-Pro',
+    dataset_id='modelscope/MMLU-Pro',
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
+    subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
-    few_shot_num=0,
+    few_shot_num=5,
     train_split='validation',
     eval_split='test',
-    system_prompt='You are an knowledge expert, you are supposed to answer the multi-choice question to derive your final answer as `The answer is ...`.',
+    prompt_template=
+    'The following are multiple choice questions (with answers) about {subset_name}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n{query}',  # noqa: E501
 )
 class MMLUProAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
 ```
 
@@ -103,20 +111,14 @@ class MMLUProAdapter(DataAdapter):
 
 完成`DataAdapter`的编写，即可在EvalScope中添加评测任务。需要实现如下方法：
 
-- `gen_prompt`：生成模型输入prompt
-    - 对于类 `ChatGenerationModelAdapter`，输出格式为：`{'data': [full_prompt], 'system_prompt': (str, optional)}` 其中 `full_prompt: str`，每个数据样本构造的提示。
-
-    - 对于类 `MultiChoiceModelAdapter`，输出格式为：`{'data': [full_prompt], 'multi_choices': self.choices}` 其中 `full_prompt: str`，每个数据样本构造的提示。
-
-    - 对于类 `ContinuationEvalModelAdapter`，输出格式为：`{'data': ctx_continuation_pair_list, 'multi_choices': self.choices}` 其中 `ctx_continuation_pair_list: list`，上下文-延续对的列表。
+- `gen_prompt`：生成模型输入prompt。
+- `get_gold_answer`：解析数据集的标准答案。
+- `parse_pred_result`：解析模型输出，可以根据不同的eval_type返回不同的答案解析方式。
+- `match`：匹配模型输出和数据集标准答案，给出打分。
 
 ```{note}
-若`gen_prompt`提供的逻辑不符合预期，可以重写`gen_prompts`方法，来自定义从数据集到prompt的转换逻辑。
+若默认`load`逻辑不符合需求，可以重写`load`方法，例如：可以实现根据指定的字段对数据集划分子数据集。
 ```
-
-- `get_gold_answer`：解析数据集的标准答案
-- `parse_pred_result`：解析模型输出，可以根据不同的eval_type返回不同的答案解析方式
-- `match`：匹配模型输出和数据集标准答案，给出打分
 
 完整示例代码如下：
 
@@ -127,42 +129,30 @@ class MMLUProAdapter(DataAdapter):
         super().__init__(**kwargs)
         
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-        self.categories = ['computer science', 'math', 'chemistry', 'engineering', 'law', 'biology',
-                            'health', 'physics', 'business', 'philosophy', 'economics', 'other',
-                            'psychology', 'history']
-        
     
-    def gen_prompts(self, data_dict: dict, **kwargs) -> Dict[str, list]:
-        """
-        Generate model prompt from raw input, unify the prompt format for MMLU-Pro benchmark.
-        Return a dict with category as key and list of prompts as value.
-        """
-        
-        data_dict = data_dict[self.subset_list[0]]  # Only one subset for MMLU-Pro
-        fewshot_prompts = self.get_fewshot_examples(data_dict)
-        
-        #  Use the category as key to group the prompts
-        res_dict = defaultdict(list)
-        # generate prompts for each test sample
-        for entry in data_dict[self.eval_split]:
-            prefix = fewshot_prompts[entry['category']]
-            query = prefix + 'Q: ' + entry['question'] + '\n' + \
-                self.__form_options(entry['options']) + '\n'
-            
-            prompt_d = {
-                'data': [query],
-                'system_prompt': self.system_prompt,
-                AnswerKeys.RAW_INPUT: entry
-            }
-            
-            res_dict[entry['category']].append(prompt_d)
-        return res_dict
+    def load(self, **kwargs):
+        # default load all data
+        kwargs['subset_list'] = ['default']
+        data_dict = super().load(**kwargs)
+        # use `category` as subset key
+        return self.reformat_subset(data_dict, subset_key='category')
     
-    def get_fewshot_examples(self, data_dict: dict):
-        # load 5-shot prompts for each category
-        prompts = {c: '' for c in self.categories}
-        for d in data_dict[self.train_split]:
-            prompts[d['category']] += 'Q:' + ' ' + d['question'] + '\n' + \
+    def gen_prompt(self, input_d: Dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
+        if self.few_shot_num > 0:
+            prefix = self.format_fewshot_examples(few_shot_list)
+        else:
+            prefix = ''
+        query = prefix + 'Q: ' + input_d['question'] + '\n' + \
+            self.__form_options(input_d['options']) + '\n'
+
+        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
+        return self.gen_prompt_data(full_prompt)
+    
+    def format_fewshot_examples(self, few_shot_list):
+        # load few-shot prompts for each category
+        prompts = ''
+        for index, d in enumerate(few_shot_list):
+            prompts += 'Q: ' + d['question'] + '\n' + \
                 self.__form_options(d['options']) + '\n' + \
                 d['cot_content'] + '\n\n'
         return prompts
@@ -199,7 +189,10 @@ class MMLUProAdapter(DataAdapter):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        return ResponseParser.parse_first_option(result)
+        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
+            return result
+        else:
+            return ResponseParser.parse_first_option(result)
 
 
     def match(self, gold: str, pred: str) -> float:
@@ -224,22 +217,27 @@ class MMLUProAdapter(DataAdapter):
 调试代码，看看是否能正常运行。
 
 ```python
-from evalscope import run_task
-task_cfg = {'model': 'qwen/Qwen2-0.5B-Instruct',
-            'datasets': ['mmlu_pro'],
-            'limit': 2,
-            'debug': True}
+from evalscope import run_task, TaskConfig
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['mmlu_pro'],
+    limit=10,
+    dataset_args={'mmlu_pro': {'subset_list': ['computer science', 'math']}},
+    debug=True
+)
 run_task(task_cfg=task_cfg)
 ```
 
 输出如下：
 
 ```text
-+---------------------+-------------------------------------------+
-| Model               | mmlu-pro                                  |
-+=====================+===========================================+
-| Qwen2-0.5B-Instruct | (mmlu-pro/WeightedAverageAccuracy) 0.1429 |
-+---------------------+-------------------------------------------+ 
++-----------------------+-----------+-----------------+------------------+-------+---------+---------+
+| Model                 | Dataset   | Metric          | Subset           |   Num |   Score | Cat.0   |
++=======================+===========+=================+==================+=======+=========+=========+
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | AverageAccuracy | computer science |     10 |       0.1 | default |
++-----------------------+-----------+-----------------+------------------+-------+---------+---------+
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | AverageAccuracy | math             |     10 |       0.1 | default |
++-----------------------+-----------+-----------------+------------------+-------+---------+---------+ 
 ```
 
-运行没问题的话，就可以提交[PR](https://github.com/modelscope/evalscope/pulls)了，我们将尽快合并你的贡献，让更多用户来使用你贡献的基准评测，快来试一试吧🚀
+运行没问题的话，就可以提交[PR](https://github.com/modelscope/evalscope/pulls)了，我们将尽快合并你的贡献，让更多用户来使用你贡献的基准评测。如果你不知道如何提交PR，可以查看我们的[指南](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md)，快来试一试吧🚀 
