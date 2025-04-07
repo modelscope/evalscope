@@ -281,9 +281,10 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                'general_qa'
+                # 'general_qa'
                 # 'super_gpqa',
-                # 'mmlu_redux'
+                # 'mmlu_redux',
+                'maritime_bench'
             ],
             dataset_args={
                 'mmlu': {
@@ -353,10 +354,9 @@ class TestRun(unittest.TestCase):
             stream=False,
             generation_config={
                 'temperature': 0,
-                'n': 2,
+                'n': 1,
                 'max_tokens': 4096,
-            },
-            use_cache='outputs/20250326_202848',
+            }
         )
 
         run_task(task_cfg=task_cfg)

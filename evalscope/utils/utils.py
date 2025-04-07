@@ -196,6 +196,12 @@ class ResponseParser:
             return match[-1]
         return ''
 
+    @staticmethod
+    def parse_bracketed_answer(text: str, options: str) -> str:
+        match = re.search(rf'<({options})>', text)
+        if match:
+            return match.group(1)
+        return ''
 
 
 def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
