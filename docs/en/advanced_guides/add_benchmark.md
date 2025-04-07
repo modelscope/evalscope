@@ -82,6 +82,10 @@ Example code is as follows:
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 
+SUBSET_LIST = [
+    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
+    'philosophy', 'economics', 'other', 'psychology', 'history'
+]  # customize your subset list
 
 @Benchmark.register(
     name='mmlu_pro',

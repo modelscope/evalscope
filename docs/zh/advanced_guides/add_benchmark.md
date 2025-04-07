@@ -70,7 +70,7 @@ evalscope/benchmarks/
 - 创建`MMLUProAdapter`类，继承自`DataAdapter`。
 
 ```{tip}
-`subset_list`, `train_split`, `eval_split` 可以从数据集预览中获取，例如[MMLU-Pro预览](https://modelscope.cn/datasets/modelscope/MMLU-Pro/dataPeview)
+默认`subset_list`, `train_split`, `eval_split` 可以从数据集预览中获取，例如[MMLU-Pro预览](https://modelscope.cn/datasets/modelscope/MMLU-Pro/dataPeview)
 
 ![MMLU-Pro预览](./images/mmlu_pro_preview.png)
 ```
@@ -81,6 +81,10 @@ evalscope/benchmarks/
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 
+SUBSET_LIST = [
+    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
+    'philosophy', 'economics', 'other', 'psychology', 'history'
+]  # 自定义的子数据集列表
 
 @Benchmark.register(
     name='mmlu_pro',
@@ -113,7 +117,7 @@ class MMLUProAdapter(DataAdapter):
 - `match`：匹配模型输出和数据集标准答案，给出打分。
 
 ```{note}
-若默认`load`逻辑不符合需求，可以重写`load`方法，例如：可以实现根据指定的字段对数据集进行分类。
+若默认`load`逻辑不符合需求，可以重写`load`方法，例如：可以实现根据指定的字段对数据集划分子数据集。
 ```
 
 完整示例代码如下：
