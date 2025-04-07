@@ -164,6 +164,21 @@ evalscope perf \
   --debug
 ```
 
+## 使用SwanLab记录测试结果
+
+请使用如下命令安装SwanLab:
+```bash
+pip install swanlab
+```
+
+启动测试前添加如下参数:
+```bash
+--swanlab-api-key 'swanlab_api_key'
+--name 'name_of_swanlab_log'
+```  
+
+![swanlab sample](waiting for link)
+
 ## 调试请求
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
 

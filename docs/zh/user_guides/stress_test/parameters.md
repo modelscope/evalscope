@@ -69,4 +69,5 @@
 
 ## 数据存储
 - `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
+- `--swanlab-api-key` swanlab API密钥，如果设置，则度量将保存到swanlab。
 - `--outputs-dir` 输出文件路径，默认为`./outputs`。

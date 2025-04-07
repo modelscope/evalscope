@@ -70,4 +70,5 @@ Here's the English translation:
 
 ## Data Storage
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
+- `--swanlab-api-key`: swanlab API key, if set, metrics will be saved to swanlab.
 - `--outputs-dir` specifies the output file path, with a default value of `./outputs`.

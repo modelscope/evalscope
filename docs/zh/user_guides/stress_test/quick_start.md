@@ -155,6 +155,8 @@ Percentile results:
 
 ## 可视化测试结果
 
+### 使用WandB进行可视化测试结果
+
 请先安装wandb，并获取对应的[API Key](https://wandb.ai/settings)：
 ```bash
 pip install wandb
@@ -170,3 +172,36 @@ pip install wandb
 例如：
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
+### 使用SwanLab进行可视化测试结果
+
+请先安装SwanLab，并获取对应的[API Key](https://swanlab.cn/space/~/settings)
+
+```bash
+pip install swanlab
+```
+
+在评测启动时，额外添加以下参数，即可将测试结果上传swanlab server并进行可视化：
+```bash
+# ...
+--swanlab-api-key 'swanlab_api_key'
+--name 'name_of_swanlab_log'
+```
+
+例如：
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+如果希望仅[使用SwanLab本地看板模式](https://docs.swanlab.cn/guide_cloud/self_host/offline-board.html)，先安装swanlab离线看板：
+
+```bash
+pip install 'swanlab[dashboard]'
+```
+
+再通过设置如下参数：
+
+```bash
+--swanlab-api-key local
+```
+
+并通过`swanlab watch <日志路径>`打开本地可视化看板。

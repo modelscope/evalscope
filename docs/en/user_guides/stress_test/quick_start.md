@@ -157,6 +157,8 @@ Percentile results:
 
 ## Visualizing Test Results
 
+### Visualizing with WandB
+
 First, install wandb and obtain the corresponding [API Key](https://wandb.ai/settings):
 ```bash
 pip install wandb
@@ -172,3 +174,35 @@ To upload the test results to the wandb server and visualize them, add the follo
 For example:
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
+
+### Visualizing Test Results with SwanLab
+
+First, install SwanLab and obtain the corresponding [API Key](https://swanlab.cn/space/~/settings):
+```bash
+pip install swanlab
+```
+
+To upload the test results to the wandb server and visualize them, add the following parameters when launching the evaluation:
+```bash
+# ...
+--swanlab-api-key 'swanlab_api_key'
+--name 'name_of_swanlab_log'
+```
+
+For example:
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+If you prefer to use [SwanLab in local dashboard mode](https://docs.swanlab.cn/guide_cloud/self_host/offline-board.html), install swanlab dashboard first:
+
+```bash
+pip install 'swanlab[dashboard]'
+```
+
+and set the following parameters instead:
+```bash
+--swanlab-api-key local
+```
+
+Then, use `swanlab watch <log_path>` to launch the local visualization dashboard.
