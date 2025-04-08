@@ -67,6 +67,7 @@ pip install evalscope[rag] -U
 配置文件示例如下：
 ```python
 one_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -91,7 +92,6 @@ one_stage_task_cfg = {
                 "ATEC",
             ],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "top_k": 10,
             "limits": 500,
@@ -106,6 +106,7 @@ one_stage_task_cfg = {
 
 ```python
 two_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -133,7 +134,6 @@ two_stage_task_cfg = {
         "eval": {
             "tasks": ["T2Retrieval"],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "top_k": 5,
             "limits": 100,
@@ -167,7 +167,6 @@ two_stage_task_cfg = {
         - `tasks`: `List[str]` 任务名称，参见[任务列表](#支持的数据集)
         - `top_k`: `int` 选取前 K 个结果，检索任务使用  
         - `verbosity`: `int` 详细程度，范围为 0-3  
-        - `output_folder`: `str` 输出文件夹，默认为 "outputs"  
         - `overwrite_results`: `bool` 是否覆盖结果，默认为 True  
         - `limits`: `Optional[int]` 限制样本数量，默认为 None；检索任务不建议设置
         - `hub`: `str` 数据集来源，可以是 "modelscope" 或 "huggingface"  

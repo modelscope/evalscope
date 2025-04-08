@@ -58,10 +58,17 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
 
+    # Unify the output directory structure
     if task_cfg.eval_backend == EvalBackend.OPEN_COMPASS:
         task_cfg.eval_config['time_str'] = run_time
     elif task_cfg.eval_backend == EvalBackend.VLM_EVAL_KIT:
         task_cfg.eval_config['work_dir'] = task_cfg.work_dir
+    elif task_cfg.eval_backend == EvalBackend.RAG_EVAL:
+        from evalscope.backend.rag_eval import Tools
+        if task_cfg.eval_config['tool'].lower() == Tools.MTEB:
+            task_cfg.eval_config['eval']['output_folder'] = task_cfg.work_dir
+        elif task_cfg.eval_config['tool'].lower() == Tools.CLIP_BENCHMARK:
+            task_cfg.eval_config['eval']['output_dir'] = task_cfg.work_dir
     return outputs
 
 

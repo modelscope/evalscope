@@ -67,6 +67,7 @@ The framework supports two evaluation modes: single-stage evaluation and two-sta
 Example configuration file:
 ```python
 one_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -91,7 +92,6 @@ one_stage_task_cfg = {
                 "ATEC",
             ],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "topk": 10,
             "limits": 500,
@@ -105,6 +105,7 @@ one_stage_task_cfg = {
 Example configuration file: first perform retrieval, then reranking:
 ```python
 two_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -132,7 +133,6 @@ two_stage_task_cfg = {
         "eval": {
             "tasks": ["T2Retrieval"],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "topk": 5,
             "limits": 100,
@@ -165,7 +165,6 @@ two_stage_task_cfg = {
         - `tasks`: `List[str]` Task names, refer to the [task list](#supported-datasets)
         - `top_k`: `int` Select the top K results, for retrieval tasks  
         - `verbosity`: `int` Level of detail, ranging from 0-3  
-        - `output_folder`: `str` Output folder, default is "outputs"  
         - `overwrite_results`: `bool` Whether to overwrite results, default is True  
         - `limits`: `Optional[int]` Limit on the number of samples, default is None; not recommended to set for retrieval tasks
         - `hub`: `str` Source of the dataset, can be "modelscope" or "huggingface"  

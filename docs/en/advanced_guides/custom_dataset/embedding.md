@@ -65,6 +65,7 @@ Here is an example configuration file:
 
 ```python
 task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -84,7 +85,6 @@ task_cfg = {
             "tasks": ["CustomRetrieval"],
             "dataset_path": "custom_eval/text/retrieval",
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "limits": 500,
         },
