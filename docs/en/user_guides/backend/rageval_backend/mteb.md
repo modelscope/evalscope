@@ -67,6 +67,7 @@ The framework supports two evaluation modes: single-stage evaluation and two-sta
 Example configuration file:
 ```python
 one_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -91,7 +92,6 @@ one_stage_task_cfg = {
                 "ATEC",
             ],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "topk": 10,
             "limits": 500,
@@ -100,11 +100,45 @@ one_stage_task_cfg = {
 }
 ```
 
+### Evaluation of API Model Services
+
+When using a remote API model service, the configuration file example is as follows:
+
+```python
+from evalscope import TaskConfig
+
+task_cfg = TaskConfig(
+    eval_backend='RAGEval',  # Specifies the evaluation backend to use
+    eval_config={
+        'tool': 'MTEB',  # The evaluation tool to be used
+        'model': [
+            {
+                'model_name': 'text-embedding-v3',  # Name of the model
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',  # Base URL for the API service
+                'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # API key for authentication
+                'dimensions': 1024,  # Dimensionality of the model's output
+                'encode_kwargs': {  # Encoding arguments
+                    'batch_size': 10,  # Size of the batch to process at once
+                },
+            }
+        ],
+        'eval': {
+            'tasks': [
+                'T2Retrieval',  # Task or tasks to evaluate
+            ],
+            'verbosity': 2,  # Level of detail in evaluation output
+            'overwrite_results': True,  # Whether to overwrite existing results
+            'limits': 30,  # Limit on the number of items to evaluate
+        },
+    },
+)
+```
 
 ### Two-stage Evaluation
 Example configuration file: first perform retrieval, then reranking:
 ```python
 two_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -132,7 +166,6 @@ two_stage_task_cfg = {
         "eval": {
             "tasks": ["T2Retrieval"],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "topk": 5,
             "limits": 100,
@@ -146,26 +179,39 @@ two_stage_task_cfg = {
 - `eval_config`: A dictionary containing the following fields:
     - `tool`: Evaluation tool, using `MTEB`.
     - `model`: List of model configurations. **For single-stage evaluation, only one model can be placed; for two-stage evaluation, two models are passed in, with the first model used for retrieval and the second model used for reranking**, including the following fields:
-        - `model_name_or_path`: `str` Model name or path, supports automatic download from the modelscope repository.
-        - `is_cross_encoder`: `bool` Whether the model is a cross-encoder, default is False; reranking models should be set to `True`.
-        - `pooling_mode`: `Optional[str]` Pooling mode, default is `mean`, optional values are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For `bge` series models, please set to "cls".
-        - `max_seq_length`: `int` Maximum sequence length, default is 512.  
-        - `prompt`: `str` Prompt for retrieval tasks in front of the model, default is an empty string.  
-        - `model_kwargs`: `dict` Keyword arguments for the model, default is `{"torch_dtype": "auto"}`.  
-        - `config_kwargs`: `Dict[str, Any]` Keyword arguments for configuration, default is an empty dictionary.  
-        - `encode_kwargs`: `dict` Keyword arguments for encoding, default is:  
-            ```python  
-            {  
-                "show_progress_bar": True,  
-                "batch_size": 32
-            }  
-            ```  
+      - **For locally loaded model support**:
+        - `model_name_or_path`: `str`: Model name or path, supports automatic model download from the ModelScope repository.
+        - `is_cross_encoder`: `bool`: Whether the model is a cross encoder, default is False; for reranking models, set to `True`.
+        - `pooling_mode`: `Optional[str]`: Pooling mode, default is `mean`. Options are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For `bge` series models, set to "cls".
+        - `max_seq_length`: `int`: Maximum sequence length, default is 512.
+        - `prompt`: `str`: Prompt used in front of the model for retrieval tasks, default is an empty string.
+        - `model_kwargs`: `dict`: Model keyword arguments, default value is `{"torch_dtype": "auto"}`.
+        - `config_kwargs`: `Dict[str, Any]`: Configuration keyword arguments, default is an empty dictionary.
+        - `encode_kwargs`: `dict`: Encoding keyword arguments, default is:
+          ```python
+          {
+              "show_progress_bar": True,
+              "batch_size": 32
+          }
+          ```
+        - `hub`: `str`: Model source, can be "modelscope" or "huggingface".
+
+      - **For remote API model service support**:
+        - `model_name`: `str`: Model name.
+        - `api_base`: `str`: Model API service address.
+        - `api_key`: `str`: Model API key.
+        - `dimension`: `int`: Model output dimension.
+        - `encode_kwargs`: `dict`: Encoding keyword arguments, default is:
+          ```python
+          {
+              "batch_size": 10
+          }
+          ```
         - `hub`: `str` Source of the model, can be "modelscope" or "huggingface".  
     - `eval`: A dictionary containing the following fields:
         - `tasks`: `List[str]` Task names, refer to the [task list](#supported-datasets)
         - `top_k`: `int` Select the top K results, for retrieval tasks  
         - `verbosity`: `int` Level of detail, ranging from 0-3  
-        - `output_folder`: `str` Output folder, default is "outputs"  
         - `overwrite_results`: `bool` Whether to overwrite results, default is True  
         - `limits`: `Optional[int]` Limit on the number of samples, default is None; not recommended to set for retrieval tasks
         - `hub`: `str` Source of the dataset, can be "modelscope" or "huggingface"  

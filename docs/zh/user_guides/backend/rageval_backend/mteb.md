@@ -67,6 +67,7 @@ pip install evalscope[rag] -U
 配置文件示例如下：
 ```python
 one_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -91,7 +92,6 @@ one_stage_task_cfg = {
                 "ATEC",
             ],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "top_k": 10,
             "limits": 500,
@@ -100,12 +100,44 @@ one_stage_task_cfg = {
 }
 ```
 
+### API模型服务评测
+使用远程API模型服务时，配置文件示例如下：
+
+```python
+from evalscope import TaskConfig
+task_cfg = TaskConfig(
+    eval_backend='RAGEval',
+    eval_config={
+        'tool': 'MTEB',
+        'model': [
+            {
+                'model_name': 'text-embedding-v3',
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                'dimensions': 1024,
+                'encode_kwargs': {
+                    'batch_size': 10,
+                },
+            }
+        ],
+        'eval': {
+            'tasks': [
+                'T2Retrieval',
+            ],
+            'verbosity': 2,
+            'overwrite_results': True,
+            'limits': 30,
+        },
+    },
+)
+```
 
 ### 两阶段评测
 评测reranker需要用retrieval数据集，先用embedding模型检索topk，再进行排序。配置文件示例如下：
 
 ```python
 two_stage_task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "MTEB",
@@ -133,7 +165,6 @@ two_stage_task_cfg = {
         "eval": {
             "tasks": ["T2Retrieval"],
             "verbosity": 2,
-            "output_folder": "outputs",
             "overwrite_results": True,
             "top_k": 5,
             "limits": 100,
@@ -148,26 +179,37 @@ two_stage_task_cfg = {
 - `eval_config`：字典，包含以下字段：
     - `tool`：评测工具，使用 `MTEB`。
     - `model`： 模型配置列表，**单阶段评测时只能放置一个模型；两阶段评测传入两个模型，第一个模型用于检索，第二个模型用于reranking**，包含以下字段：
-        - `model_name_or_path`: `str` 模型名称或路径，支持从modelscope仓库自动下载模型。
-        - `is_cross_encoder`: `bool` 模型是否为交叉编码器，默认为 False；reranking模型需设置为`True`。
-        - `pooling_mode`: `Optional[str]` 池化模式，默认为`mean`，可选值为：“cls”、“lasttoken”、“max”、“mean”、“mean_sqrt_len_tokens”或“weightedmean”。`bge`系列模型请设置为“cls”。
-        - `max_seq_length`: `int` 最大序列长度，默认为 512。  
-        - `prompt`: `str` 用于检索任务在模型前的提示，默认为空字符串。  
-        - `model_kwargs`: `dict` 模型的关键字参数，默认值为 `{"torch_dtype": "auto"}`。  
-        - `config_kwargs`: `Dict[str, Any]` 配置的关键字参数，默认为空字典。  
-        - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  
-            ```python  
-            {  
-                "show_progress_bar": True,  
-                "batch_size": 32
-            }  
-            ```  
-        - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"。  
+        - **对于本地加载的模型支持**：
+            - `model_name_or_path`: `str` 模型名称或路径，支持从modelscope仓库自动下载模型。
+            - `is_cross_encoder`: `bool` 模型是否为交叉编码器，默认为 False；reranking模型需设置为`True`。
+            - `pooling_mode`: `Optional[str]` 池化模式，默认为`mean`，可选值为：“cls”、“lasttoken”、“max”、“mean”、“mean_sqrt_len_tokens”或“weightedmean”。`bge`系列模型请设置为“cls”。
+            - `max_seq_length`: `int` 最大序列长度，默认为 512。  
+            - `prompt`: `str` 用于检索任务在模型前的提示，默认为空字符串。  
+            - `model_kwargs`: `dict` 模型的关键字参数，默认值为 `{"torch_dtype": "auto"}`。  
+            - `config_kwargs`: `Dict[str, Any]` 配置的关键字参数，默认为空字典。  
+            - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  
+                ```python  
+                {  
+                    "show_progress_bar": True,  
+                    "batch_size": 32
+                }  
+                ```  
+            - `hub`: `str` 模型来源，可以是 "modelscope" 或 "huggingface"。
+        - **对于远程API模型服务支持**：
+            - `model_name`: `str` 模型名称。
+            - `api_base`: `str` 模型API服务地址。
+            - `api_key`: `str` 模型API密钥。
+            - `dimension`: `int` 模型输出维度。
+            - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  
+                ```python  
+                {  
+                    "batch_size": 10
+                }  
+                ```
     - `eval`：字典，包含以下字段：
         - `tasks`: `List[str]` 任务名称，参见[任务列表](#支持的数据集)
         - `top_k`: `int` 选取前 K 个结果，检索任务使用  
         - `verbosity`: `int` 详细程度，范围为 0-3  
-        - `output_folder`: `str` 输出文件夹，默认为 "outputs"  
         - `overwrite_results`: `bool` 是否覆盖结果，默认为 True  
         - `limits`: `Optional[int]` 限制样本数量，默认为 None；检索任务不建议设置
         - `hub`: `str` 数据集来源，可以是 "modelscope" 或 "huggingface"  

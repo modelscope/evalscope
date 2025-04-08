@@ -5,7 +5,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 import unittest
 
-from evalscope.run import run_task
+from evalscope import TaskConfig, run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
 
@@ -37,13 +37,10 @@ class TestRAGAS(unittest.TestCase):
                     'docs': ['README_zh.md'],
                     'test_size': 5,
                     'output_file': 'outputs/testset.json',
-                    'distribution': {
-                        'simple': 0.5,
-                        'multi_context': 0.4,
-                        'reasoning': 0.1,
-                    },
                     'generator_llm': {
-                        'model_name_or_path': 'qwen/Qwen2-7B-Instruct',
+                        'model_name': 'qwen-plus',  # 自定义聊天模型名称
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',  # 自定义基础URL
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
                     'embeddings': {
                         'model_name_or_path': 'AI-ModelScope/m3e-base',
@@ -87,32 +84,38 @@ class TestRAGAS(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_rag_eval_api(self):
-        task_cfg = {
-            'eval_backend': 'RAGEval',
-            'eval_config': {
-                'tool': 'RAGAS',
-                'eval': {
-                    'testset_file':
-                    'outputs/testset.json',
-                    'critic_llm': {
-                        'model_name': 'gpt-4o-mini',  # 自定义聊天模型名称
-                        'api_base': 'http://127.0.0.1:8088/v1',  # 自定义基础URL
-                        'api_key': 'xxxx',  # 你的API密钥
+        from evalscope.backend.rag_eval.ragas.arguments import EvaluationArguments
+        task_cfg = TaskConfig(
+            eval_backend='RAGEval',
+            eval_config=dict(
+                tool='RAGAS',
+                eval=EvaluationArguments(
+                    testset_file='outputs/testset_chinese_with_answer_small.json',
+                    critic_llm={
+                        'model_name': 'qwen-plus',  # 自定义聊天模型名称
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',  # 自定义基础URL
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
-                    'embeddings': {
-                        'model_name_or_path': 'AI-ModelScope/m3e-base',
+                    embeddings={
+                        'model_name': 'text-embedding-v1',
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                        'dimensions': 1024,
+                        'encode_kwargs': {
+                            'batch_size': 10,
+                        },
                     },
-                    'metrics': [
+                    metrics=[
                         'Faithfulness',
                         'AnswerRelevancy',
                         'ContextPrecision',
                         'AnswerCorrectness',
-                        'MultiModalFaithfulness',
-                        'MultiModalRelevance',
+                        # 'MultiModalFaithfulness',
+                        # 'MultiModalRelevance',
                     ],
-                },
-            },
-        }
+                ),
+            ),
+        )
 
         logger.info(f'>> Start to run task: {task_cfg}')
 

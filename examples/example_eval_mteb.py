@@ -19,6 +19,7 @@ def run_eval():
     # Prepare the config
 
     one_stage_task_cfg = {  # noqa
+        'work_dir': 'outputs',
         'eval_backend': 'RAGEval',
         'eval_config': {
             'tool': 'MTEB',
@@ -49,7 +50,6 @@ def run_eval():
                     'VideoRetrieval'
                 ],
                 'verbosity': 2,
-                'output_folder': 'outputs',
                 'overwrite_results': True,
                 'top_k': 10,
                 'limits': 1000,  # don't limit for retrieval task
@@ -58,6 +58,7 @@ def run_eval():
     }
 
     two_stage_task_cfg = {
+        'work_dir': 'outputs',
         'eval_backend': 'RAGEval',
         'eval_config': {
             'tool': 'MTEB',
@@ -86,7 +87,6 @@ def run_eval():
             'eval': {
                 'tasks': ['T2Retrieval'],
                 'verbosity': 2,
-                'output_folder': 'outputs',
                 'overwrite_results': True,
                 'limits': 100,
             },

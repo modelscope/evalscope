@@ -8,6 +8,12 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
+class Tools:
+    MTEB = 'mteb'
+    RAGAS = 'ragas'
+    CLIP_BENCHMARK = 'clip_benchmark'
+
+
 class RAGEvalBackendManager(BackendManager):
 
     def __init__(self, config: Union[str, dict], **kwargs):
@@ -47,9 +53,19 @@ class RAGEvalBackendManager(BackendManager):
         from evalscope.backend.rag_eval.ragas.tasks import generate_testset
 
         if testset_args is not None:
-            generate_testset(TestsetGenerationArguments(**testset_args))
+            if isinstance(testset_args, dict):
+                generate_testset(TestsetGenerationArguments(**testset_args))
+            elif isinstance(testset_args, TestsetGenerationArguments):
+                generate_testset(testset_args)
+            else:
+                raise ValueError('Please provide the testset generation arguments.')
         if eval_args is not None:
-            rag_eval(EvaluationArguments(**eval_args))
+            if isinstance(eval_args, dict):
+                rag_eval(EvaluationArguments(**eval_args))
+            elif isinstance(eval_args, EvaluationArguments):
+                rag_eval(eval_args)
+            else:
+                raise ValueError('Please provide the evaluation arguments.')
 
     @staticmethod
     def run_clip_benchmark(args):
@@ -59,17 +75,17 @@ class RAGEvalBackendManager(BackendManager):
 
     def run(self, *args, **kwargs):
         tool = self.config_d.pop('tool')
-        if tool.lower() == 'mteb':
+        if tool.lower() == Tools.MTEB:
             self._check_env('mteb')
             model_args = self.config_d['model']
             eval_args = self.config_d['eval']
             self.run_mteb(model_args, eval_args)
-        elif tool.lower() == 'ragas':
+        elif tool.lower() == Tools.RAGAS:
             self._check_env('ragas')
             testset_args = self.config_d.get('testset_generation', None)
             eval_args = self.config_d.get('eval', None)
             self.run_ragas(testset_args, eval_args)
-        elif tool.lower() == 'clip_benchmark':
+        elif tool.lower() == Tools.CLIP_BENCHMARK:
             self._check_env('webdataset')
             self.run_clip_benchmark(self.config_d['eval'])
         else:

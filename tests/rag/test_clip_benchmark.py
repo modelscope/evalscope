@@ -45,7 +45,6 @@ class TestCLIPBenchmark(unittest.TestCase):
                     'num_workers': 1,
                     'verbose': True,
                     'skip_existing': False,
-                    'output_dir': 'outputs',
                     'cache_dir': 'cache',
                     'limit': 1000,
                 },

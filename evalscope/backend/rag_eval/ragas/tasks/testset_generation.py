@@ -67,9 +67,14 @@ def get_persona(llm, kg, language):
 
 
 def load_data(file_path):
-    from langchain_community.document_loaders import UnstructuredFileLoader
+    import nltk
+    from langchain_unstructured import UnstructuredLoader
 
-    loader = UnstructuredFileLoader(file_path, mode='single')
+    if nltk.data.find('taggers/averaged_perceptron_tagger_eng') is False:
+        # need to download nltk data for the first time
+        nltk.download('averaged_perceptron_tagger_eng')
+
+    loader = UnstructuredLoader(file_path)
     data = loader.load()
     return data
 

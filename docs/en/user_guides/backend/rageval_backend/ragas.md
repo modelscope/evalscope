@@ -88,16 +88,23 @@ Configuration file description:
     - `test_size`: `int`: Size of the generated test set, e.g., 5.
     - `output_file`: `str`: Path of the generated dataset output file, e.g., "outputs/testset.json".
     - `knowledge_graph`: `str`: The file path of the knowledge graph, e.g., "outputs/knowledge_graph.json". The knowledge graph generated during the document processing will be saved in this path. If a knowledge graph already exists at this path, it will be loaded directly, skipping the generation step of the knowledge graph.
-    - `generator_llm`: `dict`: Configuration of the generator LLM:
-      - If using a local model, supports the following parameters:
-        - `model_name_or_path`: `str`: Name or path of the generator model, e.g., "qwen/Qwen2-7B-Instruct" can be automatically downloaded from ModelScope; providing a path will load the model locally.
-        - `generation_config`: `dict`: Generation configuration, e.g., `{"temperature": 0.7}`.
-      - If using an API model, supports the following parameters:
-        - `model_name`: `str`: Name of the custom model.
-        - `api_base`: `str`: Base URL of the custom API, e.g., "http://127.0.0.1:8000".
-        - `api_key`: `Optional[str]`: Your API key, default is "EMPTY".
-    - `embeddings`: `dict`: Configuration of the embedding model.
-      - `model_name_or_path`: `str`: Name or path of the embedding model, e.g., "AI-ModelScope/m3e-base".
+    - `generator_llm`: `dict`: Configuration for the generator LLM:
+        - If using a **local model**, the following parameters are supported:
+            - `model_name_or_path`: `str`: The name or path of the generator model, for example, "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4". The model can be automatically downloaded from ModelScope. If a path is provided, the model will be loaded locally.
+            - `generation_config`: `dict`: Generation configuration, for example, `{"temperature": 0.7}`.
+        - If using an **API model**, the following parameters are supported:
+            - `model_name`: `str`: The name of the custom model.
+            - `api_base`: `str`: The base URL of the custom API, for example, "http://127.0.0.1:8000".
+            - `api_key`: `Optional[str]`: Your API key, default is "EMPTY".
+
+    - `embeddings`: `dict`: Configuration for the embedding model.
+        - If using a **local model**, the following parameters are supported:
+            - `model_name_or_path`: `str`: The name or path of the embedding model, for example, "AI-ModelScope/m3e-base".
+        - If using an **API model**, the following parameters are supported:
+            - `model_name`: `str`: Model name.
+            - `api_base`: `str`: Model API service address.
+            - `api_key`: `str`: Model API key.
+            - `dimension`: `int`: Model output dimension.
     - `language`: `str`: Language, default is `english`, can be set to another language such as "chinese". The `generator_llm` will automatically translate prompts to the target language. The framework has pre-translated some prompts using `Qwen2.5-72B-Instruct`.
 
 ````{note}

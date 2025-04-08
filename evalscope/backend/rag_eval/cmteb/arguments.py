@@ -20,6 +20,12 @@ class ModelArguments:
     encode_kwargs: dict = field(default_factory=lambda: {'show_progress_bar': True, 'batch_size': 32})
     hub: str = 'modelscope'  # modelscope or huggingface
 
+    # for API embedding model
+    model_name: Optional[str] = None
+    api_base: Optional[str] = None
+    api_key: Optional[str] = None
+    dimensions: Optional[int] = None
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'model_name_or_path': self.model_name_or_path,
@@ -31,6 +37,10 @@ class ModelArguments:
             'config_kwargs': self.config_kwargs,
             'encode_kwargs': self.encode_kwargs,
             'hub': self.hub,
+            'model_name': self.model_name,
+            'api_base': self.api_base,
+            'api_key': self.api_key,
+            'dimensions': self.dimensions,
         }
 
 

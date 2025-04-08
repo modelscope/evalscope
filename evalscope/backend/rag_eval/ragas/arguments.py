@@ -21,7 +21,6 @@ class TestsetGenerationArguments:
     """
     generator_llm: Dict = field(default_factory=dict)
     embeddings: Dict = field(default_factory=dict)
-    distribution: str = field(default_factory=lambda: {'simple': 0.5, 'multi_context': 0.4, 'reasoning': 0.1})
     # For LLM based evaluation
     # available: ['english', 'hindi', 'marathi', 'chinese', 'spanish', 'amharic', 'arabic',
     # 'armenian', 'bulgarian', 'urdu', 'russian', 'polish', 'persian', 'dutch', 'danish',

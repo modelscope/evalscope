@@ -27,11 +27,6 @@ def run_eval():
                 'docs': ['README.md'],
                 'test_size': 10,
                 'output_file': 'outputs/testset_chinese.json',  # json file
-                'distribution': {
-                    'simple': 0.3,
-                    'multi_context': 0.3,
-                    'reasoning': 0.4
-                },
                 'generator_llm': {
                     'model_name_or_path': 'Qwen/Qwen2.5-72B-Instruct',
                 },
@@ -50,11 +45,6 @@ def run_eval():
                 'docs': ['test_zh.md'],
                 'test_size': 10,
                 'output_file': 'outputs/testset_chinese.json',  # json file
-                'distribution': {
-                    'simple': 0.3,
-                    'multi_context': 0.3,
-                    'reasoning': 0.4
-                },
                 'generator_llm': gpt_4_o,
                 'embeddings': {
                     'model_name_or_path': 'AI-ModelScope/bge-large-zh',

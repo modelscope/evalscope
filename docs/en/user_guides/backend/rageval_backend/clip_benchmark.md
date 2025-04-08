@@ -63,6 +63,7 @@ pip install evalscope[rag] -U
 
 ```python
 task_cfg = {
+    "work_dir": "outputs",
     "eval_backend": "RAGEval",
     "eval_config": {
         "tool": "clip_benchmark",
@@ -78,7 +79,6 @@ task_cfg = {
             "num_workers": 1,
             "verbose": True,
             "skip_existing": False,
-            "output_dir": "outputs",
             "cache_dir": "cache",
             "limit": 1000,
         },
@@ -99,7 +99,6 @@ task_cfg = {
         - `num_workers`: `int` Number of worker threads for data loading, default is `1`.
         - `verbose`: `bool` Whether to enable detailed logging, default is `True`.
         - `skip_existing`: `bool` Whether to skip processing if output already exists, default is `False`.
-        - `output_dir`: `str` Output directory, default is `outputs`.
         - `cache_dir`: `str` Dataset cache directory, default is `cache`.
         - `limit`: `Optional[int]` Limit the number of samples to process, default is `None`, e.g., `1000`.
 
