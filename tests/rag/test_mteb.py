@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import subprocess
 import unittest
+from dotenv import dotenv_values
 
+env = dotenv_values('.env')
 from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
@@ -57,6 +58,37 @@ class TestMTEB(unittest.TestCase):
                 },
             },
         }
+
+        run_task(task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_one_stage_api(self):
+        from evalscope import TaskConfig
+        task_cfg = TaskConfig(
+            eval_backend='RAGEval',
+            eval_config={
+                'tool': 'MTEB',
+                'model': [
+                    {
+                        'model_name': 'text-embedding-v3',
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                        'dimensions': 1024,
+                        'encode_kwargs': {
+                            'batch_size': 10,
+                        },
+                    }
+                ],
+                'eval': {
+                    'tasks': [
+                        'T2Retrieval',
+                    ],
+                    'verbosity': 2,
+                    'overwrite_results': True,
+                    'limits': 30,
+                },
+            },
+        )
 
         run_task(task_cfg)
 

@@ -97,7 +97,13 @@ class TestRAGAS(unittest.TestCase):
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
                     embeddings={
-                        'model_name_or_path': 'AI-ModelScope/m3e-base',
+                        'model_name': 'text-embedding-v1',
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                        'dimensions': 1024,
+                        'encode_kwargs': {
+                            'batch_size': 10,
+                        },
                     },
                     metrics=[
                         'Faithfulness',

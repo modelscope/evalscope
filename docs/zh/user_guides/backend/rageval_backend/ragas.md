@@ -89,15 +89,21 @@ generate_testset_task_cfg = {
     - `output_file`: `str`：生成数据集的输出文件路径，例如 "outputs/testset.json"。
     - `knowledge_graph`: `str`：知识图谱文件路径，例如 "outputs/knowledge_graph.json"，文档处理过程中生成的知识图谱会保存在该路径下；若该路径已有知识图谱，则会直接加载知识图谱，跳过生成知识图谱的步骤。
     - `generator_llm`: `dict`：生成器LLM的配置：
-      - 若使用本地模型，支持如下参数：
+      - 若使用**本地模型**，支持如下参数：
         - `model_name_or_path`: `str`：生成器模型的名称或路径，例如 "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4" 可以从 ModelScope 自动下载模型；填入路径则从本地加载模型。
         - `generation_config`: `dict`：生成配置，例如 `{"temperature": 0.7}`。
-      - 若使用 API 模型，支持如下参数：
+      - 若使用**API 模型**，支持如下参数：
         - `model_name`: `str`：自定义模型的名称。
         - `api_base`: `str`：自定义基础 URL，例如 "http://127.0.0.1:8000"。
         - `api_key`: `Optional[str]`：你的 API 密钥，默认为"EMPTY"。
     - `embeddings`: `dict`：嵌入模型的配置。
-      - `model_name_or_path`: `str`：嵌入模型的名称或路径，例如 "AI-ModelScope/m3e-base"。
+      - 若使用**本地模型**，支持如下参数：
+        - `model_name_or_path`: `str`：嵌入模型的名称或路径，例如 "AI-ModelScope/m3e-base"。
+      - 若使用**API 模型**，支持如下参数：
+        - `model_name`: `str` 模型名称。
+        - `api_base`: `str` 模型API服务地址。
+        - `api_key`: `str` 模型API密钥。
+        - `dimension`: `int` 模型输出维度。
     - `language`: `str`：语言，默认为`english`，可以设置为其他语言例如 "chinese"，会使用`generator_llm`自动将prompt翻译到目标语言，框架已使用`Qwen2.5-72B-Instruct`预先翻译了部分prompt。
 
 

@@ -1,10 +1,12 @@
 import os
 import torch
 from langchain_core.embeddings import Embeddings
+from langchain_openai.embeddings import OpenAIEmbeddings
 from sentence_transformers import models
 from sentence_transformers.cross_encoder import CrossEncoder
 from sentence_transformers.SentenceTransformer import SentenceTransformer
 from torch import Tensor
+from tqdm import tqdm
 from typing import Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.utils.tools import download_model
@@ -18,10 +20,10 @@ class BaseModel(Embeddings):
 
     def __init__(
         self,
-        model_name_or_path: str,
+        model_name_or_path: str = '',
         max_seq_length: int = 512,
         prompt: str = '',
-        revision: Optional[str] = None,
+        revision: Optional[str] = 'master',
         **kwargs,
     ):
         self.model_name_or_path = model_name_or_path
@@ -139,7 +141,7 @@ class CrossEncoderModel(BaseModel):
             max_length=self.max_seq_length,
         )
 
-    def predict(self, sentences: List[List[str]], **kwargs) -> List[List[float]]:
+    def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
         self.encode_kwargs.update(kwargs)
 
         if len(sentences[0]) == 3:  # Note: For mteb retrieval task
@@ -154,6 +156,46 @@ class CrossEncoderModel(BaseModel):
         return embeddings
 
 
+class APIEmbeddingModel(BaseModel):
+
+    def __init__(self, **kwargs):
+        self.model_name = kwargs.get('model_name')
+        self.openai_api_base = kwargs.get('api_base')
+        self.openai_api_key = kwargs.get('api_key')
+        self.dimensions = kwargs.get('dimensions')
+
+        self.model = OpenAIEmbeddings(
+            model=self.model_name,
+            openai_api_base=self.openai_api_base,
+            openai_api_key=self.openai_api_key,
+            dimensions=self.dimensions,
+            check_embedding_ctx_length=False)
+
+        super().__init__(model_name_or_path=self.model_name, **kwargs)
+
+        self.batch_size = self.encode_kwargs.get('batch_size', 10)
+
+    def encode(self, texts: Union[str, List[str]], **kwargs) -> Tensor:
+        if isinstance(texts, str):
+            texts = [texts]
+
+        embeddings: List[List[float]] = []
+        for i in tqdm(range(0, len(texts), self.batch_size)):
+            response = self.model.embed_documents(texts[i:i + self.batch_size], chunk_size=self.batch_size)
+            embeddings.extend(response)
+        return torch.tensor(embeddings)
+
+    def encode_queries(self, queries, **kwargs):
+        return self.encode(queries, **kwargs)
+
+    def encode_corpus(self, corpus, **kwargs):
+        if isinstance(corpus[0], dict):
+            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
+        else:
+            input_texts = corpus
+        return self.encode(input_texts, **kwargs)
+
+
 class EmbeddingModel:
     """Custom embeddings"""
 
@@ -165,6 +207,10 @@ class EmbeddingModel:
         revision: Optional[str] = 'master',
         **kwargs,
     ):
+        if kwargs.get('model_name'):
+            # If model_name is provided, use OpenAIEmbeddings
+            return APIEmbeddingModel(**kwargs)
+
         # If model path does not exist and hub is 'modelscope', download the model
         if not os.path.exists(model_name_or_path) and hub == HubType.MODELSCOPE:
             model_name_or_path = download_model(model_name_or_path, revision)
