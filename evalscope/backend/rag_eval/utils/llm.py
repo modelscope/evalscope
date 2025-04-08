@@ -2,7 +2,7 @@ import os
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from langchain_openai import ChatOpenAI
-from modelscope.utils.hf_util import GenerationConfig
+from transformers.generation.configuration_utils import GenerationConfig
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from evalscope.constants import DEFAULT_MODEL_REVISION
@@ -16,9 +16,9 @@ class LLM:
         api_base = kw.get('api_base', None)
         if api_base:
             return ChatOpenAI(
-                model_name=kw.get('model_name', ''),
-                openai_api_base=api_base,
-                openai_api_key=kw.get('api_key', 'EMPTY'),
+                model=kw.get('model_name', ''),
+                base_url=api_base,
+                api_key=kw.get('api_key', 'EMPTY'),
             )
         else:
             return LocalLLM(**kw)

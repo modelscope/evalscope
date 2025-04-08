@@ -1,7 +1,7 @@
-langchain<0.3.0
-langchain-community<0.3.0
-langchain-core<0.3.0
-langchain-openai<0.3.0
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-openai>=0.3.0,<0.4.0
 mteb==1.19.4
-ragas==0.2.9
+ragas==0.2.14
 webdataset>0.2.0

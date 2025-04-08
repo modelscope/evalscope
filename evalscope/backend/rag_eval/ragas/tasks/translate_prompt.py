@@ -2,7 +2,6 @@ import asyncio
 import os
 from ragas.llms import BaseRagasLLM
 from ragas.prompt import PromptMixin, PydanticPrompt
-from ragas.utils import RAGAS_SUPPORTED_LANGUAGE_CODES
 from typing import List
 
 from evalscope.utils.logger import get_logger
@@ -16,10 +15,6 @@ async def translate_prompt(
     llm: BaseRagasLLM,
     adapt_instruction: bool = False,
 ):
-    if target_lang not in RAGAS_SUPPORTED_LANGUAGE_CODES:
-        logger.warning(f'{target_lang} is not in supported language: {list(RAGAS_SUPPORTED_LANGUAGE_CODES)}')
-        return
-
     if not issubclass(type(prompt_user), PromptMixin):
         logger.info(f"{prompt_user} is not a PromptMixin, don't translate it")
         return
