@@ -177,7 +177,7 @@ pip install swanlab
 --name 'name_of_swanlab_log'
 ```  
 
-![swanlab sample](waiting for link)
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
 
 ## 调试请求
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：
