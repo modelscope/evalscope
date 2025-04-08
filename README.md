@@ -392,6 +392,10 @@ Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.i
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
+**Supports swanlab for recording results**
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
 **Supports Speed Benchmark**
 
 It supports speed testing and provides speed benchmarks similar to those found in the [official Qwen](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html) reports:

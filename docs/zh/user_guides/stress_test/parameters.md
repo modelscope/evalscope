@@ -6,7 +6,7 @@
 ## 基本设置
 - `--model` 测试模型名称。
 - `--url` 指定API地址。
-- `--name` wandb数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
+- `--name` wandb/swanlab数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
 - `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
   - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
   - 指定为`dashscope`，则使用支持DashScope的API，需要提供`--url`参数。

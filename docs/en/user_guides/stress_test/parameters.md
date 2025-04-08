@@ -5,7 +5,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 ## Basic Settings
 - `--model`: Name of the test model.
 - `--url`: Specify the API address.
-- `--name`: Name for the wandb database result and result database, default is `{model_name}_{current_time}`, optional.
+- `--name`: Name for the wandb/swanlab database result and result database, default is `{model_name}_{current_time}`, optional.
 - `--api`: Specify the service API, currently supports [openai|dashscope|local|local_vllm].
   - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
   - Select `dashscope` to use the API supporting DashScope, requiring the `--url` parameter.

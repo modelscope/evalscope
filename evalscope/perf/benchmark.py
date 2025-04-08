@@ -139,6 +139,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
             swanlab.login(api_key=args.swanlab_api_key)
         current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         name = args.name if args.name else f'{args.model_id}_{current_time}'
+        swanlab.config.update({'framework': '📏evalscope'})
         swanlab.init(
             project='perf_benchmark',
             name=name,
