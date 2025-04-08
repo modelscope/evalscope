@@ -176,6 +176,22 @@ When starting, add the following parameters:
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
+## Using swanlab to Record Test Results
+
+Please install swanlab:
+```bash
+pip install swanlab
+```
+
+When starting, add the following parameters:
+```bash
+--swanlab-api-key 'swanlab_api_key'
+--name 'name_of_swanlab_log'
+```
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+
 ## Debugging Requests
 Use the `--debug` option to output the requests and responses.
 

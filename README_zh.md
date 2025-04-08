@@ -384,6 +384,10 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
+**支持swanlab记录结果**
+
+![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
 **支持Speed Benchmark**
 
 支持速度测试，得到类似[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准：

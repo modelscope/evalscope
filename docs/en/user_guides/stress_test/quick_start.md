@@ -183,7 +183,7 @@ First, install SwanLab and obtain the corresponding [API Key](https://swanlab.cn
 pip install swanlab
 ```
 
-To upload the test results to the wandb server and visualize them, add the following parameters when launching the evaluation:
+To upload the test results to the swanlab server and visualize them, add the following parameters when launching the evaluation:
 ```bash
 # ...
 --swanlab-api-key 'swanlab_api_key'
