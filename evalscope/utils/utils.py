@@ -170,6 +170,7 @@ class ResponseParser:
         patterns = [
             rf'answer is \(?({options_pattern})\)?',
             rf'[Aa]nswer:\s*({options_pattern})',
+            rf'ANSWER:\s*({options_pattern})',
             rf'[Tt]he correct answer is:\s*({options_pattern})',
             rf'[Tt]he correct answer is:\n\s*({options_pattern})',
             rf'[Tt]he correct answer is:\n\n-\s*({options_pattern})',
@@ -303,3 +304,9 @@ def seed_everything(seed: int):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+if __name__ == '__main__':
+    options = ['A', 'B', 'C', 'D']
+    answers = ['Context .... ANSWER: A', 'answer: A']
+    for answer in answers:
+        print(ResponseParser.parse_first_option(answer, options))
