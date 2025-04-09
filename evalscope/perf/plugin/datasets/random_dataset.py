@@ -23,8 +23,12 @@ class RandomDatasetPlugin(DatasetPluginBase):
         self.number = self.query_parameters.number or 1
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        min_prompt_length = self.query_parameters.min_prompt_length - self.template_len
-        max_prompt_length = self.query_parameters.max_prompt_length - self.template_len + 1
+        if self.query_parameters.apply_chat_template:
+            min_prompt_length = self.query_parameters.min_prompt_length - self.template_len
+            max_prompt_length = self.query_parameters.max_prompt_length - self.template_len + 1
+        else:
+            min_prompt_length = self.query_parameters.min_prompt_length
+            max_prompt_length = self.query_parameters.max_prompt_length + 1
 
         assert min_prompt_length >= 0, f'min_prompt_length should be greater than or equal to the template length {self.template_len}.'  # noqa: E501
         assert max_prompt_length >= min_prompt_length, 'max_prompt_length should be greater than or equal to min_prompt_length.'  # noqa: E501
@@ -37,7 +41,11 @@ class RandomDatasetPlugin(DatasetPluginBase):
             prompt_ids = (offsets[i] + i + np.arange(input_lens[i])) % self.tokenizer.vocab_size
             prompt = self.tokenizer.decode(
                 self.prefix_ids + prompt_ids.tolist(), skip_special_tokens=False, clean_up_tokenization_spaces=False)
-            yield [{'role': 'user', 'content': prompt}]
+
+            if self.query_parameters.apply_chat_template:
+                yield [{'role': 'user', 'content': prompt}]
+            else:
+                yield prompt
 
     def get_random_inputs(self, length: int) -> List[int]:
         if length <= 0:

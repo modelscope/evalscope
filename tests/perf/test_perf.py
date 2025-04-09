@@ -104,7 +104,7 @@ class TestPerf(unittest.TestCase):
         task_cfg = Arguments(
             parallel=20,
             model='Qwen2.5-0.5B-Instruct',
-            url='http://127.0.0.1:8801/v1/chat/completions',
+            url='http://127.0.0.1:8801/v1/completions',
             api='openai',
             dataset='random',
             min_tokens=1024,
@@ -115,7 +115,6 @@ class TestPerf(unittest.TestCase):
             number=40,
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             seed=None,
-            debug= True,
         )
         run_perf_benchmark(task_cfg)
 

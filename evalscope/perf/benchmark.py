@@ -18,6 +18,7 @@ from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
 from evalscope.perf.utils.handler import add_signal_handlers, exception_handler
 from evalscope.perf.utils.local_server import start_app
+from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -56,7 +57,7 @@ async def get_requests(args: Arguments) -> AsyncGenerator[dict, None]:
 
     if args.prompt:
         prompt = load_prompt(args.prompt)
-        messages = [{'role': 'user', 'content': prompt}]
+        messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         generator = generate_requests_from_prompt(messages)
     elif args.dataset:
         generator = generate_requests_from_dataset()
@@ -113,38 +114,11 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args)
-    # Initialize wandb if the api key is provided
-    if args.wandb_api_key:
-        import datetime
-        try:
-            import wandb
-        except ImportError:
-            raise RuntimeError('Cannot import wandb. Please install it with command: \n pip install wandb')
-        os.environ['WANDB_SILENT'] = 'true'
-        os.environ['WANDB_DIR'] = args.outputs_dir
 
-        wandb.login(key=args.wandb_api_key)
-        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        name = args.name if args.name else f'{args.model_id}_{current_time}'
-        wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
-    # Initialize SwanLab if the api key is provided
+    if args.wandb_api_key:
+        init_wandb(args)
     if args.swanlab_api_key:
-        import datetime
-        try:
-            import swanlab
-        except ImportError:
-            raise RuntimeError('Cannot import swanlab. Please install it with command: \n pip install swanlab')
-        os.environ['SWANLAB_LOG_DIR'] = args.outputs_dir
-        if not args.swanlab_api_key == 'local':
-            swanlab.login(api_key=args.swanlab_api_key)
-        current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        name = args.name if args.name else f'{args.model_id}_{current_time}'
-        swanlab.config.update({'framework': '📏evalscope'})
-        swanlab.init(
-            project='perf_benchmark',
-            name=name,
-            config=args.to_dict(),
-            mode='local' if args.swanlab_api_key == 'local' else None)
+        init_swanlab(args)
 
     collected_benchmark_data = []
 
@@ -169,8 +143,10 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
             # Log the message to wandb\swanlab if the api key is provided
             if args.wandb_api_key:
+                import wandb
                 wandb.log(message)
             if args.swanlab_api_key:
+                import swanlab
                 swanlab.log(message)
 
             # Log the message to the logger every n queries
@@ -197,11 +173,6 @@ async def start_server(args: Arguments) -> bool:
         #  start local server
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
         server.start()
-
-        if args.dataset.startswith('speed_benchmark'):
-            args.url = f'http://127.0.0.1:{args.port}/v1/completions'
-        else:
-            args.url = f'http://127.0.0.1:{args.port}/v1/chat/completions'
 
     if (not args.no_test_connection) and (not await test_connection(args)):
         raise TimeoutError('Test connection failed')

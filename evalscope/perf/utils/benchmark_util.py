@@ -118,15 +118,15 @@ class BenchmarkMetrics:
             logger.exception(e)
             return
 
-    def create_message(self, default_ndigits=3):
+    def create_message(self, default_ndigits=4):
         message = {
             'Time taken for tests (s)': round(self.total_time, default_ndigits),
             'Number of concurrency': self.concurrency,
             'Total requests': int(self.n_total_queries),
             'Succeed requests': self.n_succeed_queries,
             'Failed requests': self.n_failed_queries,
-            'Throughput(average tokens/s)': round(self.avg_token_per_seconds, default_ndigits),
-            'Average QPS': round(self.qps, default_ndigits),
+            'Output token throughput (tok/s)': round(self.avg_token_per_seconds, default_ndigits),
+            'Request throughput (req/s)': round(self.qps, default_ndigits),
             'Average latency (s)': round(self.avg_latency, default_ndigits),
             'Average time to first token (s)': round(self.avg_first_chunk_latency, default_ndigits),
             'Average time per output token (s)': round(self.avg_time_per_token, default_ndigits),

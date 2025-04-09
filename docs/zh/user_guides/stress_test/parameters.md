@@ -5,7 +5,7 @@
 
 ## 基本设置
 - `--model` 测试模型名称。
-- `--url` 指定API地址。
+- `--url` 指定API地址，支持`/chat/completion`和`/completion`两种endpoint。
 - `--name` wandb/swanlab数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
 - `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
   - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
@@ -34,7 +34,7 @@
   `--parallel`参数用于控制发送请求的worker数量，worker将从请求队列获取请求并发送，且在上一请求回复后才发送下一请求。 两个参数不建议同时设置，也即在本工具中，`--rate`参数仅对`--parallel`为1时有效。
   ```
 - `--log-every-n-query` 每n个查询记录日志，默认为10。
-- `--stream` 使用SSE流输出，默认为False。需要设置`stream`参数以测量Time to First Token (TTFT)指标。
+- `--stream` 使用SSE流输出，默认为True。注意：需要设置`--stream`以测量Time to First Token (TTFT)指标；设置`--no-stream`将不使用流式输出。
 
 ## Prompt设置
 - `--max-prompt-length` 最大输入prompt长度，默认为`131072`，大于该值时，将丢弃prompt。
@@ -42,6 +42,7 @@
 - `--prefix-length` promt的前缀长度，默认为0，仅对于`random`数据集有效。
 - `--prompt` 指定请求prompt，一个字符串或本地文件，使用优先级高于`dataset`。使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./prompt.txt`。
 - `--query-template` 指定查询模板，一个`JSON`字符串或本地文件，使用本地文件时，通过`@/path/to/file`指定文件路径，例如`@./query_template.json`。
+- `--apply-chat-template` 是否应用聊天模板，默认为None，将根据url后缀是否为`chat/completion`自动选择。
 
 ## 数据集配置
 - `--dataset` 可以指定如下数据集模式，您也可以使用python自定义数据集解析器，参考[自定义数据集指南](custom.md/#自定义数据集)。

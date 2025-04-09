@@ -144,7 +144,7 @@ async def test_connection(args: Arguments) -> bool:
     async def attempt_connection():
         client = AioHttpClient(args)
         async with client:
-            if 'chat/completions' in args.url:
+            if args.apply_chat_template:
                 request = {
                     'messages': [{
                         'role': 'user',

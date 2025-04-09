@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/python-%E2%89%A53.8-5be.svg">
+<img src="https://img.shields.io/badge/python-%E2%89%A53.9-5be.svg">
 <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>

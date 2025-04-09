@@ -47,6 +47,7 @@ class Arguments:
     prefix_length: int = 0  # Length of the prefix, only for random dataset
     prompt: Optional[str] = None  # The prompt text
     query_template: Optional[str] = None  # Template for the query
+    apply_chat_template: Optional[bool] = None  # Whether to apply chat template
 
     # Dataset settings
     dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
@@ -61,7 +62,7 @@ class Arguments:
     seed: Optional[int] = 42  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
-    stream: Optional[bool] = False  # Whether to stream the response
+    stream: Optional[bool] = True  # Whether to stream the response
     temperature: float = 0.0  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
@@ -77,11 +78,25 @@ class Arguments:
         return Arguments(**args_dict)
 
     def __post_init__(self):
+        # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
         if self.api_key:
             # Assuming the API key is used as a Bearer token
             self.headers['Authorization'] = f'Bearer {self.api_key}'
+
+        # Set the model ID based on the model name
         self.model_id = os.path.basename(self.model)
+
+        # Set the URL based on the dataset type
+        if self.api.startswith('local'):
+            if self.dataset.startswith('speed_benchmark'):
+                self.url = f'http://127.0.0.1:{self.port}/v1/completions'
+            else:
+                self.url = f'http://127.0.0.1:{self.port}/v1/chat/completions'
+
+        # Set the apply_chat_template flag based on the URL
+        if self.apply_chat_template is None:
+            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
@@ -145,6 +160,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
+    parser.add_argument(
+        '--apply-chat-template', type=argparse.BooleanOptionalAction, default=None, help='Apply chat template to the prompt')  # noqa: E501
 
     # Output settings
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
@@ -164,7 +181,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--seed', type=int, help='The random seed', default=42)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
-    parser.add_argument('--stream', action='store_true', help='Stream output with SSE', default=False)
+    parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=0.0)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)

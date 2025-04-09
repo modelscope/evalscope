@@ -175,7 +175,7 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
 
     metrics = {
         'TTFT (s)': [row[FIRST_CHUNK_LATENCY_INDEX] for row in rows],
-        'TPOT (s)':
+        'ITL (s)':
         inter_token_latencies_all,
         'Latency (s)': [row[LATENCY_INDEX] for row in rows],
         'Input tokens': [row[PROMPT_TOKENS_INDEX] for row in rows],
