@@ -18,7 +18,6 @@ logger = get_logger()
     extra_params={
         'start_date': None,
         'end_date': None,
-        'num_process_evaluate': 1,
         'timeout': 6
     },
     system_prompt=
@@ -33,7 +32,6 @@ class LiveCodeBenchAdapter(DataAdapter):
 
         extra_params = kwargs.get('extra_params', {})
 
-        self.num_process_evaluate = extra_params.get('num_process_evaluate', 1)
         self.timeout = extra_params.get('timeout', 6)
         self.start_date = extra_params.get('start_date')
         self.end_date = extra_params.get('end_date')
@@ -84,7 +82,7 @@ class LiveCodeBenchAdapter(DataAdapter):
             references,
             predictions,
             k_list=[1],
-            num_process_evaluate=self.num_process_evaluate,
+            num_process_evaluate=1,
             timeout=self.timeout,
         )
         return metrics['pass@1'] / 100  # convert to point scale
