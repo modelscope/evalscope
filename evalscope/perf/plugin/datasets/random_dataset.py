@@ -38,9 +38,8 @@ class RandomDatasetPlugin(DatasetPluginBase):
         offsets = np.random.randint(0, self.tokenizer.vocab_size, size=self.number)
 
         for i in range(self.number):
-            prompt_ids = (offsets[i] + i + np.arange(input_lens[i])) % self.tokenizer.vocab_size
-            prompt = self.tokenizer.decode(
-                self.prefix_ids + prompt_ids.tolist(), skip_special_tokens=False, clean_up_tokenization_spaces=False)
+            prompt_ids = ((offsets[i] + i + np.arange(input_lens[i])) % self.tokenizer.vocab_size).tolist()
+            prompt = self.tokenizer.decode(self.prefix_ids + prompt_ids)
 
             if self.query_parameters.apply_chat_template:
                 yield [{'role': 'user', 'content': prompt}]

@@ -24,7 +24,6 @@ class AioHttpClient:
         self.connect_timeout = args.connect_timeout
         self.client = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
-            connector=aiohttp.TCPConnector(limit=1),
             trace_configs=[self._create_trace_config()] if args.debug else [])
 
     def _create_trace_config(self):
@@ -164,7 +163,7 @@ async def test_connection(args: Arguments) -> bool:
             is_error, state_code, response_data = await asyncio.wait_for(
                 attempt_connection(), timeout=args.connect_timeout)
             if not is_error:
-                logger.info('Connection successful.')
+                logger.info('Test connection successful.')
                 return True
             logger.warning(f'Retrying...  <{state_code}> {response_data}')
         except Exception as e:

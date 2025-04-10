@@ -82,6 +82,7 @@ async def send_request(
         client = AioHttpClient(args)
         async with client:
             benchmark_data = BenchmarkData(request=request)
+            benchmark_data.start_time = time.perf_counter()
             collected_messages = []
             try:
                 async for is_error, state_code, response_data in client.post(request):
@@ -107,7 +108,7 @@ async def send_request(
 
 
 @exception_handler
-async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue, args: Arguments):
+async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments):
     metrics = BenchmarkMetrics(concurrency=args.parallel)
 
     api_plugin_class = ApiRegistry(args.api)
@@ -168,7 +169,7 @@ async def statistic_benchmark_metric_worker(benchmark_data_queue: asyncio.Queue,
 
 
 @exception_handler
-async def start_server(args: Arguments) -> bool:
+async def connect_test(args: Arguments) -> bool:
     if args.api.startswith('local'):
         #  start local server
         server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
@@ -186,31 +187,22 @@ async def benchmark(args: Arguments) -> None:
 
     # init queue
     benchmark_data_queue = asyncio.Queue()
-
     # reset event
     data_process_completed_event.clear()
-
+    # test connection
+    await connect_test(args)
+    # start statistic benchmark metric
+    statistic_benchmark_metric_task = asyncio.create_task(statistic_benchmark_metric(benchmark_data_queue, args))
+    # start send request
     semaphore = asyncio.Semaphore(args.parallel)
+    send_request_tasks: List[asyncio.Task] = []
+    async for request in get_requests(args):
+        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args))
+        send_request_tasks.append(task)
 
-    async def create_send_request_tasks():
-        tasks: List[asyncio.Task] = []
-        async for request in get_requests(args):
-            task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args))
-            tasks.append(task)
-        return tasks
+    await asyncio.gather(*send_request_tasks, return_exceptions=True)
+    await benchmark_data_queue.join()
+    data_process_completed_event.set()
 
-    async def run_tasks():
-        await start_server(args)
-
-        statistic_benchmark_metric_task = asyncio.create_task(
-            statistic_benchmark_metric_worker(benchmark_data_queue, args))
-        send_request_tasks = await create_send_request_tasks()
-
-        await asyncio.gather(*send_request_tasks, return_exceptions=True)
-        await benchmark_data_queue.join()
-        data_process_completed_event.set()
-
-        metrics, result_db_path = await statistic_benchmark_metric_task
-        summary_result(args, metrics, result_db_path)
-
-    await run_tasks()
+    metrics, result_db_path = await statistic_benchmark_metric_task
+    summary_result(args, metrics, result_db_path)

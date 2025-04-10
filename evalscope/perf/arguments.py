@@ -59,7 +59,7 @@ class Arguments:
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
     min_tokens: Optional[int] = None  # Minimum number of tokens in the response
     n_choices: Optional[int] = None  # Number of response choices
-    seed: Optional[int] = 42  # Random seed for reproducibility
+    seed: Optional[int] = 0  # Random seed for reproducibility
     stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
     stream: Optional[bool] = True  # Whether to stream the response
@@ -178,7 +178,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)
-    parser.add_argument('--seed', type=int, help='The random seed', default=42)
+    parser.add_argument('--seed', type=int, help='The random seed', default=0)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)

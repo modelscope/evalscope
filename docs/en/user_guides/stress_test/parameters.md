@@ -61,7 +61,7 @@ Here's the English translation:
 - `--max-tokens`: The maximum number of tokens that can be generated.
 - `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
 - `--n-choices`: The number of completion choices to generate.
-- `--seed`: The random seed, default is 42.
+- `--seed`: The random seed, default is 0.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
 - `--temperature`: Sampling temperature, default is 0.0
