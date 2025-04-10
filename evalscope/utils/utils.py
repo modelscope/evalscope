@@ -168,9 +168,9 @@ class ResponseParser:
         options_pattern = ResponseParser.process_options(options)
 
         patterns = [
-            rf'answer is \(?({options_pattern})\)?',
             rf'[Aa]nswer:\s*({options_pattern})',
             rf'ANSWER:\s*({options_pattern})',
+            rf'answer is \(?({options_pattern})\)?',
             rf'[Tt]he correct answer is:\s*({options_pattern})',
             rf'[Tt]he correct answer is:\n\s*({options_pattern})',
             rf'[Tt]he correct answer is:\n\n-\s*({options_pattern})',

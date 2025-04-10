@@ -19,4 +19,7 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
             prompt = item.strip()
             if len(prompt) > self.query_parameters.min_prompt_length and len(
                     prompt) < self.query_parameters.max_prompt_length:
-                yield [{'role': 'user', 'content': prompt}]
+                if self.query_parameters.apply_chat_template:
+                    yield [{'role': 'user', 'content': prompt}]
+                else:
+                    yield prompt

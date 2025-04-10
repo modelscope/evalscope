@@ -11,7 +11,7 @@ logger = get_logger()
 @dataclass
 class BenchmarkData:
     request: Any = None
-    start_time: float = field(default_factory=time.perf_counter)
+    start_time: float = 0.0
     completed_time: float = 0.0
     chunk_times: List[float] = field(default_factory=list)
     success: bool = False
@@ -73,7 +73,9 @@ class BenchmarkMetrics:
     avg_chunk_time: float = -1
     avg_prompt_tokens: float = -1
     avg_completion_tokens: float = -1
-    avg_token_per_seconds: float = -1
+    avg_input_token_per_seconds: float = -1
+    avg_output_token_per_seconds: float = -1
+    avg_total_token_per_seconds: float = -1
     avg_time_per_token: float = -1
     qps: float = -1
 
@@ -111,22 +113,26 @@ class BenchmarkMetrics:
             self.avg_chunk_time = self.total_chunks_time / self.n_total_chunks
             self.avg_prompt_tokens = self.n_total_prompt_tokens / self.n_succeed_queries
             self.avg_completion_tokens = self.n_total_completion_tokens / self.n_succeed_queries
-            self.avg_token_per_seconds = self.n_total_completion_tokens / self.total_time
+            self.avg_input_token_per_seconds = self.n_total_prompt_tokens / self.total_first_chunk_latency
+            self.avg_output_token_per_seconds = self.n_total_completion_tokens / self.total_time
+            self.avg_total_token_per_seconds = (self.n_total_prompt_tokens
+                                                + self.n_total_completion_tokens) / self.total_time
             self.avg_time_per_token = self.n_time_per_output_token / self.n_succeed_queries
             self.qps = self.n_succeed_queries / self.total_time
         except ZeroDivisionError as e:
             logger.exception(e)
             return
 
-    def create_message(self, default_ndigits=3):
+    def create_message(self, default_ndigits=4):
         message = {
             'Time taken for tests (s)': round(self.total_time, default_ndigits),
             'Number of concurrency': self.concurrency,
             'Total requests': int(self.n_total_queries),
             'Succeed requests': self.n_succeed_queries,
             'Failed requests': self.n_failed_queries,
-            'Throughput(average tokens/s)': round(self.avg_token_per_seconds, default_ndigits),
-            'Average QPS': round(self.qps, default_ndigits),
+            'Output token throughput (tok/s)': round(self.avg_output_token_per_seconds, default_ndigits),
+            'Total token throughput (tok/s)': round(self.avg_total_token_per_seconds, default_ndigits),
+            'Request throughput (req/s)': round(self.qps, default_ndigits),
             'Average latency (s)': round(self.avg_latency, default_ndigits),
             'Average time to first token (s)': round(self.avg_first_chunk_latency, default_ndigits),
             'Average time per output token (s)': round(self.avg_time_per_token, default_ndigits),

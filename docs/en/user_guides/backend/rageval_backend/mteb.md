@@ -47,7 +47,7 @@ Here is an overview of the available tasks and datasets in C-MTEB:
 For retrieval tasks, a sample of 100,000 candidates (including the ground truth) is drawn from the entire corpus to reduce inference costs.
 
 ```{seealso}
-- [Datasets Supported by CMTEB](https://github.com/FlagOpen/FlagEmbedding/blob/master/C_MTEB/README.md)
+- [Datasets Supported by CMTEB](https://github.com/FlagOpen/FlagEmbedding/blob/master/research/C_MTEB/README.md)
 - [Datasets Supported by MTEB](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
 ```
 

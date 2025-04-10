@@ -4,7 +4,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 
 ## Basic Settings
 - `--model`: Name of the test model.
-- `--url`: Specify the API address.
+- `--url` specifies the API address, supporting two types of endpoints: `/chat/completion` and `/completion`.
 - `--name`: Name for the wandb/swanlab database result and result database, default is `{model_name}_{current_time}`, optional.
 - `--api`: Specify the service API, currently supports [openai|dashscope|local|local_vllm].
   - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
@@ -33,7 +33,7 @@ Execute `evalscope perf --help` to get a full parameter description:
   The `--parallel` parameter is used to control the number of workers sending requests; workers will take requests from the queue and send them, only sending the next request after receiving a response for the previous one. It is not recommended to set both parameters simultaneously; thus, in this tool, the `--rate` parameter is only effective when `--parallel` is set to 1.
   ```
 - `--log-every-n-query`: Log every n queries, default is 10.
-- `--stream`: Use SSE stream output, default is False. Need to set the `stream` parameter to measure the Time to First Token (TTFT) metric.
+- `--stream` uses SSE (Server-Sent Events) stream output, default is True. Note: Setting `--stream` is necessary to measure the Time to First Token (TTFT) metric; setting `--no-stream` will disable streaming output.
 
 ## Prompt Settings
 - `--max-prompt-length`: The maximum input prompt length, default is `131072`. Prompts exceeding this length will be discarded.
@@ -41,6 +41,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--prefix-length`: The length of the prompt prefix, default is 0. This is only effective for the `random` dataset.
 - `--prompt`: Specifies the request prompt, which can be a string or a local file. This has higher priority than `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
 - `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
+- `--apply-chat-template` determines whether to apply the chat template, default is None. It will automatically choose based on whether the URL suffix is `chat/completion`.
 
 ## Dataset Configuration
 Here's the English translation:
@@ -60,7 +61,7 @@ Here's the English translation:
 - `--max-tokens`: The maximum number of tokens that can be generated.
 - `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
 - `--n-choices`: The number of completion choices to generate.
-- `--seed`: The random seed, default is 42.
+- `--seed`: The random seed, default is 0.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
 - `--temperature`: Sampling temperature, default is 0.0
