@@ -2,7 +2,6 @@ import json
 import multiprocessing
 import numpy as np
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from evalscope.utils.logger import get_logger
 from .pass_k_utils import compute_metrics_from_results
@@ -99,7 +98,7 @@ def evaluate_generations(
     samples_list: list,
     generations_list: list[list[str]],
     debug: bool = False,
-    num_process_evaluate: int = 16,
+    num_process_evaluate: int = 16,  # This parameter will be unused
     timeout=6,
 ):
     """We take the list of code generations and try to compile them and the run
@@ -117,26 +116,19 @@ def evaluate_generations(
         [-2] = compile error, [-1] = runtime error [False] = failed test
             case [True] = passed test case
     """
+    results = {}
+    metadata = {}
 
-    # generations are code generations in the same order of the dataset
+    for index in range(len(generations_list)):
+        problem_generations = generations_list[index]
+        sample = samples_list[index]
 
-    inputs = [[(generations_list[index], samples_list[index], debug, timeout), index]
-              for index in range(len(generations_list))]
+        result, meta = evaluate_generations_by_problem(problem_generations, sample, debug, timeout)
+        results[index] = result
+        metadata[index] = meta
 
-    with ProcessPoolExecutor(max_workers=1 if debug else num_process_evaluate) as executor:
-        futures = {
-            executor.submit(evaluate_generations_by_problem, problem_generations, sample, debug, timeout): index
-            for (problem_generations, sample, debug, timeout), index in inputs
-        }
-
-        results = {}
-        metadata = {}
-        for future in as_completed(futures):
-            index = futures[future]
-            results[index], metadata[index] = future.result()
-
-    assert len(results) == len(inputs), f'results = {len(results)} inputs = {len(inputs)} {results=}'
-    # results = {i: r for r, (_, i) in zip(results, inputs)}
+    assert len(results) == len(
+        generations_list), f'results = {len(results)} inputs = {len(generations_list)} {results=}'
 
     return results, metadata
 
