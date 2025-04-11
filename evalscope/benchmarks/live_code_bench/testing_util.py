@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from functools import partial
 from io import StringIO
 # from pyext import RuntimeModule
 from types import ModuleType
@@ -46,8 +47,9 @@ class TimeoutException(Exception):
     pass
 
 
-def timeout_handler(signum, frame):
-    logger.info('timeout occured: alarm went off')
+def timeout_handler(debug, signum, frame):
+    if debug:
+        logger.info('timeout occured: alarm went off')
     raise TimeoutException
 
 
@@ -381,7 +383,8 @@ def run_test(sample, test=None, debug=False, timeout=6):
     if test(generated_code) is not None it'll try to run the code.
     otherwise it'll just return an input and output pair.
     """
-    signal.signal(signal.SIGALRM, timeout_handler)
+    timeout_handler_wrapper = partial(timeout_handler, debug)
+    signal.signal(signal.SIGALRM, timeout_handler_wrapper)
 
     # Disable functionalities that can make destructive changes to the test.
     # max memory is set to 4GB
