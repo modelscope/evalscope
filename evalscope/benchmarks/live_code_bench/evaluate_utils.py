@@ -30,7 +30,10 @@ def codegen_check_correctness(sample, generation, timeout, debug=True):
         args=(sample, generation, debug, result, metadata_list, timeout),
     )
     p.start()
-    p.join(timeout=(timeout + 1) * len(json.loads(sample['input_output'])['inputs']) + 5)
+    global_timeout = (timeout + 1) * len(json.loads(sample['input_output'])['inputs'])
+    if debug:
+        logger.info(f'global timeout = {global_timeout}')
+    p.join(timeout=global_timeout)
     if p.is_alive():
         p.kill()
     if not result:
@@ -38,7 +41,7 @@ def codegen_check_correctness(sample, generation, timeout, debug=True):
         # consider that all tests failed
         result = [[-1 for i in range(len(in_outs['inputs']))]]
         if debug:
-            logger.info('global timeout')
+            logger.info('global timeout occured: alarm went off')
     return result[0], metadata_list[0]
 
 

@@ -18,7 +18,8 @@ logger = get_logger()
     extra_params={
         'start_date': None,
         'end_date': None,
-        'timeout': 6
+        'timeout': 6,
+        'debug': False
     },
     system_prompt=
     'You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.',  # noqa: E501
@@ -33,6 +34,7 @@ class LiveCodeBenchAdapter(DataAdapter):
         extra_params = kwargs.get('extra_params', {})
 
         self.timeout = extra_params.get('timeout', 6)
+        self.debug = extra_params.get('debug', False)
         self.start_date = extra_params.get('start_date')
         self.end_date = extra_params.get('end_date')
 
@@ -84,5 +86,6 @@ class LiveCodeBenchAdapter(DataAdapter):
             k_list=[1],
             num_process_evaluate=1,
             timeout=self.timeout,
+            debug=self.debug,
         )
         return metrics['pass@1'] / 100  # convert to point scale
