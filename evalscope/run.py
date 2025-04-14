@@ -153,10 +153,10 @@ def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsSt
         data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
         return EvaluatorCollection(task_cfg, data_adapter, outputs, base_model)
 
-    # Initialize model adapter
-    model_adapter = initialize_model_adapter(task_cfg, benchmark, base_model)
-    # Initialize data adapter
+    # Initialize data adapter first to update config
     data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
+    # Initialize model adapter
+    model_adapter = initialize_model_adapter(task_cfg, data_adapter, base_model)
 
     # update task_cfg.dataset_args
     task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()

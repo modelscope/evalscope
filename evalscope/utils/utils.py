@@ -76,16 +76,16 @@ def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
 class ResponseParser:
 
     @staticmethod
-    def parse_first_capital(text: str) -> str:
+    def parse_first_capital(text: str, options: list[str]) -> str:
         for t in text:
-            if t.isupper():
+            if t.isupper() and (t in options):
                 return t
         return ''
 
     @staticmethod
-    def parse_last_capital(text: str) -> str:
+    def parse_last_capital(text: str, options: list[str]) -> str:
         for t in text[::-1]:
-            if t.isupper():
+            if t.isupper() and (t in options):
                 return t
         return ''
 
@@ -183,6 +183,10 @@ class ResponseParser:
             matches = regex.search(text)
             if matches:
                 return matches.group(1)
+        # If no match found, try to find the last capital letter in the text
+        last_capital = ResponseParser.parse_last_capital(text, options)
+        if last_capital:
+            return last_capital
         return 'No valid option found'
 
 

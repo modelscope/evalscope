@@ -11,7 +11,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 if TYPE_CHECKING:
-    from evalscope.benchmarks import BenchmarkMeta
+    from evalscope.benchmarks import DataAdapter
     from evalscope.config import TaskConfig
 
 
@@ -39,7 +39,7 @@ class BaseModelAdapter(ABC):
         raise NotImplementedError
 
 
-def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'BenchmarkMeta', base_model: 'LocalModel'):
+def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', base_model: 'LocalModel'):
     """Initialize the model adapter based on the task configuration."""
     if task_cfg.dry_run:
         from evalscope.models.model import DummyChatModel

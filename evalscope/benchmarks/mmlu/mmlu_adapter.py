@@ -137,7 +137,7 @@ SUBJECT_MAPPING = {
     name='mmlu',
     pretty_name='MMLU',
     dataset_id='modelscope/mmlu',
-    model_adapter=OutputType.MULTIPLE_CHOICE,
+    model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],
@@ -263,6 +263,8 @@ class MMLUAdapter(DataAdapter):
 
         if include_answer:
             example += f"\nAnswer: {input_d['target']}\n\n"
+        else:
+            example += '\nAnswer: \n\n'
 
         return example
 

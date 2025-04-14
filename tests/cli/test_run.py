@@ -209,17 +209,24 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='Qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'math_500',
                 # 'aime24',
-                # 'competition_math'
+                # 'competition_math',
+                'mmlu',
             ],
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4', 'Level 5']
+                },
+                'mmlu': {
+                    'subset_list': ['elementary_mathematics'],
+                    'few_shot_num': 0,
+                    # 'model_adapter': OutputType.MULTIPLE_CHOICE,
                 }
             },
-            limit=5
+            limit=100,
+            eval_batch_size=10,
         )
 
         run_task(task_cfg=task_cfg)
