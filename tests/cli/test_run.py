@@ -209,7 +209,8 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='Qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
-                'iquiz',
+                # 'iquiz',
+                'mmlu',
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math'
@@ -217,7 +218,11 @@ class TestRun(unittest.TestCase):
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4', 'Level 5']
-                }
+                },
+                'mmlu': {
+                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
+                    'few_shot_num': 0
+                },
             },
             limit=5
         )
@@ -284,7 +289,7 @@ class TestRun(unittest.TestCase):
                 # 'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux',
-                'maritime_bench'
+                # 'maritime_bench'
             ],
             dataset_args={
                 'mmlu': {

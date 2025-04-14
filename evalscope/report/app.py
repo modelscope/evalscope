@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, List, Union
 
 from evalscope.constants import DataCollection
-from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
+from evalscope.report import Report, ReportKey, add_argument, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.version import __version__
@@ -697,15 +697,6 @@ def create_app(args: argparse.Namespace):
             return gr.update(visible=new_visible), new_visible, gr.update(value=text)
 
     demo.launch(share=args.share, server_name=args.server_name, server_port=args.server_port, debug=args.debug)
-
-
-def add_argument(parser: argparse.ArgumentParser):
-    parser.add_argument('--share', action='store_true', help='Share the app.')
-    parser.add_argument('--server-name', type=str, default='0.0.0.0', help='The server name.')
-    parser.add_argument('--server-port', type=int, default=None, help='The server port.')
-    parser.add_argument('--debug', action='store_true', help='Debug the app.')
-    parser.add_argument('--lang', type=str, default='zh', help='The locale.', choices=['zh', 'en'])
-    parser.add_argument('--outputs', type=str, default='./outputs', help='The outputs dir.')
 
 
 if __name__ == '__main__':
