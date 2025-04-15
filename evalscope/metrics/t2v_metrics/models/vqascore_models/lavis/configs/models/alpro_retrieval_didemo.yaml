@@ -1,0 +1,35 @@
+ # Copyright (c) 2022, salesforce.com, inc.
+ # All rights reserved.
+ # SPDX-License-Identifier: BSD-3-Clause
+ # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+model:
+  arch: alpro_retrieval
+
+  load_finetuned: True
+
+  finetuned: https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/ALPRO/alpro_didemo_retrieval.pt
+  pretrained: "https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/ALPRO/alpro_pretrain.pt"
+
+  timesformer:
+    n_frms: 8
+    image_size: 224
+
+    patch_size: 16
+    attn_drop_rate: 0.
+    drop_rate: 0.
+    drop_path_rate: 0.1
+    use_grad_ckpt: False
+
+  # bert config
+  med_config_path: "configs/models/bert_config_alpro.json"
+
+preprocess:
+  vis_processor:
+      eval:
+        name: "alpro_video_eval"
+        n_frms: 8
+        image_size: 224
+  text_processor:
+      eval:
+        name: "blip_caption"

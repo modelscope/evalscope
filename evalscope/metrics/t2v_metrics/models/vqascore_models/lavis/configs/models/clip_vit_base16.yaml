@@ -1,0 +1,17 @@
+ # Copyright (c) 2022, salesforce.com, inc.
+ # All rights reserved.
+ # SPDX-License-Identifier: BSD-3-Clause
+ # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+model:
+  arch: clip
+
+  model_type: ViT-B-16
+
+  pretrained: openai
+
+preprocess:
+  vis_processor:
+      eval:
+        name: "clip_image_eval"
+        image_size: 224
