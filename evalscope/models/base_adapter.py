@@ -42,8 +42,8 @@ class BaseModelAdapter(ABC):
 def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', base_model: 'LocalModel'):
     """Initialize the model adapter based on the task configuration."""
     if task_cfg.dry_run:
-        from evalscope.models.model import DummyChatModel
-        return DummyChatModel(model_cfg=dict())
+        from evalscope.models.custom import DummyCustomModel
+        return DummyCustomModel()
     elif task_cfg.eval_type == EvalType.CUSTOM:
         if not isinstance(task_cfg.model, CustomModel):
             raise ValueError(f'Expected evalscope.models.custom.CustomModel, but got {type(task_cfg.model)}.')

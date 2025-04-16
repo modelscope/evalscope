@@ -3,6 +3,7 @@ from functools import partial
 from typing import Callable, Dict
 
 from evalscope.metrics.metrics import mean, pass_at_k, weighted_mean
+from evalscope.metrics.t2v_metrics import clip_flant5_score, pick_score
 
 
 @dataclass
@@ -42,3 +43,5 @@ for k in range(1, 17):
     metric_registry.register(Metric(name=f'Pass@{k}', object=partial(pass_at_k, k=k)))
 
 # t2v_metrics
+metric_registry.register(Metric(name='CLIPT5VQAScore', object=clip_flant5_score))
+metric_registry.register(Metric(name='PickScore', object=pick_score))

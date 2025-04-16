@@ -1,0 +1,7 @@
+{"image_path": "custom_eval/multimodal/images/dog.jpg", "prompt": "A cute dog."}
+{"image_path": "custom_eval/multimodal/images/dog.jpg", "prompt": "A cute cat."}
+{"image_path": "custom_eval/multimodal/images/AMNH.jpg", "prompt": "building"}
+{"image_path": "custom_eval/multimodal/images/tokyo.jpg", "prompt": "city tokyo"}
+{"image_path": "custom_eval/multimodal/images/tesla.jpg", "prompt": "car tesla"}
+{"image_path": "custom_eval/multimodal/images/running.jpg", "prompt": "man running"}
+{"image_path": "custom_eval/multimodal/images/running.jpg", "prompt": "man eating"}
