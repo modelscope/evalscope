@@ -210,10 +210,10 @@ class TestRun(unittest.TestCase):
             model='Qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
                 # 'iquiz',
-                'mmlu',
                 # 'math_500',
                 # 'aime24',
-                # 'competition_math'
+                # 'competition_math',
+                'mmlu',
             ],
             dataset_args={
                 'competition_math': {
@@ -224,7 +224,8 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
             },
-            limit=5
+            limit=100,
+            eval_batch_size=10,
         )
 
         run_task(task_cfg=task_cfg)

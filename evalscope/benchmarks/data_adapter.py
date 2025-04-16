@@ -24,6 +24,7 @@ class DataAdapter(ABC):
                  subset_list: list,
                  metric_list: List[str],
                  llm_as_a_judge: bool = False,
+                 output_types: Optional[List[str]] = None,
                  few_shot_num: Optional[int] = 0,
                  train_split: Optional[str] = None,
                  eval_split: Optional[str] = None,
@@ -63,6 +64,7 @@ class DataAdapter(ABC):
         self.query_template = query_template
         self.pretty_name = pretty_name
         self.config_kwargs = kwargs
+        self.output_types = output_types or [model_adapter]
         self.llm_as_a_judge = llm_as_a_judge
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)
