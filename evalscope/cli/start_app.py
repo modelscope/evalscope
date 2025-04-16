@@ -21,7 +21,7 @@ class StartAppCMD(CLICommand):
     def define_args(parsers: ArgumentParser):
         """ define args for create pipeline template command.
         """
-        from evalscope.report.app import add_argument
+        from evalscope.report import add_argument
 
         parser = parsers.add_parser(StartAppCMD.name)
         add_argument(parser)
