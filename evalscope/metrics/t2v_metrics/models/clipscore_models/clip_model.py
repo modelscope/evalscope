@@ -78,17 +78,12 @@ class CLIPScoreModel(ScoreModel):
         """Load the model, tokenizer, image transform
         """
         import open_clip
-        from modelscope import snapshot_download
+
+        from .utils import download_open_clip_model
 
         self.pretrained, self.arch = self.model_name.split(':')
-
-        # get pretrained config
-        pretrained_cfg = open_clip.get_pretrained_cfg(self.arch, self.pretrained)
-        model_hub = pretrained_cfg.get('hf_hub').strip('/')
         # load model from modelscope
-        model_weight_name = 'open_clip_model.safetensors'
-        local_path = snapshot_download(model_id=model_hub, cache_dir=self.cache_dir, allow_patterns=model_weight_name)
-        model_file_path = os.path.join(local_path, model_weight_name)
+        model_file_path = download_open_clip_model(self.arch, self.pretrained, self.cache_dir)
 
         self.model, _, self.preprocess = open_clip.create_model_and_transforms(
             self.arch, pretrained=model_file_path, device=self.device)
