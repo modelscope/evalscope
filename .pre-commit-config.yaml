@@ -11,7 +11,8 @@ repos:
                 evalscope/utils/utils.py|
                 evalscope/third_party/|
                 evalscope/backend/rag_eval/clip_benchmark/tasks|
-                evalscope/backend/rag_eval/cmteb/tasks
+                evalscope/backend/rag_eval/cmteb/tasks|
+                evalscope/metrics/t2v_metrics
             )
   - repo: https://github.com/PyCQA/isort.git
     rev: 5.13.2

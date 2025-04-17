@@ -10,8 +10,8 @@ from evalscope.utils import get_logger
 logger = get_logger()
 
 # Using glob to find all files matching the pattern
-pattern = os.path.join(os.path.dirname(__file__), '*', '*_adapter.py')
-files = glob.glob(pattern, recursive=False)
+pattern = os.path.join(os.path.dirname(__file__), '*', '**', '*_adapter.py')
+files = glob.glob(pattern, recursive=True)
 
 for file_path in files:
     if file_path.endswith('.py') and not os.path.basename(file_path).startswith('_'):

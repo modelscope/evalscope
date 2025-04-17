@@ -1,0 +1,40 @@
+ # Copyright (c) 2022, salesforce.com, inc.
+ # All rights reserved.
+ # SPDX-License-Identifier: BSD-3-Clause
+ # For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+
+model:
+  arch: albef_vqa
+  load_finetuned: True
+
+  pretrained: "https://storage.googleapis.com/sfr-pcl-data-research/ALBEF/ALBEF.pth"
+  finetuned: "https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/ALBEF/albef_vqav2_lavis.pt"
+
+  use_distill: True
+  momentum: 0.995
+  alpha: 0.4
+
+  # vit encoder
+  vit_type: "base"
+  vit_grad_ckpt: False
+  vit_ckpt_layer: 0
+  vit_layer_norm_epsilon: 1e-6
+
+  image_size: 384
+
+  # bert config
+  med_config_path: "configs/models/med_config_albef.json"
+
+preprocess:
+  vis_processor:
+      train:
+        name: "blip_image_train"
+        image_size: 384
+      eval:
+        name: "blip_image_eval"
+        image_size: 384
+  text_processor:
+      train:
+        name: "blip_question"
+      eval:
+        name: "blip_question"

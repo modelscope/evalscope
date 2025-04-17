@@ -4,13 +4,12 @@ import copy
 import json
 import os
 from argparse import Namespace
-from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
                                  JudgeStrategy, OutputType)
-from evalscope.models.custom import CustomModel
+from evalscope.models import CustomModel, DummyCustomModel
 from evalscope.utils import gen_hash
 from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -79,6 +78,10 @@ class TaskConfig:
     judge_model_args: Optional[Dict] = field(default_factory=lambda: {})
 
     def __post_init__(self):
+        if self.model is None:
+            self.model = DummyCustomModel()
+            self.eval_type = EvalType.CUSTOM
+
         if (not self.model_id) and self.model:
             if isinstance(self.model, CustomModel):
                 self.model_id = self.model.config.get('model_id', 'custom_model')
