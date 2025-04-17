@@ -12,6 +12,7 @@ nltk>=3.9
 omegaconf
 openai
 pandas
+pillow
 pyarrow
 pyyaml
 requests

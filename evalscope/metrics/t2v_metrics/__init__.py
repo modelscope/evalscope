@@ -29,3 +29,23 @@ def clip_flant5_score():
 def pick_score():
     pick_score = CLIPScore(model='pickscore-v1')
     return pick_score
+
+
+def clip_score():
+    clip_score = CLIPScore(model='openai:ViT-L-14-336')
+    return clip_score
+
+
+def blip2_score():
+    blip_itm_score = ITMScore(model='blip2-itm')
+    return blip_itm_score
+
+
+def hpsv2_score():
+    hpsv2_score = CLIPScore(model='hpsv2')
+    return hpsv2_score
+
+
+def image_reward_score():
+    image_reward_score = ITMScore(model='image-reward-v1')
+    return image_reward_score

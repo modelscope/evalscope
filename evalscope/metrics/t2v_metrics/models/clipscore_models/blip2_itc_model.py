@@ -26,7 +26,7 @@ class BLIP2ITCScoreModel(ScoreModel):
     def __init__(self, model_name='blip2-itc', device='cuda', cache_dir=CACHE_DIR):
         assert model_name in BLIP2_ITC_MODELS, f'Model name must be one of {BLIP2_ITC_MODELS.keys()}'
         os.environ['TORCH_HOME'] = cache_dir
-        import timm.models.hub as timm_hub
+
         super().__init__(model_name=model_name, device=device, cache_dir=cache_dir)
 
     def load_model(self):
