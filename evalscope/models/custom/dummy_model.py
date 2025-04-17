@@ -17,7 +17,7 @@ class DummyCustomModel(CustomModel):
     def __init__(self, config: dict = {'model_id': 'dummy-model'}, **kwargs):
         super(DummyCustomModel, self).__init__(config=config, **kwargs)
 
-    def predict(self, inputs: List[dict], **kwargs):
+    def predict(self, prompts: List[dict], **kwargs):
         # ONLY FOR DUMMY IMPLEMENTATION, DO NOT EDIT OR USE IN PRODUCTION.
 
         response = ''
@@ -40,7 +40,7 @@ class DummyCustomModel(CustomModel):
             }
         }
 
-        return [res_d for _ in inputs]
+        return [res_d for _ in prompts]
 
 
 if __name__ == '__main__':

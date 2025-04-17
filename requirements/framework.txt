@@ -5,9 +5,11 @@ jieba
 jsonlines
 langdetect
 latex2sympy2
+lazy_import
 matplotlib
 modelscope[framework]
 nltk>=3.9
+omegaconf
 openai
 pandas
 pyarrow

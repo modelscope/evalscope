@@ -12,12 +12,15 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
 from functools import partial
-from timm.models.helpers import adapt_input_conv, named_apply
-from timm.models.layers import DropPath, trunc_normal_
-from timm.models.registry import register_model
-from timm.models.vision_transformer import PatchEmbed, _cfg
+
+try:
+    from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
+    from timm.models.helpers import adapt_input_conv
+    from timm.models.layers import DropPath, trunc_normal_
+    from timm.models.vision_transformer import PatchEmbed
+except ImportError:
+    pass
 
 from ..models.base_model import BaseEncoder
 

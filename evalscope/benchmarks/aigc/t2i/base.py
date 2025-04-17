@@ -12,7 +12,7 @@ class T2IBaseAdapter(DataAdapter):
 
         super().__init__(**kwargs)
 
-        self.metrics = {m: metric_registry.get(m)() for m in self.metric_list}
+        self.metrics = {m: metric_registry.get(m).object() for m in self.metric_list}
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         # dummy prompt for general t2i
@@ -31,7 +31,8 @@ class T2IBaseAdapter(DataAdapter):
         # pred is the image path, gold is the prompt
         res = {}
         for metric_name, metric_func in self.metrics.items():
-            res[metric_name] = metric_func(images=[pred], texts=[gold])
+            score = metric_func(images=[pred], texts=[gold]).cpu()
+            res[metric_name] = score[0].item()
         return res
 
     def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:

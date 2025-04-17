@@ -11,8 +11,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from functools import partial
-from timm.models.layers import drop_path, to_2tuple, trunc_normal_
-from timm.models.registry import register_model
+
+try:
+    from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+except ImportError:
+    pass
 
 from ..common.dist_utils import download_cached_file
 

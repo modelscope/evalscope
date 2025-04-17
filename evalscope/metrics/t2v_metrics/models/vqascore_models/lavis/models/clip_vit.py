@@ -3,7 +3,6 @@ import math
 import torch
 import torch.nn.functional as F
 from collections import OrderedDict
-from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
 from itertools import repeat
 from torch import nn
 
@@ -126,6 +125,7 @@ class ResidualAttentionBlock(nn.Module):
         self.attn_mask = attn_mask
 
         if use_grad_checkpointing:
+            from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
             self.attn = checkpoint_wrapper(self.attn)
             self.mlp = checkpoint_wrapper(self.mlp)
 
