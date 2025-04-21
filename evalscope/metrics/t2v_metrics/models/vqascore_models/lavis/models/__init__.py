@@ -17,6 +17,7 @@ from .blip2_models.blip2_image_text_matching import Blip2ITM
 from .blip2_models.blip2_qformer import Blip2Qformer
 from .blip2_models.blip2_t5 import Blip2T5
 from .blip2_models.blip2_t5_instruct import Blip2T5Instruct
+from .blip2_models.fga_blip2 import FGA_Blip2
 from .blip_models.blip import BlipBase
 from .blip_models.blip_caption import BlipCaption
 from .blip_models.blip_classification import BlipClassification
@@ -44,6 +45,7 @@ __all__ = [
     'Blip2ITM',
     'Blip2T5',
     'Blip2T5Instruct',
+    'FGA_Blip2',
 ]
 
 

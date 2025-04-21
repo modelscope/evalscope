@@ -54,3 +54,8 @@ def hpsv2_1_score():
 def image_reward_score():
     image_reward_score = ITMScore(model='image-reward-v1')
     return image_reward_score
+
+
+def fga_blip2_score():
+    fga_blip2_score = ITMScore(model='fga_blip2')
+    return fga_blip2_score

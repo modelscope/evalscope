@@ -35,7 +35,7 @@ class Score(nn.Module):
         """
         pass
 
-    def forward(self, images: Union[str, List[str]], texts: Union[str, List[str]], **kwargs) -> torch.Tensor:
+    def forward(self, images: Union[str, List[str]], texts: Union[str, List[str]], **kwargs) -> List[float]:
         """Return the similarity score(s) between the image(s) and the text(s)
         If there are m images and n texts, return a m x n tensor
         """
@@ -43,10 +43,10 @@ class Score(nn.Module):
             images = [images]
         if type(texts) == str:
             texts = [texts]
-
-        scores = torch.zeros(len(images), len(texts)).to(self.device)
+        assert len(images) == len(texts), 'Number of images and texts must match'
+        scores = []
         for i, image in enumerate(images):
-            scores[i] = self.model.forward([image] * len(texts), texts, **kwargs)
+            scores.append(self.model.forward([image] * len(texts), texts, **kwargs))
         return scores
 
     def batch_forward(self, dataset: List[ImageTextDict], batch_size: int = 16, **kwargs) -> torch.Tensor:
