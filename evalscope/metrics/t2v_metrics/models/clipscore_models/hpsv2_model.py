@@ -23,7 +23,7 @@ class HPSV2ScoreModel(ScoreModel):
         """
         import open_clip
 
-        from .utils import download_file, download_open_clip_model
+        from ..utils import download_file, download_open_clip_model
 
         self.pretrained, self.arch = 'laion2B-s32B-b79K:ViT-H-14'.split(':')
         # load model from modelscope

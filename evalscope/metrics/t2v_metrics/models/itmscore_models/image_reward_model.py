@@ -1,4 +1,3 @@
-import os
 import torch
 from typing import List
 
@@ -23,9 +22,18 @@ class ImageRewardScoreModel(ScoreModel):
     def load_model(self):
         """Load the model, tokenizer, image transform
         """
-        import ImageReward as reward
+        from ..utils import download_file
+        from .image_reward.ImageReward import ImageReward
+
         self.variant = IMAGE_REWARD_MODELS[self.model_name]['variant']
-        self.model = reward.load(self.variant).to(self.device).eval()
+
+        self.model_path = download_file('ZhipuAI/ImageReward', file_name='ImageReward.pt', cache_dir=self.cache_dir)
+        self.med_config = download_file('ZhipuAI/ImageReward', file_name='med_config.json', cache_dir=self.cache_dir)
+
+        state_dict = torch.load(self.model_path, map_location='cpu')
+        self.model = ImageReward(device=self.device, med_config=self.med_config).to(self.device)
+        msg = self.model.load_state_dict(state_dict, strict=False)
+        self.model.eval()
 
     def load_images(self, image: List[str]) -> torch.Tensor:
         """Load the image(s), and return a tensor (after preprocessing) put on self.device

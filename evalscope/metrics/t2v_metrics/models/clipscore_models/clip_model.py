@@ -79,7 +79,7 @@ class CLIPScoreModel(ScoreModel):
         """
         import open_clip
 
-        from .utils import download_open_clip_model
+        from ..utils import download_open_clip_model
 
         self.pretrained, self.arch = self.model_name.split(':')
         # load model from modelscope

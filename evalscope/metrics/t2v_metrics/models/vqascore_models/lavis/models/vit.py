@@ -15,8 +15,8 @@ import torch.nn.functional as F
 from functools import partial
 
 try:
-    from timm.layers import DropPath, trunc_normal_
-    from timm.models import PatchEmbed, adapt_input_conv
+    from timm.layers import DropPath, PatchEmbed, trunc_normal_
+    from timm.models import adapt_input_conv
 except ImportError:
     pass
 
