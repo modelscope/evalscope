@@ -16,9 +16,10 @@ def download_open_clip_model(model_name, tag, cache_dir):
     return model_file_path
 
 
-def download_file(model_id, file_name, cache_dir):
+def download_file(model_id, file_name=None, cache_dir=None):
     # download file from modelscope
     local_path = snapshot_download(model_id=model_id, cache_dir=cache_dir, allow_patterns=file_name)
-    file_path = os.path.join(local_path, file_name)
-
-    return file_path
+    if file_name is None:
+        return local_path
+    else:
+        return os.path.join(local_path, file_name)

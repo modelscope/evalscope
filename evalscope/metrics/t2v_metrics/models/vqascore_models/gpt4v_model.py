@@ -122,8 +122,6 @@ class GPT4VModel(VQAScoreModel):
             print(completion.choices[0].logprobs.content[0].top_logprobs)
             return torch.Tensor([0.0])
 
-    # @torch.no_grad()
-    # @torch.autocast(device_type='cuda', dtype=torch.bfloat16)
     def forward(self,
                 images: List[str],
                 texts: List[str],

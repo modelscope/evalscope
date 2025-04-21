@@ -35,18 +35,18 @@ CLIP_T5_MODELS = {
     # If you want to use a smaller model, we recommend using 'clip-flant5-xl'.
     'clip-flant5-xxl': {
         'tokenizer': {
-            'path': 'google/flan-t5-xxl',
+            'path': 'AI-ModelScope/clip-flant5-xxl',  # zhiqiulin/clip-flant5-xxl
             'model_max_length': CONTEXT_LEN,
         },
         'model': {
-            'path': 'zhiqiulin/clip-flant5-xxl',
+            'path': 'AI-ModelScope/clip-flant5-xxl',  # zhiqiulin/clip-flant5-xxl
             'conversation': 't5_chat',
             'image_aspect_ratio': 'pad',
         },
     },
     'clip-flant5-xl': {
         'tokenizer': {
-            'path': 'google/flan-t5-xl',
+            'path': 'zhiqiulin/clip-flant5-xl',
             'model_max_length': CONTEXT_LEN,
         },
         'model': {

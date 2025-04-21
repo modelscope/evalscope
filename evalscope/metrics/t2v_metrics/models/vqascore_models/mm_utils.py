@@ -77,9 +77,13 @@ def load_pretrained_model(
         tokenizer_dict['model_max_length'] = model_max_length
     if padding_side:
         tokenizer_dict['padding_side'] = padding_side
+
+    from ..utils import download_file
+
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, use_fast=False, **tokenizer_dict)
     # tokenizer.pad_token = tokenizer.unk_token # could be redundant
 
+    model_path = download_file(model_path, cache_dir=cache_dir)
     model = model_cls.from_pretrained(model_path, cache_dir=cache_dir)
 
     if mmprojector_repo:

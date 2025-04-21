@@ -46,6 +46,11 @@ def hpsv2_score():
     return hpsv2_score
 
 
+def hpsv2_1_score():
+    hpsv2_1_score = CLIPScore(model='hpsv2.1')
+    return hpsv2_1_score
+
+
 def image_reward_score():
     image_reward_score = ITMScore(model='image-reward-v1')
     return image_reward_score
