@@ -33,6 +33,8 @@ def preprocess_decorator(func):
 
     @wraps(func)
     def wrapper(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT):
+        if result is None:
+            result = ''
         filters = self.config_kwargs.get('filters', None)
         if filters:
             # Apply filters to the resultply filters to the result
