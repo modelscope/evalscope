@@ -15,10 +15,8 @@ import torch.nn.functional as F
 from functools import partial
 
 try:
-    from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
-    from timm.models.helpers import adapt_input_conv
-    from timm.models.layers import DropPath, trunc_normal_
-    from timm.models.vision_transformer import PatchEmbed
+    from timm.layers import DropPath, trunc_normal_
+    from timm.models import PatchEmbed, adapt_input_conv
 except ImportError:
     pass
 
@@ -149,6 +147,7 @@ class Block(nn.Module):
         )
 
         if use_grad_checkpointing:
+            from fairscale.nn.checkpoint.checkpoint_activations import checkpoint_wrapper
             self.attn = checkpoint_wrapper(self.attn)
             self.mlp = checkpoint_wrapper(self.mlp)
 

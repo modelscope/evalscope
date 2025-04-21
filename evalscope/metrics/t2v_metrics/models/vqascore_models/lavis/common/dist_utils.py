@@ -114,19 +114,28 @@ def download_cached_file(url, check_hash=True, progress=False):
     Download a file from a URL and cache it locally. If the file already exists, it is not downloaded again.
     If distributed, only the main process downloads the file, and the other processes wait for the file to be downloaded.
     """
-    import timm.models.hub as timm_hub
+    import timm.models as timm_hub
 
-    def get_cached_file_path():
-        # a hack to sync the file path across processes
-        parts = torch.hub.urlparse(url)
-        filename = os.path.basename(parts.path)
-        cached_file = os.path.join(timm_hub.get_cache_dir(), filename)
-        return cached_file
+    def download_file(model_id, file_name, cache_dir=None):
+        # download file from modelscope
+        from modelscope import snapshot_download
+        local_path = snapshot_download(model_id=model_id, cache_dir=cache_dir, allow_patterns=file_name)
+        file_path = os.path.join(local_path, file_name)
+
+        return file_path
+
+    parts = torch.hub.urlparse(url)
+    filename = os.path.basename(parts.path)
 
     if is_main_process():
-        timm_hub.download_cached_file(url, check_hash, progress)
+        try:
+            cached_file = download_file('AI-ModelScope/BLIP2-Pretrain', filename)
+        except Exception as e:
+            print(f'Error downloading file: {e}')
+            timm_hub.download_cached_file(url, check_hash, progress)
+            cached_file = os.path.join(timm_hub.get_cache_dir(), filename)
 
     if is_dist_avail_and_initialized():
         dist.barrier()
 
-    return get_cached_file_path()
+    return cached_file

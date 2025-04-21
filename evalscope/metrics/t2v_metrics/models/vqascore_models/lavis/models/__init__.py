@@ -17,8 +17,6 @@ from .blip2_models.blip2_image_text_matching import Blip2ITM
 from .blip2_models.blip2_qformer import Blip2Qformer
 from .blip2_models.blip2_t5 import Blip2T5
 from .blip2_models.blip2_t5_instruct import Blip2T5Instruct
-from .blip2_models.blip2_vicuna import Blip2Vicuna
-from .blip2_models.blip2_vicuna_instruct import Blip2VicunaInstruct
 from .blip_models.blip import BlipBase
 from .blip_models.blip_caption import BlipCaption
 from .blip_models.blip_classification import BlipClassification
@@ -26,7 +24,6 @@ from .blip_models.blip_feature_extractor import BlipFeatureExtractor
 from .blip_models.blip_image_text_matching import BlipITM
 from .blip_models.blip_nlvr import BlipNLVR
 from .blip_models.blip_pretrain import BlipPretrain
-from .blip_models.blip_retrieval import BlipRetrieval
 from .blip_models.blip_vqa import BlipVQA
 from .med import XBertLMHeadDecoder
 from .vit import VisionTransformerEncoder
@@ -41,7 +38,6 @@ __all__ = [
     'BlipITM',
     'BlipNLVR',
     'BlipPretrain',
-    'BlipRetrieval',
     'BlipVQA',
     'Blip2Qformer',
     'Blip2Base',

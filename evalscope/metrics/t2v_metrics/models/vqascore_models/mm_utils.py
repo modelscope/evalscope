@@ -1,7 +1,7 @@
 import os
 import torch
+from modelscope import AutoTokenizer
 from PIL import Image
-from transformers import AutoTokenizer
 
 from ...constants import CACHE_DIR, IMAGE_TOKEN_INDEX
 
@@ -104,7 +104,7 @@ def load_pretrained_model(
         model.get_model().initialize_vision_modules(
             model_args)  # This will load the CLIP vision encoder and MLP projector
     else:
-        model.resize_token_embeddings(len(tokenizer))  # perhaps not needed
+        model.resize_token_embeddings(tokenizer.vocab_size)  # perhaps not needed
 
     if not model.get_vision_tower().is_loaded:
         model.get_vision_tower().load_model()

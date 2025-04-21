@@ -8,7 +8,7 @@
 import logging
 import os
 import torch
-from transformers import BertTokenizer
+from modelscope import AutoTokenizer
 
 from ...common.dist_utils import download_cached_file
 from ...common.utils import is_url
@@ -20,7 +20,7 @@ class BlipBase(BaseModel):
 
     @classmethod
     def init_tokenizer(cls):
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        tokenizer = AutoTokenizer.from_pretrained('AI-ModelScope/bert-base-uncased')
         tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         tokenizer.add_special_tokens({'additional_special_tokens': ['[ENC]']})
         tokenizer.enc_token_id = tokenizer.additional_special_tokens_ids[0]

@@ -13,7 +13,7 @@ import torch.utils.checkpoint as checkpoint
 from functools import partial
 
 try:
-    from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+    from timm.layers import drop_path, to_2tuple, trunc_normal_
 except ImportError:
     pass
 
