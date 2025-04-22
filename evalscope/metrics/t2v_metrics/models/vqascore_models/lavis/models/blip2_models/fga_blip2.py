@@ -95,7 +95,7 @@ class FGA_Blip2(Blip2Qformer):
             image_embeds = self.ln_vision(self.visual_encoder(image))
         image_embeds = image_embeds.float()
         image_atts = torch.ones(image_embeds.size()[:-1], dtype=torch.long).to(image.device)
-        # breakpoint()
+
         text = self.tokenizer(
             caption,
             # padding="max_length",

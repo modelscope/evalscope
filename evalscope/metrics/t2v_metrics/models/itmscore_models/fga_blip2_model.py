@@ -86,10 +86,10 @@ class FGA_BLIP2ScoreModel(ScoreModel):
                     mask[idx:idx + len(element_ids)] = [1] * len(element_ids)
 
                     mask = torch.tensor(mask).to(self.device)
-                    elements_score[element] = ((scores * mask).sum() / mask.sum()).item()
+                    elements_score[element] = (scores * mask).sum() / mask.sum()
                 else:
-                    elements_score[element] = 0
+                    elements_score[element] = torch.tensor(0.0).to(self.device)
 
-            result_list.append({'score_result': alignment_score.item(), **elements_score})
+            result_list.append({'alignment_score': alignment_score, **elements_score})
 
         return result_list

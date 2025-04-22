@@ -28,11 +28,10 @@ from .Qformer import BertConfig, BertLMHeadModel
 
 class Blip2Base(BaseModel):
 
-    bert_path = snapshot_download('AI-ModelScope/bert-base-uncased')
-
     @classmethod
     def init_tokenizer(cls, truncation_side='right'):
-        tokenizer = BertTokenizer.from_pretrained(cls.bert_path, truncation_side=truncation_side)
+        bert_path = snapshot_download('AI-ModelScope/bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained(bert_path, truncation_side=truncation_side)
         tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         return tokenizer
 
@@ -42,13 +41,14 @@ class Blip2Base(BaseModel):
         enable_autocast = self.device != torch.device('cpu')
 
         if enable_autocast:
-            return torch.amp.autocast(device_type=self.device, dtype=dtype)
+            return torch.amp.autocast(device_type=self.device.type, dtype=dtype)
         else:
             return contextlib.nullcontext()
 
     @classmethod
     def init_Qformer(cls, num_query_token, vision_width, cross_attention_freq=2):
-        encoder_config = BertConfig.from_pretrained(cls.bert_path)
+        bert_path = snapshot_download('AI-ModelScope/bert-base-uncased')
+        encoder_config = BertConfig.from_pretrained(bert_path)
         encoder_config.encoder_width = vision_width
         encoder_config.vocab_size += 1  # add one for [DEC]
         # insert cross-attention layer every other block

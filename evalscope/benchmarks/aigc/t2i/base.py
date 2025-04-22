@@ -31,12 +31,12 @@ class T2IBaseAdapter(DataAdapter):
         # pred is the image path, gold is the prompt
         res = {}
         for metric_name, metric_func in self.metrics.items():
-            score = metric_func(images=[pred], texts=[gold]).cpu()[0]
+            score = metric_func(images=[pred], texts=[gold])[0][0]
             if isinstance(score, dict):
                 for k, v in score.items():
-                    res[f'{metric_name}_{k}'] = v.item()
+                    res[f'{metric_name}_{k}'] = v.cpu().item()
             else:
-                res[metric_name] = score.item()  # Updated to directly use score.item()
+                res[metric_name] = score.cpu().item()  # Updated to use score.cpu().item()
         return res
 
     def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
