@@ -220,10 +220,9 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['Level 4', 'Level 5']
                 },
                 'mmlu': {
-                    'subset_list': ['elementary_mathematics'],
-                    'few_shot_num': 0,
-                    # 'model_adapter': OutputType.MULTIPLE_CHOICE,
-                }
+                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
+                    'few_shot_num': 0
+                },
             },
             limit=100,
             eval_batch_size=10,
@@ -291,7 +290,7 @@ class TestRun(unittest.TestCase):
                 # 'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux',
-                'maritime_bench'
+                # 'maritime_bench'
             ],
             dataset_args={
                 'mmlu': {

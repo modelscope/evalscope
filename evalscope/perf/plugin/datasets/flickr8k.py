@@ -30,6 +30,7 @@ class FlickrDatasetPlugin(DatasetPluginBase):
 
         for item in dataset:
             pil_image = item['jpg']
+            text = item['txt']
             base64_iamge = PIL_to_base64(pil_image)
 
             yield [{
@@ -38,7 +39,7 @@ class FlickrDatasetPlugin(DatasetPluginBase):
                 'content': [
                     {
                         'type': 'text',
-                        'text': 'Describe the image'
+                        'text': text,
                     },
                     {
                         'type': 'image_url',
