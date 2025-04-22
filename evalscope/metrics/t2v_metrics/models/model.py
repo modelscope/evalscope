@@ -39,7 +39,7 @@ class ScoreModel(ABC):
         pass
 
     @abstractmethod
-    def forward(self, images: List[str], texts: List[str]) -> torch.Tensor:
+    def forward(self, images: List[str], texts: List[str], **kwargs) -> torch.Tensor:
         """Forward pass of the model to return n scores for n (image, text) pairs (in PyTorch Tensor)
         """
         pass

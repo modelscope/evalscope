@@ -4,7 +4,7 @@ from typing import Callable, Dict
 
 from evalscope.metrics.metrics import mean, pass_at_k, weighted_mean
 from evalscope.metrics.t2v_metrics import (blip2_score, clip_flant5_score, clip_score, fga_blip2_score, hpsv2_1_score,
-                                           hpsv2_score, image_reward_score, pick_score)
+                                           hpsv2_score, image_reward_score, mps_score, pick_score)
 
 
 @dataclass
@@ -52,3 +52,4 @@ metric_registry.register(Metric(name='HPSv2Score', object=hpsv2_score))
 metric_registry.register(Metric(name='HPSv2_1Score', object=hpsv2_1_score))
 metric_registry.register(Metric(name='ImageRewardScore', object=image_reward_score))
 metric_registry.register(Metric(name='FGA_BLIP2Score', object=fga_blip2_score))
+metric_registry.register(Metric(name='MPS_Score', object=mps_score))

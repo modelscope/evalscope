@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import List, Optional, Union
 
 from evalscope.benchmarks import Benchmark
-from evalscope.metrics import mean
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .base import T2IBaseAdapter

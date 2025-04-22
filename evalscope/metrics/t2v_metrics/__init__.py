@@ -59,3 +59,8 @@ def image_reward_score():
 def fga_blip2_score():
     fga_blip2_score = ITMScore(model='fga_blip2')
     return fga_blip2_score
+
+
+def mps_score():
+    mps_score = CLIPScore(model='mps')
+    return mps_score
