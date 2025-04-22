@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Union
 
-from evalscope.models.base_adapter import BaseModelAdapter
-from evalscope.models.custom import CustomModel
-from evalscope.models.register import register_model_adapter
+from .base_adapter import BaseModelAdapter
+from .custom import CustomModel
+from .register import register_model_adapter
 
 
 @register_model_adapter('custom')

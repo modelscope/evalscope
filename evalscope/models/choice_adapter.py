@@ -4,10 +4,10 @@ import torch
 from typing import List
 
 from evalscope.constants import OutputType
-from evalscope.models.base_adapter import BaseModelAdapter
-from evalscope.models.local_model import LocalModel
-from evalscope.models.register import register_model_adapter
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
+from .base_adapter import BaseModelAdapter
+from .local_model import LocalModel
+from .register import register_model_adapter
 
 
 @register_model_adapter(OutputType.MULTIPLE_CHOICE)

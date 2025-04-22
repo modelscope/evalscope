@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from evalscope.constants import EvalType, OutputType
-from evalscope.models.custom import CustomModel
-from evalscope.models.local_model import LocalModel
-from evalscope.models.register import get_model_adapter, register_model_adapter
 from evalscope.utils.logger import get_logger
+from .custom import CustomModel
+from .local_model import LocalModel
+from .register import get_model_adapter, register_model_adapter
 
 logger = get_logger()
 

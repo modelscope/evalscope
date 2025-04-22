@@ -3,8 +3,8 @@ import os
 import time
 from typing import List
 
-from evalscope.models.custom import CustomModel
 from evalscope.utils.logger import get_logger
+from .custom_model import CustomModel
 
 logger = get_logger()
 """

@@ -29,9 +29,14 @@ class TestRun(unittest.TestCase):
             dataset_args={
                 'general_t2i': {
                     'metric_list': [
-                        # 'PickScore',
+                        'PickScore',
                         'CLIPScore',
-                        ],
+                        'HPSv2Score',
+                        'BLIPv2Score',
+                        'ImageRewardScore',
+                        'VQAScore',
+                        'FGA_BLIP2Score',
+                    ],
                     'dataset_id': 'custom_eval/multimodal/t2i/example.jsonl',
                 }
             }
