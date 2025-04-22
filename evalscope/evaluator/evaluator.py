@@ -66,7 +66,7 @@ class Evaluator(object):
         if self.task_cfg.judge_strategy == JudgeStrategy.RULE:
             self.judge = None
         else:
-            from evalscope.metrics.llm_judge import LLMJudge
+            from evalscope.metrics import LLMJudge
             self.judge = LLMJudge(**self.task_cfg.judge_model_args)
 
     def load_dataset(self):
