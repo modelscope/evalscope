@@ -22,6 +22,23 @@ PLOTLY_THEME = 'plotly_dark'
 REPORT_TOKEN = '@@'
 MODEL_TOKEN = '::'
 DATASET_TOKEN = ', '
+LATEX_DELIMITERS = [{
+    'left': '$$',
+    'right': '$$',
+    'display': True
+}, {
+    'left': '$',
+    'right': '$',
+    'display': False
+}, {
+    'left': '\\(',
+    'right': '\\)',
+    'display': False
+}, {
+    'left': '\\[',
+    'right': '\\]',
+    'display': True
+}]
 
 
 def scan_for_report_folders(root_path):
@@ -307,23 +324,6 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     return df_subset
 
 
-def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: int = 1) -> pd.DataFrame:
-    if data_review_df is None:
-        return pd.DataFrame(), None
-
-    logger.debug(f'page: {page}, rows_per_page: {rows_per_page}')
-    start = (page - 1) * rows_per_page
-    end = start + rows_per_page
-    df_subset = data_review_df.iloc[start:end].copy()
-    df_subset['Input'] = df_subset['Input'].map(process_model_prediction).astype(str)
-    df_subset['Generated'] = df_subset['Generated'].map(process_model_prediction).astype(str)
-    df_subset['Pred'] = df_subset['Pred'].map(process_model_prediction).map(convert_markdown_image).astype(str)
-    df_subset['Score'] = df_subset['Score'].map(process_model_prediction).astype(str)
-    logger.debug(f'df_subset: {df_subset}')
-    styler = style_df(df_subset, columns=['NScore'])
-    return df_subset, styler
-
-
 @dataclass
 class SidebarComponents:
     root_path: gr.Textbox
@@ -470,7 +470,11 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         'page': {
             'zh': '页码',
             'en': 'Page'
-        }
+        },
+        'score_threshold': {
+            'zh': '分数阈值',
+            'en': 'Score Threshold'
+        },
     }
 
     # Update the UI components with localized labels
@@ -502,37 +506,53 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         gr.Markdown(f'### {locale_dict["model_prediction"][lang]}')
         subset_select = gr.Dropdown(
             label=locale_dict['select_subset'][lang], choices=[], show_label=True, interactive=True)
+
         with gr.Row():
             answer_mode_radio = gr.Radio(
                 label=locale_dict['answer_mode'][lang], choices=['All', 'Pass', 'Fail'], value='All', interactive=True)
-            page_number = gr.Number(
-                value=1, label=locale_dict['page'][lang], minimum=1, maximum=1, step=1, interactive=True)
-        answer_mode_counts = gr.Markdown('', label='Counts')
+            score_threshold = gr.Number(value=0.99, label=locale_dict['score_threshold'][lang], interactive=True)
+
         data_review_df = gr.State(None)
         filtered_review_df = gr.State(None)
-        data_review_table = gr.DataFrame(
-            value=None,
-            datatype=['markdown', 'markdown', 'markdown', 'markdown', 'markdown', 'number'],
-            # column_widths=['500px', '500px'],
-            wrap=True,
-            latex_delimiters=[{
-                'left': '$$',
-                'right': '$$',
-                'display': True
-            }, {
-                'left': '$',
-                'right': '$',
-                'display': False
-            }, {
-                'left': '\\(',
-                'right': '\\)',
-                'display': False
-            }, {
-                'left': '\\[',
-                'right': '\\]',
-                'display': True
-            }],
-            max_height=600)
+
+        # show statistics
+        with gr.Row(variant='panel'):
+            with gr.Column():
+                gr.Markdown('### *Counts*')
+                answer_mode_counts = gr.Markdown('')
+            with gr.Column():
+                page_number = gr.Number(
+                    value=1, label=locale_dict['page'][lang], minimum=1, maximum=1, step=1, interactive=True)
+
+        # show data review table
+        with gr.Row(variant='panel'):
+            with gr.Column():
+                gr.Markdown('### *Score*')
+                score_text = gr.Markdown(
+                    '', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+            with gr.Column():
+                gr.Markdown('### *Normalized Score*')
+                nscore = gr.Markdown('', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS)
+
+        with gr.Row(variant='panel'):
+            with gr.Column():
+                gr.Markdown('### *Gold*')
+                gold_text = gr.Markdown(
+                    '', elem_id='gold_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+            with gr.Column():
+                gr.Markdown('### *Pred*')
+                pred_text = gr.Markdown(
+                    '', elem_id='pred_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+
+        with gr.Row(variant='panel'):
+            with gr.Column():
+                gr.Markdown('### *Input*')
+                input_text = gr.Markdown(
+                    '', elem_id='input_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+            with gr.Column():
+                gr.Markdown('### *Generated*')
+                generated_text = gr.Markdown(
+                    '', elem_id='generated_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
@@ -574,15 +594,15 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         return data_review_df, 1
 
     @gr.on(
-        triggers=[data_review_df.change, answer_mode_radio.change],
-        inputs=[data_review_df, answer_mode_radio],
+        triggers=[data_review_df.change, answer_mode_radio.change, score_threshold.change],
+        inputs=[data_review_df, answer_mode_radio, score_threshold],
         outputs=[filtered_review_df, page_number, answer_mode_counts])
-    def filter_data(data_review_df, answer_mode):
+    def filter_data(data_review_df, answer_mode, score_threshold):
         if data_review_df is None:
             return None, gr.update(value=1, maximum=1), ''
 
         all_count = len(data_review_df)
-        pass_df = data_review_df[data_review_df['NScore'] >= 0.99]
+        pass_df = data_review_df[data_review_df['NScore'] >= score_threshold]
         pass_count = len(pass_df)
         fail_count = all_count - pass_count
 
@@ -591,7 +611,7 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         if answer_mode == 'Pass':
             filtered_df = pass_df
         elif answer_mode == 'Fail':
-            filtered_df = data_review_df[data_review_df['NScore'] < 0.99]
+            filtered_df = data_review_df[data_review_df['NScore'] < score_threshold]
         else:
             filtered_df = data_review_df
 
@@ -601,13 +621,33 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
 
     @gr.on(
         triggers=[filtered_review_df.change, page_number.change],
-        inputs=[filtered_review_df, page_number],
-        outputs=[data_review_table])
-    def update_table(filtered_df, page_number):
-        if filtered_df is None:
-            return gr.update(value=None)
-        subset_df, styler = get_table_data(filtered_df, page_number)
-        return styler
+        inputs=[filtered_review_df, page_number, score_threshold],
+        outputs=[input_text, generated_text, gold_text, pred_text, score_text, nscore])
+    def update_table_components(filtered_df, page_number, score_threshold):
+        if filtered_df is None or len(filtered_df) == 0:
+            return '', '', '', '', '', ''
+
+        # Get single row data for the current page
+        start = (page_number - 1)
+        if start >= len(filtered_df):
+            return '', '', '', '', '', ''
+
+        row = filtered_df.iloc[start]
+
+        # Process the data for display
+        input_md = process_model_prediction(row['Input'])
+        generated_md = process_model_prediction(row['Generated'])
+        gold_md = process_model_prediction(row['Gold'])
+        pred_md = convert_markdown_image(process_model_prediction(row['Pred']))
+        score_md = process_model_prediction(row['Score'])
+        nscore_val = float(row['NScore']) if not pd.isna(row['NScore']) else 0.0
+
+        if nscore_val >= score_threshold:
+            nscore_val = f'<div style="background-color:rgb(45,104, 62); padding:10px;">{nscore_val}</div>'
+        else:
+            nscore_val = f'<div style="background-color:rgb(151, 31, 44); padding:10px;">{nscore_val}</div>'
+
+        return input_md, generated_md, gold_md, pred_md, score_md, nscore_val
 
     return SingleModelComponents(report_name=report_name)
 
