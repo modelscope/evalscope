@@ -165,6 +165,7 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     CHUNK_TIMES_INDEX = 1
     LATENCY_INDEX = 4
     FIRST_CHUNK_LATENCY_INDEX = 5
+    CHUNK_TIME_INDEX = 7
     PROMPT_TOKENS_INDEX = 8
     COMPLETION_TOKENS_INDEX = 9
 
@@ -180,9 +181,10 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
         'Latency (s)': [row[LATENCY_INDEX] for row in rows],
         'Input tokens': [row[PROMPT_TOKENS_INDEX] for row in rows],
         'Output tokens': [row[COMPLETION_TOKENS_INDEX] for row in rows],
-        'Throughput(tokens/s)':
-        [(row[COMPLETION_TOKENS_INDEX] / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
-         for row in rows]
+        'Output throughput(tokens/s)': [(row[COMPLETION_TOKENS_INDEX] / row[CHUNK_TIME_INDEX])
+                                        if row[CHUNK_TIME_INDEX] > 0 else float('nan') for row in rows],
+        'Total throughput(tokens/s)': [((row[PROMPT_TOKENS_INDEX] + row[COMPLETION_TOKENS_INDEX]) / row[LATENCY_INDEX])
+                                       if row[LATENCY_INDEX] > 0 else float('nan') for row in rows]
     }
 
     # Calculate percentiles for each metric
