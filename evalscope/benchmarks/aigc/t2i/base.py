@@ -1,5 +1,3 @@
-import os.path
-from collections import defaultdict
 from typing import List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter

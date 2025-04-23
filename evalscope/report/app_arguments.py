@@ -8,3 +8,4 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--debug', action='store_true', help='Debug the app.')
     parser.add_argument('--lang', type=str, default='zh', help='The locale.', choices=['zh', 'en'])
     parser.add_argument('--outputs', type=str, default='./outputs', help='The outputs dir.')
+    parser.add_argument('--allowed-paths', nargs='+', default=['/'], help='The outputs dir.')

@@ -234,6 +234,18 @@ def convert_html_tags(text):
     return text
 
 
+def convert_markdown_image(text):
+    if not os.path.isfile(text):
+        return text
+    # Convert the image path to a markdown image tag
+    if text.endswith('.png') or text.endswith('.jpg') or text.endswith('.jpeg'):
+        text = os.path.abspath(text)
+        image_tag = f'![image](gradio_api/file={text})'
+        logger.debug(f'Converting image path to markdown: {text} -> {image_tag}')
+        return image_tag
+    return text
+
+
 def process_string(string: str, max_length: int = 2048) -> str:
     string = convert_html_tags(string)  # for display labels e.g. `<think>`
     if len(string) > max_length:
@@ -305,8 +317,9 @@ def get_table_data(data_review_df: pd.DataFrame, page: int = 1, rows_per_page: i
     df_subset = data_review_df.iloc[start:end].copy()
     df_subset['Input'] = df_subset['Input'].map(process_model_prediction).astype(str)
     df_subset['Generated'] = df_subset['Generated'].map(process_model_prediction).astype(str)
-    df_subset['Pred'] = df_subset['Pred'].map(process_model_prediction).astype(str)
+    df_subset['Pred'] = df_subset['Pred'].map(process_model_prediction).map(convert_markdown_image).astype(str)
     df_subset['Score'] = df_subset['Score'].map(process_model_prediction).astype(str)
+    logger.debug(f'df_subset: {df_subset}')
     styler = style_df(df_subset, columns=['NScore'])
     return df_subset, styler
 
@@ -696,7 +709,13 @@ def create_app(args: argparse.Namespace):
             text = '<' if new_visible else '>'
             return gr.update(visible=new_visible), new_visible, gr.update(value=text)
 
-    demo.launch(share=args.share, server_name=args.server_name, server_port=args.server_port, debug=args.debug)
+    demo.launch(
+        share=args.share,
+        server_name=args.server_name,
+        server_port=args.server_port,
+        debug=args.debug,
+        allowed_paths=args.allowed_paths,
+    )
 
 
 if __name__ == '__main__':
