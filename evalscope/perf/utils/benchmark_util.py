@@ -32,13 +32,13 @@ class BenchmarkData:
         self.query_latency = self.completed_time - self.start_time
         if len(self.chunk_times) > 1:
             self.first_chunk_latency = self.chunk_times[0] - self.start_time
-            self.n_chunks = len(self.chunk_times) - 2
+            self.n_chunks = len(self.chunk_times) - 2  # remove last and first chunk
             self.n_chunks_time = self.chunk_times[-2] - self.chunk_times[0]
         else:
             self.first_chunk_latency = self.query_latency
             self.n_chunks = 1
             self.n_chunks_time = self.query_latency
-        self.time_per_output_token = self.query_latency / self.completion_tokens
+        self.time_per_output_token = self.n_chunks_time / self.completion_tokens
 
     def _calculate_tokens(self, api_plugin):
         self.prompt_tokens, self.completion_tokens = \

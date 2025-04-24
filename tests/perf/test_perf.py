@@ -112,9 +112,10 @@ class TestPerf(unittest.TestCase):
             prefix_length=0,
             min_prompt_length=1024,
             max_prompt_length=1024,
-            number=40,
+            number=20,
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             seed=None,
+            extra_args={'ignore_eos': True}
         )
         run_perf_benchmark(task_cfg)
 
