@@ -7,10 +7,8 @@ from evalscope.constants import OutputType
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 from .base_adapter import BaseModelAdapter
 from .local_model import LocalModel
-from .register import register_model_adapter
 
 
-@register_model_adapter(OutputType.MULTIPLE_CHOICE)
 class MultiChoiceModelAdapter(BaseModelAdapter):
     """ The multi-choice model adapter. """
 
@@ -113,7 +111,6 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         return log_probs, {'tokens': tokens}
 
 
-@register_model_adapter(OutputType.CONTINUOUS)
 class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
     """
     Continuation-logits model adapter.

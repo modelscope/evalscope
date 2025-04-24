@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-import random
 import time
 from abc import ABC, abstractmethod
 from typing import Any, List

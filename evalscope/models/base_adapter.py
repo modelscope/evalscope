@@ -6,7 +6,6 @@ from evalscope.constants import EvalType, OutputType
 from evalscope.utils.logger import get_logger
 from .custom import CustomModel
 from .local_model import LocalModel
-from .register import get_model_adapter, register_model_adapter
 
 logger = get_logger()
 
@@ -15,7 +14,6 @@ if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
 
-@register_model_adapter('base')
 class BaseModelAdapter(ABC):
 
     def __init__(self, model: Optional[Union[LocalModel, CustomModel]], **kwargs):
@@ -63,6 +61,8 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
             stream=task_cfg.stream,
         )
     else:
+        from .register import get_model_adapter
+
         # for local model, we need to determine the model adapter class based on the output type
         model_adapter_cls = benchmark.model_adapter
         if model_adapter_cls not in benchmark.output_types:

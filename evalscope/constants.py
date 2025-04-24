@@ -164,3 +164,8 @@ class JudgeStrategy:
     RULE = 'rule'
     LLM = 'llm'
     LLM_RECALL = 'llm_recall'
+
+
+class ModelTask:
+    TEXT_GENERATION = 'text_generation'
+    IMAGE_GENERATION = 'image_generation'

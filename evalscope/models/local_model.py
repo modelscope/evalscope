@@ -1,6 +1,8 @@
+import importlib
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
-from evalscope.constants import DEFAULT_MODEL_CACHE_DIR, DEFAULT_MODEL_REVISION, EvalType
+from evalscope.constants import DEFAULT_MODEL_CACHE_DIR, DEFAULT_MODEL_REVISION, EvalType, ModelTask
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import get_device
 
@@ -10,31 +12,51 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
-class LocalModel:
+class LocalModel(ABC):
 
     def __init__(self,
                  model_id: str,
                  model_revision: str = DEFAULT_MODEL_REVISION,
-                 device_map: str = 'auto',
+                 device_map: str = None,
                  torch_dtype: str = 'auto',
                  cache_dir: str = None,
                  **kwargs):
-        from modelscope import AutoModelForCausalLM, AutoTokenizer
-
-        model_cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
-
-        if isinstance(torch_dtype, str) and torch_dtype != 'auto':
-            torch_dtype = eval(torch_dtype)
 
         self.model_id = model_id
         self.model_revision = model_revision
-        self.device = device_map
+        self.device = device_map or get_device()
+        self.cache_dir = cache_dir or DEFAULT_MODEL_CACHE_DIR
+
+        if isinstance(torch_dtype, str) and torch_dtype != 'auto':
+            torch_dtype = eval(torch_dtype)
+        self.torch_dtype = torch_dtype
+
+        self.model_cfg = {
+            'model_id': self.model_id,
+            'device_map': self.device,
+            'torch_dtype': str(self.torch_dtype),
+        }
+
+    @abstractmethod
+    def load_model(self):
+        pass
+
+
+class LocalChatModel(LocalModel):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.kwargs = kwargs
+
+    def load_model(self):
+        from modelscope import AutoModelForCausalLM, AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,
-            revision=model_revision,
+            revision=self.model_revision,
             trust_remote_code=True,
-            cache_dir=model_cache_dir,
+            cache_dir=self.cache_dir,
         )
 
         # Fix no padding
@@ -43,18 +65,40 @@ class LocalModel:
 
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_id,
-            revision=model_revision,
-            device_map=device_map,
+            revision=self.model_revision,
+            device_map=self.device,
             trust_remote_code=True,
-            torch_dtype=torch_dtype,
-            cache_dir=model_cache_dir,
+            torch_dtype=self.torch_dtype,
+            cache_dir=self.cache_dir,
         )
 
-        self.model_cfg = {
-            'model_id': model_id,
-            'device_map': device_map,
-            'torch_dtype': str(torch_dtype),
-        }
+
+class LocalImageModel(LocalModel):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pipeline_cls = kwargs.pop('pipeline_cls', None)
+        # default to DiffusionPipeline if not specified
+        if self.pipeline_cls is None:
+            if 'flux' in self.model_id:
+                self.pipeline_cls = 'FluxPipeline'
+            else:
+                self.pipeline_cls = 'DiffusionPipeline'
+        self.kwargs = kwargs
+
+    def load_model(self):
+        # from modelscope import pipeline_cls
+        module = getattr(importlib.import_module('modelscope'), self.pipeline_cls)
+
+        self.model = module.from_pretrained(
+            self.model_id,
+            revision=self.model_revision,
+            device_map=self.device,
+            trust_remote_code=True,
+            torch_dtype=self.torch_dtype,
+            cache_dir=self.cache_dir,
+        )
 
 
 def get_local_model(task_cfg: 'TaskConfig') -> Optional[LocalModel]:
@@ -63,16 +107,12 @@ def get_local_model(task_cfg: 'TaskConfig') -> Optional[LocalModel]:
     """
     if task_cfg.eval_type != EvalType.CHECKPOINT:
         return None
-    else:
-        device_map = task_cfg.model_args.get('device_map', get_device())
-        cache_dir = task_cfg.model_args.get('cache_dir', None)
-        model_precision = task_cfg.model_args.get('precision', 'torch.float16')
-        model_revision = task_cfg.model_args.get('revision', DEFAULT_MODEL_REVISION)
-
-        base_model = LocalModel(
-            model_id=task_cfg.model,
-            model_revision=model_revision,
-            device_map=device_map,
-            torch_dtype=model_precision,
-            cache_dir=cache_dir)
+    elif task_cfg.model_task == ModelTask.TEXT_GENERATION:
+        base_model = LocalChatModel(model_id=task_cfg.model, **task_cfg.model_args)
+        base_model.load_model()
         return base_model
+    elif task_cfg.model_task == ModelTask.IMAGE_GENERATION:
+        base_model = LocalImageModel(model_id=task_cfg.model, **task_cfg.model_args)
+        base_model.load_model()
+    else:
+        raise ValueError(f'Unsupported model task: {task_cfg.model_task} for model checkpoint.')

@@ -2,10 +2,8 @@ from typing import Any, Dict, List, Union
 
 from .base_adapter import BaseModelAdapter
 from .custom import CustomModel
-from .register import register_model_adapter
 
 
-@register_model_adapter('custom')
 class CustomModelAdapter(BaseModelAdapter):
 
     def __init__(self, custom_model: CustomModel, **kwargs):
