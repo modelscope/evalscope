@@ -1,4 +1,3 @@
-import torch
 from typing import TYPE_CHECKING, Optional
 
 from evalscope.constants import DEFAULT_MODEL_CACHE_DIR, DEFAULT_MODEL_REVISION, EvalType
