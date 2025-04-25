@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import List, Optional, Union
 
 from evalscope.benchmarks import Benchmark
+from evalscope.constants import OutputType
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .base import T2IBaseAdapter
@@ -14,6 +15,8 @@ logger = get_logger()
 @Benchmark.register(
     name='general_t2i',
     dataset_id='general_t2i',
+    model_adapter=OutputType.IMAGE_GENERATION,
+    output_types=[OutputType.IMAGE_GENERATION],
     subset_list=['default'],
     metric_list=['PickScore'],
     few_shot_num=0,

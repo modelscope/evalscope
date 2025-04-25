@@ -1,9 +1,5 @@
 from evalscope.constants import OutputType
-from .base_adapter import BaseModelAdapter
-from .chat_adapter import ChatGenerationModelAdapter
-from .choice_adapter import ContinuationLogitsModelAdapter, MultiChoiceModelAdapter
-from .custom_adapter import CustomModelAdapter
-from .server_adapter import ServerModelAdapter
+from .adapters import *
 
 MODEL_ADAPTERS = {}
 
@@ -55,3 +51,4 @@ register_model_adapter_class(ContinuationLogitsModelAdapter, name=OutputType.LOG
 register_model_adapter_class(MultiChoiceModelAdapter, name=OutputType.MULTIPLE_CHOICE)
 register_model_adapter_class(CustomModelAdapter, name='custom')
 register_model_adapter_class(ServerModelAdapter, name='server')
+register_model_adapter_class(T2IModelAdapter, name=OutputType.IMAGE_GENERATION)

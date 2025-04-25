@@ -3,10 +3,9 @@ import time
 import torch
 from typing import List
 
-from evalscope.constants import OutputType
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
+from ..local_model import LocalModel
 from .base_adapter import BaseModelAdapter
-from .local_model import LocalModel
 
 
 class MultiChoiceModelAdapter(BaseModelAdapter):

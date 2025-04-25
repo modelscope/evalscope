@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Union
 
+from ..custom import CustomModel
 from .base_adapter import BaseModelAdapter
-from .custom import CustomModel
 
 
 class CustomModelAdapter(BaseModelAdapter):

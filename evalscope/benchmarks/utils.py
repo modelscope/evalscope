@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import wraps
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from evalscope.constants import EvalType
 from evalscope.utils.filters import Filter
@@ -9,7 +9,7 @@ from evalscope.utils.filters import Filter
 @dataclass
 class PromptData:
     data: List[str]
-    index: Optional[int] = 0
+    index: Optional[Union[int, str]] = 0
     system_prompt: Optional[str] = None
     multi_choices: Optional[List[str]] = None
 

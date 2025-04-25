@@ -145,6 +145,7 @@ class OutputType:
     GENERATION = 'generation'  # for text generation tasks and general tasks
     MULTIPLE_CHOICE = 'multiple_choice_logits'  # for multiple choice tasks
     CONTINUOUS = 'continuous_logits'  # for continuous tasks
+    IMAGE_GENERATION = 'image_generation'  # for image generation tasks
 
 
 class EvalBackend:

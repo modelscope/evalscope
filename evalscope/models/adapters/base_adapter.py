@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from evalscope.constants import EvalType, OutputType
 from evalscope.utils.logger import get_logger
-from .custom import CustomModel
-from .local_model import LocalModel
+from ..custom import CustomModel
+from ..local_model import LocalModel
 
 logger = get_logger()
 
@@ -61,15 +61,18 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
             stream=task_cfg.stream,
         )
     else:
-        from .register import get_model_adapter
+        from ..register import get_model_adapter
 
         # for local model, we need to determine the model adapter class based on the output type
-        model_adapter_cls = benchmark.model_adapter
-        if model_adapter_cls not in benchmark.output_types:
-            logger.warning(f'Output type {model_adapter_cls} is not supported for benchmark {benchmark.name}. '
+        model_adapter_cls_str = benchmark.model_adapter
+        if model_adapter_cls_str not in benchmark.output_types:
+            logger.warning(f'Output type {model_adapter_cls_str} is not supported for benchmark {benchmark.name}. '
                            f'Using {benchmark.output_types[0]} instead.')
-            model_adapter_cls = benchmark.output_types[0]
+            model_adapter_cls_str = benchmark.output_types[0]
 
-        model_adapter = get_model_adapter(model_adapter_cls)
-        return model_adapter(
-            model=base_model, generation_config=task_cfg.generation_config, chat_template=task_cfg.chat_template)
+        model_adapter_cls = get_model_adapter(model_adapter_cls_str)
+        return model_adapter_cls(
+            model=base_model,
+            generation_config=task_cfg.generation_config,
+            chat_template=task_cfg.chat_template,
+            task_cfg=task_cfg)

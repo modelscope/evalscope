@@ -14,7 +14,7 @@ class T2IBaseAdapter(DataAdapter):
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         # dummy prompt for general t2i
-        return self.gen_prompt_data(input_d.get('prompt', ''))
+        return self.gen_prompt_data(prompt=input_d.get('prompt', ''), index=input_d.get('id', 0))
 
     def get_gold_answer(self, input_d: dict) -> str:
         # dummy gold answer for general t2i

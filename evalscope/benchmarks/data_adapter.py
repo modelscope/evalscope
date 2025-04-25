@@ -191,7 +191,7 @@ class DataAdapter(ABC):
         if self.few_shot_num and self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'Use default settings: '
+        logger.info(f'Use settings: '
                     f'> few_shot_num: {self.few_shot_num}, '
                     f'> few_shot_split: {self.train_split}, '
                     f'> target_eval_split: {self.eval_split}')
@@ -319,11 +319,15 @@ class DataAdapter(ABC):
                         prompt: str,
                         system_prompt: Optional[str] = None,
                         choices: Optional[List[str]] = None,
+                        index: Optional[Union[int, str]] = None,
                         **kwargs) -> dict:
         if not isinstance(prompt, list):
             prompt = [prompt]
         prompt_data = PromptData(
-            data=prompt, multi_choices=choices or self.choices, system_prompt=system_prompt or self.system_prompt)
+            data=prompt,
+            multi_choices=choices or self.choices,
+            system_prompt=system_prompt or self.system_prompt,
+            index=index or 0)
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
