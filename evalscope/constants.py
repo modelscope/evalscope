@@ -1,4 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# flake8: noqa
+import os
+
+os.environ['MODELSCOPE_LOG_LEVEL'] = '40'  # Set default log level to ERROR
+
 from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 

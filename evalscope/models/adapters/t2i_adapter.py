@@ -3,7 +3,6 @@ import time
 import torch
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from evalscope.utils import gen_hash
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
@@ -54,18 +53,18 @@ class T2IModelAdapter(BaseModelAdapter):
         results = []
         for input_item in inputs:
             prompt = input_item['data'][0]
-            index = input_item.get('index', gen_hash(prompt, bits=8))
+            image_id = input_item.get('id') or input_item.get('index')
 
             samples = self._model_generate(prompt, infer_cfg)
 
             choices_list = []
-            for i, sample in enumerate(samples):
-                image_file_path = os.path.join(self.save_path, f'{index}_{i}.jpeg')
+            for index, sample in enumerate(samples):
+                image_file_path = os.path.join(self.save_path, f'{image_id}_{index}.jpeg')
                 sample.save(image_file_path)
                 logger.debug(f'Saved image to {image_file_path}')
 
                 choice = ChatCompletionResponseChoice(
-                    index=i, message=ChatMessage(content=image_file_path, role='assistant'), finish_reason='stop')
+                    index=index, message=ChatMessage(content=image_file_path, role='assistant'), finish_reason='stop')
                 choices_list.append(choice)
 
             res_d = ChatCompletionResponse(

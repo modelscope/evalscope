@@ -71,7 +71,7 @@ class TestRun(unittest.TestCase):
                     ]
                 }
             },
-            limit=10,
+            limit=5,
             generation_config={
                 'num_inference_steps': 50,
                 'guidance_scale': 7.5

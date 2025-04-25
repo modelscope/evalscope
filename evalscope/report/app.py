@@ -314,7 +314,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
                 'Input': raw_input,
                 'Generated': raw_pred_answer,
                 'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
-                'Pred': parsed_pred_answer if parsed_pred_answer != raw_pred_answer else '*Same as Generated*',
+                'Pred': parsed_pred_answer,
                 'Score': score,
                 'NScore': normalize_score(score)
             }

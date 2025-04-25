@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import wraps
 from typing import Dict, List, Optional, Union
 
@@ -12,21 +12,10 @@ class PromptData:
     index: Optional[Union[int, str]] = 0
     system_prompt: Optional[str] = None
     multi_choices: Optional[List[str]] = None
+    id: Optional[str] = None
 
     def to_dict(self) -> Dict:
-        if self.multi_choices is None:
-            return {
-                'data': self.data,
-                'index': self.index,
-                'system_prompt': self.system_prompt,
-            }
-        else:
-            return {
-                'data': self.data,
-                'index': self.index,
-                'system_prompt': self.system_prompt,
-                'multi_choices': self.multi_choices,
-            }
+        return {k: v for k, v in asdict(self).items() if v is not None}
 
 
 def preprocess_decorator(func):

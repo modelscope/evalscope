@@ -54,6 +54,8 @@ class LocalChatModel(LocalModel):
     def load_model(self):
         from modelscope import AutoModelForCausalLM, AutoTokenizer
 
+        logger.info(f'Loading model {self.model_id} ...')
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_id,
             revision=self.model_revision,
@@ -91,6 +93,8 @@ class LocalImageModel(LocalModel):
     def load_model(self):
         # from modelscope import pipeline_cls
         module = getattr(importlib.import_module('modelscope'), self.pipeline_cls)
+
+        logger.info(f'Loading model {self.model_id} with {self.pipeline_cls} ...')
 
         self.model = module.from_pretrained(
             self.model_id,
