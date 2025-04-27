@@ -17,7 +17,10 @@ def mean(arr: list):
         return 0.0
 
     if isinstance(arr[0], list):
-        arr = [item for sublist in arr for item in sublist]
+        if isinstance(arr[0][0], list):
+            arr = [item for sublist in arr for item in sublist]
+        else:
+            arr = [item for item in arr]
     return sum(arr) / len(arr)
 
 
