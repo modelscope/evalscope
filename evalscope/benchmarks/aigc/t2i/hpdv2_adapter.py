@@ -13,17 +13,17 @@ logger = get_logger()
 
 
 @Benchmark.register(
-    name='tifa160',
+    name='hpdv2',
     dataset_id='AI-ModelScope/T2V-Eval-Prompts',
     model_adapter=OutputType.IMAGE_GENERATION,
     output_types=[OutputType.IMAGE_GENERATION],
-    subset_list=['TIFA-160'],
-    metric_list=['PickScore'],
+    subset_list=['HPDv2'],
+    metric_list=['HPSv2.1Score'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
 )
-class TIFA_Adapter(T2IBaseAdapter):
+class HPDv2Adapter(T2IBaseAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -35,3 +35,23 @@ class TIFA_Adapter(T2IBaseAdapter):
             return data_dict
         else:
             return super().load(**kwargs)
+
+    def get_gold_answer(self, input_d: dict) -> dict:
+        # return prompt and elements dict
+        return {'prompt': input_d.get('prompt'), 'tags': input_d.get('tags', {})}
+
+    def match(self, gold: dict, pred: str) -> dict:
+        # dummy match for general t2i
+        # pred is the image path, gold is the prompt
+        res = {}
+        for metric_name, metric_func in self.metrics.items():
+            score = metric_func(images=[pred], texts=[gold['prompt']])[0][0]
+
+            res[metric_name] = score.cpu().item()
+
+            # fine-granular metrics
+            category = gold['tags'].get('category')
+            if category:
+                res[f'{metric_name}_{category}'] = score.cpu().item()
+
+        return res

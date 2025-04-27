@@ -2,6 +2,9 @@ from typing import List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.metrics import mean, metric_registry
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class T2IBaseAdapter(DataAdapter):
@@ -10,6 +13,7 @@ class T2IBaseAdapter(DataAdapter):
 
         super().__init__(**kwargs)
 
+        logger.info(f'Initializing metrics: {self.metric_list}')
         self.metrics = {m: metric_registry.get(m).object() for m in self.metric_list}
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:

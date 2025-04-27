@@ -28,13 +28,15 @@ class TestRun(unittest.TestCase):
             dataset_args={
                 'general_t2i': {
                     'metric_list': [
-                        'PickScore',
+                        # 'PickScore',
                         # 'CLIPScore',
                         # 'HPSv2Score',
+                        # 'HPSv2.1Score',
                         # 'BLIPv2Score',
                         # 'ImageRewardScore',
                         # 'VQAScore',
                         # 'FGA_BLIP2Score',
+                        'MPS'
                     ],
                     'dataset_id': 'custom_eval/multimodal/t2i/example.jsonl',
                 }
@@ -56,7 +58,10 @@ class TestRun(unittest.TestCase):
                 'torch_dtype': 'torch.float16',
             },
             datasets=[
-                'tifa160'
+                # 'tifa160',
+                # 'genai_bench',
+                'evalmuse',
+                # 'hpdv2',
             ],
             dataset_args={
                 'tifa160': {
@@ -75,7 +80,8 @@ class TestRun(unittest.TestCase):
             generation_config={
                 'num_inference_steps': 50,
                 'guidance_scale': 7.5
-            }
+            },
+            use_cache='outputs/20250427_134122',
         )
 
         run_task(task_cfg=task_cfg)

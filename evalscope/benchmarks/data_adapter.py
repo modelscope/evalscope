@@ -3,7 +3,7 @@ import os.path
 import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks.utils import PromptData, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
@@ -246,7 +246,8 @@ class DataAdapter(ABC):
             res_list.append({'metric_name': metric_name, 'score': metric_func(review_res), 'num': len(review_res)})
         return res_list
 
-    def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
+    def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]],
+                            **kwargs) -> Dict[str, List[float]]:
         """
         compute weighted mean of the bleu score of all samples
 
@@ -254,7 +255,7 @@ class DataAdapter(ABC):
             review_res_list: [score1, score2, ...]
 
         Returns:
-            avg_res: List[dict]
+            avg_res: Dict[str, List[float]]
 
         """
         if isinstance(review_res_list[0], list):
