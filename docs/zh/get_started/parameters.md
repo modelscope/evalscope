@@ -12,6 +12,7 @@
   - `revision`: 模型版本，默认为`master`
   - `precision`: 模型精度，默认为`torch.float16`
   - `device_map`: 模型分配设备，默认为`auto`
+- `--model-task`: 模型任务类型，默认为`text_generation`，可选`text_generation`, `image_generation`
 - `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，将解析为字典:
   - 若使用本地模型推理（基于Transformers）包括如下参数（[全部参数指南](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)）：
     - `do_sample`: 是否使用采样，默认为`false`

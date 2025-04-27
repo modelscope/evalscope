@@ -39,7 +39,7 @@ class EvalMuseAdapter(T2IBaseAdapter):
 
     def get_gold_answer(self, input_d: dict) -> dict:
         # return prompt and elements dict
-        return {'prompt': input_d.get('prompt'), 'tags': input_d.get('tags')}
+        return {'prompt': input_d.get('prompt'), 'tags': input_d.get('tags', {})}
 
     def match(self, gold: dict, pred: str) -> dict:
         # dummy match for general t2i
