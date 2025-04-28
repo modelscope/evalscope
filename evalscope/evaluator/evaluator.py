@@ -281,7 +281,7 @@ class Evaluator(object):
         os.makedirs(os.path.dirname(review_file_path), exist_ok=True)
 
         if self.use_cache and os.path.exists(review_file_path):
-            logger.warning(f'Ignore use_cache={self.use_cache}, updating the review file: {review_file_path} ...')
+            logger.info(f'Updating the review file: {review_file_path} ...')
             os.remove(review_file_path)
 
         def process_single_review(answer_d):

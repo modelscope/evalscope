@@ -357,7 +357,7 @@ judge_config = dict(
 )
 
 distill_qwen_config = dict(
-    report_path = './outputs/20250218_180219',
+    report_path = '../eval-scope/outputs/20250218_180219',
     model_name = 'DeepSeek-R1-Distill-Qwen-7B',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
     dataset_name = 'math_500',
@@ -367,7 +367,7 @@ distill_qwen_config = dict(
 )
 
 math_qwen_config = dict(
-    report_path = './outputs/20250219_202358',
+    report_path = '../eval-scope/outputs/20250219_202358',
     model_name = 'Qwen2.5-Math-7B-Instruct',
     tokenizer_path = 'Qwen/Qwen2.5-Math-7B-Instruct',
     dataset_name = 'math_500',
@@ -377,7 +377,7 @@ math_qwen_config = dict(
 )
 
 r1_config = dict(
-    report_path = './outputs/20250307_000404',
+    report_path = '../eval-scope/outputs/20250307_000404',
     model_name = 'deepseek-r1',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1',
     dataset_name = 'math_500',
@@ -387,7 +387,7 @@ r1_config = dict(
 )
 
 qwq_preview_config = dict(
-    report_path = './outputs/20250221_105911',
+    report_path = '../eval-scope/outputs/20250221_105911',
     model_name = 'qwq-32b-preview',
     tokenizer_path = 'Qwen/QwQ-32B-Preview',
     dataset_name = 'math_500',
@@ -397,7 +397,7 @@ qwq_preview_config = dict(
 )
 
 qwq_config = dict(
-    report_path = './outputs/20250306_181550',
+    report_path = '../eval-scope/outputs/20250306_181550',
     model_name = 'QwQ-32B',
     tokenizer_path = 'Qwen/QwQ-32B',
     dataset_name = 'math_500',
@@ -407,9 +407,19 @@ qwq_config = dict(
 )
 
 distill_qwen_32b = dict(
-    report_path = './outputs/20250306_235951',
+    report_path = '../eval-scope/outputs/20250306_235951',
     model_name = 'deepseek-r1-distill-qwen-32b',
     tokenizer_path = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
+    dataset_name = 'math_500',
+    subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+    split_strategies='separator',
+    judge_config=judge_config
+)
+
+qwen3_32b_think = dict(
+    report_path = '../eval-scope/outputs/20250428_151817',
+    model_name = 'Qwen3-32B',
+    tokenizer_path = '/mnt/data/jintao/.cache/modelscope/models/Qwen3-32B/Qwen3-32B-250415',
     dataset_name = 'math_500',
     subsets = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     split_strategies='separator',
@@ -422,8 +432,10 @@ if __name__ == '__main__':
     # run_task(qwq_preview_config, max_tokens=20000, count=200, workers=128)
     # run_task(r1_config, max_tokens=20000, count=200, workers=128)
     # run_task(qwq_config, max_tokens=20000, count=200, workers=128)
+    run_task(qwen3_32b_think, max_tokens=20000, count=200, workers=128)
     # run_task(distill_qwen_32b, max_tokens=20000, count=200, workers=128)
 
     # combine_results([qwq_config, r1_config, qwq_preview_config,  distill_qwen_32b], output_path='outputs/model_comparison_metrics.png')
     # combine_results([qwq_config, r1_config, distill_qwen_32b], output_path='outputs/model_comparison_metrics_3models.png')
-    combine_results([distill_qwen_config, math_qwen_config, qwq_config, r1_config, qwq_preview_config, distill_qwen_32b], output_path='outputs/model_comparison_metrics_6models.png')
+    # combine_results([distill_qwen_config, math_qwen_config, qwq_config, r1_config, qwq_preview_config, distill_qwen_32b], output_path='outputs/model_comparison_metrics_6models.png')
+    combine_results([qwq_config, r1_config, distill_qwen_32b, qwen3_32b_think], output_path='outputs/model_comparison_metrics_4models.png')

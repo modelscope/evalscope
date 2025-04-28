@@ -99,8 +99,14 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                 messages = [ChatMessage(role='user', content=query)]
                 if i < len(system_prompts) and system_prompts[i]:
                     messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
-                formatted_prompts.append(
-                    self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
+                # whether thinking is needed
+                enable_thinking = infer_cfg.get('enable_thinking', None)
+                if enable_thinking is not None:
+                    prompts = self.tokenizer.apply_chat_template(
+                        messages, tokenize=False, add_generation_prompt=True, enable_thinking=enable_thinking)
+                else:
+                    prompts = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                formatted_prompts.append(prompts)
         else:
             # For base model, use the queries as the input
             formatted_prompts = queries

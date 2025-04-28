@@ -155,6 +155,10 @@ class ResponseParser:
                 for i in options:
                     if i in outputs:
                         return i
+        # If no match found, try to find the last capital letter in the text
+        last_capital = ResponseParser.parse_last_capital(text, options)
+        if last_capital:
+            return last_capital
         return 'No valid option found'
 
     @staticmethod
