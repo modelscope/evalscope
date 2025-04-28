@@ -54,7 +54,7 @@ for chunk in response:
 
 > **Performance Test Command**
 
-```python
+```shell
 evalscope perf \
     --model Qwen/Qwen3-32B \
     --url "https://api-inference.modelscope.cn/v1/chat/completions" \

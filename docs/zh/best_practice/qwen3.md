@@ -55,7 +55,7 @@ for chunk in response:
 
 > **压测命令**
 
-```python
+```shell
 evalscope perf \
     --model Qwen/Qwen3-32B \
     --url "https://api-inference.modelscope.cn/v1/chat/completions" \
