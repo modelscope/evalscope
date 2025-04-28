@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
 from tabulate import tabulate
 from tqdm import tqdm
 from typing import List
@@ -10,7 +11,7 @@ from typing import List
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.collections.sampler import DatasetEntry
 from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalType
+from evalscope.constants import AnswerKeys, DataCollection, DumpMode, EvalType
 from evalscope.evaluator import Evaluator
 from evalscope.models import initialize_model_adapter
 from evalscope.report import ReportGenerator
@@ -95,10 +96,17 @@ class EvaluatorCollection:
 
     def _initialize_evaluators(self):
         evaluators = {}
+        # load dataset args
+        dataset_args = deepcopy(self.task_cfg.dataset_args)
+        common_args = dataset_args.get(DataCollection.NAME, {})
         for dataset_name in self.dataset_name_map.keys():
             benchmark = Benchmark.get(dataset_name)
             model_adapter = initialize_model_adapter(self.task_cfg, benchmark, self.model)
-            data_adapter = benchmark.get_data_adapter()
+            # update dataset args
+            cur_dataset_args = dataset_args.get(dataset_name, {})
+            cur_dataset_args.update(common_args)
+            # get data adapter
+            data_adapter = benchmark.get_data_adapter(cur_dataset_args)
             evaluators[dataset_name] = SimpleEvaluator(dataset_name, data_adapter, model_adapter, self.task_cfg,
                                                        self.outputs)
         return evaluators
@@ -185,12 +193,14 @@ class EvaluatorCollection:
                 index = answer.get(AnswerKeys.INDEX)
                 answer_dict[index] = answer
                 indices.add(index)
+
             data = []
             for sample in self.dataset:
                 if sample.index not in indices:
                     data.append(sample)
             data_map = self._init_name_map(data)
 
+            logger.info(f'Reuse from {pred_file_path}. Loaded {len(indices)} samples, remain {len(data)} samples.')
             return answer_dict, data, data_map
         return answer_dict, self.dataset, self.dataset_name_map
 

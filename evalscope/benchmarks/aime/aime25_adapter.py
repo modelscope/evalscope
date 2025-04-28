@@ -11,12 +11,12 @@ logger = get_logger()
 @Benchmark.register(
     name='aime25',
     pretty_name='AIME-2025',
-    dataset_id='TIGER-Lab/AIME25',
-    subset_list=['default'],
+    dataset_id='opencompass/AIME2025',
+    subset_list=['AIME2025-I', 'AIME2025-II'],
     metric_list=['AveragePass@1'],
     few_shot_num=0,
     train_split=None,
-    eval_split='train',  # Only train set is available
+    eval_split='test',  # Only train set is available
     prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class AIME25Adapter(DataAdapter):
