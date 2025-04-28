@@ -18,6 +18,7 @@ import urllib
 import urllib.error
 import urllib.request
 import yaml
+
 try:
     from iopath.common.download import download
     from iopath.common.file_io import file_lock, g_pathmgr

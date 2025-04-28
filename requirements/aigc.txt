@@ -1,4 +1,4 @@
-open_clip_torch
 diffusers
-opencv-python
 iopath
+open_clip_torch
+opencv-python
