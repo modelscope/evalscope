@@ -1,6 +1,7 @@
 import json
 import os
 import pandas as pd
+import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
@@ -68,9 +69,10 @@ class EvaluatorCollection:
     def load(self) -> tuple[list[DatasetEntry], str]:
         dataset_name = os.path.splitext(os.path.basename(self.data_adapter.dataset_id))[0]
         raw_dataset = self.data_adapter.load()
-        # limit the dataset
+        # random limit the dataset
         if self.task_cfg.limit:
-            raw_dataset = raw_dataset[:self.task_cfg.limit]
+            raw_dataset = random.sample(raw_dataset,
+                                        self.task_cfg.limit) if len(raw_dataset) > self.task_cfg.limit else raw_dataset
         # index dataset
         datasets = []
         for sample in raw_dataset:

@@ -48,14 +48,16 @@ class DataCollectionAdapter(DataAdapter):
             if len(dataset) == 0:
                 raise ValueError(f'Local dataset is empty: {dataset_name_or_path}')
         else:
-            from modelscope.msdatasets import MsDataset
+            from modelscope import dataset_snapshot_download
 
             # Load dataset from remote
             logger.info(f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path}')
 
-            dataset = MsDataset.load(dataset_name=dataset_name_or_path, cache_dir=work_dir, hub=datasets_hub, **kwargs)
-
-            dataset = dataset[self.eval_split].to_list()
+            dataset_path = dataset_snapshot_download(
+                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern='*.jsonl')
+            # find the jsonl file
+            dataset_files = [os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f.endswith('.jsonl')]
+            dataset = jsonl_to_list(dataset_files[0])
 
         return dataset
 
