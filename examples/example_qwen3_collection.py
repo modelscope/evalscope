@@ -70,7 +70,7 @@ def run_test_no_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'outputs/qwen3_test_sample.jsonl',
+                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
             }
         },
         eval_batch_size=128,
