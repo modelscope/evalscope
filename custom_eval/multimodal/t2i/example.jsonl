@@ -1,0 +1,10 @@
+{"image_path": "custom_eval/multimodal/images/dog.jpg", "prompt": "dog"}
+{"image_path": "custom_eval/multimodal/images/dog.jpg", "prompt": "cat"}
+{"image_path": "custom_eval/multimodal/images/AMNH.jpg", "prompt": "building"}
+{"image_path": "custom_eval/multimodal/images/AMNH.jpg", "prompt": "Grand historic building with columns, glass doors, digital screen, and busy open area. Classical yet modern."}
+{"image_path": "custom_eval/multimodal/images/tokyo.jpg", "prompt": "city tokyo"}
+{"image_path": "custom_eval/multimodal/images/tokyo.jpg", "prompt": "city newyork"}
+{"image_path": "custom_eval/multimodal/images/tesla.jpg", "prompt": "car tesla"}
+{"image_path": "custom_eval/multimodal/images/tesla.jpg", "prompt": "car toyota"}
+{"image_path": "custom_eval/multimodal/images/running.jpg", "prompt": "man running"}
+{"image_path": "custom_eval/multimodal/images/running.jpg", "prompt": "man eating"}

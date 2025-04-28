@@ -48,7 +48,7 @@ class ReportGenerator:
         df = flatten_subset()
 
         metrics_list = []
-        for metric_name, group_metric in df.groupby('metric_name'):
+        for metric_name, group_metric in df.groupby('metric_name', sort=False):
             categories = []
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []

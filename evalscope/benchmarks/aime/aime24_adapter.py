@@ -1,6 +1,6 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import OutputType
-from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
+from evalscope.metrics import extract_answer, math_equal, strip_answer_string
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa

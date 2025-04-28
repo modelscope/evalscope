@@ -8,6 +8,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - Specify the local path to the model, for example, `/path/to/model`, to load the model from the local environment;
   - When the evaluation target is the model API endpoint, it needs to be specified as `model_id`, for example, `Qwen2.5-0.5B-Instruct`.
 - `--model-id`: An alias for the model being evaluated. Defaults to the last part of `model`, for example, the `model-id` for `Qwen/Qwen2.5-0.5B-Instruct` is `Qwen2.5-0.5B-Instruct`.
+- `--model-task`: The task type of the model, defaults to `text_generation`, options are `text_generation`, `image_generation`.
 - `--model-args`: Model loading parameters, separated by commas in `key=value` format, with default parameters:
   - `revision`: Model version, defaults to `master`
   - `precision`: Model precision, defaults to `torch.float16`

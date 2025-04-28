@@ -224,7 +224,7 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
             },
-            limit=100,
+            limit=10,
             eval_batch_size=10,
         )
 

@@ -1,17 +1,53 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import TYPE_CHECKING
 
-from evalscope.models.base_adapter import BaseModelAdapter, initialize_model_adapter
-from evalscope.models.chat_adapter import ChatGenerationModelAdapter
-from evalscope.models.choice_adapter import ContinuationLogitsModelAdapter, MultiChoiceModelAdapter
-from evalscope.models.custom import CustomModel
-from evalscope.models.custom_adapter import CustomModelAdapter
-from evalscope.models.local_model import LocalModel, get_local_model
-from evalscope.models.model import BaseModel, ChatBaseModel, OpenAIModel
-from evalscope.models.register import get_model_adapter
-from evalscope.models.server_adapter import ServerModelAdapter
+from evalscope.utils.import_utils import _LazyModule
 
-__all__ = [
-    'CustomModel', 'BaseModel', 'ChatBaseModel', 'OpenAIModel', 'BaseModelAdapter', 'ChatGenerationModelAdapter',
-    'MultiChoiceModelAdapter', 'ContinuationLogitsModelAdapter', 'CustomModelAdapter', 'ServerModelAdapter',
-    'LocalModel', 'get_local_model', 'initialize_model_adapter', 'get_model_adapter'
-]
+if TYPE_CHECKING:
+    from .adapters import (BaseModelAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
+                           CustomModelAdapter, MultiChoiceModelAdapter, ServerModelAdapter, T2IModelAdapter,
+                           initialize_model_adapter)
+    from .custom import CustomModel, DummyCustomModel
+    from .local_model import LocalModel, get_local_model
+    from .model import BaseModel, ChatBaseModel, OpenAIModel
+    from .register import get_model_adapter
+
+else:
+    _import_structure = {
+        'adapters': [
+            'BaseModelAdapter',
+            'initialize_model_adapter',
+            'ChatGenerationModelAdapter',
+            'ContinuationLogitsModelAdapter',
+            'MultiChoiceModelAdapter',
+            'CustomModelAdapter',
+            'ServerModelAdapter',
+            'T2IModelAdapter',
+        ],
+        'custom': [
+            'CustomModel',
+            'DummyCustomModel',
+        ],
+        'local_model': [
+            'LocalModel',
+            'get_local_model',
+        ],
+        'model': [
+            'BaseModel',
+            'ChatBaseModel',
+            'OpenAIModel',
+        ],
+        'register': [
+            'get_model_adapter',
+        ],
+    }
+
+    import sys
+
+    sys.modules[__name__] = _LazyModule(
+        __name__,
+        globals()['__file__'],
+        _import_structure,
+        module_spec=__spec__,
+        extra_objects={},
+    )

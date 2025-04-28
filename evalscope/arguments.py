@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from evalscope.constants import EvalBackend, EvalStage, EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalBackend, EvalStage, EvalType, JudgeStrategy, ModelTask, OutputType
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -35,6 +35,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--model', type=str, required=False, help='The model id on modelscope, or local model dir.')
     parser.add_argument('--model-id', type=str, required=False, help='The model id for model name in report.')
     parser.add_argument('--model-args', type=str, action=ParseStrArgsAction, help='The model args, should be a string.')
+    parser.add_argument('--model-task', type=str, default=ModelTask.TEXT_GENERATION, choices=[ModelTask.TEXT_GENERATION, ModelTask.IMAGE_GENERATION], help='The model task for model id.')  # noqa: E501
 
     # Template-related arguments
     parser.add_argument('--template-type', type=str, required=False, help='Deprecated, will be removed in v1.0.0.')

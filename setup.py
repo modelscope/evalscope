@@ -127,6 +127,7 @@ if __name__ == '__main__':
     extra_requires['rag'], _ = parse_requirements('requirements/rag.txt')
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
+    extra_requires['aigc'], _ = parse_requirements('requirements/aigc.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])
@@ -134,6 +135,7 @@ if __name__ == '__main__':
     all_requires.extend(extra_requires['rag'])
     all_requires.extend(extra_requires['perf'])
     all_requires.extend(extra_requires['app'])
+    all_requires.extend(extra_requires['aigc'])
     extra_requires['all'] = all_requires
 
     setup(

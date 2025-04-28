@@ -1,4 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# flake8: noqa
+import os
+
+os.environ['MODELSCOPE_LOG_LEVEL'] = '40'  # Set default log level to ERROR
+
 from modelscope.utils.constant import DEFAULT_REPOSITORY_REVISION
 from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_root
 
@@ -145,6 +150,7 @@ class OutputType:
     GENERATION = 'generation'  # for text generation tasks and general tasks
     MULTIPLE_CHOICE = 'multiple_choice_logits'  # for multiple choice tasks
     CONTINUOUS = 'continuous_logits'  # for continuous tasks
+    IMAGE_GENERATION = 'image_generation'  # for image generation tasks
 
 
 class EvalBackend:
@@ -164,3 +170,8 @@ class JudgeStrategy:
     RULE = 'rule'
     LLM = 'llm'
     LLM_RECALL = 'llm_recall'
+
+
+class ModelTask:
+    TEXT_GENERATION = 'text_generation'
+    IMAGE_GENERATION = 'image_generation'
