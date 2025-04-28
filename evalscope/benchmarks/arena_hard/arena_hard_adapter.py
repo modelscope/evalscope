@@ -3,9 +3,7 @@ from collections import defaultdict
 from typing import Any, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys
-from evalscope.metrics import Metric, mean, metric_registry
-from evalscope.metrics.llm_judge import LLMJudge
+from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa

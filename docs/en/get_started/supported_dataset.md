@@ -8,6 +8,7 @@ The framework currently supports the following datasets natively. If the dataset
 You can also use other tools supported by this framework for evaluation, such as [OpenCompass](../user_guides/backend/opencompass_backend.md) for language model evaluation, or [VLMEvalKit](../user_guides/backend/vlmevalkit_backend.md) for multimodal model evaluation.
 ```
 
+### LLM Evaluation Datasets
 
 | Name              | Dataset ID                                                                                           | Task Category    | Remarks                                                                                                                  |
 |-------------------|------------------------------------------------------------------------------------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------|
@@ -50,6 +51,18 @@ You can also use other tools supported by this framework for evaluation, such as
 
 **4.** For better evaluation results, it is recommended that reasoning models set post-processing corresponding to the dataset, such as `{"filters": {"remove_until": "</think>"}}`.
 ```
+
+### AIGC Evaluation Datasets
+
+This framework also supports evaluation datasets related to text-to-image and other AIGC tasks. The specific datasets are as follows:
+
+| Name          | Dataset ID       | Task Type       | Remarks                        |
+|---------------|------------------|-----------------|--------------------------------|
+| `general_t2i` |                  | General Text-to-Image | Refer to the tutorial          |
+| `evalmuse`    | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary) | Text-Image Consistency | EvalMuse subset, default metric is `FGA_BLIP2Score` |
+| `genai_bench` | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/) | Text-Image Consistency | GenAI-Bench-1600 subset, default metric is `VQAScore` |
+| `hpdv2`       | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/) | Text-Image Consistency | HPDv2 subset, default metric is `HPSv2.1Score` |
+| `tifa160`     | [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/) | Text-Image Consistency | TIFA160 subset, default metric is `PickScore` |
 
 ## 2. OpenCompass Backend
 Refer to the [detailed explanation](https://github.com/open-compass/opencompass#-dataset-support)

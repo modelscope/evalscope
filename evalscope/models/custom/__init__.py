@@ -1,3 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evalscope.models.custom.custom_model import *
+from .custom_model import CustomModel
+from .dummy_model import DummyCustomModel

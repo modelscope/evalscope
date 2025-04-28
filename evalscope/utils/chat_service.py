@@ -64,10 +64,10 @@ class ChatCompletionResponseStreamChoice(BaseModel):
 
 class ChatCompletionResponse(BaseModel):
     model: str
-    object: Literal['chat.completion', 'chat.completion.chunk']
+    object: Literal['chat.completion', 'chat.completion.chunk', 'images.generations']
     choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice, Any]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
-    usage: Optional[Usage]
+    usage: Optional[Usage] = None
 
 
 class TextCompletionRequest(BaseModel):
