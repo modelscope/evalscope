@@ -58,10 +58,10 @@ class TestRun(unittest.TestCase):
                 'torch_dtype': 'torch.float16',
             },
             datasets=[
-                # 'tifa160',
-                # 'genai_bench',
+                'tifa160',
+                'genai_bench',
                 'evalmuse',
-                # 'hpdv2',
+                'hpdv2',
             ],
             dataset_args={
                 'tifa160': {

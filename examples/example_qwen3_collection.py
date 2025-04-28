@@ -81,9 +81,11 @@ def run_test_no_think():
             'top_k': 20,  # top-k采样 (qwen 报告推荐值)
             'n': 1,  # 每个请求产生的回复数量
         },
+        judge_worker_num=1,
         timeout=60000,  # 超时时间
         stream=True,  # 是否使用流式输出
         # limit=1000,  # 设置为1000条数据进行测试
+        use_cache='outputs/20250428_230554'
     )
 
     run_task(task_cfg=task_cfg)

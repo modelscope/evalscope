@@ -5,7 +5,10 @@
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 
-import cv2
+try:
+    import cv2
+except ImportError:
+    pass
 import numpy as np
 import torch
 

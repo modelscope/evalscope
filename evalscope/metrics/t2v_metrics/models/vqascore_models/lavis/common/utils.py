@@ -18,8 +18,12 @@ import urllib
 import urllib.error
 import urllib.request
 import yaml
-from iopath.common.download import download
-from iopath.common.file_io import file_lock, g_pathmgr
+
+try:
+    from iopath.common.download import download
+    from iopath.common.file_io import file_lock, g_pathmgr
+except ImportError:
+    pass
 from torch.utils.model_zoo import tqdm
 from torchvision.datasets.utils import check_integrity, download_file_from_google_drive, extract_archive
 from typing import Optional
