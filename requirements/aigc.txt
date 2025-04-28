@@ -1,1 +1,4 @@
 open_clip_torch
+diffusers
+opencv-python
+iopath
