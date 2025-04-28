@@ -60,6 +60,7 @@ experiments/speed_benchmark/index.md
 :::{toctree}
 :hidden:
 :caption: 📖 Best Practices
+best_practice/qwen3.md
 best_practice/eval_qwq.md
 best_practice/iquiz.md
 best_practice/deepseek_r1_distill.md
