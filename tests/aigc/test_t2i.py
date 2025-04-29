@@ -58,9 +58,9 @@ class TestRun(unittest.TestCase):
                 'torch_dtype': 'torch.float16',
             },
             datasets=[
-                # 'tifa160',
+                'tifa160',
                 # 'genai_bench',
-                'evalmuse',
+                # 'evalmuse',
                 # 'hpdv2',
             ],
             dataset_args={
@@ -81,7 +81,7 @@ class TestRun(unittest.TestCase):
                 'num_inference_steps': 50,
                 'guidance_scale': 7.5
             },
-            use_cache='outputs/20250427_134122',
+            # use_cache='outputs/20250427_134122',
         )
 
         run_task(task_cfg=task_cfg)

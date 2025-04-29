@@ -100,10 +100,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
                 if i < len(system_prompts) and system_prompts[i]:
                     messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
                 # whether thinking is needed
-                enable_thinking = infer_cfg.get('enable_thinking', None)
-                if enable_thinking is not None:
+                chat_template_kwargs = infer_cfg.get('chat_template_kwargs', None)
+                if chat_template_kwargs is not None:
                     prompts = self.tokenizer.apply_chat_template(
-                        messages, tokenize=False, add_generation_prompt=True, enable_thinking=enable_thinking)
+                        messages, tokenize=False, add_generation_prompt=True, **chat_template_kwargs)
                 else:
                     prompts = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
                 formatted_prompts.append(prompts)

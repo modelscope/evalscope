@@ -7,7 +7,7 @@ import sqlite3
 import sys
 from datetime import datetime
 from tabulate import tabulate
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
@@ -200,16 +200,16 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     return results
 
 
-def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: str):
+def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: str) -> Tuple[Dict, Dict]:
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
-    data = metrics.create_message()
-    data.update({'Expected number of requests': args.number, 'Result DB path': result_db_path})
-    write_json_file(data, os.path.join(result_path, 'benchmark_summary.json'))
+    metrics_result = metrics.create_message()
+    metrics_result.update({'Expected number of requests': args.number, 'Result DB path': result_db_path})
+    write_json_file(metrics_result, os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table
-    table = tabulate(list(data.items()), headers=['Key', 'Value'], tablefmt='grid')
+    table = tabulate(list(metrics_result.items()), headers=['Key', 'Value'], tablefmt='grid')
     logger.info('\nBenchmarking summary:\n' + table)
 
     # Get percentile results
@@ -222,6 +222,8 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
 
     if args.dataset.startswith('speed_benchmark'):
         speed_benchmark_result(result_db_path)
+
+    return metrics_result, percentile_result
 
 
 def speed_benchmark_result(result_db_path: str):

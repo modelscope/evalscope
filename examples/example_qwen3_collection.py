@@ -70,7 +70,7 @@ def run_test_no_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'outputs/qwen3_test_sample.jsonl',
+                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
             }
         },
         eval_batch_size=128,
@@ -80,10 +80,12 @@ def run_test_no_think():
             'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
             'top_k': 20,  # top-k采样 (qwen 报告推荐值)
             'n': 1,  # 每个请求产生的回复数量
+            'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
         },
+        judge_worker_num=1,
         timeout=60000,  # 超时时间
         stream=True,  # 是否使用流式输出
-        # limit=1000,  # 设置为1000条数据进行测试
+        limit=10,  # 设置为1000条数据进行测试
     )
 
     run_task(task_cfg=task_cfg)

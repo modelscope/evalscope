@@ -1,1 +1,5 @@
+diffusers
+iopath
+omegaconf
 open_clip_torch
+opencv-python

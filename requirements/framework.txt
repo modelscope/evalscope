@@ -5,16 +5,14 @@ jieba
 jsonlines
 langdetect
 latex2sympy2
-lazy_import
 matplotlib
 modelscope[framework]
 nltk>=3.9
-omegaconf
 openai
 pandas
 pillow
 pyarrow
-pyyaml
+pyyaml>=5.1
 requests
 rouge-chinese
 rouge-score>=0.1.0
@@ -27,6 +25,7 @@ sympy
 tabulate
 # pip3 install --no-dependencies -r requirements/framework.txt
 torch
+torchvision
 tqdm
 transformers>=4.33
 word2number

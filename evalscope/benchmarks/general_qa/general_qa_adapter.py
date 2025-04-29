@@ -33,7 +33,7 @@ class GeneralQAAdapter(DataAdapter):
         subset_list = subset_list or self.subset_list
 
         data_file_dict = defaultdict(str)
-        data_list = []
+        data_item_dict = defaultdict(list)
 
         # get data file path and subset name
         if os.path.isdir(dataset_name_or_path):
@@ -48,11 +48,11 @@ class GeneralQAAdapter(DataAdapter):
         # load data from local disk
         try:
             for subset_name, file_path in data_file_dict.items():
-                data_list.extend(jsonl_to_list(file_path))
+                data_item_dict[subset_name] = jsonl_to_list(file_path)
         except Exception as e:
             raise ValueError(f'Failed to load data from {self.dataset_id}, got error: {e}')
 
-        data_dict = {subset_name: {'test': data_list} for subset_name in data_file_dict.keys()}
+        data_dict = {subset_name: {'test': data_item_dict[subset_name]} for subset_name in data_file_dict.keys()}
 
         return data_dict
 
