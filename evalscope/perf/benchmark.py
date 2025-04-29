@@ -9,7 +9,7 @@ import threading
 import time
 from http import HTTPStatus
 from tqdm import tqdm
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.http_client import AioHttpClient, test_connection
@@ -180,7 +180,7 @@ async def connect_test(args: Arguments) -> bool:
 
 
 @exception_handler
-async def benchmark(args: Arguments) -> None:
+async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     if platform.system() != 'Windows':
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
@@ -205,4 +205,5 @@ async def benchmark(args: Arguments) -> None:
     data_process_completed_event.set()
 
     metrics, result_db_path = await statistic_benchmark_metric_task
-    summary_result(args, metrics, result_db_path)
+    metrics_result, percentile_result = summary_result(args, metrics, result_db_path)
+    return metrics_result, percentile_result
