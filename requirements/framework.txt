@@ -8,12 +8,11 @@ latex2sympy2
 matplotlib
 modelscope[framework]
 nltk>=3.9
-omegaconf
 openai
 pandas
 pillow
 pyarrow
-pyyaml
+pyyaml>=5.1
 requests
 rouge-chinese
 rouge-score>=0.1.0

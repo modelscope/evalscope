@@ -212,8 +212,8 @@ class TestRun(unittest.TestCase):
                 # 'iquiz',
                 # 'math_500',
                 # 'aime24',
-                # 'competition_math',
-                'mmlu',
+                'competition_math',
+                # 'mmlu',
             ],
             dataset_args={
                 'competition_math': {
@@ -224,8 +224,8 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
             },
-            limit=10,
-            eval_batch_size=10,
+            limit=5,
+            eval_batch_size=5,
         )
 
         run_task(task_cfg=task_cfg)
