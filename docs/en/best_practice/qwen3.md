@@ -78,7 +78,7 @@ Example output:
 
 ### Local Model Service Performance Evaluation
 
-The command to start the model service locally using the vLLM framework (vLLM version >= 0.8.4) is as follows (default is **thinking mode**):
+The command to start the model service locally using the vLLM framework (vLLM version >= 0.8.5) is as follows (default is **thinking mode**):
 
 ```bash
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 vllm serve Qwen/Qwen3-32B --gpu-memory-utilization 0.9 --served-model-name Qwen3-32B --trust_remote_code --port 8801

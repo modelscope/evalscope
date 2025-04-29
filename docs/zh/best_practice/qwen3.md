@@ -79,7 +79,7 @@ evalscope perf \
 
 ### 本地模型服务性能评测
 
-使用vLLM框架（需要vLLM版本大于等于0.8.4）在本地拉起模型服务的命令如下（默认为**思考模式**）：
+使用vLLM框架（需要vLLM版本大于等于0.8.5）在本地拉起模型服务的命令如下（默认为**思考模式**）：
 
 ```bash
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 vllm serve Qwen/Qwen3-32B --gpu-memory-utilization 0.9 --served-model-name Qwen3-32B --trust_remote_code --port 8801
