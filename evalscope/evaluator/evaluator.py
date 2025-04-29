@@ -317,6 +317,8 @@ class Evaluator(object):
         """
 
         review_res_list = []
+        max_choices = max(
+            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d[ReviewKeys.REVIEWED])
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
                 logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
@@ -325,10 +327,14 @@ class Evaluator(object):
             if len(review_d[AnswerKeys.CHOICES]) == 0:
                 logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
                 continue
-            elif len(review_d[AnswerKeys.CHOICES]) == 1:
+            elif len(review_d[AnswerKeys.CHOICES]) == 1 and max_choices == 1:
                 review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
             else:
                 review_res = [choice[ReviewKeys.REVIEW][ReviewKeys.RESULT] for choice in review_d[AnswerKeys.CHOICES]]
+                if len(review_d[AnswerKeys.CHOICES]) < max_choices:
+                    logger.warning(
+                        f'Less choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, '
+                        f'max_choices is {max_choices}, but only {len(review_d[AnswerKeys.CHOICES])} choices found')
 
             review_res_list.append(review_res)
 
