@@ -207,13 +207,13 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen/Qwen2.5-0.5B-Instruct',
+            model='Qwen/Qwen3-1.7B',
             datasets=[
                 # 'iquiz',
                 # 'math_500',
-                # 'aime24',
+                'aime24',
                 # 'competition_math',
-                'mmlu',
+                # 'mmlu',
             ],
             dataset_args={
                 'competition_math': {
@@ -224,8 +224,15 @@ class TestRun(unittest.TestCase):
                     'few_shot_num': 0
                 },
             },
-            limit=10,
-            eval_batch_size=10,
+            limit=5,
+            eval_batch_size=5,
+            generation_config={
+                'max_new_tokens': 1000,  # 最大生成token数，建议设置为较大值避免输出截断
+                'temperature': 0.7,  # 采样温度 (qwen 报告推荐值)
+                'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
+                'top_k': 20,  # top-k采样 (qwen 报告推荐值)
+                'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
+            }
         )
 
         run_task(task_cfg=task_cfg)

@@ -84,12 +84,6 @@ The command to start the model service locally using the vLLM framework (vLLM ve
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 vllm serve Qwen/Qwen3-32B --gpu-memory-utilization 0.9 --served-model-name Qwen3-32B --trust_remote_code --port 8801
 ```
 
-Start the model service using **non-thinking mode** (requires configuring chat template):
-
-```shell
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 vllm serve Qwen/Qwen3-32B --gpu-memory-utilization 0.9 --served-model-name Qwen3-32B-no-think --trust_remote_code --port 8801 --chat-template "<template-goes-here>"
-```
-
 > **Performance Test Command**
 
 ```shell
@@ -219,7 +213,7 @@ Testing model performance in **non-thinking mode** (note the changes in generati
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
-    model='Qwen3-32B-no-think',
+    model='Qwen3-32B',
     api_url='http://127.0.0.1:8801/v1/chat/completions',
     eval_type='service',
     datasets=[
@@ -237,6 +231,7 @@ task_cfg = TaskConfig(
         'top_p': 0.8,  # top-p sampling (recommended value per Qwen report)
         'top_k': 20,  # top-k sampling (recommended value per Qwen report)
         'n': 1,  # Number of replies generated per request
+        'chat_template_kwargs': {'enable_thinking': False}  # close thinking mode
     },
     timeout=60000,  # Timeout
     stream=True,  # Use streaming output

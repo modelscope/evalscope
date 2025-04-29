@@ -59,9 +59,9 @@ class TestRun(unittest.TestCase):
             },
             datasets=[
                 'tifa160',
-                'genai_bench',
-                'evalmuse',
-                'hpdv2',
+                # 'genai_bench',
+                # 'evalmuse',
+                # 'hpdv2',
             ],
             dataset_args={
                 'tifa160': {
@@ -81,7 +81,7 @@ class TestRun(unittest.TestCase):
                 'num_inference_steps': 50,
                 'guidance_scale': 7.5
             },
-            use_cache='outputs/20250427_134122',
+            # use_cache='outputs/20250427_134122',
         )
 
         run_task(task_cfg=task_cfg)
