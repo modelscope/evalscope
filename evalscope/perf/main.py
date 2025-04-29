@@ -36,9 +36,11 @@ def run_perf_benchmark(args):
     if platform.system() != 'Windows':
         add_signal_handlers(loop)
 
-    loop.run_until_complete(benchmark(args))
+    return loop.run_until_complete(benchmark(args))
 
 
 if __name__ == '__main__':
     args = Arguments.from_args(parse_args())
-    run_perf_benchmark(args)
+    metrics_result, percentile_result = run_perf_benchmark(args)
+    print(metrics_result)
+    print(percentile_result)
