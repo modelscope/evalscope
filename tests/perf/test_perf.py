@@ -103,7 +103,7 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=20,
-            model='Qwen2.5-0.5B-Instruct',
+            model='Qwen3-1.7B',
             url='http://127.0.0.1:8801/v1/completions',
             api='openai',
             dataset='random',
@@ -117,7 +117,9 @@ class TestPerf(unittest.TestCase):
             seed=None,
             extra_args={'ignore_eos': True}
         )
-        run_perf_benchmark(task_cfg)
+        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
+        print(metrics_result)
+        print(percentile_result)
 
 
 if __name__ == '__main__':
