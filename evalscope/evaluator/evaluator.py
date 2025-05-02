@@ -367,7 +367,7 @@ class Evaluator(object):
         os.makedirs(os.path.dirname(report_path), exist_ok=True)
 
         # Write report
-        with open(report_path, 'w') as f:
+        with open(report_path, 'w',encoding='utf-8') as f:
             f.write(json.dumps(report_map.to_dict(), ensure_ascii=False, indent=4))
         logger.info(f'Dump report: {report_path} \n')
 

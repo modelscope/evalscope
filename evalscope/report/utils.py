@@ -96,7 +96,7 @@ class Report:
 
     @classmethod
     def from_json(cls, json_file: str):
-        with open(json_file, 'r') as f:
+        with open(json_file, 'r',encoding='utf-8') as f:
             data = json.load(f)
         return cls.from_dict(data)
 
