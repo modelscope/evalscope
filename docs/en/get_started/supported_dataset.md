@@ -327,7 +327,10 @@ Refer to the [detailed explanation](https://github.com/open-compass/opencompass#
 
 
 ## 3. VLMEvalKit Backend
-Refer to the [detailed explanation](https://github.com/open-compass/VLMEvalKit/tree/main#-datasets-models-and-evaluation-results)
+
+```{note}
+For more comprehensive instructions and an up-to-date list of datasets, please refer to [detailed instructions](https://aicarrier.feishu.cn/wiki/Qp7wwSzQ9iK1Y6kNUJVcr6zTnPe?table=tblsdEpLieDoCxtb).
+```
 
 ### Image Understanding Dataset
 

@@ -332,7 +332,10 @@
 
 
 ## 3. VLMEvalKit评测后端支持的数据集
-参考[详细说明](https://github.com/open-compass/VLMEvalKit/blob/main/docs/zh-CN/README_zh-CN.md#%E6%94%AF%E6%8C%81%E7%9A%84%E5%9B%BE%E6%96%87%E5%A4%9A%E6%A8%A1%E6%80%81%E8%AF%84%E6%B5%8B%E9%9B%86)
+
+```{note}
+更完整的说明和及时更新的数据集列表，请参考[详细说明](https://aicarrier.feishu.cn/wiki/Qp7wwSzQ9iK1Y6kNUJVcr6zTnPe?table=tblsdEpLieDoCxtb)
+```
 
 ### 图文多模态评测集
 
