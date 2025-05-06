@@ -211,10 +211,14 @@ class TestRun(unittest.TestCase):
             datasets=[
                 # 'iquiz',
                 # 'math_500',
-                'aime24',
+                # 'aime24',
                 # 'competition_math',
                 # 'mmlu',
+                'simple_qa',
             ],
+            model_args={
+                'device_map': 'auto',
+            },
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4', 'Level 5']
@@ -232,7 +236,8 @@ class TestRun(unittest.TestCase):
                 'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
                 'top_k': 20,  # top-k采样 (qwen 报告推荐值)
                 'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
-            }
+            },
+            judge_strategy=JudgeStrategy.RULE,
         )
 
         run_task(task_cfg=task_cfg)

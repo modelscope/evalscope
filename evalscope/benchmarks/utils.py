@@ -21,7 +21,7 @@ class PromptData:
 def preprocess_decorator(func):
 
     @wraps(func)
-    def wrapper(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT):
+    def wrapper(self, result: str, raw_input_d: dict = None, **kwargs):
         if result is None:
             result = ''
         filters = self.config_kwargs.get('filters', None)
@@ -29,6 +29,6 @@ def preprocess_decorator(func):
             # Apply filters to the resultply filters to the result
             for filter_name, filter_value in filters.items():
                 result = Filter.apply(filter_name, result, filter_value)
-        return func(self, result, raw_input_d, eval_type)
+        return func(self, result, raw_input_d, **kwargs)
 
     return wrapper
