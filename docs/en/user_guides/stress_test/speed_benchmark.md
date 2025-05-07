@@ -6,8 +6,10 @@ To conduct speed tests and obtain a speed benchmark report similar to the [offic
 
 You can specify the dataset for speed testing using `--dataset [speed_benchmark|speed_benchmark_long]`:
 
-- `speed_benchmark`: Tests prompts of lengths [1, 6144, 14336, 30720], with a fixed output of 2048 tokens.
-- `speed_benchmark_long`: Tests prompts of lengths [63488, 129024], with a fixed output of 2048 tokens.
+- `speed_benchmark`: Tests prompts of lengths [1, 6144, 14336, 30720], with a fixed output of 2048 tokens. 
+  A total of 8 requests are made, with 2 requests for each prompt length.
+- `speed_benchmark_long`: Tests prompts of lengths [63488, 129024], with a fixed output of 2048 tokens. 
+  A total of 4 requests are made, with 2 requests for each prompt length.
 
 ## Online API Inference
 ```{note}
