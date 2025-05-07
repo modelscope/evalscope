@@ -18,24 +18,14 @@ logger = get_logger()
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
-DEFAULT_MODEL_ARGS = {'revision': 'master', 'precision': 'torch.float16'}
-DEFAULT_GENERATION_CONFIG = {
-    'max_length': 2048,
-    'max_new_tokens': 512,
-    'do_sample': False,
-    'top_k': 50,
-    'top_p': 1.0,
-    'temperature': 1.0,
-}
-
 
 @dataclass
 class TaskConfig:
     # Model-related arguments
     model: Union[str, 'CustomModel', None] = None
     model_id: Optional[str] = None
-    model_args: Optional[Dict] = field(default_factory=lambda: DEFAULT_MODEL_ARGS | {})
-    model_task: Optional[str] = ModelTask.TEXT_GENERATION
+    model_args: Dict = field(default_factory=dict)
+    model_task: str = ModelTask.TEXT_GENERATION
 
     # Template-related arguments
     template_type: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
@@ -48,7 +38,7 @@ class TaskConfig:
     dataset_hub: str = HubType.MODELSCOPE
 
     # Generation configuration arguments
-    generation_config: Optional[Dict] = field(default_factory=lambda: DEFAULT_GENERATION_CONFIG | {})
+    generation_config: Dict = field(default_factory=dict)
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT
@@ -94,6 +84,46 @@ class TaskConfig:
         # Set default eval_batch_size based on eval_type
         if self.eval_batch_size is None:
             self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
+
+        # Set default generation_config and model_args
+        self.__init_default_generation_config()
+        self.__init_default_model_args()
+
+    def __init_default_generation_config(self):
+        if self.generation_config:
+            return
+        if self.model_task == ModelTask.IMAGE_GENERATION:
+            self.generation_config = {
+                'height': 1024,
+                'width': 1024,
+                'num_inference_steps': 50,
+                'guidance_scale': 9.0,
+            }
+        elif self.model_task == ModelTask.TEXT_GENERATION:
+            if self.eval_type == EvalType.CHECKPOINT:
+                self.generation_config = {
+                    'max_length': 2048,
+                    'max_new_tokens': 512,
+                    'do_sample': False,
+                    'top_k': 50,
+                    'top_p': 1.0,
+                    'temperature': 1.0,
+                }
+            elif self.eval_type == EvalType.SERVICE:
+                self.generation_config = {
+                    'max_tokens': 2048,
+                    'temperature': 0.0,
+                }
+
+    def __init_default_model_args(self):
+        if self.model_args:
+            return
+        if self.model_task == ModelTask.TEXT_GENERATION:
+            if self.eval_type == EvalType.CHECKPOINT:
+                self.model_args = {
+                    'revision': 'master',
+                    'precision': 'torch.float16',
+                }
 
     def to_dict(self):
         result = self.__dict__.copy()

@@ -97,7 +97,6 @@ class Evaluator(object):
         answer_d[AnswerKeys.ANSWER_ID] = answer_id
         answer_d[AnswerKeys.SUBSET_NAME] = subset_name
         answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
-        # answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
         answer_d[AnswerKeys.INDEX] = input_d[AnswerKeys.INDEX]
         return answer_d
 
@@ -197,16 +196,17 @@ class Evaluator(object):
             reviewer_spec = {}
 
         review_res = deepcopy(answer_d)
-        choices = review_res[AnswerKeys.CHOICES]
-        if len(choices) == 0:
-            review_res[ReviewKeys.REVIEWED] = False
+        if AnswerKeys.CHOICES not in review_res:
+            review_res[AnswerKeys.CHOICES] = []
+            review_res[ReviewKeys.REVIEWED] = True
             review_res[ReviewKeys.REVIEW_ID] = None
             review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
             review_res[ReviewKeys.REVIEW_TIME] = time.time()
+            logger.warning(f'No choices found for answer dict: {review_res}')
             return review_res
 
         rev_choices = []
-        for choice in choices:
+        for choice in review_res[AnswerKeys.CHOICES]:
             raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
@@ -321,11 +321,11 @@ class Evaluator(object):
             len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d[ReviewKeys.REVIEWED])
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, skipping ...')
                 continue
 
             if len(review_d[AnswerKeys.CHOICES]) == 0:
-                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, skipping ...')
                 continue
             elif len(review_d[AnswerKeys.CHOICES]) == 1 and max_choices == 1:
                 review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]

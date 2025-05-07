@@ -43,7 +43,7 @@ class ServerModelAdapter(BaseModelAdapter):
         sig = signature(self.client.chat.completions.create)
         return list(sig.parameters.keys())
 
-    def predict(self, inputs: List[dict], infer_cfg: dict = None) -> List[dict]:
+    def predict(self, inputs: List[dict], infer_cfg: Optional[dict] = None) -> List[dict]:
         """
         Model prediction func.
 
@@ -90,16 +90,9 @@ class ServerModelAdapter(BaseModelAdapter):
 
         return messages
 
-    def make_request(self, content: list, infer_cfg: dict = {}) -> dict:
+    def make_request(self, content: list, infer_cfg: dict) -> dict:
         """Make request to remote API."""
         # Format request JSON according to OpenAI API format
-        from evalscope.config import DEFAULT_GENERATION_CONFIG
-        if infer_cfg == DEFAULT_GENERATION_CONFIG:
-            infer_cfg = {
-                'max_tokens': 2048,
-                'temperature': 0.0,
-            }
-
         request_json = {'model': self.model_id, 'messages': content, **infer_cfg}
 
         if self.timeout:

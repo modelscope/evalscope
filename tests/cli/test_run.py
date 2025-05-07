@@ -209,12 +209,12 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='Qwen/Qwen3-1.7B',
             datasets=[
-                # 'iquiz',
+                'iquiz',
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'mmlu',
-                'simple_qa',
+                # 'simple_qa',
             ],
             model_args={
                 'device_map': 'auto',
@@ -237,7 +237,7 @@ class TestRun(unittest.TestCase):
                 'top_k': 20,  # top-k采样 (qwen 报告推荐值)
                 'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
             },
-            judge_strategy=JudgeStrategy.RULE,
+            judge_strategy=JudgeStrategy.AUTO,
         )
 
         run_task(task_cfg=task_cfg)
@@ -368,14 +368,15 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=32,
-            limit=15,
+            limit=5,
             debug=True,
             stream=False,
             generation_config={
                 'temperature': 0,
                 'n': 1,
                 'max_tokens': 4096,
-            }
+            },
+            use_cache='outputs/20250507_195856'
         )
 
         run_task(task_cfg=task_cfg)
