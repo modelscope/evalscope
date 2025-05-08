@@ -258,7 +258,7 @@ class DataAdapter(ABC):
             avg_res: Dict[str, List[float]]
 
         """
-        if isinstance(review_res_list[0], list):
+        if len(review_res_list) > 0 and isinstance(review_res_list[0], list):
             review_res_list = [item for sublist in review_res_list for item in sublist]
 
         items = defaultdict(list)
