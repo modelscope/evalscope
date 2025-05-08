@@ -97,13 +97,23 @@ class Evaluator(object):
         answer_d[AnswerKeys.ANSWER_ID] = answer_id
         answer_d[AnswerKeys.SUBSET_NAME] = subset_name
         answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
-        # answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
         answer_d[AnswerKeys.INDEX] = input_d[AnswerKeys.INDEX]
         return answer_d
 
     def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
         answers_list = []
-        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        try:
+            # get answer from model
+            answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        except Exception as e:
+            logger.error(f'Failed to get answer for {input_prompts}, due to {e}')
+            # if ignore_errors is True, continue to next input
+            if self.task_cfg.ignore_errors:
+                logger.warning('`ignore_errors` is set to True. Dropping this prompt and continuing with evaluation.')
+                return answers_list
+            else:
+                raise e
+        # process answer
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
@@ -197,16 +207,17 @@ class Evaluator(object):
             reviewer_spec = {}
 
         review_res = deepcopy(answer_d)
-        choices = review_res[AnswerKeys.CHOICES]
-        if len(choices) == 0:
-            review_res[ReviewKeys.REVIEWED] = False
+        if AnswerKeys.CHOICES not in review_res:
+            review_res[AnswerKeys.CHOICES] = []
+            review_res[ReviewKeys.REVIEWED] = True
             review_res[ReviewKeys.REVIEW_ID] = None
             review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
             review_res[ReviewKeys.REVIEW_TIME] = time.time()
+            logger.warning(f'No choices found for answer dict: {review_res}')
             return review_res
 
         rev_choices = []
-        for choice in choices:
+        for choice in review_res[AnswerKeys.CHOICES]:
             raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
             answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
             gold_content = self.data_adapter.get_gold_answer(raw_input_d)
@@ -315,17 +326,24 @@ class Evaluator(object):
         Returns:
             The metric result. Depends on the metric function in data_adapter.
         """
+        # Get max choices
+        choices_lengths = [
+            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d.get(ReviewKeys.REVIEWED)
+        ]
+        if choices_lengths:
+            max_choices = max(choices_lengths)
+        else:
+            max_choices = 0
 
+        # Get review result
         review_res_list = []
-        max_choices = max(
-            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d[ReviewKeys.REVIEWED])
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, skipping ...')
                 continue
 
             if len(review_d[AnswerKeys.CHOICES]) == 0:
-                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
+                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, skipping ...')
                 continue
             elif len(review_d[AnswerKeys.CHOICES]) == 1 and max_choices == 1:
                 review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]

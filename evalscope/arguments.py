@@ -67,6 +67,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
 
     # Debug and runtime mode arguments
+    parser.add_argument('--ignore-errors', action='store_true', default=False, help='Ignore errors during evaluation.')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug mode, will print information for debugging.')  # noqa: E501
     parser.add_argument('--dry-run', action='store_true', default=False, help='Dry run in single processing mode.')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')

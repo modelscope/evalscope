@@ -103,4 +103,5 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
 - `--use-cache`: Use local cache path, default is `None`; if a path is specified, such as `outputs/20241210_194434`, it will reuse the model inference results from that path. If inference is not completed, it will continue inference and then proceed to evaluation.
 - `--seed`: Random seed, default is `42`.
 - `--debug`: Whether to enable debug mode, default is `false`.
+- `--ignore-errors`: Whether to ignore errors during model generation, default is `false`.
 - `--dry-run`: Pre-check parameters without performing inference, only prints parameters, default is `false`.
