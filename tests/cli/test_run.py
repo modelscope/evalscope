@@ -74,6 +74,12 @@ class TestRun(unittest.TestCase):
         logger.error(f'>>test_run_eval_with_args stderr: {run_res.stderr}')
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_yaml_config(self):
+        from evalscope import run_task
+
+        run_task(task_cfg='examples/tasks/eval_native.yaml')
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_task(self):
         task_cfg = TaskConfig(
             model='qwen/Qwen2.5-0.5B-Instruct',
