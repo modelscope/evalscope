@@ -309,7 +309,8 @@ class TestRun(unittest.TestCase):
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
-                'drop'
+                # 'drop',
+                'winogrande',
             ],
             dataset_args={
                 'mmlu': {
