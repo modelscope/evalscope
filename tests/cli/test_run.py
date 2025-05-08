@@ -285,7 +285,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -308,7 +308,8 @@ class TestRun(unittest.TestCase):
                 # 'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux',
-                # 'maritime_bench'
+                # 'maritime_bench',
+                'drop'
             ],
             dataset_args={
                 'mmlu': {
@@ -382,7 +383,7 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            ignore_errors=True,
+            # ignore_errors=True,
             # use_cache='outputs/20250507_195856'
         )
 
