@@ -218,9 +218,9 @@ def parse_task_config(task_cfg) -> TaskConfig:
     elif isinstance(task_cfg, str):
         extension = os.path.splitext(task_cfg)[-1]
         logger.info(f'Args: Task config is provided with {extension} file type.')
-        if extension in ['yaml', 'yml']:
+        if extension in ['.yaml', '.yml']:
             task_cfg = TaskConfig.from_yaml(task_cfg)
-        elif extension == 'json':
+        elif extension == '.json':
             task_cfg = TaskConfig.from_json(task_cfg)
         else:
             raise ValueError('Args: Unsupported file extension.')

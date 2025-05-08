@@ -1,0 +1,5 @@
+model: Qwen/Qwen2.5-0.5B-Instruct
+datasets:
+  - gsm8k
+  - arc
+limit: 5
