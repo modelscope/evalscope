@@ -102,7 +102,18 @@ class Evaluator(object):
 
     def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
         answers_list = []
-        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        try:
+            # get answer from model
+            answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        except Exception as e:
+            logger.error(f'Failed to get answer for {input_prompts}, due to {e}')
+            # if ignore_errors is True, continue to next input
+            if self.task_cfg.ignore_errors:
+                logger.warning('`ignore_errors` is set to True. Dropping this prompt and continuing with evaluation.')
+                return answers_list
+            else:
+                raise e
+        # process answer
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
@@ -315,10 +326,17 @@ class Evaluator(object):
         Returns:
             The metric result. Depends on the metric function in data_adapter.
         """
+        # Get max choices
+        choices_lengths = [
+            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d.get(ReviewKeys.REVIEWED)
+        ]
+        if choices_lengths:
+            max_choices = max(choices_lengths)
+        else:
+            max_choices = 0
 
+        # Get review result
         review_res_list = []
-        max_choices = max(
-            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d[ReviewKeys.REVIEWED])
         for review_d in reviews_list:
             if not review_d[ReviewKeys.REVIEWED]:
                 logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, skipping ...')

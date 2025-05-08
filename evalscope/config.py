@@ -55,6 +55,7 @@ class TaskConfig:
     outputs: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
 
     # Debug and runtime mode arguments
+    ignore_errors: bool = False
     debug: bool = False
     dry_run: bool = False
     seed: Optional[int] = 42

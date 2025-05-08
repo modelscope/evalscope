@@ -130,7 +130,7 @@ class ServerModelAdapter(BaseModelAdapter):
             return response.model_dump(exclude_unset=True)
         except Exception as e:
             logger.error(f'Error when calling remote API: {str(e)}')
-            raise
+            raise e
 
     def _collect_stream_response(self, response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
         collected_chunks = []

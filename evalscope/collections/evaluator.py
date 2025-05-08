@@ -249,8 +249,7 @@ class EvaluatorCollection:
         os.makedirs(review_file_path, exist_ok=True)
 
         if self.task_cfg.use_cache and os.path.exists(review_file_path):
-            logger.warning(
-                f'Ignore use_cache={self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
+            logger.warning(f'Use cache from{self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
             if os.path.isdir(review_file_path):
                 for filename in os.listdir(review_file_path):
                     file_path = os.path.join(review_file_path, filename)

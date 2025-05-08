@@ -279,9 +279,9 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'iquiz',
+                'iquiz',
                 # 'ifeval',
-                'mmlu',
+                # 'mmlu',
                 # 'mmlu_pro',
                 # 'musr',
                 # 'process_bench',
@@ -376,7 +376,8 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            use_cache='outputs/20250507_195856'
+            ignore_errors=True,
+            # use_cache='outputs/20250507_195856'
         )
 
         run_task(task_cfg=task_cfg)
