@@ -6,4 +6,4 @@ numpy
 sse_starlette
 # for tokenizer
 transformers
-unicorn
+uvicorn
