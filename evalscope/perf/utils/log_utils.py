@@ -35,7 +35,7 @@ def init_swanlab(args: Arguments) -> None:
     name = args.name if args.name else f'{args.model_id}_{current_time}'
     swanlab.config.update({'framework': '📏evalscope'})
     swanlab.init(
-        project='perf_benchmark',
+        project=os.getenv('SWANLAB_PROJ_NAME', 'perf_benchmark'),
         name=name,
         config=args.to_dict(),
         mode='local' if args.swanlab_api_key == 'local' else None)
