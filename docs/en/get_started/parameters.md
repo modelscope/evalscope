@@ -13,7 +13,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   - `revision`: Model version, defaults to `master`
   - `precision`: Model precision, defaults to `torch.float16`
   - `device_map`: Device allocation for the model, defaults to `auto`
-- `--generation-config`: Generation parameters, separated by commas, in the form of `key=value`:
+- `--generation-config`: Generation parameters, separated by commas, in the form of `key=value` or passed in as a JSON string, which will be parsed into a dictionary:
   - If using local model inference (based on Transformers), the following parameters are included ([Full parameter guide](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)):
     - `do_sample`: Whether to use sampling, default is `false`
     - `max_length`: Maximum length, default is 2048
@@ -27,9 +27,13 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
     - `temperature`: Generation temperature, default is 0.0
     - `n`: number of generated sequences, default is 1 (Note: currently, lmdeploy only supports n=1)
   ```bash
-  # For example
+  # For example, pass arguments in the form of key=value
   --model-args revision=master,precision=torch.float16,device_map=auto
   --generation-config do_sample=true,temperature=0.5
+
+  # Or pass more complex parameters using a JSON string
+  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}'
+  --generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking": false}}'
   ```
 - `--chat-template`: Model inference template, defaults to `None`, indicating the use of transformers' `apply_chat_template`; supports passing in a jinja template string to customize the inference template.
 - `--template-type`: Model inference template, deprecated, refer to `--chat-template`.

@@ -9,6 +9,15 @@ class ParseStrArgsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         assert isinstance(values, str), 'args should be a string.'
 
+        # try json load first
+        try:
+            arg_dict = json.loads(values)
+            setattr(namespace, self.dest, arg_dict)
+            return
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        # If JSON load fails, fall back to parsing as key=value pairs
         arg_dict = {}
         for arg in values.strip().split(','):
             key, value = map(str.strip, arg.split('=', 1))  # Use maxsplit=1 to handle multiple '='
