@@ -13,7 +13,7 @@
   - `precision`: 模型精度，默认为`torch.float16`
   - `device_map`: 模型分配设备，默认为`auto`
 - `--model-task`: 模型任务类型，默认为`text_generation`，可选`text_generation`, `image_generation`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，将解析为字典:
+- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，或以json字符串格式传入，将解析为字典:
   - 若使用本地模型推理（基于Transformers）包括如下参数（[全部参数指南](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)）：
     - `do_sample`: 是否使用采样，默认为`false`
     - `max_length`: 最大长度，默认为2048
@@ -27,9 +27,12 @@
     - `temperature`: 生成温度, 默认为0.0
     - `n`: 生成序列数量，默认为1（注意：lmdeploy目前仅支持n=1）
   ```bash
-  # 例如
+  # 例如用key=value形式传入
   --model-args revision=master,precision=torch.float16,device_map=auto
   --generation-config do_sample=true,temperature=0.5
+  # 或者用json字符串传入更复杂的参数
+  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}'
+  --generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking": false}}'
   ```
 - `--chat-template`: 模型推理模板，默认为`None`，表示使用transformers的`apply_chat_template`；支持传入jinjia模版字符串，来自定义推理模板
 - `--template-type`: 模型推理模板，已弃用，参考`--chat-template`
