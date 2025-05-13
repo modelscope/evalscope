@@ -1,2 +1,0 @@
-ms-swift>=2.1.0
-rouge

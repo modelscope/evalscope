@@ -40,8 +40,10 @@
 | `race`            | [modelscope/race](https://modelscope.cn/datasets/modelscope/race/summary)                          | 阅读理解         |                                                                                                                       |
 | `simple_qa`<sup>3</sup>          | [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)               | 知识问答      |
 | `super_gpqa`      | [m-a-p/SuperGPQA](https://www.modelscope.cn/datasets/m-a-p/SuperGPQA/dataPeview)                | 专家级考试         |       使用`field`字段作为子数据集                                                                                                              |
+| `tool_bench`       | [AI-ModelScope/ToolBench-Statich](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)                | 工具调用         |    参考[使用说明](../third_party/toolbench.md)                                                                                                                   |
 | `trivia_qa`       | [modelscope/trivia_qa](https://modelscope.cn/datasets/modelscope/trivia_qa/summary)                | 知识问答             |                                                                                                                       |
 | `truthful_qa`<sup>1</sup>       | [modelscope/truthful_qa](https://modelscope.cn/datasets/modelscope/truthful_qa/summary)            | 安全性            |                                                                                                                       |
+|  `winogrande`       | [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary)            | 推理，指代消解            |                                                                                                                       |
 
 ```{note}
 **1.** 评测需要计算logits等，暂不支持API服务评测(`eval-type != server`)。
