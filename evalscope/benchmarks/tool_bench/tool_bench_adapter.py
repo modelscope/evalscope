@@ -10,7 +10,7 @@ from evalscope.metrics import Metric, mean, metric_registry
     pretty_name='ToolBench-Static',
     dataset_id='AI-ModelScope/ToolBench-Static',
     subset_list=['in_domain', 'out_of_domain'],
-    metric_list=['action_em', 'plan_em', 'f1', 'hallu_rate', 'rouge'],
+    metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
@@ -20,11 +20,11 @@ class ToolBenchAdapter(DataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        metric_registry.register(Metric(name='rouge', object=mean))
-        metric_registry.register(Metric(name='plan_em', object=mean))
-        metric_registry.register(Metric(name='action_em', object=mean))
-        metric_registry.register(Metric(name='f1', object=mean))
-        metric_registry.register(Metric(name='hallu_rate', object=mean))
+        metric_registry.register(Metric(name='Rouge-L', object=mean))
+        metric_registry.register(Metric(name='Act.EM', object=mean))
+        metric_registry.register(Metric(name='Plan.EM', object=mean))
+        metric_registry.register(Metric(name='F1', object=mean))
+        metric_registry.register(Metric(name='HalluRate', object=mean))
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

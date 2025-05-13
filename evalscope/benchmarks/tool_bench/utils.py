@@ -192,11 +192,11 @@ def calculate_metrics(data):
     action_em = evaluate_action_em(cand_list=action_pred, ref_list=action_ref)
     easy_f1, hard_f1, f1 = evaluate_action_input_f1(action_pred, action_ref, action_input_pred, action_input_ref)
     hallu_rate = hallu_pred
-    metric['rouge'] = rouge
+    metric['Act.EM'] = action_em
+    metric['F1'] = f1
+    metric['HalluRate'] = hallu_rate
     metric['plan_em'] = plan_em
-    metric['action_em'] = action_em
-    metric['easy_f1'] = easy_f1
-    metric['hard_f1'] = hard_f1
-    metric['f1'] = f1
-    metric['hallu_rate'] = hallu_rate
+    metric['Easy_F1'] = easy_f1
+    metric['Hard_F1'] = hard_f1
+    metric['Rouge-L'] = rouge
     return metric
