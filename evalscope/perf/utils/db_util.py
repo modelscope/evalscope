@@ -157,10 +157,6 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     with sqlite3.connect(result_db_path) as con:
         rows = con.execute(query_sql).fetchall()
 
-    if len(rows) < len(percentiles):
-        logger.info('Too little data to calculate quantiles!')
-        return {}
-
     # Define index variables for columns
     CHUNK_TIMES_INDEX = 1
     LATENCY_INDEX = 4

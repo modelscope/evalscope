@@ -1,6 +1,8 @@
 import asyncio
+import copy
 import os
 import platform
+import time
 from argparse import Namespace
 
 from evalscope.perf.arguments import Arguments, parse_args
@@ -13,20 +15,16 @@ from evalscope.utils.utils import seed_everything
 logger = get_logger()
 
 
-def run_perf_benchmark(args):
-    if isinstance(args, dict):
-        args = Arguments(**args)
-    elif isinstance(args, Namespace):
-        args = Arguments.from_args(args)
-
-    if args.seed is not None:
-        seed_everything(args.seed)
+def run_one_benchmark(args: Arguments, output_path: str = None):
+    if isinstance(args.parallel, list):
+        args.parallel = args.parallel[0]
+    if isinstance(args.number, list):
+        args.number = args.number[0]
 
     # Setup logger and output
-    args.outputs_dir = get_output_path(args)
-    configure_logging(args.debug, os.path.join(args.outputs_dir, 'benchmark.log'))
+    args.outputs_dir = output_path
 
-    logger.info('Starting benchmark...')
+    logger.info('Starting benchmark with args: ')
     logger.info(args)
 
     if platform.system() == 'Windows':
@@ -37,6 +35,46 @@ def run_perf_benchmark(args):
         add_signal_handlers(loop)
 
     return loop.run_until_complete(benchmark(args))
+
+
+def run_multi_benchmark(args: Arguments, output_path: str = None):
+    results = {}
+    number_list = copy.deepcopy(args.number)
+    parallel_list = copy.deepcopy(args.parallel)
+    for i, (number, parallel) in enumerate(zip(number_list, parallel_list)):
+        args.number = number
+        args.parallel = parallel
+        # Set up output path for each run
+        cur_output_path = os.path.join(output_path, f'parallel_{parallel}_number_{number}')
+        os.makedirs(cur_output_path, exist_ok=True)
+        # Start the benchmark
+        metrics_result = run_one_benchmark(args, output_path=cur_output_path)
+        # Save the results
+        results[(number, parallel)] = metrics_result
+        # Sleep between runs to avoid overwhelming the server
+        if i < len(number_list) - 1:
+            logger.info('Sleeping for 5 seconds before the next run...')
+            time.sleep(5)
+    return results
+
+
+def run_perf_benchmark(args):
+    if isinstance(args, dict):
+        args = Arguments(**args)
+    elif isinstance(args, Namespace):
+        args = Arguments.from_args(args)
+
+    if args.seed is not None:
+        seed_everything(args.seed)
+
+    # Initialize output directory
+    output_path = get_output_path(args)
+    configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
+    # Start benchmark
+    if len(args.number) == 1:
+        return run_one_benchmark(args, output_path=output_path)
+    else:
+        return run_multi_benchmark(args, output_path=output_path)
 
 
 if __name__ == '__main__':
