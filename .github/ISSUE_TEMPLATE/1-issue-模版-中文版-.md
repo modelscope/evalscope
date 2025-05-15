@@ -1,5 +1,5 @@
 ---
-name: Issue template（中文版）
+name: 1-Issue 模版（中文版）
 about: 模型评测遇到的问题
 title: ''
 labels: ''

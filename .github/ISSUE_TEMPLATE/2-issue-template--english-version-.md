@@ -1,5 +1,5 @@
 ---
-name: Issue template (English Version)
+name: 2-Issue template (English Version)
 about: Issues encountered during model evaluation
 title: ''
 labels: ''
