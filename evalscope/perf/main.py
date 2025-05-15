@@ -5,12 +5,13 @@ import platform
 import time
 from argparse import Namespace
 
-from evalscope.perf.arguments import Arguments, parse_args
-from evalscope.perf.benchmark import benchmark
-from evalscope.perf.utils.db_util import get_output_path
-from evalscope.perf.utils.handler import add_signal_handlers
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.utils import seed_everything
+from .arguments import Arguments, parse_args
+from .benchmark import benchmark
+from .utils.db_util import get_output_path
+from .utils.handler import add_signal_handlers
+from .utils.rich_display import print_summary
 
 logger = get_logger()
 
@@ -38,7 +39,7 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
 
 
 def run_multi_benchmark(args: Arguments, output_path: str = None):
-    results = {}
+    results = []
     number_list = copy.deepcopy(args.number)
     parallel_list = copy.deepcopy(args.parallel)
     for i, (number, parallel) in enumerate(zip(number_list, parallel_list)):
@@ -50,11 +51,13 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
         # Start the benchmark
         metrics_result = run_one_benchmark(args, output_path=cur_output_path)
         # Save the results
-        results[(number, parallel)] = metrics_result
+        results.append(metrics_result)
         # Sleep between runs to avoid overwhelming the server
         if i < len(number_list) - 1:
             logger.info('Sleeping for 5 seconds before the next run...')
             time.sleep(5)
+    # Analyze results
+    print_summary(results, args.model_id)
     return results
 
 

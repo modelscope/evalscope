@@ -111,6 +111,18 @@ def get_result_db_path(args: Arguments):
     return result_db_path
 
 
+class PercentileMetrics:
+    TTFT = 'TTFT (s)'
+    ITL = 'ITL (s)'
+    TPOT = 'TPOT (s)'
+    LATENCY = 'Latency (s)'
+    INPUT_TOKENS = 'Input tokens'
+    OUTPUT_TOKENS = 'Output tokens'
+    OUTPUT_THROUGHPUT = 'Output (tok/s)'
+    TOTAL_THROUGHPUT = 'Total (tok/s)'
+    PERCENTILES = 'Percentiles'
+
+
 def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int, float]:
     """
     Calculate the percentiles for a specific list of data.
@@ -171,24 +183,25 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
         inter_token_latencies_all.extend(inter_token_latencies(row[CHUNK_TIMES_INDEX]))
 
     metrics = {
-        'TTFT (s)': [row[FIRST_CHUNK_LATENCY_INDEX] for row in rows],
-        'ITL (s)':
+        PercentileMetrics.TTFT: [row[FIRST_CHUNK_LATENCY_INDEX] for row in rows],
+        PercentileMetrics.ITL:
         inter_token_latencies_all,
-        'TPOT (s)':
+        PercentileMetrics.TPOT:
         [(row[CHUNK_TIME_INDEX] / row[COMPLETION_TOKENS_INDEX]) if row[COMPLETION_TOKENS_INDEX] > 0 else float('nan')
          for row in rows],
-        'Latency (s)': [row[LATENCY_INDEX] for row in rows],
-        'Input tokens': [row[PROMPT_TOKENS_INDEX] for row in rows],
-        'Output tokens': [row[COMPLETION_TOKENS_INDEX] for row in rows],
-        'Output throughput(tok/s)':
+        PercentileMetrics.LATENCY: [row[LATENCY_INDEX] for row in rows],
+        PercentileMetrics.INPUT_TOKENS: [row[PROMPT_TOKENS_INDEX] for row in rows],
+        PercentileMetrics.OUTPUT_TOKENS: [row[COMPLETION_TOKENS_INDEX] for row in rows],
+        PercentileMetrics.OUTPUT_THROUGHPUT:
         [(row[COMPLETION_TOKENS_INDEX] / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
          for row in rows],
-        'Total throughput(tok/s)': [((row[PROMPT_TOKENS_INDEX] + row[COMPLETION_TOKENS_INDEX])
-                                     / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan') for row in rows]
+        PercentileMetrics.TOTAL_THROUGHPUT: [((row[PROMPT_TOKENS_INDEX] + row[COMPLETION_TOKENS_INDEX])
+                                              / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
+                                             for row in rows]
     }
 
     # Calculate percentiles for each metric
-    results = {'Percentile': [f'{p}%' for p in percentiles]}
+    results = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
     for metric_name, data in metrics.items():
         metric_percentiles = calculate_percentiles(data, percentiles)
         results[metric_name] = [metric_percentiles[p] for p in percentiles]
@@ -201,7 +214,6 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
     metrics_result = metrics.create_message()
-    metrics_result.update({'Expected number of requests': args.number, 'Result DB path': result_db_path})
     write_json_file(metrics_result, os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table
@@ -218,6 +230,8 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
 
     if args.dataset.startswith('speed_benchmark'):
         speed_benchmark_result(result_db_path)
+
+    logger.info(f'Save the summary to: {result_path}')
 
     return metrics_result, percentile_result
 
