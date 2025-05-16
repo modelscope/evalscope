@@ -121,6 +121,29 @@ class TestPerf(unittest.TestCase):
         print(metrics_result)
         print(percentile_result)
 
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_perf_multi_parallel(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 5],
+            model='qwen2.5-7b-instruct',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='random',
+            min_tokens=100,
+            max_tokens=100,
+            prefix_length=0,
+            min_prompt_length=1024,
+            max_prompt_length=1024,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            seed=None,
+            extra_args={'ignore_eos': True}
+        )
+        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
+        print(metrics_result)
+        print(percentile_result)
 
 if __name__ == '__main__':
     unittest.main(buffer=False)

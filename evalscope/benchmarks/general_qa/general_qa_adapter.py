@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import List, Optional, Union
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
+from evalscope.metrics import mean
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -112,9 +112,13 @@ class GeneralQAAdapter(DataAdapter):
         """
         res = dict()
         if 'AverageRouge' in self.metric_list:
+            from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh
+
             rouge_dict = compute_rouge_score_one_sample_zh([pred], [gold])
             res.update(rouge_dict)
         if 'AverageBLEU' in self.metric_list:
+            from evalscope.metrics import bleu_ngram_one_sample
+
             bleu_dict = bleu_ngram_one_sample(pred, gold)
             res.update(bleu_dict)
         return res
