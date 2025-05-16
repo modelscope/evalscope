@@ -248,8 +248,10 @@ class EvaluatorCollection:
         review_file_path = os.path.join(self.outputs.reviews_dir, self.task_cfg.model_id)
         os.makedirs(review_file_path, exist_ok=True)
 
-        if self.task_cfg.use_cache and os.path.exists(review_file_path):
-            logger.warning(f'Use cache from{self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
+        review_history_map = defaultdict(dict)
+        if not self.task_cfg.use_cache and os.path.exists(review_file_path):
+            logger.warning(
+                f'Ignore use_cache={self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
             if os.path.isdir(review_file_path):
                 for filename in os.listdir(review_file_path):
                     file_path = os.path.join(review_file_path, filename)
@@ -260,11 +262,25 @@ class EvaluatorCollection:
                         logger.error(f'Error deleting file {file_path}: {e}')
             else:
                 os.remove(review_file_path)
+        elif self.task_cfg.use_cache and os.path.exists(review_file_path):
+            logger.warning(
+                f'use_cache={self.task_cfg.use_cache}, reloading the review file: {review_file_path} ...')
+            if os.path.isdir(review_file_path):
+                for filename in os.listdir(review_file_path):
+                    if '.ipynb_checkpoints' in filename:
+                        continue
+                    file_path = os.path.join(review_file_path, filename)
+                    review_history = [json.loads(line.strip()) for line in open(file_path)]
+                    review_history_map[filename] = {item['index']: item for item in review_history}
 
         reviews = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting reviews'):
-            evaluator = self.evaluators[sample.dataset_name]
-            review_d = evaluator.get_review(answers[sample.index])
+            file_name = f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'
+            if self.task_cfg.use_cache and sample.index in review_history_map.get(file_name, {}):
+                review_d = review_history_map[file_name][sample.index]
+            else:
+                evaluator = self.evaluators[sample.dataset_name]
+                review_d = evaluator.get_review(answers[sample.index])
             reviews[sample.index] = review_d
             dump_jsonl_data(
                 review_d,
