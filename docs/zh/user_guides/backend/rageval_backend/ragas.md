@@ -66,7 +66,7 @@ generate_testset_task_cfg = {
             "docs": ["README_zh.md"],
             "test_size": 10,
             "output_file": "outputs/testset.json",
-            "knowledge_graph", "outputs/knowledge_graph.json",
+            "knowledge_graph": "outputs/knowledge_graph.json",
             "generator_llm": {
                 "model_name_or_path": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
             },
