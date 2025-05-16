@@ -65,6 +65,18 @@ class ServerModelAdapter(BaseModelAdapter):
 
     def process_single_input(self, input_item: dict, infer_cfg: dict) -> dict:
         """Process a single input item."""
+        if input_item.get('messages', None):
+            content = input_item['messages']
+        else:
+            content = self.make_request_content(input_item)
+        request_json = self.make_request(content, infer_cfg)
+        response = self.send_request(request_json)
+        return response
+
+    def make_request_content(self, input_item: dict) -> list:
+        """
+        Make request content for OpenAI API.
+        """
         data: list = input_item['data']
         if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
             query = '\n'.join(''.join(item) for item in data)
@@ -73,15 +85,6 @@ class ServerModelAdapter(BaseModelAdapter):
             query = data[0]
             system_prompt = input_item.get('system_prompt', None)
 
-        content = self.make_request_content(query, system_prompt)
-        request_json = self.make_request(content, infer_cfg)
-        response = self.send_request(request_json)
-        return response
-
-    def make_request_content(self, query: str, system_prompt: Optional[str] = None) -> list:
-        """
-        Make request content for OpenAI API.
-        """
         messages = []
         if system_prompt:
             messages.append({'role': 'system', 'content': system_prompt})

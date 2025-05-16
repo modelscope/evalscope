@@ -1,7 +1,7 @@
 import os
 import time
 import torch
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, Usage
 from evalscope.utils.logger import get_logger
@@ -58,19 +58,15 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         return generation_config
 
     def _model_generate(self,
-                        queries: List[str],
-                        system_prompts: List[str] = None,
+                        formatted_prompts: List[str],
                         infer_cfg: Dict[str, Any] = None) -> Tuple[List[List[str]], List[int]]:
         """
         Args:
-            queries: The input queries.
-            system_prompts: The system prompts.
+            formatted_prompts: The formatted prompts.
             infer_cfg: The inference configuration.
         Returns:
             The prediction results.
         """
-        if system_prompts is None:
-            system_prompts = []
         if infer_cfg is None:
             infer_cfg = {}
 
@@ -91,27 +87,6 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         self.generation_config.update(**infer_cfg)
         fix_do_sample_warning(self.generation_config)
-
-        # For chat model, use the chat template to format the input
-        if self.tokenizer.chat_template is not None:
-            formatted_prompts = []
-            for i, query in enumerate(queries):
-                messages = [ChatMessage(role='user', content=query)]
-                if i < len(system_prompts) and system_prompts[i]:
-                    messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
-                # whether thinking is needed
-                chat_template_kwargs = infer_cfg.get('chat_template_kwargs', None)
-                if chat_template_kwargs is not None:
-                    prompts = self.tokenizer.apply_chat_template(
-                        messages, tokenize=False, add_generation_prompt=True, **chat_template_kwargs)
-                else:
-                    prompts = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                formatted_prompts.append(prompts)
-        else:
-            # For base model, use the queries as the input
-            formatted_prompts = queries
-
-        logger.debug(f'formatted_prompts: {formatted_prompts}')
 
         # Get input ids
         inputs = self.tokenizer(
@@ -136,8 +111,55 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         return responses, input_lengths
 
+    def _prepare_inputs(self, inputs: List[dict], infer_cfg: dict = {}) -> List[str]:
+        """
+        Prepare the inputs for the model.
+        Args:
+            inputs: The input data.
+            infer_cfg: The inference configuration.
+        Returns:
+            The prepared inputs and system prompts.
+        """
+        queries = []
+        system_prompts = []
+        message_list = []
+
+        for input_item in inputs:
+            queries.append(input_item['data'][0])
+            system_prompts.append(input_item.get('system_prompt', None))
+            if input_item.get('messages', None):
+                message_list.append(input_item.get('messages', None))
+
+        # For non chat model, use the original queries as the input
+        if self.tokenizer.chat_template is None:
+            return queries
+
+        # For chat model, use the messages as the input
+        # if message_list is None, use the queries as the input
+        if len(message_list) == 0:
+            for i, query in enumerate(queries):
+                messages = [ChatMessage(role='user', content=query)]
+                if i < len(system_prompts) and system_prompts[i]:
+                    messages = [ChatMessage(role='system', content=system_prompts[i])] + messages
+                message_list.append(messages)
+
+        # Format the messages
+        formatted_prompts = []
+        for messages in message_list:
+            # apply chat template
+            chat_template_kwargs = infer_cfg.get('chat_template_kwargs', None)
+            if chat_template_kwargs is not None:
+                prompts = self.tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True, **chat_template_kwargs)
+            else:
+                prompts = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            formatted_prompts.append(prompts)
+
+        logger.debug(f'formatted_prompts: {formatted_prompts}')
+        return formatted_prompts
+
     @torch.no_grad()
-    def predict(self, inputs: List[dict], infer_cfg: dict = {}) -> List[dict]:
+    def predict(self, inputs: List[dict], infer_cfg: Optional[dict] = {}) -> List[dict]:
         """
         Args:
             inputs: The input data.
@@ -147,15 +169,10 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
         """
 
         # Process inputs
-        queries = []
-        system_prompts = []
-
-        for input_item in inputs:
-            queries.append(input_item['data'][0])
-            system_prompts.append(input_item.get('system_prompt', None))
+        formatted_prompts = self._prepare_inputs(inputs, infer_cfg)
 
         # Run inference
-        responses, input_lengths = self._model_generate(queries, system_prompts, infer_cfg)
+        responses, input_lengths = self._model_generate(formatted_prompts, infer_cfg)
 
         # Process outputs
         results = []

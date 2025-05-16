@@ -52,7 +52,7 @@ class LocalLLM(BaseLLM):
         """Run the LLM on the given input."""
         infer_cfg = {'stop': stop}
 
-        response, _ = self.model._model_generate([prompt], infer_cfg=infer_cfg)
+        response, _ = self.model.predict([{'data': [prompt]}], infer_cfg=infer_cfg)
         return response[0][0]
 
     @property

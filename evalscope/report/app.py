@@ -223,34 +223,6 @@ def plot_multi_report_radar(df: pd.DataFrame):
     return fig
 
 
-def dict_to_markdown(data) -> str:
-    markdown_lines = []
-
-    for key, value in data.items():
-        bold_key = f'**{key}**'
-
-        if isinstance(value, list):
-            value_str = '\n' + '\n'.join([f'  - {item}' for item in value])
-        elif isinstance(value, dict):
-            value_str = dict_to_markdown(value)
-        else:
-            value_str = str(value)
-
-        value_str = process_string(value_str)
-        markdown_line = f'{bold_key}: {value_str}'
-        markdown_lines.append(markdown_line)
-
-    return '\n\n'.join(markdown_lines)
-
-
-def convert_html_tags(text):
-    # match begin label
-    text = re.sub(r'<(\w+)>', r'[\1]', text)
-    # match end label
-    text = re.sub(r'</(\w+)>', r'[/\1]', text)
-    return text
-
-
 def convert_markdown_image(text):
     if not os.path.isfile(text):
         return text
@@ -263,22 +235,63 @@ def convert_markdown_image(text):
     return text
 
 
+def convert_html_tags(text):
+    # match begin label
+    text = re.sub(r'<(\w+)>', r'[\1]', text)
+    # match end label
+    text = re.sub(r'</(\w+)>', r'[/\1]', text)
+    return text
+
+
 def process_string(string: str, max_length: int = 2048) -> str:
-    string = convert_html_tags(string)  # for display labels e.g. `<think>`
-    if len(string) > max_length:
+    string = convert_html_tags(string)  # for display labels e.g.
+    if max_length and len(string) > max_length:
         return f'{string[:max_length // 2]}......{string[-max_length // 2:]}'
     return string
 
 
-def process_model_prediction(item: Any):
+def dict_to_markdown(data) -> str:
+    markdown_lines = []
+
+    for key, value in data.items():
+        bold_key = f'**{key}**'
+
+        if isinstance(value, list):
+            value_str = '\n' + '\n'.join([f'- {process_model_prediction(item, max_length=None)}' for item in value])
+        elif isinstance(value, dict):
+            value_str = dict_to_markdown(value)
+        else:
+            value_str = str(value)
+
+        value_str = process_string(value_str, max_length=None)  # Convert HTML tags but don't truncate
+        markdown_line = f'{bold_key}:\n{value_str}'
+        markdown_lines.append(markdown_line)
+
+    return '\n\n'.join(markdown_lines)
+
+
+def process_model_prediction(item: Any, max_length: int = 2048) -> str:
+    """
+    Process model prediction output into a formatted string.
+
+    Args:
+        item: The item to process. Can be a string, list, or dictionary.
+        max_length: The maximum length of the output string.
+
+    Returns:
+        A formatted string representation of the input.
+    """
     if isinstance(item, dict):
-        res = dict_to_markdown(item)
-        return process_string(res)
+        result = dict_to_markdown(item)
     elif isinstance(item, list):
-        res = '\n'.join([process_model_prediction(item) for item in item])
-        return process_string(res)
+        result = '\n'.join([f'- {process_model_prediction(i, max_length=None)}' for i in item])
     else:
-        return process_string(str(item))
+        result = str(item)
+
+    # Apply HTML tag conversion and truncation only at the final output
+    if max_length is not None:
+        return process_string(result, max_length)
+    return result
 
 
 def normalize_score(score):
