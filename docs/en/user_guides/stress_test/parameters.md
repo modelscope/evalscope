@@ -24,13 +24,13 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
 
 ## Request Control
-- `--number`: Number of requests sent, default is 1000.
-- `--parallel` sets the number of workers for concurrent requests, with a default of 1.
-- `--rate` specifies the number of requests generated per second (not sent), with a default of -1, indicating that all requests will be generated at time 0 with no interval; otherwise, we use a Poisson process to generate request intervals.
+- `--parallel` specifies the number of concurrent requests, and you can input multiple values separated by spaces; the default is 1.
+- `--number` indicates the total number of requests to be sent, and you can input multiple values separated by spaces (must correspond one-to-one with `parallel`); the default is 1000.
+- `--rate` defines the number of requests generated per second (without sending them), with a default of -1, meaning all requests are generated at time 0 with no interval; otherwise, a Poisson process is used to generate request intervals.
   ```{tip}
-  In the implementation of this tool, request generation and sending are separated:
-  The `--rate` parameter is used to control the number of requests generated per second, and these requests will be placed in a request queue.
-  The `--parallel` parameter is used to control the number of workers sending requests; workers will take requests from the queue and send them, only sending the next request after receiving a response for the previous one. It is not recommended to set both parameters simultaneously; thus, in this tool, the `--rate` parameter is only effective when `--parallel` is set to 1.
+  In the implementation of this tool, request generation and sending are separate:
+  The `--rate` parameter controls the number of requests generated per second, which are placed in a request queue.
+  The `--parallel` parameter controls the number of workers sending requests, with each worker retrieving requests from the queue and sending them, only proceeding to the next request after receiving a response to the previous one.
   ```
 - `--log-every-n-query`: Log every n queries, default is 10.
 - `--stream` uses SSE (Server-Sent Events) stream output, default is True. Note: Setting `--stream` is necessary to measure the Time to First Token (TTFT) metric; setting `--no-stream` will disable streaming output.

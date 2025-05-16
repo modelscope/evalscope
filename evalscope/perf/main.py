@@ -5,6 +5,7 @@ import platform
 import time
 from argparse import Namespace
 
+from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.utils import seed_everything
 from .arguments import Arguments, parse_args
@@ -62,6 +63,7 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
 
 
 def run_perf_benchmark(args):
+    # Check if args is a dictionary or Namespace
     if isinstance(args, dict):
         args = Arguments(**args)
     elif isinstance(args, Namespace):
@@ -73,6 +75,13 @@ def run_perf_benchmark(args):
     # Initialize output directory
     output_path = get_output_path(args)
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
+
+    # Initialize wandb and swanlab
+    if args.wandb_api_key:
+        init_wandb(args)
+    if args.swanlab_api_key:
+        init_swanlab(args)
+
     # Start benchmark
     if len(args.number) == 1:
         return run_one_benchmark(args, output_path=output_path)
