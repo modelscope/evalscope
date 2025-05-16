@@ -96,12 +96,6 @@ class AlpacaEvalAdapter(DataAdapter):
             return None
 
     def compute_metric(self, review_res_list: List[bool], **kwargs) -> List[dict]:
-        """
-        compute weighted mean of the bleu score of all samples
-
-        Args:
-            review_res_list: [{'is_correct': 1, 'is_incorrect': 0, 'is_not_attempted': 0}, ...]
-        """
         # zip dict answers
         res_list = [res for res in review_res_list if res is not None]
 

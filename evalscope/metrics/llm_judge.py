@@ -59,13 +59,13 @@ class LLMJudge:
         # Initialize ServerModelAdapter
         self.server_adapter = ServerModelAdapter(api_url=self.api_url, model_id=self.model_id, api_key=self.api_key)
 
-    def __call__(self, prompt: str, system_prompt: Optional[str] = None) -> float:
+    def __call__(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Args:
             prompt (str): The prompt to evaluate
             system_prompt (str, optional): The system prompt to use for the evaluation
         Returns:
-            float: The score of the evaluation
+            str: The response from the LLM
         """
         input_data = {'data': [prompt], 'system_prompt': system_prompt or self.system_prompt}
 
@@ -83,7 +83,7 @@ class LLMJudge:
             return llm_response
         except Exception as e:
             logger.error(f'Error during LLM evaluation: {e}')
-            return None
+            return ''
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):
         if question is None:
