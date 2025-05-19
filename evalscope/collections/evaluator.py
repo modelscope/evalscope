@@ -263,8 +263,7 @@ class EvaluatorCollection:
             else:
                 os.remove(review_file_path)
         elif self.task_cfg.use_cache and os.path.exists(review_file_path):
-            logger.warning(
-                f'use_cache={self.task_cfg.use_cache}, reloading the review file: {review_file_path} ...')
+            logger.warning(f'use_cache={self.task_cfg.use_cache}, reloading the review file: {review_file_path} ...')
             if os.path.isdir(review_file_path):
                 for filename in os.listdir(review_file_path):
                     if '.ipynb_checkpoints' in filename:
