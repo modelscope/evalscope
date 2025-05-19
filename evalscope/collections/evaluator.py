@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from tabulate import tabulate
 from tqdm import tqdm
-from typing import List
+from typing import Any, Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.collections.sampler import DatasetEntry
@@ -190,21 +190,24 @@ class EvaluatorCollection:
         answer_dict = defaultdict(dict)
         if self.task_cfg.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
+            # Create a set of sample indices for which we have answers
             indices = set()
             for answer in answers_list:
                 index = answer.get(AnswerKeys.INDEX)
                 answer_dict[index] = answer
                 indices.add(index)
 
-            data = []
-            for sample in self.dataset:
-                if sample.index not in indices:
-                    data.append(sample)
+            # Filter dataset to only include samples that don't have answers
+            data = [sample for sample in self.dataset if sample.index not in indices]
+
+            # Initialize name map for the filtered dataset
             data_map = self._init_name_map(data)
 
             logger.info(f'Reuse from {pred_file_path}. Loaded {len(indices)} samples, remain {len(data)} samples.')
             return answer_dict, data, data_map
-        return answer_dict, self.dataset, self.dataset_name_map
+        else:
+            # If cache isn't enabled or file doesn't exist, return the full dataset
+            return answer_dict, self.dataset, self.dataset_name_map
 
     def get_answers(self):
         pred_file_path = os.path.join(self.outputs.predictions_dir, self.task_cfg.model_id,
@@ -214,13 +217,16 @@ class EvaluatorCollection:
         answers, dataset, dataset_name_map = self._filter_answer(pred_file_path)
 
         eval_batch_size = self.task_cfg.eval_batch_size
+        # Process samples and get answers
         with tqdm(total=len(dataset), desc='Getting answers') as pbar:
             if self.task_cfg.eval_type == EvalType.SERVICE:
+                # Create a thread pool for parallel processing
                 with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
                     futures = []
                     for sample in dataset:
                         evaluator = self.evaluators[sample.dataset_name]
                         futures.append(executor.submit(evaluator.get_answer, [sample], self.task_cfg.generation_config))
+                    # Process completed tasks
                     for future in as_completed(futures):
                         answer_list, samples = future.result()
                         answers[samples[0].index] = answer_list[0]
@@ -244,33 +250,78 @@ class EvaluatorCollection:
                             pbar.update(len(batch_ids))
         return answers
 
-    def get_reviews(self, answers):
+    def get_reviews(self, answers: Dict[int, Any]) -> Dict[int, Any]:
+        """
+        Retrieve or generate reviews for given answers.
+
+        Args:
+            answers: Dictionary of answers indexed by sample index.
+
+        Returns:
+            Dictionary of reviews indexed by sample index.
+        """
+        # Set up the review file path
         review_file_path = os.path.join(self.outputs.reviews_dir, self.task_cfg.model_id)
         os.makedirs(review_file_path, exist_ok=True)
 
-        if self.task_cfg.use_cache and os.path.exists(review_file_path):
-            logger.warning(f'Use cache from{self.task_cfg.use_cache}, updating the review file: {review_file_path} ...')
-            if os.path.isdir(review_file_path):
-                for filename in os.listdir(review_file_path):
-                    file_path = os.path.join(review_file_path, filename)
-                    try:
-                        if os.path.isfile(file_path):
-                            os.remove(file_path)
-                    except Exception as e:
-                        logger.error(f'Error deleting file {file_path}: {e}')
-            else:
-                os.remove(review_file_path)
+        review_history_map = defaultdict(dict)
 
-        reviews = defaultdict(dict)
+        # Handle caching logic
+        if os.path.exists(review_file_path):
+            if not self.task_cfg.use_cache:
+                # Clear existing reviews if not using cache
+                self._clear_review_files(review_file_path)
+            else:
+                # Load existing reviews if using cache
+                self._load_existing_reviews(review_file_path, review_history_map)
+
+        reviews = {}
         for sample in tqdm(self.dataset, desc='Getting reviews'):
-            evaluator = self.evaluators[sample.dataset_name]
-            review_d = evaluator.get_review(answers[sample.index])
+            file_name = f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'
+
+            if self.task_cfg.use_cache and sample.index in review_history_map.get(file_name, {}):
+                # Use cached review if available
+                review_d = review_history_map[file_name][sample.index]
+            else:
+                # Generate new review
+                evaluator = self.evaluators[sample.dataset_name]
+                review_d = evaluator.get_review(answers[sample.index])
+                # Only save the review if it's not in the cache
+                self._save_review(review_file_path, file_name, review_d)
+
             reviews[sample.index] = review_d
-            dump_jsonl_data(
-                review_d,
-                os.path.join(review_file_path, f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'),
-                dump_mode=DumpMode.APPEND)
+
         return reviews
+
+    def _clear_review_files(self, review_file_path: str) -> None:
+        """Clear existing review files."""
+        if os.path.isdir(review_file_path):
+            for filename in os.listdir(review_file_path):
+                file_path = os.path.join(review_file_path, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    logger.error(f'Error deleting file {file_path}: {e}')
+        else:
+            os.remove(review_file_path)
+
+    def _load_existing_reviews(self, review_file_path: str, review_history_map: Dict[str, Dict[int, Any]]) -> None:
+        """Load existing reviews from files."""
+        logger.info(f'use_cache={self.task_cfg.use_cache}, reloading the review file: {review_file_path}')
+        if os.path.isdir(review_file_path):
+            for filename in os.listdir(review_file_path):
+                if '.ipynb_checkpoints' in filename:
+                    continue
+                file_path = os.path.join(review_file_path, filename)
+                with open(file_path, 'r') as f:
+                    review_history = [json.loads(line.strip()) for line in f]
+                review_history_map[filename] = {item['index']: item for item in review_history}
+
+    def _save_review(self, review_file_path: str, file_name: str, review_d: Dict[str, Any]) -> None:
+        """Save a single review to file."""
+        file_path = os.path.join(review_file_path, file_name)
+        dump_jsonl_data(review_d, file_path, dump_mode=DumpMode.APPEND)
 
     def get_scores(self, reviews) -> float:
         scores = defaultdict(dict)

@@ -305,7 +305,7 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                # 'general_qa'
+                'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
@@ -386,7 +386,7 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
             },
             # ignore_errors=True,
-            # use_cache='outputs/20250507_195856'
+            use_cache='outputs/20250519_142106'
         )
 
         run_task(task_cfg=task_cfg)
@@ -439,12 +439,12 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                # 'chinese_simpleqa',
+                'chinese_simpleqa',
                 # 'live_code_bench',
                 # 'humaneval',
                 # 'general_qa',
                 # 'alpaca_eval',
-                'arena_hard'
+                # 'arena_hard'
             ],
             dataset_args={
                 'competition_math': {
@@ -470,7 +470,7 @@ class TestRun(unittest.TestCase):
                     ]
                 },
             },
-            eval_batch_size=5,
+            eval_batch_size=10,
             limit=10,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
@@ -491,7 +491,7 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
-            # use_cache='outputs/20250320_143658'
+            use_cache='outputs/20250519_142551'
         )
 
         run_task(task_cfg=task_cfg)

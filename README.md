@@ -51,9 +51,23 @@
 
 ## 📝 Introduction
 
-EvalScope is [ModelScope](https://modelscope.cn/)'s official framework for model evaluation and benchmarking, designed for diverse assessment needs. It supports various model types including large language models, multimodal, embedding, reranker, and CLIP models.
+EvalScope is a comprehensive model evaluation and performance benchmarking framework meticulously crafted by the [ModelScope Community](https://modelscope.cn/), offering a one-stop solution for your model assessment needs. Regardless of the type of model you are developing, EvalScope is equipped to cater to your requirements:
 
-The framework accommodates multiple evaluation scenarios such as end-to-end RAG evaluation, arena mode, and inference performance testing. It features built-in benchmarks and metrics like MMLU, CMMLU, C-Eval, and GSM8K. Seamlessly integrated with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, EvalScope enables one-click evaluations, offering comprehensive support for model training and assessment 🚀
+- 🧠 Large Language Models
+- 🎨 Multimodal Models
+- 🔍 Embedding Models
+- 🏆 Reranker Models
+- 🖼️ CLIP Models
+- 🎭 AIGC Models (Image-to-Text/Video)
+- ...and more!
+
+EvalScope is not merely an evaluation tool; it is a valuable ally in your model optimization journey:
+
+- 🏅 Equipped with multiple industry-recognized benchmarks and evaluation metrics: MMLU, CMMLU, C-Eval, GSM8K, etc.
+- 📊 Model inference performance stress testing: Ensuring your model excels in real-world applications.
+- 🚀 Seamless integration with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, enabling one-click evaluations and providing full-chain support from training to assessment for your model development.
+
+Below is the overall architecture diagram of EvalScope:
 
 <p align="center">
   <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
@@ -88,6 +102,7 @@ Please scan the QR code below to join our community groups:
 
 ## 🎉 News
 
+- 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
 - 🔥 **[2025.05.13]** Added support for the [ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static) dataset to evaluate model's tool-calling capabilities. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) for usage instructions. Also added support for the [DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/dataPeview) and [Winogrande](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val) benchmarks to assess the reasoning capabilities of models.
 - 🔥 **[2025.04.29]** Added Qwen3 Evaluation Best Practices, [welcome to read 📖](https://evalscope.readthedocs.io/en/latest/best_practice/qwen3.html)
 - 🔥 **[2025.04.27]** Support for text-to-image evaluation: Supports 8 metrics including MPS, HPSv2.1Score, etc., and evaluation benchmarks such as EvalMuse, GenAI-Bench. Refer to the [user documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html) for more details.
@@ -354,26 +369,27 @@ For more customized evaluations, such as customizing model parameters or dataset
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
-### Parameter
-- `--model-args`: Model loading parameters, separated by commas in `key=value` format. Default parameters:
-  - `revision`: Model version, default is `master`
-  - `precision`: Model precision, default is `auto`
-  - `device_map`: Model device allocation, default is `auto`
-- `--generation-config`: Generation parameters, separated by commas in `key=value` format. Default parameters:
-  - `do_sample`: Whether to use sampling, default is `false`
-  - `max_length`: Maximum length, default is 2048
-  - `max_new_tokens`: Maximum length of generation, default is 512
-- `--dataset-args`: Configuration parameters for evaluation datasets, passed in `json` format. The key is the dataset name, and the value is the parameters. Note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
+### Parameter Description
+- `--model-args`: Model loading parameters, passed as a JSON string:
+  - `revision`: Model version
+  - `precision`: Model precision
+  - `device_map`: Device allocation for the model
+- `--generation-config`: Generation parameters, passed as a JSON string and parsed as a dictionary:
+  - `do_sample`: Whether to use sampling
+  - `temperature`: Generation temperature
+  - `max_new_tokens`: Maximum length of generated tokens
+  - `chat_template_kwargs`: Model inference template parameters
+- `--dataset-args`: Settings for the evaluation dataset, passed as a JSON string where the key is the dataset name and the value is the parameters. Note that these need to correspond one-to-one with the values in the `--datasets` parameter:
   - `few_shot_num`: Number of few-shot examples
-  - `few_shot_random`: Whether to randomly sample few-shot data, if not set, defaults to `true`
+  - `few_shot_random`: Whether to randomly sample few-shot data; if not set, defaults to `true`
 
 Reference: [Full Parameter Description](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html)
 
@@ -391,6 +407,11 @@ EvalScope supports using third-party evaluation frameworks to initiate evaluatio
 A stress testing tool focused on large language models, which can be customized to support various dataset formats and different API protocol formats.
 
 Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html)
+
+**Output example**
+
+![multi_perf](docs/en/user_guides/stress_test/images/multi_perf.png)
+
 
 **Supports wandb for recording results**
 
@@ -440,7 +461,7 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
 </a>
 
 ## 🔜 Roadmap
-- [ ] Support for better evaluation report visualization
+- [x] Support for better evaluation report visualization
 - [x] Support for mixed evaluations across multiple datasets
 - [x] RAG evaluation
 - [x] VLM evaluation
@@ -450,7 +471,7 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
 - [x] Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
-  - [ ] GPQA
+  - [x] GPQA
   - [x] MBPP
 
 

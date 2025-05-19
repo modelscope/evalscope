@@ -19,10 +19,6 @@ class DummyTokenizer:
         return text.split()
 
 
-scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=DummyTokenizer())
-zh_scorer = Rouge()
-
-
 def is_contains_chinese(strs):
     for _char in strs:
         if '\u4e00' <= _char <= '\u9fa5':
@@ -51,6 +47,7 @@ def compute_rouge_score(predict_l, reference_l):
 
 def compute_rouge_score_one_sample_zh(predict, reference):
     result = dict()
+    zh_scorer = Rouge()
     for p, r in zip(predict, reference):
         p = ' '.join(jieba.cut(p)) if is_contains_chinese(p) else p
         r = ' '.join(jieba.cut(r)) if is_contains_chinese(r) else r
@@ -60,21 +57,22 @@ def compute_rouge_score_one_sample_zh(predict, reference):
         except Exception as e:
             logger.warning(f'rouge score error: {p} {r} {e}')
             continue
-        result['rouge-1-r'] = score['rouge-1']['r']
-        result['rouge-1-p'] = score['rouge-1']['p']
-        result['rouge-1-f'] = score['rouge-1']['f']
-        result['rouge-2-r'] = score['rouge-2']['r']
-        result['rouge-2-p'] = score['rouge-2']['p']
-        result['rouge-2-f'] = score['rouge-2']['f']
-        result['rouge-l-r'] = score['rouge-l']['r']
-        result['rouge-l-p'] = score['rouge-l']['p']
-        result['rouge-l-f'] = score['rouge-l']['f']
+        result['Rouge-1-R'] = score['rouge-1']['r']
+        result['Rouge-1-P'] = score['rouge-1']['p']
+        result['Rouge-1-F'] = score['rouge-1']['f']
+        result['Rouge-2-R'] = score['rouge-2']['r']
+        result['Rouge-2-P'] = score['rouge-2']['p']
+        result['Rouge-2-F'] = score['rouge-2']['f']
+        result['Rouge-L-R'] = score['rouge-l']['r']
+        result['Rouge-L-P'] = score['rouge-l']['p']
+        result['Rouge-L-F'] = score['rouge-l']['f']
 
     return result
 
 
 def compute_rouge_score_one_sample(predict, reference):
     result = dict()
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=DummyTokenizer())
     for p, r in zip(predict, reference):
         try:
             score = scorer.score(p, r)

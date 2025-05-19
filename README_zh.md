@@ -39,9 +39,23 @@
 
 ## 📝 简介
 
-EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，专为多样化的模型评估需求而设计。它支持广泛的模型类型，包括但不限于大语言模型、多模态模型、Embedding 模型、Reranker 模型和 CLIP 模型。
+EvalScope 是[魔搭社区](https://modelscope.cn/)倾力打造的模型评测与性能基准测试框架，为您的模型评估需求提供一站式解决方案。无论您在开发什么类型的模型，EvalScope 都能满足您的需求：
 
-EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等，其内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K等。此外，通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，可一键发起评测，为模型训练和评测提供全链路支持🚀
+- 🧠 大语言模型
+- 🎨 多模态模型
+- 🔍 Embedding 模型
+- 🏆 Reranker 模型
+- 🖼️ CLIP 模型
+- 🎭 AIGC模型（图生文/视频）
+- ...以及更多！
+
+EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力助手：
+
+- 🏅 内置多个业界认可的测试基准和评测指标：MMLU、CMMLU、C-Eval、GSM8K 等。
+- 📊 模型推理性能压测：确保您的模型在实际应用中表现出色。
+- 🚀 与 [ms-swift](https://github.com/modelscope/ms-swift) 训练框架无缝集成，一键发起评测，为您的模型开发提供从训练到评估的全链路支持。
+
+下面是 EvalScope 的整体架构图：
 
 <p align="center">
     <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
@@ -80,6 +94,7 @@ EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模�
 
 ## 🎉 新闻
 
+- 🔥 **[2025.05.16]** 模型服务性能压测支持设置多种并发，并输出性能压测报告，[参考示例](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id3)。
 - 🔥 **[2025.05.13]** 新增支持[ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static)数据集，评测模型的工具调用能力，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)；支持[DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/dataPeview)和[Winogrande](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val)评测基准，评测模型的推理能力。
 - 🔥 **[2025.04.29]** 新增Qwen3评测最佳实践，[欢迎阅读📖](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/qwen3.html)
 - 🔥 **[2025.04.27]** 支持文生图评测：支持MPS、HPSv2.1Score等8个指标，支持EvalMuse、GenAI-Bench等评测基准，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/aigc/t2i.html)
@@ -348,24 +363,25 @@ evalscope eval \
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
 ### 参数说明
-- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
-  - `revision`: 模型版本，默认为`master`
-  - `precision`: 模型精度，默认为`auto`
-  - `device_map`: 模型分配设备，默认为`auto`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_length`: 最大长度，默认为2048
-  - `max_new_tokens`: 生成最大长度，默认为512
-- `--dataset-args`: 评测数据集的设置参数，以`json`格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
+- `--model-args`: 模型加载参数，以json字符串格式传入：
+  - `revision`: 模型版本
+  - `precision`: 模型精度
+  - `device_map`: 模型分配设备
+- `--generation-config`: 生成参数，以json字符串格式传入，将解析为字典：
+  - `do_sample`: 是否使用采样
+  - `temperature`: 生成温度
+  - `max_new_tokens`: 生成最大长度
+  - `chat_template_kwargs`: 模型推理模板参数
+- `--dataset-args`: 评测数据集的设置参数，以json字符串格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
   - `few_shot_num`: few-shot的数量
   - `few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
 
@@ -384,6 +400,10 @@ EvalScope支持使用第三方评测框架发起评测任务，我们称之为�
 一个专注于大型语言模型的压力测试工具，可以自定义以支持各种数据集格式和不同的API协议格式。
 
 参考：性能测试[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/index.html)
+
+输出示例如下：
+
+![multi_perf](docs/zh/user_guides/stress_test/images/multi_perf.png)
 
 **支持wandb记录结果**
 
@@ -432,7 +452,7 @@ EvalScope作为[ModelScope](https://modelscope.cn)的官方评测工具，其基
 </a>
 
 ## 🔜  Roadmap
-- [ ] 支持更好的评测报告可视化
+- [x] 支持更好的评测报告可视化
 - [x] 支持多数据集混合评测
 - [x] RAG evaluation
 - [x] VLM evaluation
@@ -442,7 +462,7 @@ EvalScope作为[ModelScope](https://modelscope.cn)的官方评测工具，其基
 - [x] Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
-  - [ ] GPQA
+  - [x] GPQA
   - [x] MBPP
 
 
