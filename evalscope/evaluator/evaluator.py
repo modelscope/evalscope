@@ -291,11 +291,20 @@ class Evaluator(object):
         review_file_path = os.path.join(self.outputs_structure.reviews_dir, self.model_name, review_file_name)
         os.makedirs(os.path.dirname(review_file_path), exist_ok=True)
 
+        # Load existing reviews if using cache
+        existing_reviews = {}
         if self.use_cache and os.path.exists(review_file_path):
-            logger.info(f'Updating the review file: {review_file_path} ...')
-            os.remove(review_file_path)
+            with open(review_file_path, 'r') as f:
+                for line in f:
+                    review = json.loads(line.strip())
+                    existing_reviews[review['index']] = review
+            logger.info(f'Reusing review result from {review_file_path}, got {len(existing_reviews)} reviews.')
 
         def process_single_review(answer_d):
+            # Check if review already exists in cache
+            if self.use_cache and answer_d['index'] in existing_reviews:
+                return existing_reviews[answer_d['index']]
+
             review_id, reviewer_spec = self._generate_review_id(answer_d)
             # Get review
             review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
@@ -310,8 +319,9 @@ class Evaluator(object):
             for future in tqdm(as_completed(futures), total=len(futures), desc=f'Reviewing({subset_name}): '):
                 review_d = future.result()
                 reviews_list.append(review_d)
-                # Dump reviews
-                dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
+                # Dump new reviews only if not using cache or review is new
+                if not self.use_cache or review_d['index'] not in existing_reviews:
+                    dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
 
         return reviews_list
 
