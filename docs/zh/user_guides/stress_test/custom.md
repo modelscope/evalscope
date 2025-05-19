@@ -90,7 +90,9 @@ class CustomPlugin(ApiPluginBase):
 
 ## 自定义数据集
 
-要自定义数据集，您可以继承 `DatasetPluginBase` 类，并使用 `@register_dataset('数据集名称')` 进行注解，然后实现 `build_messages` 方法以返回一个message，格式参考[OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)。
+要自定义数据集，您可以继承 `DatasetPluginBase` 类，并使用 `@register_dataset('数据集名称')` 进行注解，然后实现 `build_messages` 方法以返回一个message，格式参考[OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages)。在参数中指定`dataset`为自定义数据集名称，即可使用自定义的数据集。
+
+参考如下代码：
 
 ```python
 from typing import Dict, Iterator, List
@@ -113,6 +115,23 @@ class CustomDatasetPlugin(DatasetPluginBase):
             prompt = item.strip()
             if len(prompt) > self.query_parameters.min_prompt_length and len(
                     prompt) < self.query_parameters.max_prompt_length:
-                yield [{'role': 'user', 'content': prompt}]
-   
+                if self.query_parameters.apply_chat_template:
+                    yield [{'role': 'user', 'content': prompt}]
+                else:
+                    yield prompt
+
+
+if __name__ == '__main__':
+    from evalscope.perf.arguments import Arguments
+    from evalscope.perf.main import run_perf_benchmark
+
+    args = Arguments(
+        model='qwen2.5-7b-instruct',
+        url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+        dataset_path='outputs/perf_data.txt',  # 自定义数据集路径
+        api_key='EMPTY',
+        dataset='custom',  # 自定义数据集名称
+    )
+
+    run_perf_benchmark(args)
 ```

@@ -22,3 +22,18 @@ class CustomDatasetPlugin(DatasetPluginBase):
                     yield [{'role': 'user', 'content': prompt}]
                 else:
                     yield prompt
+
+
+if __name__ == '__main__':
+    from evalscope.perf.arguments import Arguments
+    from evalscope.perf.main import run_perf_benchmark
+
+    args = Arguments(
+        model='qwen2.5-7b-instruct',
+        url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+        dataset_path='outputs/perf_data.txt',
+        api_key='EMPTY',
+        dataset='custom',
+    )
+
+    run_perf_benchmark(args)
