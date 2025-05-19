@@ -39,9 +39,23 @@
 
 ## 📝 简介
 
-EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，专为多样化的模型评估需求而设计。它支持广泛的模型类型，包括但不限于大语言模型、多模态模型、Embedding 模型、Reranker 模型和 CLIP 模型。
+EvalScope 是[魔搭社区](https://modelscope.cn/)倾力打造的模型评测与性能基准测试框架，为您的模型评估需求提供一站式解决方案。无论您在开发什么类型的模型，EvalScope 都能满足您的需求：
 
-EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等，其内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K等。此外，通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，可一键发起评测，为模型训练和评测提供全链路支持🚀
+- 🧠 大语言模型
+- 🎨 多模态模型
+- 🔍 Embedding 模型
+- 🏆 Reranker 模型
+- 🖼️ CLIP 模型
+- 🎭 AIGC模型（图生文/视频）
+- ...以及更多！
+
+EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力助手：
+
+- 🏅 内置多个业界认可的测试基准和评测指标：MMLU、CMMLU、C-Eval、GSM8K 等。
+- 📊 模型推理性能压测：确保您的模型在实际应用中表现出色。
+- 🚀 与 [ms-swift](https://github.com/modelscope/ms-swift) 训练框架无缝集成，一键发起评测，为您的模型开发提供从训练到评估的全链路支持。
+
+下面是 EvalScope 的整体架构图：
 
 <p align="center">
     <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
@@ -347,24 +361,25 @@ evalscope eval \
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
 ### 参数说明
-- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
-  - `revision`: 模型版本，默认为`master`
-  - `precision`: 模型精度，默认为`auto`
-  - `device_map`: 模型分配设备，默认为`auto`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_length`: 最大长度，默认为2048
-  - `max_new_tokens`: 生成最大长度，默认为512
-- `--dataset-args`: 评测数据集的设置参数，以`json`格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
+- `--model-args`: 模型加载参数，以json字符串格式传入：
+  - `revision`: 模型版本
+  - `precision`: 模型精度
+  - `device_map`: 模型分配设备
+- `--generation-config`: 生成参数，以json字符串格式传入，将解析为字典：
+  - `do_sample`: 是否使用采样
+  - `temperature`: 生成温度
+  - `max_new_tokens`: 生成最大长度
+  - `chat_template_kwargs`: 模型推理模板参数
+- `--dataset-args`: 评测数据集的设置参数，以json字符串格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
   - `few_shot_num`: few-shot的数量
   - `few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
 
