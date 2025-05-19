@@ -78,7 +78,8 @@ class TestCollection(unittest.TestCase):
                 'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': os.getenv('DASHSCOPE_API_KEY'),
-            }
+            },
+            use_cache='outputs/20250519_114427'
         )
         res = run_task(task_cfg=task_cfg)
         print(res)
