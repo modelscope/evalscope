@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR
 
@@ -27,8 +27,8 @@ class Arguments:
     no_test_connection: bool = False  # Test the connection before starting the benchmark
 
     # Performance and parallelism
-    number: int = 1000  # Number of requests to be made
-    parallel: int = 1  # Number of parallel requests
+    number: Union[int, List[int]] = 1000  # Number of requests to be made
+    parallel: Union[int, List[int]] = 1  # Number of parallel requests
     rate: int = -1  # Rate limit for requests (default: -1, no limit)
 
     # Logging and debugging
@@ -98,6 +98,15 @@ class Arguments:
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
+        # Set number and parallel to lists if they are integers
+        if isinstance(self.number, int):
+            self.number = [self.number]
+        if isinstance(self.parallel, int):
+            self.parallel = [self.parallel]
+        assert len(self.number) == len(
+            self.parallel
+        ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
+
     def __str__(self):
         return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
 
@@ -143,8 +152,8 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--no-test-connection', action='store_false', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism
-    parser.add_argument('-n', '--number', type=int, default=1000, help='How many requests to be made')
-    parser.add_argument('--parallel', type=int, default=1, help='Set number of concurrency requests, default 1')
+    parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
+    parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
 
     # Logging and debugging

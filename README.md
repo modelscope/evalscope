@@ -88,6 +88,7 @@ Please scan the QR code below to join our community groups:
 
 ## 🎉 News
 
+- 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
 - 🔥 **[2025.04.29]** Added Qwen3 Evaluation Best Practices, [welcome to read 📖](https://evalscope.readthedocs.io/en/latest/best_practice/qwen3.html)
 - 🔥 **[2025.04.27]** Support for text-to-image evaluation: Supports 8 metrics including MPS, HPSv2.1Score, etc., and evaluation benchmarks such as EvalMuse, GenAI-Bench. Refer to the [user documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html) for more details.
 - 🔥 **[2025.04.10]** Model service stress testing tool now supports the `/v1/completions` endpoint (the default endpoint for vLLM benchmarking)
@@ -391,6 +392,11 @@ A stress testing tool focused on large language models, which can be customized 
 
 Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html)
 
+**Output example**
+
+![multi_perf](docs/en/user_guides/stress_test/images/multi_perf.png)
+
+
 **Supports wandb for recording results**
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
@@ -439,7 +445,7 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
 </a>
 
 ## 🔜 Roadmap
-- [ ] Support for better evaluation report visualization
+- [x] Support for better evaluation report visualization
 - [x] Support for mixed evaluations across multiple datasets
 - [x] RAG evaluation
 - [x] VLM evaluation
@@ -449,7 +455,7 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
 - [x] Multi-modal evaluation
 - [ ] Benchmarks
   - [ ] GAIA
-  - [ ] GPQA
+  - [x] GPQA
   - [x] MBPP
 
 

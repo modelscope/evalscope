@@ -18,7 +18,6 @@ from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
 from evalscope.perf.utils.handler import add_signal_handlers, exception_handler
 from evalscope.perf.utils.local_server import start_app
-from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -115,11 +114,6 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
     api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args)
-
-    if args.wandb_api_key:
-        init_wandb(args)
-    if args.swanlab_api_key:
-        init_swanlab(args)
 
     collected_benchmark_data = []
 

@@ -51,6 +51,24 @@ class BenchmarkData:
         self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
 
 
+class Metrics:
+    TIME_TAKEN_FOR_TESTS = 'Time taken for tests (s)'
+    NUMBER_OF_CONCURRENCY = 'Number of concurrency'
+    TOTAL_REQUESTS = 'Total requests'
+    SUCCEED_REQUESTS = 'Succeed requests'
+    FAILED_REQUESTS = 'Failed requests'
+    OUTPUT_TOKEN_THROUGHPUT = 'Output token throughput (tok/s)'
+    TOTAL_TOKEN_THROUGHPUT = 'Total token throughput (tok/s)'
+    REQUEST_THROUGHPUT = 'Request throughput (req/s)'
+    AVERAGE_LATENCY = 'Average latency (s)'
+    AVERAGE_TIME_TO_FIRST_TOKEN = 'Average time to first token (s)'
+    AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Average time per output token (s)'
+    AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Average input tokens per request'
+    AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Average output tokens per request'
+    AVERAGE_PACKAGE_LATENCY = 'Average package latency (s)'
+    AVERAGE_PACKAGE_PER_REQUEST = 'Average package per request'
+
+
 @dataclass
 class BenchmarkMetrics:
     concurrency: int = 0
@@ -125,20 +143,20 @@ class BenchmarkMetrics:
 
     def create_message(self, default_ndigits=4):
         message = {
-            'Time taken for tests (s)': round(self.total_time, default_ndigits),
-            'Number of concurrency': self.concurrency,
-            'Total requests': int(self.n_total_queries),
-            'Succeed requests': self.n_succeed_queries,
-            'Failed requests': self.n_failed_queries,
-            'Output token throughput (tok/s)': round(self.avg_output_token_per_seconds, default_ndigits),
-            'Total token throughput (tok/s)': round(self.avg_total_token_per_seconds, default_ndigits),
-            'Request throughput (req/s)': round(self.qps, default_ndigits),
-            'Average latency (s)': round(self.avg_latency, default_ndigits),
-            'Average time to first token (s)': round(self.avg_first_chunk_latency, default_ndigits),
-            'Average time per output token (s)': round(self.avg_time_per_token, default_ndigits),
-            'Average input tokens per request': round(self.avg_prompt_tokens, default_ndigits),
-            'Average output tokens per request': round(self.avg_completion_tokens, default_ndigits),
-            'Average package latency (s)': round(self.avg_chunk_time, default_ndigits),
-            'Average package per request': round(self.n_avg_chunks, default_ndigits),
+            Metrics.TIME_TAKEN_FOR_TESTS: round(self.total_time, default_ndigits),
+            Metrics.NUMBER_OF_CONCURRENCY: self.concurrency,
+            Metrics.TOTAL_REQUESTS: int(self.n_total_queries),
+            Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
+            Metrics.FAILED_REQUESTS: self.n_failed_queries,
+            Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_per_seconds, default_ndigits),
+            Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_per_seconds, default_ndigits),
+            Metrics.REQUEST_THROUGHPUT: round(self.qps, default_ndigits),
+            Metrics.AVERAGE_LATENCY: round(self.avg_latency, default_ndigits),
+            Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency, default_ndigits),
+            Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_token, default_ndigits),
+            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
+            Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, default_ndigits),
+            Metrics.AVERAGE_PACKAGE_LATENCY: round(self.avg_chunk_time, default_ndigits),
+            Metrics.AVERAGE_PACKAGE_PER_REQUEST: round(self.n_avg_chunks, default_ndigits),
         }
         return message

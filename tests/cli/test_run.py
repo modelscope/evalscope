@@ -305,12 +305,12 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                # 'general_qa'
+                'general_qa'
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
                 # 'drop',
-                'winogrande',
+                # 'winogrande',
             ],
             dataset_args={
                 'mmlu': {
