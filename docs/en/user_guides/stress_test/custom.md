@@ -87,7 +87,9 @@ class CustomPlugin(ApiPluginBase):
 
 ## Custom Dataset
 
-To customize a dataset, you can inherit the `DatasetPluginBase` class and use `@register_dataset('dataset_name')` for annotation, then implement the `build_messages` method to return a message, formatted according to the [OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages).
+To customize a dataset, you can inherit from the `DatasetPluginBase` class and use the `@register_dataset('dataset_name')` annotation. Then, implement the `build_messages` method to return a message formatted according to the [OpenAI API](https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages). Specify the `dataset` parameter with the name of your custom dataset to utilize it.
+
+Here's a reference code example:
 
 ```python
 from typing import Dict, Iterator, List
@@ -110,5 +112,23 @@ class CustomDatasetPlugin(DatasetPluginBase):
             prompt = item.strip()
             if len(prompt) > self.query_parameters.min_prompt_length and len(
                     prompt) < self.query_parameters.max_prompt_length:
-                yield [{'role': 'user', 'content': prompt}]
+                if self.query_parameters.apply_chat_template:
+                    yield [{'role': 'user', 'content': prompt}]
+                else:
+                    yield prompt
+
+
+if __name__ == '__main__':
+    from evalscope.perf.arguments import Arguments
+    from evalscope.perf.main import run_perf_benchmark
+
+    args = Arguments(
+        model='qwen2.5-7b-instruct',
+        url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+        dataset_path='outputs/perf_data.txt',  # Path to custom dataset
+        api_key='EMPTY',
+        dataset='custom',  # Name of custom dataset
+    )
+
+    run_perf_benchmark(args)
 ```
