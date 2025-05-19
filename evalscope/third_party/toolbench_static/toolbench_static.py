@@ -6,11 +6,12 @@ from typing import Union
 from evalscope.third_party.toolbench_static.eval import EvalArgs, run_eval
 from evalscope.third_party.toolbench_static.infer import InferArgs, run_infer
 from evalscope.utils import get_logger
+from evalscope.utils.deprecation_utils import deprecated
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
 
 logger = get_logger()
 
-
+@deprecated(since='0.15.1', remove_in='0.18.0', alternative='Native implementation of ToolBench')
 def run_task(task_cfg: Union[str, dict]):
 
     if isinstance(task_cfg, str):

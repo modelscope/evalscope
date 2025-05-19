@@ -1,119 +1,77 @@
 # ToolBench
 
 ## Description
-We evaluate the effectiveness of tool learning benchmark: [ToolBench](https://arxiv.org/pdf/2307.16789) (Qin et al.,2023b). The task involve integrating API calls to accomplish tasks, where the agent must accurately select the appropriate API and compose necessary API requests.
 
-Moreover, we partition the test set of ToolBench into in-domain and out-of-domain based on whether the tools used in the test instances have been seen during training.
+We evaluate the effectiveness of the ToolBench benchmark: [ToolBench](https://arxiv.org/pdf/2307.16789) (Qin et al., 2023b). The task involves integrating API calls to complete tasks. The agent must accurately select appropriate APIs and construct necessary API requests.
 
-This division allows us to evaluate performance in both in-distribution and out-of-distribution scenarios. We call this dataset to be `ToolBench-Static`.
+Furthermore, we divide the ToolBench test set into in-domain and out-of-domain based on whether the tools used in the test instances were seen during training. This division allows us to evaluate performance in both in-distribution and out-of-distribution scenarios. We refer to this dataset as `ToolBench-Static`.
 
 For more details, please refer to: [Small LLMs Are Weak Tool Learners: A Multi-LLM Agent](https://arxiv.org/abs/2401.07324)
 
 ## Dataset
 
-- Dataset statistics:
-  - Number of in_domain: 1588
-  - Number of out_domain: 781
+Dataset [link](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/dataPeview)
+
+- Dataset Statistics:
+  - In-domain count: 1588
+  - Out-of-domain count: 781
 
 ## Usage
 
-### Installation
-
-```bash
-pip install evalscope -U
-pip install ms-swift -U
-pip install rouge -U
-```
-
-
-### Download the dataset
-
-```bash
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/toolbench-static/data.zip
-```
-
-
-### Unzip the dataset
-
-```bash
-unzip data.zip
-# The dataset will be unzipped to the `/path/to/data/toolbench_static` folder
-```
-
-
-### Task configuration
-
-There are two ways to configure the task: dict and yaml.
-
-1. Configuration with dict:
-
 ```python
-your_task_config = {
-    'infer_args': {
-        'model_name_or_path': '/path/to/model_dir',
-        'model_type': 'qwen2-7b-instruct',
-        'data_path': 'data/toolbench_static',
-        'output_dir': 'output_res',
-        'deploy_type': 'swift',
-        'max_new_tokens': 2048,
-        'num_infer_samples': None
-    },
-    'eval_args': {
-        'input_path': 'output_res',
-        'output_path': 'output_res'
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen3-1.7B',
+    datasets=['tool_bench'],
+    limit=5,
+    eval_batch_size=5,
+    generation_config={
+        'max_new_tokens': 1000,  # Maximum number of tokens to generate, set to a large value to avoid truncation
+        'temperature': 0.7,      # Sampling temperature (recommended value by qwen)
+        'top_p': 0.8,            # Top-p sampling (recommended value by qwen)
+        'top_k': 20,             # Top-k sampling (recommended value by qwen)
+        'chat_template_kwargs': {'enable_thinking': False}  # Disable thinking mode
     }
-}
-```
-- Arguments:
-  - `model_name_or_path`: The path to the model local directory.
-  - `model_type`: The model type, refer to [model type list](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm)
-  - `data_path`: The path to the dataset directory contains `in_domain.json` and `out_of_domain.json` files.
-  - `output_dir`: The path to the output directory. Default to `output_res`.
-  - `deploy_type`: The deploy type, default to `swift`.
-  - `max_new_tokens`: The maximum number of tokens to generate.
-  - `num_infer_samples`: The number of samples to infer. Default to `None`, which means infer all samples.
-  - `input_path`: The path to the input directory for evaluation, should be the same as `output_dir` of `infer_args`.
-  - `output_path`: The path to the output directory for evaluation.
+)
 
-
-2. Configuration with yaml:
-
-```yaml
-infer_args:
-  model_name_or_path: /path/to/model_dir      # absolute path is recommended
-  model_type: qwen2-7b-instruct
-  data_path: /path/to/data/toolbench_static   # absolute path is recommended
-  deploy_type: swift
-  max_new_tokens: 2048
-  num_infer_samples: null
-  output_dir: output_res
-eval_args:
-  input_path: output_res
-  output_path: output_res
-```
-refer to [config_default.yaml](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/toolbench_static/config_default.yaml) for more details.
-
-
-### Run the task
-
-```python
-from evalscope.third_party.toolbench_static import run_task
-
-# Run the task with dict configuration
-run_task(task_cfg=your_task_config)
-
-# Run the task with yaml configuration
-run_task(task_cfg='/path/to/your_task_config.yaml')
+run_task(task_cfg=task_cfg)
 ```
 
+Results are as follows (some dirty data is automatically discarded, leading to a reduction in in_domain sample count):
+```text
++------------+------------+-----------+---------------+-------+---------+---------+
+| Model      | Dataset    | Metric    | Subset        |   Num |   Score | Cat.0   |
++============+============+===========+===============+=======+=========+=========+
+| Qwen3-1.7B | tool_bench | Act.EM    | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Act.EM    | out_of_domain |     5 |  0.2    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Plan.EM   | in_domain     |     0 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Plan.EM   | out_of_domain |     0 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | F1        | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | F1        | out_of_domain |     5 |  0.2    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | HalluRate | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | HalluRate | out_of_domain |     5 |  0.4    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Rouge-L   | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Rouge-L   | out_of_domain |     5 |  0.1718 | default |
++------------+------------+-----------+---------------+-------+---------+---------+ 
+```
 
-### Results and metrics
+## Results and Metrics
 
 - Metrics:
-  - `Plan.EM`: The agent’s planning decisions at each step for using tools invocation, generating answer, or giving up. Exact match score.
-  - `Act.EM`: Action exact match score, including the tool name and arguments.
-  - `HalluRate`（lower is better）: The hallucination rate of the agent's answers at each step.
-  - `Avg.F1`: The average F1 score of the agent's tools calling at each step.
-  - `R-L`: The Rouge-L score of the agent's answers at each step.
+  - `Plan.EM`: The exact match score for the agent's plan decision to use tool calls, generate answers, or give up at each step.
+  - `Act.EM`: The exact match score for actions, including tool names and parameters.
+  - `HalluRate` (lower is better): The hallucination rate of the agent when answering at each step.
+  - `Avg.F1`: The average F1 score for the agent's tool calls at each step.
+  - `Rouge-L`: The Rouge-L score for the agent's responses at each step.
 
-Generally, we focus on `Act.EM`, `HalluRate` and `Avg.F1` metrics.
+Generally, we focus on the `Act.EM`, `HalluRate`, and `Avg.F1` metrics.

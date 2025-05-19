@@ -46,8 +46,9 @@ datasets=[
         'alpaca_eval',
         'arena_hard',
         'maritime_bench',
-        'winogrande',
         'drop',
+        'winogrande',
+        'tool_bench',
 ]
 
 dataset_args={

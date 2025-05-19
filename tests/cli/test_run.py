@@ -311,6 +311,7 @@ class TestRun(unittest.TestCase):
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
+                'tool_bench',
             ],
             dataset_args={
                 'mmlu': {
@@ -376,7 +377,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=32,
-            limit=5,
+            limit=10,
             debug=True,
             stream=False,
             generation_config={

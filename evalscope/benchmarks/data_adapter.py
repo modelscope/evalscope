@@ -322,6 +322,7 @@ class DataAdapter(ABC):
                         choices: Optional[List[str]] = None,
                         index: Optional[Union[int, str]] = None,
                         id: Optional[Union[int, str]] = None,
+                        messages: Optional[List[dict]] = None,
                         **kwargs) -> dict:
         data = [prompt] if not isinstance(prompt, list) else prompt
         prompt_data = PromptData(
@@ -329,7 +330,8 @@ class DataAdapter(ABC):
             multi_choices=choices or self.choices,
             system_prompt=system_prompt or self.system_prompt,
             index=index or 0,
-            id=id)
+            id=id,
+            messages=messages)
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
