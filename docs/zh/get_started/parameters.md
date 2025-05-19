@@ -8,12 +8,12 @@
   - 指定为模型的本地路径，例如`/path/to/model`，将从本地加载模型；
   - 评测目标为模型API服务时，需要指定为服务对应的模型id，例如`Qwen2.5-0.5B-Instruct`。
 - `--model-id`: 被评测的模型的别名，用于报告展示。默认为`model`的最后一部分，例如`Qwen/Qwen2.5-0.5B-Instruct`的`model-id`为`Qwen2.5-0.5B-Instruct`。
-- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，，将解析为字典，默认参数：
+- `--model-args`: 模型加载参数，以逗号分隔的`key=value`形式；或以json字符串格式传入，将解析为字典。默认参数：
   - `revision`: 模型版本，默认为`master`
   - `precision`: 模型精度，默认为`torch.float16`
   - `device_map`: 模型分配设备，默认为`auto`
 - `--model-task`: 模型任务类型，默认为`text_generation`，可选`text_generation`, `image_generation`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，或以json字符串格式传入，将解析为字典:
+- `--generation-config`: 生成参数，以逗号分隔的`key=value`形式；或以json字符串格式传入，将解析为字典:
   - 若使用本地模型推理（基于Transformers）包括如下参数（[全部参数指南](https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig)）：
     - `do_sample`: 是否使用采样，默认为`false`
     - `max_length`: 最大长度，默认为2048

@@ -196,6 +196,10 @@ A: Try downgrading plotly to version 5.23.0.
 
 A: Refer to this: https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id5, set the use_cache parameter.
 
+### Q30: The evaluation was interrupted, how can I resume it (checkpoint evaluation)?
+
+A: It is supported. Please use the `use_cache` parameter to pass in the path of the previous evaluation output to reuse the model's prediction results and review outcomes.
+
 ## Model Stress Testing
 
 ### Q1: When testing ollama, I found that when the concurrency is greater than 5, the Throughput (average tokens/s) value always does not go up. My graphics card, cpu, memory, and io have no bottlenecks. What is the problem?
@@ -297,3 +301,7 @@ A: The `model` is the name of the model deployed by the model service framework,
 ### Q12: KTransformers stream output cannot be recognized and reports ZeroDivisionError: float division by zero.
 
 A: The deployed model service seems not to return usage information, which is different from the standard OpenAI API format. It requires the `--tokenizer-path` parameter to calculate the number of `tokens`.
+
+### Q13: How can I perform stress testing on a multimodal large model, and how do I input images?
+
+A: Currently, setting the dataset to flickr8k is supported for stress testing of multimodal models. Please [refer to](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/parameters.html#id5) for more information.

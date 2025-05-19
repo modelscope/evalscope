@@ -112,7 +112,8 @@ run_task(task_cfg="config.json")
 - `--limit`: Maximum amount of evaluation data per dataset. If not specified, it defaults to evaluating all data, which can be used for quick validation.
 
 
-### Output Results
+**Output Results**
+
 ```text
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 | Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
@@ -127,45 +128,46 @@ run_task(task_cfg="config.json")
 
 
 ## Complex Evaluation
-For more customized evaluations, like setting custom model parameters or dataset parameters, you can use the following command. The method to initiate evaluation is the same as in simple evaluation. Below is an example using the `eval` command to start the evaluation:
+
+If you wish to conduct more customized evaluations, such as customizing model parameters or dataset parameters, you can use the following command. The evaluation method is the same as simple evaluation, and below is an example of starting the evaluation using the `eval` command:
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
-### Parameter Descriptions
-- `--model-args`: Model loading parameters, separated by commas in the `key=value` format, default parameters:
-  - `revision`: Model version, defaults to `master`
-  - `precision`: Model precision, defaults to `auto`
-  - `device_map`: Device allocation for the model, defaults to `auto`
-  
-- `--generation-config`: Generation parameters, separated by commas in the `key=value` format, default parameters:
-  - `do_sample`: Whether to use sampling, defaults to `false`
-  - `max_length`: Maximum length, defaults to 2048
-  - `max_new_tokens`: Maximum length for generation, defaults to 512
-  
-- `--dataset-args`: Settings parameters for the evaluation dataset, provided in `json` format, where the key is the dataset name and the value is the parameter. Note that these must correspond one-to-one with the values in the `--datasets` parameter:
-  - `few_shot_num`: Number of few-shot samples
+### Parameter Description
+- `--model-args`: Model loading parameters, passed as a JSON string:
+  - `revision`: Model version
+  - `precision`: Model precision
+  - `device_map`: Device allocation for the model
+- `--generation-config`: Generation parameters, passed as a JSON string and parsed as a dictionary:
+  - `do_sample`: Whether to use sampling
+  - `temperature`: Generation temperature
+  - `max_new_tokens`: Maximum length of generated tokens
+  - `chat_template_kwargs`: Model inference template parameters
+- `--dataset-args`: Settings for the evaluation dataset, passed as a JSON string where the key is the dataset name and the value is the parameters. Note that these need to correspond one-to-one with the values in the `--datasets` parameter:
+  - `few_shot_num`: Number of few-shot examples
   - `few_shot_random`: Whether to randomly sample few-shot data; if not set, defaults to `true`
 
-```{seealso}
-Reference: [All Parameter Descriptions](parameters.md)
-```
 
-### Output Results
+**Output Results**
 
 ```text
-+-----------------------+-----------------+
-| Model                 | gsm8k           |
-+=======================+=================+
-| Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
-+-----------------------+-----------------+
++------------+-----------+-----------------+----------+-------+---------+---------+
+| Model      | Dataset   | Metric          | Subset   |   Num |   Score | Cat.0   |
++============+===========+=================+==========+=======+=========+=========+
+| Qwen3-0.6B | gsm8k     | AverageAccuracy | main     |    10 |     0.3 | default |
++------------+-----------+-----------------+----------+-------+---------+---------+ 
+```
+
+```{seealso}
+Reference: [Full Parameter Description](parameters.md)
 ```
 
 ## Model API Service Evaluation

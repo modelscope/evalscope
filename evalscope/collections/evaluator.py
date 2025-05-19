@@ -190,21 +190,24 @@ class EvaluatorCollection:
         answer_dict = defaultdict(dict)
         if self.task_cfg.use_cache and os.path.exists(pred_file_path):
             answers_list = jsonl_to_list(pred_file_path)
+            # Create a set of sample indices for which we have answers
             indices = set()
             for answer in answers_list:
                 index = answer.get(AnswerKeys.INDEX)
                 answer_dict[index] = answer
                 indices.add(index)
 
-            data = []
-            for sample in self.dataset:
-                if sample.index not in indices:
-                    data.append(sample)
+            # Filter dataset to only include samples that don't have answers
+            data = [sample for sample in self.dataset if sample.index not in indices]
+
+            # Initialize name map for the filtered dataset
             data_map = self._init_name_map(data)
 
             logger.info(f'Reuse from {pred_file_path}. Loaded {len(indices)} samples, remain {len(data)} samples.')
             return answer_dict, data, data_map
-        return answer_dict, self.dataset, self.dataset_name_map
+        else:
+            # If cache isn't enabled or file doesn't exist, return the full dataset
+            return answer_dict, self.dataset, self.dataset_name_map
 
     def get_answers(self):
         pred_file_path = os.path.join(self.outputs.predictions_dir, self.task_cfg.model_id,
@@ -214,13 +217,16 @@ class EvaluatorCollection:
         answers, dataset, dataset_name_map = self._filter_answer(pred_file_path)
 
         eval_batch_size = self.task_cfg.eval_batch_size
+        # Process samples and get answers
         with tqdm(total=len(dataset), desc='Getting answers') as pbar:
             if self.task_cfg.eval_type == EvalType.SERVICE:
+                # Create a thread pool for parallel processing
                 with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
                     futures = []
                     for sample in dataset:
                         evaluator = self.evaluators[sample.dataset_name]
                         futures.append(executor.submit(evaluator.get_answer, [sample], self.task_cfg.generation_config))
+                    # Process completed tasks
                     for future in as_completed(futures):
                         answer_list, samples = future.result()
                         answers[samples[0].index] = answer_list[0]

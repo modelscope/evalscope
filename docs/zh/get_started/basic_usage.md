@@ -131,24 +131,25 @@ run_task(task_cfg="config.json")
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
 ### 参数说明
-- `--model-args`: 模型加载参数，以逗号分隔，`key=value`形式，默认参数：
-  - `revision`: 模型版本，默认为`master`
-  - `precision`: 模型精度，默认为`auto`
-  - `device_map`: 模型分配设备，默认为`auto`
-- `--generation-config`: 生成参数，以逗号分隔，`key=value`形式，默认参数：
-  - `do_sample`: 是否使用采样，默认为`false`
-  - `max_length`: 最大长度，默认为2048
-  - `max_new_tokens`: 生成最大长度，默认为512
-- `--dataset-args`: 评测数据集的设置参数，以`json`格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
+- `--model-args`: 模型加载参数，以json字符串格式传入：
+  - `revision`: 模型版本
+  - `precision`: 模型精度
+  - `device_map`: 模型分配设备
+- `--generation-config`: 生成参数，以json字符串格式传入，将解析为字典：
+  - `do_sample`: 是否使用采样
+  - `temperature`: 生成温度
+  - `max_new_tokens`: 生成最大长度
+  - `chat_template_kwargs`: 模型推理模板参数
+- `--dataset-args`: 评测数据集的设置参数，以json字符串格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
   - `few_shot_num`: few-shot的数量
   - `few_shot_random`: 是否随机采样few-shot数据，如果不设置，则默认为`true`
 
@@ -159,11 +160,11 @@ evalscope eval \
 ### 输出结果
 
 ```text
-+-----------------------+-----------------+
-| Model                 | gsm8k           |
-+=======================+=================+
-| Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
-+-----------------------+-----------------+
++------------+-----------+-----------------+----------+-------+---------+---------+
+| Model      | Dataset   | Metric          | Subset   |   Num |   Score | Cat.0   |
++============+===========+=================+==========+=======+=========+=========+
+| Qwen3-0.6B | gsm8k     | AverageAccuracy | main     |    10 |     0.3 | default |
++------------+-----------+-----------------+----------+-------+---------+---------+ 
 ```
 
 ## 模型API服务评测

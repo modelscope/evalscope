@@ -148,6 +148,7 @@ class ChineseSimpleQAAdapter(DataAdapter):
             'is_correct': 1 if res == 'A' else 0,
             'is_incorrect': 1 if res == 'B' else 0,
             'is_not_attempted': 1 if res == 'C' else 0,
+            'judge_response': grading_response,
         }
 
     def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
