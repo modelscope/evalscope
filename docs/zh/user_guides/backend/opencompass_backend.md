@@ -107,7 +107,24 @@ OpenCompass 评测后端使用统一的OpenAI API调用来进行评测，因此�
 
 下面介绍四种方式部署模型服务：
 ::::{tab-set}
-:::{tab-item} ms-swift部署 （推荐）
+
+:::{tab-item} vLLM 部署（推荐）
+参考 [vLLM 教程](https://docs.vllm.ai/en/latest/index.html)。 
+
+[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html)
+
+**安装vLLM**
+```shell
+pip install vllm -U
+```
+
+**部署模型服务**
+```shell
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000 --served-model-name Qwen2-0.5B-Instruct
+```
+:::
+
+:::{tab-item} ms-swift部署 
 
 使用ms-swift部署模型服务，具体可参考：[ms-swift部署指南](https://swift.readthedocs.io/zh-cn/latest/Instruction/%E6%8E%A8%E7%90%86%E5%92%8C%E9%83%A8%E7%BD%B2.html#id1)。
 
@@ -129,22 +146,6 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 
 </details>
 
-:::
-
-:::{tab-item} vLLM 部署
-参考 [vLLM 教程](https://docs.vllm.ai/en/latest/index.html)。 
-
-[支持的模型列表](https://docs.vllm.ai/en/latest/models/supported_models.html)
-
-**安装vLLM**
-```shell
-pip install vllm -U
-```
-
-**部署模型服务**
-```shell
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
-```
 :::
 
 :::{tab-item} LMDeploy 部署
@@ -224,7 +225,7 @@ task_cfg_dict = dict(
     eval_config={
         'datasets': ["mmlu", "ceval",'ARC_c', 'gsm8k'],
         'models': [
-            {'path': 'qwen2-0_5b-instruct', 
+            {'path': 'Qwen2-0.5B-Instruct', 
             'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 
             'is_chat': True,
             'batch_size': 16},
@@ -249,7 +250,7 @@ eval_config:
     - gsm8k
   models:
     - openai_api_base: http://127.0.0.1:8000/v1/chat/completions
-      path: qwen2-0_5b-instruct                                   
+      path: Qwen2-0.5B-Instruct                                   
       temperature: 0.0
 ```
 :::
@@ -268,7 +269,7 @@ eval_config:
     ],
     "models": [
       {
-        "path": "qwen2-0_5b-instruct",
+        "path": "Qwen2-0.5B-Instruct",
         "openai_api_base": "http://127.0.0.1:8000/v1/chat/completions",
         "temperature": 0.0
       }
@@ -334,7 +335,7 @@ python eval_openai_api.py
 可以看到最终输出如下：
 
 ```text
-dataset                                 version    metric         mode    qwen2-0_5b-instruct
+dataset                                 version    metric         mode    Qwen2-0.5B-Instruct
 --------------------------------------  ---------  -------------  ------  ---------------------
 --------- 考试 Exam ---------           -          -              -       -
 ceval                                   -          naive_average  gen     30.00
