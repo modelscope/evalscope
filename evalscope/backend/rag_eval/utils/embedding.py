@@ -29,7 +29,6 @@ class BaseModel(Embeddings):
         self.model_name_or_path = model_name_or_path
         self.max_seq_length = max_seq_length
         self.model_kwargs = kwargs.pop('model_kwargs', {})
-        self.model_kwargs['trust_remote_code'] = True
 
         self.config_kwargs = kwargs.pop('config_kwargs', {})
         self.config_kwargs['trust_remote_code'] = True
@@ -92,6 +91,7 @@ class SentenceTransformerModel(BaseModel):
     def __init__(self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs):
         super().__init__(model_name_or_path, **kwargs)
 
+        self.model_kwargs['trust_remote_code'] = True
         if not pooling_mode:
             self.model = SentenceTransformer(
                 self.model_name_or_path,
@@ -139,6 +139,7 @@ class CrossEncoderModel(BaseModel):
             self.model_name_or_path,
             trust_remote_code=True,
             max_length=self.max_seq_length,
+            automodel_args=self.model_kwargs,
         )
 
     def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
