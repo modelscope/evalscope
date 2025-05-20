@@ -58,9 +58,9 @@ class TestRun(unittest.TestCase):
                 'torch_dtype': 'torch.float16',
             },
             datasets=[
-                'tifa160',
+                # 'tifa160',
                 # 'genai_bench',
-                # 'evalmuse',
+                'evalmuse',
                 # 'hpdv2',
             ],
             dataset_args={
@@ -82,6 +82,43 @@ class TestRun(unittest.TestCase):
                 'guidance_scale': 7.5
             },
             # use_cache='outputs/20250427_134122',
+        )
+
+        run_task(task_cfg=task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_benchmark_flux(self):
+
+        task_cfg = TaskConfig(
+            model='black-forest-labs/FLUX.1-dev',  # model on modelscope
+            model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+            model_args={
+                'torch_dtype': 'torch.float16',
+            },
+            datasets=[
+                # 'tifa160',
+                # 'genai_bench',
+                'evalmuse',
+                # 'hpdv2',
+            ],
+            dataset_args={
+                'tifa160': {
+                    'metric_list': [
+                        'PickScore',
+                        # 'CLIPScore',
+                        # 'HPSv2Score',
+                        # 'BLIPv2Score',
+                        # 'ImageRewardScore',
+                        # 'VQAScore',
+                        # 'FGA_BLIP2Score',
+                    ]
+                }
+            },
+            generation_config={
+                'num_inference_steps': 50,
+                'guidance_scale': 3.5
+            },
+            use_cache='outputs/20250520_112314'
         )
 
         run_task(task_cfg=task_cfg)

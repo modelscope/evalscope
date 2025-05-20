@@ -6,6 +6,7 @@ EvalScope: pip install mteb
 
 2. Run eval task
 """
+import os
 import torch
 
 from evalscope.run import run_task
@@ -68,7 +69,7 @@ def run_eval():
                     'is_cross_encoder': False,
                     'max_seq_length': 512,
                     'prompt': '',
-                    'model_kwargs': {'torch_dtype': 'auto'},
+                    'model_kwargs': {'torch_dtype': torch.float16},
                     'encode_kwargs': {
                         'batch_size': 64,
                     },
@@ -78,7 +79,7 @@ def run_eval():
                     'is_cross_encoder': True,
                     'max_seq_length': 512,
                     'prompt': '为这个问题生成一个检索用的表示',
-                    'model_kwargs': {'torch_dtype': 'auto'},
+                    'model_kwargs': {'torch_dtype': torch.float16},
                     'encode_kwargs': {
                         'batch_size': 32,
                     },
