@@ -1,5 +1,20 @@
 # Introduction
-EvalScope is the official model evaluation and performance benchmarking framework launched by the [ModelScope](https://modelscope.cn/) community. It comes with built-in common benchmarks and evaluation metrics, such as MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, and HumanEval. EvalScope supports various types of model evaluations, including LLMs, multimodal LLMs, embedding models, and reranker models. It is also applicable to multiple evaluation scenarios, such as end-to-end RAG evaluation, arena mode, and model inference performance stress testing. Moreover, with the seamless integration of the ms-swift training framework, evaluations can be initiated with a single click, providing full end-to-end support from model training to evaluation.
+
+[EvalScope](https://github.com/modelscope/evalscope) is a comprehensive model evaluation and benchmarking framework meticulously crafted by the ModelScope community. It offers an all-in-one solution for your model assessment needs, regardless of the type of model you are developing:
+
+- 🧠 Large Language Models
+- 🎨 Multimodal Models
+- 🔍 Embedding Models
+- 🏆 Reranker Models
+- 🖼️ CLIP Models
+- 🎭 AIGC Models (Text-to-Image/Video)
+- ...and more!
+
+EvalScope is not merely an evaluation tool; it is a valuable ally in your model optimization journey:
+
+- 🏅 Equipped with multiple industry-recognized benchmarks and evaluation metrics such as MMLU, CMMLU, C-Eval, GSM8K, and others.
+- 📊 Performance stress testing for model inference to ensure your model excels in real-world applications.
+- 🚀 Seamlessly integrates with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, enabling one-click evaluations and providing end-to-end support from training to assessment for your model development.
 
 ## Overall Architecture
 ![EvalScope Architecture Diagram](../_static/images/evalscope_framework.png)

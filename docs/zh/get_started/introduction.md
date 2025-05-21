@@ -1,6 +1,20 @@
 # 简介
 
-EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持。
+[EvalScope](https://github.com/modelscope/evalscope) 是魔搭社区倾力打造的模型评测与性能基准测试框架，为您的模型评估需求提供一站式解决方案。无论您在开发什么类型的模型，EvalScope 都能满足您的需求：
+
+- 🧠 大语言模型
+- 🎨 多模态模型
+- 🔍 Embedding 模型
+- 🏆 Reranker 模型
+- 🖼️ CLIP 模型
+- 🎭 AIGC模型（图生文/视频）
+- ...以及更多！
+
+EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力助手：
+
+- 🏅 内置多个业界认可的测试基准和评测指标：MMLU、CMMLU、C-Eval、GSM8K 等。
+- 📊 模型推理性能压测：确保您的模型在实际应用中表现出色。
+- 🚀 与 [ms-swift](https://github.com/modelscope/ms-swift) 训练框架无缝集成，一键发起评测，为您的模型开发提供从训练到评估的全链路支持。
 
 ## 整体架构
 ![EvalScope 架构图](../_static/images/evalscope_framework.png)
