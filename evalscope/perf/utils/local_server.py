@@ -96,6 +96,7 @@ def create_app(model, attn_implementation=None) -> FastAPI:
 
 
 def start_app(args: Arguments):
+    logger.info('Starting local server, please wait...')
     if args.api == 'local':
         app = create_app(args.model, args.attn_implementation)
         uvicorn.run(app, host='0.0.0.0', port=args.port, workers=1)
