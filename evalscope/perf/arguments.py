@@ -60,8 +60,8 @@ class Arguments:
     min_tokens: Optional[int] = None  # Minimum number of tokens in the response
     n_choices: Optional[int] = None  # Number of response choices
     seed: Optional[int] = 0  # Random seed for reproducibility
-    stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
-    stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
+    stop: Optional[List[str]] = None  # Stop sequences for the response
+    stop_token_ids: Optional[List[str]] = None  # Stop token IDs for the response
     stream: Optional[bool] = True  # Whether to stream the response
     temperature: float = 0.0  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
