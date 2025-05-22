@@ -164,6 +164,11 @@ def get_single_dataset_df(df: pd.DataFrame, dataset_name: str):
     styler = style_df(df, columns=[ReportKey.score])
     return df, styler
 
+def get_report_analysis(report_list: List[Report], dataset_name: str)->str:
+    for report in report_list:
+        if report.dataset_name == dataset_name:
+            return report.analysis
+    return 'N/A'
 
 def plot_single_dataset_scores(df: pd.DataFrame):
     # TODO: add metric radio and relace category name
@@ -436,6 +441,10 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
             'zh': '数据集分数',
             'en': 'Dataset Scores'
         },
+        'report_analysis': {
+            'zh': '报告分析',
+            'en': 'Report Analysis'
+        },
         'dataset_scores_table': {
             'zh': '数据集分数表',
             'en': 'Dataset Scores Table'
@@ -491,6 +500,9 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
     with gr.Tab(locale_dict['dataset_details'][lang]):
         dataset_radio = gr.Radio(
             label=locale_dict['select_dataset'][lang], choices=[], show_label=True, interactive=True)
+        # show dataset details
+        with gr.Accordion(locale_dict['report_analysis'][lang], open=True):
+            report_analysis = gr.Markdown(value='N/A', show_copy_button=True)
         gr.Markdown(f'### {locale_dict["dataset_scores"][lang]}')
         dataset_plot = gr.Plot(value=None, scale=1, label=locale_dict['dataset_scores'][lang])
         gr.Markdown(f'### {locale_dict["dataset_scores_table"][lang]}')
@@ -566,15 +578,16 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
     @gr.on(
         triggers=[dataset_radio.change, report_list.change],
         inputs=[dataset_radio, report_list],
-        outputs=[dataset_plot, dataset_table, subset_select, data_review_df])
+        outputs=[dataset_plot, dataset_table, subset_select, data_review_df, report_analysis])
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
         report_df = get_data_frame(report_list)
+        analysis = get_report_analysis(report_list, dataset_name)
         data_score_df, styler = get_single_dataset_df(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)
         subsets = data_score_df[ReportKey.subset_name].unique().tolist()
         logger.debug(f'subsets: {subsets}')
-        return data_score_plot, styler, gr.update(choices=subsets, value=None), None
+        return data_score_plot, styler, gr.update(choices=subsets, value=None), None, analysis
 
     @gr.on(
         triggers=[subset_select.change],

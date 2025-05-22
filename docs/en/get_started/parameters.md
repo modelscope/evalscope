@@ -104,6 +104,8 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
   - `system_prompt`: (Optional) System prompt for evaluating the dataset
   - `prompt_template`: (Optional) Prompt template for evaluating the dataset
   - `generation_config`: (Optional) Generation parameters
+- `--analysis-report`: Specifies whether to generate an analysis report, with the default set to `false`. If this parameter is enabled, an analysis report will be generated using the judge model, providing interpretative insights and recommendations based on the model evaluation results. The output language of the report will be automatically determined by `locale.getlocale()`.
+
 
 ## Other Parameters
 - `--work-dir`: Output path for model evaluation, default is `./outputs/{timestamp}`.

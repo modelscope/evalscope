@@ -101,6 +101,7 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
   - `system_prompt`: (可选) 评测数据集的系统prompt
   - `prompt_template`: (可选) 评测数据集的prompt模板
   - `generation_config`: (可选) 生成参数
+- `--analysis-report`: 是否生成分析报告，默认为`false`；如果设置该参数，将使用judge model生成分析报告，报告中包含模型评测结果的分析解读和建议。报告输出语言将根据`locale.getlocale()`自动判断。
 
 ## 其他参数
 

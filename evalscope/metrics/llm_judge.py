@@ -55,7 +55,7 @@ class LLMJudge:
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
-        self.generation_config = generation_config
+        self.generation_config = generation_config or {}
 
         from evalscope.models import ServerModelAdapter
 

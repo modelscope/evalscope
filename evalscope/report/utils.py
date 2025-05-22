@@ -7,7 +7,9 @@ from typing import Any, Dict, List
 
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import normalize_score
+from evalscope.utils.logger import get_logger
 
+logger = get_logger()
 
 @dataclass
 class Subset:
@@ -160,19 +162,23 @@ class Report:
 
     def generate_analysis(self, judge_llm_config: dict) -> str:
         import locale
-
         from evalscope.metrics import LLMJudge
 
-        # get the default locale
-        lang, _ = locale.getdefaultlocale()
+        try:
+            # get the default locale
+            lang, _ = locale.getlocale()
 
-        if 'zh' in lang:
-            language = '中文'
-        else:
-            language = 'English'
+            if lang is None:
+                language = '中文'
+            else:
+                language = 'en' if lang.startswith('en') else '中文'
 
-        prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
-        judge_llm = LLMJudge(**judge_llm_config)
-        response = judge_llm(prompt)
+            prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
+            judge_llm = LLMJudge(**judge_llm_config)
+            response = judge_llm(prompt)
+        except Exception as e:
+            logger.error(f"Error generating analysis: {e}")
+            response = "N/A"
+            
         self.analysis = response
         return response
