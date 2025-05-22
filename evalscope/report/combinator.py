@@ -48,6 +48,14 @@ def gen_table(reports_path_list: list) -> str:
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
 
 
+def gen_report_table(report: Report) -> str:
+    """
+    Generate a report table for a single report.
+    """
+    table = report.to_dataframe(flatten_metrics=True, flatten_categories=True)
+    return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
+
+
 class ReportsRecorder:
     COMMON_DATASET_PATH = []
     CUSTOM_DATASET_PATH = []

@@ -95,9 +95,12 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
   - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model
 - `--judge-worker-num`: The concurrency number for the judge model, default is `1`
 - `--judge-model-args`: Sets the parameters for the judge model, passed in as a `json` string and parsed as a dictionary, supporting the following fields:
-  - `api_key`: API endpoint key for the model, default is `EMPTY`
-  - `api_url`: API endpoint for the model, default is `https://api.openai.com/v1`
-  - `model_id`: Model ID, default is `gpt-3.5-turbo`
+  - `api_key`: The API endpoint key for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_SDK_TOKEN`, with a default value of `EMPTY`.
+  - `api_url`: The API endpoint for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_API_BASE`, with a default value of `https://api-inference.modelscope.cn/v1/`.
+  - `model_id`: The model ID. If not set, it will be retrieved from the environment variable `MODELSCOPE_JUDGE_LLM`, with a default value of `Qwen/Qwen3-235B-A22B`.
+    ```{seealso}
+    For more information on ModelScope's model inference services, please refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro).
+    ```
   - `system_prompt`: (Optional) System prompt for evaluating the dataset
   - `prompt_template`: (Optional) Prompt template for evaluating the dataset
   - `generation_config`: (Optional) Generation parameters

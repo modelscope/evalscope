@@ -179,11 +179,19 @@ class EvaluatorCollection:
             logger.info(f'{level} Report:\n{table}')
 
         report = ReportGenerator.gen_collection_report(df, self.dataset_name, self.task_cfg.model_id)
+        # Make report analysis
+        if self.task_cfg.analysis_report:
+            logger.info('Generating report analysis, please wait ...')
+            analysis = report.generate_analysis(self.task_cfg.judge_model_args)
+            logger.info('Report analysis:\n%s', analysis)
+        else:
+            logger.info('Skipping report analysis (`analysis_report=False`).')
+
         # save report to JSON file
         report_file_path = os.path.join(self.outputs.reports_dir, self.task_cfg.model_id, f'{self.dataset_name}.json')
-        os.makedirs(os.path.dirname(report_file_path), exist_ok=True)
-        with open(report_file_path, 'w', encoding='utf-8') as f:
-            json.dump(report.to_dict(), f, ensure_ascii=False, indent=4)
+        report.to_json(report_file_path)
+
+        logger.info(f'Report saved to {report_file_path}')
         return report
 
     def _filter_answer(self, pred_file_path):

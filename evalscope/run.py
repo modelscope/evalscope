@@ -43,6 +43,8 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     else:
         result = evaluate_model(task_cfg, outputs)
 
+    logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
+    logger.info(f'Output directory: {outputs.outputs_dir}')
     return result
 
 
@@ -109,6 +111,7 @@ def get_backend_manager_class(eval_backend: EvalBackend):
 def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     from evalscope.models import get_local_model
+    from evalscope.report import gen_table
 
     # Initialize evaluator
     eval_results = {}
@@ -122,9 +125,17 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
     task_cfg.dump_yaml(outputs.configs_dir)
     logger.info(task_cfg)
 
+    # Run evaluation for each evaluator
     for evaluator in evaluators:
         res_dict = evaluator.eval()
         eval_results[evaluator.dataset_name] = res_dict
+
+    # Make overall report
+    try:
+        report_table: str = gen_table([outputs.reports_dir])
+        logger.info(f'Overall report table: \n{report_table} \n')
+    except Exception:
+        logger.error('Failed to generate report table.')
 
     # Clean up
     if base_model is not None:
