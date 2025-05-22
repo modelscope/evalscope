@@ -11,34 +11,14 @@ from dataclasses import dataclass
 from typing import Any, List, Union
 
 from evalscope.constants import DataCollection
-from evalscope.report import Report, ReportKey, add_argument, get_data_frame, get_report_list
+from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.version import __version__
+from .arguments import add_argument
+from .constants import DATASET_TOKEN, LATEX_DELIMITERS, MODEL_TOKEN, PLOTLY_THEME, REPORT_TOKEN
 
 logger = get_logger()
-
-PLOTLY_THEME = 'plotly_dark'
-REPORT_TOKEN = '@@'
-MODEL_TOKEN = '::'
-DATASET_TOKEN = ', '
-LATEX_DELIMITERS = [{
-    'left': '$$',
-    'right': '$$',
-    'display': True
-}, {
-    'left': '$',
-    'right': '$',
-    'display': False
-}, {
-    'left': '\\(',
-    'right': '\\)',
-    'display': False
-}, {
-    'left': '\\[',
-    'right': '\\]',
-    'display': True
-}]
 
 
 def scan_for_report_folders(root_path):
