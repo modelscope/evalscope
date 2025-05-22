@@ -92,7 +92,7 @@ def print_summary(all_results, model_name):
     basic_info.add_row('Model', model_name)
     basic_info.add_row('Total Generated', f'{total_tokens:,} tokens')
     basic_info.add_row('Total Test Time', f'{total_time:.2f} seconds')
-    basic_info.add_row('Avg Output Rate', f'{total_tokens/total_time:.2f} tokens/sec')
+    basic_info.add_row('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec')
 
     console.print('\nBasic Information:')
     console.print(basic_info)

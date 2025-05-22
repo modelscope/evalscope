@@ -164,11 +164,13 @@ def get_single_dataset_df(df: pd.DataFrame, dataset_name: str):
     styler = style_df(df, columns=[ReportKey.score])
     return df, styler
 
-def get_report_analysis(report_list: List[Report], dataset_name: str)->str:
+
+def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
     for report in report_list:
         if report.dataset_name == dataset_name:
             return report.analysis
     return 'N/A'
+
 
 def plot_single_dataset_scores(df: pd.DataFrame):
     # TODO: add metric radio and relace category name

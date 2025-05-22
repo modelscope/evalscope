@@ -11,6 +11,7 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+
 @dataclass
 class Subset:
     name: str = 'default_subset'
@@ -162,6 +163,7 @@ class Report:
 
     def generate_analysis(self, judge_llm_config: dict) -> str:
         import locale
+
         from evalscope.metrics import LLMJudge
 
         try:
@@ -178,7 +180,7 @@ class Report:
             response = judge_llm(prompt)
         except Exception as e:
             logger.error(f"Error generating analysis: {e}")
-            response = "N/A"
-            
+            response = 'N/A'
+
         self.analysis = response
         return response
