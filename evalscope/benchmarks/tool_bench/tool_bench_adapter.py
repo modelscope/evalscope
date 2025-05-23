@@ -31,7 +31,10 @@ class ToolBenchAdapter(DataAdapter):
         Generate model prompt from input data.
         """
         messages = input_d['messages']
-        # use prepared messages
+        # use prepared messages and remove the name field
+        for message in messages:
+            if 'name' in message:
+                del message['name']
         return self.gen_prompt_data(prompt='', messages=messages)
 
     def get_gold_answer(self, input_d: dict) -> str:
