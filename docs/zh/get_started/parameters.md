@@ -92,12 +92,16 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
   - `llm_recall`: 先使用规则判断，若规则判断失败再使用裁判模型
 - `--judge-worker-num`: 裁判模型并发数，默认为`1`
 - `--judge-model-args`: 设置裁判模型参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
-  - `api_key`: 模型API端点密钥，默认为`EMPTY`
-  - `api_url`: 模型API端点，默认为`https://api.openai.com/v1`
-  - `model_id`: 模型ID，默认为`gpt-3.5-turbo`
+  - `api_key`: 模型API端点密钥，未设置时将从环境变量`MODELSCOPE_SDK_TOKEN`中读取，默认为`EMPTY`
+  - `api_url`: 模型API端点，未设置时将从环境变量`MODELSCOPE_API_BASE`中读取，默认为`https://api-inference.modelscope.cn/v1/`
+  - `model_id`: 模型ID，未设置时将从环境变量`MODELSCOPE_JUDGE_LLM`中读取，默认为`Qwen/Qwen3-235B-A22B`
+    ```{seealso}
+    关于ModelScope的模型推理服务的更多信息，请参考[ModelScope API推理服务](https://modelscope.cn/docs/model-service/API-Inference/intro)
+    ```
   - `system_prompt`: (可选) 评测数据集的系统prompt
   - `prompt_template`: (可选) 评测数据集的prompt模板
   - `generation_config`: (可选) 生成参数
+- `--analysis-report`: 是否生成分析报告，默认为`false`；如果设置该参数，将使用judge model生成分析报告，报告中包含模型评测结果的分析解读和建议。报告输出语言将根据`locale.getlocale()`自动判断。
 
 ## 其他参数
 

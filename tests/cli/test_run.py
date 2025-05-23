@@ -305,13 +305,13 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                'general_qa',
+                # 'general_qa',
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                # 'tool_bench',
+                'tool_bench',
             ],
             dataset_args={
                 'mmlu': {
@@ -384,7 +384,7 @@ class TestRun(unittest.TestCase):
                 'temperature': 0,
                 'n': 1,
                 'max_tokens': 4096,
-                'extra_headers':{'key': 'value'},
+                # 'extra_headers':{'key': 'value'},
             },
             # ignore_errors=True,
             # use_cache='outputs/20250519_142106'
@@ -476,7 +476,7 @@ class TestRun(unittest.TestCase):
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
-                'model_id': 'qwen2.5-7b-instruct',
+                'model_id': 'qwen2.5-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -492,7 +492,8 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
-            use_cache='outputs/20250519_142551'
+            analysis_report=True,
+            # use_cache='outputs/20250519_142551'
         )
 
         run_task(task_cfg=task_cfg)

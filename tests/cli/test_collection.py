@@ -73,13 +73,14 @@ class TestCollection(unittest.TestCase):
                 # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
             limit=10,
-            judge_strategy=JudgeStrategy.LLM_RECALL,
+            judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                'model_id': 'qwen2.5-7b-instruct',
-                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                'api_key': os.getenv('DASHSCOPE_API_KEY'),
+                # 'model_id': 'qwen2.5-72b-instruct',
+                # 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                # 'api_key': os.getenv('DASHSCOPE_API_KEY'),
             },
-            use_cache='outputs/20250519_114427'
+            analysis_report=True,
+            use_cache='outputs/20250522_204520'
         )
         res = run_task(task_cfg=task_cfg)
         print(res)
