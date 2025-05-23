@@ -179,7 +179,7 @@ class Report:
             judge_llm = LLMJudge(**judge_llm_config)
             response = judge_llm(prompt)
         except Exception as e:
-            logger.error(f"Error generating analysis: {e}")
+            logger.error(f'Error generating analysis: {e}')
             response = 'N/A'
 
         self.analysis = response
