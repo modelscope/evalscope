@@ -305,13 +305,13 @@ class TestRun(unittest.TestCase):
                 # 'ceval',
                 # 'hellaswag',
                 # 'general_mcq',
-                'general_qa',
+                # 'general_qa',
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                # 'tool_bench',
+                'tool_bench',
             ],
             dataset_args={
                 'mmlu': {
@@ -384,7 +384,7 @@ class TestRun(unittest.TestCase):
                 'temperature': 0,
                 'n': 1,
                 'max_tokens': 4096,
-                'extra_headers':{'key': 'value'},
+                # 'extra_headers':{'key': 'value'},
             },
             # ignore_errors=True,
             # use_cache='outputs/20250519_142106'

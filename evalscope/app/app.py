@@ -444,8 +444,8 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
             'en': 'Dataset Scores'
         },
         'report_analysis': {
-            'zh': '报告分析',
-            'en': 'Report Analysis'
+            'zh': '报告智能分析',
+            'en': 'Report Intelligent Analysis'
         },
         'dataset_scores_table': {
             'zh': '数据集分数表',
