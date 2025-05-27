@@ -377,7 +377,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=32,
-            limit=10,
+            limit=20,
             debug=True,
             stream=False,
             generation_config={

@@ -1,13 +1,14 @@
 import json
-from rouge import Rouge
+
+from evalscope.metrics import compute_rouge_score_one_sample
 
 
 def evaluate_rougel(cand_list: list, ref_list: list):
     if len(ref_list) == 0:
         return 0
-    rouge = Rouge()
-    rouge_score = rouge.get_scores(hyps=cand_list, refs=ref_list, avg=True)
-    rougel = rouge_score['rouge-l']['f']
+    rouge_score = compute_rouge_score_one_sample(cand_list, ref_list)
+    rougel = rouge_score.get('rouge-l-f', 0)
+
     return rougel
 
 
