@@ -228,10 +228,10 @@ class APIEmbeddingModel(BaseModel):
         for i in tqdm(range(0, len(texts), self.batch_size)):
             # set prompt if provided
             if prompt is not None:
-                texts = [prompt + text for text in texts[i:i + self.batch_size]]
+                batch_texts = [prompt + text for text in texts[i:i + self.batch_size]]
             else:
-                texts = texts[i:i + self.batch_size]
-            response = self.model.embed_documents(texts, chunk_size=self.batch_size)
+                batch_texts = texts[i:i + self.batch_size]
+            response = self.model.embed_documents(batch_texts, chunk_size=self.batch_size)
             embeddings.extend(response)
         return torch.tensor(embeddings)
 
