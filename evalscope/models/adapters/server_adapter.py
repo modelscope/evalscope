@@ -1,11 +1,11 @@
 import openai
 from collections import defaultdict
-from inspect import signature
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from typing import List, Optional, Union
 
 from evalscope.utils.logger import get_logger
+from evalscope.utils.utils import get_supported_params
 from .base_adapter import BaseModelAdapter
 
 logger = get_logger()
@@ -31,17 +31,13 @@ class ServerModelAdapter(BaseModelAdapter):
             api_key=api_key,
             base_url=self.api_url,
         )
-        self.supported_params = self._get_supported_params()
+        self.supported_params = get_supported_params(self.client.chat.completions.create)
 
         self.seed = kwargs.get('seed', None)
         self.timeout = kwargs.get('timeout', 60)
         self.stream = kwargs.get('stream', False)
         self.model_cfg = {'api_url': api_url, 'model_id': model_id, 'api_key': api_key}
         super().__init__(model=None, model_cfg=self.model_cfg, **kwargs)
-
-    def _get_supported_params(self):
-        sig = signature(self.client.chat.completions.create)
-        return list(sig.parameters.keys())
 
     def predict(self, inputs: List[dict], infer_cfg: Optional[dict] = None) -> List[dict]:
         """

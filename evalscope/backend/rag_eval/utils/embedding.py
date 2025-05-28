@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Union
 from evalscope.backend.rag_eval.utils.tools import download_model
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
+from evalscope.utils.utils import get_supported_params
 
 logger = get_logger()
 
@@ -38,6 +39,7 @@ class BaseModel(Embeddings):
 
         self.prompt = prompt
         self.revision = revision
+        self.framework = ['PyTorch']
 
     @property
     def mteb_model_meta(self):
@@ -45,10 +47,22 @@ class BaseModel(Embeddings):
         from mteb import ModelMeta
 
         return ModelMeta(
-            name=os.path.basename(self.model_name_or_path),
+            name='eval/' + os.path.basename(self.model_name_or_path),  # Ensure the name contains a slash
             revision=self.revision,
             languages=None,
             release_date=None,
+            n_parameters=None,
+            memory_usage_mb=None,
+            max_tokens=None,
+            embed_dim=None,
+            license=None,
+            open_weights=None,
+            public_training_code=None,
+            public_training_data=None,
+            similarity_fn_name=None,
+            use_instructions=None,
+            training_datasets=None,
+            framework=self.framework,
         )
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -91,6 +105,8 @@ class SentenceTransformerModel(BaseModel):
     def __init__(self, model_name_or_path: str, pooling_mode: Optional[str] = None, **kwargs):
         super().__init__(model_name_or_path, **kwargs)
 
+        self.framework = ['Sentence Transformers', 'PyTorch']
+
         self.model_kwargs['trust_remote_code'] = True
         if not pooling_mode:
             self.model = SentenceTransformer(
@@ -112,10 +128,16 @@ class SentenceTransformerModel(BaseModel):
 
         self.model.max_seq_length = self.max_seq_length
 
+        self.supported_encode_params = get_supported_params(self.model.encode)
+
     def encode(self, texts: Union[str, List[str]], prompt=None, **kwargs) -> List[torch.Tensor]:
-        kwargs.pop('prompt_name', '')  # remove prompt name, use prompt
+        # pop unused kwargs
+        for key in list(kwargs.keys()):
+            if key not in self.supported_encode_params:
+                kwargs.pop(key)
         self.encode_kwargs.update(kwargs)
 
+        prompt = prompt or self.prompt
         embeddings = self.model.encode(texts, prompt=prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings.cpu().detach()
@@ -135,12 +157,16 @@ class CrossEncoderModel(BaseModel):
 
     def __init__(self, model_name_or_path: str, **kwargs):
         super().__init__(model_name_or_path, **kwargs)
+
+        self.framework = ['Sentence Transformers', 'PyTorch']
+
         self.model = CrossEncoder(
             self.model_name_or_path,
             trust_remote_code=True,
             max_length=self.max_seq_length,
             automodel_args=self.model_kwargs,
         )
+        self.supported_encode_params = get_supported_params(self.model.predict)
 
     def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
         self.encode_kwargs.update(kwargs)
@@ -164,6 +190,7 @@ class APIEmbeddingModel(BaseModel):
         self.openai_api_base = kwargs.get('api_base')
         self.openai_api_key = kwargs.get('api_key')
         self.dimensions = kwargs.get('dimensions')
+        self.framework = ['API']
 
         self.model = OpenAIEmbeddings(
             model=self.model_name,
@@ -175,6 +202,8 @@ class APIEmbeddingModel(BaseModel):
         super().__init__(model_name_or_path=self.model_name, **kwargs)
 
         self.batch_size = self.encode_kwargs.get('batch_size', 10)
+
+        self.supported_encode_params = get_supported_params(self.model.embed_documents)
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> Tensor:
         if isinstance(texts, str):

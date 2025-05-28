@@ -37,23 +37,23 @@ def run_eval():
             ],
             'eval': {
                 'tasks': [
-                    'TNews',
-                    'CLSClusteringS2S',
-                    'T2Reranking',
-                    'ATEC',
+                    # 'TNews',
+                    # 'CLSClusteringS2S',
+                    # 'T2Reranking',
+                    # 'ATEC',
                     'T2Retrieval',
-                    'MMarcoRetrieval',
-                    'DuRetrieval',
-                    'CovidRetrieval',
-                    'CmedqaRetrieval',
-                    'EcomRetrieval',
-                    'MedicalRetrieval',
-                    'VideoRetrieval'
+                    # 'MMarcoRetrieval',
+                    # 'DuRetrieval',
+                    # 'CovidRetrieval',
+                    # 'CmedqaRetrieval',
+                    # 'EcomRetrieval',
+                    # 'MedicalRetrieval',
+                    # 'VideoRetrieval'
                 ],
                 'verbosity': 2,
                 'overwrite_results': True,
                 'top_k': 10,
-                'limits': 1000,  # don't limit for retrieval task
+                'limits': 100,  # don't limit for retrieval task
             },
         },
     }
@@ -95,8 +95,8 @@ def run_eval():
     }
 
     # Run task
-    # run_task(task_cfg=one_stage_task_cfg)
-    run_task(task_cfg=two_stage_task_cfg)
+    run_task(task_cfg=one_stage_task_cfg)
+    # run_task(task_cfg=two_stage_task_cfg)
 
 
 if __name__ == '__main__':

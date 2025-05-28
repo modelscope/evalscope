@@ -1,6 +1,6 @@
 import mteb
 import os
-from mteb.task_selection import results_to_dataframe
+from tabulate import tabulate
 
 from evalscope.backend.rag_eval import EmbeddingModel, cmteb
 from evalscope.utils.logger import get_logger
@@ -12,14 +12,27 @@ def show_results(output_folder, model, results):
     model_name = model.mteb_model_meta.model_name_as_path()
     revision = model.mteb_model_meta.revision
 
-    results_df = results_to_dataframe({model_name: {revision: results}})
+    data = []
+    for model_res in results:
+        main_res = model_res.only_main_score()
+        for split, score in main_res.scores.items():
+            for sub_score in score:
+                data.append({
+                    'Model': model_name.replace('eval__', ''),
+                    'Revision': revision,
+                    'Task Type': main_res.task_type,
+                    'Task': main_res.task_name,
+                    'Split': split,
+                    'Subset': sub_score['hf_subset'],
+                    'Main Score': sub_score['main_score'],
+                })
 
     save_path = os.path.join(
         output_folder,
         model_name,
         revision,
     )
-    logger.info(f'Evaluation results:\n{results_df.to_markdown()}')
+    logger.info(f'Evaluation results:\n{tabulate(data, headers="keys", tablefmt="grid")}')
     logger.info(f'Evaluation results saved in {os.path.abspath(save_path)}')
 
 

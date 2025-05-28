@@ -9,7 +9,6 @@ class CustomRetrieval(AbsTaskRetrieval):
     ignore_identical_ids: bool = True
 
     def __init__(self, dataset_path: Optional[str] = 'custom_eval/text/retrieval', **kwargs):
-        super().__init__(**kwargs)
         self.metadata = TaskMetadata(
             name='CustomRetrieval',
             description='CustomRetrieval Task',
@@ -34,6 +33,7 @@ class CustomRetrieval(AbsTaskRetrieval):
             bibtex_citation='',
             descriptive_stats={},
         )
+        super().__init__(**kwargs)
 
     def load_data(self, **kwargs):
         if self.data_loaded:

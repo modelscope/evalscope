@@ -43,8 +43,9 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     else:
         result = evaluate_model(task_cfg, outputs)
 
-    logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
-    logger.info(f'Output directory: {outputs.outputs_dir}')
+        logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
+        logger.info(f'Output directory: {outputs.outputs_dir}')
+
     return result
 
 
