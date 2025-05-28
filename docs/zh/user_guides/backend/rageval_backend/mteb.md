@@ -184,7 +184,8 @@ two_stage_task_cfg = {
             - `is_cross_encoder`: `bool` 模型是否为交叉编码器，默认为 False；reranking模型需设置为`True`。
             - `pooling_mode`: `Optional[str]` 池化模式，默认为`mean`，可选值为：“cls”、“lasttoken”、“max”、“mean”、“mean_sqrt_len_tokens”或“weightedmean”。`bge`系列模型请设置为“cls”。
             - `max_seq_length`: `int` 最大序列长度，默认为 512。  
-            - `prompt`: `str` 用于检索任务在模型前的提示，默认为空字符串。  
+            - `prompt`: `str` 用于检索任务在模型前的提示，默认为None。 
+            - `prompts`: `Dict[str, str]` 用于检索任务在模型前的提示，为不同任务设置prompt，默认为None，key为对应任务名，value为对应prompt，仅在未设置prompt时生效。
             - `model_kwargs`: `dict` 模型的关键字参数，默认值为 `{"torch_dtype": "auto"}`。  
             - `config_kwargs`: `Dict[str, Any]` 配置的关键字参数，默认为空字典。  
             - `encode_kwargs`: `dict` 编码的关键字参数，默认值为：  

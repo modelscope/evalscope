@@ -10,6 +10,7 @@ import os
 import random
 import re
 import torch
+from inspect import signature
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.utils.logger import get_logger
@@ -312,6 +313,12 @@ def seed_everything(seed: int):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+def get_supported_params(func):
+    """Get the supported parameters of a function."""
+    sig = signature(func)
+    return list(sig.parameters.keys())
+
 
 if __name__ == '__main__':
     options = ['A', 'B', 'C', 'D']
