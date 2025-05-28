@@ -47,6 +47,7 @@ def one_stage_eval(
     tasks = cmteb.TaskBase.get_tasks(task_names=eval_args['tasks'], dataset_path=custom_dataset_path)
     evaluation = mteb.MTEB(tasks=tasks)
 
+    eval_args['encode_kwargs'] = model_args.get('encode_kwargs', {})
     # run evaluation
     results = evaluation.run(model, **eval_args)
 
@@ -79,6 +80,7 @@ def two_stage_eval(
             overwrite_results=True,
             hub=eval_args['hub'],
             limits=eval_args['limits'],
+            encode_kwargs=model1_args.get('encode_kwargs', {}),
         )
         # stage 2: run cross encoder
         results = evaluation.run(
@@ -90,6 +92,7 @@ def two_stage_eval(
             overwrite_results=True,
             hub=eval_args['hub'],
             limits=eval_args['limits'],
+            encode_kwargs=model2_args.get('encode_kwargs', {}),
         )
 
         # save and log results
