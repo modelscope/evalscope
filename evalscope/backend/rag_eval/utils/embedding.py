@@ -2,6 +2,7 @@ import os
 import torch
 from langchain_core.embeddings import Embeddings
 from langchain_openai.embeddings import OpenAIEmbeddings
+from mteb.encoder_interface import PromptType
 from sentence_transformers import models
 from sentence_transformers.cross_encoder import CrossEncoder
 from sentence_transformers.SentenceTransformer import SentenceTransformer
@@ -23,7 +24,8 @@ class BaseModel(Embeddings):
         self,
         model_name_or_path: str = '',
         max_seq_length: int = 512,
-        prompt: str = '',
+        prompt: Optional[str] = None,
+        prompts: Optional[Dict[str, str]] = None,
         revision: Optional[str] = 'master',
         **kwargs,
     ):
@@ -38,6 +40,7 @@ class BaseModel(Embeddings):
         self.encode_kwargs['convert_to_tensor'] = True
 
         self.prompt = prompt
+        self.prompts = prompts if prompts else {}
         self.revision = revision
         self.framework = ['PyTorch']
 
@@ -74,7 +77,7 @@ class BaseModel(Embeddings):
         Returns:
             List of embeddings.
         """
-        return self.encode_corpus(texts).tolist()
+        return self.encode(texts).tolist()
 
     def embed_query(self, text: str) -> List[float]:
         """Embed query text. Compact langchain.
@@ -85,19 +88,17 @@ class BaseModel(Embeddings):
         Returns:
             Embedding.
         """
-        return self.encode_queries(text).tolist()
+        return self.encode(text).tolist()
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
         """Embed text."""
         raise NotImplementedError
 
-    def encode_queries(self, queries: List[str], **kwargs) -> list[torch.Tensor]:
-        """Embed query text. Compact mteb."""
-        raise NotImplementedError
-
-    def encode_corpus(self, corpus: Union[List[str], List[Dict[str, str]]], **kwargs) -> list[torch.Tensor]:
-        """Embed search docs . Compact mteb."""
-        raise NotImplementedError
+    def get_prompt(self, task_name: str) -> Optional[str]:
+        """Get prompt for the given task name."""
+        if self.prompt:
+            return self.prompt
+        return self.prompts.get(task_name, None)
 
 
 class SentenceTransformerModel(BaseModel):
@@ -130,27 +131,24 @@ class SentenceTransformerModel(BaseModel):
 
         self.supported_encode_params = get_supported_params(self.model.encode)
 
-    def encode(self, texts: Union[str, List[str]], prompt=None, **kwargs) -> List[torch.Tensor]:
+    def encode(self, texts: Union[str, List[str]], **kwargs) -> List[torch.Tensor]:
         # pop unused kwargs
+        extra_params = {}
         for key in list(kwargs.keys()):
             if key not in self.supported_encode_params:
-                kwargs.pop(key)
+                extra_params[key] = kwargs.pop(key)
         self.encode_kwargs.update(kwargs)
 
-        prompt = prompt or self.prompt
+        # set prompt if provided
+        prompt = None
+        prompt_type = extra_params.pop('prompt_type', '')
+        task_name = extra_params.pop('task_name', '')
+        if prompt_type and prompt_type == PromptType.query:
+            prompt = self.get_prompt(task_name)
+
         embeddings = self.model.encode(texts, prompt=prompt, **self.encode_kwargs)
         assert isinstance(embeddings, Tensor)
         return embeddings.cpu().detach()
-
-    def encode_queries(self, queries, **kwargs):
-        return self.encode(queries, prompt=self.prompt)
-
-    def encode_corpus(self, corpus, **kwargs):
-        if isinstance(corpus[0], dict):
-            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
-        else:
-            input_texts = corpus
-        return self.encode(input_texts)
 
 
 class CrossEncoderModel(BaseModel):
@@ -169,6 +167,9 @@ class CrossEncoderModel(BaseModel):
         self.supported_encode_params = get_supported_params(self.model.predict)
 
     def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
+        for key in list(kwargs.keys()):
+            if key not in self.supported_encode_params:
+                kwargs.pop(key)
         self.encode_kwargs.update(kwargs)
 
         if len(sentences[0]) == 3:  # Note: For mteb retrieval task
@@ -206,24 +207,33 @@ class APIEmbeddingModel(BaseModel):
         self.supported_encode_params = get_supported_params(self.model.embed_documents)
 
     def encode(self, texts: Union[str, List[str]], **kwargs) -> Tensor:
+        # pop unused kwargs
+        extra_params = {}
+        for key in list(kwargs.keys()):
+            if key not in self.supported_encode_params:
+                extra_params[key] = kwargs.pop(key)
+        self.encode_kwargs.update(kwargs)
+
+        # set prompt if provided
+        prompt = None
+        prompt_type = extra_params.pop('prompt_type', '')
+        task_name = extra_params.pop('task_name', '')
+        if prompt_type and prompt_type == PromptType.query:
+            prompt = self.get_prompt(task_name)
+
         if isinstance(texts, str):
             texts = [texts]
 
         embeddings: List[List[float]] = []
         for i in tqdm(range(0, len(texts), self.batch_size)):
-            response = self.model.embed_documents(texts[i:i + self.batch_size], chunk_size=self.batch_size)
+            # set prompt if provided
+            if prompt is not None:
+                texts = [prompt + text for text in texts[i:i + self.batch_size]]
+            else:
+                texts = texts[i:i + self.batch_size]
+            response = self.model.embed_documents(texts, chunk_size=self.batch_size)
             embeddings.extend(response)
         return torch.tensor(embeddings)
-
-    def encode_queries(self, queries, **kwargs):
-        return self.encode(queries, **kwargs)
-
-    def encode_corpus(self, corpus, **kwargs):
-        if isinstance(corpus[0], dict):
-            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
-        else:
-            input_texts = corpus
-        return self.encode(input_texts, **kwargs)
 
 
 class EmbeddingModel:

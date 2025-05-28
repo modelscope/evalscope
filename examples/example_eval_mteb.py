@@ -41,19 +41,19 @@ def run_eval():
                     # 'CLSClusteringS2S',
                     # 'T2Reranking',
                     # 'ATEC',
-                    'T2Retrieval',
+                    # 'T2Retrieval',
                     # 'MMarcoRetrieval',
                     # 'DuRetrieval',
                     # 'CovidRetrieval',
                     # 'CmedqaRetrieval',
                     # 'EcomRetrieval',
-                    # 'MedicalRetrieval',
+                    'MedicalRetrieval',
                     # 'VideoRetrieval'
                 ],
                 'verbosity': 2,
                 'overwrite_results': True,
                 'top_k': 10,
-                'limits': 100,  # don't limit for retrieval task
+                # 'limits': 1000,  # don't limit for retrieval task
             },
         },
     }
@@ -94,9 +94,37 @@ def run_eval():
         },
     }
 
+    from evalscope import TaskConfig
+    api_task_cfg = TaskConfig(
+        eval_backend='RAGEval',
+        eval_config={
+            'tool': 'MTEB',
+            'model': [
+                {
+                    'model_name': 'text-embedding-v3',
+                    'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                    'api_key': 'xxx',
+                    'dimensions': 1024,
+                    'encode_kwargs': {
+                        'batch_size': 10,
+                    },
+                }
+            ],
+            'eval': {
+                'tasks': [
+                    'T2Retrieval',
+                ],
+                'verbosity': 2,
+                'overwrite_results': True,
+                'limits': 30,
+            },
+        },
+    )
+
     # Run task
-    run_task(task_cfg=one_stage_task_cfg)
-    # run_task(task_cfg=two_stage_task_cfg)
+    # run_task(task_cfg=one_stage_task_cfg)
+    run_task(task_cfg=two_stage_task_cfg)
+    # run_eval_task(task_cfg=api_task_cfg)
 
 
 if __name__ == '__main__':
