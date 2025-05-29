@@ -33,3 +33,26 @@ def preprocess_decorator(func):
         return func(self, result, raw_input_d, **kwargs)
 
     return wrapper
+
+
+def load_file_with_extension(file_path: Union[str, List[str]]) -> List[dict]:
+    """
+    Load a file with a specific extension and return its content as a list of dictionaries.
+    """
+    import json
+    import os
+
+    if isinstance(file_path, str):
+        file_path = [file_path]
+
+    data = []
+    for path in file_path:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'The file {path} does not exist.')
+
+        with open(path, 'r', encoding='utf-8') as f:
+            if path.endswith('.json'):
+                data.extend(json.load(f))
+            elif path.endswith('.jsonl'):
+                data.extend([json.loads(line) for line in f])
+    return data

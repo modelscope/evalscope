@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
 
-from evalscope.benchmarks.utils import PromptData, preprocess_decorator
+from evalscope.benchmarks.utils import PromptData, load_file_with_extension, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics import LLMJudge, metric_registry
 from evalscope.report import Report, ReportGenerator
@@ -156,6 +156,49 @@ class DataAdapter(ABC):
         """
         return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
 
+    def load_with_snapshot(self,
+                           file_structure: Dict[str, List[str]],
+                           dataset_name_or_path: str = None,
+                           subset_list: list = None,
+                           work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+                           **kwargs) -> dict:
+        """
+        For datasets that cannot be correctly loaded using MsDataset, utilize snapshot downloading to load the data.
+        This feature supports both remote and local datasets.
+
+        Args:
+            file_structure: dict, the file structure of the dataset, e.g. {'subset_name': ['file1.jsonl', 'file2.jsonl']}.
+            dataset_name_or_path: str, the dataset id on ModelScope or local path for the benchmark.
+            subset_list: list of subset names for the dataset.
+            work_dir: str, the working directory to store the dataset.
+        Returns: {'subset_name': {'eval': eval_dataset}}
+        """  # noqa: E501
+        dataset_name_or_path = os.path.expanduser(dataset_name_or_path or self.dataset_id)
+        subset_list = subset_list or self.subset_list
+
+        # Try to load dataset from local disk
+        if os.path.exists(dataset_name_or_path):
+            logger.info(f'Loading dataset from {dataset_name_or_path}')
+            dataset_path = dataset_name_or_path
+        else:
+            from modelscope import dataset_snapshot_download
+
+            # Load dataset from remote
+            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
+            # flatten file structure
+            file_names = [file for sub_files in file_structure.values() for file in sub_files]
+            # download dataset snapshot
+            dataset_path = dataset_snapshot_download(
+                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern=file_names)
+        # read and process files
+        data_dict = defaultdict(dict)
+        for sub_name in subset_list:
+            file_paths = [os.path.join(dataset_path, file_name) for file_name in file_structure[sub_name]]
+            # not train split, only eval split
+            data_dict[sub_name][self.eval_split] = load_file_with_extension(file_paths)
+
+        return data_dict
+
     def reformat_subset(self, data_dict: dict, subset_key: str, format: str = '{}') -> dict:
         """
         Reformat the dataset subset with subset_key and format.
@@ -249,7 +292,7 @@ class DataAdapter(ABC):
     def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]],
                             **kwargs) -> Dict[str, List[float]]:
         """
-        compute weighted mean of the bleu score of all samples
+        compute weighted mean of score of all samples
 
         Args:
             review_res_list: [score1, score2, ...]
@@ -416,7 +459,8 @@ class DataAdapter(ABC):
 
         # Extract question from raw_input if available
         raw_input = kwargs.get('raw_input', {})
-        question_keys = ['question', 'prompt', 'query', 'problem']
+        question_keys = ['question', 'Question', 'prompt', 'Prompt', 'query', 'Query', 'problem', 'Problem']
+        # Find the first non-empty question key in raw_input
         question = next((raw_input.get(key) for key in question_keys if raw_input.get(key)), None)
 
         # Request judge and obtain score
