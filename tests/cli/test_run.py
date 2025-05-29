@@ -447,7 +447,8 @@ class TestRun(unittest.TestCase):
                 # 'general_qa',
                 # 'alpaca_eval',
                 # 'arena_hard',
-                'frames',
+                # 'frames',
+                'docmath',
             ],
             dataset_args={
                 'competition_math': {
@@ -472,9 +473,12 @@ class TestRun(unittest.TestCase):
                         '中华文化'
                     ]
                 },
+                'frames': {
+                    'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
+                }
             },
             eval_batch_size=10,
-            limit=10,
+            limit=10 ,
             judge_strategy=JudgeStrategy.LLM_RECALL,
             judge_worker_num=5,
             judge_model_args={
