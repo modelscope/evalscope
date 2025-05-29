@@ -434,7 +434,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'math_500',
+                'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
@@ -448,7 +448,7 @@ class TestRun(unittest.TestCase):
                 # 'alpaca_eval',
                 # 'arena_hard',
                 # 'frames',
-                'docmath',
+                # 'docmath',
             ],
             dataset_args={
                 'competition_math': {
@@ -478,8 +478,8 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=10 ,
-            judge_strategy=JudgeStrategy.LLM_RECALL,
+            limit=20 ,
+            judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
