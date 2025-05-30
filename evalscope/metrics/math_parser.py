@@ -4,7 +4,7 @@ The logic in this file largely borrows from Qwen2.5-Math codebase at https://git
 # flake8: noqa
 import re
 import regex
-from latex2sympy2 import latex2sympy
+from latex2sympy2_extended import latex2sympy
 from math import isclose
 from sympy import N, simplify
 from sympy.parsing.latex import parse_latex

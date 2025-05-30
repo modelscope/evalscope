@@ -28,6 +28,7 @@ class BenchmarkMeta:
     system_prompt: Optional[str] = None
     query_template: Optional[str] = None
     pretty_name: Optional[str] = None
+    description: Optional[str] = None
     filters: Optional[OrderedDict] = None
     extra_params: Optional[Dict] = field(default_factory=dict)
 

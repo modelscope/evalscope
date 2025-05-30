@@ -1,24 +1,42 @@
 import pandas as pd
 from pandas import DataFrame
+from typing import TYPE_CHECKING
 
 from evalscope.constants import DataCollection
 from evalscope.report.utils import *
+
+if TYPE_CHECKING:
+    from evalscope.benchmarks import DataAdapter
 
 
 class ReportGenerator:
 
     @staticmethod
-    def gen_report(subset_score_map: dict, report_name: str, **kwargs) -> Report:
+    def gen_report(subset_score_map: dict, model_name: str, data_adapter: 'DataAdapter', **kwargs) -> Report:
         """
-        Generate report for specific dataset.
-        subset_score_map: e.g. {subset_name: [{'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100}, {'metric_name': 'WeightedAverageAccuracy', 'score': 0.3389, 'num': 100}]}
-        category_map: e.g. {'subset_name': ['category_name1', 'category_name2'], ...}
-        metric_list: e.g. [{'object': AverageAccuracy, 'name': 'AverageAccuracy'}, {'object': 'WeightedAverageAccuracy', 'name': 'WeightedAverageAccuracy'}]
+        Generate a report for a specific dataset based on provided subset scores.
+
+        Args:
+            subset_score_map (dict): A mapping from subset names to a list of score dictionaries.
+                    {
+                        'subset_name': [
+                            {'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100},
+                            {'metric_name': 'WeightedAverageAccuracy', 'score': 0.3389, 'num': 100}
+                        ],
+                        ...
+                    }
+            report_name (str): The name of the report to generate.
+            data_adapter (DataAdapter): An adapter object for data handling.
+
+        Returns:
+            Report: A structured report object containing metrics, categories, and subsets.
+
+            >>> report = gen_report(subset_score_map, "My Report", data_adapter, dataset_name="Dataset", model_name="Model")
         """  # noqa: E501
 
-        dataset_name = kwargs.get('dataset_name', None)
-        model_name = kwargs.get('model_name', None)
-        category_map = kwargs.get('category_map', {})
+        dataset_name = data_adapter.name
+        category_map = data_adapter.category_map
+        report_name = f'{model_name}@{dataset_name}'
 
         def flatten_subset() -> DataFrame:
             """
@@ -59,7 +77,13 @@ class ReportGenerator:
 
             metrics_list.append(Metric(name=metric_name, categories=categories))
 
-        report = Report(name=report_name, metrics=metrics_list, dataset_name=dataset_name, model_name=model_name)
+        report = Report(
+            name=report_name,
+            metrics=metrics_list,
+            dataset_name=dataset_name,
+            model_name=model_name,
+            dataset_description=data_adapter.description,
+            dataset_pretty_name=data_adapter.pretty_name)
         return report
 
     @staticmethod

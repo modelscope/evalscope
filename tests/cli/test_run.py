@@ -311,7 +311,8 @@ class TestRun(unittest.TestCase):
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                'tool_bench',
+                # 'tool_bench',
+                'frames',
             ],
             dataset_args={
                 'mmlu': {
@@ -377,7 +378,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=32,
-            limit=20,
+            limit=10,
             debug=True,
             stream=False,
             generation_config={
@@ -428,7 +429,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-0.5b-instruct',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -437,15 +438,17 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
-                # 'gsm8k'
+                'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
-                'chinese_simpleqa',
+                # 'chinese_simpleqa',
                 # 'live_code_bench',
                 # 'humaneval',
                 # 'general_qa',
                 # 'alpaca_eval',
-                # 'arena_hard'
+                # 'arena_hard',
+                # 'frames',
+                # 'docmath',
             ],
             dataset_args={
                 'competition_math': {
@@ -470,9 +473,12 @@ class TestRun(unittest.TestCase):
                         '中华文化'
                     ]
                 },
+                'frames': {
+                    'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
+                }
             },
             eval_batch_size=10,
-            limit=10,
+            limit=5 ,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={

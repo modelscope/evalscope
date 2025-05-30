@@ -4,7 +4,7 @@ immutabledict
 jieba
 jsonlines
 langdetect
-latex2sympy2
+latex2sympy2_extended
 matplotlib
 modelscope[framework]
 nltk>=3.9
@@ -23,6 +23,7 @@ seaborn
 sympy
 # streamlit
 tabulate
+tiktoken
 # pip3 install --no-dependencies -r requirements/framework.txt
 torch
 torchvision

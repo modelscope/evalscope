@@ -46,7 +46,6 @@ class Evaluator(object):
         self.dataset_name = data_adapter.name
         self.dataset_name_or_path = os.path.expanduser(data_adapter.dataset_id)
         self.model_name = task_cfg.model_id
-        self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
@@ -383,10 +382,7 @@ class Evaluator(object):
         """
         # Get report map
         report_map: Report = self.data_adapter.gen_report(
-            subset_score_map=reviews_score_all,
-            report_name=self.custom_task_name,
-            model_name=self.model_name,
-            dataset_name=self.dataset_name)
+            subset_score_map=reviews_score_all, model_name=self.model_name)
 
         # Make table
         try:
