@@ -1,6 +1,6 @@
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import LLMJudge, exact_match
+from evalscope.constants import EvalType
+from evalscope.metrics import LLMJudge
 
 TEMPLATE_0SHOT = """Please read the following text and answer the question below.
 

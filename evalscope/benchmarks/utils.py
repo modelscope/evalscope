@@ -55,4 +55,6 @@ def load_file_with_extension(file_path: Union[str, List[str]]) -> List[dict]:
                 data.extend(json.load(f))
             elif path.endswith('.jsonl'):
                 data.extend([json.loads(line) for line in f])
+            elif path.endswith('.txt'):
+                data.extend([{'text': f.read()}])
     return data

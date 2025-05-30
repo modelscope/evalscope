@@ -10,7 +10,7 @@ from dataclasses import asdict
 from sphinxawesome_theme import ThemeOptions
 
 project = 'EvalScope'
-copyright = '2022-2024, Alibaba ModelScope'
+copyright = '2022-2025, Alibaba ModelScope'
 author = 'ModelScope Authors'
 version_file = '../../evalscope/version.py'
 
