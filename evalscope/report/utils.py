@@ -90,6 +90,8 @@ ANALYSIS_PROMPT = """根据给出的json格式的模型评测结果，输出分�
 class Report:
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
+    dataset_pretty_name: str = ''
+    dataset_description: str = ''
     model_name: str = 'default_model'
     score: float = 0.0
     metrics: List[Metric] = field(default_factory=list)
@@ -116,10 +118,12 @@ class Report:
         metrics = [Metric.from_dict(metric) for metric in data.get('metrics', [])]
         return cls(
             name=data['name'],
-            score=data['score'],
-            metrics=metrics,
             dataset_name=data['dataset_name'],
+            dataset_pretty_name=data.get('dataset_pretty_name'),
+            dataset_description=data.get('dataset_description'),
+            score=data['score'],
             model_name=data['model_name'],
+            metrics=metrics,
             analysis=data.get('analysis', 'N/A'),
         )
 

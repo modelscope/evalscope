@@ -434,11 +434,11 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'math_500',
+                # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
-                # 'gsm8k'
+                'gsm8k'
                 # 'truthful_qa',
                 # 'simple_qa',
                 # 'chinese_simpleqa',
@@ -478,7 +478,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=20 ,
+            limit=5 ,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
@@ -498,7 +498,7 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
-            analysis_report=False,
+            analysis_report=True,
             # use_cache='outputs/20250519_142551'
         )
 

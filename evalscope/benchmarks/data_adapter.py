@@ -15,6 +15,13 @@ logger = get_logger()
 
 
 class DataAdapter(ABC):
+    """
+    Data Adapter for the benchmark. You need to implement the following methods:
+        - gen_prompt
+        - get_gold_answer
+        - parse_pred_result
+        - match
+    """
 
     def __init__(self,
                  name: str,
@@ -31,30 +38,36 @@ class DataAdapter(ABC):
                  system_prompt: Optional[str] = None,
                  query_template: Optional[str] = None,
                  pretty_name: Optional[str] = None,
+                 description: Optional[str] = None,
                  **kwargs):
         """
-        Data Adapter for the benchmark. You need to implement the following methods:
-            - gen_prompt
-            - get_gold_answer
-            - parse_pred_result
-            - match
         Args:
             name: str, the name of the benchmark.
             dataset_id: str, the dataset id on ModelScope or local path for the benchmark.
+            model_adapter: str, the model adapter to use for the benchmark.
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
+            llm_as_a_judge: bool, whether to use LLM as a judge to evaluate the predicted answer against the gold answer.
+            output_types: list, the output types of the model adapter. Default: [model_adapter]
             few_shot_num: int, number of few-shot examples. Default: 0
             train_split: str, usually for few-shot examples. e.g. 'train'
             eval_split: str, the target eval split name. e.g. 'test'
             prompt_template: str, the prompt template for the benchmark,
                 e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in
                     the form of A or B or C or D, do not output explanation:`
-        """
+            system_prompt: str, the system prompt for the benchmark, e.g. 'You are a helpful assistant.'
+            query_template: str, the query template for the benchmark, e.g. 'Please answer the following question: {}'
+            pretty_name: str, the pretty name of the benchmark, e.g. 'ARC Challenge Set'.
+            description: str, the description of the benchmark,
+                e.g. 'ARC Challenge Set is a benchmark for evaluating reasoning abilities of models on science questions.'
+        """  # noqa: E501
         self.name = name
         self.dataset_id = dataset_id
         self.model_adapter = model_adapter
         self.subset_list = subset_list
         self.metric_list = metric_list
+        self.llm_as_a_judge = llm_as_a_judge
+        self.output_types = output_types or [model_adapter]
         self.few_shot_num = few_shot_num
         self.train_split = train_split
         self.eval_split = eval_split
@@ -62,9 +75,8 @@ class DataAdapter(ABC):
         self.system_prompt = system_prompt
         self.query_template = query_template
         self.pretty_name = pretty_name
+        self.description = description
         self.config_kwargs = kwargs
-        self.output_types = output_types or [model_adapter]
-        self.llm_as_a_judge = llm_as_a_judge
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)
 
@@ -313,7 +325,7 @@ class DataAdapter(ABC):
                 items['AverageAccuracy'].append(scores)
         return items
 
-    def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:
+    def gen_report(self, subset_score_map: dict, model_name: str, **kwargs) -> Report:
         """
         Generate report for the evaluation results for all subsets.
 
@@ -321,7 +333,7 @@ class DataAdapter(ABC):
             subset_score_map: The subset-score map.
                 e.g. {subset_name: [{'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100}]}
 
-            report_name: str, the user-defined report name. Default: None
+            model_name: The evaluation model name.
 
         Returns: The evaluation report.
 
@@ -355,9 +367,7 @@ class DataAdapter(ABC):
             "model_name": "qwen2.5"
         }
         """  # noqa: E501
-        kwargs['category_map'] = self.category_map
-        kwargs['metric_list'] = self.metric_list
-        return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
+        return ReportGenerator.gen_report(subset_score_map, model_name, data_adapter=self, **kwargs)
 
     def gen_prompt_data(self,
                         prompt: str,
@@ -367,6 +377,23 @@ class DataAdapter(ABC):
                         id: Optional[Union[int, str]] = None,
                         messages: Optional[List[dict]] = None,
                         **kwargs) -> dict:
+        """
+        Generates a dictionary representation of prompt data for evaluation or inference.
+
+        Args:
+            prompt (str): The main prompt or input text. Can also be a list of prompts.
+            system_prompt (Optional[str], optional): An optional system-level prompt to provide context or instructions. Defaults to None.
+            choices (Optional[List[str]], optional): A list of possible choices for multi-choice tasks.
+                If not provided, uses self.choices. Defaults to None.
+            index (Optional[Union[int, str]], optional): An optional index or identifier for the prompt.
+                Defaults to 0 if not provided. Defaults to None.
+            id (Optional[Union[int, str]], optional): An optional unique identifier for the prompt data. Defaults to None.
+            messages (Optional[List[dict]], optional): An optional list of message dictionaries, typically for chat-based prompts. Defaults to None.
+                If messages is provided, it will be used as the prompt data instead of the prompt string.
+
+        Returns:
+            dict: A dictionary representation of the prompt data, suitable for further processing or model input.
+        """  # noqa: E501
         data = [prompt] if not isinstance(prompt, list) else prompt
         prompt_data = PromptData(
             data=data,
