@@ -438,7 +438,7 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
-                'gsm8k'
+                # 'gsm8k',
                 # 'truthful_qa',
                 # 'simple_qa',
                 # 'chinese_simpleqa',
@@ -449,6 +449,7 @@ class TestRun(unittest.TestCase):
                 # 'arena_hard',
                 # 'frames',
                 # 'docmath',
+                'needle_haystack',
             ],
             dataset_args={
                 'competition_math': {
@@ -499,6 +500,7 @@ class TestRun(unittest.TestCase):
             timeout=60000,
             stream=True,
             analysis_report=True,
+            debug=True,
             # use_cache='outputs/20250519_142551'
         )
 

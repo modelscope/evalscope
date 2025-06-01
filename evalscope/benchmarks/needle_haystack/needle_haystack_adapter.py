@@ -1,8 +1,13 @@
 from itertools import product
 
+from tqdm import tqdm
+
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
 from evalscope.metrics import LLMJudge, exact_match
+from evalscope.utils import get_logger
+
+logger = get_logger()
 
 PROMPT_TEMPLATE = """Please read the following text and answer the question below.
 
@@ -23,7 +28,7 @@ Don't give information outside the document or repeat your findings."""
     description='Needle in a Haystack is a benchmark focused on information retrieval tasks. \
     It requires the model to find specific information within a large corpus of text.',
     dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
-    metric_list=['AveragePrecision'],
+    metric_list=['AverageAccuracy'],
     subset_list=['english', 'chinese'],
     few_shot_num=0,
     train_split=None,
@@ -31,14 +36,15 @@ Don't give information outside the document or repeat your findings."""
     system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
     prompt_template=PROMPT_TEMPLATE,
     extra_params={
-        'retrieval_question': '',
-        'needles': [],
+        'retrieval_question': 'What is the best thing to do in San Francisco?',
+        'needles': ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
         'context_lengths_min': 1000,
-        'context_lengths_max': 16000,
+        'context_lengths_max': 32000,
         'context_lengths_num_intervals': 10,
         'document_depth_percent_min': 0,
         'document_depth_percent_max': 100,
         'document_depth_percent_intervals': 10,
+        'tokenizer_path': 'Qwen/Qwen3-0.6B',
     })
 class NeedleHaystackAdapter(DataAdapter):
 
@@ -54,12 +60,14 @@ class NeedleHaystackAdapter(DataAdapter):
             'needles',
             ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'])
         self.context_lengths_min = extra_params.get('context_lengths_min', 1000)
-        self.context_lengths_max = extra_params.get('context_lengths_max', 16000)
+        self.context_lengths_max = extra_params.get('context_lengths_max', 32000)
         self.context_lengths_num_intervals = extra_params.get('context_lengths_num_intervals', 10)
         self.document_depth_percent_min = extra_params.get('document_depth_percent_min', 0)
         self.document_depth_percent_max = extra_params.get('document_depth_percent_max', 100)
         self.document_depth_percent_intervals = extra_params.get('document_depth_percent_intervals', 10)
-
+        self.tokenizer_path = extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
+      
+        self.__init_tokenizer()
         self.__init_length()
 
     def __init_length(self):
@@ -80,6 +88,11 @@ class NeedleHaystackAdapter(DataAdapter):
                 num=self.document_depth_percent_intervals,
                 endpoint=True)).astype(int)
 
+    def __init_tokenizer(self):
+        """ Initialize the tokenizer based on the provided tokenizer path."""
+        from modelscope import AutoTokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path)
+    
     def load(self, **kwargs):
         # default load with snapshot
         kwargs['file_structure'] = {'english': ['PaulGraham_Essays.txt'], 'chinese': ['Journey_to_the_West.txt']}
@@ -101,34 +114,137 @@ class NeedleHaystackAdapter(DataAdapter):
         e.g. train -- few-shot data, test -- target dataset to evaluate.
         """
         res_dict: dict = {}
-        tasks = []
-        for context_length, depth_percent in product(self.context_lengths, self.document_depth_percents):
-            task = self.bound_evaluate_and_log(context_length, depth_percent)
-            tasks.append(task)
 
         for sub_name, sub_data_dict in data_dict.items():
             res_dict[sub_name] = []
             for sample_d in sub_data_dict[self.eval_split]:
-                prompt_d = self.gen_prompt(input_d=sample_d, subset_name=sub_name, few_shot_list=[])
-                prompt_d[AnswerKeys.RAW_INPUT] = sample_d
-                res_dict[sub_name].append(prompt_d)
+                # Generate prompts for each sample in the dataset
+                tokens_context = self._get_context_tokens(sample_d['text'])
+                for context_length, depth_percent in tqdm(product(self.context_lengths, self.document_depth_percents), desc=f'Generating {sub_name} prompts'):
+                    # Insert needles into the context at the specified depth percentage
+                    context = self._insert_needles(tokens_context, depth_percent, context_length)
+                    # Build the input dictionary for the prompt
+                    input_d = {
+                        'context_length': int(context_length),
+                        'depth_percent': int(depth_percent),
+                        'question': self.retrieval_question,
+                        'answer': '\n'.join(self.needles),
+                        'context': context,
+                    }
+                    prompt_d = self.gen_prompt(input_d=input_d)
+                    prompt_d[AnswerKeys.RAW_INPUT] = input_d
+                    res_dict[sub_name].append(prompt_d)
 
         return res_dict
 
-    def gen_prompt(self, input_d, subset_name, few_shot_list, **kwargs):
+    def _get_context_tokens(self, input_context: str) -> list:
         """
-        Generate the prompt for each sample in the dataset.
+        Encodes the context string into tokens using the tokenizer, ensuring the tokenized context
+        is at least as long as the maximum context length required.
 
         Args:
-            input_d: The input data for the sample
-            subset_name: The name of the subset
-            few_shot_list: List of few-shot examples
+            input_context (str): The context string to be tokenized.
 
+        Returns:
+            List[int]: A list of token IDs representing the context.
+        """
+        max_context_length = max(self.context_lengths)
+        context = input_context
+        tokens_context = self.tokenizer.encode(context, add_special_tokens=False)
+        # Repeat the context until reaching the required length
+        while len(tokens_context) < max_context_length:
+            context += '\n' + input_context
+            tokens_context = self.tokenizer.encode(context, add_special_tokens=False)
+        return tokens_context
+    
+    def _insert_needles(self, tokens_context, depth_percent, context_length):
+        """
+        Inserts multiple needles (specific facts or pieces of information) into the original context string at 
+        designated depth percentages, effectively distributing these needles throughout the context. This method 
+        is designed to test a model's ability to retrieve specific information (needles) from a larger body of text 
+        (haystack) based on the placement depth of these needles.
+
+        The method first encodes the context and each needle into tokens to calculate their lengths in tokens. 
+        It then adjusts the context length to accommodate the final buffer length. This is crucial for ensuring 
+        that the total token count (context plus needles) does not exceed the maximum allowable context length, 
+        which might otherwise lead to information being truncated.
+
+        This approach calculates the initial insertion point for the first needle as before but then calculates even 
+        spacing for the remaining needles based on the remaining context length. It ensures that needles are 
+        distributed as evenly as possible throughout the context after the first insertion. 
+        
+        Args:
+            tokens_context (List[int]): The original context tokens.
+            depth_percent (float): The depth percent at which to insert the needles.
+            context_length (int): The total length of the context in tokens, adjusted for final buffer.
+        
+        Returns:
+            str: The new context with needles inserted.
+        """
+
+        context_length -= 150
+
+        # Calculate the total length of all needles in tokens
+        total_needles_length = sum(len(self.tokenizer.encode(needle)) for needle in self.needles)
+
+        # Ensure context length accounts for needles
+        if len(tokens_context) + total_needles_length > context_length:
+            tokens_context = tokens_context[:context_length - total_needles_length]
+        
+        # To evenly distribute the needles, we calculate the intervals they need to be inserted.
+        depth_percent_interval = (100 - depth_percent) / len(self.needles)
+        
+        # Reset the insertion percentages list for the current context
+        self.insertion_percentages = []
+
+        # Insert needles at calculated points
+        for needle in self.needles:
+
+            tokens_needle = self.tokenizer.encode(needle)
+
+            if depth_percent == 100:
+                # If your depth percent is 100 (which means your needle is the last thing in the doc), throw it at the end
+                tokens_context = tokens_context + tokens_needle
+            else:
+                # Go get the position (in terms of tokens) to insert your needle
+                insertion_point = int(len(tokens_context) * (depth_percent / 100))
+
+                # tokens_new_context represents the tokens before the needle
+                tokens_new_context = tokens_context[:insertion_point]
+
+                # We want to make sure that we place our needle at a sentence break so we first see what token a '.' is
+                period_tokens = self.tokenizer.encode('.') + self.tokenizer.encode('。')  # Handle both English and Chinese periods
+
+                # Then we iteration backwards until we find the first period
+                while tokens_new_context and tokens_new_context[-1] not in period_tokens:
+                    insertion_point -= 1
+                    tokens_new_context = tokens_context[:insertion_point]
+                    
+                # Insert the needle into the context at the found position
+                tokens_context = tokens_context[:insertion_point] + tokens_needle + tokens_context[insertion_point:]
+
+                # Log 
+                insertion_percentage = (insertion_point / len(tokens_context)) * 100
+                self.insertion_percentages.append(insertion_percentage)
+                logger.debug(f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, total length now: {len(tokens_context)} tokens")
+                
+                # Adjust depth for next needle
+                depth_percent += depth_percent_interval  
+
+        new_context = self.tokenizer.decode(tokens_context)
+        return new_context
+
+    def gen_prompt(self, input_d: dict, **kwargs) -> dict:
+        """
+        Generate the prompt for each sample in the dataset.
+        Args:
+            input_d: A dictionary containing the input data for the prompt.
+                It should contain 'context' and optionally 'question'.
         Returns:
             A dictionary containing the prompt data
         """
-        context = input_d['context'] if 'context' in input_d else input_d.get('text', '')
-        question = input_d['question'] if 'question' in input_d else self.retrieval_question
+        context = input_d.get('context')
+        question = input_d.get('question')
 
         prompt = self.prompt_template.format(context=context, question=question)
 
@@ -138,52 +254,36 @@ class NeedleHaystackAdapter(DataAdapter):
         """
         Parse the raw input labels (gold).
         """
-        if 'Answer' in input_d:
-            return input_d['Answer']
-
-        # If there's no predefined answer, assume the answer is in the needle
-        # This is for testing with inserted needles
-        for needle in self.needles:
-            if needle in input_d.get('context', ''):
-                # Return a key fact from the needle
-                return needle.strip()
-
-        return ''
+        return input_d.get('answer', '').strip()
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
         """
         Parse the predicted result and extract proper answer.
         """
-        response = result.replace('*', '')
-
-        if 'the answer is' in response.lower():
-            ans = response.lower().rsplit('the answer is', 1)[-1].strip().strip('.').strip()
-        else:
-            ans = response.strip()
-
-        return ans
+        return result
 
     def match(self, gold: str, pred: str) -> float:
         """
         Match the gold answer and the predicted answer.
         """
-        return exact_match(gold=gold, pred=pred)
+        from .utils import normalize_answer
+        norm_gold = normalize_answer(gold)
+        norm_pred = normalize_answer(pred)
+        # Use exact match for Needle in a Haystack
+        return exact_match(gold=norm_gold, pred=norm_pred)
 
     def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> float:
         """
         Use LLM as a judge to evaluate the predicted answer against the gold answer.
         """
-        from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+        from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE, parse_score
 
         raw_input = kwargs.get('raw_input', None)
-        question = raw_input.get('question', self.retrieval_question)
+        question = raw_input.get('question')
 
         # get grading response
-        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=gold, answer_2=pred)
+        prompt = ORM_USER_TEMPLATE.format(question=question, gold=gold, pred=pred)
         orm_response = judge(prompt=prompt, system_prompt=GENERAL_ORM_PROMPT)
 
-        # parse grading response
-        if 'YES' in orm_response:
-            return 1.0
-        else:
-            return 0.0
+        # parse grading score with regex, [[score]]
+        return parse_score(orm_response) if orm_response else 0.0

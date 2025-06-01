@@ -23,7 +23,6 @@ seaborn
 sympy
 # streamlit
 tabulate
-tiktoken
 # pip3 install --no-dependencies -r requirements/framework.txt
 torch
 torchvision
