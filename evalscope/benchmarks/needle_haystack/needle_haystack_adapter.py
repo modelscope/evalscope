@@ -1,11 +1,15 @@
 from itertools import product
-
 from tqdm import tqdm
+from typing import TYPE_CHECKING, List, Union
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
 from evalscope.metrics import LLMJudge, exact_match
+from evalscope.metrics.metrics import mean
 from evalscope.utils import get_logger
+
+if TYPE_CHECKING:
+    from evalscope.report import Report
 
 logger = get_logger()
 
@@ -37,7 +41,8 @@ Don't give information outside the document or repeat your findings."""
     prompt_template=PROMPT_TEMPLATE,
     extra_params={
         'retrieval_question': 'What is the best thing to do in San Francisco?',
-        'needles': ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
+        'needles':
+        ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
         'context_lengths_min': 1000,
         'context_lengths_max': 32000,
         'context_lengths_num_intervals': 10,
@@ -66,7 +71,7 @@ class NeedleHaystackAdapter(DataAdapter):
         self.document_depth_percent_max = extra_params.get('document_depth_percent_max', 100)
         self.document_depth_percent_intervals = extra_params.get('document_depth_percent_intervals', 10)
         self.tokenizer_path = extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
-      
+
         self.__init_tokenizer()
         self.__init_length()
 
@@ -92,7 +97,7 @@ class NeedleHaystackAdapter(DataAdapter):
         """ Initialize the tokenizer based on the provided tokenizer path."""
         from modelscope import AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path)
-    
+
     def load(self, **kwargs):
         # default load with snapshot
         kwargs['file_structure'] = {'english': ['PaulGraham_Essays.txt'], 'chinese': ['Journey_to_the_West.txt']}
@@ -120,7 +125,9 @@ class NeedleHaystackAdapter(DataAdapter):
             for sample_d in sub_data_dict[self.eval_split]:
                 # Generate prompts for each sample in the dataset
                 tokens_context = self._get_context_tokens(sample_d['text'])
-                for context_length, depth_percent in tqdm(product(self.context_lengths, self.document_depth_percents), desc=f'Generating {sub_name} prompts'):
+                for context_length, depth_percent in tqdm(
+                        product(self.context_lengths, self.document_depth_percents),
+                        desc=f'Generating {sub_name} prompts'):
                     # Insert needles into the context at the specified depth percentage
                     context = self._insert_needles(tokens_context, depth_percent, context_length)
                     # Build the input dictionary for the prompt
@@ -156,28 +163,28 @@ class NeedleHaystackAdapter(DataAdapter):
             context += '\n' + input_context
             tokens_context = self.tokenizer.encode(context, add_special_tokens=False)
         return tokens_context
-    
+
     def _insert_needles(self, tokens_context, depth_percent, context_length):
         """
-        Inserts multiple needles (specific facts or pieces of information) into the original context string at 
-        designated depth percentages, effectively distributing these needles throughout the context. This method 
-        is designed to test a model's ability to retrieve specific information (needles) from a larger body of text 
+        Inserts multiple needles (specific facts or pieces of information) into the original context string at
+        designated depth percentages, effectively distributing these needles throughout the context. This method
+        is designed to test a model's ability to retrieve specific information (needles) from a larger body of text
         (haystack) based on the placement depth of these needles.
 
-        The method first encodes the context and each needle into tokens to calculate their lengths in tokens. 
-        It then adjusts the context length to accommodate the final buffer length. This is crucial for ensuring 
-        that the total token count (context plus needles) does not exceed the maximum allowable context length, 
+        The method first encodes the context and each needle into tokens to calculate their lengths in tokens.
+        It then adjusts the context length to accommodate the final buffer length. This is crucial for ensuring
+        that the total token count (context plus needles) does not exceed the maximum allowable context length,
         which might otherwise lead to information being truncated.
 
-        This approach calculates the initial insertion point for the first needle as before but then calculates even 
-        spacing for the remaining needles based on the remaining context length. It ensures that needles are 
-        distributed as evenly as possible throughout the context after the first insertion. 
-        
+        This approach calculates the initial insertion point for the first needle as before but then calculates even
+        spacing for the remaining needles based on the remaining context length. It ensures that needles are
+        distributed as evenly as possible throughout the context after the first insertion.
+
         Args:
             tokens_context (List[int]): The original context tokens.
             depth_percent (float): The depth percent at which to insert the needles.
             context_length (int): The total length of the context in tokens, adjusted for final buffer.
-        
+
         Returns:
             str: The new context with needles inserted.
         """
@@ -190,10 +197,10 @@ class NeedleHaystackAdapter(DataAdapter):
         # Ensure context length accounts for needles
         if len(tokens_context) + total_needles_length > context_length:
             tokens_context = tokens_context[:context_length - total_needles_length]
-        
+
         # To evenly distribute the needles, we calculate the intervals they need to be inserted.
         depth_percent_interval = (100 - depth_percent) / len(self.needles)
-        
+
         # Reset the insertion percentages list for the current context
         self.insertion_percentages = []
 
@@ -203,7 +210,8 @@ class NeedleHaystackAdapter(DataAdapter):
             tokens_needle = self.tokenizer.encode(needle)
 
             if depth_percent == 100:
-                # If your depth percent is 100 (which means your needle is the last thing in the doc), throw it at the end
+                # If your depth percent is 100 (which means your needle is the last thing in the doc),
+                # throw it at the end
                 tokens_context = tokens_context + tokens_needle
             else:
                 # Go get the position (in terms of tokens) to insert your needle
@@ -212,24 +220,27 @@ class NeedleHaystackAdapter(DataAdapter):
                 # tokens_new_context represents the tokens before the needle
                 tokens_new_context = tokens_context[:insertion_point]
 
-                # We want to make sure that we place our needle at a sentence break so we first see what token a '.' is
-                period_tokens = self.tokenizer.encode('.') + self.tokenizer.encode('。')  # Handle both English and Chinese periods
+                # We want to make sure that we place our needle at a sentence break
+                # so we first see what token a '.' is
+                period_tokens = self.tokenizer.encode('.') + self.tokenizer.encode(
+                    '。')  # Handle both English and Chinese periods
 
                 # Then we iteration backwards until we find the first period
                 while tokens_new_context and tokens_new_context[-1] not in period_tokens:
                     insertion_point -= 1
                     tokens_new_context = tokens_context[:insertion_point]
-                    
+
                 # Insert the needle into the context at the found position
                 tokens_context = tokens_context[:insertion_point] + tokens_needle + tokens_context[insertion_point:]
 
-                # Log 
+                # Log
                 insertion_percentage = (insertion_point / len(tokens_context)) * 100
                 self.insertion_percentages.append(insertion_percentage)
-                logger.debug(f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, total length now: {len(tokens_context)} tokens")
-                
+                logger.debug(f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, "
+                             f"total length now: {len(tokens_context)} tokens")
+
                 # Adjust depth for next needle
-                depth_percent += depth_percent_interval  
+                depth_percent += depth_percent_interval
 
         new_context = self.tokenizer.decode(tokens_context)
         return new_context
@@ -272,7 +283,7 @@ class NeedleHaystackAdapter(DataAdapter):
         # Use exact match for Needle in a Haystack
         return exact_match(gold=norm_gold, pred=norm_pred)
 
-    def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> float:
+    def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> dict:
         """
         Use LLM as a judge to evaluate the predicted answer against the gold answer.
         """
@@ -280,10 +291,51 @@ class NeedleHaystackAdapter(DataAdapter):
 
         raw_input = kwargs.get('raw_input', None)
         question = raw_input.get('question')
+        context_length = raw_input.get('context_length')
+        depth_percent = raw_input.get('depth_percent')
 
         # get grading response
         prompt = ORM_USER_TEMPLATE.format(question=question, gold=gold, pred=pred)
         orm_response = judge(prompt=prompt, system_prompt=GENERAL_ORM_PROMPT)
 
         # parse grading score with regex, [[score]]
-        return parse_score(orm_response) if orm_response else 0.0
+        score = parse_score(orm_response) if orm_response else 0.0
+        return {f'Context#{context_length} Depth#{depth_percent}': score}
+
+    def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
+        """
+        compute weighted mean of the bleu score of all samples
+
+        Args:
+            review_res_list: [score1, score2, ...]
+
+        Returns:
+            avg_res: List[dict]
+
+        """
+        items = super().compute_dict_metric(review_res_list, **kwargs)
+        return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]
+
+    def post_process_report(self, report: 'Report', **kwargs):
+        try:
+            import os
+
+            from .utils import draw_score_chat
+
+            report_path = kwargs.get('report_path')
+            data_frame = report.to_dataframe()
+            # split `Metric` to `Context` and `Depth`
+            data_frame[['Context', 'Depth']] = data_frame['Metric'].str.split(' ', n=1, expand=True)
+            data_frame['Depth'] = data_frame['Depth'].str.replace('Depth#', '').astype(float)
+            data_frame['Context'] = data_frame['Context'].str.replace('Context#', '').astype(int)
+            # split by `Subset` to multi sub data frame
+            for subset in data_frame['Subset'].unique():
+                sub_df = data_frame[data_frame['Subset'] == subset]
+                # draw charts for each subset
+                pivot_table = sub_df.pivot_table(
+                    values='Score', index=['Depth', 'Context'], aggfunc='mean').reset_index()
+                pivot_table = pivot_table.pivot(index='Depth', columns='Context', values='Score')
+                draw_score_chat(pivot_table, outpath=os.path.join(report_path, f'needle_haystack_heatmap_{subset}.png'))
+
+        except Exception as e:
+            logger.error(f'Error generating charts: {e}')

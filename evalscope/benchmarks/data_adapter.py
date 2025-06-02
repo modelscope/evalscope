@@ -369,6 +369,16 @@ class DataAdapter(ABC):
         """  # noqa: E501
         return ReportGenerator.gen_report(subset_score_map, model_name, data_adapter=self, **kwargs)
 
+    def post_process_report(self, report: Report, **kwargs):
+        """
+        Post-process the report after generation. Draw a chart, save to file, etc.
+        This method can be overridden to customize the report format or content.
+
+        Args:
+            report (Report): The generated report.
+        """
+        pass
+
     def gen_prompt_data(self,
                         prompt: str,
                         system_prompt: Optional[str] = None,

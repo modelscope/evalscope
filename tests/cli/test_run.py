@@ -479,7 +479,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=5 ,
+            # limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
@@ -500,8 +500,8 @@ class TestRun(unittest.TestCase):
             timeout=60000,
             stream=True,
             analysis_report=True,
-            debug=True,
-            # use_cache='outputs/20250519_142551'
+            # debug=True,
+            use_cache='outputs/20250602_135859'
         )
 
         run_task(task_cfg=task_cfg)
