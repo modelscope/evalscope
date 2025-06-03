@@ -53,6 +53,7 @@ task_cfg = TaskConfig(
                 'document_depth_percent_intervals': 10,
                 # Path to tokenizer (can specify modelscope ID)
                 'tokenizer_path': 'Qwen/Qwen3-0.6B',
+                'show_score': True,  # Whether to display scores on the heatmap
             }
         }
     },
@@ -151,6 +152,7 @@ task_cfg = TaskConfig(
                 'document_depth_percent_max': 100,
                 'document_depth_percent_intervals': 10,
                 'tokenizer_path': 'Qwen/Qwen3-0.6B',
+                'show_score': True,
             }
         }
     },
