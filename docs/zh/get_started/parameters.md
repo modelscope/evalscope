@@ -66,7 +66,7 @@
   ```
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`
-- `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
+- `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证。支持int和float类型，int表示评测数据集的前`N`条数据，float表示评测数据集的前`N%`条数据。例如`0.1`表示评测数据集的前10%的数据，`100`表示评测数据集的前100条数据。
 
 ## 评测参数
 - `--eval-batch-size`: 评测批量大小，默认为`1`；在`eval-type=service`时，表示并发评测的请求数，默认为`8`

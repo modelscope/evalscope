@@ -67,7 +67,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
     parser.add_argument('--stage', type=str, default='all', help='The stage of evaluation pipeline.',
                         choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.REVIEW])
-    parser.add_argument('--limit', type=int, default=None, help='Max evaluation samples num for each subset.')
+    parser.add_argument('--limit', type=float, default=None, help='Max evaluation samples num for each subset.')
     parser.add_argument('--eval-batch-size', type=int, default=1, help='The batch size for evaluation.')
 
     # Cache and working directory arguments

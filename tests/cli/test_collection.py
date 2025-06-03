@@ -72,7 +72,7 @@ class TestCollection(unittest.TestCase):
                 'local_path': 'outputs/mixed_data_test.jsonl'
                 # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
-            limit=10,
+            limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 # 'model_id': 'qwen2.5-72b-instruct',
@@ -80,7 +80,7 @@ class TestCollection(unittest.TestCase):
                 # 'api_key': os.getenv('DASHSCOPE_API_KEY'),
             },
             analysis_report=True,
-            use_cache='outputs/20250522_204520'
+            # use_cache='outputs/20250522_204520'
         )
         res = run_task(task_cfg=task_cfg)
         print(res)

@@ -435,7 +435,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
-                # 'aime24',
+                'aime24',
                 # 'competition_math',
                 # 'arc',
                 # 'gsm8k',
@@ -449,7 +449,7 @@ class TestRun(unittest.TestCase):
                 # 'arena_hard',
                 # 'frames',
                 # 'docmath',
-                'needle_haystack',
+                # 'needle_haystack',
             ],
             dataset_args={
                 'competition_math': {
@@ -479,7 +479,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            # limit=5,
+            limit=1,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
@@ -501,7 +501,7 @@ class TestRun(unittest.TestCase):
             stream=True,
             analysis_report=True,
             # debug=True,
-            use_cache='outputs/20250602_135859'
+            # use_cache='outputs/20250602_135859'
         )
 
         run_task(task_cfg=task_cfg)
