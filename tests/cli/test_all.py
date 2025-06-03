@@ -12,43 +12,46 @@ from evalscope.run import run_task
 from evalscope.utils import test_level_list
 from evalscope.utils.logger import get_logger
 
-os.environ['LOG_LEVEL'] = 'DEBUG'
+os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 
 logger = get_logger()
 
 datasets=[
-        'iquiz',
-        'ifeval',
-        'mmlu',
-        'mmlu_pro',
-        'musr',
-        'process_bench',
-        'race',
-        'trivia_qa',
-        'cmmlu',
-        'humaneval',
-        'gsm8k',
-        'bbh',
-        'competition_math',
-        'math_500',
-        'aime24',
-        'gpqa',
-        'arc',
-        'ceval',
-        'hellaswag',
-        'general_mcq',
-        'general_qa',
-        'super_gpqa',
-        'live_code_bench',
-        'mmlu_redux',
-        'simple_qa',
-        'chinese_simpleqa',
-        'alpaca_eval',
-        'arena_hard',
-        'maritime_bench',
-        'drop',
-        'winogrande',
-        'tool_bench',
+        # 'iquiz',
+        # 'ifeval',
+        # 'mmlu',
+        # 'mmlu_pro',
+        # 'musr',
+        # 'process_bench',
+        # 'race',
+        # 'trivia_qa',
+        # 'cmmlu',
+        # 'humaneval',
+        # 'gsm8k',
+        # 'bbh',
+        # 'competition_math',
+        # 'math_500',
+        # 'aime24',
+        # 'gpqa',
+        # 'arc',
+        # 'ceval',
+        # 'hellaswag',
+        # 'general_mcq',
+        # 'general_qa',
+        # 'super_gpqa',
+        # 'live_code_bench',
+        # 'mmlu_redux',
+        # 'simple_qa',
+        # 'chinese_simpleqa',
+        # 'alpaca_eval',
+        # 'arena_hard',
+        # 'maritime_bench',
+        # 'drop',
+        # 'winogrande',
+        # 'tool_bench',
+        'frames',
+        'docmath',
+        'needle_haystack'
 ]
 
 dataset_args={
@@ -131,7 +134,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-0.5b-instruct',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -145,9 +148,10 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
+            judge_worker_num=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                'model_id': 'qwen2.5-7b-instruct',
+                'model_id': 'qwen2.5-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }

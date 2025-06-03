@@ -381,6 +381,7 @@ class Evaluator(object):
         Returns: None
         """
         report_path = os.path.join(self.outputs_structure.reports_dir, self.model_name)
+        os.makedirs(report_path, exist_ok=True)
         # Get report map
         report_map: Report = self.data_adapter.gen_report(
             subset_score_map=reviews_score_all, model_name=self.model_name)
