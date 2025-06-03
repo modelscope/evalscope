@@ -1,5 +1,5 @@
 accelerate
-datasets>=3.0.0,<=3.2.0
+datasets
 immutabledict
 jieba
 jsonlines
