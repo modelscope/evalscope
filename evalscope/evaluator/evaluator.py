@@ -87,7 +87,7 @@ class Evaluator(object):
                 elif isinstance(self.task_cfg.limit, float):
                     limit = int(len(prompts_list) * self.task_cfg.limit)
             # Limit the number of prompts
-            for index, prompt in enumerate(prompts_list[:limit]):
+            for index, prompt in enumerate(prompts_list[:min(limit, len(prompts_list))]):
                 prompt[AnswerKeys.INDEX] = index
                 limited_prompts[subset_name].append(prompt)
 
