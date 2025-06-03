@@ -46,7 +46,6 @@ class Evaluator(object):
         self.dataset_name = data_adapter.name
         self.dataset_name_or_path = os.path.expanduser(data_adapter.dataset_id)
         self.model_name = task_cfg.model_id
-        self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
 
         self.data_adapter = data_adapter
         self.model_adapter = model_adapter
@@ -381,12 +380,14 @@ class Evaluator(object):
 
         Returns: None
         """
+        report_path = os.path.join(self.outputs_structure.reports_dir, self.model_name)
+        os.makedirs(report_path, exist_ok=True)
         # Get report map
         report_map: Report = self.data_adapter.gen_report(
-            subset_score_map=reviews_score_all,
-            report_name=self.custom_task_name,
-            model_name=self.model_name,
-            dataset_name=self.dataset_name)
+            subset_score_map=reviews_score_all, model_name=self.model_name)
+
+        # Post process report
+        self.data_adapter.post_process_report(report_map, report_path=report_path)
 
         # Make table
         try:
@@ -404,10 +405,9 @@ class Evaluator(object):
             logger.info('Skipping report analysis (`analysis_report=False`).')
 
         # Dump report
-        report_path: str = os.path.join(self.outputs_structure.reports_dir, self.model_name,
-                                        f'{self.dataset_name}.json')
-        report_map.to_json(report_path)
-        logger.info(f'Dump report to: {report_path} \n')
+        report_file = os.path.join(report_path, f'{self.dataset_name}.json')
+        report_map.to_json(report_file)
+        logger.info(f'Dump report to: {report_file} \n')
 
         return report_map
 

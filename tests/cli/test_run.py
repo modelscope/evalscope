@@ -13,7 +13,7 @@ from evalscope.run import run_task
 from evalscope.utils import is_module_installed, test_level_list
 from evalscope.utils.logger import get_logger
 
-os.environ['LOG_LEVEL'] = 'DEBUG'
+os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 
 logger = get_logger()
 
@@ -311,7 +311,8 @@ class TestRun(unittest.TestCase):
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                'tool_bench',
+                # 'tool_bench',
+                'frames',
             ],
             dataset_args={
                 'mmlu': {
@@ -377,7 +378,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=32,
-            limit=20,
+            limit=10,
             debug=True,
             stream=False,
             generation_config={
@@ -428,7 +429,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-0.5b-instruct',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -437,15 +438,18 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
-                # 'gsm8k'
+                # 'gsm8k',
                 # 'truthful_qa',
                 # 'simple_qa',
-                'chinese_simpleqa',
+                # 'chinese_simpleqa',
                 # 'live_code_bench',
                 # 'humaneval',
                 # 'general_qa',
                 # 'alpaca_eval',
-                # 'arena_hard'
+                # 'arena_hard',
+                # 'frames',
+                # 'docmath',
+                'needle_haystack',
             ],
             dataset_args={
                 'competition_math': {
@@ -470,9 +474,12 @@ class TestRun(unittest.TestCase):
                         '中华文化'
                     ]
                 },
+                'frames': {
+                    'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
+                }
             },
             eval_batch_size=10,
-            limit=10,
+            # limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
@@ -493,7 +500,8 @@ class TestRun(unittest.TestCase):
             timeout=60000,
             stream=True,
             analysis_report=True,
-            # use_cache='outputs/20250519_142551'
+            # debug=True,
+            use_cache='outputs/20250602_135859'
         )
 
         run_task(task_cfg=task_cfg)

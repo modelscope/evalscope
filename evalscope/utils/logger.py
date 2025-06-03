@@ -10,7 +10,7 @@ simple_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 detailed_formatter = logging.Formatter(detailed_format)
 simple_formatter = logging.Formatter(simple_format)
-DEFAULT_LEVEL = logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
+DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
 logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL, force=True)
 

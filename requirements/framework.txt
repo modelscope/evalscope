@@ -1,10 +1,10 @@
 accelerate
-datasets>=3.0.0,<=3.2.0
+datasets
 immutabledict
 jieba
 jsonlines
 langdetect
-latex2sympy2
+latex2sympy2_extended
 matplotlib
 modelscope[framework]
 nltk>=3.9

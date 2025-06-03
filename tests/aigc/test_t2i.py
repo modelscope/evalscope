@@ -11,7 +11,7 @@ from evalscope.run import run_task
 from evalscope.utils import test_level_list
 from evalscope.utils.logger import get_logger
 
-os.environ['LOG_LEVEL'] = 'DEBUG'
+os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 
 logger = get_logger()
 
