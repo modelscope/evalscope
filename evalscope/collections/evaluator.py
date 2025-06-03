@@ -70,9 +70,13 @@ class EvaluatorCollection:
         dataset_name = os.path.splitext(os.path.basename(self.data_adapter.dataset_id))[0]
         raw_dataset = self.data_adapter.load()
         # random limit the dataset
-        if self.task_cfg.limit:
-            raw_dataset = random.sample(raw_dataset,
-                                        self.task_cfg.limit) if len(raw_dataset) > self.task_cfg.limit else raw_dataset
+        limit = len(raw_dataset)
+        if self.task_cfg.limit is not None:
+            if isinstance(self.task_cfg.limit, int):
+                limit = self.task_cfg.limit
+            elif isinstance(self.task_cfg.limit, float):
+                limit = int(len(raw_dataset) * self.task_cfg.limit)
+            raw_dataset = random.sample(raw_dataset, min(limit, len(raw_dataset)))
         # index dataset
         datasets = []
         for sample in raw_dataset:

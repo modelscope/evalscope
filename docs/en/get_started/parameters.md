@@ -67,7 +67,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   ```
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.
-- `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
+- `--limit`: The maximum amount of evaluation data for each dataset. If not specified, the default is to evaluate the entire dataset, which can be useful for quick validation. It supports both `int` and `float` types. An `int` value indicates the first `N` entries of the dataset to be evaluated, while a `float` value represents the first `N%` of the dataset. For example, `0.1` means evaluating the first 10% of the dataset, and `100` means evaluating the first 100 entries.
 
 ## Evaluation Parameters
 

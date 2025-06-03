@@ -78,8 +78,16 @@ class Evaluator(object):
         # Limit and index prompts
         limited_prompts = defaultdict(list)
         for subset_name, prompts_list in prompts.items():
-            limit = self.task_cfg.limit or len(prompts_list)
-            for index, prompt in enumerate(prompts_list[:limit]):
+            # If limit is None, use all prompts
+            if self.task_cfg.limit is None:
+                limit = len(prompts_list)
+            else:
+                if isinstance(self.task_cfg.limit, int):
+                    limit = self.task_cfg.limit
+                elif isinstance(self.task_cfg.limit, float):
+                    limit = int(len(prompts_list) * self.task_cfg.limit)
+            # Limit the number of prompts
+            for index, prompt in enumerate(prompts_list[:min(limit, len(prompts_list))]):
                 prompt[AnswerKeys.INDEX] = index
                 limited_prompts[subset_name].append(prompt)
 

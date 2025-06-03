@@ -13,6 +13,7 @@ from evalscope.models import CustomModel, DummyCustomModel
 from evalscope.utils import gen_hash
 from evalscope.utils.io_utils import dict_to_yaml, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
+from evalscope.utils.utils import parse_int_or_float
 
 logger = get_logger()
 
@@ -45,7 +46,7 @@ class TaskConfig:
     eval_backend: str = EvalBackend.NATIVE
     eval_config: Union[str, Dict, None] = None
     stage: str = EvalStage.ALL
-    limit: Optional[int] = None
+    limit: Optional[Union[int, float]] = None
     eval_batch_size: Optional[int] = None
 
     # Cache and working directory arguments
@@ -86,6 +87,10 @@ class TaskConfig:
         # Set default eval_batch_size based on eval_type
         if self.eval_batch_size is None:
             self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
+
+        # Post process limit
+        if self.limit is not None:
+            self.limit = parse_int_or_float(self.limit)
 
         # Set default generation_config and model_args
         self.__init_default_generation_config()

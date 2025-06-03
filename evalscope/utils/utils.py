@@ -319,6 +319,11 @@ def get_supported_params(func):
     sig = signature(func)
     return list(sig.parameters.keys())
 
+def parse_int_or_float(num):
+    number = float(num)
+    if number.is_integer():
+        return int(number)
+    return number
 
 if __name__ == '__main__':
     options = ['A', 'B', 'C', 'D']
