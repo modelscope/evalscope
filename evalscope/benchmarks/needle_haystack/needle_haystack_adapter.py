@@ -237,7 +237,7 @@ class NeedleHaystackAdapter(DataAdapter):
                 insertion_percentage = (insertion_point / len(tokens_context)) * 100
                 self.insertion_percentages.append(insertion_percentage)
                 logger.debug(f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, "
-                             f"total length now: {len(tokens_context)} tokens")
+                             f'total length now: {len(tokens_context)} tokens')
 
                 # Adjust depth for next needle
                 depth_percent += depth_percent_interval
