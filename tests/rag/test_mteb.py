@@ -46,11 +46,11 @@ class TestMTEB(unittest.TestCase):
                 ],
                 'eval': {
                     'tasks': [
-                        # 'TNews',
-                        # 'CLSClusteringS2S',
+                        'TNews',
+                        'CLSClusteringS2S',
                         'T2Reranking',
-                        # 'T2Retrieval',
-                        # 'ATEC',
+                        'T2Retrieval',
+                        'ATEC',
                     ],
                     'verbosity': 2,
                     'overwrite_results': True,
@@ -85,7 +85,7 @@ class TestMTEB(unittest.TestCase):
                     ],
                     'verbosity': 2,
                     'overwrite_results': True,
-                    'limits': 30,
+                    'limits': 10,
                 },
             },
         )

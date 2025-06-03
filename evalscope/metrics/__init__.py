@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .metrics import (bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score,
                           weighted_mean)
     from .named_metrics import Metric, metric_registry
-    from .rouge_metric import compute_rouge_score_one_sample_zh
+    from .rouge_metric import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
 
 else:
     _import_structure = {
@@ -28,6 +28,8 @@ else:
         ],
         'rouge_metric': [
             'compute_rouge_score_one_sample_zh',
+            'compute_rouge_score',
+            'compute_rouge_score_one_sample',
         ],
         'llm_judge': [
             'LLMJudge',

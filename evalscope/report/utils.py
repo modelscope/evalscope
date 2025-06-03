@@ -1,4 +1,5 @@
 import json
+import os
 import pandas as pd
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -6,6 +7,9 @@ from typing import Any, Dict, List
 
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import normalize_score
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 @dataclass
@@ -70,13 +74,28 @@ class ReportKey:
     score = 'Score'
 
 
+ANALYSIS_PROMPT = """根据给出的json格式的模型评测结果，输出分析报告，要求如下：
+1. 报告分为 总体表现、关键指标分析、改进建议、结论 四部分
+2. 若模型有多种指标，将其分为低分、中分、高分三个部分，并列出markdown表格
+3. 只列出报告本身，不要有其他多余内容
+4. 输出报告语言为{language}
+
+```json
+{report_str}
+```
+"""
+
+
 @dataclass
 class Report:
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
+    dataset_pretty_name: str = ''
+    dataset_description: str = ''
     model_name: str = 'default_model'
     score: float = 0.0
     metrics: List[Metric] = field(default_factory=list)
+    analysis: str = 'N/A'
 
     def __post_init__(self):
         self.score = self.metrics[0].score  # NOTE: only use the first metric by default
@@ -84,15 +103,29 @@ class Report:
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
+    def to_json_str(self) -> str:
+        return json.dumps(self.to_dict(), indent=4, ensure_ascii=False)
+
+    def to_json(self, json_file: str):
+        # ensure the directory exists
+        os.makedirs(os.path.dirname(json_file), exist_ok=True)
+        # write the report to a json file
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=4, ensure_ascii=False)
+
     @classmethod
     def from_dict(cls, data: dict):
         metrics = [Metric.from_dict(metric) for metric in data.get('metrics', [])]
         return cls(
             name=data['name'],
-            score=data['score'],
-            metrics=metrics,
             dataset_name=data['dataset_name'],
-            model_name=data['model_name'])
+            dataset_pretty_name=data.get('dataset_pretty_name'),
+            dataset_description=data.get('dataset_description'),
+            score=data['score'],
+            model_name=data['model_name'],
+            metrics=metrics,
+            analysis=data.get('analysis', 'N/A'),
+        )
 
     @classmethod
     def from_json(cls, json_file: str):
@@ -111,7 +144,7 @@ class Report:
                     table[ReportKey.category_name].append(category.name)
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
-                    table[ReportKey.score].append(subset.score)  # TODO: convert to percentage
+                    table[ReportKey.score].append(subset.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
                 break
@@ -131,3 +164,27 @@ class Report:
 
         df_categories.drop(columns=[ReportKey.category_name], inplace=True)
         return df_categories
+
+    def generate_analysis(self, judge_llm_config: dict) -> str:
+        import locale
+
+        from evalscope.metrics import LLMJudge
+
+        try:
+            # get the default locale
+            lang, _ = locale.getlocale()
+
+            if lang is None:
+                language = '中文'
+            else:
+                language = 'en' if lang.startswith('en') else '中文'
+
+            prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
+            judge_llm = LLMJudge(**judge_llm_config)
+            response = judge_llm(prompt)
+        except Exception as e:
+            logger.error(f'Error generating analysis: {e}')
+            response = 'N/A'
+
+        self.analysis = response
+        return response

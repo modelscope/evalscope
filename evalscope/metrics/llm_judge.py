@@ -22,6 +22,9 @@ B: INCORRECT
 Just return the letters "A" or "B", with no text around it.
 """  # noqa: E501
 
+DEFAULT_JUDGE_MODEL = 'Qwen/Qwen3-235B-A22B'
+DEFAULT_API_URL = 'https://api-inference.modelscope.cn/v1/'
+
 
 class LLMJudge:
     """
@@ -47,12 +50,12 @@ class LLMJudge:
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
         """
-        self.api_key = api_key or os.environ.get('OPENAI_API_KEY', 'EMPTY')
-        self.api_url = api_url or os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1')
-        self.model_id = model_id or os.environ.get('LOCAL_LLM', 'gpt-4')
+        self.api_key = api_key or os.environ.get('MODELSCOPE_SDK_TOKEN', 'EMPTY')
+        self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
+        self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
-        self.generation_config = generation_config
+        self.generation_config = generation_config or {}
 
         from evalscope.models import ServerModelAdapter
 
@@ -74,6 +77,10 @@ class LLMJudge:
         if self.generation_config:
             infer_cfg.update(self.generation_config)
 
+        if self.model_id == DEFAULT_JUDGE_MODEL:
+            # Disable thinking for the default judge model
+            infer_cfg['enable_thinking'] = self.generation_config.get('enable_thinking', False)
+
         try:
             # Send request using ServerModelAdapter
             response = self.server_adapter.process_single_input(input_data, infer_cfg)
@@ -82,7 +89,7 @@ class LLMJudge:
             llm_response = response.get('choices', [{}])[0].get('message', {}).get('content', '')
             return llm_response
         except Exception as e:
-            logger.error(f'Error during LLM evaluation: {e}')
+            logger.error(f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}')
             return ''
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
 
-from evalscope.benchmarks.utils import PromptData, preprocess_decorator
+from evalscope.benchmarks.utils import PromptData, load_file_with_extension, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
 from evalscope.metrics import LLMJudge, metric_registry
 from evalscope.report import Report, ReportGenerator
@@ -15,6 +15,13 @@ logger = get_logger()
 
 
 class DataAdapter(ABC):
+    """
+    Data Adapter for the benchmark. You need to implement the following methods:
+        - gen_prompt
+        - get_gold_answer
+        - parse_pred_result
+        - match
+    """
 
     def __init__(self,
                  name: str,
@@ -31,30 +38,36 @@ class DataAdapter(ABC):
                  system_prompt: Optional[str] = None,
                  query_template: Optional[str] = None,
                  pretty_name: Optional[str] = None,
+                 description: Optional[str] = None,
                  **kwargs):
         """
-        Data Adapter for the benchmark. You need to implement the following methods:
-            - gen_prompt
-            - get_gold_answer
-            - parse_pred_result
-            - match
         Args:
             name: str, the name of the benchmark.
             dataset_id: str, the dataset id on ModelScope or local path for the benchmark.
+            model_adapter: str, the model adapter to use for the benchmark.
             subset_list: list of subset names for the dataset.
             metric_list: list, the metric list to evaluate the model on specific benchmark.
+            llm_as_a_judge: bool, whether to use LLM as a judge to evaluate the predicted answer against the gold answer.
+            output_types: list, the output types of the model adapter. Default: [model_adapter]
             few_shot_num: int, number of few-shot examples. Default: 0
             train_split: str, usually for few-shot examples. e.g. 'train'
             eval_split: str, the target eval split name. e.g. 'test'
             prompt_template: str, the prompt template for the benchmark,
                 e.g. for ARC, it is `The following are multiple choice questions, please output correct answer in
                     the form of A or B or C or D, do not output explanation:`
-        """
+            system_prompt: str, the system prompt for the benchmark, e.g. 'You are a helpful assistant.'
+            query_template: str, the query template for the benchmark, e.g. 'Please answer the following question: {}'
+            pretty_name: str, the pretty name of the benchmark, e.g. 'ARC Challenge Set'.
+            description: str, the description of the benchmark,
+                e.g. 'ARC Challenge Set is a benchmark for evaluating reasoning abilities of models on science questions.'
+        """  # noqa: E501
         self.name = name
         self.dataset_id = dataset_id
         self.model_adapter = model_adapter
         self.subset_list = subset_list
         self.metric_list = metric_list
+        self.llm_as_a_judge = llm_as_a_judge
+        self.output_types = output_types or [model_adapter]
         self.few_shot_num = few_shot_num
         self.train_split = train_split
         self.eval_split = eval_split
@@ -62,9 +75,8 @@ class DataAdapter(ABC):
         self.system_prompt = system_prompt
         self.query_template = query_template
         self.pretty_name = pretty_name
+        self.description = description
         self.config_kwargs = kwargs
-        self.output_types = output_types or [model_adapter]
-        self.llm_as_a_judge = llm_as_a_judge
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)
 
@@ -155,6 +167,49 @@ class DataAdapter(ABC):
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
         return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
+
+    def load_with_snapshot(self,
+                           file_structure: Dict[str, List[str]],
+                           dataset_name_or_path: str = None,
+                           subset_list: list = None,
+                           work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+                           **kwargs) -> dict:
+        """
+        For datasets that cannot be correctly loaded using MsDataset, utilize snapshot downloading to load the data.
+        This feature supports both remote and local datasets.
+
+        Args:
+            file_structure: dict, the file structure of the dataset, e.g. {'subset_name': ['file1.jsonl', 'file2.jsonl']}.
+            dataset_name_or_path: str, the dataset id on ModelScope or local path for the benchmark.
+            subset_list: list of subset names for the dataset.
+            work_dir: str, the working directory to store the dataset.
+        Returns: {'subset_name': {'eval': eval_dataset}}
+        """  # noqa: E501
+        dataset_name_or_path = os.path.expanduser(dataset_name_or_path or self.dataset_id)
+        subset_list = subset_list or self.subset_list
+
+        # Try to load dataset from local disk
+        if os.path.exists(dataset_name_or_path):
+            logger.info(f'Loading dataset from {dataset_name_or_path}')
+            dataset_path = dataset_name_or_path
+        else:
+            from modelscope import dataset_snapshot_download
+
+            # Load dataset from remote
+            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
+            # flatten file structure
+            file_names = [file for sub_files in file_structure.values() for file in sub_files]
+            # download dataset snapshot
+            dataset_path = dataset_snapshot_download(
+                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern=file_names)
+        # read and process files
+        data_dict = defaultdict(dict)
+        for sub_name in subset_list:
+            file_paths = [os.path.join(dataset_path, file_name) for file_name in file_structure[sub_name]]
+            # not train split, only eval split
+            data_dict[sub_name][self.eval_split] = load_file_with_extension(file_paths)
+
+        return data_dict
 
     def reformat_subset(self, data_dict: dict, subset_key: str, format: str = '{}') -> dict:
         """
@@ -249,7 +304,7 @@ class DataAdapter(ABC):
     def compute_dict_metric(self, review_res_list: Union[List[dict], List[List[dict]]],
                             **kwargs) -> Dict[str, List[float]]:
         """
-        compute weighted mean of the bleu score of all samples
+        compute weighted mean of score of all samples
 
         Args:
             review_res_list: [score1, score2, ...]
@@ -270,7 +325,7 @@ class DataAdapter(ABC):
                 items['AverageAccuracy'].append(scores)
         return items
 
-    def gen_report(self, subset_score_map: dict, report_name: str = None, **kwargs) -> Report:
+    def gen_report(self, subset_score_map: dict, model_name: str, **kwargs) -> Report:
         """
         Generate report for the evaluation results for all subsets.
 
@@ -278,7 +333,7 @@ class DataAdapter(ABC):
             subset_score_map: The subset-score map.
                 e.g. {subset_name: [{'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100}]}
 
-            report_name: str, the user-defined report name. Default: None
+            model_name: The evaluation model name.
 
         Returns: The evaluation report.
 
@@ -312,9 +367,17 @@ class DataAdapter(ABC):
             "model_name": "qwen2.5"
         }
         """  # noqa: E501
-        kwargs['category_map'] = self.category_map
-        kwargs['metric_list'] = self.metric_list
-        return ReportGenerator.gen_report(subset_score_map, report_name, **kwargs)
+        return ReportGenerator.gen_report(subset_score_map, model_name, data_adapter=self, **kwargs)
+
+    def post_process_report(self, report: Report, **kwargs):
+        """
+        Post-process the report after generation. Draw a chart, save to file, etc.
+        This method can be overridden to customize the report format or content.
+
+        Args:
+            report (Report): The generated report.
+        """
+        pass
 
     def gen_prompt_data(self,
                         prompt: str,
@@ -324,6 +387,23 @@ class DataAdapter(ABC):
                         id: Optional[Union[int, str]] = None,
                         messages: Optional[List[dict]] = None,
                         **kwargs) -> dict:
+        """
+        Generates a dictionary representation of prompt data for evaluation or inference.
+
+        Args:
+            prompt (str): The main prompt or input text. Can also be a list of prompts.
+            system_prompt (Optional[str], optional): An optional system-level prompt to provide context or instructions. Defaults to None.
+            choices (Optional[List[str]], optional): A list of possible choices for multi-choice tasks.
+                If not provided, uses self.choices. Defaults to None.
+            index (Optional[Union[int, str]], optional): An optional index or identifier for the prompt.
+                Defaults to 0 if not provided. Defaults to None.
+            id (Optional[Union[int, str]], optional): An optional unique identifier for the prompt data. Defaults to None.
+            messages (Optional[List[dict]], optional): An optional list of message dictionaries, typically for chat-based prompts. Defaults to None.
+                If messages is provided, it will be used as the prompt data instead of the prompt string.
+
+        Returns:
+            dict: A dictionary representation of the prompt data, suitable for further processing or model input.
+        """  # noqa: E501
         data = [prompt] if not isinstance(prompt, list) else prompt
         prompt_data = PromptData(
             data=data,
@@ -416,7 +496,8 @@ class DataAdapter(ABC):
 
         # Extract question from raw_input if available
         raw_input = kwargs.get('raw_input', {})
-        question_keys = ['question', 'prompt', 'query', 'problem']
+        question_keys = ['question', 'Question', 'prompt', 'Prompt', 'query', 'Query', 'problem', 'Problem']
+        # Find the first non-empty question key in raw_input
         question = next((raw_input.get(key) for key in question_keys if raw_input.get(key)), None)
 
         # Request judge and obtain score

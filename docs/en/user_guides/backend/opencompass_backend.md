@@ -98,7 +98,22 @@ OpenCompass evaluation backend uses a unified OpenAI API call for assessment, so
 Here are four ways to deploy model services:
 
 ::::{tab-set}
-:::{tab-item} ms-swift (Recommended)
+:::{tab-item} vLLM  (Recommended)
+Refer to [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
+
+[Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html)
+
+**Install vLLM**
+```shell
+pip install vllm -U
+```
+**Deploy Model Service**
+```shell
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000 --served-model-name Qwen2-0.5B-Instruct
+```
+:::
+
+:::{tab-item} ms-swift
 Use ms-swift to deploy model services. For more details, please refer to the: [ms-swift Deployment Guide](https://swift.readthedocs.io/en/latest/Instruction/Inference-and-deployment.html).
 
 **Install ms-swift**
@@ -119,21 +134,6 @@ CUDA_VISIBLE_DEVICES=0 swift deploy --model_type qwen2-0_5b-instruct --port 8000
 
 </details>
 
-:::
-
-:::{tab-item} vLLM
-Refer to [vLLM Tutorial](https://docs.vllm.ai/en/latest/index.html) for more details.
-
-[Supported Models](https://docs.vllm.ai/en/latest/models/supported_models.html)
-
-**Install vLLM**
-```shell
-pip install vllm -U
-```
-**Deploy Model Service**
-```shell
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0 python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2-0.5B-Instruct --port 8000
-```
 :::
 
 :::{tab-item} LMDeploy
@@ -213,7 +213,7 @@ task_cfg_dict = dict(
     eval_config={
         'datasets': ["mmlu", "ceval", 'ARC_c', 'gsm8k'],
         'models': [
-            {'path': 'qwen2-0_5b-instruct', 
+            {'path': 'Qwen2-0.5B-Instruct', 
             'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions', 
             'is_chat': True,
             'batch_size': 16},
@@ -238,7 +238,7 @@ eval_config:
     - gsm8k
   models:
     - openai_api_base: http://127.0.0.1:8000/v1/chat/completions
-      path: qwen2-0_5b-instruct                                   
+      path: Qwen2-0.5B-Instruct                                   
       temperature: 0.0
 ```
 :::
@@ -257,7 +257,7 @@ eval_config:
     ],
     "models": [
       {
-        "path": "qwen2-0_5b-instruct",
+        "path": "Qwen2-0.5B-Instruct",
         "openai_api_base": "http://127.0.0.1:8000/v1/chat/completions",
         "temperature": 0.0
       }
@@ -316,7 +316,7 @@ python example_eval_openai_api.py
 You will see the final output as follows:
 
 ```text
-dataset                                 version    metric         mode    qwen2-0_5b-instruct
+dataset                                 version    metric         mode    Qwen2-0.5B-Instruct
 --------------------------------------  ---------  -------------  ------  ---------------------
 --------- 考试 Exam ---------           -          -              -       -
 ceval                                   -          naive_average  gen     30.00

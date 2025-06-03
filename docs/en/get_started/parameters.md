@@ -67,7 +67,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
   ```
 - `--dataset-dir`: Dataset download path, defaults to `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset download source, defaults to `modelscope`, alternative is `huggingface`.
-- `--limit`: Maximum evaluation data amount for each dataset, if not specified, defaults to all data for evaluation, can be used for quick validation.
+- `--limit`: The maximum amount of evaluation data for each dataset. If not specified, the default is to evaluate the entire dataset, which can be useful for quick validation. It supports both `int` and `float` types. An `int` value indicates the first `N` entries of the dataset to be evaluated, while a `float` value represents the first `N%` of the dataset. For example, `0.1` means evaluating the first 10% of the dataset, and `100` means evaluating the first 100 entries.
 
 ## Evaluation Parameters
 
@@ -95,12 +95,17 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
   - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model
 - `--judge-worker-num`: The concurrency number for the judge model, default is `1`
 - `--judge-model-args`: Sets the parameters for the judge model, passed in as a `json` string and parsed as a dictionary, supporting the following fields:
-  - `api_key`: API endpoint key for the model, default is `EMPTY`
-  - `api_url`: API endpoint for the model, default is `https://api.openai.com/v1`
-  - `model_id`: Model ID, default is `gpt-3.5-turbo`
+  - `api_key`: The API endpoint key for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_SDK_TOKEN`, with a default value of `EMPTY`.
+  - `api_url`: The API endpoint for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_API_BASE`, with a default value of `https://api-inference.modelscope.cn/v1/`.
+  - `model_id`: The model ID. If not set, it will be retrieved from the environment variable `MODELSCOPE_JUDGE_LLM`, with a default value of `Qwen/Qwen3-235B-A22B`.
+    ```{seealso}
+    For more information on ModelScope's model inference services, please refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro).
+    ```
   - `system_prompt`: (Optional) System prompt for evaluating the dataset
   - `prompt_template`: (Optional) Prompt template for evaluating the dataset
   - `generation_config`: (Optional) Generation parameters
+- `--analysis-report`: Specifies whether to generate an analysis report, with the default set to `false`. If this parameter is enabled, an analysis report will be generated using the judge model, providing interpretative insights and recommendations based on the model evaluation results. The output language of the report will be automatically determined by `locale.getlocale()`.
+
 
 ## Other Parameters
 - `--work-dir`: Output path for model evaluation, default is `./outputs/{timestamp}`.

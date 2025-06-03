@@ -2,9 +2,11 @@ import asyncio
 import copy
 import os
 import platform
+import threading
 import time
 from argparse import Namespace
 
+from evalscope.perf.utils.local_server import start_app
 from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.utils import seed_everything
@@ -82,6 +84,11 @@ def run_perf_benchmark(args):
     if args.swanlab_api_key:
         init_swanlab(args)
 
+    # Initialize local server if needed
+    if args.api.startswith('local'):
+        #  start local server
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
+        server.start()
     # Start benchmark
     if len(args.number) == 1:
         return run_one_benchmark(args, output_path=output_path)

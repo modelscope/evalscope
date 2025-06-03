@@ -184,7 +184,8 @@ two_stage_task_cfg = {
         - `is_cross_encoder`: `bool`: Whether the model is a cross encoder, default is False; for reranking models, set to `True`.
         - `pooling_mode`: `Optional[str]`: Pooling mode, default is `mean`. Options are: "cls", "lasttoken", "max", "mean", "mean_sqrt_len_tokens", or "weightedmean". For `bge` series models, set to "cls".
         - `max_seq_length`: `int`: Maximum sequence length, default is 512.
-        - `prompt`: `str`: Prompt used in front of the model for retrieval tasks, default is an empty string.
+        - `prompt`: `str` A prompt used before the model for retrieval tasks, with a default value of None.
+        - `prompts`: `Dict[str, str]` A dictionary for setting prompts before the model for retrieval tasks, allowing different prompts for various tasks. The default is None, where the key is the task name and the value is the corresponding prompt. This only takes effect when a prompt has not been set.
         - `model_kwargs`: `dict`: Model keyword arguments, default value is `{"torch_dtype": "auto"}`.
         - `config_kwargs`: `Dict[str, Any]`: Configuration keyword arguments, default is an empty dictionary.
         - `encode_kwargs`: `dict`: Encoding keyword arguments, default is:

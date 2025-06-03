@@ -11,7 +11,9 @@ class ModelArguments:
     pooling_mode: Optional[str] = None
     max_seq_length: int = 512  # max sequence length
     # prompt for llm based model
-    prompt: str = ''
+    prompt: Optional[str] = None
+    # prompts dictionary for different tasks, if prompt is not set
+    prompts: Optional[Dict[str, str]] = None
     # model kwargs
     model_kwargs: dict = field(default_factory=dict)
     # config kwargs
@@ -33,6 +35,7 @@ class ModelArguments:
             'pooling_mode': self.pooling_mode,
             'max_seq_length': self.max_seq_length,
             'prompt': self.prompt,
+            'prompts': self.prompts,
             'model_kwargs': self.model_kwargs,
             'config_kwargs': self.config_kwargs,
             'encode_kwargs': self.encode_kwargs,

@@ -88,11 +88,11 @@ class RougeScorer(scoring.BaseScorer):
     """
 
     def __init__(self, rouge_types, use_stemmer=False, split_summaries=False, tokenizer=None):
-        check_nltk_data()
         self.rouge_types = rouge_types
         if tokenizer:
             self._tokenizer = tokenizer
         else:
+            check_nltk_data()
             self._tokenizer = tokenizers.DefaultTokenizer(use_stemmer)
             logging.info('Using default tokenizer.')
 

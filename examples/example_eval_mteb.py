@@ -6,6 +6,7 @@ EvalScope: pip install mteb
 
 2. Run eval task
 """
+import os
 import torch
 
 from evalscope.run import run_task
@@ -36,23 +37,23 @@ def run_eval():
             ],
             'eval': {
                 'tasks': [
-                    'TNews',
-                    'CLSClusteringS2S',
-                    'T2Reranking',
-                    'ATEC',
-                    'T2Retrieval',
-                    'MMarcoRetrieval',
-                    'DuRetrieval',
-                    'CovidRetrieval',
-                    'CmedqaRetrieval',
-                    'EcomRetrieval',
+                    # 'TNews',
+                    # 'CLSClusteringS2S',
+                    # 'T2Reranking',
+                    # 'ATEC',
+                    # 'T2Retrieval',
+                    # 'MMarcoRetrieval',
+                    # 'DuRetrieval',
+                    # 'CovidRetrieval',
+                    # 'CmedqaRetrieval',
+                    # 'EcomRetrieval',
                     'MedicalRetrieval',
-                    'VideoRetrieval'
+                    # 'VideoRetrieval'
                 ],
                 'verbosity': 2,
                 'overwrite_results': True,
                 'top_k': 10,
-                'limits': 1000,  # don't limit for retrieval task
+                # 'limits': 1000,  # don't limit for retrieval task
             },
         },
     }
@@ -68,7 +69,7 @@ def run_eval():
                     'is_cross_encoder': False,
                     'max_seq_length': 512,
                     'prompt': '',
-                    'model_kwargs': {'torch_dtype': 'auto'},
+                    'model_kwargs': {'torch_dtype': torch.float16},
                     'encode_kwargs': {
                         'batch_size': 64,
                     },
@@ -78,7 +79,7 @@ def run_eval():
                     'is_cross_encoder': True,
                     'max_seq_length': 512,
                     'prompt': '为这个问题生成一个检索用的表示',
-                    'model_kwargs': {'torch_dtype': 'auto'},
+                    'model_kwargs': {'torch_dtype': torch.float16},
                     'encode_kwargs': {
                         'batch_size': 32,
                     },
@@ -93,9 +94,37 @@ def run_eval():
         },
     }
 
+    from evalscope import TaskConfig
+    api_task_cfg = TaskConfig(
+        eval_backend='RAGEval',
+        eval_config={
+            'tool': 'MTEB',
+            'model': [
+                {
+                    'model_name': 'text-embedding-v3',
+                    'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                    'api_key': 'xxx',
+                    'dimensions': 1024,
+                    'encode_kwargs': {
+                        'batch_size': 10,
+                    },
+                }
+            ],
+            'eval': {
+                'tasks': [
+                    'T2Retrieval',
+                ],
+                'verbosity': 2,
+                'overwrite_results': True,
+                'limits': 30,
+            },
+        },
+    )
+
     # Run task
     # run_task(task_cfg=one_stage_task_cfg)
     run_task(task_cfg=two_stage_task_cfg)
+    # run_eval_task(task_cfg=api_task_cfg)
 
 
 if __name__ == '__main__':

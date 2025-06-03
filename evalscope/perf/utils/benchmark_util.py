@@ -38,7 +38,7 @@ class BenchmarkData:
             self.first_chunk_latency = self.query_latency
             self.n_chunks = 1
             self.n_chunks_time = self.query_latency
-        self.time_per_output_token = self.n_chunks_time / self.completion_tokens
+        self.time_per_output_token = self.n_chunks_time / self.n_chunks
 
     def _calculate_tokens(self, api_plugin):
         self.prompt_tokens, self.completion_tokens = \

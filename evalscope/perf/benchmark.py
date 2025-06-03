@@ -1,11 +1,8 @@
 import asyncio
-import copy
 import json
 import numpy as np
-import os
 import platform
 import sqlite3
-import threading
 import time
 from http import HTTPStatus
 from tqdm import tqdm
@@ -17,7 +14,6 @@ from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
 from evalscope.perf.utils.handler import add_signal_handlers, exception_handler
-from evalscope.perf.utils.local_server import start_app
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -164,11 +160,6 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
 @exception_handler
 async def connect_test(args: Arguments) -> bool:
-    if args.api.startswith('local'):
-        #  start local server
-        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
-        server.start()
-
     if (not args.no_test_connection) and (not await test_connection(args)):
         raise TimeoutError('Test connection failed')
 

@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
 import subprocess
 import tempfile
 from dataclasses import asdict
@@ -204,7 +205,7 @@ class OpenCompassBackendManager(BackendManager):
                     model_d['meta_template'] = get_template(model_d['meta_template'])
 
                 # set the 'abbr' as the 'path' if 'abbr' is not specified
-                model_d['abbr'] = model_d['path']
+                model_d['abbr'] = os.path.basename(model_d['path'])
 
                 model_config = ApiModelConfig(**model_d)
                 models.append(asdict(model_config))
