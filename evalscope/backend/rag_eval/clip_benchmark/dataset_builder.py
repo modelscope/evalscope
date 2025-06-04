@@ -186,18 +186,19 @@ def build_wds_dataset(dataset_name, transform, split='test', data_dir='root', ca
 
     Set `cache_dir` to a path to cache the dataset, otherwise, no caching will occur.
     """
+    import requests
     import webdataset as wds
 
     def read_txt(fname):
-        if '://' in fname:
-            stream = os.popen("curl -L -s --fail '%s'" % fname, 'r')
-            value = stream.read()
-            if stream.close():
-                raise FileNotFoundError('Failed to retreive data')
+        if fname.startswith(('http://', 'https://')):
+            try:
+                response = requests.get(fname)
+                return response.text
+            except Exception:
+                raise FileNotFoundError(f'Failed to read {fname}.')
         else:
             with open(fname, 'r') as file:
-                value = file.read()
-        return value
+                return file.read()
 
     if not data_dir:
         data_dir = f'https://modelscope.cn/datasets/clip-benchmark/wds_{dataset_name}/resolve/master'
