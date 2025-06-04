@@ -215,16 +215,14 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='Qwen/Qwen3-1.7B',
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'mmlu',
                 # 'simple_qa',
+                'truthful_qa',
             ],
-            model_args={
-                'device_map': 'auto',
-            },
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4', 'Level 5']
