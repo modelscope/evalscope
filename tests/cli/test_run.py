@@ -435,7 +435,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 # 'math_500',
-                'aime24',
+                # 'aime24',
                 # 'competition_math',
                 # 'arc',
                 # 'gsm8k',
@@ -449,9 +449,15 @@ class TestRun(unittest.TestCase):
                 # 'arena_hard',
                 # 'frames',
                 # 'docmath',
-                # 'needle_haystack',
+                'needle_haystack',
             ],
             dataset_args={
+                'needle_haystack': {
+                    'subset_list': ['english'],
+                    'extra_params': {
+                        'show_score': True,
+                    }
+                },
                 'competition_math': {
                     'subset_list': ['Level 4']
                 },
@@ -479,7 +485,7 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=1,
+            limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={

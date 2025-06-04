@@ -53,6 +53,7 @@ task_cfg = TaskConfig(
                 'document_depth_percent_intervals': 10,
                 # tokenizer的路径(可以指定modelscope的id)
                 'tokenizer_path': 'Qwen/Qwen3-0.6B',
+                'show_score': True, # 是否在heatmap上显示分数
             }
         }
     },
@@ -151,6 +152,7 @@ task_cfg = TaskConfig(
                 'document_depth_percent_max': 100,
                 'document_depth_percent_intervals': 10,
                 'tokenizer_path': 'Qwen/Qwen3-0.6B',
+                'show_score': True,
             }
         }
     },
