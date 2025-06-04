@@ -146,7 +146,7 @@ class EvalType:
 
 
 class OutputType:
-    LOGITS = 'logits'  # for multiple choice tasks
+    LOGITS = 'logits'  # for logits output tasks
     GENERATION = 'generation'  # for text generation tasks and general tasks
     MULTIPLE_CHOICE = 'multiple_choice_logits'  # for multiple choice tasks
     CONTINUOUS = 'continuous_logits'  # for continuous tasks

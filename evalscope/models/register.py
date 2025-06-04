@@ -47,7 +47,7 @@ def register_model_adapter_class(cls, name=None):
 # register all model adapters
 register_model_adapter_class(BaseModelAdapter, name='base')
 register_model_adapter_class(ChatGenerationModelAdapter, name=OutputType.GENERATION)
-register_model_adapter_class(ContinuationLogitsModelAdapter, name=OutputType.LOGITS)
+register_model_adapter_class(ContinuationLogitsModelAdapter, name=OutputType.CONTINUOUS)
 register_model_adapter_class(MultiChoiceModelAdapter, name=OutputType.MULTIPLE_CHOICE)
 register_model_adapter_class(CustomModelAdapter, name='custom')
 register_model_adapter_class(ServerModelAdapter, name='server')
