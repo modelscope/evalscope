@@ -193,9 +193,10 @@ def build_wds_dataset(dataset_name, transform, split='test', data_dir='root', ca
         if fname.startswith(('http://', 'https://')):
             try:
                 response = requests.get(fname)
+                response.raise_for_status()  # Ensure the HTTP request was successful
                 return response.text
-            except Exception:
-                raise FileNotFoundError(f'Failed to read {fname}.')
+            except requests.exceptions.RequestException as e:
+                raise FileNotFoundError(f'Failed to read {fname}: {e}')
         else:
             with open(fname, 'r') as file:
                 return file.read()
