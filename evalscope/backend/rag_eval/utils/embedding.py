@@ -172,11 +172,9 @@ class CrossEncoderModel(BaseModel):
                 kwargs.pop(key)
         self.encode_kwargs.update(kwargs)
 
-        if len(sentences[0]) == 3:  # Note: For mteb retrieval task
+        if len(sentences[0]) == 2:  # Note: For mteb retrieval task
             processed_sentences = []
-            for query, docs, instruction in sentences:
-                if isinstance(docs, dict):
-                    docs = docs['text']
+            for query, docs in sentences:
                 processed_sentences.append((self.prompt + query, docs))
             sentences = processed_sentences
         embeddings = self.model.predict(sentences, **self.encode_kwargs)
