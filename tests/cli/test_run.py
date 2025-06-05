@@ -385,7 +385,7 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
                 # 'extra_headers':{'key': 'value'},
             },
-            # ignore_errors=True,
+            ignore_errors=True,
             # use_cache='outputs/20250519_142106'
         )
 

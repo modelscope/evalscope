@@ -75,11 +75,12 @@ class TestCollection(unittest.TestCase):
             limit=5,
             judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
-                # 'model_id': 'qwen2.5-72b-instruct',
-                # 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                # 'api_key': os.getenv('DASHSCOPE_API_KEY'),
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': os.getenv('DASHSCOPE_API_KEY'),
             },
             analysis_report=True,
+            ignore_errors=True,
             # use_cache='outputs/20250522_204520'
         )
         res = run_task(task_cfg=task_cfg)
