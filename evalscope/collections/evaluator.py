@@ -32,11 +32,22 @@ class SimpleEvaluator(Evaluator):
             task_cfg=task_cfg,
             outputs=outputs)
 
-    def get_answer(self, samples, infer_cfg) -> List[dict]:
+    def get_answer(self, samples: List[DatasetEntry], infer_cfg: dict) -> List[dict]:
         input_prompts = [sample.prompt for sample in samples]
         subset_name = samples[0].subset_name
+        try:
+            # get answer from model
+            answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
+        except Exception as e:
+            logger.error(f'Failed to get answer for {input_prompts}, due to {e}')
+            # if ignore_errors is True, continue to next input
+            if self.task_cfg.ignore_errors:
+                logger.warning('`ignore_errors` is set to True. Dropping this prompt and continuing with evaluation.')
+                return [None] * len(samples), samples
+            else:
+                raise e
+        # process answers
         answers_list = []
-        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
@@ -66,7 +77,7 @@ class EvaluatorCollection:
         self.dataset_id_map = EvaluatorCollection._init_id_map(self.dataset)
         self.evaluators = self._initialize_evaluators()
 
-    def load(self) -> tuple[list[DatasetEntry], str]:
+    def load(self) -> tuple[List[DatasetEntry], str]:
         dataset_name = os.path.splitext(os.path.basename(self.data_adapter.dataset_id))[0]
         raw_dataset = self.data_adapter.load()
         # random limit the dataset
@@ -86,7 +97,7 @@ class EvaluatorCollection:
         return datasets, dataset_name
 
     @staticmethod
-    def _init_name_map(dataset):
+    def _init_name_map(dataset: List[DatasetEntry]) -> Dict[str, Dict[str, List[int]]]:
         dataset_name_map = defaultdict(lambda: defaultdict(list))
         for sample in dataset:
             dataset_name, subset_name = sample.dataset_name, sample.subset_name
@@ -94,13 +105,13 @@ class EvaluatorCollection:
         return dataset_name_map
 
     @staticmethod
-    def _init_id_map(dataset):
+    def _init_id_map(dataset: List[DatasetEntry]) -> Dict[int, DatasetEntry]:
         dataset_id_map = {}
         for sample in dataset:
             dataset_id_map[sample.index] = sample
         return dataset_id_map
 
-    def _initialize_evaluators(self):
+    def _initialize_evaluators(self) -> Dict[str, SimpleEvaluator]:
         evaluators = {}
         # load dataset args
         dataset_args = deepcopy(self.task_cfg.dataset_args)
@@ -118,6 +129,8 @@ class EvaluatorCollection:
         return evaluators
 
     def get_report(self, scores):
+        if not scores:
+            return
 
         def get_dataframe(scores):
             data = []
@@ -241,9 +254,12 @@ class EvaluatorCollection:
                     # Process completed tasks
                     for future in as_completed(futures):
                         answer_list, samples = future.result()
-                        answers[samples[0].index] = answer_list[0]
-                        dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
-                        pbar.update(1)
+                        for answer_d, sample in zip(answer_list, samples):
+                            if answer_d is None:
+                                continue
+                            answers[sample.index] = answer_d
+                            dump_jsonl_data([answer_d], pred_file_path, dump_mode=DumpMode.APPEND)
+                            pbar.update(1)
             else:
                 for dataset_name, data_map in dataset_name_map.items():
                     # get evaluator for the dataset
@@ -253,13 +269,14 @@ class EvaluatorCollection:
                             # get batch samples
                             batch_ids = ids[i:i + eval_batch_size]
                             batch_samples = [self.dataset_id_map[_id] for _id in batch_ids]
-                            answer_list, _ = evaluator.get_answer(batch_samples, self.task_cfg.generation_config)
+                            answer_list, samples = evaluator.get_answer(batch_samples, self.task_cfg.generation_config)
                             # update answers
-                            for j, _id in enumerate(batch_ids):
-                                answers[_id] = answer_list[j]
-                            dump_jsonl_data(answer_list, pred_file_path, dump_mode=DumpMode.APPEND)
-
-                            pbar.update(len(batch_ids))
+                            for answer_d, sample in zip(answer_list, samples):
+                                if answer_d is None:
+                                    continue
+                                answers[sample.index] = answer_d
+                                dump_jsonl_data([answer_d], pred_file_path, dump_mode=DumpMode.APPEND)
+                                pbar.update(1)
         return answers
 
     def get_reviews(self, answers: Dict[int, Any]) -> Dict[int, Any]:
@@ -289,19 +306,22 @@ class EvaluatorCollection:
 
         reviews = {}
         for sample in tqdm(self.dataset, desc='Getting reviews'):
-            file_name = f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'
+            try:
+                file_name = f'{self.dataset_name}_{sample.dataset_name}_{sample.subset_name}.jsonl'
 
-            if self.task_cfg.use_cache and sample.index in review_history_map.get(file_name, {}):
-                # Use cached review if available
-                review_d = review_history_map[file_name][sample.index]
-            else:
-                # Generate new review
-                evaluator = self.evaluators[sample.dataset_name]
-                review_d = evaluator.get_review(answers[sample.index])
-                # Only save the review if it's not in the cache
-                self._save_review(review_file_path, file_name, review_d)
+                if self.task_cfg.use_cache and sample.index in review_history_map.get(file_name, {}):
+                    # Use cached review if available
+                    review_d = review_history_map[file_name][sample.index]
+                else:
+                    # Generate new review
+                    evaluator = self.evaluators[sample.dataset_name]
+                    review_d = evaluator.get_review(answers[sample.index])
+                    # Only save the review if it's not in the cache
+                    self._save_review(review_file_path, file_name, review_d)
 
-            reviews[sample.index] = review_d
+                reviews[sample.index] = review_d
+            except Exception as e:
+                logger.error(f'Error getting review for sample index {sample.index}: {e}. Skipping this sample.')
 
         return reviews
 
@@ -339,6 +359,8 @@ class EvaluatorCollection:
         scores = defaultdict(dict)
         for sample in tqdm(self.dataset, desc='Getting scores'):
             evaluator = self.evaluators[sample.dataset_name]
+            if sample.index not in reviews:
+                continue
             review_d = reviews[sample.index]
             score = evaluator.get_score(review_d)
             scores[sample.index] = score

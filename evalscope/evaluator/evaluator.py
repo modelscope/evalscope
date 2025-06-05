@@ -108,7 +108,6 @@ class Evaluator(object):
         return answer_d
 
     def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
-        answers_list = []
         try:
             # get answer from model
             answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
@@ -117,10 +116,11 @@ class Evaluator(object):
             # if ignore_errors is True, continue to next input
             if self.task_cfg.ignore_errors:
                 logger.warning('`ignore_errors` is set to True. Dropping this prompt and continuing with evaluation.')
-                return answers_list
+                return []
             else:
                 raise e
         # process answer
+        answers_list = []
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
