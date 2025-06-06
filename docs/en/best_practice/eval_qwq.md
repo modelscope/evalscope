@@ -1,4 +1,4 @@
-# Best Practices for Evaluating the QwQ Model
+# Evaluating the QwQ Model
 
 Today (March 6, 2025), the Qwen team released the QwQ-32B model, which has demonstrated performance comparable to DeepSeek-R1-671B in a series of benchmark tests. The results below showcase the performance comparison of QwQ-32B with other leading models.
 

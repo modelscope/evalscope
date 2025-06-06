@@ -28,8 +28,11 @@ def process_markdown(input_path, output_path, image_folder):
     matches = image_pattern.findall(content)
 
     for url in matches:
-        local_path = download_image(url, image_folder)
-        content = content.replace(url, local_path)
+        try:
+            local_path = download_image(url, image_folder)
+            content = content.replace(url, local_path)
+        except Exception as e:
+            print(f'Error downloading {url}: {e}')
 
     with open(output_path, 'w', encoding='utf-8') as file:
         file.write(content)
@@ -37,8 +40,8 @@ def process_markdown(input_path, output_path, image_folder):
 
 # 主函数
 if __name__ == '__main__':
-    input_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/qwen3.md'  # 输入的Markdown文件路径
-    output_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/qwen3_new.md'  # 输出的Markdown文件路径
+    input_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/t2i_eval.md'  # 输入的Markdown文件路径
+    output_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/t2i_eval.md'  # 输出的Markdown文件路径
     image_folder = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/images'  # 保存图片的文件夹
 
     process_markdown(input_markdown_file, output_markdown_file, image_folder)
