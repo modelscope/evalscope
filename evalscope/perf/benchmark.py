@@ -40,10 +40,13 @@ async def get_requests(args: Arguments) -> AsyncGenerator[dict, None]:
     async def generate_requests_from_dataset():
         message_generator_class = DatasetRegistry(args.dataset)
         message_generator = message_generator_class(args)
-
+    
         dataset_messages = []
-        for messages in message_generator:
-            dataset_messages.append(messages)
+        try:
+            for messages in message_generator:
+                dataset_messages.append(messages)
+        except StopIteration:
+            pass
         
         if not dataset_messages:
             raise Exception('Dataset is empty!')
