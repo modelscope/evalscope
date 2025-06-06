@@ -1,4 +1,4 @@
-# Best Practices for Evaluating the Qwen3 Model
+# Evaluating the Qwen3 Model
 
 Qwen3 is the latest generation of the Qwen series of large language models, offering a range of dense and mixed expert (MoE) models. Based on extensive training, Qwen3 has made groundbreaking advances in reasoning, instruction following, agency capabilities, and multilingual support, enabling seamless switching between thinking and non-thinking modes. In this best practices article, we will use the EvalScope framework to conduct a comprehensive evaluation of the Qwen3-32B model, covering model service inference performance evaluation, model capability evaluation, and model thinking efficiency evaluation.
 
