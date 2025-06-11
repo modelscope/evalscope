@@ -55,6 +55,7 @@ class Arguments:
 
     # Response settings
     frequency_penalty: Optional[float] = None  # Frequency penalty for the response
+    repetition_penalty: Optional[float] = None  # Repetition penalty for the response
     logprobs: Optional[bool] = None  # Whether to log probabilities
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
     min_tokens: Optional[int] = None  # Minimum number of tokens in the response
@@ -181,6 +182,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Response settings
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)
+    parser.add_argument('--repetition-penalty', type=float, help='The repetition_penalty value', default=None)
     parser.add_argument('--logprobs', action='store_true', help='The logprobs', default=None)
     parser.add_argument(
         '--max-tokens', type=int, help='The maximum number of tokens that can be generated', default=2048)

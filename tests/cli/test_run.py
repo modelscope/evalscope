@@ -63,7 +63,7 @@ class TestRun(unittest.TestCase):
                         f'--model {model} ' \
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \
-                        f'--generation-config do_sample=false,temperature=0.0 ' \
+                        f'--generation-config do_sample=true,temperature=0.6,max_length=65535,max_new_tokens=65535,max_tokens=65535,n=1,top_p=0.95,top_k=20 ' \
                         f"""--dataset-args \'{dataset_args}\' """
 
         logger.info(f'Start to run command: {cmd_with_args}')
