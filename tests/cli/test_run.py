@@ -304,13 +304,13 @@ class TestRun(unittest.TestCase):
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa',
-                # 'super_gpqa',
+                'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
-                'frames',
+                # 'frames',
             ],
             dataset_args={
                 'mmlu': {
@@ -368,7 +368,7 @@ class TestRun(unittest.TestCase):
                     'metric_list': ['AverageRouge']
                 },
                 'super_gpqa': {
-                    # 'subset_list': ['Philosophy', 'Education'],
+                    'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
                 },
                 'mmlu_redux':{

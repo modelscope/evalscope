@@ -139,13 +139,15 @@ class SuperGPQAAdapter(DataAdapter):
         return self.reformat_subset(data_dict, subset_key='field', format='{}')
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+        question = input_d['question']
+        choices = self._format_choices(input_d['options'])
         if not self.prompt_template:
             if few_shot_list:
-                prompt = self.few_shot_prompt.format(query=input_d['question'])
+                prompt = self.few_shot_prompt.format(query=question, choices=choices)
             else:
-                prompt = self.zero_shot_prompt.format(query=input_d['question'])
+                prompt = self.zero_shot_prompt.format(query=question, choices=choices)
         else:
-            prompt = self.prompt_template.format(query=input_d['question'])
+            prompt = self.prompt_template.format(query=question, choices=choices)
         return self.gen_prompt_data(prompt)
 
     def get_gold_answer(self, input_d: dict) -> str:
@@ -189,3 +191,16 @@ class SuperGPQAAdapter(DataAdapter):
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
+
+    def _format_choices(self, choices: list) -> str:
+        """
+        Format the choices into a string for display.
+
+        Args:
+            choices (list): List of choices.
+
+        Returns:
+            str: Formatted string of choices.
+        """
+        choice_list = [f'{option}) {content}' for option, content in zip(self.choices, choices)]
+        return '\n'.join(choice_list)

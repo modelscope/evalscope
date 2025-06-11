@@ -85,5 +85,6 @@ Answer: A.
 
 Question:
 {query}
+{choices}
 
 Answer: Let's think step by step.
