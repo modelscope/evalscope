@@ -75,6 +75,8 @@ class OpenaiPlugin(ApiPluginBase):
             payload['min_tokens'] = param.min_tokens
         if param.frequency_penalty is not None:
             payload['frequency_penalty'] = param.frequency_penalty
+        if param.repetition_penalty is not None:
+            payload['repetition_penalty'] = param.repetition_penalty
         if param.logprobs is not None:
             payload['logprobs'] = param.logprobs
         if param.n_choices is not None:
