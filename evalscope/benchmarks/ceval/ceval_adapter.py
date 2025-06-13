@@ -126,6 +126,8 @@ SUBJECT_MAPPING = {
 @Benchmark.register(
     name='ceval',
     pretty_name='C-Eval',
+    description=
+    'C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.',  # noqa: E501
     dataset_id='modelscope/ceval-exam',
     model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

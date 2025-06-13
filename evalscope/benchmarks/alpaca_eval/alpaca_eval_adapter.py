@@ -47,6 +47,8 @@ Evaluate the models based on the quality and relevance of their outputs, and sel
 @Benchmark.register(
     name='alpaca_eval',
     pretty_name='AlpacaEval2.0',
+    description=
+    'Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments.',  # noqa: E501
     dataset_id='AI-ModelScope/alpaca_eval',
     subset_list=['alpaca_eval_gpt4_baseline'],
     metric_list=['winrate'],

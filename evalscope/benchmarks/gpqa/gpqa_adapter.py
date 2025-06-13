@@ -10,6 +10,8 @@ from evalscope.metrics import exact_match
 @Benchmark.register(
     name='gpqa',
     pretty_name='GPQA',
+    description=
+    'GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.',  # noqa: E501
     dataset_id='modelscope/gpqa',
     model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

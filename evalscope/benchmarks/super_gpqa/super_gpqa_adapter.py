@@ -109,6 +109,8 @@ SUBSET_MAPPING = {
 @Benchmark.register(
     name='super_gpqa',
     pretty_name='SuperGPQA',
+    description=
+    'SuperGPQA is a large-scale Chinese multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
     dataset_id='m-a-p/SuperGPQA',
     model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

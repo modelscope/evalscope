@@ -10,6 +10,8 @@ from evalscope.metrics import Metric, mean, metric_registry
 @Benchmark.register(
     name='ifeval',
     pretty_name='IFEval',
+    description=
+    'IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.',  # noqa: E501
     dataset_id='opencompass/ifeval',
     subset_list=['default'],
     metric_list=[

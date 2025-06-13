@@ -59,6 +59,8 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 @Benchmark.register(
     name='bbh',
     pretty_name='BBH',
+    description=
+    'The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.',  # noqa: E501
     dataset_id='modelscope/bbh',
     subset_list=SUBSET_LIST,
     metric_list=['AverageAccuracy'],

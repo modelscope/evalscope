@@ -17,6 +17,8 @@ logger = get_logger()
 @Benchmark.register(
     name='race',
     pretty_name='RACE',
+    description=
+    'RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.',  # noqa: E501
     dataset_id='modelscope/race',
     model_adapter=OutputType.MULTIPLE_CHOICE,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
