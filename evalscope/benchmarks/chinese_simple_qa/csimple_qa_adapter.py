@@ -87,7 +87,8 @@ SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应�
 
 @Benchmark.register(
     name='chinese_simpleqa',
-    pretty_name='Chinese SimpleQA',
+    pretty_name='Chinese-SimpleQA',
+    tags=['Knowledge', 'QA', 'Chinese'],
     description=
     "Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.",  # noqa: E501
     subset_list=SUBSET_LIST,

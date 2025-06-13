@@ -16,6 +16,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 @Benchmark.register(
     name='frames',
     pretty_name='FRAMES',
+    tags=['Reasoning', 'Long Context'],
     description=
     'FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.',  # noqa: E501
     dataset_id='iic/frames',

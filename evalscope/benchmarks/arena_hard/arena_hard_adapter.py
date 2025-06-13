@@ -17,6 +17,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
 @Benchmark.register(
     name='arena_hard',
     pretty_name='ArenaHard',
+    tags=['Instruction-Following', 'Reasoning'],
     description=
     'ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities.',  # noqa: E501
     dataset_id='AI-ModelScope/arena-hard-auto-v0.1',

@@ -11,6 +11,7 @@ SUBSET_LIST = ['default']
 @Benchmark.register(
     name='maritime_bench',
     pretty_name='MaritimeBench',
+    tags=['Maritime', 'MCQ', 'Knowledge'],
     description=
     'MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.',  # noqa: E501
     dataset_id='HiDolphin/MaritimeBench',

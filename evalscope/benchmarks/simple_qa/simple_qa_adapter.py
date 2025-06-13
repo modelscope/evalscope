@@ -95,6 +95,7 @@ Just return the letters "A", "B", or "C", with no text around it.
 @Benchmark.register(
     name='simple_qa',
     pretty_name='SimpleQA',
+    tags=['Knowledge', 'QA'],
     description=
     'SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.',  # noqa: E501
     dataset_id='AI-ModelScope/SimpleQA',

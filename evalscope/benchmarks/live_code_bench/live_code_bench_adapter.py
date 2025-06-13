@@ -8,7 +8,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='live_code_bench',
-    pretty_name='Live Code Bench',
+    pretty_name='Live-Code-Bench',
+    tags=['Coding'],
     description=
     'Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model\'s ability to generate correct and efficient code solutions.',  # noqa: E501
     dataset_id='AI-ModelScope/code_generation_lite',

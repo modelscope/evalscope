@@ -16,6 +16,7 @@ logger = get_logger()
 @Benchmark.register(
     name='trivia_qa',
     pretty_name='TriviaQA',
+    tags=['QA', 'Reading Comprehension'],
     description=
     'TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.',  # noqa: E501
     dataset_id='modelscope/trivia_qa',

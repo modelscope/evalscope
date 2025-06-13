@@ -16,6 +16,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 @Benchmark.register(
     name='docmath',
     pretty_name='DocMath',
+    tags=['Reasoning', 'Mathematics', 'Long Context'],
     description=
     'DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.',  # noqa: E501
     dataset_id='yale-nlp/DocMath-Eval',

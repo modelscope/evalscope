@@ -13,6 +13,7 @@ logger = get_logger()
 @Benchmark.register(
     name='humaneval',
     pretty_name='HumanEval',
+    tags=['Coding'],
     description=
     'HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.',  # noqa: E501
     dataset_id='modelscope/humaneval',

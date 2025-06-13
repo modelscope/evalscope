@@ -88,6 +88,7 @@ SUBJECT_MAPPING = {
 @Benchmark.register(
     name='mmlu_redux',
     pretty_name='MMLU-Redux',
+    tags=['MCQ', 'Knowledge'],
     description=
     'MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
     dataset_id='AI-ModelScope/mmlu-redux-2.0',

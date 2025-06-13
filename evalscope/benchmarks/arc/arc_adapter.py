@@ -17,6 +17,7 @@ logger = get_logger()
 @Benchmark.register(
     name='arc',
     pretty_name='ARC',
+    tags=['Reasoning', 'MCQ'],
     description=
     'The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.',  # noqa: E501
     dataset_id='modelscope/ai2_arc',

@@ -10,6 +10,7 @@ logger = get_logger()
 @Benchmark.register(
     name='aime24',
     pretty_name='AIME-2024',
+    tags=['Mathematics'],
     description=
     'The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model’s ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.',  # noqa: E501
     dataset_id='HuggingFaceH4/aime_2024',

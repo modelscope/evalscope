@@ -15,6 +15,7 @@ logger = get_logger()
 @Benchmark.register(
     name='gsm8k',
     pretty_name='GSM8K',
+    tags=['Mathematics'],
     description=
     'GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',
     dataset_id='modelscope/gsm8k',

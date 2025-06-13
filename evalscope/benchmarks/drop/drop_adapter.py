@@ -31,6 +31,7 @@ Answer:  43
 @Benchmark.register(
     name='drop',
     pretty_name='DROP',
+    tags=['Reasoning'],
     description=
     'The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.',  # noqa: E501
     dataset_id='AI-ModelScope/DROP',

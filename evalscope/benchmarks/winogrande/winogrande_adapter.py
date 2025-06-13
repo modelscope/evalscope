@@ -7,6 +7,7 @@ from evalscope.utils.utils import ResponseParser
 @Benchmark.register(
     name='winogrande',
     pretty_name='Winogrande',
+    tags=['Reasoning', 'MCQ'],
     description=
     'Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.',  # noqa: E501
     dataset_id='AI-ModelScope/winogrande_val',

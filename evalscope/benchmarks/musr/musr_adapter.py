@@ -10,6 +10,7 @@ from evalscope.utils.utils import ResponseParser
 @Benchmark.register(
     name='musr',
     pretty_name='MuSR',
+    tags=['Reasoning', 'MCQ'],
     description=
     'MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.',  # noqa: E501
     dataset_id='AI-ModelScope/MuSR',

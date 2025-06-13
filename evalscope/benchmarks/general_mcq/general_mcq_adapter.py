@@ -15,7 +15,8 @@ logger = get_logger()
 
 @Benchmark.register(
     name='general_mcq',
-    pretty_name='General MCQ',
+    pretty_name='General-MCQ',
+    tags=['MCQ', 'Custom'],
     dataset_id='general_mcq',
     model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

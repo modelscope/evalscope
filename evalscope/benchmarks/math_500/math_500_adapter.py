@@ -10,6 +10,7 @@ logger = get_logger()
 @Benchmark.register(
     name='math_500',
     pretty_name='MATH-500',
+    tags=['Mathematics'],
     description=
     "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",  # noqa: E501
     dataset_id='AI-ModelScope/MATH-500',

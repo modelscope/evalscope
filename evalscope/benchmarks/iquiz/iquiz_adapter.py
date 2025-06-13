@@ -7,6 +7,7 @@ from evalscope.utils.utils import ResponseParser
 @Benchmark.register(
     name='iquiz',
     pretty_name='IQuiz',
+    tags=['Knowledge', 'MCQ', 'Chinese'],
     description=
     'IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.',  # noqa: E501
     dataset_id='AI-ModelScope/IQuiz',

@@ -136,6 +136,7 @@ SUBJECT_MAPPING = {
 @Benchmark.register(
     name='mmlu',
     pretty_name='MMLU',
+    tags=['Knowledge', 'MCQ'],
     description=
     "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",  # noqa: E501
     dataset_id='modelscope/mmlu',

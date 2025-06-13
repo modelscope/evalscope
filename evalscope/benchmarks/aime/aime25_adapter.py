@@ -10,6 +10,7 @@ logger = get_logger()
 @Benchmark.register(
     name='aime25',
     pretty_name='AIME-2025',
+    tags=['Mathematics'],
     description=
     'The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model’s ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.',
     dataset_id='opencompass/AIME2025',

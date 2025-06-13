@@ -12,6 +12,7 @@ cur_path = os.path.dirname(os.path.abspath(__file__))
 @Benchmark.register(
     name='process_bench',
     pretty_name='ProcessBench',
+    tags=['Mathematical', 'Reasoning'],
     description=
     'ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.',  # noqa: E501
     dataset_id='Qwen/ProcessBench',

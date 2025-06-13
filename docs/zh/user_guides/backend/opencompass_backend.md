@@ -16,7 +16,7 @@ pip install evalscope[opencompass] -U
 ````{note}
 有以下两种方式下载数据集
 
-数据集的详细信息可以参考[OpenCompass数据集列表](../../get_started/supported_dataset.md#2-opencompass评测后端支持的数据集)
+数据集的详细信息可以参考[OpenCompass数据集列表](../../get_started/supported_dataset/opencompass.md)
 
 您可以使用以下方式，来查看支持的数据集的名称列表：
 ```python

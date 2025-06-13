@@ -15,6 +15,7 @@ SUBSET_LIST = [
 @Benchmark.register(
     name='mmlu_pro',
     pretty_name='MMLU-Pro',
+    tags=['MCQ', 'Knowledge'],
     description=
     'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
     dataset_id='modelscope/MMLU-Pro',

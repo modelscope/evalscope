@@ -108,7 +108,7 @@ run_task(task_cfg="config.json")
 
 ### 基本参数说明
 - `--model`: 指定了模型在[ModelScope](https://modelscope.cn/)中的`model_id`，可自动下载，例如[Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary)；也可使用模型的本地路径，例如`/path/to/model`
-- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
+- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset/native.md)
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证
 
 
@@ -261,7 +261,7 @@ unzip data.zip
 
 #### 下载modelscope数据集
 
-对于不在`zip`中的数据集，例如[mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro)数据集，数据集地址参考[支持的数据集](./supported_dataset.md#1-原生支持的数据集)，执行以下命令：
+对于不在`zip`中的数据集，例如[mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro)数据集，数据集地址参考[支持的数据集](./supported_dataset/index.md)，执行以下命令：
 
 ```bash
 git lfs install
