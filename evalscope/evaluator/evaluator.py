@@ -13,7 +13,7 @@ from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
 from evalscope.models import BaseModelAdapter
-from evalscope.report import Report, gen_report_table
+from evalscope.report import Report, gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -399,8 +399,9 @@ class Evaluator(object):
 
         # Make table
         try:
-            report_table = gen_report_table(report_map)
-            logger.info(f'{self.dataset_name_or_path} report table: \n{report_table} \n')
+            report_table = gen_table(report_list=[report_map], add_overall_metric=True)
+            logger.info(f'\n{self.dataset_name_or_path} report table:'
+                        f'\n{report_table} \n')
         except Exception:
             logger.error('Failed to generate report table.')
 

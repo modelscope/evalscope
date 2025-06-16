@@ -386,7 +386,7 @@ class TestRun(unittest.TestCase):
                 # 'extra_headers':{'key': 'value'},
             },
             ignore_errors=True,
-            # use_cache='outputs/20250519_142106'
+            use_cache='outputs/20250616_153756'
         )
 
         run_task(task_cfg=task_cfg)
@@ -447,7 +447,8 @@ class TestRun(unittest.TestCase):
                 # 'arena_hard',
                 # 'frames',
                 # 'docmath',
-                'needle_haystack',
+                # 'needle_haystack',
+                'ifeval',
             ],
             dataset_args={
                 'needle_haystack': {
@@ -503,9 +504,9 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
-            analysis_report=True,
+            # analysis_report=True,
             # debug=True,
-            # use_cache='outputs/20250602_135859'
+            use_cache='outputs/20250616_161931'
         )
 
         run_task(task_cfg=task_cfg)

@@ -135,11 +135,11 @@ def plot_single_report_scores(df: pd.DataFrame):
 
 def plot_single_report_sunburst(report_list: List[Report]):
     if report_list[0].name == DataCollection.NAME:
-        df = get_data_frame(report_list)
+        df = get_data_frame(report_list=report_list)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = categories + [ReportKey.subset_name]
     else:
-        df = get_data_frame(report_list, flatten_metrics=False)
+        df = get_data_frame(report_list=report_list, flatten_metrics=False)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
     logger.debug(f'df: {df}')
@@ -583,7 +583,7 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         outputs=[dataset_plot, dataset_table, subset_select, data_review_df, report_analysis])
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
-        report_df = get_data_frame(report_list)
+        report_df = get_data_frame(report_list=report_list)
         analysis = get_report_analysis(report_list, dataset_name)
         data_score_df, styler = get_single_dataset_df(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)

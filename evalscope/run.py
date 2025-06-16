@@ -133,7 +133,7 @@ def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
 
     # Make overall report
     try:
-        report_table: str = gen_table([outputs.reports_dir])
+        report_table: str = gen_table(reports_path_list=[outputs.reports_dir], add_overall_metric=True)
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')

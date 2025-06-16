@@ -133,11 +133,25 @@ class Report:
             data = json.load(f)
         return cls.from_dict(data)
 
-    def to_dataframe(self, flatten_metrics: bool = True, flatten_categories: bool = True):
+    def to_dataframe(self,
+                     flatten_metrics: bool = True,
+                     flatten_categories: bool = True,
+                     add_overall_metric: bool = False) -> pd.DataFrame:
+        """
+        Convert the report to a pandas DataFrame.
+        Args:
+            flatten_metrics (bool): Whether to flatten the metrics to a single row.
+            flatten_categories (bool): Whether to flatten the categories to multiple rows.
+            add_overall_metric (bool): Whether to add an overall metric row.
+        Returns:
+            pd.DataFrame: The report as a pandas DataFrame.
+        """
         table = defaultdict(list)
         for metric in self.metrics:
+            metric_count = 0
             for category in metric.categories:
                 for subset in category.subsets:
+                    metric_count += 1
                     table[ReportKey.model_name].append(self.model_name)
                     table[ReportKey.dataset_name].append(self.dataset_name)
                     table[ReportKey.metric_name].append(metric.name)
@@ -145,6 +159,15 @@ class Report:
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)
+            # add overall metric when there are multiple subsets
+            if metric_count > 1 and add_overall_metric:
+                table[ReportKey.model_name].append(self.model_name)
+                table[ReportKey.dataset_name].append(self.dataset_name)
+                table[ReportKey.metric_name].append(metric.name)
+                table[ReportKey.category_name].append(('-', ))
+                table[ReportKey.subset_name].append('OVERALL')
+                table[ReportKey.num].append(metric.num)
+                table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
                 break
