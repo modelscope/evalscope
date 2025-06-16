@@ -29,6 +29,7 @@ class BenchmarkMeta:
     query_template: Optional[str] = None
     pretty_name: Optional[str] = None
     description: Optional[str] = None
+    tags: Optional[List[str]] = field(default_factory=list)
     filters: Optional[OrderedDict] = None
     extra_params: Optional[Dict] = field(default_factory=dict)
 

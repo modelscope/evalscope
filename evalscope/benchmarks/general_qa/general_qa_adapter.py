@@ -13,6 +13,9 @@ logger = get_logger()
 
 @Benchmark.register(
     name='general_qa',
+    pretty_name='General-QA',
+    description='General Question Answering dataset',
+    tags=['QA', 'Custom'],
     dataset_id='general_qa',
     subset_list=['default'],
     metric_list=['AverageBLEU', 'AverageRouge'],

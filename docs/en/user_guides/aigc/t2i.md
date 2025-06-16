@@ -4,7 +4,7 @@ The EvalScope framework supports the evaluation of various text-to-image models,
 
 ## Supported Evaluation Datasets
 
-Please refer to the [documentation](../../get_started/supported_dataset.md#aigc-evaluation-datasets).
+Please refer to the [documentation](../../get_started/supported_dataset/aigc.md).
 
 ## Supported Evaluation Metrics
 

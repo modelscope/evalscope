@@ -103,6 +103,9 @@ SUBJECT_MAPPING = {
 @Benchmark.register(
     name='cmmlu',
     pretty_name='C-MMLU',
+    tags=['Knowledge', 'MCQ', 'Chinese'],
+    description=
+    'C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.',
     dataset_id='modelscope/cmmlu',
     model_adapter=OutputType.GENERATION,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

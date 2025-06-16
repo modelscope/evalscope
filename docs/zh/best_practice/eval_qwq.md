@@ -77,7 +77,7 @@ run_task(task_config)
 +---------+-----------+---------------+----------+-------+---------+---------+ 
 ```
 
-如果想运行[其他数据集](../get_started/supported_dataset.md#1-原生支持的数据集)，可以修改上述配置中的`datasets`和`dataset_args`参数，例如：
+如果想运行[其他数据集](../get_started/supported_dataset/index.md)，可以修改上述配置中的`datasets`和`dataset_args`参数，例如：
 
 ```python
 # ...

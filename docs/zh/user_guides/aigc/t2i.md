@@ -4,7 +4,7 @@ EvalScope框架支持多种文生图模型的评测，包括Stable Diffusion、F
 
 ## 支持的评测数据集
 
-请参考[文档](../../get_started/supported_dataset.md#aigc-评测集)。
+请参考[文档](../../get_started/supported_dataset/aigc.md#aigc评测集)。
 
 ## 支持的评测指标
 
