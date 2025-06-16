@@ -108,7 +108,7 @@ run_task(task_cfg="config.json")
 
 ### Basic Parameter Descriptions
 - `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, for example, [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); it can also be a local path to the model, e.g., `/path/to/model`.
-- `--datasets`: Dataset names, supporting multiple datasets separated by spaces. Datasets will be automatically downloaded from ModelScope; refer to the [Dataset List](./supported_dataset.md#1-native-supported-datasets) for supported datasets.
+- `--datasets`: Dataset names, supporting multiple datasets separated by spaces. Datasets will be automatically downloaded from ModelScope; refer to the [Dataset List](./supported_dataset/llm.md) for supported datasets.
 - `--limit`: Maximum amount of evaluation data per dataset. If not specified, it defaults to evaluating all data, which can be used for quick validation.
 
 
@@ -266,7 +266,7 @@ The unzipped datasets will be located in the `/path/to/workdir/data` directory, 
 
 #### Download Modelscope Dataset
 
-For datasets that are not in a `zip` file, such as the [mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro) dataset, refer to the dataset address in the [Supported Datasets](./supported_dataset.md#1-native-supported-datasets) document and execute the following commands:
+For datasets that are not in a `zip` file, such as the [mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro) dataset, refer to the dataset address in the [Supported Datasets](./supported_dataset/llm.md) document and execute the following commands:
 
 ```bash
 git lfs install

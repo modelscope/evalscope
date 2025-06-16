@@ -14,9 +14,7 @@ def wrap_key_words(keywords: list[str]) -> str:
     Returns:
         str: 格式化的Markdown字符串
     """
-    if not keywords:
-        return '无'
-    
+
     # 使用逗号分隔关键词，并添加反引号格式化
     return ', '.join(sorted([f'`{keyword}`' for keyword in keywords]))
 
@@ -45,8 +43,6 @@ def generate_dataset_markdown(data_adapter: DataAdapter) -> str:
     dataset_id = data_adapter.dataset_id
     description = data_adapter.description or '暂无详细描述'
     
-    # 生成锚点链接
-    anchor = f"<a id=\"{name}\"></a>"
     
     # 处理数据集ID的链接格式
     if dataset_id.startswith(('http://', 'https://')):
@@ -67,7 +63,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter) -> str:
         f'- **任务类别**: {wrap_key_words(data_adapter.tags)}',
         f'- **评估指标**: {wrap_key_words(data_adapter.metric_list)}',
         f"- **需要LLM Judge**: {'是' if data_adapter.llm_as_a_judge else '否'}",
-        f'- **默认提示方式**: {data_adapter.few_shot_num} Few-shot'
+        f'- **默认提示方式**: {data_adapter.few_shot_num}-shot'
     ]
     
     # 添加数据集子集信息
@@ -86,7 +82,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter) -> str:
 
     # 添加提示模板
     if data_adapter.system_prompt:
-        technical_info.append(f'- **系统提示词**: `{data_adapter.system_prompt}`')
+        technical_info.append(f'- **系统提示词**: \n```text\n{data_adapter.system_prompt}\n```')
     if data_adapter.prompt_template:
         technical_info.append(f'- **提示模板**: \n```text\n{data_adapter.prompt_template}\n```')
 
@@ -116,9 +112,10 @@ def generate_full_documentation(adapters: list[DataAdapter]) -> str:
     for adapter in adapters:
         name = adapter.name
         pretty_name = adapter.pretty_name or name
+        link_name = pretty_name.lower().replace(' ', '-').replace('.', '')
         tags = wrap_key_words(adapter.tags)
-        index.append(f'| `{name}` | [{pretty_name}](#{pretty_name.lower()}) | {tags} |')
-    
+        index.append(f'| `{name}` | [{pretty_name}](#{link_name}) | {tags} |')
+
     # 生成详情部分
     details = [
         '',
@@ -137,6 +134,111 @@ def generate_full_documentation(adapters: list[DataAdapter]) -> str:
     return '\n'.join(index + details)
 
 
+def generate_dataset_markdown_en(data_adapter: DataAdapter) -> str:
+    """
+    Generate a well-formatted Markdown benchmark introduction based on a DataAdapter instance
+    
+    Args:
+        data_adapter (DataAdapter): Dataset adapter instance
+        
+    Returns:
+        str: Formatted Markdown string
+    """
+    # Get basic information
+    name = data_adapter.name
+    pretty_name = data_adapter.pretty_name or name
+    dataset_id = data_adapter.dataset_id
+    description = data_adapter.description or 'No detailed description available'
+    
+    # Format dataset ID links
+    if dataset_id.startswith(('http://', 'https://')):
+        dataset_id_md = f'[{dataset_id}]({dataset_id})'
+    elif '/' in dataset_id:  # ModelScope format ID
+        dataset_id_md = f'[{dataset_id}](https://modelscope.cn/datasets/{dataset_id}/summary)'
+    else:
+        dataset_id_md = dataset_id
+    
+    # Build details section
+    details = [
+        f'### {pretty_name}',
+        '',
+        f'[Back to Top](#llm-benchmarks)',
+        f'- **Dataset Name**: `{name}`',
+        f'- **Dataset ID**: {dataset_id_md}',
+        f'- **Description**:  \n  > {description}',
+        f'- **Task Categories**: {wrap_key_words(data_adapter.tags)}',
+        f'- **Evaluation Metrics**: {wrap_key_words(data_adapter.metric_list)}',
+        f"- **Requires LLM Judge**: {'Yes' if data_adapter.llm_as_a_judge else 'No'}",
+        f'- **Default Shots**: {data_adapter.few_shot_num}-shot'
+    ]
+    
+    # Add dataset subsets
+    if data_adapter.subset_list:
+        details.append(f'- **Subsets**: {wrap_key_words(data_adapter.subset_list)}')
+
+    # Add technical information
+    technical_info = [
+        f'- **Supported Output Formats**: {wrap_key_words(data_adapter.output_types)}',
+    ]
+    
+    # Add extra parameters
+    extra_params = data_adapter.config_kwargs.get('extra_params', {})
+    if extra_params:
+        technical_info.append(f'- **Extra Parameters**: \n```json\n{process_dictionary(extra_params)}\n```')
+
+    # Add prompt templates
+    if data_adapter.system_prompt:
+        technical_info.append(f'- **System Prompt**: \n```text\n{data_adapter.system_prompt}\n```')
+    if data_adapter.prompt_template:
+        technical_info.append(f'- **Prompt Template**: \n```text\n{data_adapter.prompt_template}\n```')
+
+    return '\n'.join(details + [''] + technical_info + [''])
+
+
+def generate_full_documentation_en(adapters: list[DataAdapter]) -> str:
+    """
+    Generate complete Markdown documentation with index and all benchmark details
+    
+    Args:
+        adapters (list[DataAdapter]): List of DataAdapter instances
+        
+    Returns:
+        str: Complete Markdown document
+    """
+    # Generate index
+    index = [
+        '# LLM Benchmarks',
+        '',
+        'Below is the list of supported LLM benchmarks. Click on a benchmark name to jump to details.',
+        '',
+        '| Benchmark Name | Pretty Name | Task Categories |',
+        '|----------------|-------------|----------------|',
+    ]
+    
+    for adapter in adapters:
+        name = adapter.name
+        pretty_name = adapter.pretty_name or name
+        link_name = pretty_name.lower().replace(' ', '-').replace('.', '')
+        tags = wrap_key_words(adapter.tags)
+        index.append(f'| `{name}` | [{pretty_name}](#{link_name}) | {tags} |')
+    
+    # Generate details section
+    details = [
+        '',
+        '---',
+        '',
+        '## Benchmark Details',
+        ''
+    ]
+
+    for i, adapter in enumerate(adapters):
+        details.append(generate_dataset_markdown_en(adapter))
+        if i < len(adapters) - 1:
+            details.append('---')
+            details.append('')
+    
+    return '\n'.join(index + details)
+
 if __name__ == '__main__':
     # 示例用法
     from evalscope.benchmarks.benchmark import BENCHMARK_MAPPINGS
@@ -152,9 +254,13 @@ if __name__ == '__main__':
     
     # 生成完整文档
     markdown_doc = generate_full_documentation(adapters)
+    markdown_doc_en = generate_full_documentation_en(adapters)
     
     # 输出到文件
-    with open('docs/zh/get_started/supported_dataset/native/llm.md', 'w', encoding='utf-8') as f:
+    with open('docs/zh/get_started/supported_dataset/llm.md', 'w', encoding='utf-8') as f:
         f.write(markdown_doc)
 
-    print('Markdown文档已生成: llm.md')
+    with open('docs/en/get_started/supported_dataset/llm.md', 'w', encoding='utf-8') as f:
+        f.write(markdown_doc_en)
+        
+    print('Done')

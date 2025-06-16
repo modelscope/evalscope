@@ -45,7 +45,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
 - `--stream`: Whether to use streaming transmission, default is `False`
 
 ## Dataset Parameters
-- `--datasets`: Dataset name, supports inputting multiple datasets separated by spaces, datasets will automatically be downloaded from ModelScope, supported datasets refer to [Dataset List](./supported_dataset.md#supported-datasets).
+- `--datasets`: Dataset name, supports inputting multiple datasets separated by spaces, datasets will automatically be downloaded from ModelScope, supported datasets refer to [Dataset List](./supported_dataset/index.md).
 - `--dataset-args`: Configuration parameters for the evaluation dataset, passed in `json` format, where the key is the dataset name and the value is the parameter, note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
   - `dataset_id` (or `local_path`): Local path for the dataset, once specified, it will attempt to load local data.
   - `prompt_template`: The prompt template for the evaluation dataset. When specified, it will be used to generate prompts. For example, the template for the `gsm8k` dataset is `Question: {query}\nLet's think step by step\nAnswer:`. The question from the dataset will be filled into the `query` field of the template.

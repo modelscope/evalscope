@@ -30,8 +30,9 @@ Don't give information outside the document or repeat your findings."""
     name='needle_haystack',
     pretty_name='Needle-in-a-Haystack',
     tags=['Retrieval', 'Long Context'],
-    description=
-    'Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text.',  # noqa: E501
+    description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
+    'It requires the model to find specific information within a large corpus of text. '
+    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)',  # noqa: E501
     dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
     metric_list=['AverageAccuracy'],
     subset_list=['english', 'chinese'],

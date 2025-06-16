@@ -6,7 +6,7 @@
 |------------|----------|----------|
 | `aime24` | [AIME-2024](#aime-2024) | `Mathematics` |
 | `aime25` | [AIME-2025](#aime-2025) | `Mathematics` |
-| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval2.0) | `Instruction-Following`, `Reasoning` |
+| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Instruction-Following`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Instruction-Following`, `Reasoning` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -56,7 +56,7 @@
 - **任务类别**: `Mathematics`
 - **评估指标**: `AveragePass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -78,7 +78,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `Mathematics`
 - **评估指标**: `AveragePass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `AIME2025-II`, `AIME2025-I`
 
 - **支持输出格式**: `generation`
@@ -96,11 +96,11 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `alpaca_eval`
 - **数据集ID**: [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary)
 - **数据集描述**:  
-  > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments.
+  > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
 - **任务类别**: `Instruction-Following`, `Reasoning`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `alpaca_eval_gpt4_baseline`
 
 - **支持输出格式**: `generation`
@@ -117,7 +117,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `ARC-Challenge`, `ARC-Easy`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -136,11 +136,11 @@ Your response should end with "The best answer is [the_answer_letter]" where the
 - **数据集名称**: `arena_hard`
 - **数据集ID**: [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary)
 - **数据集描述**:  
-  > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities.
+  > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
 - **任务类别**: `Instruction-Following`, `Reasoning`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -157,7 +157,7 @@ Your response should end with "The best answer is [the_answer_letter]" where the
 - **任务类别**: `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 3 Few-shot
+- **默认提示方式**: 3-shot
 - **数据集子集**: `boolean_expressions`, `causal_judgement`, `date_understanding`, `disambiguation_qa`, `dyck_languages`, `formal_fallacies`, `geometric_shapes`, `hyperbaton`, `logical_deduction_five_objects`, `logical_deduction_seven_objects`, `logical_deduction_three_objects`, `movie_recommendation`, `multistep_arithmetic_two`, `navigate`, `object_counting`, `penguins_in_a_table`, `reasoning_about_colored_objects`, `ruin_names`, `salient_translation_error_detection`, `snarks`, `sports_understanding`, `temporal_sequences`, `tracking_shuffled_objects_five_objects`, `tracking_shuffled_objects_seven_objects`, `tracking_shuffled_objects_three_objects`, `web_of_lies`, `word_sorting`
 
 - **支持输出格式**: `generation`
@@ -179,7 +179,7 @@ A: Let's think step by step.
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `accountant`, `advanced_mathematics`, `art_studies`, `basic_medicine`, `business_administration`, `chinese_language_and_literature`, `civil_servant`, `clinical_medicine`, `college_chemistry`, `college_economics`, `college_physics`, `college_programming`, `computer_architecture`, `computer_network`, `discrete_mathematics`, `education_science`, `electrical_engineer`, `environmental_impact_assessment_engineer`, `fire_engineer`, `high_school_biology`, `high_school_chemistry`, `high_school_chinese`, `high_school_geography`, `high_school_history`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `ideological_and_moral_cultivation`, `law`, `legal_professional`, `logic`, `mao_zedong_thought`, `marxism`, `metrology_engineer`, `middle_school_biology`, `middle_school_chemistry`, `middle_school_geography`, `middle_school_history`, `middle_school_mathematics`, `middle_school_physics`, `middle_school_politics`, `modern_chinese_history`, `operating_system`, `physician`, `plant_protection`, `probability_and_statistics`, `professional_tour_guide`, `sports_science`, `tax_accountant`, `teacher_qualification`, `urban_and_rural_planner`, `veterinary_medicine`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -201,7 +201,7 @@ A: Let's think step by step.
 - **任务类别**: `Chinese`, `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
 - **需要LLM Judge**: 是
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `中华文化`, `人文与社会科学`, `工程、技术与应用科学`, `生活、艺术与文化`, `社会`, `自然与自然科学`
 
 - **支持输出格式**: `generation`
@@ -218,7 +218,7 @@ A: Let's think step by step.
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5 Few-shot
+- **默认提示方式**: 5-shot
 - **数据集子集**: `agronomy`, `anatomy`, `ancient_chinese`, `arts`, `astronomy`, `business_ethics`, `chinese_civil_service_exam`, `chinese_driving_rule`, `chinese_food_culture`, `chinese_foreign_policy`, `chinese_history`, `chinese_literature`, `chinese_teacher_qualification`, `clinical_knowledge`, `college_actuarial_science`, `college_education`, `college_engineering_hydrology`, `college_law`, `college_mathematics`, `college_medical_statistics`, `college_medicine`, `computer_science`, `computer_security`, `conceptual_physics`, `construction_project_management`, `economics`, `education`, `electrical_engineering`, `elementary_chinese`, `elementary_commonsense`, `elementary_information_and_technology`, `elementary_mathematics`, `ethnology`, `food_science`, `genetics`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_geography`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `human_sexuality`, `international_law`, `journalism`, `jurisprudence`, `legal_and_moral_basis`, `logical`, `machine_learning`, `management`, `marketing`, `marxist_theory`, `modern_chinese`, `nutrition`, `philosophy`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_study`, `sociology`, `sports_science`, `traditional_chinese_medicine`, `virology`, `world_history`, `world_religions`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -240,7 +240,7 @@ A: Let's think step by step.
 - **任务类别**: `Mathematics`
 - **评估指标**: `AveragePass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 4 Few-shot
+- **默认提示方式**: 4-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
 - **支持输出格式**: `generation`
@@ -262,7 +262,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `Long Context`, `Mathematics`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `complong_testmini`, `compshort_testmini`, `simplong_testmini`, `simpshort_testmini`
 
 - **支持输出格式**: `generation`
@@ -291,7 +291,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **任务类别**: `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -317,7 +317,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 - **任务类别**: `Long Context`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -342,11 +342,11 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **数据集名称**: `general_mcq`
 - **数据集ID**: general_mcq
 - **数据集描述**:  
-  > 暂无详细描述
+  > A general multiple-choice question answering dataset.
 - **任务类别**: `Custom`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -368,7 +368,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **任务类别**: `Custom`, `QA`
 - **评估指标**: `AverageBLEU`, `AverageRouge`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -390,7 +390,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AveragePass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5 Few-shot
+- **默认提示方式**: 5-shot
 - **数据集子集**: `gpqa_diamond`, `gpqa_extended`, `gpqa_main`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -412,7 +412,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `Mathematics`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 4 Few-shot
+- **默认提示方式**: 4-shot
 - **数据集子集**: `main`
 
 - **支持输出格式**: `generation`
@@ -435,7 +435,7 @@ Answer:
 - **任务类别**: `Commonsense`, `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -456,7 +456,7 @@ Answer:
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `openai_humaneval`
 
 - **支持输出格式**: `generation`
@@ -485,7 +485,7 @@ Complete the following python code:
 - **任务类别**: `Instruction-Following`
 - **评估指标**: `inst_level_loose_acc`, `inst_level_strict_acc`, `prompt_level_loose_acc`, `prompt_level_strict_acc`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -502,11 +502,14 @@ Complete the following python code:
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `EQ`, `IQ`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
-- **系统提示词**: `你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。`
+- **系统提示词**: 
+```text
+你是一个高智商和高情商的专家，你被要求回答一个选择题，并选出一个正确的选项，解释原因，最终输出格式为：`答案是(选项)`。
+```
 
 ---
 
@@ -520,7 +523,7 @@ Complete the following python code:
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `release_latest`
 
 - **支持输出格式**: `generation`
@@ -533,7 +536,10 @@ Complete the following python code:
     "debug": false
 }
 ```
-- **系统提示词**: `You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.`
+- **系统提示词**: 
+```text
+You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.
+```
 - **提示模板**: 
 ```text
 ### Question:
@@ -556,7 +562,7 @@ Complete the following python code:
 - **任务类别**: `Knowledge`, `MCQ`, `Maritime`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -586,7 +592,7 @@ D. 扭应力
 - **任务类别**: `Mathematics`
 - **评估指标**: `AveragePass@1`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
 - **支持输出格式**: `generation`
@@ -608,7 +614,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5 Few-shot
+- **默认提示方式**: 5-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -631,7 +637,7 @@ Answer the following multiple choice question about {subset_name}. The last line
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5 Few-shot
+- **默认提示方式**: 5-shot
 - **数据集子集**: `biology`, `business`, `chemistry`, `computer science`, `economics`, `engineering`, `health`, `history`, `law`, `math`, `other`, `philosophy`, `physics`, `psychology`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -653,7 +659,7 @@ The following are multiple choice questions (with answers) about {subset_name}. 
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -675,7 +681,7 @@ The following are multiple choice questions (with answers) about {subset_name}. 
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `murder_mysteries`, `object_placements`, `team_allocation`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -697,11 +703,11 @@ Think step by step and then finish your answer with "the answer is (X)" where X 
 - **数据集名称**: `needle_haystack`
 - **数据集ID**: [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary)
 - **数据集描述**:  
-  > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text.
+  > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 - **任务类别**: `Long Context`, `Retrieval`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 是
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `chinese`, `english`
 
 - **支持输出格式**: `generation`
@@ -722,7 +728,10 @@ Think step by step and then finish your answer with "the answer is (X)" where X 
     "show_score": false
 }
 ```
-- **系统提示词**: `You are a helpful AI bot that answers questions for a user. Keep your response short and direct`
+- **系统提示词**: 
+```text
+You are a helpful AI bot that answers questions for a user. Keep your response short and direct
+```
 - **提示模板**: 
 ```text
 Please read the following text and answer the question below.
@@ -750,7 +759,7 @@ Don't give information outside the document or repeat your findings.
 - **任务类别**: `Mathematical`, `Reasoning`
 - **评估指标**: `correct_acc`, `error_acc`, `simple_f1_score`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `gsm8k`, `math`, `olympiadbench`, `omnimath`
 
 - **支持输出格式**: `generation`
@@ -784,7 +793,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 3 Few-shot
+- **默认提示方式**: 3-shot
 - **数据集子集**: `high`, `middle`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -801,7 +810,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
 - **需要LLM Judge**: 是
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -818,7 +827,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `Aeronautical and Astronautical Science and Technology`, `Agricultural Engineering`, `Animal Husbandry`, `Applied Economics`, `Aquaculture`, `Architecture`, `Art Studies`, `Astronomy`, `Atmospheric Science`, `Basic Medicine`, `Biology`, `Business Administration`, `Chemical Engineering and Technology`, `Chemistry`, `Civil Engineering`, `Clinical Medicine`, `Computer Science and Technology`, `Control Science and Engineering`, `Crop Science`, `Education`, `Electrical Engineering`, `Electronic Science and Technology`, `Environmental Science and Engineering`, `Food Science and Engineering`, `Forestry Engineering`, `Forestry`, `Geography`, `Geological Resources and Geological Engineering`, `Geology`, `Geophysics`, `History`, `Hydraulic Engineering`, `Information and Communication Engineering`, `Instrument Science and Technology`, `Journalism and Communication`, `Language and Literature`, `Law`, `Library, Information and Archival Management`, `Management Science and Engineering`, `Materials Science and Engineering`, `Mathematics`, `Mechanical Engineering`, `Mechanics`, `Metallurgical Engineering`, `Military Science`, `Mining Engineering`, `Musicology`, `Naval Architecture and Ocean Engineering`, `Nuclear Science and Technology`, `Oceanography`, `Optical Engineering`, `Petroleum and Natural Gas Engineering`, `Pharmacy`, `Philosophy`, `Physical Education`, `Physical Oceanography`, `Physics`, `Political Science`, `Power Engineering and Engineering Thermophysics`, `Psychology`, `Public Administration`, `Public Health and Preventive Medicine`, `Sociology`, `Stomatology`, `Surveying and Mapping Science and Technology`, `Systems Science`, `Textile Science and Engineering`, `Theoretical Economics`, `Traditional Chinese Medicine`, `Transportation Engineering`, `Veterinary Medicine`, `Weapon Science and Technology`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`
@@ -831,11 +840,11 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **数据集名称**: `tool_bench`
 - **数据集ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **数据集描述**:  
-  > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.
+  > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
 - **任务类别**: `Agent`, `Reasoning`
 - **评估指标**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `in_domain`, `out_of_domain`
 
 - **支持输出格式**: `generation`
@@ -852,7 +861,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `QA`, `Reading Comprehension`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5 Few-shot
+- **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`
@@ -869,7 +878,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `Knowledge`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `multiple_choice`
 
 - **支持输出格式**: `continuous_logits`, `generation`
@@ -886,7 +895,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 0 Few-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`

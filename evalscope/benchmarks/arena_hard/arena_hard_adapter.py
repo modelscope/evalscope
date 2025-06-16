@@ -19,7 +19,10 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
     pretty_name='ArenaHard',
     tags=['Instruction-Following', 'Reasoning'],
     description=
-    'ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities.',  # noqa: E501
+    'ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, '
+    'where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. '
+    'It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. '
+    'Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.',  # noqa: E501
     dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
     metric_list=['winrate'],
     few_shot_num=0,
