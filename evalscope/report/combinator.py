@@ -34,25 +34,51 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
 
 def get_data_frame(report_list: List[Report],
                    flatten_metrics: bool = True,
-                   flatten_categories: bool = True) -> pd.DataFrame:
+                   flatten_categories: bool = True,
+                   add_overall_metric: bool = False) -> pd.DataFrame:
     tables = []
     for report in report_list:
-        df = report.to_dataframe(flatten_metrics=flatten_metrics, flatten_categories=flatten_categories)
+        df = report.to_dataframe(
+            flatten_metrics=flatten_metrics,
+            flatten_categories=flatten_categories,
+            add_overall_metric=add_overall_metric)
         tables.append(df)
     return pd.concat(tables, ignore_index=True)
 
 
-def gen_table(reports_path_list: list) -> str:
-    report_list = get_report_list(reports_path_list)
-    table = get_data_frame(report_list)
-    return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
-
-
-def gen_report_table(report: Report) -> str:
+def gen_table(reports_path_list: list[str] = None,
+              report_list: list[Report] = None,
+              flatten_metrics: bool = True,
+              flatten_categories: bool = True,
+              add_overall_metric: bool = False) -> str:
     """
-    Generate a report table for a single report.
+    Generates a formatted table from a list of report paths or Report objects.
+
+    Args:
+        reports_path_list (list[str], optional): List of file paths to report files.
+            Either this or `report_list` must be provided.
+        report_list (list[Report], optional): List of Report objects.
+            Either this or `reports_path_list` must be provided.
+        flatten_metrics (bool, optional): Whether to flatten the metrics in the output table. Defaults to True.
+        flatten_categories (bool, optional): Whether to flatten the categories in the output table. Defaults to True.
+        add_overall_metric (bool, optional): Whether to add an overall metric column to the table. Defaults to False.
+
+    Returns:
+        str: A string representation of the table in grid format.
+
+    Raises:
+        AssertionError: If neither `reports_path_list` nor `report_list` is provided.
     """
-    table = report.to_dataframe(flatten_metrics=True, flatten_categories=True)
+    assert (reports_path_list is not None) or (report_list is not None), \
+        'Either reports_path_list or report_list must be provided.'
+    if report_list is None:
+        report_list = get_report_list(reports_path_list)
+    # Generate a DataFrame from the report list
+    table = get_data_frame(
+        report_list,
+        flatten_metrics=flatten_metrics,
+        flatten_categories=flatten_categories,
+        add_overall_metric=add_overall_metric)
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
 
 
@@ -68,7 +94,7 @@ if __name__ == '__main__':
     report_dir_1 = './outputs/20250117_151926'
     # report_dir_2 = './outputs/20250107_204445/reports'
 
-    report_table = gen_table([report_dir_1])
+    report_table = gen_table(reports_path_list=[report_dir_1])
     print(report_table)
 
     # ALL VALUES ONLY FOR EXAMPLE
