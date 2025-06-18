@@ -145,19 +145,65 @@ class ServerModelAdapter(BaseModelAdapter):
         collected_chunks = []
         collected_messages = defaultdict(list)
         collected_reasoning = defaultdict(list)
+        collected_tool_calls = defaultdict(dict)
 
         for chunk in response_stream:
             collected_chunks.append(chunk)
             for choice in chunk.choices:
+                # Handle reasoning content
                 if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
                     collected_reasoning[choice.index].append(choice.delta.reasoning_content)
+
+                # Handle regular content
                 if choice.delta.content is not None:
                     collected_messages[choice.index].append(choice.delta.content)
 
+                # Handle tool calls
+                if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
+                    for tool_call in choice.delta.tool_calls:
+                        tool_id = tool_call.index
+
+                        # Initialize tool call if not present
+                        if tool_id not in collected_tool_calls[choice.index]:
+                            collected_tool_calls[choice.index][tool_id] = {
+                                'id': tool_call.id if hasattr(tool_call, 'id') and tool_call.id else None,
+                                'type': tool_call.type if hasattr(tool_call, 'type') and tool_call.type else None,
+                                'function': {
+                                    'name': '',
+                                    'arguments': ''
+                                }
+                            }
+
+                        # Update tool call with new chunks
+                        if hasattr(tool_call, 'function'):
+                            if hasattr(tool_call.function, 'name') and tool_call.function.name:
+                                collected_tool_calls[
+                                    choice.index][tool_id]['function']['name'] = tool_call.function.name
+
+                            if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
+                                collected_tool_calls[
+                                    choice.index][tool_id]['function']['arguments'] += tool_call.function.arguments
+
+                        # Update ID if it was received later
+                        if hasattr(tool_call, 'id') and tool_call.id:
+                            collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
+
+        # Get all unique choice indices from all collections
+        all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(
+            collected_tool_calls.keys())
+
         choices = []
-        for index, messages in collected_messages.items():
-            full_reply_content = ''.join(messages)
-            reasoning = ''.join(collected_reasoning[index])
+        for index in all_indices:
+            full_reply_content = ''.join(collected_messages.get(index, []))
+            reasoning = ''.join(collected_reasoning.get(index, []))
+
+            # Process tool_calls for this choice if any exists
+            tool_calls_list = None
+            if index in collected_tool_calls and collected_tool_calls[index]:
+                tool_calls_list = list(collected_tool_calls[index].values())
+                # Filter out any tool calls with None id (incomplete tool calls)
+                tool_calls_list = [tc for tc in tool_calls_list if tc['id'] is not None]
+
             # use the finish_reason from the last chunk that generated this choice
             finish_reason = None
             for chunk in reversed(collected_chunks):
@@ -165,11 +211,16 @@ class ServerModelAdapter(BaseModelAdapter):
                     finish_reason = chunk.choices[0].finish_reason
                     break
 
+            message_kwargs = {'role': 'assistant', 'content': full_reply_content}
+
+            if reasoning:
+                message_kwargs['reasoning_content'] = reasoning
+
+            if tool_calls_list:
+                message_kwargs['tool_calls'] = tool_calls_list
+
             choice = Choice(
-                finish_reason=finish_reason or 'stop',
-                index=index,
-                message=ChatCompletionMessage(
-                    role='assistant', content=full_reply_content, reasoning_content=reasoning))
+                finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs))
             choices.append(choice)
 
         # build the final completion object

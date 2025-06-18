@@ -1,3 +1,4 @@
+import copy
 import importlib
 import json
 import re
@@ -10,28 +11,45 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+SUBJECT_MAPPING = {
+    'simple': 'AST_NON_LIVE',
+    'multiple': 'AST_NON_LIVE',
+    'parallel': 'AST_NON_LIVE',
+    'parallel_multiple': 'AST_NON_LIVE',
+    'java': 'AST_NON_LIVE',
+    'javascript': 'AST_NON_LIVE',
+    'live_simple': 'AST_LIVE',
+    'live_multiple': 'AST_LIVE',
+    'live_parallel': 'AST_LIVE',
+    'live_parallel_multiple': 'AST_LIVE',
+    'irrelevance': 'RELEVANCE',
+    'live_relevance': 'RELEVANCE',
+    'live_irrelevance': 'RELEVANCE',
+    'multi_turn_base': 'MULTI_TURN',
+    'multi_turn_miss_func': 'MULTI_TURN',
+    'multi_turn_miss_param': 'MULTI_TURN',
+    'multi_turn_long_context': 'MULTI_TURN'
+}
+
 
 @Benchmark.register(
-    name='bfcl',
+    name='bfcl_v3',
     pretty_name='BFCL-v3',
     tags=['Agent'],
     description=
     'Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** '
     'dedicated to assessing Large Language Models\' (LLMs) ability to invoke functions. Unlike previous evaluations, '
-    'BFCL accounts for various forms of function calls, diverse scenarios, and executability.',  # noqa: E501
+    'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
+    'Need to run `pip install bfcl-eval` before evaluating.',  # noqa: E501
     dataset_id='AI-ModelScope/bfcl_v3',
-    subset_list=[
-        'irrelevance', 'live_relevance', 'live_irrelevance', 'live_simple', 'live_multiple', 'live_parallel',
-        'live_parallel_multiple', 'simple', 'multiple', 'parallel', 'parallel_multiple', 'java', 'javascript',
-        'multi_turn_base', 'multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context'
-    ],
+    subset_list=list(SUBJECT_MAPPING.keys()),
     model_adapter='bfcl_server',
     metric_list=['AverageAccuracy'],
     few_shot_num=0,
     train_split=None,
     eval_split='train',
     extra_params={
-        'underscore_to_dot': False,
+        'underscore_to_dot': True,
         'is_fc_model': True,
     })
 class BFCLAdapter(DataAdapter):
@@ -44,28 +62,58 @@ class BFCLAdapter(DataAdapter):
             raise ImportError(
                 '`bfcl_eval` not found, please install it with `pip install bfcl-eval` before evaluating.')
 
+        self.category_map = SUBJECT_MAPPING
+
         extra_params = kwargs.get('extra_params', {})
         self.underscore_to_dot = extra_params.get('underscore_to_dot', False)
         self.is_fc_model = extra_params.get('is_fc_model', True)
 
+    def load(self, **kwargs):
+        kwargs['subset_list'] = ['default']
+        data_dict = super().load(**kwargs)
+        return self.reformat_subset(data_dict, subset_key='subset', format='{}')
+
+    def preprocess_row(self, row: dict):
+        """
+        Inplace preprocess the row to ensure it has the correct format for BFCL evaluation.
+        """
+        row['should_execute_tool_calls'] = True if row['multi_turn'] else False
+        row['functions'] = json.loads(row['functions'])
+        row['tools'] = json.loads(row['tools'])
+        row['turns'] = json.loads(row['turns'])
+        row['missing_functions'] = json.loads(row['missed_functions'])
+        row['ground_truth'] = json.loads(row.get('ground_truth', '{}'))
+        row['initial_config'] = json.loads(row['initial_config'])
+        row['is_fc_model'] = self.is_fc_model
+
     def gen_prompt(self, input_d, subset_name, few_shot_list, **kwargs):
+        self.preprocess_row(input_d)
+
+        # If the model is a function calling model, we need to remove the system prompt
         if self.is_fc_model:
-            # Remove system prompt for function calling models
             turns = input_d['turns']
             new_turns = []
             for turn_idx, messages in enumerate(turns):
                 current_messages = messages.copy()
-                if current_messages[0]['role'] == 'system':
+                if len(current_messages) > 0 and current_messages[0]['role'] == 'system':
                     current_messages = current_messages[1:]
                 new_turns.append(current_messages)
             input_d['turns'] = new_turns
 
-        input_d['should_execute_tool_calls'] = True if input_d['multi_turn'] else False
-        input_d['is_fc_model'] = self.is_fc_model
-
         return self.gen_prompt_data(prompt='', messages=input_d)
 
-    def grade_row(self, row: dict[str, Any]) -> dict[str, Any]:
+    def get_gold_answer(self, input_d: dict) -> str:
+        # Get the gold choice
+        return input_d.get('ground_truth', )
+
+    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> dict:
+        row = copy.deepcopy(raw_input_d)
+        del row['turns']  # Remove turns as they are not needed for the match function
+
+        row['generation'] = result
+        return row
+
+    def match(self, gold: dict, pred: dict) -> dict:
         from bfcl_eval.eval_checker.ast_eval.ast_checker import ast_checker
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_checker import multi_turn_checker
         from bfcl_eval.model_handler.utils import (convert_to_function_call, default_decode_ast_prompting,
@@ -82,6 +130,7 @@ class BFCLAdapter(DataAdapter):
         else:
             dummy_model = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 
+        row = pred
         test_category = re.sub(r'_[0-9_-]+$', '', row['id'])
         if test_category in {'irrelevance', 'live_irrelevance', 'live_relevance'}:
             error = None
@@ -176,6 +225,12 @@ class BFCLAdapter(DataAdapter):
                 }
 
         return {
-            'score': float(score_result['valid']),
+            'AverageAccuracy': float(score_result['valid']),
             'raw_score_result': score_result,
         }
+
+    def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:
+        # aggregate review results
+        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
+
+        return super().compute_metric(res_dict, **kwargs)

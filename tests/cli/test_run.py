@@ -304,13 +304,14 @@ class TestRun(unittest.TestCase):
                 # 'hellaswag',
                 # 'general_mcq',
                 # 'general_qa',
-                'super_gpqa',
+                # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
                 # 'frames',
+                'bfcl_v3',
             ],
             dataset_args={
                 'mmlu': {
@@ -374,19 +375,22 @@ class TestRun(unittest.TestCase):
                 'mmlu_redux':{
                     'subset_list': ['abstract_algebra']
                 },
+                'bfcl_v3': {
+                    'subset_list': ['multi_turn_miss_func'],
+                },
             },
-            eval_batch_size=32,
-            limit=10,
-            debug=True,
-            stream=False,
+            eval_batch_size=1,
+            limit=3,
+            debug=False,
+            stream=True,
             generation_config={
                 'temperature': 0,
                 'n': 1,
                 'max_tokens': 4096,
                 # 'extra_headers':{'key': 'value'},
             },
-            ignore_errors=True,
-            use_cache='outputs/20250616_153756'
+            ignore_errors=False,
+            # use_cache='outputs/20250616_153756'
         )
 
         run_task(task_cfg=task_cfg)

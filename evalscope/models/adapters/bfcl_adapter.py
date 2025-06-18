@@ -1,16 +1,12 @@
 import json
+import time
 import uuid
-from collections import defaultdict
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
-from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from typing import Any, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
 from .server_adapter import ServerModelAdapter
 
 logger = get_logger()
-
-MAX_INFERENCE_STEPS = 10
 
 
 class BFCLAdapter(ServerModelAdapter):
@@ -52,19 +48,39 @@ class BFCLAdapter(ServerModelAdapter):
             # On the other hand, we try to manage
             # tool calling via prompting and parse tool calls in the standard text response
             # This is how the is_fc_model=False benchmark is designed to work
-            is_fc_model = input_item.get('is_fc_model', False)
             row = input_item.get('messages')
+            is_fc_model = row.get('is_fc_model', False)
 
             if is_fc_model:
                 response = self.generate_turn_with_tools(row, infer_cfg)
             else:
                 response = self.generate_turn(row, infer_cfg)
-            results.append(response)
+
+            # wrap response with openai types
+            res_d = {
+                'choices': [{
+                    'index': 0,
+                    'message': {
+                        'content': response,
+                        'role': 'assistant'
+                    }
+                }],
+                'created': time.time(),
+                'model': self.model_id,
+                'object': 'chat.completion',
+                'usage': {
+                    'completion_tokens': 0,
+                    'prompt_tokens': 0,
+                    'total_tokens': 0
+                }
+            }
+            results.append(res_d)
 
         return results
 
     def generate_turn(self, row: dict[str, Any], infer_cfg: dict[str, Any]) -> list[str]:
-        from bfcl_eval.constants.default_prompts import DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING
+        from bfcl_eval.constants.default_prompts import (DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING,
+                                                         MAXIMUM_STEP_LIMIT)
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_utils import execute_multi_turn_func_call
         from bfcl_eval.model_handler.utils import default_decode_execute_prompting
 
@@ -92,7 +108,7 @@ class BFCLAdapter(ServerModelAdapter):
                     'messages': current_messages,
                 }
                 responses = self.process_single_input(input_item, infer_cfg)
-                result = responses[0].content
+                result = responses['choices'][0]['message']['content']
 
                 logger.debug(f'Turn:{turn_idx} Step:{n_steps} Result: {result}')
                 current_messages.append({
@@ -126,14 +142,13 @@ class BFCLAdapter(ServerModelAdapter):
                             'role': 'tool',
                             'tool_call_id': str(uuid.uuid4())[:6],
                             'content': json.dumps({'response': tool_output}),
-                            # "content": tool_output,
                         })
                 else:
                     break
 
                 n_steps += 1
-                if n_steps > MAX_INFERENCE_STEPS:
-                    print(f'INFERENCE_ERROR: Exceeded max inference steps ({MAX_INFERENCE_STEPS})')
+                if n_steps > MAXIMUM_STEP_LIMIT:
+                    logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                     break
 
             all_model_responses.append(current_responses)
@@ -141,7 +156,8 @@ class BFCLAdapter(ServerModelAdapter):
         return all_model_responses
 
     def generate_turn_with_tools(self, row: dict[str, Any], infer_cfg: dict[str, Any]) -> list[str]:
-        from bfcl_eval.constants.default_prompts import DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC
+        from bfcl_eval.constants.default_prompts import (DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
+                                                         MAXIMUM_STEP_LIMIT)
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_utils import execute_multi_turn_func_call
         from bfcl_eval.model_handler.utils import convert_to_function_call
 
@@ -156,9 +172,13 @@ class BFCLAdapter(ServerModelAdapter):
 
             if str(turn_idx) in row['missing_functions']:
                 assert len(messages) == 0, 'Holdout turn should not have user message.'
+                # inject new functions on the fly
                 new_tools = row['missing_functions'][str(turn_idx)]
-
-                tools.extend(new_tools)
+                for new_tool in new_tools:
+                    tools.append({
+                        'type': 'function',
+                        'function': new_tool[0],
+                    })
                 new_turn = [{
                     'role': 'user',
                     'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
@@ -171,17 +191,19 @@ class BFCLAdapter(ServerModelAdapter):
                     'tools': tools,
                 }
                 responses = self.process_single_input(input_item, infer_cfg)
-                message = responses[0]
+                message = responses['choices'][0]['message']
 
                 current_messages.append(message)
                 if isinstance(message, str):
                     model_responses = [message]
                     tool_call_strs = None
-                elif message.tool_calls:
-                    model_responses = [{tc.function.name: tc.function.arguments} for tc in message.tool_calls]
+                elif message.get('tool_calls'):
+                    model_responses = [{
+                        tc['function']['name']: tc['function']['arguments']
+                    } for tc in message['tool_calls']]
                     tool_call_strs = convert_to_function_call(model_responses)
                 else:
-                    model_responses = [message.content]
+                    model_responses = [message['content']]
                     tool_call_strs = None
 
                 current_responses.extend(model_responses)
@@ -198,18 +220,18 @@ class BFCLAdapter(ServerModelAdapter):
                         is_evaL_run=False,
                     )
 
-                    for tc, tool_output in zip(message.tool_calls, tool_outputs, strict=False):
+                    for tc, tool_output in zip(message['tool_calls'], tool_outputs, strict=False):
                         current_messages.append({
                             'role': 'tool',
-                            'tool_call_id': tc.id,
+                            'tool_call_id': tc['id'],
                             'content': json.dumps({'response': tool_output}),
                         })
                 else:
                     break
 
                 n_steps += 1
-                if n_steps > MAX_INFERENCE_STEPS:
-                    print(f'INFERENCE_ERROR: Exceeded max inference steps ({MAX_INFERENCE_STEPS})')
+                if n_steps > MAXIMUM_STEP_LIMIT:
+                    logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                     break
 
             all_model_responses.append(current_responses)
