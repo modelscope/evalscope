@@ -1,3 +1,4 @@
+import copy
 import openai
 from collections import defaultdict
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
@@ -61,18 +62,17 @@ class ServerModelAdapter(BaseModelAdapter):
 
     def process_single_input(self, input_item: dict, infer_cfg: dict) -> dict:
         """Process a single input item."""
-        if input_item.get('messages', None):
-            content = input_item['messages']
-        else:
-            content = self.make_request_content(input_item)
-        request_json = self.make_request(content, infer_cfg)
+        request_json = self.make_request(input_item, infer_cfg)
         response = self.send_request(request_json)
         return response
 
-    def make_request_content(self, input_item: dict) -> list:
+    def make_request_messages(self, input_item: dict) -> list:
         """
-        Make request content for OpenAI API.
+        Make request messages for OpenAI API.
         """
+        if input_item.get('messages', None):
+            return input_item['messages']
+
         data: list = input_item['data']
         if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
             query = '\n'.join(''.join(item) for item in data)
@@ -89,10 +89,11 @@ class ServerModelAdapter(BaseModelAdapter):
 
         return messages
 
-    def make_request(self, content: list, infer_cfg: dict) -> dict:
+    def make_request(self, input_item: dict, infer_cfg: dict) -> dict:
         """Make request to remote API."""
+        messages = self.make_request_messages(input_item)
         # Format request JSON according to OpenAI API format
-        request_json = {'model': self.model_id, 'messages': content, **infer_cfg}
+        request_json = {'model': self.model_id, 'messages': messages, **infer_cfg}
 
         if self.timeout:
             request_json['timeout'] = self.timeout
@@ -100,6 +101,15 @@ class ServerModelAdapter(BaseModelAdapter):
         if self.stream:
             request_json['stream'] = self.stream
             request_json['stream_options'] = {'include_usage': True}
+
+        if input_item.get('tools', None):
+            tools_copy = copy.deepcopy(input_item.get('tools'))
+            # Remove the "responses" from the functions, as that doesn't
+            # need to go to the model
+            for tool in tools_copy:
+                if 'function' in tool and 'response' in tool['function']:
+                    del tool['function']['response']
+            request_json['tools'] = tools_copy
 
         logger.debug(f'Request to remote API: {request_json}')
 
