@@ -23,7 +23,7 @@ Run `evalscope eval --help` to get a complete list of parameter descriptions.
     - `top_k`: Top-k for generation
     - `top_p`: Top-p for generation
   - If using model API service for inference (`eval-type` set to `service`), the following parameters are included (please refer to the deployed model service for specifics):
-    - `max_tokens`: Maximum length of generated text, default is 512
+    - `max_tokens`: Maximum length of generated text, default is 2048
     - `temperature`: Generation temperature, default is 0.0
     - `n`: number of generated sequences, default is 1 (Note: currently, lmdeploy only supports n=1)
   ```bash
