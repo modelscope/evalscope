@@ -16,7 +16,7 @@
 首先，安装EvalScope  (https://github.com/modelscope/evalscope) 模型评估框架：
 
 ```bash
-pip install 'evalscope[app]' -U
+pip install 'evalscope[aigc,app]' -U
 ```
 
 为了方便使用包括HiDream-I1-Dev在内的最新的文生图模型，还需要安装最新的diffusers库：

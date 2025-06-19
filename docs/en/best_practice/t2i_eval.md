@@ -4,7 +4,7 @@ The rapid advancement of generative models in fields like text-to-image generati
 
 To address these challenges, EvalScope offers a comprehensive solution from automated evaluation to intelligent analysis. Its core advantages include:
 
-1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion and Flux, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/aigc/t2i.html).
+1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion and Flux, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html).
 
 2. **Intelligent Reporting and Visualization**: Utilizes large models to automatically generate multi-dimensional analysis reports, combined with interactive visualization tools like radar and bar charts, to intuitively display model performance differences across scenarios, aiding developers in quickly identifying model bottlenecks.
 
@@ -15,7 +15,7 @@ This document uses FLUX.1-dev and HiDream-I1-Dev models as evaluation subjects o
 First, install the EvalScope model evaluation framework:
 
 ```bash
-pip install 'evalscope[app]' -U
+pip install 'evalscope[aigc,app]' -U
 ```
 
 To use the latest text-to-image models, including HiDream-I1-Dev, install the latest diffusers library:
