@@ -136,13 +136,14 @@ class BFCLAdapter(ServerModelAdapter):
                         long_context=('long_context' in row['test_category'] or 'composite' in row['test_category']),
                         is_evaL_run=False,
                     )
-
-                    for tool_output in tool_outputs:
-                        current_messages.append({
-                            'role': 'tool',
-                            'tool_call_id': str(uuid.uuid4())[:6],
-                            'content': json.dumps({'response': tool_output}),
-                        })
+                    # Append tool outputs to the current messages
+                    tool_results = []
+                    for tool_output, tool_call in zip(tool_outputs, tool_calls):
+                        tool_results.append({'role': 'tool', 'name': tool_call, 'content': tool_output})
+                    current_messages.append({
+                        'role': 'user',
+                        'content': repr(tool_results),
+                    })
                 else:
                     break
 
@@ -201,7 +202,11 @@ class BFCLAdapter(ServerModelAdapter):
                     model_responses = [{
                         tc['function']['name']: tc['function']['arguments']
                     } for tc in message['tool_calls']]
-                    tool_call_strs = convert_to_function_call(model_responses)
+                    try:
+                        tool_call_strs = convert_to_function_call(model_responses)
+                    except Exception as e:
+                        logger.error(f'Error converting tool calls to function call strings: {e}')
+                        tool_call_strs = None
                 else:
                     model_responses = [message['content']]
                     tool_call_strs = None

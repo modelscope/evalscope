@@ -40,7 +40,8 @@ SUBJECT_MAPPING = {
     'Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** '
     'dedicated to assessing Large Language Models\' (LLMs) ability to invoke functions. Unlike previous evaluations, '
     'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
-    'Need to run `pip install bfcl-eval` before evaluating.',  # noqa: E501
+    'Need to run `pip install bfcl-eval` before evaluating. '
+    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)',  # noqa: E501
     dataset_id='AI-ModelScope/bfcl_v3',
     subset_list=list(SUBJECT_MAPPING.keys()),
     model_adapter='bfcl_server',

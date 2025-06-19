@@ -10,6 +10,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Instruction-Following`, `Reasoning` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
+| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
@@ -165,6 +166,30 @@ Your response should end with "The best answer is [the_answer_letter]" where the
 ```text
 Q: {query}
 A: Let's think step by step.
+```
+
+---
+
+### BFCL-v3
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `bfcl_v3`
+- **Dataset ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
+- **Description**:  
+  > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
+- **Task Categories**: `Agent`
+- **Evaluation Metrics**: `AverageAccuracy`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `irrelevance`, `java`, `javascript`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple`
+
+- **Supported Output Formats**: `generation`
+- **Extra Parameters**: 
+```json
+{
+    "underscore_to_dot": true,
+    "is_fc_model": true
+}
 ```
 
 ---

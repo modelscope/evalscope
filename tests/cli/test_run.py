@@ -376,12 +376,15 @@ class TestRun(unittest.TestCase):
                     'subset_list': ['abstract_algebra']
                 },
                 'bfcl_v3': {
-                    'subset_list': ['multi_turn_miss_func'],
+                    'subset_list': ['parallel'],
+                    'extra_params': {
+                        # 'is_fc_model': False,
+                    }
                 },
             },
-            eval_batch_size=1,
-            limit=3,
-            debug=False,
+            eval_batch_size=10,
+            limit=50,
+            debug=True,
             stream=True,
             generation_config={
                 'temperature': 0,
