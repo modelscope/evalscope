@@ -23,7 +23,7 @@
     - `top_k`: 生成top-k
     - `top_p`: 生成top-p
   - 若使用模型API服务推理（`eval-type`设置为`service`），包括如下参数（具体请参考部署的模型服务）：
-    - `max_tokens`: 生成最大长度，默认为512
+    - `max_tokens`: 生成最大长度，默认为2048
     - `temperature`: 生成温度, 默认为0.0
     - `n`: 生成序列数量，默认为1（注意：lmdeploy目前仅支持n=1）
   ```bash
