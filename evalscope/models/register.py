@@ -51,4 +51,5 @@ register_model_adapter_class(ContinuationLogitsModelAdapter, name=OutputType.CON
 register_model_adapter_class(MultiChoiceModelAdapter, name=OutputType.MULTIPLE_CHOICE)
 register_model_adapter_class(CustomModelAdapter, name='custom')
 register_model_adapter_class(ServerModelAdapter, name='server')
+register_model_adapter_class(BFCLAdapter, name='bfcl_server')
 register_model_adapter_class(T2IModelAdapter, name=OutputType.IMAGE_GENERATION)
