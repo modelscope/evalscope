@@ -1,79 +1,25 @@
 """
-UI components for the Evalscope dashboard.
+Single model components for the Evalscope dashboard.
 """
 import gradio as gr
 import os
 import pandas as pd
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
+from typing import TYPE_CHECKING
 
 from evalscope.report import Report, ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
-from evalscope.version import __version__
-from .constants import DATASET_TOKEN, LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOKEN
-from .utils.data_utils import (get_acc_report_df, get_compare_report_df, get_model_prediction, get_report_analysis,
-                               get_single_dataset_df, load_multi_report, load_single_report, process_report_name,
-                               scan_for_report_folders)
-from .utils.localization import (get_app_locale, get_multi_model_locale, get_sidebar_locale, get_single_model_locale,
-                                 get_visualization_locale)
-from .utils.text_utils import convert_markdown_image, process_model_prediction
-from .utils.visualization import (plot_multi_report_radar, plot_single_dataset_scores, plot_single_report_scores,
-                                  plot_single_report_sunburst)
+from ..constants import DATASET_TOKEN, LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOKEN
+from ..utils.data_utils import (get_acc_report_df, get_model_prediction, get_report_analysis, get_single_dataset_df,
+                                load_single_report)
+from ..utils.localization import get_single_model_locale
+from ..utils.text_utils import convert_markdown_image, process_model_prediction
+from ..utils.visualization import plot_single_dataset_scores, plot_single_report_scores, plot_single_report_sunburst
+
+if TYPE_CHECKING:
+    from .sidebar import SidebarComponents
 
 logger = get_logger()
-
-
-@dataclass
-class SidebarComponents:
-    root_path: gr.Textbox
-    reports_dropdown: gr.Dropdown
-    load_btn: gr.Button
-
-
-def create_sidebar(outputs_dir: str, lang: str):
-    locale_dict = get_sidebar_locale(lang)
-
-    gr.Markdown(f'## {locale_dict["settings"]}')
-    root_path = gr.Textbox(label=locale_dict['report_root_path'], value=outputs_dir, placeholder=outputs_dir, lines=1)
-    reports_dropdown = gr.Dropdown(label=locale_dict['select_reports'], choices=[], multiselect=True, interactive=True)
-    load_btn = gr.Button(locale_dict['load_btn'])
-    gr.Markdown(f'### {locale_dict["note"]}')
-
-    @reports_dropdown.focus(inputs=[root_path], outputs=[reports_dropdown])
-    def update_dropdown_choices(root_path):
-        folders = scan_for_report_folders(root_path)
-        if len(folders) == 0:
-            gr.Warning(locale_dict['warning'], duration=3)
-        return gr.update(choices=folders)
-
-    return SidebarComponents(
-        root_path=root_path,
-        reports_dropdown=reports_dropdown,
-        load_btn=load_btn,
-    )
-
-
-@dataclass
-class VisualizationComponents:
-    single_model: 'SingleModelComponents'
-    multi_model: 'MultiModelComponents'
-
-
-def create_visualization(sidebar: SidebarComponents, lang: str):
-    locale_dict = get_visualization_locale(lang)
-
-    with gr.Column(visible=True):
-        gr.Markdown(f'## {locale_dict["visualization"]}')
-        with gr.Tabs():
-            with gr.Tab(locale_dict['single_model']):
-                single = create_single_model_tab(sidebar, lang)
-
-            with gr.Tab(locale_dict['multi_model']):
-                multi = create_multi_model_tab(sidebar, lang)
-    return VisualizationComponents(
-        single_model=single,
-        multi_model=multi,
-    )
 
 
 @dataclass
@@ -81,7 +27,7 @@ class SingleModelComponents:
     report_name: gr.Dropdown
 
 
-def create_single_model_tab(sidebar: SidebarComponents, lang: str):
+def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     locale_dict = get_single_model_locale(lang)
 
     # Update the UI components with localized labels
@@ -259,72 +205,3 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         return input_md, generated_md, gold_md, pred_md, score_md, nscore_val
 
     return SingleModelComponents(report_name=report_name)
-
-
-@dataclass
-class MultiModelComponents:
-    multi_report_name: gr.Dropdown
-
-
-def create_multi_model_tab(sidebar: SidebarComponents, lang: str):
-    locale_dict = get_multi_model_locale(lang)
-
-    multi_report_name = gr.Dropdown(label=locale_dict['select_reports'], choices=[], multiselect=True, interactive=True)
-    gr.Markdown(locale_dict['model_radar'])
-    radar_plot = gr.Plot(value=None)
-    gr.Markdown(locale_dict['model_scores'])
-    score_table = gr.DataFrame(value=None)
-
-    @multi_report_name.change(inputs=[sidebar.root_path, multi_report_name], outputs=[radar_plot, score_table])
-    def update_multi_report_data(root_path, multi_report_name):
-        if not multi_report_name:
-            return gr.skip()
-        report_list = load_multi_report(root_path, multi_report_name)
-        report_df, _ = get_acc_report_df(report_list)
-        report_radar_plot = plot_multi_report_radar(report_df)
-        _, styler = get_compare_report_df(report_df)
-        return report_radar_plot, styler
-
-    return MultiModelComponents(multi_report_name=multi_report_name)
-
-
-def create_app_ui(args):
-    lang = args.lang
-    locale_dict = get_app_locale(lang)
-
-    with gr.Blocks(title='Evalscope Dashboard') as demo:
-        gr.HTML(f'<h1 style="text-align: left;">{locale_dict["title"]} (v{__version__})</h1>')
-        with gr.Row():
-            with gr.Column(scale=0, min_width=35):
-                toggle_btn = gr.Button('<')
-            with gr.Column(scale=1):
-                gr.HTML(f'<h3 style="text-align: left;">{locale_dict["star_beggar"]}</h3>')
-
-        with gr.Row():
-            with gr.Column(scale=1) as sidebar_column:
-                sidebar_visible = gr.State(True)
-                sidebar = create_sidebar(args.outputs, lang)
-
-            with gr.Column(scale=5):
-                visualization = create_visualization(sidebar, lang)
-
-        @sidebar.load_btn.click(
-            inputs=[sidebar.reports_dropdown],
-            outputs=[visualization.single_model.report_name, visualization.multi_model.multi_report_name])
-        def update_displays(reports_dropdown):
-            if not reports_dropdown:
-                gr.Warning(locale_dict['note'], duration=3)
-                return gr.skip()
-
-            return (
-                gr.update(choices=reports_dropdown, value=reports_dropdown[0]),  # update single model dropdown
-                gr.update(choices=reports_dropdown, value=reports_dropdown)  # update multi model dropdown
-            )
-
-        @toggle_btn.click(inputs=[sidebar_visible], outputs=[sidebar_column, sidebar_visible, toggle_btn])
-        def toggle_sidebar(visible):
-            new_visible = not visible
-            text = '<' if new_visible else '>'
-            return gr.update(visible=new_visible), new_visible, gr.update(value=text)
-
-    return demo

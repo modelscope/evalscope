@@ -5,7 +5,7 @@ import argparse
 
 from evalscope.utils.logger import configure_logging
 from .arguments import add_argument
-from .ui_components import create_app_ui
+from .ui import create_app_ui
 
 
 def create_app(args: argparse.Namespace):
