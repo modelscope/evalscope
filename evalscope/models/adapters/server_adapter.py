@@ -97,8 +97,8 @@ class ServerModelAdapter(BaseModelAdapter):
         if self.timeout:
             request_json['timeout'] = self.timeout
 
+        request_json['stream'] = self.stream
         if self.stream:
-            request_json['stream'] = self.stream
             request_json['stream_options'] = {'include_usage': True}
 
         logger.debug(f'Request to remote API: {request_json}')
