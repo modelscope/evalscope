@@ -6,21 +6,39 @@
 适合用户是选择题的场景，评测指标为准确率（accuracy）。
 
 ### 1. 数据准备
-准备选择题格式的csv文件，该目录结构如下：
+准备选择题格式的文件，支持CSV和JSONL两种格式，该目录结构如下：
+
+**CSV格式**
 
 ```text
 mcq/
-├── example_dev.csv  # （可选）文件名组成为`{subset_name}_dev.csv`，用于fewshot评测
-└── example_val.csv  # 文件名组成为`{subset_name}_val.csv`，用于实际评测的数据
+├── example_dev.csv   # （可选）文件名组成为`{subset_name}_dev.csv`，用于fewshot评测
+└── example_val.csv   # 文件名组成为`{subset_name}_val.csv`，用于实际评测的数据
 ```
 
-其中csv文件需要为下面的格式：
+CSV文件需要为下面的格式：
 
 ```text
 id,question,A,B,C,D,answer
 1,通常来说，组成动物蛋白质的氨基酸有____,4种,22种,20种,19种,C
 2,血液内存在的下列物质中，不属于代谢终产物的是____。,尿素,尿酸,丙酮酸,二氧化碳,C
 ```
+
+**JSONL格式**
+
+```text
+mcq/
+├── example_dev.jsonl # （可选）文件名组成为`{subset_name}_dev.jsonl`，用于fewshot评测
+└── example_val.jsonl # 文件名组成为`{subset_name}_val.jsonl`，用于实际评测的数据
+```
+
+JSONL文件需要为下面的格式：
+
+```json
+{"id": "1", "question": "通常来说，组成动物蛋白质的氨基酸有____", "A": "4种", "B": "22种", "C": "20种", "D": "19种", "answer": "C"}
+{"id": "2", "question": "血液内存在的下列物质中，不属于代谢终产物的是____。", "A": "尿素", "B": "尿酸", "C": "丙酮酸", "D": "二氧化碳", "answer": "C"}
+```
+
 其中：
 - `id`是序号（可选字段）
 - `question`是问题

@@ -6,25 +6,44 @@ This framework supports multiple-choice questions and question-answering questio
 Suitable for scenarios where users need multiple-choice questions. The evaluation metric is accuracy.
 
 ### 1. Data Preparation
-Prepare a CSV file in the multiple-choice question format. The directory structure is as follows:
+
+Prepare files in multiple-choice question format, supporting both CSV and JSONL formats. The directory structure is as follows:
+
+**CSV Format**
 
 ```text
 mcq/
-├── example_dev.csv  # (Optional) Filename should be `{subset_name}_dev.csv`, used for few-shot evaluation
-└── example_val.csv  # Filename should be `{subset_name}_val.csv`, used for actual evaluation data
+├── example_dev.csv   # (Optional) File name composed of `{subset_name}_dev.csv`, used for few-shot evaluation
+└── example_val.csv   # File name composed of `{subset_name}_val.csv`, used for actual evaluation data
 ```
 
-The CSV file needs to be in the following format:
+CSV files should be in the following format:
 
 ```text
 id,question,A,B,C,D,answer
-1,The amino acids that make up animal proteins typically include ____,4 types,22 types,20 types,19 types,C
-2,Among the following substances present in the blood, which is not a metabolic end product?____,urea,uric acid,pyruvic acid,carbon dioxide,C
+1,Generally speaking, the amino acids that make up animal proteins are ____,4 types,22 types,20 types,19 types,C
+2,Among the substances present in the blood, which one is not a metabolic end product?____,Urea,Uric acid,Pyruvic acid,Carbon dioxide,C
 ```
+
+**JSONL Format**
+
+```text
+mcq/
+├── example_dev.jsonl # (Optional) File name composed of `{subset_name}_dev.jsonl`, used for few-shot evaluation
+└── example_val.jsonl # File name composed of `{subset_name}_val.jsonl`, used for actual evaluation data
+```
+
+JSONL files should be in the following format:
+
+```json
+{"id": "1", "question": "Generally speaking, the amino acids that make up animal proteins are ____", "A": "4 types", "B": "22 types", "C": "20 types", "D": "19 types", "answer": "C"}
+{"id": "2", "question": "Among the substances present in the blood, which one is not a metabolic end product?____", "A": "Urea", "B": "Uric acid", "C": "Pyruvic acid", "D": "Carbon dioxide", "answer": "C"}
+```
+
 Where:
-- `id` is the sequence number (optional)
-- `question` is the question
-- `A`, `B`, `C`, `D`, etc., are the options, with a maximum of 10 options supported
+- `id` is the serial number (optional field)
+- `question` is the query
+- `A`, `B`, `C`, `D`, etc., are the options, supporting up to 10 choices
 - `answer` is the correct option
 
 ### 2. Configuration Task
