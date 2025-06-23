@@ -46,6 +46,7 @@ advanced_guides/add_benchmark.md
 :::{toctree}
 :hidden:
 :caption: 🧰 Third-Party Tools
+third_party/bfcl_v3.md
 third_party/needle_haystack.md
 third_party/toolbench.md
 third_party/longwriter.md
