@@ -54,10 +54,11 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
 
             if 'server' not in model_adapter_cls_str:
                 model_adapter_cls_str = 'server'
+                logger.info(
+                    f'Using {model_adapter_cls.__name__} for api model evaluation for benchmark {benchmark.name}.')
 
             # init server model adapter
             model_adapter_cls = get_model_adapter(model_adapter_cls_str)
-            logger.info(f'Using {model_adapter_cls.__name__} for api model evaluation.')
 
             return model_adapter_cls(
                 api_url=task_cfg.api_url,
@@ -69,7 +70,7 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
             )
         else:
             if model_adapter_cls_str not in benchmark.output_types:
-                logger.warning(f'Output type {model_adapter_cls_str} is not supported for benchmark {benchmark.name}. '
+                logger.warning(f'Output type {model_adapter_cls_str} is not supported for benchmark {benchmark.name}.'
                                f'Using {benchmark.output_types[0]} instead.')
                 model_adapter_cls_str = benchmark.output_types[0]
 
