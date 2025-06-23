@@ -39,6 +39,7 @@ class DataAdapter(ABC):
                  query_template: Optional[str] = None,
                  pretty_name: Optional[str] = None,
                  description: Optional[str] = None,
+                 tags: Optional[List[str]] = None,
                  **kwargs):
         """
         Args:
@@ -76,6 +77,7 @@ class DataAdapter(ABC):
         self.query_template = query_template
         self.pretty_name = pretty_name
         self.description = description
+        self.tags = tags or []
         self.config_kwargs = kwargs
         self.category_map = kwargs.get('category_map', {})
         self.choices = kwargs.get('choices', None)

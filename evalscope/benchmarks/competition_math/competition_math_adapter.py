@@ -17,6 +17,9 @@ logger = get_logger()
 @Benchmark.register(
     name='competition_math',
     pretty_name='MATH',
+    tags=['Mathematics'],
+    description=
+    'The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.',
     dataset_id='modelscope/competition_math',
     subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
     metric_list=['AveragePass@1'],

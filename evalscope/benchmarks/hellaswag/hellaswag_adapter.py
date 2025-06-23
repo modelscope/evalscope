@@ -18,6 +18,9 @@ logger = get_logger()
 @Benchmark.register(
     name='hellaswag',
     pretty_name='HellaSwag',
+    tags=['Commonsense', 'MCQ', 'Knowledge'],
+    description=
+    'HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.',
     dataset_id='modelscope/hellaswag',
     model_adapter=OutputType.MULTIPLE_CHOICE,
     output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],

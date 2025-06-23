@@ -30,7 +30,7 @@ class Summarizer:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
 
-        report_table: str = gen_table([reports_dir])
+        report_table: str = gen_table(reports_path_list=[reports_dir])
         logger.info(f'*** Report table ***\n{report_table}')
 
         return res_list

@@ -1,3 +1,4 @@
+import csv
 import json
 import jsonlines as jsonl
 import os
@@ -112,8 +113,58 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
         writer.write_all(data_list)
 
 
-def jsonl_to_csv():
-    pass
+def jsonl_to_csv(jsonl_file, csv_file):
+    """
+    Convert jsonl file to csv file.
+
+    Args:
+        jsonl_file: jsonl file path.
+        csv_file: csv file path.
+    """
+    data = jsonl_to_list(jsonl_file)
+    if not data:
+        logger.warning(f'No data found in {jsonl_file}.')
+        return
+
+    with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(data[0].keys())  # Write header
+        for item in data:
+            writer.writerow(item.values())
+
+
+def csv_to_list(csv_file) -> list:
+    """
+    Read csv file to list.
+
+    Args:
+        csv_file: csv file path.
+
+    Returns:
+        list: list of lines. Each line is a dict.
+    """
+    res_list = []
+    with open(csv_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            res_list.append(row)
+    return res_list
+
+
+def csv_to_jsonl(csv_file, jsonl_file):
+    """
+    Convert csv file to jsonl file.
+
+    Args:
+        csv_file: csv file path.
+        jsonl_file: jsonl file path.
+    """
+    data = csv_to_list(csv_file)
+    if not data:
+        logger.warning(f'No data found in {csv_file}.')
+        return
+
+    dump_jsonl_data(data, jsonl_file, dump_mode=DumpMode.OVERWRITE)
 
 
 def yaml_to_dict(yaml_file) -> dict:
@@ -168,3 +219,9 @@ def dict_to_json(d: dict, json_file: str):
     """
     with open(json_file, 'w') as f:
         json.dump(d, f, indent=4, ensure_ascii=False)
+
+
+if __name__ == '__main__':
+    csv_file = 'custom_eval/text/mcq/example_val.csv'
+    jsonl_file = 'custom_eval/text/mcq/example_val.jsonl'
+    csv_to_jsonl(csv_file, jsonl_file)

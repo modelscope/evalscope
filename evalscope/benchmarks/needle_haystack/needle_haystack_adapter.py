@@ -28,9 +28,11 @@ Don't give information outside the document or repeat your findings."""
 
 @Benchmark.register(
     name='needle_haystack',
-    pretty_name='Needle in a Haystack',
-    description='Needle in a Haystack is a benchmark focused on information retrieval tasks. \
-    It requires the model to find specific information within a large corpus of text.',
+    pretty_name='Needle-in-a-Haystack',
+    tags=['Retrieval', 'Long Context'],
+    description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
+    'It requires the model to find specific information within a large corpus of text. '
+    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)',  # noqa: E501
     dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
     metric_list=['AverageAccuracy'],
     subset_list=['english', 'chinese'],
@@ -50,6 +52,7 @@ Don't give information outside the document or repeat your findings."""
         'document_depth_percent_max': 100,
         'document_depth_percent_intervals': 10,
         'tokenizer_path': 'Qwen/Qwen3-0.6B',
+        'show_score': False,
     })
 class NeedleHaystackAdapter(DataAdapter):
 
@@ -71,11 +74,12 @@ class NeedleHaystackAdapter(DataAdapter):
         self.document_depth_percent_max = extra_params.get('document_depth_percent_max', 100)
         self.document_depth_percent_intervals = extra_params.get('document_depth_percent_intervals', 10)
         self.tokenizer_path = extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
+        self.show_score = extra_params.get('show_score', False)
 
-        self.__init_tokenizer()
-        self.__init_length()
+        self._init_tokenizer()
+        self._init_length()
 
-    def __init_length(self):
+    def _init_length(self):
         """ Initialize context lengths and document depth percentages based on the provided parameters."""
         import numpy as np
 
@@ -93,7 +97,7 @@ class NeedleHaystackAdapter(DataAdapter):
                 num=self.document_depth_percent_intervals,
                 endpoint=True)).astype(int)
 
-    def __init_tokenizer(self):
+    def _init_tokenizer(self):
         """ Initialize the tokenizer based on the provided tokenizer path."""
         from modelscope import AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path)
@@ -335,7 +339,10 @@ class NeedleHaystackAdapter(DataAdapter):
                 pivot_table = sub_df.pivot_table(
                     values='Score', index=['Depth', 'Context'], aggfunc='mean').reset_index()
                 pivot_table = pivot_table.pivot(index='Depth', columns='Context', values='Score')
-                draw_score_chat(pivot_table, outpath=os.path.join(report_path, f'needle_haystack_heatmap_{subset}.png'))
+                draw_score_chat(
+                    pivot_table,
+                    outpath=os.path.join(report_path, f'needle_haystack_heatmap_{subset}.png'),
+                    show_score=self.show_score)
 
         except Exception as e:
             logger.error(f'Error generating charts: {e}')

@@ -121,10 +121,54 @@ class TestMTEB(unittest.TestCase):
                     },
                 ],
                 'eval': {
-                    'tasks': ['MedicalRetrieval', 'T2Retrieval'],
+                    'tasks': [
+                        'MedicalRetrieval',
+                        'T2Retrieval'
+                    ],
                     'verbosity': 2,
                     'overwrite_results': True,
-                    # 'limits': 10,
+                    'limits': 10,
+                    'top_k': 10,
+                },
+            },
+        }
+
+        run_task(task_cfg)
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_two_stage_api(self):
+        task_cfg = {
+            'eval_backend': 'RAGEval',
+            'eval_config': {
+                'tool': 'MTEB',
+                'model': [
+                    {
+                        'model_name': 'text-embedding-v3',
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                        'dimensions': 1024,
+                        'encode_kwargs': {
+                            'batch_size': 10,
+                        },
+                    },
+                    {
+                        'model_name': 'text-embedding-v3',
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                        'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),
+                        'dimensions': 1024,
+                        'encode_kwargs': {
+                            'batch_size': 10,
+                        },
+                    },
+                ],
+                'eval': {
+                    'tasks': [
+                        'MedicalRetrieval',
+                        # 'T2Retrieval'
+                    ],
+                    'verbosity': 2,
+                    'overwrite_results': True,
+                    'limits': 10,
                     'top_k': 10,
                 },
             },

@@ -23,7 +23,7 @@
     - `top_k`: 生成top-k
     - `top_p`: 生成top-p
   - 若使用模型API服务推理（`eval-type`设置为`service`），包括如下参数（具体请参考部署的模型服务）：
-    - `max_tokens`: 生成最大长度，默认为512
+    - `max_tokens`: 生成最大长度，默认为2048
     - `temperature`: 生成温度, 默认为0.0
     - `n`: 生成序列数量，默认为1（注意：lmdeploy目前仅支持n=1）
   ```bash
@@ -44,7 +44,7 @@
 - `--stream`:  是否使用流式传输，默认为`False`
 
 ## 数据集参数
-- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset.md#支持的数据集)
+- `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset/llm.md)
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据。
   - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中。

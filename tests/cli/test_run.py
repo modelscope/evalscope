@@ -63,7 +63,7 @@ class TestRun(unittest.TestCase):
                         f'--model {model} ' \
                         f'--datasets {datasets} ' \
                         f'--limit {limit} ' \
-                        f'--generation-config do_sample=false,temperature=0.0 ' \
+                        f'--generation-config do_sample=true,temperature=0.6,max_length=65535,max_new_tokens=65535,max_tokens=65535,n=1,top_p=0.95,top_k=20 ' \
                         f"""--dataset-args \'{dataset_args}\' """
 
         logger.info(f'Start to run command: {cmd_with_args}')
@@ -187,8 +187,11 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen/Qwen2-0.5B-Instruct',
-            datasets=['general_mcq', 'general_qa'],  # 数据格式，选择题格式固定为 'ceval'
+            model='Qwen/Qwen3-0.6B',
+            datasets=[
+                'general_mcq',
+                'general_qa'
+            ],
             dataset_args={
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -215,16 +218,14 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='Qwen/Qwen3-1.7B',
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'mmlu',
                 # 'simple_qa',
+                'truthful_qa',
             ],
-            model_args={
-                'device_map': 'auto',
-            },
             dataset_args={
                 'competition_math': {
                     'subset_list': ['Level 4', 'Level 5']
@@ -304,7 +305,7 @@ class TestRun(unittest.TestCase):
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',
-                # 'general_mcq',
+                'general_mcq',
                 # 'general_qa',
                 # 'super_gpqa',
                 # 'mmlu_redux',
@@ -312,7 +313,8 @@ class TestRun(unittest.TestCase):
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
-                'frames',
+                # 'frames',
+                # 'bfcl_v3',
             ],
             dataset_args={
                 'mmlu': {
@@ -370,25 +372,31 @@ class TestRun(unittest.TestCase):
                     'metric_list': ['AverageRouge']
                 },
                 'super_gpqa': {
-                    # 'subset_list': ['Philosophy', 'Education'],
+                    'subset_list': ['Philosophy', 'Education'],
                     'few_shot_num': 0
                 },
                 'mmlu_redux':{
                     'subset_list': ['abstract_algebra']
                 },
+                'bfcl_v3': {
+                    'subset_list': ['parallel'],
+                    'extra_params': {
+                        # 'is_fc_model': False,
+                    }
+                },
             },
-            eval_batch_size=32,
-            limit=10,
+            eval_batch_size=10,
+            limit=5,
             debug=True,
-            stream=False,
+            stream=True,
             generation_config={
                 'temperature': 0,
                 'n': 1,
                 'max_tokens': 4096,
                 # 'extra_headers':{'key': 'value'},
             },
-            # ignore_errors=True,
-            # use_cache='outputs/20250519_142106'
+            ignore_errors=False,
+            # use_cache='outputs/20250616_153756'
         )
 
         run_task(task_cfg=task_cfg)
@@ -434,8 +442,8 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'math_500',
-                'aime24',
+                'math_500',
+                # 'aime24',
                 # 'competition_math',
                 # 'arc',
                 # 'gsm8k',
@@ -450,8 +458,15 @@ class TestRun(unittest.TestCase):
                 # 'frames',
                 # 'docmath',
                 # 'needle_haystack',
+                # 'ifeval',
             ],
             dataset_args={
+                'needle_haystack': {
+                    'subset_list': ['english'],
+                    'extra_params': {
+                        'show_score': True,
+                    }
+                },
                 'competition_math': {
                     'subset_list': ['Level 4']
                 },
@@ -479,8 +494,8 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=1,
-            judge_strategy=JudgeStrategy.AUTO,
+            limit=3,
+            judge_strategy=JudgeStrategy.LLM,
             judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
@@ -499,9 +514,9 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
-            analysis_report=True,
+            # analysis_report=True,
             # debug=True,
-            # use_cache='outputs/20250602_135859'
+            # use_cache='outputs/20250616_161931'
         )
 
         run_task(task_cfg=task_cfg)

@@ -1,6 +1,7 @@
 import argparse
 import glob
 import gradio as gr
+import json
 import numpy as np
 import os
 import pandas as pd
@@ -135,11 +136,11 @@ def plot_single_report_scores(df: pd.DataFrame):
 
 def plot_single_report_sunburst(report_list: List[Report]):
     if report_list[0].name == DataCollection.NAME:
-        df = get_data_frame(report_list)
+        df = get_data_frame(report_list=report_list)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = categories + [ReportKey.subset_name]
     else:
-        df = get_data_frame(report_list, flatten_metrics=False)
+        df = get_data_frame(report_list=report_list, flatten_metrics=False)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
     logger.debug(f'df: {df}')
@@ -233,7 +234,7 @@ def convert_html_tags(text):
 def process_string(string: str, max_length: int = 2048) -> str:
     string = convert_html_tags(string)  # for display labels e.g.
     if max_length and len(string) > max_length:
-        return f'{string[:max_length // 2]}......{string[-max_length // 2:]}'
+        return f'{string[:max_length // 2]}...[truncate]...{string[-max_length // 2:]}'
     return string
 
 
@@ -257,7 +258,7 @@ def dict_to_markdown(data) -> str:
     return '\n\n'.join(markdown_lines)
 
 
-def process_model_prediction(item: Any, max_length: int = 2048) -> str:
+def process_model_prediction_old(item: Any, max_length: int = 2048) -> str:
     """
     Process model prediction output into a formatted string.
 
@@ -278,6 +279,20 @@ def process_model_prediction(item: Any, max_length: int = 2048) -> str:
     # Apply HTML tag conversion and truncation only at the final output
     if max_length is not None:
         return process_string(result, max_length)
+    return result
+
+
+def process_model_prediction(item: Any, max_length: int = 4096) -> str:
+    if isinstance(item, (dict, list)):
+        result = json.dumps(item, ensure_ascii=False, indent=2)
+        result = f'```json\n{result}\n```'
+    else:
+        result = str(item)
+
+    # Apply HTML tag conversion and truncation only at the final output
+    if max_length is not None:
+        return process_string(result, max_length)
+
     return result
 
 
@@ -583,7 +598,7 @@ def create_single_model_tab(sidebar: SidebarComponents, lang: str):
         outputs=[dataset_plot, dataset_table, subset_select, data_review_df, report_analysis])
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
-        report_df = get_data_frame(report_list)
+        report_df = get_data_frame(report_list=report_list)
         analysis = get_report_analysis(report_list, dataset_name)
         data_score_df, styler = get_single_dataset_df(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)

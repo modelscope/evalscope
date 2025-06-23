@@ -69,6 +69,7 @@ class EvalMuseAdapter(T2IBaseAdapter):
             if 'FGA_BLIP2Score' in metric_name and '(' in metric_name:  # FGA_BLIP2Score element score
                 metrics_prefix = metric_name.split(':')[0]
                 category = metric_name.rpartition('(')[-1].split(')')[0]
+                category = category.split('-')[0].lower()  # remove the suffix if exists
                 new_items[f'{metrics_prefix}:{category}'].extend(value_list)
             else:
                 new_items[metric_name].extend(value_list)

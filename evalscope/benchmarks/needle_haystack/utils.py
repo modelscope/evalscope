@@ -37,13 +37,13 @@ def parse_score(score_str: str) -> int:
         return 0.0
 
 
-def draw_score_chat(pivot_table, outpath):
+def draw_score_chat(pivot_table, outpath, show_score=False):
     # Create a custom colormap. Go to https://coolors.co/ and pick cool colors
     cmap = LinearSegmentedColormap.from_list('custom_cmap', ['#F0496E', '#EBB839', '#0CD79F'])
 
     # Create the heatmap with better aesthetics
     plt.figure(figsize=(17.5, 8))  # Can adjust these dimensions as needed
-    sns.heatmap(pivot_table, vmin=0.0, vmax=1.0, annot=True, fmt='.1f', cmap=cmap, cbar_kws={'label': 'Score'})
+    sns.heatmap(pivot_table, vmin=0.0, vmax=1.0, annot=show_score, fmt='.1f', cmap=cmap, cbar_kws={'label': 'Score'})
 
     # More aesthetics
     plt.title('Fact Retrieval Across Context Lengths ("Needle In A HayStack")')  # Adds a title

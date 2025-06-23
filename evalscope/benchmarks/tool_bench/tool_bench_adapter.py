@@ -8,6 +8,11 @@ from evalscope.metrics import Metric, mean, metric_registry
 @Benchmark.register(
     name='tool_bench',
     pretty_name='ToolBench-Static',
+    tags=['Reasoning', 'Agent'],
+    description='ToolBench is a benchmark for evaluating AI models on tool use tasks. '
+    'It includes various subsets such as in-domain and out-of-domain, '
+    'each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. '
+    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)',  # noqa: E501
     dataset_id='AI-ModelScope/ToolBench-Static',
     subset_list=['in_domain', 'out_of_domain'],
     metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],

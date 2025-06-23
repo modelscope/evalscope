@@ -4,7 +4,7 @@ EvalScope框架支持多种文生图模型的评测，包括Stable Diffusion、F
 
 ## 支持的评测数据集
 
-请参考[文档](../../get_started/supported_dataset.md#aigc-评测集)。
+请参考[文档](../../get_started/supported_dataset/aigc.md#aigc评测集)。
 
 ## 支持的评测指标
 
@@ -126,7 +126,9 @@ run_task(task_cfg=task_cfg)
 
 ## 自定义评测
 
-用户可以通过以下命令配置自定义prompts来评测任务。
+当前文生图模型的开发流程日益复杂，部分开发者需依赖ComfyUI等可视化工作流工具进行多模块组合生成，或通过API接口调用云端模型服务（如Stable Diffusion WebUI、商业API平台）。针对这类场景，EvalScope支持“无模型介入”的评测模式 ，仅需用户提供生成图片的prompt文本列表 与对应图像存储路径 ，即可直接启动评测流程，无需本地下载模型权重或执行推理计算。
+
+用户可以通过以下命令配置自定义prompts来进行评测任务。
 
 
 ### 自定义数据集评测

@@ -82,7 +82,7 @@ class LocalImageModel(LocalModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pipeline_cls = kwargs.pop('pipeline_cls', None)
+        self.pipeline_cls = self.kwargs.pop('pipeline_cls', None)
         # default to DiffusionPipeline if not specified
         if self.pipeline_cls is None:
             if 'flux' in self.model_id.lower():

@@ -13,7 +13,7 @@ from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
 from evalscope.models import BaseModelAdapter
-from evalscope.report import Report, gen_report_table
+from evalscope.report import Report, gen_table
 from evalscope.utils import dict_torch_dtype_to_str, gen_hash
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
 from evalscope.utils.logger import get_logger
@@ -108,7 +108,6 @@ class Evaluator(object):
         return answer_d
 
     def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
-        answers_list = []
         try:
             # get answer from model
             answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
@@ -117,10 +116,11 @@ class Evaluator(object):
             # if ignore_errors is True, continue to next input
             if self.task_cfg.ignore_errors:
                 logger.warning('`ignore_errors` is set to True. Dropping this prompt and continuing with evaluation.')
-                return answers_list
+                return []
             else:
                 raise e
         # process answer
+        answers_list = []
         for answer_d, input_prompt in zip(answer_ds, input_prompts):
             answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
             processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
@@ -399,8 +399,9 @@ class Evaluator(object):
 
         # Make table
         try:
-            report_table = gen_report_table(report_map)
-            logger.info(f'{self.dataset_name_or_path} report table: \n{report_table} \n')
+            report_table = gen_table(report_list=[report_map], add_overall_metric=True)
+            logger.info(f'\n{self.dataset_name_or_path} report table:'
+                        f'\n{report_table} \n')
         except Exception:
             logger.error('Failed to generate report table.')
 

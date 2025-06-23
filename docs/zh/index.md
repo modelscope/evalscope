@@ -26,7 +26,7 @@ get_started/installation.md
 get_started/basic_usage.md
 get_started/visualization.md
 get_started/parameters.md
-get_started/supported_dataset.md
+get_started/supported_dataset/index.md
 get_started/faq.md
 :::
 
@@ -51,6 +51,7 @@ advanced_guides/add_benchmark.md
 :::{toctree}
 :hidden:
 :caption: 🧰 第三方工具
+third_party/bfcl_v3.md
 third_party/needle_haystack.md
 third_party/toolbench.md
 third_party/longwriter.md
@@ -66,6 +67,7 @@ experiments/speed_benchmark/index.md
 :::{toctree}
 :hidden:
 :caption: 📖 最佳实践
+best_practice/t2i_eval.md
 best_practice/qwen3.md
 best_practice/eval_qwq.md
 best_practice/iquiz.md

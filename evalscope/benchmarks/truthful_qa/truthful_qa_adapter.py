@@ -21,6 +21,9 @@ logger = get_logger()
 @Benchmark.register(
     name='truthful_qa',
     pretty_name='TruthfulQA',
+    tags=['Knowledge'],
+    description=
+    'TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice and generation tasks, focusing on the model\'s understanding of factual information and its ability to generate coherent responses.',  # noqa: E501
     dataset_id='modelscope/truthful_qa',
     model_adapter=OutputType.CONTINUOUS,
     output_types=[OutputType.CONTINUOUS, OutputType.GENERATION],

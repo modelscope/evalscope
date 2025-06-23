@@ -1,4 +1,5 @@
 import os
+import posixpath  # For URL path handling
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as TorchDataset
@@ -186,42 +187,53 @@ def build_wds_dataset(dataset_name, transform, split='test', data_dir='root', ca
 
     Set `cache_dir` to a path to cache the dataset, otherwise, no caching will occur.
     """
+    import requests
     import webdataset as wds
 
     def read_txt(fname):
-        if '://' in fname:
-            stream = os.popen("curl -L -s --fail '%s'" % fname, 'r')
-            value = stream.read()
-            if stream.close():
-                raise FileNotFoundError('Failed to retreive data')
+        if fname.startswith(('http://', 'https://')):
+            try:
+                response = requests.get(fname)
+                response.raise_for_status()  # Ensure the HTTP request was successful
+                return response.text
+            except requests.exceptions.RequestException as e:
+                raise FileNotFoundError(f'Failed to read {fname}: {e}')
         else:
             with open(fname, 'r') as file:
-                value = file.read()
-        return value
+                return file.read()
+
+    def url_path_join(*parts):
+        """Join URL path parts with forward slashes regardless of platform"""
+        return posixpath.join(*parts)
 
     if not data_dir:
         data_dir = f'https://modelscope.cn/datasets/clip-benchmark/wds_{dataset_name}/resolve/master'
 
     # Git LFS files have a different file path to access the raw data than other files
-    if data_dir.startswith('https://modelscope.cn/datasets'):
+    is_url = data_dir.startswith(('http://', 'https://'))
+    if is_url and data_dir.startswith('https://modelscope.cn/datasets'):
         *split_url_head, _, url_path = data_dir.split('/', 7)
         url_head = '/'.join(split_url_head)
         metadata_dir = '/'.join([url_head, 'resolve', url_path])
         tardata_dir = '/'.join([url_head, 'resolve', url_path])
     else:
         metadata_dir = tardata_dir = data_dir
+
+    # Use appropriate path joining function based on whether we're dealing with a URL
+    path_join = url_path_join if is_url else os.path.join
+
     # Get number of shards
-    nshards_fname = os.path.join(metadata_dir, split, 'nshards.txt')
+    nshards_fname = path_join(metadata_dir, split, 'nshards.txt')
     nshards = int(read_txt(nshards_fname))  # Do not catch FileNotFound, nshards.txt should be mandatory
 
     # Get dataset type (classification or retrieval)
-    type_fname = os.path.join(metadata_dir, 'dataset_type.txt')
+    type_fname = path_join(metadata_dir, 'dataset_type.txt')
     try:
         dataset_type = read_txt(type_fname).strip().lower()
     except FileNotFoundError:
         dataset_type = 'classification'
 
-    filepattern = os.path.join(tardata_dir, split, '{0..%d}.tar' % (nshards - 1))
+    filepattern = path_join(tardata_dir, split, '{0..%d}.tar' % (nshards - 1))
     # Load webdataset (support WEBP, PNG, and JPG for now)
     if not cache_dir or not isinstance(cache_dir, str):
         cache_dir = None

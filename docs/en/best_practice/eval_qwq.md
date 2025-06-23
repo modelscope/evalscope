@@ -1,4 +1,4 @@
-# Best Practices for Evaluating the QwQ Model
+# Evaluating the QwQ Model
 
 Today (March 6, 2025), the Qwen team released the QwQ-32B model, which has demonstrated performance comparable to DeepSeek-R1-671B in a series of benchmark tests. The results below showcase the performance comparison of QwQ-32B with other leading models.
 
@@ -77,7 +77,7 @@ The output will look as follows, displaying the model's accuracy on problems at 
 +---------+-----------+---------------+----------+-------+---------+---------+
 ```
 
-If you want to run the model on [other datasets](../get_started/supported_dataset.md#1-native-supported-datasets), you can modify the `datasets` and `dataset_args` parameters in the configuration as follows:
+If you want to run the model on [other datasets](../get_started/supported_dataset/llm.md), you can modify the `datasets` and `dataset_args` parameters in the configuration as follows:
 
 ```python
 datasets=[

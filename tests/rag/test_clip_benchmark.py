@@ -39,7 +39,11 @@ class TestCLIPBenchmark(unittest.TestCase):
                             'model_name': 'AI-ModelScope/chinese-clip-vit-large-patch14-336px',
                         }
                     ],
-                    'dataset_name': ['muge', 'mnist'],
+                    'dataset_name': [
+                        'muge',
+                        'mnist',
+                        'flickr8k'
+                    ],
                     'split': 'test',
                     'batch_size': 128,
                     'num_workers': 1,
