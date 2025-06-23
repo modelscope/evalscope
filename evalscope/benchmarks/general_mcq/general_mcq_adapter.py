@@ -1,11 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import csv
 import os
+from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
 from evalscope.utils import ResponseParser
+from evalscope.utils.io_utils import csv_to_list, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -26,7 +27,7 @@ logger = get_logger()
     few_shot_num=0,
     train_split='dev',
     eval_split='val',
-    prompt_template='请回答问题，并选出其中的正确答案\n{query}',
+    prompt_template='请回答问题，并选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。\n{query}',
     query_template='问题：{question}\n{choices}\n答案: {answer}\n\n')
 class GeneralMCQAdapter(DataAdapter):
 
@@ -36,28 +37,21 @@ class GeneralMCQAdapter(DataAdapter):
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict = {}
+        data_dict = defaultdict(dict)
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
-                if os.path.exists(dataset_name_or_path):
-                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}.csv')
-                else:
-                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
-                if os.path.exists(file_path):
-                    with open(file_path, encoding='utf-8') as f:
-                        rows = []
-                        reader = csv.reader(f)
-                        header = next(reader)
-                        for row in reader:
-                            item = dict(zip(header, row))
-                            rows.append(item)
+                # Check for files with different extensions
+                for ext, loader in [('.jsonl', jsonl_to_list), ('.csv', csv_to_list)]:
+                    if os.path.exists(dataset_name_or_path):
+                        file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}{ext}')
+                    else:
+                        file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}{ext}')
 
-                        if subset_name in data_dict:
-                            data_dict[subset_name].update({split_name: rows})
-                        else:
-                            data_dict[subset_name] = {split_name: rows}
+                    if os.path.exists(file_path):
+                        data_dict[subset_name][split_name] = loader(file_path)
+                        break  # Stop checking other extensions once a file is found
 
-        return data_dict
+        return dict(data_dict)
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """

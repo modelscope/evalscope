@@ -25,7 +25,6 @@ sympy
 tabulate
 # pip3 install --no-dependencies -r requirements/framework.txt
 torch
-torchvision
 tqdm
 transformers>=4.33
 word2number

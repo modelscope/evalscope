@@ -17,41 +17,42 @@ os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 logger = get_logger()
 
 datasets=[
-        # 'iquiz',
-        # 'ifeval',
-        # 'mmlu',
-        # 'mmlu_pro',
-        # 'musr',
-        # 'process_bench',
-        # 'race',
-        # 'trivia_qa',
-        # 'cmmlu',
-        # 'humaneval',
-        # 'gsm8k',
-        # 'bbh',
-        # 'competition_math',
-        # 'math_500',
-        # 'aime24',
-        # 'gpqa',
-        # 'arc',
-        # 'ceval',
-        # 'hellaswag',
-        # 'general_mcq',
-        # 'general_qa',
-        # 'super_gpqa',
-        # 'live_code_bench',
-        # 'mmlu_redux',
-        # 'simple_qa',
-        # 'chinese_simpleqa',
-        # 'alpaca_eval',
-        # 'arena_hard',
-        # 'maritime_bench',
-        # 'drop',
-        # 'winogrande',
-        # 'tool_bench',
+        'iquiz',
+        'ifeval',
+        'mmlu',
+        'mmlu_pro',
+        'musr',
+        'process_bench',
+        'race',
+        'trivia_qa',
+        'cmmlu',
+        'humaneval',
+        'gsm8k',
+        'bbh',
+        'competition_math',
+        'math_500',
+        'aime24',
+        'gpqa',
+        'arc',
+        'ceval',
+        'hellaswag',
+        'general_mcq',
+        'general_qa',
+        'super_gpqa',
+        'live_code_bench',
+        'mmlu_redux',
+        'simple_qa',
+        'chinese_simpleqa',
+        'alpaca_eval',
+        'arena_hard',
+        'maritime_bench',
+        'drop',
+        'winogrande',
+        'tool_bench',
         'frames',
         'docmath',
-        'needle_haystack'
+        'needle_haystack',
+        'bfcl_v3',
 ]
 
 dataset_args={
@@ -126,6 +127,12 @@ dataset_args={
     'mmlu_redux':{
         'subset_list': ['abstract_algebra']
     },
+    'frames':{
+        'subset_list': ['simpshort_testmini']
+    },
+    'bfcl_v3':{
+        'subset_list': ['simple', 'multiple']
+    }
 }
 
 class TestRun(unittest.TestCase):
