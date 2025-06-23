@@ -10,9 +10,6 @@ class CustomModel(ABC):
         self.config = config
         self.kwargs = kwargs
 
-        if config.get('model_id', None) is None:
-            raise ValueError(f'**Error: model_id is required in config for CustomModel. Got config: {config}')
-
     @abstractmethod
     @torch.no_grad()
     def predict(self, prompts: List[str], **kwargs) -> List[Dict[str, Any]]:

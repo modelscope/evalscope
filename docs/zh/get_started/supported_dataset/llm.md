@@ -377,7 +377,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **支持输出格式**: `generation`, `multiple_choice_logits`
 - **提示模板**: 
 ```text
-请回答问题，并选出其中的正确答案
+请回答问题，并选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
 {query}
 ```
 

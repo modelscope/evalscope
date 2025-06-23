@@ -187,8 +187,11 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen/Qwen2-0.5B-Instruct',
-            datasets=['general_mcq', 'general_qa'],  # 数据格式，选择题格式固定为 'ceval'
+            model='Qwen/Qwen3-0.6B',
+            datasets=[
+                'general_mcq',
+                'general_qa'
+            ],
             dataset_args={
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -302,7 +305,7 @@ class TestRun(unittest.TestCase):
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',
-                # 'general_mcq',
+                'general_mcq',
                 # 'general_qa',
                 # 'super_gpqa',
                 # 'mmlu_redux',
@@ -311,7 +314,7 @@ class TestRun(unittest.TestCase):
                 # 'winogrande',
                 # 'tool_bench',
                 # 'frames',
-                'bfcl_v3',
+                # 'bfcl_v3',
             ],
             dataset_args={
                 'mmlu': {
@@ -383,7 +386,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=10,
-            limit=50,
+            limit=5,
             debug=True,
             stream=True,
             generation_config={
@@ -439,7 +442,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'math_500',
+                'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
@@ -455,7 +458,7 @@ class TestRun(unittest.TestCase):
                 # 'frames',
                 # 'docmath',
                 # 'needle_haystack',
-                'ifeval',
+                # 'ifeval',
             ],
             dataset_args={
                 'needle_haystack': {
@@ -491,8 +494,8 @@ class TestRun(unittest.TestCase):
                 }
             },
             eval_batch_size=10,
-            limit=5,
-            judge_strategy=JudgeStrategy.AUTO,
+            limit=3,
+            judge_strategy=JudgeStrategy.LLM,
             judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
@@ -513,7 +516,7 @@ class TestRun(unittest.TestCase):
             stream=True,
             # analysis_report=True,
             # debug=True,
-            use_cache='outputs/20250616_161931'
+            # use_cache='outputs/20250616_161931'
         )
 
         run_task(task_cfg=task_cfg)
