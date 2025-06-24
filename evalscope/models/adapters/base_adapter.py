@@ -54,8 +54,6 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
 
             if 'server' not in model_adapter_cls_str:
                 model_adapter_cls_str = 'server'
-                logger.info(
-                    f'Using {model_adapter_cls.__name__} for api model evaluation for benchmark {benchmark.name}.')
 
             # init server model adapter
             model_adapter_cls = get_model_adapter(model_adapter_cls_str)
