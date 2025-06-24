@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
 from ..constants import LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOKEN
-from ..utils.data_utils import (get_acc_report_df, get_compare_report_df, get_model_prediction, get_report_analysis,
-                                get_single_dataset_df, load_multi_report, load_single_report)
+from ..utils.data_utils import (get_acc_report_df, get_compare_report_df, get_model_prediction, get_single_dataset_df,
+                                load_multi_report, load_single_report)
 from ..utils.localization import get_multi_model_locale
 from ..utils.text_utils import convert_markdown_image, process_model_prediction
-from ..utils.visualization import plot_multi_report_radar, plot_single_dataset_scores
+from ..utils.visualization import plot_multi_report_radar
 
 if TYPE_CHECKING:
     from .sidebar import SidebarComponents
@@ -146,8 +146,9 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         # Extract model names for dropdowns
         model_choices = multi_report_names
 
-        return report_list, report_radar_plot, styler, gr.update(choices=model_choices), gr.update(
-            choices=model_choices)
+        return report_list, report_radar_plot, styler, gr.update(
+            choices=model_choices, value=model_choices[0]), gr.update(
+                choices=model_choices, value=model_choices[1] if len(model_choices) > 1 else None)
 
     @gr.on(
         triggers=[model_a_select.change, model_b_select.change],
