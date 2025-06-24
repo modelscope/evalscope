@@ -91,9 +91,9 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row():
             # Headers for the two models
             with gr.Column(scale=1):
-                gr.Markdown(f'### *{model_a_name.value}*')
+                gr.Markdown('### *Model A*')
             with gr.Column(scale=1):
-                gr.Markdown(f'### *{model_b_name.value}*')
+                gr.Markdown('### *Model B*')
 
         # Score comparison row
         with gr.Row():
