@@ -120,6 +120,10 @@ def get_multi_model_locale(lang: str) -> Dict[str, str]:
             'zh': '请选择报告',
             'en': 'Select Reports'
         },
+        'models_overview': {
+            'zh': '模型概览',
+            'en': 'Models Overview'
+        },
         'model_radar': {
             'zh': '模型对比雷达',
             'en': 'Model Comparison Radar'
@@ -127,6 +131,70 @@ def get_multi_model_locale(lang: str) -> Dict[str, str]:
         'model_scores': {
             'zh': '模型对比分数',
             'en': 'Model Comparison Scores'
+        },
+        'model_comparison_details': {
+            'zh': '模型对比详情',
+            'en': 'Model Comparison Details'
+        },
+        'select_model_a': {
+            'zh': '选择模型A',
+            'en': 'Select Model A'
+        },
+        'select_model_b': {
+            'zh': '选择模型B',
+            'en': 'Select Model B'
+        },
+        'select_dataset': {
+            'zh': '选择数据集',
+            'en': 'Select Dataset'
+        },
+        'model_predictions': {
+            'zh': '模型预测',
+            'en': 'Model Predictions'
+        },
+        'select_subset': {
+            'zh': '选择子集',
+            'en': 'Select Subset'
+        },
+        'answer_mode': {
+            'zh': '答案模式',
+            'en': 'Answer Mode'
+        },
+        'score_threshold': {
+            'zh': '分数阈值',
+            'en': 'Score Threshold'
+        },
+        'comparison_counts': {
+            'zh': '对比统计',
+            'en': 'Comparison Counts'
+        },
+        'page': {
+            'zh': '页码',
+            'en': 'Page'
+        },
+        'input': {
+            'zh': '输入',
+            'en': 'Input'
+        },
+        'gold_answer': {
+            'zh': '标准答案',
+            'en': 'Gold Answer'
+        },
+        'score': {
+            'zh': '分数',
+            'en': 'Score'
+        },
+        'normalized_score': {
+            'zh': '归一化分数',
+            'en': 'Normalized Score'
+        },
+        'prediction': {
+            'zh': '预测',
+            'en': 'Prediction'
+        },
+        'generated': {
+            'zh': '生成结果',
+            'en': 'Generated'
         }
     }
     return {k: v[lang] for k, v in locale_dict.items()}

@@ -139,12 +139,14 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     ds = []
     for i, item in origin_df.iterrows():
         raw_input = item['raw_input']
-        for choice in item['choices']:
+        sample_index = item['index']
+        for choice_index, choice in enumerate(item['choices']):
             raw_pred_answer = choice['message']['content']
             parsed_gold_answer = choice['review']['gold']
             parsed_pred_answer = choice['review']['pred']
             score = choice['review']['result']
             raw_d = {
+                'Index': f'{sample_index}_{choice_index}',
                 'Input': raw_input,
                 'Generated': raw_pred_answer,
                 'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',

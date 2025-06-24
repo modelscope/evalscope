@@ -52,7 +52,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         dataset_radio = gr.Radio(label=locale_dict['select_dataset'], choices=[], show_label=True, interactive=True)
         # show dataset details
         with gr.Accordion(locale_dict['report_analysis'], open=True):
-            report_analysis = gr.Markdown(value='N/A', show_copy_button=True)
+            report_analysis = gr.Markdown(value='N/A')
         gr.Markdown(f'### {locale_dict["dataset_scores"]}')
         dataset_plot = gr.Plot(value=None, scale=1, label=locale_dict['dataset_scores'])
         gr.Markdown(f'### {locale_dict["dataset_scores_table"]}')
@@ -82,8 +82,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Score*')
-                score_text = gr.Markdown(
-                    '', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+                score_text = gr.Markdown('', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS)
             with gr.Column():
                 gr.Markdown('### *Normalized Score*')
                 nscore = gr.Markdown('', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS)
@@ -91,22 +90,18 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Gold*')
-                gold_text = gr.Markdown(
-                    '', elem_id='gold_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+                gold_text = gr.Markdown('', elem_id='gold_text', latex_delimiters=LATEX_DELIMITERS)
             with gr.Column():
                 gr.Markdown('### *Pred*')
-                pred_text = gr.Markdown(
-                    '', elem_id='pred_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+                pred_text = gr.Markdown('', elem_id='pred_text', latex_delimiters=LATEX_DELIMITERS)
 
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Input*')
-                input_text = gr.Markdown(
-                    '', elem_id='input_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+                input_text = gr.Markdown('', elem_id='input_text', latex_delimiters=LATEX_DELIMITERS)
             with gr.Column():
                 gr.Markdown('### *Generated*')
-                generated_text = gr.Markdown(
-                    '', elem_id='generated_text', latex_delimiters=LATEX_DELIMITERS, show_copy_button=True)
+                generated_text = gr.Markdown('', elem_id='generated_text', latex_delimiters=LATEX_DELIMITERS)
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
