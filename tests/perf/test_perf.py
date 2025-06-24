@@ -126,7 +126,7 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
-            number=[2, 5],
+            number=[2, 4],
             model='qwen2.5-7b-instruct',
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
