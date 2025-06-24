@@ -305,8 +305,8 @@ class TestRun(unittest.TestCase):
                 # 'arc',
                 # 'ceval',
                 # 'hellaswag',
-                'general_mcq',
-                # 'general_qa',
+                # 'general_mcq',
+                'general_qa',
                 # 'super_gpqa',
                 # 'mmlu_redux',
                 # 'maritime_bench',
@@ -396,7 +396,7 @@ class TestRun(unittest.TestCase):
                 # 'extra_headers':{'key': 'value'},
             },
             ignore_errors=False,
-            # use_cache='outputs/20250616_153756'
+            use_cache='outputs/test_2'
         )
 
         run_task(task_cfg=task_cfg)
