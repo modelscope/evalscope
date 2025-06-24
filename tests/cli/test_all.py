@@ -165,3 +165,50 @@ class TestRun(unittest.TestCase):
         )
 
         run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_ci_lite(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                'general_mcq',
+                'general_qa'
+            ],
+            dataset_args={
+                'general_mcq': {
+                    'local_path': 'custom_eval/text/mcq',
+                    'subset_list': [
+                        'example'
+                    ],
+                },
+                'general_qa': {
+                    'local_path': 'custom_eval/text/qa',
+                    'subset_list': [
+                        'example'
+                    ]
+                }
+            },
+            eval_batch_size=1,
+            limit=1,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+            },
+            judge_worker_num=1,
+            judge_strategy=JudgeStrategy.LLM_RECALL,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+            }
+        )
+
+        run_task(task_cfg=task_cfg)
