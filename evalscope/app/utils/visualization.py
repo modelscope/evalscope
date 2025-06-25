@@ -21,7 +21,7 @@ def plot_single_report_scores(df: pd.DataFrame):
     logger.debug(f'df: {df}')
     plot = px.bar(df, x=df[ReportKey.dataset_name], y=df[ReportKey.score], text=df[ReportKey.score])
 
-    width = 0.2 if len(df[ReportKey.dataset_name]) <= 5 else None
+    width = DEFAULT_BAR_WIDTH if len(df[ReportKey.dataset_name]) <= 5 else None
     plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
     plot.update_layout(uniformtext_minsize=12, uniformtext_mode='hide', yaxis=dict(range=[0, 1]), template=PLOTLY_THEME)
     return plot
