@@ -29,7 +29,7 @@ class ServerModelAdapter(BaseModelAdapter):
         self.api_key = api_key
 
         self.client = openai.OpenAI(
-            api_key=api_key,
+            api_key=self.api_key,
             base_url=self.api_url,
         )
         self.supported_params = get_supported_params(self.client.chat.completions.create)
