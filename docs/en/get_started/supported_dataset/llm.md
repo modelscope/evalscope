@@ -3,7 +3,7 @@
 Below is the list of supported LLM benchmarks. Click on a benchmark name to jump to details.
 
 | Benchmark Name | Pretty Name | Task Categories |
-|----------------|-------------|----------------|
+|------------|----------|----------|
 | `aime24` | [AIME-2024](#aime-2024) | `Mathematics` |
 | `aime25` | [AIME-2025](#aime-2025) | `Mathematics` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Instruction-Following`, `Reasoning` |
