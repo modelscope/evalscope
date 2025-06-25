@@ -10,7 +10,7 @@ from typing import List
 from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
-from ..constants import PLOTLY_THEME
+from ..constants import DEFAULT_BAR_WIDTH, PLOTLY_THEME
 
 logger = get_logger()
 
