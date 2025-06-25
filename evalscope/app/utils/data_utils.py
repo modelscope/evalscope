@@ -60,7 +60,8 @@ def load_single_report(root_path: str, report_name: str):
 
     config_files = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))
     if not config_files:
-        raise FileNotFoundError(f"No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}")
+        raise FileNotFoundError(
+            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}')
     task_cfg_path = config_files[0]
     task_cfg = yaml_to_dict(task_cfg_path)
     return report_list, datasets, task_cfg
