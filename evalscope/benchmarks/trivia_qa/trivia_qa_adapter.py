@@ -96,13 +96,16 @@ class TriviaQaAdapter(DataAdapter):
         def get_sys_prompt(inp: dict) -> str:
             return inp['input'][0]['content']
 
-        prompt = get_sys_prompt(input_d)
+        if self.few_shot_num > 0:
+            sys_prompt = get_sys_prompt(input_d)
+        else:
+            sys_prompt = None
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
-        context: str = '\n'.join(few_shot_prompts) + '\n'
+        context = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
         full_prompt = context
 
-        return self.gen_prompt_data(full_prompt)
+        return self.gen_prompt_data(full_prompt, system_prompt=sys_prompt)
 
     def get_gold_answer(self, input_d: dict) -> list:
         # Get the gold choice
@@ -124,7 +127,9 @@ class TriviaQaAdapter(DataAdapter):
         return result
 
     def match(self, gold: list, pred: str) -> float:
-        is_correct = any([cand in pred for cand in gold])
+        lower_pred = pred.lower()
+        gold = [g.lower() for g in gold]
+        is_correct = any([cand in lower_pred for cand in gold])
         return 1 if is_correct else 0
 
     @classmethod

@@ -1,11 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import csv
 import os
+from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
 from evalscope.utils import ResponseParser
+from evalscope.utils.io_utils import csv_to_list
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -154,7 +156,7 @@ class CEVALAdapter(DataAdapter):
         self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict = {}
+        data_dict = defaultdict(dict)
         for subset_name in subset_list:
             for split_name in [self.train_split, self.eval_split]:
                 if os.path.exists(dataset_name_or_path):
@@ -162,20 +164,7 @@ class CEVALAdapter(DataAdapter):
                 else:
                     file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
                 if os.path.exists(file_path):
-                    with open(file_path, encoding='utf-8') as f:
-                        rows = []
-                        reader = csv.reader(f)
-                        header = next(reader)
-                        for row in reader:
-                            item = dict(zip(header, row))
-                            item.setdefault('explanation', '')
-                            item.setdefault('answer', '')
-                            rows.append(item)
-
-                        if subset_name in data_dict:
-                            data_dict[subset_name].update({split_name: rows})
-                        else:
-                            data_dict[subset_name] = {split_name: rows}
+                    data_dict[subset_name][split_name] = csv_to_list(file_path)
 
         return data_dict
 

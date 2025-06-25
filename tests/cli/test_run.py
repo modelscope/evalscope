@@ -396,7 +396,6 @@ class TestRun(unittest.TestCase):
                 # 'extra_headers':{'key': 'value'},
             },
             ignore_errors=False,
-            use_cache='outputs/test_2'
         )
 
         run_task(task_cfg=task_cfg)
@@ -517,6 +516,70 @@ class TestRun(unittest.TestCase):
             # analysis_report=True,
             # debug=True,
             # use_cache='outputs/20250616_161931'
+        )
+
+        run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_local_dataset(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                # 'mmlu',
+                # 'race',
+                'trivia_qa',
+                # 'cmmlu',
+                # 'humaneval',
+                # 'gsm8k',
+                # 'bbh',
+                # 'competition_math',
+                # 'arc',
+                # 'ceval',
+            ],
+            dataset_args={
+                'mmlu': {
+                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
+                    'few_shot_num': 0,
+                    'dataset_id': 'data/data/mmlu',
+                },
+                'ceval': {
+                    'subset_list': [
+                        'computer_network', 'operating_system', 'computer_architecture'
+                    ],
+                    'few_shot_num': 0,
+                    'dataset_id': 'data/data/ceval',
+                },
+                'cmmlu': {
+                    'subset_list': ['elementary_chinese'],
+                    'dataset_id': 'data/data/cmmlu',
+                    'few_shot_num': 0
+                },
+                'bbh': {
+                    'subset_list': ['word_sorting', 'movie_recommendation'],
+                },
+                'humaneval': {
+                    'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
+                },
+                'trivia_qa': {
+                    'dataset_id': 'data/data/trivia_qa',
+                },
+            },
+            eval_batch_size=10,
+            limit=5,
+            debug=True,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+            },
+            ignore_errors=False,
         )
 
         run_task(task_cfg=task_cfg)
