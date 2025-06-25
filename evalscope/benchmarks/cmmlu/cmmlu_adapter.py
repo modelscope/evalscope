@@ -2,11 +2,13 @@
 
 import csv
 import os
+from collections import defaultdict
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
 from evalscope.utils import ResponseParser
+from evalscope.utils.io_utils import csv_to_list
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -126,29 +128,15 @@ class CMMLUAdapter(DataAdapter):
         self.choices = ['A', 'B', 'C', 'D']
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict = {}
+        data_dict = defaultdict(dict)
         for subset_name in subset_list:
-            data_dict[subset_name] = {}
             for split_name in [self.train_split, self.eval_split]:
-                file_path = os.path.join(work_dir, dataset_name_or_path, split_name, f'{subset_name}.csv')
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, split_name, f'{subset_name}.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, split_name, f'{subset_name}.csv')
                 if os.path.exists(file_path):
-                    with open(file_path, encoding='utf-8') as f:
-                        rows = []
-                        reader = csv.reader(f)
-                        for row in reader:
-                            if len(row) != 7:
-                                logger.error(f'Mismatch len of row: {row}, len of row should be 6. Skip this row.')
-                                continue
-                            rows.append({
-                                'Question': row[1],
-                                'A': row[2],
-                                'B': row[3],
-                                'C': row[4],
-                                'D': row[5],
-                                'Answer': row[6],
-                            })
-
-                        data_dict[subset_name].update({split_name: rows})
+                    data_dict[subset_name][split_name] = csv_to_list(file_path)
 
         return data_dict
 
