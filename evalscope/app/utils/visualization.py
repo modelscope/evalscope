@@ -54,7 +54,7 @@ def plot_single_report_sunburst(report_list: List[Report]):
 
 
 def plot_single_dataset_scores(df: pd.DataFrame):
-    # TODO: add metric radio and relace category name
+    # TODO: add metric radio and replace category name
     plot = px.bar(
         df,
         x=df[ReportKey.metric_name],
