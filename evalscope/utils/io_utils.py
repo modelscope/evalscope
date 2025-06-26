@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import jsonlines as jsonl
 import os
@@ -246,3 +247,22 @@ def get_latest_folder_path(work_dir):
     latest_folder = max(timestamped_folders, key=parse_timestamp)
 
     return os.path.join(work_dir, latest_folder)
+
+
+def gen_hash(name: str, bits: int = 32):
+    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
+
+
+def get_valid_list(input_list, candidate_list):
+    """
+    Get the valid and invalid list from input_list based on candidate_list.
+    Args:
+        input_list: The input list.
+        candidate_list: The candidate list.
+
+    Returns:
+        valid_list: The valid list.
+        invalid_list: The invalid list.
+    """
+    return [i for i in input_list if i in candidate_list], \
+           [i for i in input_list if i not in candidate_list]

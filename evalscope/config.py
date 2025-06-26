@@ -9,11 +9,9 @@ from typing import Dict, List, Optional, Union
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
                                  JudgeStrategy, ModelTask, OutputType)
 from evalscope.models import CustomModel, DummyCustomModel
-from evalscope.utils import gen_hash
-from evalscope.utils.argument_utils import BaseArgument
-from evalscope.utils.io_utils import dict_to_yaml
+from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
+from evalscope.utils.io_utils import dict_to_yaml, gen_hash
 from evalscope.utils.logger import get_logger
-from evalscope.utils.utils import parse_int_or_float
 
 logger = get_logger()
 

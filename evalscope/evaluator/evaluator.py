@@ -14,9 +14,9 @@ from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
 from evalscope.models import BaseModelAdapter
 from evalscope.report import Report, gen_table
-from evalscope.utils import dict_torch_dtype_to_str, gen_hash
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, gen_hash, jsonl_to_list
 from evalscope.utils.logger import get_logger
+from evalscope.utils.model_utils import dict_torch_dtype_to_str
 
 logger = get_logger()
 

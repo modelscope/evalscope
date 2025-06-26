@@ -1,5 +1,6 @@
 import json
 from argparse import Namespace
+from inspect import signature
 
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
 
@@ -48,3 +49,16 @@ class BaseArgument:
     def __str__(self):
         """Return a JSON-formatted string representation of the instance."""
         return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
+
+
+def parse_int_or_float(num):
+    number = float(num)
+    if number.is_integer():
+        return int(number)
+    return number
+
+
+def get_supported_params(func):
+    """Get the supported parameters of a function."""
+    sig = signature(func)
+    return list(sig.parameters.keys())

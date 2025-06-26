@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from dotenv import dotenv_values
 
+from tests.utils import test_level_list
+
 env = dotenv_values('.env')
 
 import os
@@ -10,7 +12,7 @@ import unittest
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 
 os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'

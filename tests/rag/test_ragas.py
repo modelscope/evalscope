@@ -2,11 +2,13 @@
 import os
 from dotenv import dotenv_values
 
+from tests.utils import test_level_list
+
 env = dotenv_values('.env')
 import unittest
 
 from evalscope import TaskConfig, run_task
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

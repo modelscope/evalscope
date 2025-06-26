@@ -9,7 +9,7 @@ from argparse import Namespace
 from evalscope.perf.utils.local_server import start_app
 from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
 from evalscope.utils.logger import configure_logging, get_logger
-from evalscope.utils.utils import seed_everything
+from evalscope.utils.model_utils import seed_everything
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
 from .utils.db_util import get_output_path
