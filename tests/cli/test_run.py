@@ -10,7 +10,7 @@ import subprocess
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalStage, EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
@@ -582,6 +582,101 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
             },
             ignore_errors=False,
+        )
+
+        run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_general_no_answer(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                'general_qa',
+            ],
+            dataset_args={
+                'general_qa': {
+                    'dataset_id': 'custom_eval/text/qa',
+                    'subset_list': [
+                        'arena'
+                    ],
+                }
+            },
+            eval_batch_size=10,
+            limit=10,
+            debug=True,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+            },
+            ignore_errors=False,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'generation_config': {
+                    'temperature': 0.0,
+                    'max_tokens': 4096
+                },
+                'score_type': 'numeric',
+            },
+            judge_worker_num=5,
+            judge_strategy=JudgeStrategy.LLM,
+            use_cache='outputs/20250626_193421'
+        )
+
+        run_task(task_cfg=task_cfg)
+
+
+    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_general_with_answer(self):
+        from evalscope.config import TaskConfig
+
+        task_cfg = TaskConfig(
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                'general_qa',
+            ],
+            dataset_args={
+                'general_qa': {
+                    'dataset_id': 'custom_eval/text/qa',
+                    'subset_list': [
+                        'example'
+                    ],
+                }
+            },
+            eval_batch_size=10,
+            limit=10,
+            debug=True,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+            },
+            ignore_errors=False,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'generation_config': {
+                    'temperature': 0.0,
+                    'max_tokens': 4096
+                },
+                'score_type': 'pattern',
+            },
+            judge_worker_num=5,
+            judge_strategy=JudgeStrategy.LLM,
         )
 
         run_task(task_cfg=task_cfg)

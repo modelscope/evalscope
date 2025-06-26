@@ -25,7 +25,6 @@ logger = get_logger()
     prompt_template='请回答问题\n{query}',
 )
 class GeneralQAAdapter(DataAdapter):
-    # TODO: set few_shot_num
 
     def __init__(self, **kwargs):
 
@@ -70,16 +69,11 @@ class GeneralQAAdapter(DataAdapter):
             {'data': [prompt]}
 
         """
-        # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        history = input_d.get('history', [])  # history: [['q1', 'a1'], ['q2', 'a2'], ...]
-        if len(history) > 0:
-            logger.warning('The history is not included in the prompt for GeneralQA. \
-                           To be supported in the future.')
-
+        messages = input_d.get('messages')
         query = input_d.get('question', '') or input_d.get('query', '')
         system_prompt = input_d.get('system')
         prompt = self.prompt_template.format(query=query)
-        return self.gen_prompt_data(prompt, system_prompt=system_prompt)
+        return self.gen_prompt_data(prompt, system_prompt=system_prompt, messages=messages)
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
@@ -90,7 +84,7 @@ class GeneralQAAdapter(DataAdapter):
             gold_answer: str
 
         """
-        return input_d.get('answer', '') or input_d.get('response', '')
+        return input_d.get('answer') or input_d.get('response')
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
@@ -113,6 +107,11 @@ class GeneralQAAdapter(DataAdapter):
             bleu_score: dict
 
         """
+        # reference free metrics
+        if gold is None:
+            return {'AverageAccuracy': -1}
+
+        # calculate rouge and bleu scores
         res = dict()
         if 'AverageRouge' in self.metric_list:
             from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh

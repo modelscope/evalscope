@@ -8,11 +8,14 @@ logger = get_logger()
 
 DEFAULT_PROMPT_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
 
-Question: {question}
+[Question]
+{question}
 
-Reference Answer: {gold}
+[Reference Answer]
+{gold}
 
-Model Answer: {pred}
+[Predicted Answer]
+{pred}
 
 Evaluate the model's answer based on correctness compared to the reference answer.
 Grade the predicted answer of this new question as one of:
@@ -20,6 +23,18 @@ A: CORRECT
 B: INCORRECT
 
 Just return the letters "A" or "B", with no text around it.
+"""  # noqa: E501
+
+
+DEFAULT_NUMERIC_SCORE_TEMPLATE = """Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+Begin your evaluation by providing a short explanation. Be as objective as possible.
+After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[0.5]]\"
+
+[Question]
+{question}
+
+[Response]
+{pred}
 """  # noqa: E501
 
 DEFAULT_JUDGE_MODEL = 'Qwen/Qwen3-235B-A22B'
@@ -31,14 +46,18 @@ class LLMJudge:
     A metric that uses LLM to judge the quality of model predictions by comparing them with reference answers.
     """
 
-    def __init__(self,
-                 api_key: Optional[str] = None,
-                 api_url: Optional[str] = None,
-                 model_id: Optional[str] = None,
-                 system_prompt: Optional[str] = None,
-                 prompt_template: Optional[str] = None,
-                 generation_config: Optional[Dict[str, Any]] = None,
-                 **kwargs):
+    def __init__(
+            self,
+            api_key: Optional[str] = None,
+            api_url: Optional[str] = None,
+            model_id: Optional[str] = None,
+            system_prompt: Optional[str] = None,
+            prompt_template: Optional[str] = None,
+            generation_config: Optional[Dict[str, Any]] = None,
+            score_pattern: Optional[str] = None,
+            score_mapping: Optional[Dict[str, float]] = None,
+            score_type: str = 'pattern',  # 'pattern', 'numeric'
+            **kwargs):
         """
         Initialize LLMJudge metric.
 
@@ -49,14 +68,33 @@ class LLMJudge:
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
+            score_pattern (str, optional): Regex pattern to extract score from LLM response
+            score_mapping (dict, optional): Mapping from extracted score to float value
+            score_type (str, optional): Type of score extraction strategy ('pattern', 'numeric') defaults to 'pattern'.
+                - 'pattern': Use score_pattern and score_mapping to extract categorical scores
+                - 'numeric': Treat the extracted value as a direct numerical score
         """
         self.api_key = api_key or os.environ.get('MODELSCOPE_SDK_TOKEN', 'EMPTY')
         self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
-        self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
         self.generation_config = generation_config or {}
 
+        # Default score mapping for A/B pattern
+        self.score_type = score_type
+        if self.score_type == 'numeric':
+            self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
+            self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE',
+                                                                     DEFAULT_NUMERIC_SCORE_TEMPLATE)
+        else:
+            self.score_pattern = score_pattern or r'(A|B)'
+            self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
+
+        self.score_mapping = score_mapping or {'A': 1.0, 'B': 0.0}
+
+        self._init_server_adapter()
+
+    def _init_server_adapter(self):
         from evalscope.models import ServerModelAdapter
 
         # Initialize ServerModelAdapter
@@ -95,17 +133,63 @@ class LLMJudge:
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):
         if question is None:
             question = 'Not provided'
-        return self.prompt_template.format(question=question, pred=pred, gold=gold)
+
+        # check variables in prompt_template
+        prompt = self.prompt_template
+        if '{question}' in self.prompt_template:
+            prompt = prompt.replace('{question}', question)
+        if '{pred}' in self.prompt_template:
+            prompt = prompt.replace('{pred}', pred)
+        if '{gold}' in self.prompt_template:
+            prompt = prompt.replace('{gold}', gold)
+        return prompt
 
     def get_score(self, response: str) -> float:
+        """
+        Extract score from LLM response using the configured pattern and mapping.
+
+        Args:
+            response (str): The response from the LLM
+
+        Returns:
+            float: The numeric score extracted from the response
+        """
         if response is None:
-            return 0
-        match = re.search(r'(A|B)', response)
+            return 0.0
+
+        # choose extraction method based on score_type
+        if self.score_type == 'numeric':
+            return self._extract_numeric_score(response)
+        elif self.score_type == 'pattern':
+            return self._extract_pattern_score(response)
+
+    def _extract_numeric_score(self, response: str) -> Optional[float]:
+        """extract numeric score from the response using the score_pattern"""
+        match = re.search(self.score_pattern, response)
+
+        if match:
+            # try to convert each captured group to float
+            for group in match.groups():
+                if group is not None:
+                    try:
+                        return float(group)
+                    except (ValueError, TypeError):
+                        continue
+
+            # if not found in groups, try the whole match
+            try:
+                return float(match.group(0))
+            except (ValueError, TypeError):
+                logger.warning(f'Failed to convert any extracted value to float from: {match.group(0)}')
+
+        return None
+
+    def _extract_pattern_score(self, response: str) -> float:
+        """use the score_pattern to extract categorical scores"""
+        match = re.search(self.score_pattern, response)
         if match:
             answer = match.group(0)
-            if answer == 'A':
-                return 1
-            elif answer == 'B':
-                return 0
+            return self.score_mapping.get(answer, 0.0)
         else:
-            return 0
+            logger.warning(f"No match found for pattern '{self.score_pattern}' in response: {response}")
+            return 0.0

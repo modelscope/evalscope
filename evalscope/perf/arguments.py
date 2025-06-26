@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR
-from evalscope.utils.argument_utils import BaseArgument
+from evalscope.utils import BaseArgument
 
 
 @dataclass
