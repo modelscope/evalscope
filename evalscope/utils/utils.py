@@ -264,42 +264,6 @@ def get_valid_list(input_list, candidate_list):
            [i for i in input_list if i not in candidate_list]
 
 
-def get_latest_folder_path(work_dir):
-    from datetime import datetime
-
-    # Get all subdirectories in the work_dir
-    folders = [f for f in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, f))]
-
-    # Get the timestamp（YYYYMMDD_HHMMSS）
-    timestamp_pattern = re.compile(r'^\d{8}_\d{6}$')
-
-    # Filter out the folders
-    timestamped_folders = [f for f in folders if timestamp_pattern.match(f)]
-
-    if not timestamped_folders:
-        print(f'>> No timestamped folders found in {work_dir}!')
-        return None
-
-    # timestamp parser
-    def parse_timestamp(folder_name):
-        return datetime.strptime(folder_name, '%Y%m%d_%H%M%S')
-
-    # Find the latest folder
-    latest_folder = max(timestamped_folders, key=parse_timestamp)
-
-    return os.path.join(work_dir, latest_folder)
-
-
-def csv_to_list(file_path: str) -> List[dict]:
-    import csv
-
-    with open(file_path, mode='r', newline='', encoding='utf-8') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        result = [row for row in csv_reader]
-
-    return result
-
-
 def seed_everything(seed: int):
     """Set all random seeds to a fixed value for reproducibility.
 

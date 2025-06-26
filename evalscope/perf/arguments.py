@@ -6,10 +6,11 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR
+from evalscope.utils.argument_utils import BaseArgument
 
 
 @dataclass
-class Arguments:
+class Arguments(BaseArgument):
     # Model and API
     model: str  # Model name or path
     model_id: Optional[str] = None  # Model identifier
@@ -69,15 +70,6 @@ class Arguments:
     top_k: Optional[int] = None  # Top-k sampling setting for the response
     extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
 
-    @staticmethod
-    def from_args(args):
-        # Convert Namespace to a dictionary and filter out None values
-        args_dict = {k: v for k, v in vars(args).items() if v is not None}
-
-        if 'func' in args_dict:
-            del args_dict['func']  # Note: compat CLI arguments
-        return Arguments(**args_dict)
-
     def __post_init__(self):
         # Set the default headers
         self.headers = self.headers or {}  # Default to empty dictionary
@@ -107,12 +99,6 @@ class Arguments:
         assert len(self.number) == len(
             self.parallel
         ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
-
-    def __str__(self):
-        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return self.__dict__
 
 
 class ParseKVAction(argparse.Action):
