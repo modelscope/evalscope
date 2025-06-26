@@ -6,7 +6,7 @@ import os
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.utils import ResponseParser
+from evalscope.metrics.completion_parsers import ResponseParser
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa

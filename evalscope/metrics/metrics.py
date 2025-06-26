@@ -223,7 +223,7 @@ def chrf(items):
     Source: https://github.com/m-popovic/chrF
     Paper: https://www.aclweb.org/anthology/W15-3049.pdf
 
-    Higher is better  # TODO I think
+    Higher is better
     """
     refs = list(zip(*items))[0]
     preds = list(zip(*items))[1]

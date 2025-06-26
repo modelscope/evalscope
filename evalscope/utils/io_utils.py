@@ -1,7 +1,9 @@
 import csv
+import hashlib
 import json
 import jsonlines as jsonl
 import os
+import re
 import yaml
 
 from evalscope.constants import DumpMode
@@ -221,7 +223,46 @@ def dict_to_json(d: dict, json_file: str):
         json.dump(d, f, indent=4, ensure_ascii=False)
 
 
-if __name__ == '__main__':
-    csv_file = 'custom_eval/text/mcq/example_val.csv'
-    jsonl_file = 'custom_eval/text/mcq/example_val.jsonl'
-    csv_to_jsonl(csv_file, jsonl_file)
+def get_latest_folder_path(work_dir):
+    from datetime import datetime
+
+    # Get all subdirectories in the work_dir
+    folders = [f for f in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, f))]
+
+    # Get the timestamp（YYYYMMDD_HHMMSS）
+    timestamp_pattern = re.compile(r'^\d{8}_\d{6}$')
+
+    # Filter out the folders
+    timestamped_folders = [f for f in folders if timestamp_pattern.match(f)]
+
+    if not timestamped_folders:
+        print(f'>> No timestamped folders found in {work_dir}!')
+        return None
+
+    # timestamp parser
+    def parse_timestamp(folder_name):
+        return datetime.strptime(folder_name, '%Y%m%d_%H%M%S')
+
+    # Find the latest folder
+    latest_folder = max(timestamped_folders, key=parse_timestamp)
+
+    return os.path.join(work_dir, latest_folder)
+
+
+def gen_hash(name: str, bits: int = 32):
+    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
+
+
+def get_valid_list(input_list, candidate_list):
+    """
+    Get the valid and invalid list from input_list based on candidate_list.
+    Args:
+        input_list: The input list.
+        candidate_list: The candidate list.
+
+    Returns:
+        valid_list: The valid list.
+        invalid_list: The invalid list.
+    """
+    return [i for i in input_list if i in candidate_list], \
+           [i for i in input_list if i not in candidate_list]

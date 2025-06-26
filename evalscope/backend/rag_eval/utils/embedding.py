@@ -12,8 +12,8 @@ from typing import Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.utils.tools import download_model
 from evalscope.constants import HubType
+from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.logger import get_logger
-from evalscope.utils.utils import get_supported_params
 
 logger = get_logger()
 

@@ -5,7 +5,7 @@ import unittest
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
 from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.utils.io_utils import dump_jsonl_data
-from evalscope.utils.utils import test_level_list
+from tests.utils import test_level_list
 
 
 class TestCollection(unittest.TestCase):

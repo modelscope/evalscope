@@ -6,9 +6,9 @@ import re
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
+from evalscope.metrics.completion_parsers import ResponseParser
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
-from evalscope.utils.utils import ResponseParser
 
 # flake8: noqa
 

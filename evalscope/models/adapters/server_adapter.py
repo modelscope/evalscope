@@ -5,8 +5,8 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from typing import List, Optional, Union
 
+from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.logger import get_logger
-from evalscope.utils.utils import get_supported_params
 from .base_adapter import BaseModelAdapter
 
 logger = get_logger()

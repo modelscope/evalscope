@@ -1,77 +1,85 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# Copyright (c) OpenCompass.
+# flake8: noqa
 
-import functools
-import hashlib
-import importlib
-import importlib.util
-import numpy as np
-import os
-import random
+import ast
 import re
-import torch
-from inspect import signature
-from typing import Any, Dict, List, Tuple, Union
 
+# from . import utils as ann_utils
+from evalscope.constants import ArenaWinner
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-TEST_LEVEL_LIST = [0, 1]
-
-# Example: export TEST_LEVEL_LIST=0,1
-TEST_LEVEL_LIST_STR = 'TEST_LEVEL_LIST'
+one_score_pattern = re.compile('\[\[(\d+\.?\d*)\]\]')
+one_score_pattern_backup = re.compile('\[(\d+\.?\d*)\]')
 
 
-def test_level_list():
-    global TEST_LEVEL_LIST
-    if TEST_LEVEL_LIST_STR in os.environ:
-        TEST_LEVEL_LIST = [int(x) for x in os.environ[TEST_LEVEL_LIST_STR].split(',')]
+# modified from: https://github.com/lm-sys/FastChat/blob/main/fastchat/eval/eval_gpt_review.py#L47
+# does not work with batched completions
+def lmsys_parser(completion, output_format):
+    if output_format == '[[rating]]':
+        match = re.search(one_score_pattern, completion)
+        if not match:
+            match = re.search(one_score_pattern_backup, completion)
 
-    return TEST_LEVEL_LIST
+        if match:
+            rating = ast.literal_eval(match.groups()[0])
+        else:
+            logger.error(f'Content: {completion}\n'
+                         'You must manually fix the score.')
+            rating = -1
+
+        return rating
+    if output_format == '[[rating_a,rating_b]]':
+        try:
+            score_pair = completion.split('\n')[0]
+            score_pair = score_pair.replace(',', ' ')
+            sp = score_pair.split(' ')
+            if len(sp) == 2:
+                score_1 = float(sp[0])
+                score_2 = float(sp[1])
+                if score_1 > score_2:
+                    winner = ArenaWinner.MODEL_A
+                elif score_1 < score_2:
+                    winner = ArenaWinner.MODEL_B
+                else:
+                    if score_1 == score_1 == -1:
+                        winner = ArenaWinner.UNKNOWN
+                    winner = ArenaWinner.TIE
+                return winner, [score_1, score_2]
+            else:
+                raise Exception('Invalid score pair.')
+        except Exception as e:
+            logger.error(f'{e}\nContent: {completion}\nYou must manually fix the score pair.')
+            return ArenaWinner.UNKNOWN, [-1, -1]
+    elif output_format == '[[A]]':
+        if '[[A]]' in completion:
+            winner = ArenaWinner.MODEL_A
+        elif '[[B]]' in completion:
+            winner = ArenaWinner.MODEL_B
+        elif '[[C]]' in completion:
+            winner = ArenaWinner.TIE
+        else:
+            logger.error(f'\nContent: {completion}\nYou must manually fix the score.')
+            winner = ArenaWinner.UNKNOWN
+        return winner
 
 
-def get_obj_from_cfg(eval_class_ref: Any, *args, **kwargs) -> Any:
-    module_name, spliter, cls_name = eval_class_ref.partition(':')
-
+def ranking_parser(completion, **kwargs):
     try:
-        obj_cls = importlib.import_module(module_name)
-    except ImportError as e:
-        logger.error(f'{e}')
-        raise e
+        if isinstance(completion, str):
+            ordered_completions = ast.literal_eval(completion)
+        else:
+            ordered_completions = completion
 
-    if spliter:
-        for attr in cls_name.split('.'):
-            obj_cls = getattr(obj_cls, attr)
+        rank = [c for c in ordered_completions if c['model'] == 'model_a'][0]['rank']
+        assert rank in [1, 2]
 
-    return functools.partial(obj_cls, *args, **kwargs)
-
-
-def random_seeded_choice(seed: Union[int, str, float], choices, **kwargs):
-    """Random choice with a (potentially string) seed."""
-    return random.Random(seed).choices(choices, k=1, **kwargs)[0]
-
-
-def gen_hash(name: str, bits: int = 32):
-    return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
-
-
-def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
-    """
-        Checks whether the passed dictionary and its nested dicts have a *torch_dtype* key and if it's not None,
-        converts torch.dtype to a string of just the type. For example, `torch.float32` get converted into *"float32"*
-        string, which can then be stored in the json format.
-
-        Refer to: https://github.com/huggingface/transformers/pull/16065/files for details.
-        """
-    if d.get('torch_dtype', None) is not None and not isinstance(d['torch_dtype'], str):
-        d['torch_dtype'] = str(d['torch_dtype']).split('.')[1]
-
-    for value in d.values():
-        if isinstance(value, dict):
-            dict_torch_dtype_to_str(value)
-
-    return d
+        return ArenaWinner.MODEL_A if rank == 1 else ArenaWinner.MODEL_B
+    except Exception as e:
+        logger.error(f'{e}\nContent: {completion}\n'
+                     'You must manually fix the score pair.')
+        return ArenaWinner.UNKNOWN
 
 
 class ResponseParser:
@@ -194,7 +202,6 @@ class ResponseParser:
             return last_capital
         return 'No valid option found'
 
-
     @staticmethod
     def parse_bracketed_answer(text: str, options: list[str]) -> str:
         options = ResponseParser.process_options(options)
@@ -211,122 +218,3 @@ class ResponseParser:
         # Join options into a regex pattern separated by '|', to match any of the options
         options_pattern = '|'.join(escaped_options)
         return options_pattern
-
-def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
-    """
-    Normalize score.
-
-    Args:
-        score: input score, could be float or dict. e.g. 0.12345678 or {'acc': 0.12345678, 'f1': 0.12345678}
-        keep_num: number of digits to keep.
-
-    Returns:
-        Union[float, dict]: normalized score. e.g. 0.1234 or {'acc': 0.1234, 'f1': 0.1234}
-    """
-    if isinstance(score, float):
-        score = round(score, keep_num)
-    elif isinstance(score, dict):
-        score = {k: round(v, keep_num) for k, v in score.items()}
-    else:
-        logger.warning(f'Unknown score type: {type(score)}')
-
-    return score
-
-
-def is_module_installed(module_name):
-    try:
-        importlib.import_module(module_name)
-        return True
-    except ImportError:
-        return False
-
-
-def get_module_path(module_name):
-    spec = importlib.util.find_spec(module_name)
-    if spec and spec.origin:
-        return os.path.abspath(spec.origin)
-    else:
-        raise ValueError(f'Cannot find module: {module_name}')
-
-
-def get_valid_list(input_list, candidate_list):
-    """
-    Get the valid and invalid list from input_list based on candidate_list.
-    Args:
-        input_list: The input list.
-        candidate_list: The candidate list.
-
-    Returns:
-        valid_list: The valid list.
-        invalid_list: The invalid list.
-    """
-    return [i for i in input_list if i in candidate_list], \
-           [i for i in input_list if i not in candidate_list]
-
-
-def get_latest_folder_path(work_dir):
-    from datetime import datetime
-
-    # Get all subdirectories in the work_dir
-    folders = [f for f in os.listdir(work_dir) if os.path.isdir(os.path.join(work_dir, f))]
-
-    # Get the timestamp（YYYYMMDD_HHMMSS）
-    timestamp_pattern = re.compile(r'^\d{8}_\d{6}$')
-
-    # Filter out the folders
-    timestamped_folders = [f for f in folders if timestamp_pattern.match(f)]
-
-    if not timestamped_folders:
-        print(f'>> No timestamped folders found in {work_dir}!')
-        return None
-
-    # timestamp parser
-    def parse_timestamp(folder_name):
-        return datetime.strptime(folder_name, '%Y%m%d_%H%M%S')
-
-    # Find the latest folder
-    latest_folder = max(timestamped_folders, key=parse_timestamp)
-
-    return os.path.join(work_dir, latest_folder)
-
-
-def csv_to_list(file_path: str) -> List[dict]:
-    import csv
-
-    with open(file_path, mode='r', newline='', encoding='utf-8') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        result = [row for row in csv_reader]
-
-    return result
-
-
-def seed_everything(seed: int):
-    """Set all random seeds to a fixed value for reproducibility.
-
-    Args:
-        seed (int): The seed value.
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-def get_supported_params(func):
-    """Get the supported parameters of a function."""
-    sig = signature(func)
-    return list(sig.parameters.keys())
-
-def parse_int_or_float(num):
-    number = float(num)
-    if number.is_integer():
-        return int(number)
-    return number
-
-if __name__ == '__main__':
-    options = ['A', 'B', 'C', 'D']
-    answers = ['Context .... ANSWER: A', 'answer: A']
-    for answer in answers:
-        print(ResponseParser.parse_first_option(answer, options))

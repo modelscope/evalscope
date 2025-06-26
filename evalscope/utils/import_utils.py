@@ -64,3 +64,19 @@ class _LazyModule(ModuleType):
 
     def __reduce__(self):
         return self.__class__, (self._name, self.__file__, self._import_structure)
+
+
+def is_module_installed(module_name):
+    try:
+        importlib.import_module(module_name)
+        return True
+    except ImportError:
+        return False
+
+
+def get_module_path(module_name):
+    spec = importlib.util.find_spec(module_name)
+    if spec and spec.origin:
+        return os.path.abspath(spec.origin)
+    else:
+        raise ValueError(f'Cannot find module: {module_name}')

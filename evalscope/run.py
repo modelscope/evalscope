@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DataCollection, EvalBackend
-from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
+from evalscope.utils.model_utils import seed_everything
 
 if TYPE_CHECKING:
     from evalscope.models import LocalModel

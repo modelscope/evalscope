@@ -3,7 +3,7 @@ from typing import Any
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import exact_match
-from evalscope.utils.utils import ResponseParser
+from evalscope.metrics.completion_parsers import ResponseParser
 
 SUBSET_LIST = ['default']
 

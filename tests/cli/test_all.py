@@ -9,8 +9,8 @@ import unittest
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
-from evalscope.utils import test_level_list
 from evalscope.utils.logger import get_logger
+from tests.utils import test_level_list
 
 os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 
