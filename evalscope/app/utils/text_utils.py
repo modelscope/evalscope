@@ -84,7 +84,7 @@ def process_model_prediction_old(item: Any, max_length: int = 2048) -> str:
     return result
 
 
-def process_model_prediction(item: Any, max_length: int = 4096) -> str:
+def process_model_prediction(item: Any, max_length: int = 32000) -> str:
     if isinstance(item, (dict, list)):
         result = json.dumps(item, ensure_ascii=False, indent=2)
         result = f'```json\n{result}\n```'

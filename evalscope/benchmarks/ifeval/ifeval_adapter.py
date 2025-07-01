@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.benchmarks.ifeval.utils import process_results
 from evalscope.constants import EvalType
 from evalscope.metrics import Metric, mean, metric_registry
 
@@ -47,6 +46,8 @@ class IFEvalAdapter(DataAdapter):
         return result
 
     def match(self, gold: Any, pred: Any) -> Dict:
+        from evalscope.benchmarks.ifeval.utils import process_results
+
         return process_results(gold, [pred])
 
     def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:

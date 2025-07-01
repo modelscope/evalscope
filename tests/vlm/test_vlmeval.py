@@ -64,7 +64,11 @@ class TestVLMEval(unittest.TestCase):
         task_cfg = {
             'eval_backend': 'VLMEvalKit',
             'eval_config': {
-                'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
+                'data': [
+                    # 'SEEDBench_IMG',
+                    # 'ChartQA_TEST',
+                    'MMDU'
+                    ],
                 'limit': 5,
                 'mode': 'all',
                 'model': [

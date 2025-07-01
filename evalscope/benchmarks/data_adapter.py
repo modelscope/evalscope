@@ -506,8 +506,5 @@ class DataAdapter(ABC):
         prompt = judge.build_prompt(pred, gold, question)
         judge_response = judge(prompt)
         score = judge.get_score(judge_response)
+
         return score
-        # return {
-        #     'score': score,
-        #     'judge_response': judge_response
-        # }

@@ -3,7 +3,6 @@
 import argparse
 
 from evalscope.cli.start_app import StartAppCMD
-from evalscope.cli.start_arena import ArenaCMD
 from evalscope.cli.start_eval import EvalCMD
 from evalscope.cli.start_perf import PerfBenchCMD
 
@@ -15,7 +14,6 @@ def run_cmd():
     PerfBenchCMD.define_args(subparsers)
     EvalCMD.define_args(subparsers)
     StartAppCMD.define_args(subparsers)
-    ArenaCMD.define_args(subparsers)
 
     args = parser.parse_args()
 

@@ -69,6 +69,8 @@ class VLMEvalKitBackendManager(BackendManager):
                     del remain_cfg['type']  # remove not used args
 
                     norm_model_type = os.path.basename(model_type).replace(':', '-').replace('.', '_')
+                    model_cfg['type'] = norm_model_type
+
                     self.valid_models.update({norm_model_type: partial(model_class, model=model_type, **remain_cfg)})
                     new_model_names.append(norm_model_type)
                 else:
