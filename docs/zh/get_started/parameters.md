@@ -98,14 +98,73 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
     ```{seealso}
     关于ModelScope的模型推理服务的更多信息，请参考[ModelScope API推理服务](https://modelscope.cn/docs/model-service/API-Inference/intro)
     ```
-  - `system_prompt`: (可选) 评测数据集的系统prompt
-  - `prompt_template`: (可选) 评测数据集的prompt模板
-  - `generation_config`: (可选) 生成参数
+  - `system_prompt`: 评测数据集的系统prompt
+  - `prompt_template`: 评测数据集的prompt模板
+  - `generation_config`: 模型生成参数，与`--generation-config`参数相同。
+  - `score_type`: 预置的模型打分方式，可选：
+    - `pattern`: （默认选项）直接判断模型输出与参考答案是否相同，适合有参考答案评测。
+      <details><summary>默认prompt_template</summary>
+
+      ```text
+      Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
+
+      [Question]
+      {question}
+
+      [Reference Answer]
+      {gold}
+
+      [Predicted Answer]
+      {pred}
+
+      Evaluate the model's answer based on correctness compared to the reference answer.
+      Grade the predicted answer of this new question as one of:
+      A: CORRECT
+      B: INCORRECT
+
+      Just return the letters "A" or "B", with no text around it.
+      ```
+      </details>
+    - `numeric`: 判断模型输出在prompt条件下的打分，适合无参考答案评价。
+      <details><summary>默认prompt_template</summary>
+
+      ```text
+      Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+
+      Begin your evaluation by providing a short explanation. Be as objective as possible.
+
+      After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[0.5]]\"
+
+      [Question]
+      {question}
+
+      [Response]
+      {pred}
+      ```
+      </details>
+  - `score_pattern`：解析模型输出的正则表达式，`pattern`模式默认为`(A|B)`；`numeric`模式默认为`\[\[(\d+(?:\.\d+)?)\]\]`，用于提取模型打分结果。
+  - `score_mapping`：`pattern`模式下的分数映射字典，默认为`{'A': 1.0, 'B': 0.0}`
 - `--analysis-report`: 是否生成分析报告，默认为`false`；如果设置该参数，将使用judge model生成分析报告，报告中包含模型评测结果的分析解读和建议。报告输出语言将根据`locale.getlocale()`自动判断。
 
 ## 其他参数
 
-- `--work-dir`: 模型评测输出路径，默认为`./outputs/{timestamp}`
+- `--work-dir`: 模型评测输出路径，默认为`./outputs/{timestamp}`，文件夹结构示例如下：
+  ```text
+  .
+  ├── configs
+  │   └── task_config_b6f42c.yaml
+  ├── logs
+  │   └── eval_log.log
+  ├── predictions
+  │   └── Qwen2.5-0.5B-Instruct
+  │       └── general_qa_example.jsonl
+  ├── reports
+  │   └── Qwen2.5-0.5B-Instruct
+  │       └── general_qa.json
+  └── reviews
+      └── Qwen2.5-0.5B-Instruct
+          └── general_qa_example.jsonl
+  ```
 - `--use-cache`: 使用本地缓存的路径，默认为`None`；如果为指定路径，例如`outputs/20241210_194434`，将重用路径下的模型推理结果，若未完成推理则会继续推理，之后进行评测。
 - `--seed`: 随机种子，默认为`42`
 - `--debug`: 是否开启调试模式，默认为`false`

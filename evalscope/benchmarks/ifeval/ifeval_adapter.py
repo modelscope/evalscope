@@ -42,9 +42,6 @@ class IFEvalAdapter(DataAdapter):
     def get_gold_answer(self, input_d: dict) -> str:
         return input_d
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        return result
-
     def match(self, gold: Any, pred: Any) -> Dict:
         from evalscope.benchmarks.ifeval.utils import process_results
 

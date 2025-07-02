@@ -92,20 +92,21 @@ def get_judge_score(result, reverse=False):
 
 def get_battles_from_row(row, first_game_only=False, multiplier=3):
     results = []
-    output = {'model_a': row['model_a'], 'model_b': row['model_b']}
 
     game = row['games'][0]
+    output = {'model_a': game['model_a'], 'model_b': game['model_b']}
+
     weight = 1
-    if game['score'] == 'A=B':
+    if game['judgment'] == 'A=B':
         output['winner'] = 'tie'
-    elif game['score'] == 'A>B':
+    elif game['judgment'] == 'A>B':
         output['winner'] = 'model_a'
-    elif game['score'] == 'A>>B':
+    elif game['judgment'] == 'A>>B':
         output['winner'] = 'model_a'
         weight = multiplier
-    elif game['score'] == 'B>A':
+    elif game['judgment'] == 'B>A':
         output['winner'] = 'model_b'
-    elif game['score'] == 'B>>A':
+    elif game['judgment'] == 'B>>A':
         output['winner'] = 'model_b'
         weight = multiplier
     else:
@@ -117,22 +118,23 @@ def get_battles_from_row(row, first_game_only=False, multiplier=3):
     if first_game_only:
         return pd.DataFrame(results)
 
-    # game 2
-    output = {'model_a': row['model_a'], 'model_b': row['model_b']}
+    # Dont change the order of model_a and model_b
+    output = {'model_a': game['model_a'], 'model_b': game['model_b']}
 
+    # game 2
     game = row['games'][1]
 
     weight = 1
-    if game['score'] == 'A=B':
+    if game['judgment'] == 'A=B':
         output['winner'] = 'tie'
-    elif game['score'] == 'A>B':
+    elif game['judgment'] == 'A>B':
         output['winner'] = 'model_b'
-    elif game['score'] == 'A>>B':
+    elif game['judgment'] == 'A>>B':
         output['winner'] = 'model_b'
         weight = multiplier
-    elif game['score'] == 'B>A':
+    elif game['judgment'] == 'B>A':
         output['winner'] = 'model_a'
-    elif game['score'] == 'B>>A':
+    elif game['judgment'] == 'B>>A':
         output['winner'] = 'model_a'
         weight = multiplier
     else:

@@ -237,9 +237,10 @@ class Evaluator(object):
             if use_llm:
                 # Use LLM as judge
                 assert self.judge is not None, f'Judge model is required for LLM judging {self.data_adapter.name}'
+                pred_content = self.data_adapter.llm_parse_pred_result(
+                    result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
                 review_result = self.data_adapter.llm_match(
-                    gold_content, answer_content, self.judge, raw_input=raw_input_d)
-                pred = answer_content
+                    gold_content, pred_content, self.judge, raw_input=raw_input_d)
             else:
                 # Use rule-based judging
                 pred_content = self.data_adapter.parse_pred_result(
@@ -250,15 +251,14 @@ class Evaluator(object):
                 if (self.task_cfg.judge_strategy == JudgeStrategy.LLM_RECALL
                         and isinstance(review_result, (bool, int, float)) and not bool(review_result)):
                     assert self.judge is not None, f'Judge model is required for LLM_RECALL strategy {self.data_adapter.name}'  # noqa: E501
+                    pred_content = self.data_adapter.llm_parse_pred_result(
+                        result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
                     review_result = self.data_adapter.llm_match(
-                        gold_content, answer_content, self.judge, raw_input=raw_input_d)
-                    pred = answer_content
-                else:
-                    pred = pred_content
+                        gold_content, pred_content, self.judge, raw_input=raw_input_d)
 
             choice[ReviewKeys.REVIEW] = {
                 ReviewKeys.GOLD: gold_content if gold_content != raw_input_d else '*Same as Input*',
-                ReviewKeys.PRED: pred,
+                ReviewKeys.PRED: pred_content,
                 ReviewKeys.RESULT: review_result
             }
             rev_choices.append(choice)

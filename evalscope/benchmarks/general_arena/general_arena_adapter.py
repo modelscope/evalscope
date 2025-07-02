@@ -252,6 +252,12 @@ class GeneralArenaAdapter(DataAdapter):
         import pandas as pd
         import tabulate
 
+        report_path = kwargs.get('report_path')
+        leaderboard_file = os.path.join(report_path, 'leaderboard.txt')
+
+        # Ensure report directory exists
+        os.makedirs(report_path, exist_ok=True)
+
         # Convert report to dataframe
         df = report.to_dataframe()
 
@@ -264,6 +270,9 @@ class GeneralArenaAdapter(DataAdapter):
 
         # Get all model names from self.models
         all_model_names = [model['name'] for model in self.models]
+
+        # Collect all leaderboard outputs
+        leaderboard_outputs = []
 
         def format_leaderboard(data_df, title):
             """Format DataFrame as leaderboard with CI."""
@@ -312,24 +321,21 @@ class GeneralArenaAdapter(DataAdapter):
             leaderboard_df = pd.DataFrame(leaderboard_data)
             leaderboard_df.index = range(len(leaderboard_df))
 
-            logger.info(f"\n{title}\n{tabulate.tabulate(leaderboard_df, headers='keys', showindex=False)}")
+            # Format as string
+            table_str = tabulate.tabulate(leaderboard_df, headers='keys', showindex=False)
+            output = f'{title}\n{table_str}\n'
+
+            logger.info(f'\n{title}\n{table_str}')
+            return output
 
         # Parse dataset and subset information from dataset_name column
         # Format: '{dataset_name}&{subset_name}@{name}&{self.baseline}'
         def parse_dataset_key(dataset_key):
             """Parse dataset key to extract dataset_name, subset_name, and model pair."""
-            if '&' not in dataset_key or '@' not in dataset_key:
-                return None, None, None, None
-
             parts = dataset_key.split('@')
-            if len(parts) != 2:
-                return None, None, None, None
 
             dataset_subset = parts[0]
             model_pair = parts[1]
-
-            if '&' not in dataset_subset or '&' not in model_pair:
-                return None, None, None, None
 
             dataset_name, subset_name = dataset_subset.split('&', 1)
             model_1, model_2 = model_pair.split('&', 1)
@@ -358,7 +364,7 @@ class GeneralArenaAdapter(DataAdapter):
         # 1. Overall ranking (aggregate across all datasets and subsets)
         overall_df = parsed_df.groupby([ReportKey.model_name,
                                         ReportKey.metric_name])[ReportKey.score].mean().reset_index()
-        format_leaderboard(overall_df, '=== OVERALL LEADERBOARD ===')
+        leaderboard_outputs.append(format_leaderboard(overall_df, '=== OVERALL LEADERBOARD ==='))
 
         # 2. Dataset-level rankings
         datasets = parsed_df['dataset_name'].unique()
@@ -366,7 +372,7 @@ class GeneralArenaAdapter(DataAdapter):
             dataset_df = parsed_df[parsed_df['dataset_name'] == dataset]
             dataset_agg = dataset_df.groupby([ReportKey.model_name,
                                               ReportKey.metric_name])[ReportKey.score].mean().reset_index()
-            format_leaderboard(dataset_agg, f'=== DATASET LEADERBOARD: {dataset} ===')
+            leaderboard_outputs.append(format_leaderboard(dataset_agg, f'=== DATASET LEADERBOARD: {dataset} ==='))
 
         # 3. Subset-level rankings
         subsets = parsed_df[['dataset_name', 'subset_name']].drop_duplicates()
@@ -375,14 +381,19 @@ class GeneralArenaAdapter(DataAdapter):
             subset_name = subset_row['subset_name']
             subset_df = parsed_df[(parsed_df['dataset_name'] == dataset_name)
                                   & (parsed_df['subset_name'] == subset_name)]
-            format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ===')
+            leaderboard_outputs.append(
+                format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ==='))
+
+        # Write all leaderboard outputs to file
+        with open(leaderboard_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(leaderboard_outputs))
+
+        logger.info(f'Leaderboard results saved to: {leaderboard_file}')
 
     def get_gold_answer(self, input_d):
-        """Dummy function to get gold answer."""
         return f"model_1: {input_d['model_1']}\n---\n" + input_d['answer_1']
 
-    def parse_pred_result(self, result, raw_input_d=None, eval_type=EvalType.CHECKPOINT):
-        """Dummy function to parse prediction result."""
+    def llm_parse_pred_result(self, result, raw_input_d=None, eval_type=EvalType.CHECKPOINT):
         return f"model_2: {raw_input_d['model_2']}\n---\n" + raw_input_d['answer_2']
 
     def match(self, gold, pred):

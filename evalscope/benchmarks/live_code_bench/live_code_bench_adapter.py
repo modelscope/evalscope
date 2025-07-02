@@ -69,12 +69,6 @@ class LiveCodeBenchAdapter(DataAdapter):
         # Extract the gold answer from the input dict.
         return input_d
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-        """
-        return result
-
     def match(self, gold: dict, pred: str) -> float:
         from .evaluate_utils import codegen_metrics
         from .extract_utils import extract_code_generation

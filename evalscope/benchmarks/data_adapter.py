@@ -449,7 +449,6 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
         """
         Parse the predicted result and extract proper answer.
@@ -462,7 +461,21 @@ class DataAdapter(ABC):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        raise NotImplementedError
+        return result
+
+    def llm_parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
+        """
+        Parse the predicted result using LLM.
+
+        Args:
+            result (Any): The predicted answer from the model.
+            raw_input_d (dict): The raw input data.
+            eval_type (str): The evaluation type, default is 'checkpoint'.
+
+        Returns:
+            The parsed answer. Usually a string for chat.
+        """
+        return result
 
     @abstractmethod
     def match(self, gold: Any, pred: Any) -> Any:

@@ -255,7 +255,7 @@ class TestRunCustom(unittest.TestCase):
                 },
             },
             judge_worker_num=5,
-            use_cache='outputs/20250702_141048'
+            use_cache='outputs/20250702_165727'
         )
 
         run_task(task_cfg=task_cfg)

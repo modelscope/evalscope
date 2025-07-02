@@ -6,9 +6,9 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 |------------|----------|----------|
 | `aime24` | [AIME-2024](#aime-2024) | `Mathematics` |
 | `aime25` | [AIME-2025](#aime-2025) | `Mathematics` |
-| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Instruction-Following`, `Reasoning` |
+| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `Instruction-Following` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
-| `arena_hard` | [ArenaHard](#arenahard) | `Instruction-Following`, `Reasoning` |
+| `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `Instruction-Following` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
@@ -18,6 +18,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `docmath` | [DocMath](#docmath) | `Long Context`, `Mathematics`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `Long Context`, `Reasoning` |
+| `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
@@ -98,7 +99,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Dataset ID**: [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary)
 - **Description**:  
   > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
-- **Task Categories**: `Instruction-Following`, `Reasoning`
+- **Task Categories**: `Arena`, `Instruction-Following`
 - **Evaluation Metrics**: `winrate`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
@@ -138,7 +139,7 @@ Your response should end with "The best answer is [the_answer_letter]" where the
 - **Dataset ID**: [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary)
 - **Description**:  
   > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
-- **Task Categories**: `Instruction-Following`, `Reasoning`
+- **Task Categories**: `Arena`, `Instruction-Following`
 - **Evaluation Metrics**: `winrate`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
@@ -357,6 +358,39 @@ Please read the following text and answer the question below.
 {question}
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
+```
+
+---
+
+### GeneralArena
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `general_arena`
+- **Dataset ID**: general_arena
+- **Description**:  
+  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path.
+- **Task Categories**: `Arena`, `Custom`
+- **Evaluation Metrics**: `winrate`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Supported Output Formats**: `generation`
+- **Extra Parameters**: 
+```json
+{
+    "models": [
+        {
+            "name": "qwen-plus",
+            "report_path": "outputs/20250627_172550/reports/qwen-plus"
+        },
+        {
+            "name": "qwen2.5-7b",
+            "report_path": "outputs/20250627_172817/reports/qwen2.5-7b-instruct"
+        }
+    ],
+    "baseline": "qwen2.5-7b"
+}
 ```
 
 ---
