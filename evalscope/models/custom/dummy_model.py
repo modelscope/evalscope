@@ -50,14 +50,14 @@ class DummyCustomModel(CustomModel):
         # Must return a list of dicts with the same format as the OpenAI API.
         responses = []
         for input_item in original_inputs:
-            message = self.make_request_messages(input_item)
-            response = f'Dummy response for prompt: {message}'
+            # message = self.make_request_messages(input_item)
+            # response = f'Dummy response for prompt: {message}'
 
             res_d = {
                 'choices': [{
                     'index': 0,
                     'message': {
-                        'content': response,
+                        'content': '*PlaceHolder*',
                         'role': 'assistant'
                     }
                 }],

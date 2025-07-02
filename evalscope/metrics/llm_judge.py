@@ -86,10 +86,11 @@ class LLMJudge:
             self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE',
                                                                      DEFAULT_NUMERIC_SCORE_TEMPLATE)
-        else:
+        elif self.score_type == 'pattern':
             self.score_pattern = score_pattern or r'(A|B)'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
-
+        else:
+            raise ValueError(f"Invalid score_type: {self.score_type}. Must be 'pattern' or 'numeric'.")
         self.score_mapping = score_mapping or {'A': 1.0, 'B': 0.0}
 
         self._init_server_adapter()

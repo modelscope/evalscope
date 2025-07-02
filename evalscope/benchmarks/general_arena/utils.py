@@ -55,6 +55,41 @@ def post_process_result(completion):
         return None
 
 
+def get_judge_score(result, reverse=False):
+    """
+    Calculate the judge score, considering confidence weight.
+
+    Args:
+        result: Judgment result ('A=B', 'A>B', 'A>>B', 'B>A', 'B>>A')
+        reverse: Whether to reverse the score
+
+    Returns:
+        float: Weighted score
+    """
+
+    # Base score mapping - using finer-grained scores
+    if not reverse:
+        score_mapping = {
+            'A=B': 0.5,  # Tie
+            'A>B': 0.75,  # A slightly wins
+            'A>>B': 1.0,  # A significantly wins
+            'B>A': 0.25,  # B slightly wins
+            'B>>A': 0.0,  # B significantly wins
+        }
+    else:
+        score_mapping = {
+            'A=B': 0.5,  # Tie
+            'A>B': 0.25,  # A slightly wins
+            'A>>B': 0.0,  # A significantly wins
+            'B>A': 0.75,  # B slightly wins
+            'B>>A': 1.0,  # B significantly wins
+        }
+
+    base_score = score_mapping.get(result, 0.5)
+
+    return base_score
+
+
 def get_battles_from_row(row, first_game_only=False, multiplier=3):
     results = []
     output = {'model_a': row['model_a'], 'model_b': row['model_b']}

@@ -394,9 +394,6 @@ class Evaluator(object):
         report_map: Report = self.data_adapter.gen_report(
             subset_score_map=reviews_score_all, model_name=self.model_name)
 
-        # Post process report
-        self.data_adapter.post_process_report(report_map, report_path=report_path)
-
         # Make table
         try:
             report_table = gen_table(report_list=[report_map], add_overall_metric=True)
@@ -417,6 +414,12 @@ class Evaluator(object):
         report_file = os.path.join(report_path, f'{self.dataset_name}.json')
         report_map.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
+
+        # Post process report
+        try:
+            self.data_adapter.post_process_report(report_map, report_path=report_path)
+        except Exception as e:
+            logger.error(f'Failed to post process report: {e}')
 
         return report_map
 

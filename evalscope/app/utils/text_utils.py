@@ -2,6 +2,7 @@
 Text processing utilities for the Evalscope dashboard.
 """
 import json
+import numpy as np
 import os
 import pandas as pd
 import re
@@ -96,3 +97,23 @@ def process_model_prediction(item: Any, max_length: int = 32000) -> str:
         return process_string(result, max_length)
 
     return result
+
+
+def process_json_content(content: Any) -> str:
+    """
+    Process JSON content to convert it into a markdown-friendly format.
+
+    Args:
+        content (str): The JSON content as a string.
+
+    Returns:
+        str: The processed content formatted for markdown display.
+    """
+    if isinstance(content, (np.bool_, np.int_, np.float_)):
+        content = str(content)
+
+    if isinstance(content, str):
+        content = {'content': content}
+
+    content_json = json.dumps(content, ensure_ascii=False, indent=2)
+    return content_json

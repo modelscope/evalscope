@@ -158,12 +158,12 @@ class GeneralArenaAdapter(DataAdapter):
                             'model_1': name,
                             'model_2': self.baseline
                         })
-                pairwise_data[f'{dataset_name}_{subset_name}@{name}&{self.baseline}'][self.eval_split] = pairs
+                pairwise_data[f'{dataset_name}&{subset_name}@{name}&{self.baseline}'][self.eval_split] = pairs
 
         return pairwise_data
 
     def llm_match(self, gold, pred, judge=None, **kwargs):
-        from .utils import post_process_result
+        from .utils import get_judge_score, post_process_result
 
         raw_input = kwargs.get('raw_input', None)
         question = raw_input['question']
@@ -179,23 +179,27 @@ class GeneralArenaAdapter(DataAdapter):
         game1_response = judge(prompt1, system_prompt=GRADER_SYSTEM_PROMPT)
         game2_response = judge(prompt2, system_prompt=GRADER_SYSTEM_PROMPT)
         # parse grading response
+        # game1
         res1 = post_process_result(game1_response)
+        score1 = get_judge_score(res1, reverse=False)
+        # game2
         res2 = post_process_result(game2_response)
+        score2 = get_judge_score(res2, reverse=True)
         return {
-            'model_a':
-            model_1,
-            'model_b':
-            model_2,
+            'score':
+            mean([score1, score2]),
             'games': [
                 {
-                    'user_prompt': prompt1,
-                    'judgment': game1_response,
-                    'score': res1
+                    'model_a': model_1,
+                    'model_b': model_2,
+                    'response': game1_response,
+                    'judgment': res1
                 },
                 {
-                    'user_prompt': prompt2,
-                    'judgment': game2_response,
-                    'score': res2
+                    'model_a': model_2,
+                    'model_b': model_1,
+                    'response': game2_response,
+                    'judgment': res2
                 },
             ]
         }
@@ -261,13 +265,6 @@ class GeneralArenaAdapter(DataAdapter):
         # Get all model names from self.models
         all_model_names = [model['name'] for model in self.models]
 
-        def extract_model_from_subset_name(subset_name):
-            """Extract model name from subset name like 'dataset@model1&model2'"""
-            if '@' in subset_name and '&' in subset_name:
-                parts = subset_name.split('@')[1].split('&')
-                return parts[0] if parts[1] == self.baseline else parts[1]
-            return subset_name
-
         def format_leaderboard(data_df, title):
             """Format DataFrame as leaderboard with CI."""
             # Pivot to get winrate, winrate_lower, winrate_upper as columns
@@ -298,21 +295,18 @@ class GeneralArenaAdapter(DataAdapter):
                 if pd.isna(pivot_df.loc[model, 'winrate']):
                     continue
 
-                if model == self.baseline:
-                    leaderboard_data.append({'Model': model, 'Scores (%)': '50.0', 'CI (%)': '(+0.0 / +0.0)'})
-                else:
-                    score_pct = pivot_df.loc[model, 'winrate'] * 100
-                    lower_diff = (pivot_df.loc[model, 'winrate_lower'] - pivot_df.loc[model, 'winrate']) * 100
-                    upper_diff = (pivot_df.loc[model, 'winrate_upper'] - pivot_df.loc[model, 'winrate']) * 100
+                score_pct = pivot_df.loc[model, 'winrate'] * 100
+                lower_diff = (pivot_df.loc[model, 'winrate_lower'] - pivot_df.loc[model, 'winrate']) * 100
+                upper_diff = (pivot_df.loc[model, 'winrate_upper'] - pivot_df.loc[model, 'winrate']) * 100
 
-                    leaderboard_data.append({
-                        'Model': model,
-                        'Scores (%)': f'{score_pct:.1f}',
-                        'CI (%)': f'({lower_diff:+.1f} / {upper_diff:+.1f})'
-                    })
+                leaderboard_data.append({
+                    'Model': model,
+                    'WinRate (%)': f'{score_pct:.1f}',
+                    'CI (%)': f'({lower_diff:+.1f} / {upper_diff:+.1f})'
+                })
 
             # Sort by score descending
-            leaderboard_data.sort(key=lambda x: float(x['Scores (%)'].replace('%', '')), reverse=True)
+            leaderboard_data.sort(key=lambda x: float(x['WinRate (%)'].replace('%', '')), reverse=True)
 
             # Create DataFrame
             leaderboard_df = pd.DataFrame(leaderboard_data)
@@ -320,85 +314,76 @@ class GeneralArenaAdapter(DataAdapter):
 
             logger.info(f"\n{title}\n{tabulate.tabulate(leaderboard_df, headers='keys', showindex=False)}")
 
-        # Add extracted model and dataset columns
-        winrate_df['extracted_model'] = winrate_df[ReportKey.subset_name].apply(extract_model_from_subset_name)
-        winrate_df['extracted_dataset'] = winrate_df[ReportKey.subset_name].apply(lambda x: x.split('@')[0]
-                                                                                  if '@' in x else x)
+        # Parse dataset and subset information from dataset_name column
+        # Format: '{dataset_name}&{subset_name}@{name}&{self.baseline}'
+        def parse_dataset_key(dataset_key):
+            """Parse dataset key to extract dataset_name, subset_name, and model pair."""
+            if '&' not in dataset_key or '@' not in dataset_key:
+                return None, None, None, None
 
-        # Keep original data for subset processing (don't filter out baseline here)
-        original_winrate_df = winrate_df.copy()
+            parts = dataset_key.split('@')
+            if len(parts) != 2:
+                return None, None, None, None
 
-        # Filter out baseline model from data for overall/dataset aggregations (will be added manually in format_leaderboard)
-        winrate_df = winrate_df[winrate_df['extracted_model'] != self.baseline]
+            dataset_subset = parts[0]
+            model_pair = parts[1]
 
-        # 1. Overall Leaderboard - weighted average across all datasets and subsets
-        if not winrate_df.empty:
-            overall_grouped = winrate_df.groupby(['extracted_model', ReportKey.metric_name]).apply(lambda x: pd.Series(
-                {'weighted_score':
-                 (x[ReportKey.score] * x[ReportKey.num]).sum() / x[ReportKey.num].sum()})).reset_index()
+            if '&' not in dataset_subset or '&' not in model_pair:
+                return None, None, None, None
 
-            # Reshape for format_leaderboard function
-            overall_df = overall_grouped.pivot_table(
-                index='extracted_model', columns=ReportKey.metric_name, values='weighted_score').reset_index()
+            dataset_name, subset_name = dataset_subset.split('&', 1)
+            model_1, model_2 = model_pair.split('&', 1)
 
-            overall_reshaped = pd.melt(
-                overall_df,
-                id_vars=['extracted_model'],
-                value_vars=['winrate', 'winrate_lower', 'winrate_upper'],
-                var_name=ReportKey.metric_name,
-                value_name=ReportKey.score)
-            overall_reshaped[ReportKey.model_name] = overall_reshaped['extracted_model']
+            return dataset_name, subset_name, model_1, model_2
 
-            format_leaderboard(overall_reshaped, 'Overall Winrate Leaderboard')
+        # Add parsed columns
+        parsed_data = []
+        for _, row in winrate_df.iterrows():
+            dataset_name, subset_name, model_1, model_2 = parse_dataset_key(row[ReportKey.subset_name])
+            if dataset_name is not None:
+                parsed_data.append({
+                    'dataset_name': dataset_name,
+                    'subset_name': subset_name,
+                    ReportKey.model_name: model_1,
+                    ReportKey.metric_name: row[ReportKey.metric_name],
+                    ReportKey.score: row[ReportKey.score]
+                })
 
-        # 2. Dataset-level Leaderboards
-        datasets = set(dataset_name for dataset_name, _ in self.overall_datasets)
-        for dataset in datasets:
-            dataset_df = winrate_df[winrate_df['extracted_dataset'] == dataset]
+        if not parsed_data:
+            logger.warning('No valid dataset keys found for parsing.')
+            return
 
-            if not dataset_df.empty:
-                # Calculate weighted average for each model in this dataset
-                dataset_grouped = dataset_df.groupby(
-                    ['extracted_model', ReportKey.metric_name]).apply(lambda x: pd.Series(
-                        {'weighted_score':
-                         (x[ReportKey.score] * x[ReportKey.num]).sum() / x[ReportKey.num].sum()})).reset_index()
+        parsed_df = pd.DataFrame(parsed_data)
 
-                dataset_pivot = dataset_grouped.pivot_table(
-                    index='extracted_model', columns=ReportKey.metric_name, values='weighted_score').reset_index()
+        # 1. Overall ranking (aggregate across all datasets and subsets)
+        overall_df = parsed_df.groupby([ReportKey.model_name,
+                                        ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+        format_leaderboard(overall_df, '=== OVERALL LEADERBOARD ===')
 
-                # Reshape for format_leaderboard function
-                dataset_reshaped = pd.melt(
-                    dataset_pivot,
-                    id_vars=['extracted_model'],
-                    value_vars=['winrate', 'winrate_lower', 'winrate_upper'],
-                    var_name=ReportKey.metric_name,
-                    value_name=ReportKey.score)
-                dataset_reshaped[ReportKey.model_name] = dataset_reshaped['extracted_model']
+        # 2. Dataset-level rankings
+        datasets = parsed_df['dataset_name'].unique()
+        for dataset in sorted(datasets):
+            dataset_df = parsed_df[parsed_df['dataset_name'] == dataset]
+            dataset_agg = dataset_df.groupby([ReportKey.model_name,
+                                              ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+            format_leaderboard(dataset_agg, f'=== DATASET LEADERBOARD: {dataset} ===')
 
-                format_leaderboard(dataset_reshaped, f'Dataset: {dataset} Winrate Leaderboard')
-            else:
-                # If no non-baseline models for this dataset, still show baseline
-                logger.info(f'Dataset: {dataset} - Only baseline model {self.baseline} available')
-
-        # 3. Subset-level Leaderboards - use original data without filtering baseline
-        for dataset_name, subset_name in self.overall_datasets:
-            # Find matching subsets using original data
-            matching_subsets = original_winrate_df[original_winrate_df[ReportKey.subset_name].str.startswith(
-                f'{dataset_name}_{subset_name}@')]
-
-            if not matching_subsets.empty:
-                # Filter out baseline from matching subsets for format_leaderboard
-                matching_subsets_filtered = matching_subsets[matching_subsets['extracted_model'] != self.baseline]
-                format_leaderboard(matching_subsets_filtered,
-                                   f'Subset: {dataset_name}/{subset_name} Winrate Leaderboard')
+        # 3. Subset-level rankings
+        subsets = parsed_df[['dataset_name', 'subset_name']].drop_duplicates()
+        for _, subset_row in subsets.iterrows():
+            dataset_name = subset_row['dataset_name']
+            subset_name = subset_row['subset_name']
+            subset_df = parsed_df[(parsed_df['dataset_name'] == dataset_name)
+                                  & (parsed_df['subset_name'] == subset_name)]
+            format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ===')
 
     def get_gold_answer(self, input_d):
         """Dummy function to get gold answer."""
-        return ''
+        return f"model_1: {input_d['model_1']}\n---\n" + input_d['answer_1']
 
     def parse_pred_result(self, result, raw_input_d=None, eval_type=EvalType.CHECKPOINT):
         """Dummy function to parse prediction result."""
-        return ''
+        return f"model_2: {raw_input_d['model_2']}\n---\n" + raw_input_d['answer_2']
 
     def match(self, gold, pred):
         logger.warning(f'Please use LLMJudge to match the result for {self.name}')

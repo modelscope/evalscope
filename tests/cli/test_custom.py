@@ -120,7 +120,7 @@ class TestRunCustom(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-7b-instruct',
+            model='qwen2.5-72b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -131,7 +131,8 @@ class TestRunCustom(unittest.TestCase):
                 'general_qa': {
                     'dataset_id': 'custom_eval/text/qa',
                     'subset_list': [
-                        'arena'
+                        'arena',
+                        'example'
                     ],
                 }
             },
@@ -156,7 +157,7 @@ class TestRunCustom(unittest.TestCase):
                 'score_type': 'numeric',
             },
             judge_worker_num=5,
-            judge_strategy=JudgeStrategy.LLM,
+            judge_strategy=JudgeStrategy.AUTO,
         )
 
         run_task(task_cfg=task_cfg)
@@ -223,12 +224,16 @@ class TestRunCustom(unittest.TestCase):
                     'extra_params':{
                         'models':[
                             {
-                                'name': 'qwen-plus',
-                                'report_path': 'outputs/20250627_172550/reports/qwen-plus'
+                                'name': 'qwen2.5-0.5b',
+                                'report_path': 'outputs/20250702_140354/reports/qwen2.5-0.5b-instruct'
                             },
                             {
                                 'name': 'qwen2.5-7b',
-                                'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
+                                'report_path': 'outputs/20250702_140702/reports/qwen2.5-7b-instruct'
+                            },
+                            {
+                                'name': 'qwen2.5-72b',
+                                'report_path': 'outputs/20250702_140802/reports/qwen2.5-72b-instruct'
                             }
                         ],
                         'baseline': 'qwen2.5-7b'
@@ -241,16 +246,16 @@ class TestRunCustom(unittest.TestCase):
             stream=True,
             ignore_errors=False,
             judge_model_args={
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
-                    'max_tokens': 4096
+                    'max_tokens': 8000
                 },
             },
             judge_worker_num=5,
-            use_cache='outputs/20250701_194733'
+            use_cache='outputs/20250702_141048'
         )
 
         run_task(task_cfg=task_cfg)

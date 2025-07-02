@@ -152,7 +152,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             raw_d = {
                 'Index': f'{sample_index}_{choice_index}',
                 'Input': raw_input,
-                'Generated': raw_pred_answer,
+                'Generated': raw_pred_answer if raw_pred_answer != parsed_pred_answer else '*Same as Pred*',
                 'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
                 'Pred': parsed_pred_answer,
                 'Score': score,
