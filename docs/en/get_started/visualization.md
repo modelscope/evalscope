@@ -109,8 +109,11 @@ Follow the steps shown below to select an evaluation report:
 
 1. Click the `Multi-Model` tab button.
 2. Choose the loaded evaluation reports in the `Select Report` dropdown menu to automatically display the overview of the evaluation reports. Multiple selections are possible.
-3. Display using radar charts and comparative tables.
+3. Click on `Model Overview` to display results using a radar chart and a comparison table.  
    ![alt text](./images/model_compare.png)
+4. Click on `Model Comparison Details` and select the two models you want to compare. The evaluation results of the two models on each dataset will be shown side by side. You can adjust the threshold and filter model output results by clicking on `Answer Mode`.  
+   ![alt text](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/model_compare_viz.jpg)
+
 
 ### Mixed Dataset Evaluation Visualization
 

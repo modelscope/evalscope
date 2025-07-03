@@ -368,7 +368,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Dataset Name**: `general_arena`
 - **Dataset ID**: general_arena
 - **Description**:  
-  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path.
+  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).
 - **Task Categories**: `Arena`, `Custom`
 - **Evaluation Metrics**: `winrate`
 - **Requires LLM Judge**: Yes
@@ -391,6 +391,41 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
     ],
     "baseline": "qwen2.5-7b"
 }
+```
+- **System Prompt**: 
+```text
+Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.
+
+Begin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.
+
+When evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.
+
+Then consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.
+
+Then consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.
+
+After providing your explanation, you must output only one of the following choices as your final verdict with a label:
+
+1. Assistant A is significantly better: [[A>>B]]
+2. Assistant A is slightly better: [[A>B]]
+3. Tie, relatively the same: [[A=B]]
+4. Assistant B is slightly better: [[B>A]]
+5. Assistant B is significantly better: [[B>>A]]
+
+Example output: "My final verdict is tie: [[A=B]]".
+```
+- **Prompt Template**: 
+```text
+<|User Prompt|>
+{question}
+
+<|The Start of Assistant A's Answer|>
+{answer_1}
+<|The End of Assistant A's Answer|>
+
+<|The Start of Assistant B's Answer|>
+{answer_2}
+<|The End of Assistant B's Answer|>
 ```
 
 ---

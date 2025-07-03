@@ -26,12 +26,15 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
     description=
     'GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, '
     'where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should '
-    'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path.',
+    'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. '
+    'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).',
     dataset_id='general_arena',
     metric_list=['winrate'],
     few_shot_num=0,
     train_split=None,
     eval_split='test',
+    system_prompt=GRADER_SYSTEM_PROMPT,
+    prompt_template=GRADER_TEMPLATE,
     extra_params={
         'models': [{
             'name': 'qwen-plus',
@@ -171,13 +174,17 @@ class GeneralArenaAdapter(DataAdapter):
         answer_2 = raw_input['answer_2']
         model_1 = raw_input['model_1']
         model_2 = raw_input['model_2']
+
+        system_template = self.system_prompt
+        prompt_template = self.prompt_template
+
         # gold is baseline answer 'A', pred is model answer 'B'
-        prompt1 = GRADER_TEMPLATE.format(question=question, answer_1=answer_1, answer_2=answer_2)
+        prompt1 = prompt_template.format(question=question, answer_1=answer_1, answer_2=answer_2)
         # reverse the order
-        prompt2 = GRADER_TEMPLATE.format(question=question, answer_1=answer_2, answer_2=answer_1)
+        prompt2 = prompt_template.format(question=question, answer_1=answer_2, answer_2=answer_1)
         # get grading response
-        game1_response = judge(prompt1, system_prompt=GRADER_SYSTEM_PROMPT)
-        game2_response = judge(prompt2, system_prompt=GRADER_SYSTEM_PROMPT)
+        game1_response = judge(prompt1, system_prompt=system_template)
+        game2_response = judge(prompt2, system_prompt=system_template)
         # parse grading response
         # game1
         res1 = post_process_result(game1_response)

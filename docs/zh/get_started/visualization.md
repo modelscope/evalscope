@@ -100,7 +100,7 @@ evalscope app --outputs evalscope/examples/viz
 1. 选择数据集，将展示模型在该数据集上的评测结果
 2. 使用条形图和表格展示模型在不同指标下、不同子数据集上的评测结果
    ![alt text](./images/single_dataset.png)
-3. 选择子数据集，将展示模型在该子数据集上的评测结果，可以点击`答案模式`筛选模型输出结果。其中
+3. 选择子数据集，将展示模型在该子数据集上的评测结果，可以调整阈值，点击`答案模式`筛选模型输出结果。其中
    - `Input`表示模型输入；
    - `Generated`表示模型输出；
    - `Gold`表示标准答案；
@@ -115,8 +115,10 @@ evalscope app --outputs evalscope/examples/viz
 
 1. 点击`多模型`选项页按钮
 2. 在`选择报告`下拉框中选择已加载的评测报告，将自动展示评测报告总览，可以多项选择
-3. 使用雷达图和对比表格进行展示
+3. 点击`模型概览`，使用雷达图和对比表格进行展示
    ![alt text](./images/model_compare.png)
+4. 点击`模型对比详情`，选择需要对比的两个模型，将展示两个模型在各数据集上的评测结果对比。可以调整阈值，点击`答案模式`筛选模型输出结果。
+   ![alt text](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/model_compare_viz.jpg)
 
 ### 数据集混合评测可视化
 
