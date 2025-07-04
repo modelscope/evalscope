@@ -286,9 +286,9 @@ class TestRun(unittest.TestCase):
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
-                # 'frames',
+                'frames',
                 # 'bfcl_v3',
-                'truthful_qa',
+                # 'truthful_qa',
             ],
             dataset_args={
                 'mmlu': {
@@ -328,7 +328,6 @@ class TestRun(unittest.TestCase):
                 },
                 'musr': {
                     'subset_list': ['murder_mysteries'],
-                    'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/MuSR'
                 },
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -351,6 +350,9 @@ class TestRun(unittest.TestCase):
                 },
                 'mmlu_redux':{
                     'subset_list': ['abstract_algebra']
+                },
+                'frames':{
+                    'local_path': 'data/iic/frames',
                 },
                 'bfcl_v3': {
                     'subset_list': ['parallel'],

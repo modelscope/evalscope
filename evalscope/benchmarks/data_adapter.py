@@ -168,7 +168,7 @@ class DataAdapter(ABC):
         If you want to support local dataset, please rewrite this method in xxx_data_adapter.
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
-        return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
+        return self.load_from_hub(dataset_name_or_path, subset_list, None, **kwargs)
 
     def load_with_snapshot(self,
                            file_structure: Dict[str, List[str]],
