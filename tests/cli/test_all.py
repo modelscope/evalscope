@@ -127,7 +127,7 @@ dataset_args={
     'mmlu_redux':{
         'subset_list': ['abstract_algebra']
     },
-    'frames':{
+    'docmath':{
         'subset_list': ['simpshort_testmini']
     },
     'bfcl_v3':{
