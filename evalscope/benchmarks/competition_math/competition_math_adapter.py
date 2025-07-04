@@ -105,7 +105,8 @@ class CompetitionMathAdapter(DataAdapter):
         return result
 
     def match(self, gold: str, pred: str) -> float:
-        return math_equal(pred, gold)
+        res = math_equal(pred, gold)
+        return 1.0 if res else 0.0
 
     @classmethod
     def _generate_prompt(cls, input_d: dict, use_fewshot: bool = True) -> str:

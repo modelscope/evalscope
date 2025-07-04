@@ -13,7 +13,7 @@ from ..constants import DATASET_TOKEN, LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOK
 from ..utils.data_utils import (get_acc_report_df, get_model_prediction, get_report_analysis, get_single_dataset_df,
                                 load_single_report)
 from ..utils.localization import get_single_model_locale
-from ..utils.text_utils import convert_markdown_image, process_model_prediction
+from ..utils.text_utils import convert_markdown_image, process_json_content, process_model_prediction
 from ..utils.visualization import plot_single_dataset_scores, plot_single_report_scores, plot_single_report_sunburst
 
 if TYPE_CHECKING:
@@ -82,7 +82,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Score*')
-                score_text = gr.Markdown('', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS)
+                score_text = gr.Code('', elem_id='score_text', language='json', wrap_lines=False)
             with gr.Column():
                 gr.Markdown('### *Normalized Score*')
                 nscore = gr.Markdown('', elem_id='score_text', latex_delimiters=LATEX_DELIMITERS)
@@ -98,7 +98,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Input*')
-                input_text = gr.Markdown('', elem_id='input_text', latex_delimiters=LATEX_DELIMITERS)
+                input_text = gr.Code('', elem_id='input_text', language='json', wrap_lines=False)
             with gr.Column():
                 gr.Markdown('### *Generated*')
                 generated_text = gr.Markdown('', elem_id='generated_text', latex_delimiters=LATEX_DELIMITERS)
@@ -185,11 +185,11 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         row = filtered_df.iloc[start]
 
         # Process the data for display
-        input_md = process_model_prediction(row['Input'])
+        input_md = process_json_content(row['Input'])
         generated_md = process_model_prediction(row['Generated'])
         gold_md = process_model_prediction(row['Gold'])
         pred_md = convert_markdown_image(process_model_prediction(row['Pred']))
-        score_md = process_model_prediction(row['Score'])
+        score_md = process_json_content(row['Score'])
         nscore_val = float(row['NScore']) if not pd.isna(row['NScore']) else 0.0
 
         if nscore_val >= score_threshold:

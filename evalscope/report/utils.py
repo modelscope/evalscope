@@ -3,13 +3,44 @@ import os
 import pandas as pd
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from evalscope.metrics import macro_mean, micro_mean
-from evalscope.utils import normalize_score
-from evalscope.utils.logger import get_logger
+from evalscope.utils import get_logger
 
 logger = get_logger()
+
+ANALYSIS_PROMPT = """根据给出的json格式的模型评测结果，输出分析报告，要求如下：
+1. 报告分为 总体表现、关键指标分析、改进建议、结论 四部分
+2. 若模型有多种指标，将其分为低分、中分、高分三个部分，并列出markdown表格
+3. 只列出报告本身，不要有其他多余内容
+4. 输出报告语言为{language}
+
+```json
+{report_str}
+```
+"""
+
+
+def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
+    """
+    Normalize score.
+
+    Args:
+        score: input score, could be float or dict. e.g. 0.12345678 or {'acc': 0.12345678, 'f1': 0.12345678}
+        keep_num: number of digits to keep.
+
+    Returns:
+        Union[float, dict]: normalized score. e.g. 0.1234 or {'acc': 0.1234, 'f1': 0.1234}
+    """
+    if isinstance(score, float):
+        score = round(score, keep_num)
+    elif isinstance(score, dict):
+        score = {k: round(v, keep_num) for k, v in score.items()}
+    else:
+        logger.warning(f'Unknown score type: {type(score)}')
+
+    return score
 
 
 @dataclass
@@ -72,18 +103,6 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     score = 'Score'
-
-
-ANALYSIS_PROMPT = """根据给出的json格式的模型评测结果，输出分析报告，要求如下：
-1. 报告分为 总体表现、关键指标分析、改进建议、结论 四部分
-2. 若模型有多种指标，将其分为低分、中分、高分三个部分，并列出markdown表格
-3. 只列出报告本身，不要有其他多余内容
-4. 输出报告语言为{language}
-
-```json
-{report_str}
-```
-"""
 
 
 @dataclass

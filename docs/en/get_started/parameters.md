@@ -101,14 +101,73 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
     ```{seealso}
     For more information on ModelScope's model inference services, please refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro).
     ```
-  - `system_prompt`: (Optional) System prompt for evaluating the dataset
-  - `prompt_template`: (Optional) Prompt template for evaluating the dataset
-  - `generation_config`: (Optional) Generation parameters
-- `--analysis-report`: Specifies whether to generate an analysis report, with the default set to `false`. If this parameter is enabled, an analysis report will be generated using the judge model, providing interpretative insights and recommendations based on the model evaluation results. The output language of the report will be automatically determined by `locale.getlocale()`.
+  - `system_prompt`: System prompt for evaluating the dataset
+  - `prompt_template`: Prompt template for evaluating the dataset
+  - `generation_config`: Model generation parameters, same as the `--generation-config` parameter.
+  - `score_type`: Preset model scoring method, options include:
+    - `pattern`: (Default option) Directly judge whether the model output matches the reference answer, suitable for evaluations with reference answers.
+      <details><summary>Default prompt_template</summary>
 
+      ```text
+      Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
+
+      [Question]
+      {question}
+
+      [Reference Answer]
+      {gold}
+
+      [Predicted Answer]
+      {pred}
+
+      Evaluate the model's answer based on correctness compared to the reference answer.
+      Grade the predicted answer of this new question as one of:
+      A: CORRECT
+      B: INCORRECT
+
+      Just return the letters "A" or "B", with no text around it.
+      ```
+      </details>
+    - `numeric`: Judge the model output score under prompt conditions, suitable for evaluations without reference answers.
+      <details><summary>Default prompt_template</summary>
+
+      ```text
+      Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+
+      Begin your evaluation by providing a short explanation. Be as objective as possible.
+
+      After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[0.5]]\"
+
+      [Question]
+      {question}
+
+      [Response]
+      {pred}
+      ```
+      </details>
+  - `score_pattern`: Regular expression for parsing model output, default for `pattern` mode is `(A|B)`; default for `numeric` mode is `\[\[(\d+(?:\.\d+)?)\]\]`, used to extract model scoring results.
+  - `score_mapping`: Score mapping dictionary for `pattern` mode, default is `{'A': 1.0, 'B': 0.0}`
+- `--analysis-report`: Whether to generate an analysis report, default is `false`; if this parameter is set, an analysis report will be generated using the judge model, including analysis interpretation and suggestions for the model evaluation results. The report output language will be automatically determined based on `locale.getlocale()`.
 
 ## Other Parameters
-- `--work-dir`: Output path for model evaluation, default is `./outputs/{timestamp}`.
+
+- `--work-dir`: Model evaluation output path, default is `./outputs/{timestamp}`, folder structure example is as follows:
+  ```text
+  .
+  ├── configs
+  │   └── task_config_b6f42c.yaml
+  ├── logs
+  │   └── eval_log.log
+  ├── predictions
+  │   └── Qwen2.5-0.5B-Instruct
+  │       └── general_qa_example.jsonl
+  ├── reports
+  │   └── Qwen2.5-0.5B-Instruct
+  │       └── general_qa.json
+  └── reviews
+      └── Qwen2.5-0.5B-Instruct
+          └── general_qa_example.jsonl
+  ```
 - `--use-cache`: Use local cache path, default is `None`; if a path is specified, such as `outputs/20241210_194434`, it will reuse the model inference results from that path. If inference is not completed, it will continue inference and then proceed to evaluation.
 - `--seed`: Random seed, default is `42`.
 - `--debug`: Whether to enable debug mode, default is `false`.

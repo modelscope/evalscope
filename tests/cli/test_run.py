@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from dotenv import dotenv_values
 
+from tests.utils import test_level_list
+
 env = dotenv_values('.env')
 
 import os
@@ -8,9 +10,9 @@ import subprocess
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalStage, EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 
 os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
@@ -183,35 +185,6 @@ class TestRun(unittest.TestCase):
 
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_custom_task(self):
-        from evalscope.config import TaskConfig
-
-        task_cfg = TaskConfig(
-            model='Qwen/Qwen3-0.6B',
-            datasets=[
-                'general_mcq',
-                'general_qa'
-            ],
-            dataset_args={
-                'general_mcq': {
-                    'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
-                    'subset_list': [
-                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
-                    ],
-                    'query_template': 'Question: {question}\n{choices}\nAnswer: {answer}'  # 问题模板
-                },
-                'general_qa': {
-                    'local_path': 'custom_eval/text/qa',  # 自定义数据集路径
-                    'subset_list': [
-                        'example'  # 评测数据集名称，上述 *_dev.csv 中的 *
-                    ]
-                }
-            },
-        )
-        res = run_task(task_cfg=task_cfg)
-        print(res)
-
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_one_task(self):
         from evalscope.config import TaskConfig
 
@@ -281,7 +254,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-max',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -299,8 +272,8 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
-                'math_500',
-                'aime24',
+                # 'math_500',
+                # 'aime24',
                 # 'gpqa',
                 # 'arc',
                 # 'ceval',
@@ -313,8 +286,9 @@ class TestRun(unittest.TestCase):
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
-                # 'frames',
+                'frames',
                 # 'bfcl_v3',
+                # 'truthful_qa',
             ],
             dataset_args={
                 'mmlu': {
@@ -354,7 +328,6 @@ class TestRun(unittest.TestCase):
                 },
                 'musr': {
                     'subset_list': ['murder_mysteries'],
-                    'local_path': '/root/.cache/modelscope/hub/datasets/AI-ModelScope/MuSR'
                 },
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -378,6 +351,9 @@ class TestRun(unittest.TestCase):
                 'mmlu_redux':{
                     'subset_list': ['abstract_algebra']
                 },
+                'frames':{
+                    'local_path': 'data/iic/frames',
+                },
                 'bfcl_v3': {
                     'subset_list': ['parallel'],
                     'extra_params': {
@@ -385,9 +361,9 @@ class TestRun(unittest.TestCase):
                     }
                 },
             },
-            eval_batch_size=10,
+            eval_batch_size=1,
             limit=5,
-            debug=True,
+            # debug=True,
             stream=True,
             generation_config={
                 'temperature': 0,
@@ -520,69 +496,6 @@ class TestRun(unittest.TestCase):
 
         run_task(task_cfg=task_cfg)
 
-
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_local_dataset(self):
-        from evalscope.config import TaskConfig
-
-        task_cfg = TaskConfig(
-            model='qwen-plus',
-            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-            api_key= env.get('DASHSCOPE_API_KEY'),
-            eval_type=EvalType.SERVICE,
-            datasets=[
-                # 'mmlu',
-                # 'race',
-                'trivia_qa',
-                # 'cmmlu',
-                # 'humaneval',
-                # 'gsm8k',
-                # 'bbh',
-                # 'competition_math',
-                # 'arc',
-                # 'ceval',
-            ],
-            dataset_args={
-                'mmlu': {
-                    'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
-                    'few_shot_num': 0,
-                    'dataset_id': 'data/data/mmlu',
-                },
-                'ceval': {
-                    'subset_list': [
-                        'computer_network', 'operating_system', 'computer_architecture'
-                    ],
-                    'few_shot_num': 0,
-                    'dataset_id': 'data/data/ceval',
-                },
-                'cmmlu': {
-                    'subset_list': ['elementary_chinese'],
-                    'dataset_id': 'data/data/cmmlu',
-                    'few_shot_num': 0
-                },
-                'bbh': {
-                    'subset_list': ['word_sorting', 'movie_recommendation'],
-                },
-                'humaneval': {
-                    'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
-                },
-                'trivia_qa': {
-                    'dataset_id': 'data/data/trivia_qa',
-                },
-            },
-            eval_batch_size=10,
-            limit=5,
-            debug=True,
-            stream=True,
-            generation_config={
-                'temperature': 0,
-                'n': 1,
-                'max_tokens': 4096,
-            },
-            ignore_errors=False,
-        )
-
-        run_task(task_cfg=task_cfg)
 
 if __name__ == '__main__':
     unittest.main()

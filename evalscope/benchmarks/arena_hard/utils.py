@@ -127,18 +127,6 @@ def get_bootstrap_result(battles, func_compute_elo, num_round):
     return df[df.median().sort_values(ascending=False).index]
 
 
-def preety_print_two_ratings(ratings_1, ratings_2, column_names):
-    df = (
-        pd.DataFrame(
-            [[n, ratings_1[n], ratings_2[n]] for n in ratings_1.keys()],
-            columns=['Model', column_names[0], column_names[1]],
-        ).sort_values(column_names[0], ascending=False).reset_index(drop=True))
-    df[column_names[0]] = (df[column_names[0]] + 0.5).astype(int)
-    df[column_names[1]] = (df[column_names[1]] + 0.5).astype(int)
-    df.index = df.index + 1
-    return df
-
-
 def predict_win_rate(elo_ratings, SCALE=400, BASE=10, INIT_RATING=1000):
     names = sorted(list(elo_ratings.keys()))
     wins = defaultdict(lambda: defaultdict(lambda: 0))

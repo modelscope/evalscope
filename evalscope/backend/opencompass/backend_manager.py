@@ -8,7 +8,8 @@ from typing import Optional, Union
 
 from evalscope.backend.base import BackendManager
 from evalscope.backend.opencompass.api_meta_template import get_template
-from evalscope.utils import get_module_path, get_valid_list, is_module_installed
+from evalscope.utils.import_utils import get_module_path, is_module_installed
+from evalscope.utils.io_utils import get_valid_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

@@ -6,9 +6,9 @@
 |------------|----------|----------|
 | `aime24` | [AIME-2024](#aime-2024) | `Mathematics` |
 | `aime25` | [AIME-2025](#aime-2025) | `Mathematics` |
-| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Instruction-Following`, `Reasoning` |
+| `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `Instruction-Following` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
-| `arena_hard` | [ArenaHard](#arenahard) | `Instruction-Following`, `Reasoning` |
+| `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `Instruction-Following` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
@@ -18,6 +18,7 @@
 | `docmath` | [DocMath](#docmath) | `Long Context`, `Mathematics`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `Long Context`, `Reasoning` |
+| `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
@@ -98,7 +99,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集ID**: [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary)
 - **数据集描述**:  
   > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
-- **任务类别**: `Instruction-Following`, `Reasoning`
+- **任务类别**: `Arena`, `Instruction-Following`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
@@ -138,7 +139,7 @@ Your response should end with "The best answer is [the_answer_letter]" where the
 - **数据集ID**: [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary)
 - **数据集描述**:  
   > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
-- **任务类别**: `Instruction-Following`, `Reasoning`
+- **任务类别**: `Arena`, `Instruction-Following`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
@@ -357,6 +358,74 @@ Please read the following text and answer the question below.
 {question}
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
+```
+
+---
+
+### GeneralArena
+
+[返回目录](#llm评测集)
+- **数据集名称**: `general_arena`
+- **数据集ID**: general_arena
+- **数据集描述**:  
+  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).
+- **任务类别**: `Arena`, `Custom`
+- **评估指标**: `winrate`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **支持输出格式**: `generation`
+- **额外参数**: 
+```json
+{
+    "models": [
+        {
+            "name": "qwen-plus",
+            "report_path": "outputs/20250627_172550/reports/qwen-plus"
+        },
+        {
+            "name": "qwen2.5-7b",
+            "report_path": "outputs/20250627_172817/reports/qwen2.5-7b-instruct"
+        }
+    ],
+    "baseline": "qwen2.5-7b"
+}
+```
+- **系统提示词**: 
+```text
+Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.
+
+Begin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.
+
+When evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.
+
+Then consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.
+
+Then consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.
+
+After providing your explanation, you must output only one of the following choices as your final verdict with a label:
+
+1. Assistant A is significantly better: [[A>>B]]
+2. Assistant A is slightly better: [[A>B]]
+3. Tie, relatively the same: [[A=B]]
+4. Assistant B is slightly better: [[B>A]]
+5. Assistant B is significantly better: [[B>>A]]
+
+Example output: "My final verdict is tie: [[A=B]]".
+```
+- **提示模板**: 
+```text
+<|User Prompt|>
+{question}
+
+<|The Start of Assistant A's Answer|>
+{answer_1}
+<|The End of Assistant A's Answer|>
+
+<|The Start of Assistant B's Answer|>
+{answer_2}
+<|The End of Assistant B's Answer|>
 ```
 
 ---

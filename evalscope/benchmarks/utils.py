@@ -2,8 +2,7 @@ from dataclasses import asdict, dataclass
 from functools import wraps
 from typing import Dict, List, Optional, Union
 
-from evalscope.constants import EvalType
-from evalscope.utils.filters import Filter
+from .filters import Filter
 
 
 @dataclass

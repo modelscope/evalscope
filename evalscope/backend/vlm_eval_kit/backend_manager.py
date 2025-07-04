@@ -5,7 +5,8 @@ from functools import partial
 from typing import Optional, Union
 
 from evalscope.backend.base import BackendManager
-from evalscope.utils import get_valid_list, is_module_installed
+from evalscope.utils.import_utils import is_module_installed
+from evalscope.utils.io_utils import get_valid_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -68,6 +69,8 @@ class VLMEvalKitBackendManager(BackendManager):
                     del remain_cfg['type']  # remove not used args
 
                     norm_model_type = os.path.basename(model_type).replace(':', '-').replace('.', '_')
+                    model_cfg['type'] = norm_model_type
+
                     self.valid_models.update({norm_model_type: partial(model_class, model=model_type, **remain_cfg)})
                     new_model_names.append(norm_model_type)
                 else:

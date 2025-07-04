@@ -168,7 +168,7 @@ class DataAdapter(ABC):
         If you want to support local dataset, please rewrite this method in xxx_data_adapter.
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
-        return self.load_from_hub(dataset_name_or_path, subset_list, work_dir, **kwargs)
+        return self.load_from_hub(dataset_name_or_path, subset_list, None, **kwargs)
 
     def load_with_snapshot(self,
                            file_structure: Dict[str, List[str]],
@@ -449,7 +449,6 @@ class DataAdapter(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
         """
         Parse the predicted result and extract proper answer.
@@ -462,7 +461,21 @@ class DataAdapter(ABC):
         Returns:
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
-        raise NotImplementedError
+        return result
+
+    def llm_parse_pred_result(self, result: Any, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> Any:
+        """
+        Parse the predicted result using LLM.
+
+        Args:
+            result (Any): The predicted answer from the model.
+            raw_input_d (dict): The raw input data.
+            eval_type (str): The evaluation type, default is 'checkpoint'.
+
+        Returns:
+            The parsed answer. Usually a string for chat.
+        """
+        return result
 
     @abstractmethod
     def match(self, gold: Any, pred: Any) -> Any:
@@ -504,5 +517,7 @@ class DataAdapter(ABC):
 
         # Request judge and obtain score
         prompt = judge.build_prompt(pred, gold, question)
-        score = judge(prompt)
-        return judge.get_score(score)
+        judge_response = judge(prompt)
+        score = judge.get_score(judge_response)
+
+        return score
