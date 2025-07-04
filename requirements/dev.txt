@@ -1,3 +1,5 @@
+bfcl-eval
 dotenv
+human_eval
 pytest
 pytest-cov
