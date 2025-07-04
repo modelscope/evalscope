@@ -178,7 +178,8 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 'general_mcq',
-                'general_qa'
+                'general_qa',
+                'iquiz',
             ],
             dataset_args={
                 'general_mcq': {
@@ -203,7 +204,7 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
             },
             judge_worker_num=1,
-            judge_strategy=JudgeStrategy.LLM_RECALL,
+            judge_strategy=JudgeStrategy.AUTO,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

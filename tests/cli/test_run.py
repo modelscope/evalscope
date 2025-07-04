@@ -259,7 +259,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                # 'iquiz',
+                'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -286,7 +286,7 @@ class TestRun(unittest.TestCase):
                 # 'drop',
                 # 'winogrande',
                 # 'tool_bench',
-                'frames',
+                # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
             ],
