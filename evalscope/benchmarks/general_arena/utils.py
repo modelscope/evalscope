@@ -146,7 +146,7 @@ def get_battles_from_row(row, first_game_only=False, multiplier=3):
     return pd.DataFrame(results)
 
 
-def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000, baseline_model='gpt4-0314'):
+def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gpt4-0314'):
     models = pd.concat([df['model_a'], df['model_b']]).unique()
     models = pd.Series(np.arange(len(models)), index=models)
 
@@ -156,8 +156,8 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000, baseline_model='gp
     n = df.shape[0]
 
     X = np.zeros([n, p])
-    X[np.arange(n), models[df['model_a']]] = +math.log(BASE)
-    X[np.arange(n), models[df['model_b']]] = -math.log(BASE)
+    X[np.arange(n), models[df['model_a']]] = +math.log(base)
+    X[np.arange(n), models[df['model_b']]] = -math.log(base)
 
     # one A win => two A win
     Y = np.zeros(n)
@@ -171,18 +171,18 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000, baseline_model='gp
 
     if len(np.unique(Y)) < 2:
         logger.info('Warning: Only one class in the data')
-        elo_scores = pd.Series(INIT_RATING, index=models.index)
+        elo_scores = pd.Series(init_rating, index=models.index)
         if np.all(Y == 1.0):
-            elo_scores[df['model_a'].iloc[0]] += SCALE  # Boost the winning model
+            elo_scores[df['model_a'].iloc[0]] += scale  # Boost the winning model
         elif np.all(Y == 0.0):
-            elo_scores[df['model_b'].iloc[0]] += SCALE  # Boost the winning model
+            elo_scores[df['model_b'].iloc[0]] += scale  # Boost the winning model
         return elo_scores.sort_values(ascending=False)
 
     lr = LogisticRegression(
         fit_intercept=False, penalty=None, tol=1e-8)  # May need to set a small value when not use GPT4 as judge model
     lr.fit(X, Y)
 
-    elo_scores = SCALE * lr.coef_[0] + INIT_RATING
+    elo_scores = scale * lr.coef_[0] + init_rating
 
     # set anchor 1000
     if baseline_model in models.index:
@@ -203,24 +203,12 @@ def get_bootstrap_result(battles, func_compute_elo, num_round, baseline_model='g
     return df[df.median().sort_values(ascending=False).index]
 
 
-def preety_print_two_ratings(ratings_1, ratings_2, column_names):
-    df = (
-        pd.DataFrame(
-            [[n, ratings_1[n], ratings_2[n]] for n in ratings_1.keys()],
-            columns=['Model', column_names[0], column_names[1]],
-        ).sort_values(column_names[0], ascending=False).reset_index(drop=True))
-    df[column_names[0]] = (df[column_names[0]] + 0.5).astype(int)
-    df[column_names[1]] = (df[column_names[1]] + 0.5).astype(int)
-    df.index = df.index + 1
-    return df
-
-
-def predict_win_rate(elo_ratings, SCALE=400, BASE=10, INIT_RATING=1000):
+def predict_win_rate(elo_ratings, scale=400, base=10, init_rating=1000):
     names = sorted(list(elo_ratings.keys()))
     wins = defaultdict(lambda: defaultdict(lambda: 0))
     for a in names:
         for b in names:
-            ea = 1 / (1 + BASE**((elo_ratings[b] - elo_ratings[a]) / SCALE))
+            ea = 1 / (1 + base**((elo_ratings[b] - elo_ratings[a]) / scale))
             wins[a][b] = ea
             wins[b][a] = 1 - ea
 

@@ -27,10 +27,19 @@ logger = get_logger()
 class GeneralQAAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
 
     def load(self, dataset_name_or_path: str = None, subset_list: list = None, **kwargs) -> dict:
+        """
+        Load dataset from the given path or dataset name.
+
+        Args:
+            dataset_name_or_path (str): Path to dataset directory or file.
+            subset_list (list): List of subset names to load.
+
+        Returns:
+            dict: Loaded dataset organized by subset.
+        """
         dataset_name_or_path = dataset_name_or_path or self.dataset_id
         subset_list = subset_list or self.subset_list
 
@@ -60,14 +69,15 @@ class GeneralQAAdapter(DataAdapter):
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
+        Generate prompt for the model based on input data.
+
         Args:
-            input_d:
-                format1: {'history': [['q1', 'a1'], ['q2', 'a2']], 'question': '', 'answer': ''}
-                format2: {'history': [['q1', 'a1'], ['q2', 'a2']], 'query': '', 'response': ''}
+            input_d (dict): Input data dictionary.
+            subset_name (str): Name of the subset.
+            few_shot_list (list): List of few-shot examples.
 
         Returns:
-            {'data': [prompt]}
-
+            dict: Dictionary containing the generated prompt.
         """
         messages = input_d.get('messages')
         query = input_d.get('question', '') or input_d.get('query', '')
@@ -77,35 +87,40 @@ class GeneralQAAdapter(DataAdapter):
 
     def get_gold_answer(self, input_d: dict) -> str:
         """
+        Extract the gold (reference) answer from the input data.
+
         Args:
-            input_d: {'history': [], 'question': '', 'answer': ''}
+            input_d (dict): Input data dictionary.
 
         Returns:
-            gold_answer: str
-
+            str: Gold answer string.
         """
         return input_d.get('answer') or input_d.get('response')
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         """
+        Parse the prediction result.
+
         Args:
-            result: str
+            result (str): Model prediction result.
+            raw_input_d (dict, optional): Original input data.
+            eval_type (str): Evaluation type.
 
         Returns:
-            pred_result: str
-
+            str: Parsed prediction result.
         """
         return result
 
     def match(self, gold: str, pred: str) -> dict:
         """
+        Compute metric scores between gold and predicted answers.
+
         Args:
-            gold: str
-            pred: str
+            gold (str): Gold answer.
+            pred (str): Predicted answer.
 
         Returns:
-            bleu_score: dict
-
+            dict: Dictionary of computed metric scores.
         """
         # reference free metrics
         if gold is None:
@@ -127,14 +142,13 @@ class GeneralQAAdapter(DataAdapter):
 
     def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
         """
-        compute weighted mean of the bleu score of all samples
+        Compute weighted mean of the metric scores for all samples.
 
         Args:
-            review_res_list: [score1, score2, ...]
+            review_res_list (list): List of metric score dictionaries.
 
         Returns:
-            avg_res: List[dict]
-
+            list: List of dictionaries with averaged metric results.
         """
         items = super().compute_dict_metric(review_res_list, **kwargs)
         return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]

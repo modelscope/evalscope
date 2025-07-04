@@ -5,7 +5,7 @@ from typing import Any, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.metrics import Metric, mean, metric_registry
 from evalscope.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
 
@@ -168,17 +168,20 @@ class GeneralArenaAdapter(DataAdapter):
     def llm_match(self, gold, pred, judge=None, **kwargs):
         from .utils import get_judge_score, post_process_result
 
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input['question']
-        answer_1 = raw_input['answer_1']
-        answer_2 = raw_input['answer_2']
-        model_1 = raw_input['model_1']
-        model_2 = raw_input['model_2']
+        try:
+            raw_input = kwargs.get('raw_input', None)
+            question = raw_input['question']
+            answer_1 = raw_input['answer_1']
+            answer_2 = raw_input['answer_2']
+            model_1 = raw_input['model_1']
+            model_2 = raw_input['model_2']
+        except KeyError as e:
+            logger.error(f'Missing key in raw input: {e}. Raw input: {raw_input}')
+            raise
 
         system_template = self.system_prompt
         prompt_template = self.prompt_template
 
-        # gold is baseline answer 'A', pred is model answer 'B'
         prompt1 = prompt_template.format(question=question, answer_1=answer_1, answer_2=answer_2)
         # reverse the order
         prompt2 = prompt_template.format(question=question, answer_1=answer_2, answer_2=answer_1)
