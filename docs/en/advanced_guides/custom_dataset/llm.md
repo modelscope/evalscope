@@ -48,18 +48,28 @@ Where:
 
 ### 2. Configuration Task
 
+````{note}
+The default `prompt_template` supports four options, as shown below, where `{query}` is the placeholder for the prompt. If you need fewer or more options, you can customize the `prompt_template`.
+```text
+Please answer the question and select the correct answer from the options. The last line of your answer should be in the following format: "答案是：LETTER" (without quotes), where LETTER is one of A, B, C, or D.
+{query}
+```
+````
+
 Run the following code to start the evaluation:
+
 ```python
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2-0.5B-Instruct',
-    datasets=['general_mcq'],  # Data format, fixed as 'general_mcq' for multiple-choice format
+    datasets=['general_mcq'],  # Data format: for multiple-choice questions, use 'general_mcq'
     dataset_args={
         'general_mcq': {
-            "local_path": "custom_eval/text/mcq",  # Custom dataset path
+            # 'prompt_template': 'xxx',  # You can customize the prompt template if needed
+            "local_path": "custom_eval/text/mcq",  # Path to your custom dataset
             "subset_list": [
-                "example"  # Evaluation dataset name, mentioned subset_name
+                "example"  # Name of the evaluation dataset (the subset_name above)
             ]
         }
     },
