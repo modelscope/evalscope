@@ -17,21 +17,31 @@ EvalScope is not merely an evaluation tool; it is a valuable ally in your model 
 - 🚀 Seamlessly integrates with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, enabling one-click evaluations and providing end-to-end support from training to assessment for your model development.
 
 ## Overall Architecture
-![EvalScope Architecture Diagram](../_static/images/evalscope_framework.png)
+![EvalScope Architecture Diagram](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
 *EvalScope Architecture Diagram.*
 
 The architecture includes the following modules:
-1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
-2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
-3. **Evaluation Backend**: 
-    - **Native**: EvalScope’s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc.
-    - **OpenCompass**: Supports [OpenCompass](https://github.com/open-compass/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily.
-    - **VLMEvalKit**: Supports [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
-    - **ThirdParty**: Other third-party evaluation tasks, such as [ToolBench](../third_party/toolbench.md).
-    - **RAGEval**: Supports RAG evaluation, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](../user_guides/backend/rageval_backend/mteb.md), as well as end-to-end evaluation using [RAGAS](../user_guides/backend/rageval_backend/ragas.md).
-4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
-5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
-6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+
+1. Input Layer  
+- **Model Sources**: API models (OpenAI API), local models (ModelScope)  
+- **Datasets**: Standard evaluation benchmarks (MMLU/GSM8k, etc.), custom data (MCQ/QA)  
+
+2. Core Functions  
+- **Multi-backend Evaluation**  
+   - Native backends: Unified evaluation for LLM/VLM/Embedding/T2I models  
+   - Integrated frameworks: OpenCompass/MTEB/VLMEvalKit/RAGAS  
+
+- **Performance Monitoring**  
+   - Model plugins: Supports various model service APIs  
+   - Data plugins: Supports multiple data formats  
+   - Metric tracking: TTFT/TPOP/Stability and other metrics  
+
+- **Tool Extensions**  
+   - Integration: Tool-Bench/Needle-in-a-Haystack/BFCL-v3  
+
+3. Output Layer  
+- **Structured Reports**: Supports JSON/Tables/Logs  
+- **Visualization Platforms**: Supports Gradio/Wandb/SwanLab
 
 ## Framework Features
 - **Benchmark Datasets**: Preloaded with several commonly used test benchmarks, including MMLU, CMMLU, C-Eval, GSM8K, ARC, HellaSwag, TruthfulQA, MATH, HumanEval, etc.

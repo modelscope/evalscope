@@ -254,7 +254,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-max',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -272,8 +272,8 @@ class TestRun(unittest.TestCase):
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
-                'math_500',
-                'aime24',
+                # 'math_500',
+                # 'aime24',
                 # 'gpqa',
                 # 'arc',
                 # 'ceval',
@@ -288,6 +288,7 @@ class TestRun(unittest.TestCase):
                 # 'tool_bench',
                 # 'frames',
                 # 'bfcl_v3',
+                'truthful_qa',
             ],
             dataset_args={
                 'mmlu': {
@@ -358,9 +359,9 @@ class TestRun(unittest.TestCase):
                     }
                 },
             },
-            eval_batch_size=10,
+            eval_batch_size=1,
             limit=5,
-            debug=True,
+            # debug=True,
             stream=True,
             generation_config={
                 'temperature': 0,

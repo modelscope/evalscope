@@ -58,28 +58,32 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 下面是 EvalScope 的整体架构图：
 
 <p align="center">
-    <img src="docs/en/_static/images/evalscope_framework.png" style="width: 70%;">
+    <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png" style="width: 70%;">
     <br>EvalScope 整体架构图.
 </p>
 
 <details><summary>架构介绍</summary>
 
-1. **Model Adapter**: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。
+1. 输入层
+- **模型来源**：API模型（OpenAI API）、本地模型（ModelScope）
+- **数据集**：标准评测基准（MMLU/GSM8k等）、自定义数据（MCQ/QA）
 
-2. **Data Adapter**: 数据适配器，负责转换和处理输入数据，以便适应不同的评测需求和格式。
+2. 核心功能
+- **多后端评估**
+   - 原生后端：LLM/VLM/Embedding/T2I模型统一评估
+   - 集成框架：OpenCompass/MTEB/VLMEvalKit/RAGAS
 
-3. **Evaluation Backend**:
-    - **Native**：EvalScope自身的**默认评测框架**，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。
-    - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评测。
-    - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
-    - **RAGEval**：支持RAG评测，支持使用[MTEB/CMTEB](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/mteb.html)进行embedding模型和reranker的独立评测，以及使用[RAGAS](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/rageval_backend/ragas.html)进行端到端评测。
-    - **ThirdParty**：其他第三方评测任务，如ToolBench。
+- **性能监控**
+   - 模型插件：支持多种模型服务API
+   - 数据插件：支持多种数据格式
+   - 指标追踪：TTFT/TPOP/稳定性 等指标
 
-4. **Performance Evaluator**: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。
+- **工具扩展**
+   - 集成：Tool-Bench/Needle-in-a-Haystack/BFCL-v3
 
-5. **Evaluation Report**: 最终生成的评测报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。
-
-6. **Visualization**: 可视化结果，帮助用户更直观地理解评测结果，便于分析和比较不同模型的表现。
+3. 输出层
+- **结构化报告**: 支持JSON/Table/Logs
+- **可视化平台**：支持Gradio/Wandb/SwanLab
 
 </details>
 
@@ -96,7 +100,7 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 
 - 🔥 **[2025.07.03]** 重构了竞技场模式，支持自定义模型对战，输出模型排行榜，以及对战结果可视化，使用[参考](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。
 - 🔥 **[2025.06.28]** 优化自定义数据集评测，支持无参考答案评测；优化LLM裁判使用，预置“无参考答案直接打分” 和 “判断答案是否与参考答案一致”两种模式，使用[参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)
-- 🔥 **[2025.06.19]** 新增支持BFCL-v3评测基准，用于评测模型在多种场景下的函数调用能力，使用[参考](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)。
+- 🔥 **[2025.06.19]** 新增支持[BFCL-v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3)评测基准，用于评测模型在多种场景下的函数调用能力，使用[参考](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)。
 - 🔥 **[2025.06.02]** 新增支持大海捞针测试（Needle-in-a-Haystack），指定`needle_haystack`即可进行测试，并在`outputs/reports`文件夹下生成对应的heatmap，直观展现模型性能，使用[参考](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)。
 - 🔥 **[2025.05.29]** 新增支持[DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary)和[FRAMES](https://modelscope.cn/datasets/iic/frames/summary)两个长文档评测基准，使用注意事项请查看[文档](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
 - 🔥 **[2025.05.16]** 模型服务性能压测支持设置多种并发，并输出性能压测报告，[参考示例](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id3)。
@@ -442,6 +446,13 @@ EvalScope支持自定义数据集评测，具体请参考：自定义数据集�
 ## ⚔️ 竞技场模式
 竞技场模式允许配置多个候选模型，并指定一个baseline模型，通过候选模型与baseline模型进行对比(pairwise battle)的方式进行评测，最后输出模型的胜率和排名。该方法适合多个模型之间的对比评测，直观体现模型优劣。参考：竞技场模式[📖使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)
 
+```text
+Model           WinRate (%)  CI (%)
+------------  -------------  ---------------
+qwen2.5-72b            69.3  (-13.3 / +12.2)
+qwen2.5-7b             50    (+0.0 / +0.0)
+qwen2.5-0.5b            4.7  (-2.5 / +4.4)
+```
 ## 👷‍♂️ 贡献
 
 EvalScope作为[ModelScope](https://modelscope.cn)的官方评测工具，其基准评测功能正在持续优化中！我们诚邀您参考[贡献指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html)，轻松添加自己的评测基准，并与广大社区成员分享您的贡献。一起助力EvalScope的成长，让我们的工具更加出色！快来加入我们吧！

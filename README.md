@@ -70,24 +70,33 @@ EvalScope is not merely an evaluation tool; it is a valuable ally in your model 
 Below is the overall architecture diagram of EvalScope:
 
 <p align="center">
-  <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
+  <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png" width="70%">
   <br>EvalScope Framework.
 </p>
 
 <details><summary>Framework Description</summary>
 
 The architecture includes the following modules:
-1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
-2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
-3. **Evaluation Backend**:
-    - **Native**: EvalScope’s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc.
-    - **OpenCompass**: Supports [OpenCompass](https://github.com/open-compass/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily.
-    - **VLMEvalKit**: Supports [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
-    - **RAGEval**: Supports RAG evaluation, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html).
-    - **ThirdParty**: Other third-party evaluation tasks, such as ToolBench.
-4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
-5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
-6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+1. Input Layer
+- **Model Sources**: API models (OpenAI API), local models (ModelScope)
+- **Datasets**: Standard evaluation benchmarks (MMLU/GSM8k, etc.), custom data (MCQ/QA)
+
+2. Core Functions
+- **Multi-backend Evaluation**
+   - Native backends: Unified evaluation for LLM/VLM/Embedding/T2I models
+   - Integrated frameworks: OpenCompass/MTEB/VLMEvalKit/RAGAS
+
+- **Performance Monitoring**
+   - Model plugins: Supports various model service APIs
+   - Data plugins: Supports multiple data formats
+   - Metric tracking: TTFT/TPOP/Stability and other metrics
+
+- **Tool Extensions**
+   - Integration: Tool-Bench/Needle-in-a-Haystack/BFCL-v3
+
+3. Output Layer
+- **Structured Reports**: Supports JSON/Tables/Logs
+- **Visualization Platforms**: Supports Gradio/Wandb/SwanLab
 
 </details>
 
@@ -104,7 +113,7 @@ Please scan the QR code below to join our community groups:
 
 - 🔥 **[2025.07.03]** Refactored Arena Mode: now supports custom model battles, outputs a model leaderboard, and provides battle result visualization. See [reference](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details.
 - 🔥 **[2025.06.28]** Optimized custom dataset evaluation: now supports evaluation without reference answers. Enhanced LLM judge usage, with built-in modes for "scoring directly without reference answers" and "checking answer consistency with reference answers". See [reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for details.
-- 🔥 **[2025.06.19]** Added support for the BFCL-v3 benchmark, designed to evaluate model function-calling capabilities across various scenarios. For more information, refer to the [documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html).
+- 🔥 **[2025.06.19]** Added support for the [BFCL-v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3) benchmark, designed to evaluate model function-calling capabilities across various scenarios. For more information, refer to the [documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html).
 - 🔥 **[2025.06.02]** Added support for the Needle-in-a-Haystack test. Simply specify `needle_haystack` to conduct the test, and a corresponding heatmap will be generated in the `outputs/reports` folder, providing a visual representation of the model's performance. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html) for more details.
 - 🔥 **[2025.05.29]** Added support for two long document evaluation benchmarks: [DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) and [FRAMES](https://modelscope.cn/datasets/iic/frames/summary). For usage guidelines, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html).
 - 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
@@ -449,6 +458,14 @@ EvalScope supports custom dataset evaluation. For detailed information, please r
 ## ⚔️ Arena Mode
 
 Arena mode allows you to configure multiple candidate models and specify a baseline model. Evaluation is performed by pairwise battles between each candidate model and the baseline model, with the final output including each model's win rate and ranking. This method is suitable for comparative evaluation among multiple models, providing an intuitive reflection of each model's strengths and weaknesses. Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html)
+
+```text
+Model           WinRate (%)  CI (%)
+------------  -------------  ---------------
+qwen2.5-72b            69.3  (-13.3 / +12.2)
+qwen2.5-7b             50    (+0.0 / +0.0)
+qwen2.5-0.5b            4.7  (-2.5 / +4.4)
+```
 
 ## 👷‍♂️ Contribution
 
