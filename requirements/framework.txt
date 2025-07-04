@@ -1,12 +1,12 @@
 accelerate
-datasets>=3.0
+datasets>=3.0.0,<=3.6.0
 immutabledict
 jieba
 jsonlines
 langdetect
 latex2sympy2_extended
 matplotlib
-modelscope[framework]
+modelscope[framework]>=1.27
 nltk>=3.9
 openai
 pandas
