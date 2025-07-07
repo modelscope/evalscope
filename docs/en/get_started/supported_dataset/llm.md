@@ -436,7 +436,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Dataset Name**: `general_mcq`
 - **Dataset ID**: general_mcq
 - **Description**:  
-  > A general multiple-choice question answering dataset.
+  > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).
 - **Task Categories**: `Custom`, `MCQ`
 - **Evaluation Metrics**: `AverageAccuracy`
 - **Requires LLM Judge**: No
@@ -458,7 +458,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Dataset Name**: `general_qa`
 - **Dataset ID**: general_qa
 - **Description**:  
-  > General Question Answering dataset
+  > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).
 - **Task Categories**: `Custom`, `QA`
 - **Evaluation Metrics**: `AverageBLEU`, `AverageRouge`
 - **Requires LLM Judge**: No

@@ -436,7 +436,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **数据集名称**: `general_mcq`
 - **数据集ID**: general_mcq
 - **数据集描述**:  
-  > A general multiple-choice question answering dataset.
+  > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).
 - **任务类别**: `Custom`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
@@ -458,7 +458,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **数据集名称**: `general_qa`
 - **数据集ID**: general_qa
 - **数据集描述**:  
-  > General Question Answering dataset
+  > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).
 - **任务类别**: `Custom`, `QA`
 - **评估指标**: `AverageBLEU`, `AverageRouge`
 - **需要LLM Judge**: 否
