@@ -35,6 +35,7 @@
   ```
 - `--log-every-n-query` 每n个查询记录日志，默认为10。
 - `--stream` 使用SSE流输出，默认为True。注意：需要设置`--stream`以测量Time to First Token (TTFT)指标；设置`--no-stream`将不使用流式输出。
+- `--sleep-interval` 在每次性能测试之间的休眠时间，单位为秒，默认为5秒。该参数可以帮助避免过载服务器。
 
 ## Prompt设置
 - `--max-prompt-length` 最大输入prompt长度，默认为`131072`，大于该值时，将丢弃prompt。
