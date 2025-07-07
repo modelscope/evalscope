@@ -34,6 +34,7 @@ Execute `evalscope perf --help` to get a full parameter description:
   ```
 - `--log-every-n-query`: Log every n queries, default is 10.
 - `--stream` uses SSE (Server-Sent Events) stream output, default is True. Note: Setting `--stream` is necessary to measure the Time to First Token (TTFT) metric; setting `--no-stream` will disable streaming output.
+- `--sleep-interval`: The sleep time between each performance test, in seconds, default is 5 seconds. This parameter can help avoid overloading the server.
 
 ## Prompt Settings
 - `--max-prompt-length`: The maximum input prompt length, default is `131072`. Prompts exceeding this length will be discarded.

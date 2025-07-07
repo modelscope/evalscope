@@ -57,8 +57,8 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
         results.append(metrics_result)
         # Sleep between runs to avoid overwhelming the server
         if i < len(number_list) - 1:
-            logger.info('Sleeping for 5 seconds before the next run...')
-            time.sleep(5)
+            logger.info(f'Sleeping for {args.sleep_interval} seconds before the next run...')
+            time.sleep(args.sleep_interval)
     # Analyze results
     print_summary(results, args.model_id)
     return results
