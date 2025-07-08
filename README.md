@@ -39,14 +39,15 @@
 - [📈 Visualization of Evaluation Results](#-visualization-of-evaluation-results)
 - [🌐 Evaluation of Specified Model API](#-evaluation-of-specified-model-api)
 - [⚙️ Custom Parameter Evaluation](#️-custom-parameter-evaluation)
-  - [Parameter](#parameter)
+  - [Parameter Description](#parameter-description)
 - [Evaluation Backend](#evaluation-backend)
 - [📈 Model Serving Performance Evaluation](#-model-serving-performance-evaluation)
 - [🖊️ Custom Dataset Evaluation](#️-custom-dataset-evaluation)
-- [🏟️ Arena Mode](#️-arena-mode)
+- [⚔️ Arena Mode](#️-arena-mode)
 - [👷‍♂️ Contribution](#️-contribution)
+- [📚 Citation](#-citation)
 - [🔜 Roadmap](#-roadmap)
-- [Star History](#star-history)
+- [⭐ Star History](#-star-history)
 
 
 ## 📝 Introduction
@@ -481,6 +482,17 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
   </table>
 </a>
 
+## 📚 Citation
+
+```bibtex
+@misc{evalscope_2024,
+    title={{EvalScope}: Evaluation Framework for Large Models},
+    author={ModelScope Team},
+    year={2024},
+    url={https://github.com/modelscope/evalscope}
+}
+```
+
 ## 🔜 Roadmap
 - [x] Support for better evaluation report visualization
 - [x] Support for mixed evaluations across multiple datasets
@@ -496,6 +508,6 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
   - [x] MBPP
 
 
-## Star History
+## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)

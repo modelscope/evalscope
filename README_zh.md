@@ -467,6 +467,17 @@ EvalScope作为[ModelScope](https://modelscope.cn)的官方评测工具，其基
   </table>
 </a>
 
+## 📚 引用
+
+```bibtex
+@misc{evalscope_2024,
+    title={{EvalScope}: Evaluation Framework for Large Models},
+    author={ModelScope Team},
+    year={2024},
+    url={https://github.com/modelscope/evalscope}
+}
+```
+
 ## 🔜  Roadmap
 - [x] 支持更好的评测报告可视化
 - [x] 支持多数据集混合评测
