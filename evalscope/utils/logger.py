@@ -20,18 +20,23 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
+def get_logger(log_file: Optional[str] = None,
+               name: Optional[str] = None,
+               log_level: int = DEFAULT_LEVEL,
+               file_mode: str = 'w',
+               force=False):
     """Get logging logger
 
     Args:
         log_file: Log filename, if specified, file handler will be added to
             logger
+        name: Logger name, if not specified, it will be set to the module name.
         log_level: Logging level.
         file_mode: Specifies the mode to open the file, if filename is
             specified (if filemode is unspecified, it defaults to 'w').
     """
 
-    logger_name = __name__.split('.')[0]
+    logger_name = name or __name__.split('.')[0]
     logger = logging.getLogger(logger_name)
     logger.propagate = False
 
