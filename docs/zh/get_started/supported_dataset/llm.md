@@ -24,7 +24,7 @@
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Mathematics` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
-| `hle` | [Humanity's-Last-Exam](#humanity's-last-exam) | `Knowledge`, `QA` |
+| `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `ifeval` | [IFEval](#ifeval) | `Instruction-Following` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
