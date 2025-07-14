@@ -39,7 +39,7 @@ datasets=[
         'general_mcq',
         'general_qa',
         'super_gpqa',
-        'live_code_bench',
+        # 'live_code_bench',
         'mmlu_redux',
         'simple_qa',
         'chinese_simpleqa',
@@ -53,6 +53,7 @@ datasets=[
         'docmath',
         'needle_haystack',
         'bfcl_v3',
+        'hle',
 ]
 
 dataset_args={
@@ -132,7 +133,10 @@ dataset_args={
     },
     'bfcl_v3':{
         'subset_list': ['simple', 'multiple']
-    }
+    },
+    'hle': {
+        'subset_list': ['Math', 'Other'],
+    },
 }
 
 class TestRun(unittest.TestCase):
