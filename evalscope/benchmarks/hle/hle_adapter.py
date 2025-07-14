@@ -1,8 +1,9 @@
 import re
 from collections import defaultdict
 from typing import Any, List
+
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, mean, exact_match, DEFAULT_PROMPT_TEMPLATE
+from evalscope.metrics import DEFAULT_PROMPT_TEMPLATE, LLMJudge, exact_match, mean
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -19,6 +20,7 @@ SUBSET_LIST = [
     'Physics',
     'Other',
 ]
+
 
 @Benchmark.register(
     name='hle',
@@ -38,10 +40,9 @@ class HLEAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.llm_as_a_judge = True
 
-    
     def load(self, **kwargs):
         kwargs['subset_list'] = ['default']
         data_dict = super().load(**kwargs)
@@ -60,10 +61,19 @@ class HLEAdapter(DataAdapter):
         if self.system_prompt:
             messages.append({'role': 'system', 'content': self.system_prompt})
         if image:
-            messages.append({'role': 'user', 'content': [
-                {'type': 'text', 'text': prompt},
-                {'type': 'image_url', 'image_url': {'url': image}}
-            ]})
+            messages.append({
+                'role':
+                'user',
+                'content': [{
+                    'type': 'text',
+                    'text': prompt
+                }, {
+                    'type': 'image_url',
+                    'image_url': {
+                        'url': image
+                    }
+                }]
+            })
         else:
             messages.append({'role': 'user', 'content': prompt})
         return self.gen_prompt_data(prompt='', messages=messages)
@@ -80,7 +90,7 @@ class HLEAdapter(DataAdapter):
             logger.warning(f'No answer found in the model output: {result}')
             return ''
 
-    def llm_parse_pred_result(self, result, raw_input_d = None, **kwargs) -> str:
+    def llm_parse_pred_result(self, result, raw_input_d=None, **kwargs) -> str:
         return result.strip()
 
     def match(self, gold: str, pred: str) -> dict:

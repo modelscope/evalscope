@@ -5,7 +5,7 @@ from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
     from .completion_parsers import ResponseParser, lmsys_parser, ranking_parser
-    from .llm_judge import LLMJudge, DEFAULT_PROMPT_TEMPLATE, DEFAULT_NUMERIC_SCORE_TEMPLATE
+    from .llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
     from .math_parser import extract_answer, math_equal, strip_answer_string
     from .metrics import (bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score,
                           weighted_mean)

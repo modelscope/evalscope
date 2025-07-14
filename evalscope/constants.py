@@ -41,7 +41,6 @@ class MetricsConstant:
     ]
 
 
-
 class ArenaWinner:
 
     MODEL_A = 'model_a'
@@ -151,9 +150,11 @@ class JudgeStrategy:
     LLM = 'llm'
     LLM_RECALL = 'llm_recall'
 
+
 class JudgeScoreType:
     NUMERIC = 'numeric'  # numeric score
     PATTERN = 'pattern'  # pattern matching score
+
 
 class ModelTask:
     TEXT_GENERATION = 'text_generation'
