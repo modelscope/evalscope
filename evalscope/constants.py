@@ -41,26 +41,6 @@ class MetricsConstant:
     ]
 
 
-class MetricMembers:
-
-    # Math accuracy metric
-    MATH_ACCURACY = 'math_accuracy'
-
-    # Code pass@k metric
-    CODE_PASS_K = 'code_pass_k'
-
-    # Code rouge metric
-    ROUGE = 'rouge'
-
-    # ELO rating system for pairwise comparison
-    ELO = 'elo'
-
-    # Pairwise comparison win/lose and tie(optional)
-    PAIRWISE = 'pairwise'
-
-    # Rating score for single model
-    SCORE = 'score'
-
 
 class ArenaWinner:
 
@@ -171,6 +151,9 @@ class JudgeStrategy:
     LLM = 'llm'
     LLM_RECALL = 'llm_recall'
 
+class JudgeScoreType:
+    NUMERIC = 'numeric'  # numeric score
+    PATTERN = 'pattern'  # pattern matching score
 
 class ModelTask:
     TEXT_GENERATION = 'text_generation'

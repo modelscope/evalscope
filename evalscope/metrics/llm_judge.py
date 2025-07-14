@@ -1,7 +1,7 @@
 import os
 import re
 from typing import Any, Dict, List, Optional
-
+from evalscope.constants import JudgeScoreType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -56,7 +56,7 @@ class LLMJudge:
             generation_config: Optional[Dict[str, Any]] = None,
             score_pattern: Optional[str] = None,
             score_mapping: Optional[Dict[str, float]] = None,
-            score_type: str = 'pattern',  # 'pattern', 'numeric'
+            score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
             **kwargs):
         """
         Initialize LLMJudge metric.
@@ -82,11 +82,11 @@ class LLMJudge:
 
         # Default score mapping for A/B pattern
         self.score_type = score_type
-        if self.score_type == 'numeric':
+        if self.score_type == JudgeScoreType.NUMERIC:
             self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE',
                                                                      DEFAULT_NUMERIC_SCORE_TEMPLATE)
-        elif self.score_type == 'pattern':
+        elif self.score_type == JudgeScoreType.PATTERN:
             self.score_pattern = score_pattern or r'(A|B)'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
         else:
@@ -159,9 +159,9 @@ class LLMJudge:
             return 0.0
 
         # choose extraction method based on score_type
-        if self.score_type == 'numeric':
+        if self.score_type == JudgeScoreType.NUMERIC:
             return self._extract_numeric_score(response)
-        elif self.score_type == 'pattern':
+        elif self.score_type == JudgeScoreType.PATTERN:
             return self._extract_pattern_score(response)
 
     def _extract_numeric_score(self, response: str) -> Optional[float]:

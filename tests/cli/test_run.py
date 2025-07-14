@@ -259,7 +259,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -289,6 +289,7 @@ class TestRun(unittest.TestCase):
                 # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
+                'hle'
             ],
             dataset_args={
                 'mmlu': {
@@ -360,9 +361,12 @@ class TestRun(unittest.TestCase):
                         # 'is_fc_model': False,
                     }
                 },
+                'hle': {
+                    'subset_list': ['Math', 'Other'],
+                },
             },
             eval_batch_size=1,
-            limit=5,
+            limit=3,
             # debug=True,
             stream=True,
             generation_config={
@@ -377,35 +381,6 @@ class TestRun(unittest.TestCase):
         run_task(task_cfg=task_cfg)
 
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_run_batch_eval(self):
-        from evalscope.config import TaskConfig
-
-        task_cfg = TaskConfig(
-            model='LLM-Research/Llama-3.2-1B-Instruct',
-            datasets=[
-                # 'math_500',
-                # 'aime24',
-                # 'competition_math'
-                # 'arc',
-                'gsm8k'
-                # 'truthful_qa'
-            ],
-            dataset_args={
-                'competition_math': {
-                    'subset_list': ['Level 4', 'Level 5']
-                }
-            },
-            eval_batch_size=2,
-            limit=5,
-            generation_config={
-                'max_new_tokens': 2048,
-                'temperature': 0.7,
-                'num_return_sequences': 2,
-            }
-        )
-
-        run_task(task_cfg=task_cfg)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_judge_model(self):
@@ -417,7 +392,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'math_500',
+                # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
@@ -434,6 +409,7 @@ class TestRun(unittest.TestCase):
                 # 'docmath',
                 # 'needle_haystack',
                 # 'ifeval',
+                'hle'
             ],
             dataset_args={
                 'needle_haystack': {
@@ -466,7 +442,10 @@ class TestRun(unittest.TestCase):
                 },
                 'frames': {
                     'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
-                }
+                },
+                'hle': {
+                    'subset_list': ['Math', 'Other'],
+                },
             },
             eval_batch_size=10,
             limit=3,
@@ -489,6 +468,7 @@ class TestRun(unittest.TestCase):
             },
             timeout=60000,
             stream=True,
+            use_cache='outputs/20250714_150626'
             # analysis_report=True,
             # debug=True,
             # use_cache='outputs/20250616_161931'
