@@ -128,6 +128,7 @@ if __name__ == '__main__':
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
     extra_requires['aigc'], _ = parse_requirements('requirements/aigc.txt')
+    extra_requires['agent'], _ = parse_requirements('requirements/agent.txt')
     extra_requires['dev'], _ = parse_requirements('requirements/dev.txt')
 
     all_requires.extend(install_requires)
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     all_requires.extend(extra_requires['perf'])
     all_requires.extend(extra_requires['app'])
     all_requires.extend(extra_requires['aigc'])
-    all_requires.extend(extra_requires['dev'])
+    all_requires.extend(extra_requires['agent'])
     extra_requires['all'] = all_requires
 
     setup(
@@ -165,11 +166,12 @@ if __name__ == '__main__':
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
         ],
-        python_requires='>=3.8',
+        python_requires='>=3.9',
         zip_safe=False,
         install_requires=install_requires,
         entry_points={'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']},

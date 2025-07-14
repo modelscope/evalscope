@@ -27,10 +27,10 @@ class DockerSandboxClient(SandboxClient):
         Returns:
             Container ID
         """
-        response = requests.post(f"{self.base_url}/container/create", json=config.model_dump())
+        response = requests.post(f'{self.base_url}/container/create', json=config.model_dump())
 
         if response.status_code != 200:
-            raise Exception(f"Failed to create container: {response.text}")
+            raise Exception(f'Failed to create container: {response.text}')
 
         data = response.json()
         self.container_id = data['container_id']
@@ -41,10 +41,10 @@ class DockerSandboxClient(SandboxClient):
         if not self.container_id:
             raise ValueError('No container ID available')
 
-        response = requests.post(f"{self.base_url}/container/delete", params={'container_id': self.container_id})
+        response = requests.post(f'{self.base_url}/container/delete', params={'container_id': self.container_id})
 
         if response.status_code != 200:
-            raise Exception(f"Failed to delete container: {response.text}")
+            raise Exception(f'Failed to delete container: {response.text}')
 
         result = response.json()
         self.container_id = None
@@ -77,10 +77,10 @@ class DockerSandboxClient(SandboxClient):
             'env': env or {}
         }
 
-        response = requests.post(f"{self.base_url}/execute/code", json=request_data)
+        response = requests.post(f'{self.base_url}/execute/code', json=request_data)
 
         if response.status_code != 200:
-            raise Exception(f"Failed to execute code: {response.text}")
+            raise Exception(f'Failed to execute code: {response.text}')
 
         return response.json()
 
@@ -111,10 +111,10 @@ class DockerSandboxClient(SandboxClient):
             'env': env or {}
         }
 
-        response = requests.post(f"{self.base_url}/execute/command", json=request_data)
+        response = requests.post(f'{self.base_url}/execute/command', json=request_data)
 
         if response.status_code != 200:
-            raise Exception(f"Failed to execute command: {response.text}")
+            raise Exception(f'Failed to execute command: {response.text}')
 
         return response.json()
 
@@ -132,10 +132,10 @@ class DockerSandboxClient(SandboxClient):
 
         request_data = {'container_id': self.container_id, 'path': path}
 
-        response = requests.post(f"{self.base_url}/file/read", json=request_data)
+        response = requests.post(f'{self.base_url}/file/read', json=request_data)
 
         if response.status_code != 200:
-            raise Exception(f"Failed to read file: {response.text}")
+            raise Exception(f'Failed to read file: {response.text}')
 
         data = response.json()
         if data['binary']:
@@ -164,10 +164,10 @@ class DockerSandboxClient(SandboxClient):
 
         request_data = {'container_id': self.container_id, 'path': path, 'content': content, 'binary': binary}
 
-        response = requests.post(f"{self.base_url}/file/write", json=request_data)
+        response = requests.post(f'{self.base_url}/file/write', json=request_data)
 
         if response.status_code != 200:
-            raise Exception(f"Failed to write file: {response.text}")
+            raise Exception(f'Failed to write file: {response.text}')
 
         return response.json()
 

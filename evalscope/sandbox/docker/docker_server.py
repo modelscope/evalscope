@@ -39,18 +39,18 @@ class DockerSandboxServer(SandboxServer):
             try:
                 container.stop(timeout=1)
                 container.remove()
-                logger.info(f"Container {container_id} cleaned up")
+                logger.info(f'Container {container_id} cleaned up')
             except Exception as e:
-                logger.error(f"Error cleaning up container {container_id}: {e}")
+                logger.error(f'Error cleaning up container {container_id}: {e}')
 
     async def create_container_workspace(self, container, working_dir: str):
         """Create workspace directory in container if it doesn't exist."""
         try:
-            exit_code, _ = await asyncio.to_thread(container.exec_run, f"mkdir -p {working_dir}", user='root')
+            exit_code, _ = await asyncio.to_thread(container.exec_run, f'mkdir -p {working_dir}', user='root')
             if exit_code != 0:
-                logger.warning(f"Failed to create workspace directory: {working_dir}")
+                logger.warning(f'Failed to create workspace directory: {working_dir}')
         except Exception as e:
-            logger.error(f"Error creating workspace directory: {e}")
+            logger.error(f'Error creating workspace directory: {e}')
 
     async def create_container(self, config: DockerContainerConfig, background_tasks: BackgroundTasks) -> ContainerInfo:
         """Create a new Docker container for sandbox execution."""
@@ -59,11 +59,11 @@ class DockerSandboxServer(SandboxServer):
             try:
                 self.client.images.get(config.image)
             except ImageNotFound:
-                logger.info(f"Image {config.image} not found locally. Pulling...")
+                logger.info(f'Image {config.image} not found locally. Pulling...')
                 self.client.images.pull(config.image)
 
             # Generate unique container ID
-            container_id = f"sandbox-{uuid.uuid4().hex[:8]}"
+            container_id = f'sandbox-{uuid.uuid4().hex[:8]}'
 
             # Prepare container creation parameters
             container_params = {
@@ -104,8 +104,8 @@ class DockerSandboxServer(SandboxServer):
             return ContainerInfo(container_id=container_id, status=container.status, image=config.image, ports=ports)
 
         except Exception as e:
-            logger.error(f"Error creating container: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to create container: {str(e)}")
+            logger.error(f'Error creating container: {e}')
+            raise HTTPException(status_code=500, detail=f'Failed to create container: {str(e)}')
 
     async def delete_container(self, container_id: str):
         """Delete a Docker container."""
@@ -115,20 +115,20 @@ class DockerSandboxServer(SandboxServer):
                 container.stop(timeout=5)
                 container.remove()
                 del self.containers[container_id]
-                logger.info(f"Container {container_id} deleted")
-                return {'message': f"Container {container_id} deleted"}
+                logger.info(f'Container {container_id} deleted')
+                return {'message': f'Container {container_id} deleted'}
             else:
-                raise HTTPException(status_code=404, detail=f"Container {container_id} not found")
+                raise HTTPException(status_code=404, detail=f'Container {container_id} not found')
         except Exception as e:
-            logger.error(f"Error deleting container: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to delete container: {str(e)}")
+            logger.error(f'Error deleting container: {e}')
+            raise HTTPException(status_code=500, detail=f'Failed to delete container: {str(e)}')
 
     async def execute_code(self, request: ExecuteCodeRequest) -> CodeOutput:
         """Execute Python code in a Docker container."""
         temp_file = None
         try:
             if request.container_id not in self.containers:
-                raise HTTPException(status_code=404, detail=f"Container {request.container_id} not found")
+                raise HTTPException(status_code=404, detail=f'Container {request.container_id} not found')
 
             container = self.containers[request.container_id]
 
@@ -139,8 +139,8 @@ class DockerSandboxServer(SandboxServer):
 
             # Generate unique target path in container
             unique_id = uuid.uuid4().hex
-            target_filename = f"code_to_execute_{unique_id}.py"
-            target_path = f"/tmp/{target_filename}"
+            target_filename = f'code_to_execute_{unique_id}.py'
+            target_path = f'/tmp/{target_filename}'
 
             try:
                 # Copy file to container using tar
@@ -160,10 +160,10 @@ class DockerSandboxServer(SandboxServer):
                 env_vars = request.env or {}
                 timeout = getattr(request, 'timeout', 30)
 
-                logger.debug(f"Executing code in container {request.container_id}")
-                logger.debug(f"Working dir: {working_dir}")
-                logger.debug(f"Code length: {len(request.code)} characters")
-                logger.debug(f"Timeout: {timeout} seconds")
+                logger.debug(f'Executing code in container {request.container_id}')
+                logger.debug(f'Working dir: {working_dir}')
+                logger.debug(f'Code length: {len(request.code)} characters')
+                logger.debug(f'Timeout: {timeout} seconds')
 
                 try:
                     exec_result = await asyncio.wait_for(
@@ -177,9 +177,9 @@ class DockerSandboxServer(SandboxServer):
                         ),
                         timeout=timeout)
                 except asyncio.TimeoutError:
-                    logger.error(f"Code execution timed out after {timeout} seconds")
+                    logger.error(f'Code execution timed out after {timeout} seconds')
                     return CodeOutput(
-                        output=None, logs='', error=f"Execution timed out after {timeout} seconds", status_code=124)
+                        output=None, logs='', error=f'Execution timed out after {timeout} seconds', status_code=124)
 
                 # Handle the output properly
                 if isinstance(exec_result.output, tuple):
@@ -192,7 +192,7 @@ class DockerSandboxServer(SandboxServer):
                 stdout_str = stdout.decode('utf-8', errors='replace') if stdout else ''
                 stderr_str = stderr.decode('utf-8', errors='replace') if stderr else ''
 
-                logger.debug(f"Execution completed with exit code: {exec_result.exit_code}")
+                logger.debug(f'Execution completed with exit code: {exec_result.exit_code}')
 
                 return CodeOutput(
                     output=stdout_str,
@@ -203,12 +203,12 @@ class DockerSandboxServer(SandboxServer):
             finally:
                 # Clean up container temp file
                 try:
-                    await asyncio.to_thread(container.exec_run, f"rm -f {target_path}")
+                    await asyncio.to_thread(container.exec_run, f'rm -f {target_path}')
                 except Exception:
                     pass  # Ignore cleanup errors
 
         except Exception as e:
-            logger.error(f"Error executing code: {e}", exc_info=True)
+            logger.error(f'Error executing code: {e}', exc_info=True)
             return CodeOutput(output=None, logs='', error=str(e), status_code=1)
         finally:
             # Clean up host temp file
@@ -222,7 +222,7 @@ class DockerSandboxServer(SandboxServer):
         """Execute a shell command in a Docker container."""
         try:
             if request.container_id not in self.containers:
-                raise HTTPException(status_code=404, detail=f"Container {request.container_id} not found")
+                raise HTTPException(status_code=404, detail=f'Container {request.container_id} not found')
 
             container = self.containers[request.container_id]
 
@@ -233,9 +233,9 @@ class DockerSandboxServer(SandboxServer):
             # Execute the command
             working_dir = request.working_dir or '/sandbox'
 
-            logger.debug(f"Executing command in container {request.container_id}")
-            logger.debug(f"Command: {request.command}")
-            logger.debug(f"Timeout: {timeout} seconds")
+            logger.debug(f'Executing command in container {request.container_id}')
+            logger.debug(f'Command: {request.command}')
+            logger.debug(f'Timeout: {timeout} seconds')
 
             try:
                 exec_result = await asyncio.wait_for(
@@ -249,11 +249,11 @@ class DockerSandboxServer(SandboxServer):
                     ),
                     timeout=timeout)
             except asyncio.TimeoutError:
-                logger.error(f"Command execution timed out after {timeout} seconds")
+                logger.error(f'Command execution timed out after {timeout} seconds')
                 return CodeOutput(
                     output=None,
                     logs='',
-                    error=f"Command execution timed out after {timeout} seconds",
+                    error=f'Command execution timed out after {timeout} seconds',
                     status_code=124  # Standard timeout exit code
                 )
 
@@ -267,14 +267,14 @@ class DockerSandboxServer(SandboxServer):
                 error=stderr.decode('utf-8', errors='replace') if exec_result.exit_code != 0 else None)
 
         except Exception as e:
-            logger.error(f"Error executing command: {e}")
+            logger.error(f'Error executing command: {e}')
             return CodeOutput(output=None, logs='', error=str(e), status_code=1)
 
     async def read_file(self, request: FileOperationRequest):
         """Read a file from a Docker container."""
         try:
             if request.container_id not in self.containers:
-                raise HTTPException(status_code=404, detail=f"Container {request.container_id} not found")
+                raise HTTPException(status_code=404, detail=f'Container {request.container_id} not found')
 
             container = self.containers[request.container_id]
 
@@ -307,17 +307,17 @@ class DockerSandboxServer(SandboxServer):
                             return {'content': base64.b64encode(content).decode('ascii'), 'binary': True}
 
             except NotFound:
-                raise HTTPException(status_code=404, detail=f"File not found: {request.path}")
+                raise HTTPException(status_code=404, detail=f'File not found: {request.path}')
 
         except Exception as e:
-            logger.error(f"Error reading file: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+            logger.error(f'Error reading file: {e}')
+            raise HTTPException(status_code=500, detail=f'Failed to read file: {str(e)}')
 
     async def write_file(self, request: WriteFileRequest):
         """Write a file to a Docker container."""
         try:
             if request.container_id not in self.containers:
-                raise HTTPException(status_code=404, detail=f"Container {request.container_id} not found")
+                raise HTTPException(status_code=404, detail=f'Container {request.container_id} not found')
 
             container = self.containers[request.container_id]
 
@@ -330,7 +330,7 @@ class DockerSandboxServer(SandboxServer):
             # Create parent directory if needed
             parent_dir = os.path.dirname(request.path)
             if parent_dir:
-                await asyncio.to_thread(container.exec_run, f"mkdir -p {parent_dir}")
+                await asyncio.to_thread(container.exec_run, f'mkdir -p {parent_dir}')
 
             # Create tar archive with file
             tar_stream = io.BytesIO()
@@ -344,11 +344,11 @@ class DockerSandboxServer(SandboxServer):
             # Copy file to container
             await asyncio.to_thread(container.put_archive, os.path.dirname(request.path) or '/', tar_stream.getvalue())
 
-            return {'message': f"File {request.path} written successfully"}
+            return {'message': f'File {request.path} written successfully'}
 
         except Exception as e:
-            logger.error(f"Error writing file: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
+            logger.error(f'Error writing file: {e}')
+            raise HTTPException(status_code=500, detail=f'Failed to write file: {str(e)}')
 
 
 if __name__ == '__main__':
