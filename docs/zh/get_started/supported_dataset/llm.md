@@ -24,6 +24,7 @@
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Mathematics` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
+| `hle` | [Humanity's-Last-Exam](#humanity's-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `ifeval` | [IFEval](#ifeval) | `Instruction-Following` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
@@ -536,6 +537,29 @@ Answer:
 - **提示模板**: 
 ```text
 {query}
+```
+
+---
+
+### Humanity's-Last-Exam
+
+[返回目录](#llm评测集)
+- **数据集名称**: `hle`
+- **数据集ID**: [cais/hle](https://modelscope.cn/datasets/cais/hle/summary)
+- **数据集描述**:  
+  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions.
+- **任务类别**: `Knowledge`, `QA`
+- **评估指标**: `AverageAccuracy`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
+
+- **支持输出格式**: `generation`
+- **提示模板**: 
+```text
+{query}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
