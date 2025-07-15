@@ -3,7 +3,6 @@ from collections import defaultdict
 from typing import Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
 from evalscope.metrics import Metric, mean, metric_registry
 from evalscope.utils import get_logger
 
