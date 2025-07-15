@@ -54,6 +54,7 @@ datasets=[
         'needle_haystack',
         'bfcl_v3',
         'hle',
+        'tau_bench',
 ]
 
 dataset_args={
@@ -136,6 +137,14 @@ dataset_args={
     },
     'hle': {
         'subset_list': ['Math', 'Other'],
+    },
+    'tau_bench': {
+        'extra_params': {
+            'user_model': 'qwen-plus',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        },
+        'subset_list': ['airline'],
     },
 }
 

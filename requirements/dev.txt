@@ -1,5 +1,6 @@
 bfcl-eval
 dotenv
+git+https://github.com/sierra-research/tau-bench
 human_eval
 pytest
 pytest-cov
