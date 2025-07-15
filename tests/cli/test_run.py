@@ -259,7 +259,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -289,6 +289,7 @@ class TestRun(unittest.TestCase):
                 # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
+                'tau_bench',
             ],
             dataset_args={
                 'mmlu': {
@@ -360,13 +361,20 @@ class TestRun(unittest.TestCase):
                         # 'is_fc_model': False,
                     }
                 },
+                'tau_bench': {
+                    'extra_params': {
+                        'user_model': 'qwen-plus',
+                        'api_key': env.get('DASHSCOPE_API_KEY'),
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                    }
+                },
             },
-            eval_batch_size=1,
+            eval_batch_size=5,
             limit=5,
             # debug=True,
             stream=True,
             generation_config={
-                'temperature': 0,
+                'temperature': 0.6,
                 'n': 1,
                 'max_tokens': 4096,
                 # 'extra_headers':{'key': 'value'},
@@ -434,7 +442,6 @@ class TestRun(unittest.TestCase):
                 # 'docmath',
                 # 'needle_haystack',
                 # 'ifeval',
-                'tau_bench',
             ],
             dataset_args={
                 'needle_haystack': {

@@ -9,7 +9,6 @@ if TYPE_CHECKING:
                            TauBenchAdapter, initialize_model_adapter)
     from .custom import CustomModel, DummyCustomModel
     from .local_model import LocalModel, get_local_model
-    from .model import BaseModel, ChatBaseModel, OpenAIModel
     from .register import get_model_adapter
 
 else:
@@ -33,11 +32,6 @@ else:
         'local_model': [
             'LocalModel',
             'get_local_model',
-        ],
-        'model': [
-            'BaseModel',
-            'ChatBaseModel',
-            'OpenAIModel',
         ],
         'register': [
             'get_model_adapter',
