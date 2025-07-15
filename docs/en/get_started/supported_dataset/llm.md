@@ -24,6 +24,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Mathematics` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
+| `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `ifeval` | [IFEval](#ifeval) | `Instruction-Following` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
@@ -537,6 +538,29 @@ Answer:
 - **Prompt Template**: 
 ```text
 {query}
+```
+
+---
+
+### Humanity's-Last-Exam
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `hle`
+- **Dataset ID**: [cais/hle](https://modelscope.cn/datasets/cais/hle/summary)
+- **Description**:  
+  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions.
+- **Task Categories**: `Knowledge`, `QA`
+- **Evaluation Metrics**: `AverageAccuracy`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
+
+- **Supported Output Formats**: `generation`
+- **Prompt Template**: 
+```text
+{query}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
