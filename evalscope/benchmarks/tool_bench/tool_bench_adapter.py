@@ -1,3 +1,4 @@
+import json
 from typing import Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
@@ -40,6 +41,11 @@ class ToolBenchAdapter(DataAdapter):
         for message in messages:
             if 'name' in message:
                 del message['name']
+            if 'role' in message:
+                if message['role'] == 'function':
+                    content = json.dumps(message, ensure_ascii=False)
+                    message['role'] = 'user'
+                    message['content'] = content
         return self.gen_prompt_data(prompt='', messages=messages)
 
     def get_gold_answer(self, input_d: dict) -> str:

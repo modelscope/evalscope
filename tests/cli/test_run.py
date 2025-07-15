@@ -285,12 +285,12 @@ class TestRun(unittest.TestCase):
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                # 'tool_bench',
+                'tool_bench',
                 # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
                 # 'tau_bench',
-                'hle'
+                # 'hle'
             ],
             dataset_args={
                 'mmlu': {
