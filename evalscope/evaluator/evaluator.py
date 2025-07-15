@@ -7,16 +7,18 @@ from collections import OrderedDict, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
-from evalscope.models import BaseModelAdapter
 from evalscope.report import Report, gen_table
 from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, gen_hash, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import dict_torch_dtype_to_str
+
+if TYPE_CHECKING:
+    from evalscope.models import BaseModelAdapter
 
 logger = get_logger()
 
@@ -38,7 +40,7 @@ class Evaluator(object):
 
     def __init__(self,
                  data_adapter: DataAdapter,
-                 model_adapter: BaseModelAdapter,
+                 model_adapter: 'BaseModelAdapter',
                  outputs: OutputsStructure = None,
                  task_cfg: TaskConfig = None,
                  **kwargs):

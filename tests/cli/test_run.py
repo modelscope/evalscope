@@ -417,7 +417,7 @@ class TestRun(unittest.TestCase):
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
-                'math_500',
+                # 'math_500',
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
@@ -434,6 +434,7 @@ class TestRun(unittest.TestCase):
                 # 'docmath',
                 # 'needle_haystack',
                 # 'ifeval',
+                'tau_bench',
             ],
             dataset_args={
                 'needle_haystack': {

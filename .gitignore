@@ -145,10 +145,11 @@ evalscope/data/
 
 
 /tmp
-/data
+/data*
 output/
 /test*.*
 *.ttf
+*.zip
 _build/
 swift.test*
 /cache

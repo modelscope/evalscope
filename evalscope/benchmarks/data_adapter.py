@@ -382,7 +382,7 @@ class DataAdapter(ABC):
         pass
 
     def gen_prompt_data(self,
-                        prompt: str,
+                        prompt: str = '',
                         system_prompt: Optional[str] = None,
                         choices: Optional[List[str]] = None,
                         index: Optional[Union[int, str]] = None,
@@ -413,7 +413,8 @@ class DataAdapter(ABC):
             system_prompt=system_prompt or self.system_prompt,
             index=index or 0,
             id=id,
-            messages=messages)
+            messages=messages,
+            extra_data=kwargs.get('extra_data', None))
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
@@ -477,7 +478,6 @@ class DataAdapter(ABC):
         """
         return result
 
-    @abstractmethod
     def match(self, gold: Any, pred: Any) -> Any:
         """
         Match the gold answer and the predicted answer.
@@ -491,7 +491,7 @@ class DataAdapter(ABC):
         Returns:
             The match result. Usually a score (float) for chat/multiple-choice-questions.
         """
-        raise NotImplementedError
+        return 1.0 if gold == pred else 0.0
 
     def llm_match(self, gold: Any, pred: Any, judge: Optional[LLMJudge] = None, **kwargs) -> float:
         """
