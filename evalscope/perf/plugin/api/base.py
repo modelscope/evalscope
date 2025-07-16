@@ -1,5 +1,6 @@
+import aiohttp
 from abc import abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
 
@@ -37,6 +38,22 @@ class ApiPluginBase:
 
         Returns:
             Tuple: (Number of prompt_tokens and number of completion_tokens).
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
+                              body: Dict) -> AsyncGenerator[Tuple[bool, int, str], None]:
+        """Process the HTTP request and handle the response.
+
+        Args:
+            client_session: The aiohttp client session
+            url: The request URL
+            headers: The request headers
+            body: The request body
+
+        Yields:
+            Tuple[bool, int, str]: (is_error, status_code, response_data)
         """
         raise NotImplementedError
 

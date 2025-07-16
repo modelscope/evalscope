@@ -1,9 +1,9 @@
 import json
 import os
-from typing import Any, Dict, Iterator, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.logger import get_logger
 
@@ -11,7 +11,7 @@ logger = get_logger()
 
 
 @register_api(['openai', 'local_vllm', 'local'])
-class OpenaiPlugin(ApiPluginBase):
+class OpenaiPlugin(DefaultApiPlugin):
     """Base of openai interface."""
 
     def __init__(self, param: Arguments):

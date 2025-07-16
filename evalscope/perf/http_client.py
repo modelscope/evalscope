@@ -2,12 +2,11 @@ import aiohttp
 import asyncio
 import json
 import time
-from http import HTTPStatus
+from prompt_toolkit import prompt
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
 from evalscope.utils.logger import get_logger
 from .arguments import Arguments
-from .utils.local_server import ServerSentEvent
 
 if TYPE_CHECKING:
     from .plugin.api.base import ApiPluginBase
@@ -37,73 +36,28 @@ class AioHttpClient:
     async def __aexit__(self, exc_type, exc, tb):
         await self.client.close()
 
-    async def _handle_stream(self, response: aiohttp.ClientResponse):
-        is_error = False
-        async for line in response.content:
-            line = line.decode('utf8').rstrip('\n\r')
-            sse_msg = ServerSentEvent.decode(line)
-            if sse_msg:
-                logger.debug(f'Response recevied: {line}')
-                if sse_msg.event == 'error':
-                    is_error = True
-                if sse_msg.data:
-                    if sse_msg.data.startswith('[DONE]'):
-                        break
-                    yield is_error, response.status, sse_msg.data
-
-    async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, str], None]:
-        response_status = response.status
-        response_content_type = response.content_type
-        content_type_json = 'application/json'
-        content_type_event_stream = 'text/event-stream'
-        is_success = response_status == HTTPStatus.OK
-
-        if is_success:
-            # Handle successful response with 'text/event-stream' content type
-            if content_type_event_stream in response_content_type:
-                async for is_error, response_status, content in self._handle_stream(response):
-                    yield (is_error, response_status, content)
-            # Handle successful response with 'application/json' content type
-            elif content_type_json in response_content_type:
-                content = await response.json()
-                if content.get('object') == 'error':
-                    yield (True, content.get('code'), content.get('message'))  # DashScope
-                else:
-                    yield (False, response_status, json.dumps(content, ensure_ascii=False))
-            # Handle other successful responses
-            else:
-                content = await response.read()
-                yield (False, response_status, content)
-        else:
-            # Handle error response with 'application/json' content type
-            if content_type_json in response_content_type:
-                error = await response.json()
-                yield (True, response_status, json.dumps(error, ensure_ascii=False))
-            # Handle error response with 'text/event-stream' content type
-            elif content_type_event_stream in response_content_type:
-                async for _, _, data in self._handle_stream(response):
-                    error = json.loads(data)
-                    yield (True, response_status, json.dumps(error, ensure_ascii=False))
-            # Handle other error responses
-            else:
-                msg = await response.read()
-                yield (True, response_status, msg.decode('utf-8'))
+    def _create_trace_config(self):
+        """Create trace configuration for debugging."""
+        trace_config = aiohttp.TraceConfig()
+        trace_config.on_request_start.append(self.on_request_start)
+        trace_config.on_request_chunk_sent.append(self.on_request_chunk_sent)
+        trace_config.on_response_chunk_received.append(self.on_response_chunk_received)
+        return trace_config
 
     async def post(self, body):
-        headers = {'Content-Type': 'application/json', **self.headers}
+        """Send POST request and delegate response handling to API plugin."""
         try:
-            data = json.dumps(body, ensure_ascii=False)  # serialize to JSON
-            async with self.client.request('POST', url=self.url, data=data, headers=headers) as response:
-                async for rsp in self._handle_response(response):
-                    yield rsp
+            # Delegate the request processing to the API plugin
+            async for result in self.api_plugin.process_request(self.client, self.url, self.headers, body):
+                yield result
         except asyncio.TimeoutError:
             logger.error(
-                f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longger timeout.'  # noqa: E501
+                f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
             yield (True, None, 'Timeout')
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
-            yield (True, None, e)
+            yield (True, None, str(e))
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
@@ -141,18 +95,9 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     async def attempt_connection():
         client = AioHttpClient(args, api_plugin)
         async with client:
-            if args.apply_chat_template:
-                request = {
-                    'messages': [{
-                        'role': 'user',
-                        'content': 'hello'
-                    }],
-                    'model': args.model,
-                    'max_tokens': 10,
-                    'stream': args.stream
-                }
-            else:
-                request = {'prompt': 'hello', 'model': args.model, 'max_tokens': 10}
+            messages = [{'role': 'user', 'content': 'hello'}] if args.apply_chat_template else 'hello'
+            request = api_plugin.build_request(messages)
+
             async for is_error, state_code, response_data in client.post(request):
                 return is_error, state_code, response_data
 

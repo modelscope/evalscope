@@ -91,7 +91,8 @@ async def send_request(
             try:
                 async for is_error, state_code, response_data in client.post(request):
                     if is_error or state_code != HTTPStatus.OK:
-                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {response_data}')
+                        error_msg = str(response_data) if response_data else 'Unknown error'
+                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {error_msg}')
                         benchmark_data.success = False
                         break
                     if response_data:
