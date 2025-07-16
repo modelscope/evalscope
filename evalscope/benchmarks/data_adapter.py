@@ -168,6 +168,11 @@ class DataAdapter(ABC):
         If you want to support local dataset, please rewrite this method in xxx_data_adapter.
         Use modelscope.msdatasets.MsDataset.load to load the dataset from local by default.
         """
+        # remove dataset_infos.json file if exists, since MsDataset will occur an error if it exists.
+        dataset_infos_path = os.path.join(dataset_name_or_path, 'dataset_infos.json')
+        if os.path.exists(dataset_infos_path):
+            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid MsDataset errors.')
+            os.remove(dataset_infos_path)
         return self.load_from_hub(dataset_name_or_path, subset_list, None, **kwargs)
 
     def load_with_snapshot(self,
@@ -382,7 +387,7 @@ class DataAdapter(ABC):
         pass
 
     def gen_prompt_data(self,
-                        prompt: str,
+                        prompt: str = '',
                         system_prompt: Optional[str] = None,
                         choices: Optional[List[str]] = None,
                         index: Optional[Union[int, str]] = None,
@@ -413,7 +418,8 @@ class DataAdapter(ABC):
             system_prompt=system_prompt or self.system_prompt,
             index=index or 0,
             id=id,
-            messages=messages)
+            messages=messages,
+            extra_data=kwargs.get('extra_data', None))
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
@@ -477,7 +483,6 @@ class DataAdapter(ABC):
         """
         return result
 
-    @abstractmethod
     def match(self, gold: Any, pred: Any) -> Any:
         """
         Match the gold answer and the predicted answer.
@@ -491,7 +496,7 @@ class DataAdapter(ABC):
         Returns:
             The match result. Usually a score (float) for chat/multiple-choice-questions.
         """
-        raise NotImplementedError
+        return 1.0 if gold == pred else 0.0
 
     def llm_match(self, gold: Any, pred: Any, judge: Optional[LLMJudge] = None, **kwargs) -> float:
         """

@@ -5,15 +5,10 @@ from .choice_adapter import ContinuationLogitsModelAdapter, MultiChoiceModelAdap
 from .custom_adapter import CustomModelAdapter
 from .server_adapter import ServerModelAdapter
 from .t2i_adapter import T2IModelAdapter
+from .tau_bench_adapter import TauBenchAdapter
 
 __all__ = [
-    'initialize_model_adapter',
-    'BaseModelAdapter',
-    'ChatGenerationModelAdapter',
-    'ContinuationLogitsModelAdapter',
-    'MultiChoiceModelAdapter',
-    'CustomModelAdapter',
-    'ServerModelAdapter',
-    'BFCLAdapter',
-    'T2IModelAdapter',
+    'initialize_model_adapter', 'BaseModelAdapter', 'ChatGenerationModelAdapter', 'ContinuationLogitsModelAdapter',
+    'MultiChoiceModelAdapter', 'CustomModelAdapter', 'ServerModelAdapter', 'BFCLAdapter', 'T2IModelAdapter',
+    'TauBenchAdapter'
 ]
