@@ -10,7 +10,7 @@
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `Instruction-Following` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
-| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent` |
+| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent`, `Function Calling` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
@@ -24,6 +24,7 @@
 | `gpqa` | [GPQA](#gpqa) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Mathematics` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
+| `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `ifeval` | [IFEval](#ifeval) | `Instruction-Following` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
@@ -39,7 +40,8 @@
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
-| `tool_bench` | [ToolBench-Static](#toolbench-static) | `Agent`, `Reasoning` |
+| `tau_bench` | [τ-bench](#τ-bench) | `Agent`, `Function Calling`, `Reasoning` |
+| `tool_bench` | [ToolBench-Static](#toolbench-static) | `Agent`, `Function Calling`, `Reasoning` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `Reading Comprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
@@ -178,7 +180,7 @@ A: Let's think step by step.
 - **数据集ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **数据集描述**:  
   > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
-- **任务类别**: `Agent`
+- **任务类别**: `Agent`, `Function Calling`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -536,6 +538,29 @@ Answer:
 - **提示模板**: 
 ```text
 {query}
+```
+
+---
+
+### Humanity's-Last-Exam
+
+[返回目录](#llm评测集)
+- **数据集名称**: `hle`
+- **数据集ID**: [cais/hle](https://modelscope.cn/datasets/cais/hle/summary)
+- **数据集描述**:  
+  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions.
+- **任务类别**: `Knowledge`, `QA`
+- **评估指标**: `AverageAccuracy`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
+
+- **支持输出格式**: `generation`
+- **提示模板**: 
+```text
+{query}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
@@ -928,6 +953,35 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 
 ---
 
+### τ-bench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `tau_bench`
+- **数据集ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
+- **数据集描述**:  
+  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. 
+- **任务类别**: `Agent`, `Function Calling`, `Reasoning`
+- **评估指标**: `Pass^1`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `airline`, `retail`
+
+- **支持输出格式**: `generation`
+- **额外参数**: 
+```json
+{
+    "user_model": "qwen-plus",
+    "api_key": "EMPTY",
+    "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "generation_config": {
+        "temperature": 0.7,
+        "max_new_tokens": 1024
+    }
+}
+```
+
+---
+
 ### ToolBench-Static
 
 [返回目录](#llm评测集)
@@ -935,7 +989,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **数据集ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **数据集描述**:  
   > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
-- **任务类别**: `Agent`, `Reasoning`
+- **任务类别**: `Agent`, `Function Calling`, `Reasoning`
 - **评估指标**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

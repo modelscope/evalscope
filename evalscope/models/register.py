@@ -1,6 +1,3 @@
-from evalscope.constants import OutputType
-from .adapters import *
-
 MODEL_ADAPTERS = {}
 
 
@@ -42,14 +39,3 @@ def register_model_adapter_class(cls, name=None):
     if name in MODEL_ADAPTERS:
         raise ValueError(f"Model adapter class '{name}' is already registered.")
     MODEL_ADAPTERS[name] = cls
-
-
-# register all model adapters
-register_model_adapter_class(BaseModelAdapter, name='base')
-register_model_adapter_class(ChatGenerationModelAdapter, name=OutputType.GENERATION)
-register_model_adapter_class(ContinuationLogitsModelAdapter, name=OutputType.CONTINUOUS)
-register_model_adapter_class(MultiChoiceModelAdapter, name=OutputType.MULTIPLE_CHOICE)
-register_model_adapter_class(CustomModelAdapter, name='custom')
-register_model_adapter_class(ServerModelAdapter, name='server')
-register_model_adapter_class(BFCLAdapter, name='bfcl_server')
-register_model_adapter_class(T2IModelAdapter, name=OutputType.IMAGE_GENERATION)

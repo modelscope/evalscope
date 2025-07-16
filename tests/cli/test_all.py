@@ -39,7 +39,7 @@ datasets=[
         'general_mcq',
         'general_qa',
         'super_gpqa',
-        'live_code_bench',
+        # 'live_code_bench',
         'mmlu_redux',
         'simple_qa',
         'chinese_simpleqa',
@@ -53,6 +53,8 @@ datasets=[
         'docmath',
         'needle_haystack',
         'bfcl_v3',
+        'hle',
+        'tau_bench',
 ]
 
 dataset_args={
@@ -132,7 +134,18 @@ dataset_args={
     },
     'bfcl_v3':{
         'subset_list': ['simple', 'multiple']
-    }
+    },
+    'hle': {
+        'subset_list': ['Math', 'Other'],
+    },
+    'tau_bench': {
+        'extra_params': {
+            'user_model': 'qwen-plus',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        },
+        'subset_list': ['airline'],
+    },
 }
 
 class TestRun(unittest.TestCase):

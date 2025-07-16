@@ -1,12 +1,16 @@
-from typing import Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from ..custom import CustomModel
+from ..register import register_model_adapter
 from .base_adapter import BaseModelAdapter
 
+if TYPE_CHECKING:
+    from ..custom import CustomModel
 
+
+@register_model_adapter(name='custom')
 class CustomModelAdapter(BaseModelAdapter):
 
-    def __init__(self, custom_model: CustomModel, **kwargs):
+    def __init__(self, custom_model: 'CustomModel', **kwargs):
         """
         Custom model adapter.
 

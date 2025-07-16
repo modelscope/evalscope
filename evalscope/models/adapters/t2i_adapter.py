@@ -3,15 +3,18 @@ import time
 import torch
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from evalscope.constants import OutputType
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
 from ..local_model import LocalModel
+from ..register import register_model_adapter
 from .base_adapter import BaseModelAdapter
 
 logger = get_logger()
 
 
+@register_model_adapter(name=OutputType.IMAGE_GENERATION)
 class T2IModelAdapter(BaseModelAdapter):
     """
     Text to image model adapter.

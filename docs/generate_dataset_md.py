@@ -1,4 +1,5 @@
 import json
+import os
 from tqdm import tqdm
 from typing import Any, Dict
 
@@ -155,7 +156,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> st
     
     # Format dataset ID links
     if dataset_id.startswith(('http://', 'https://')):
-        dataset_id_md = f'[{dataset_id}]({dataset_id})'
+        dataset_id_md = f'[{os.path.basename(dataset_id)}]({dataset_id})'
     elif '/' in dataset_id:  # ModelScope format ID
         dataset_id_md = f'[{dataset_id}](https://modelscope.cn/datasets/{dataset_id}/summary)'
     else:
@@ -224,7 +225,7 @@ def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -
     for adapter in adapters:
         name = adapter.name
         pretty_name = adapter.pretty_name or name
-        link_name = pretty_name.lower().replace(' ', '-').replace('.', '')
+        link_name = pretty_name.lower().replace(' ', '-').replace('.', '').replace("'", '')
         tags = wrap_key_words(adapter.tags)
         index.append(f'| `{name}` | [{pretty_name}](#{link_name}) | {tags} |')
     

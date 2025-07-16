@@ -4,12 +4,11 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .adapters import (BaseModelAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
+    from .adapters import (BaseModelAdapter, BFCLAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
                            CustomModelAdapter, MultiChoiceModelAdapter, ServerModelAdapter, T2IModelAdapter,
-                           initialize_model_adapter)
+                           TauBenchAdapter, initialize_model_adapter)
     from .custom import CustomModel, DummyCustomModel
     from .local_model import LocalModel, get_local_model
-    from .model import BaseModel, ChatBaseModel, OpenAIModel
     from .register import get_model_adapter
 
 else:
@@ -23,6 +22,8 @@ else:
             'CustomModelAdapter',
             'ServerModelAdapter',
             'T2IModelAdapter',
+            'TauBenchAdapter',
+            'BFCLAdapter',
         ],
         'custom': [
             'CustomModel',
@@ -31,11 +32,6 @@ else:
         'local_model': [
             'LocalModel',
             'get_local_model',
-        ],
-        'model': [
-            'BaseModel',
-            'ChatBaseModel',
-            'OpenAIModel',
         ],
         'register': [
             'get_model_adapter',

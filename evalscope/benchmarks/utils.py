@@ -13,6 +13,7 @@ class PromptData:
     multi_choices: Optional[List[str]] = None
     id: Optional[str] = None
     messages: Optional[List[dict]] = None
+    extra_data: Optional[Dict] = None
 
     def to_dict(self) -> Dict:
         return {k: v for k, v in asdict(self).items() if v is not None}
