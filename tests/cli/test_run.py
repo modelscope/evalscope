@@ -285,11 +285,12 @@ class TestRun(unittest.TestCase):
                 # 'maritime_bench',
                 # 'drop',
                 # 'winogrande',
-                # 'tool_bench',
+                'tool_bench',
                 # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
-                'hle'
+                # 'tau_bench',
+                # 'hle'
             ],
             dataset_args={
                 'mmlu': {
@@ -361,16 +362,23 @@ class TestRun(unittest.TestCase):
                         # 'is_fc_model': False,
                     }
                 },
+                'tau_bench': {
+                    'extra_params': {
+                        'user_model': 'qwen-plus',
+                        'api_key': env.get('DASHSCOPE_API_KEY'),
+                        'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                    }
+                },
                 'hle': {
                     'subset_list': ['Math', 'Other'],
                 },
             },
-            eval_batch_size=1,
-            limit=3,
+            eval_batch_size=5,
+            limit=5,
             # debug=True,
             stream=True,
             generation_config={
-                'temperature': 0,
+                'temperature': 0.6,
                 'n': 1,
                 'max_tokens': 4096,
                 # 'extra_headers':{'key': 'value'},

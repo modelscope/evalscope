@@ -150,6 +150,7 @@ evalscope/data/
 output/
 /test*.*
 *.ttf
+*.zip
 _build/
 swift.test*
 /cache

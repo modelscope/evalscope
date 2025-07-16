@@ -10,7 +10,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `Instruction-Following` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
-| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent` |
+| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent`, `Function Calling` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
@@ -40,7 +40,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
-| `tool_bench` | [ToolBench-Static](#toolbench-static) | `Agent`, `Reasoning` |
+| `tau_bench` | [τ-bench](#τ-bench) | `Agent`, `Function Calling`, `Reasoning` |
+| `tool_bench` | [ToolBench-Static](#toolbench-static) | `Agent`, `Function Calling`, `Reasoning` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `Reading Comprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
@@ -179,7 +180,7 @@ A: Let's think step by step.
 - **Dataset ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **Description**:  
   > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
-- **Task Categories**: `Agent`
+- **Task Categories**: `Agent`, `Function Calling`
 - **Evaluation Metrics**: `AverageAccuracy`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -952,6 +953,35 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 
 ---
 
+### τ-bench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `tau_bench`
+- **Dataset ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
+- **Description**:  
+  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. 
+- **Task Categories**: `Agent`, `Function Calling`, `Reasoning`
+- **Evaluation Metrics**: `Pass^1`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `airline`, `retail`
+
+- **Supported Output Formats**: `generation`
+- **Extra Parameters**: 
+```json
+{
+    "user_model": "qwen-plus",
+    "api_key": "EMPTY",
+    "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "generation_config": {
+        "temperature": 0.7,
+        "max_new_tokens": 1024
+    }
+}
+```
+
+---
+
 ### ToolBench-Static
 
 [Back to Top](#llm-benchmarks)
@@ -959,7 +989,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **Dataset ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **Description**:  
   > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
-- **Task Categories**: `Agent`, `Reasoning`
+- **Task Categories**: `Agent`, `Function Calling`, `Reasoning`
 - **Evaluation Metrics**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot

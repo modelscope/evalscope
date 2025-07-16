@@ -1,3 +1,4 @@
+import json
 from typing import Dict, List
 
 from evalscope.benchmarks import Benchmark, DataAdapter
@@ -8,7 +9,7 @@ from evalscope.metrics import Metric, mean, metric_registry
 @Benchmark.register(
     name='tool_bench',
     pretty_name='ToolBench-Static',
-    tags=['Reasoning', 'Agent'],
+    tags=['Reasoning', 'Agent', 'Function Calling'],
     description='ToolBench is a benchmark for evaluating AI models on tool use tasks. '
     'It includes various subsets such as in-domain and out-of-domain, '
     'each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. '
@@ -40,6 +41,11 @@ class ToolBenchAdapter(DataAdapter):
         for message in messages:
             if 'name' in message:
                 del message['name']
+            if 'role' in message:
+                if message['role'] == 'function':
+                    content = json.dumps(message, ensure_ascii=False)
+                    message['role'] = 'user'
+                    message['content'] = content
         return self.gen_prompt_data(prompt='', messages=messages)
 
     def get_gold_answer(self, input_d: dict) -> str:
