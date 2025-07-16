@@ -1,7 +1,8 @@
-from evalscope.perf.plugin.datasets.custom import CustomDatasetPlugin
-from evalscope.perf.plugin.datasets.flickr8k import FlickrDatasetPlugin
-from evalscope.perf.plugin.datasets.line_by_line import LineByLineDatasetPlugin
-from evalscope.perf.plugin.datasets.longalpaca import LongAlpacaDatasetPlugin
-from evalscope.perf.plugin.datasets.openqa import OpenqaDatasetPlugin
-from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
-from evalscope.perf.plugin.datasets.speed_benchmark import SpeedBenchmarkDatasetPlugin, SpeedBenchmarkLongDatasetPlugin
+from .base import DatasetPluginBase
+from .custom import CustomDatasetPlugin
+from .flickr8k import FlickrDatasetPlugin
+from .line_by_line import LineByLineDatasetPlugin
+from .longalpaca import LongAlpacaDatasetPlugin
+from .openqa import OpenqaDatasetPlugin
+from .random_dataset import RandomDatasetPlugin
+from .speed_benchmark import SpeedBenchmarkDatasetPlugin, SpeedBenchmarkLongDatasetPlugin

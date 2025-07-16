@@ -3,11 +3,14 @@ import asyncio
 import json
 import time
 from http import HTTPStatus
-from typing import AsyncGenerator, Dict, List, Tuple
+from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
-from evalscope.perf.arguments import Arguments
-from evalscope.perf.utils.local_server import ServerSentEvent
 from evalscope.utils.logger import get_logger
+from .arguments import Arguments
+from .utils.local_server import ServerSentEvent
+
+if TYPE_CHECKING:
+    from .plugin.api.base import ApiPluginBase
 
 logger = get_logger()
 
@@ -17,21 +20,16 @@ class AioHttpClient:
     def __init__(
         self,
         args: Arguments,
+        api_plugin: 'ApiPluginBase',
     ):
         self.url = args.url
         self.headers = {'user-agent': 'modelscope_bench', **(args.headers or {})}
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
+        self.api_plugin = api_plugin
         self.client = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
             trace_configs=[self._create_trace_config()] if args.debug else [])
-
-    def _create_trace_config(self):
-        trace_config = aiohttp.TraceConfig()
-        trace_config.on_request_start.append(self.on_request_start)
-        trace_config.on_request_chunk_sent.append(self.on_request_chunk_sent)
-        trace_config.on_response_chunk_received.append(self.on_response_chunk_received)
-        return trace_config
 
     async def __aenter__(self):
         pass
@@ -136,12 +134,12 @@ class AioHttpClient:
         logger.debug(f'Request received: <{method=},  {url=}, {truncated_chunk=}>')
 
 
-async def test_connection(args: Arguments) -> bool:
+async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     is_error = True
     start_time = time.perf_counter()
 
     async def attempt_connection():
-        client = AioHttpClient(args)
+        client = AioHttpClient(args, api_plugin)
         async with client:
             if args.apply_chat_template:
                 request = {
