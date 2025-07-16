@@ -171,6 +171,7 @@ class DataAdapter(ABC):
         # remove dataset_infos.json file if exists, since MsDataset will occur an error if it exists.
         dataset_infos_path = os.path.join(dataset_name_or_path, 'dataset_infos.json')
         if os.path.exists(dataset_infos_path):
+            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid MsDataset errors.')
             os.remove(dataset_infos_path)
         return self.load_from_hub(dataset_name_or_path, subset_list, None, **kwargs)
 
