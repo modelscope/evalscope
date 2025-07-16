@@ -6,11 +6,12 @@ from evalscope.perf.arguments import Arguments
 
 class ApiPluginBase:
 
-    def __init__(self, model_path: str) -> None:
-        self.model_path = model_path
+    def __init__(self, param: Arguments) -> None:
+        self.param = param
+        self.model_path = param.tokenizer_path
 
     @abstractmethod
-    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
         """Build a api request body.
 
         Args:

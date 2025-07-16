@@ -1,4 +1,8 @@
-from typing import Any, List, Type, Union
+from typing import TYPE_CHECKING, Any, List, Type, Union
+
+if TYPE_CHECKING:
+    from .api import ApiPluginBase
+    from .datasets import DatasetPluginBase
 
 
 class PluginRegistry:
@@ -53,7 +57,7 @@ class DatasetRegistry(PluginRegistry):
     _registry = {}
 
     @classmethod
-    def get_class(cls, name: str):
+    def get_class(cls, name: str) -> Type['DatasetPluginBase']:
         if name not in cls._registry:
             raise ValueError(f"Dataset plugin '{name}' is not registered.")
         return cls._registry[name]
@@ -64,7 +68,7 @@ class ApiRegistry(PluginRegistry):
     _registry = {}
 
     @classmethod
-    def get_class(cls, name: str):
+    def get_class(cls, name: str) -> Type['ApiPluginBase']:
         if name not in cls._registry:
             raise ValueError(f"API plugin '{name}' is not registered.")
         return cls._registry[name]

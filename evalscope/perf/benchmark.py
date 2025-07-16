@@ -13,7 +13,7 @@ from .arguments import Arguments
 from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
 from .utils.benchmark_util import BenchmarkData, BenchmarkMetrics
-from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
+from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
 from .utils.handler import add_signal_handlers, exception_handler
 
 if TYPE_CHECKING:
@@ -27,14 +27,10 @@ data_process_completed_event = asyncio.Event()
 @exception_handler
 async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[dict, None]:
 
-    def load_prompt(prompt_path_or_text):
-        if prompt_path_or_text.startswith('@'):
-            with open(prompt_path_or_text[1:], 'r', encoding='utf-8') as file:
-                return file.read()
-        return prompt_path_or_text
-
-    async def generate_requests_from_prompt(messages):
-        request = api_plugin.build_request(messages, args)
+    async def generate_requests_from_prompt():
+        prompt = load_prompt(args.prompt)
+        messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
+        request = api_plugin.build_request(messages)
         for _ in range(args.number):
             yield request
 
@@ -57,7 +53,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
         while count < args.number:
             messages = dataset_messages[dataset_index]
-            request = api_plugin.build_request(messages, args)
+            request = api_plugin.build_request(messages)
             if request is not None:
                 yield request
                 count += 1
@@ -65,13 +61,11 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
             dataset_index = (dataset_index + 1) % len(dataset_messages)
 
     if args.prompt:
-        prompt = load_prompt(args.prompt)
-        messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
-        generator = generate_requests_from_prompt(messages)
+        generator = generate_requests_from_prompt()
     elif args.dataset:
         generator = generate_requests_from_dataset()
     else:
-        raise Exception('Either prompt or dataset is required!')
+        raise ValueError('Either prompt or dataset is required!')
 
     async for request in generator:
         yield request
@@ -184,7 +178,7 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
 
     # Create API plugin instance for request/response processing
     api_plugin_class = ApiRegistry.get_class(args.api)
-    api_plugin = api_plugin_class(args.tokenizer_path)
+    api_plugin = api_plugin_class(args)
 
     # init queue
     benchmark_data_queue = asyncio.Queue()

@@ -14,7 +14,7 @@ class CustomPlugin(ApiPluginBase):
     """Support tensorrt-llm triton server
     """
 
-    def __init__(self, mode_path: str):
+    def __init__(self, param: Arguments):
         """Init the plugin
 
         Args:
@@ -22,14 +22,14 @@ class CustomPlugin(ApiPluginBase):
                 weight in the model to calculate the number of the
                 input and output tokens.
         """
-        super().__init__(model_path=mode_path)
-        if mode_path is not None:
+        super().__init__(param=param)
+        if param.tokenizer_path is not None:
             from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path)
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -42,6 +42,7 @@ class CustomPlugin(ApiPluginBase):
         Returns:
             Dict: The request body. None if prompt format is error.
         """
+        param = param or self.param
         try:
             query = json.loads(param.query_template)
             ApiPluginBase.replace_values(query, param.model, messages[0]['content'])

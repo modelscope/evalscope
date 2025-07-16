@@ -14,7 +14,7 @@ logger = get_logger()
 class OpenaiPlugin(ApiPluginBase):
     """Base of openai interface."""
 
-    def __init__(self, mode_path: str):
+    def __init__(self, param: Arguments):
         """Init the plugin
 
         Args:
@@ -22,14 +22,14 @@ class OpenaiPlugin(ApiPluginBase):
                 weight in the model to calculate the number of the
                 input and output tokens.
         """
-        super().__init__(model_path=mode_path)
-        if mode_path is not None:
+        super().__init__(param=param)
+        if param.tokenizer_path is not None:
             from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path)
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str], param: Arguments) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -42,6 +42,7 @@ class OpenaiPlugin(ApiPluginBase):
         Returns:
             Dict: The request body. None if prompt format is error.
         """
+        param = param or self.param
         try:
             if param.query_template is not None:
                 if param.query_template.startswith('@'):
@@ -54,8 +55,6 @@ class OpenaiPlugin(ApiPluginBase):
                 else:
                     query = json.loads(param.query_template)
 
-                if 'stream' in query.keys():
-                    param.stream = query['stream']
                 # replace template messages with input messages.
                 query['messages'] = messages
             elif isinstance(messages, str):

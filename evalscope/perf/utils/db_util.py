@@ -16,6 +16,13 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
+def load_prompt(prompt_path_or_text):
+    if prompt_path_or_text.startswith('@'):
+        with open(prompt_path_or_text[1:], 'r', encoding='utf-8') as file:
+            return file.read()
+    return prompt_path_or_text
+
+
 def encode_data(data) -> str:
     """Encodes data using base64 and pickle."""
     return base64.b64encode(pickle.dumps(data)).decode('utf-8')
