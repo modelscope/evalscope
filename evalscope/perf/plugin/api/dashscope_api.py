@@ -13,17 +13,10 @@ logger = get_logger()
 @register_api('dashscope')
 class DashScopeApiPlugin(ApiPluginBase):
 
-    def __init__(self, mode_path: str):
-        """Init the plugin
+    def __init__(self, param: Arguments):
+        super().__init__(param)
 
-        Args:
-            mode_path (str): The model path, we use the tokenizer
-                weight in the model to calculate the number of the
-                input and output tokens.
-        """
-        super().__init__(model_path=mode_path)
-
-    def build_request(self, messages: List[Dict], param: Arguments) -> Dict:
+    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -36,6 +29,7 @@ class DashScopeApiPlugin(ApiPluginBase):
         Returns:
             Dict: The request body. None if prompt format is error.
         """
+        param = param or self.param
         try:
             if param.query_template is not None:
                 if param.query_template.startswith('@'):
