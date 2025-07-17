@@ -15,12 +15,12 @@ class OpenaiPlugin(DefaultApiPlugin):
     """Base of openai interface."""
 
     def __init__(self, param: Arguments):
-        """Init the plugin
+        """Initialize the OpenaiPlugin.
 
         Args:
-            mode_path (str): The model path, we use the tokenizer
-                weight in the model to calculate the number of the
-                input and output tokens.
+            param (Arguments): Configuration object containing parameters
+                such as the tokenizer path and model details. If a tokenizer
+                path is provided, it is used to initialize the tokenizer.
         """
         super().__init__(param=param)
         if param.tokenizer_path is not None:
