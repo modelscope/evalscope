@@ -1,8 +1,6 @@
 import aiohttp
 import asyncio
-import json
 import time
-from prompt_toolkit import prompt
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
 from evalscope.utils.logger import get_logger
@@ -45,16 +43,19 @@ class AioHttpClient:
         return trace_config
 
     async def post(self, body):
-        """Send POST request and delegate response handling to API plugin."""
+        """Send POST request and delegate response handling to API plugin.
+        Yields:
+            Tuple[bool, int, str]: (is_error, status_code, response_data)
+        """
         try:
             # Delegate the request processing to the API plugin
             async for result in self.api_plugin.process_request(self.client, self.url, self.headers, body):
                 yield result
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             logger.error(
                 f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
-            yield (True, None, 'Timeout')
+            yield (True, None, str(e))
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
             yield (True, None, str(e))
