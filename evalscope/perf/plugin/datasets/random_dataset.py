@@ -52,7 +52,8 @@ class RandomDatasetPlugin(DatasetPluginBase):
             prompt = self.tokenizer.decode(re_encoded_sequence)
 
             if self.query_parameters.apply_chat_template:
-                yield [{'role': 'user', 'content': prompt}]
+                message = self.create_message(prompt)
+                yield [message]
             else:
                 yield prompt
 
@@ -63,6 +64,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
         return input_ids
 
     def get_template_len(self):
-        empty_message = [{'role': 'user', 'content': ''}]
+        empty_message = [self.create_message(text='')]
         template = self.tokenizer.apply_chat_template(empty_message, tokenize=True, add_generation_prompt=True)
         return len(template)

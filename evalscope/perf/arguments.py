@@ -50,6 +50,11 @@ class Arguments(BaseArgument):
     prompt: Optional[str] = None  # The prompt text
     query_template: Optional[str] = None  # Template for the query
     apply_chat_template: Optional[bool] = None  # Whether to apply chat template
+    # random vl settings
+    image_width: int = 224  # Width of the image for random VL dataset
+    image_height: int = 224  # Height of the image for random VL dataset
+    image_format: str = 'RGB'  # Image format for random VL dataset
+    image_num: int = 1  # Number of images for random VL dataset
 
     # Dataset settings
     dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
@@ -161,6 +166,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
     parser.add_argument(
         '--apply-chat-template', type=argparse.BooleanOptionalAction, default=None, help='Apply chat template to the prompt')  # noqa: E501
+    # random vl settings
+    parser.add_argument('--image-width', type=int, default=224, help='Width of the image for random VL dataset')
+    parser.add_argument('--image-height', type=int, default=224, help='Height of the image for random VL dataset')
+    parser.add_argument('--image-format', type=str, default='RGB', help='Image format for random VL dataset')
+    parser.add_argument('--image-num', type=int, default=1, help='Number of images for random VL dataset')
 
     # Output settings
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
