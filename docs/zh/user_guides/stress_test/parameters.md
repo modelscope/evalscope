@@ -50,13 +50,15 @@
 - `--image-num` 随机VL数据集图像数量，默认为1。
 
 ## 数据集配置
-- `--dataset` 可以指定如下数据集模式，您也可以自定义数据集解析器，参考[自定义数据集指南](custom.md/#自定义数据集)。
-  - `openqa` 使用jsonl文件的 `question` 字段作为prompt。不指定`dataset_path`将从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)，prompt长度较短，一般在 100 token 以下。
-  - `longalpaca` 使用jsonl文件的 `instruction` 字段作为prompt。不指定`dataset_path`将从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)，prompt长度较长，一般在 6000 token 以上。
-  - `flickr8k` 将构建图文输入，适合评测多模态模型；从modelscope自动下载[数据集](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)，不支持指定`dataset_path`。
-  - `line_by_line` 必需提供`dataset_path`，逐行将txt文件的每一行作为一个提示，。
-  - `random` 根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`，[使用示例](./examples.md#使用random数据集)。
-  - `random_vl` 随机生成图像和文本输入，在`random`基础上增加了图像相关参数（`image-width`，`image-height`，`image-format`，`image-num`），[使用示例](./examples.md#使用random图文数据集)。
+- `--dataset` 可以指定如下数据集模式：
+  - **`openqa`**: 从modelscope自动下载[OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)，prompt长度较短，一般在 100 token 以下。指定`dataset_path`将使用jsonl文件的 `question` 字段作为prompt。
+  - **`longalpaca`**: 从modelscope自动下载[LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)，prompt长度较长，一般在 6000 token 以上。指定`dataset_path`将使用jsonl文件的 `instruction` 字段作为prompt。
+  - **`line_by_line`**: 必需提供`dataset_path`，逐行将txt文件的每一行作为一个prompt。
+  - **`flickr8k`**: 从modelscope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)，构建图文输入，数据集较大，适合评测多模态模型，不支持指定`dataset_path`。
+  - **`kontext_bench`**: 从modelscope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)，构建图文输入，数据集较小，约1000条数据，适合快速评测多模态模型，不支持指定`dataset_path`。
+  - **`random`**: 根据`prefix-length`，`max-prompt-length`和`min-prompt-length`随机生成prompt，必需指定`tokenizer-path`，[使用示例](./examples.md#使用random数据集)。
+  - **`random_vl`**: 随机生成图像和文本输入，在`random`基础上增加了图像相关参数（`image-width`，`image-height`，`image-format`，`image-num`），[使用示例](./examples.md#使用random图文数据集)。
+  - **`custom`**: 自定义数据集解析器，参考[自定义数据集指南](custom.md/#自定义数据集)。
 - `--dataset-path` 数据集文件的路径，与数据集结合使用。
 
 ## 模型设置
