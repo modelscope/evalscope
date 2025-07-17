@@ -9,7 +9,7 @@ import random
 import sacrebleu
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import Dict, List, Union
 
 
 def mean(arr: list):
@@ -22,16 +22,28 @@ def mean(arr: list):
 
 
 def pass_at_k(arr: Union[List[int], List[List[int]]], k: int = 1) -> float:
+    """
+    Calculates the pass@k metric using the calculate_pass_at_k function.
+
+    Args:
+        arr: List of binary values (1 for correct, 0 for incorrect) or list of such lists
+        k: Number of attempts allowed
+
+    Returns:
+        The average pass@k score across all problems
+    """
     if not arr:
         return 0.0
+    if not isinstance(arr[0], list):
+        # If arr is a simple list of binary results, convert it to a list of lists
+        arr = [arr]
 
-    def sub_pass_at_k(sub_arr: List[int]) -> float:
-        return 1.0 if any(sub_arr[:k]) else 0.0
+    # For list of lists case, each inner list represents attempts for one problem
+    num_samples = [len(sub_arr) for sub_arr in arr]
+    num_correct = [sum(sub_arr) for sub_arr in arr]
+    pass_at_k_values = calculate_pass_at_k(num_samples, num_correct, k)
 
-    if isinstance(arr[0], list):
-        return sum(sub_pass_at_k(sub_arr) for sub_arr in arr) / len(arr)
-    else:
-        return sum(arr) / len(arr)
+    return float(np.mean(pass_at_k_values))
 
 
 def pop_stddev(arr):
