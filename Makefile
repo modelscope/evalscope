@@ -2,7 +2,10 @@
 default: install
 
 .PHONY: docs
-docs: docs-en docs-zh
+docs:
+	python docs/generate_dataset_md.py
+	$(MAKE) docs-en
+	$(MAKE) docs-zh
 
 .PHONY: docs-en
 docs-en:
@@ -16,6 +19,11 @@ docs-zh:
 linter:
 	pre-commit run --all-files
 
+.PHONY: dev
+dev:
+	pip install -e '.[dev,perf,docs]'
+	pip install pre-commit
+
 .PHONY: install
 install:
-	pip install -e .'[dev,perf,docs]'
+	pip install -e .
