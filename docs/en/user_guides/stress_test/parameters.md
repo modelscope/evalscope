@@ -43,17 +43,20 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--prompt`: Specifies the request prompt, which can be a string or a local file. This has higher priority than `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
 - `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
 - `--apply-chat-template` determines whether to apply the chat template, default is None. It will automatically choose based on whether the URL suffix is `chat/completion`.
+- `--image-width`  The image width for the random VL dataset. Default is 224.
+- `--image-height`  The image height for the random VL dataset. Default is 224.
+- `--image-format`  The image format for the random VL dataset. Default is 'RGB'.
+- `--image-num`  The number of images for the random VL dataset. Default is 1.
 
 ## Dataset Configuration
-Here's the English translation:
-
-- `--dataset` can specify the following dataset modes. You can also use a custom Python dataset parser, refer to the [Custom Dataset Guide](./custom.md#custom-dataset).
-  - `openqa` uses the `question` field of a jsonl file as the prompt. If `dataset_path` is not specified, it will automatically download the [dataset](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope. The prompt length is relatively short, generally under 100 tokens.
-  - `longalpaca` uses the `instruction` field of a jsonl file as the prompt. If `dataset_path` is not specified, it will automatically download the [dataset](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope. The prompt length is relatively long, generally over 6000 tokens.
-  - `flickr8k` will construct image-text input, suitable for evaluating multimodal models; it automatically downloads the [dataset](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope and does not support specifying `dataset_path`.
-  - `line_by_line` requires providing `dataset_path`, and uses each line of the txt file as a prompt.
-  - `random` generates prompts randomly based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It requires specifying `tokenizer-path`. [Usage example](./examples.md#using-the-random-dataset).
-- `--dataset-path` is the path to the dataset file, used in conjunction with the dataset.
+- `--dataset`  You can specify one of the following dataset modes. You can also define a custom dataset parser; see the [Custom Dataset Guide](custom.md/#custom-dataset).
+  - `openqa`  Uses the `question` field in the jsonl file as the prompt. If `dataset_path` is not specified, [the dataset](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) will be automatically downloaded from ModelScope. Prompts are relatively short, generally under 100 tokens.
+  - `longalpaca`  Uses the `instruction` field in the jsonl file as the prompt. If `dataset_path` is not specified, [the dataset](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) will be automatically downloaded from ModelScope. Prompts are comparatively long, generally over 6000 tokens.
+  - `flickr8k`  Constructs image-text inputs, suitable for evaluating multimodal models; [the dataset](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) will be automatically downloaded from ModelScope. `dataset_path` is not supported for this mode.
+  - `line_by_line`  You must provide `dataset_path`; each line in the txt file will be used as a separate prompt.
+  - `random`  Randomly generates prompts according to `prefix-length`, `max-prompt-length`, and `min-prompt-length`. `tokenizer-path` must be specified. [See usage example](./examples.md#using-the-random-dataset).
+  - `random_vl`  Randomly generates image and text inputs. Based on `random` mode, with additional image-related parameters (`image-width`, `image-height`, `image-format`, `image-num`). [See usage example](./examples.md#using-the-random-multimodal-dataset).
+- `--dataset-path`  The file path for the dataset, used together with the dataset option.
 
 ## Model Settings
 - `--tokenizer-path`: Optional. Specifies the tokenizer weights path, used to calculate the number of tokens in the input and output, usually located in the same directory as the model weights.
