@@ -35,9 +35,9 @@ class TestPerf(unittest.TestCase):
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_perf_stream(self):
         task_cfg = {
-            'url': 'http://127.0.0.1:8000/v1/chat/completions',
+            'url': 'http://127.0.0.1:8801/v1/chat/completions',
             'parallel': 1,
-            'model': 'qwen2.5',
+            'model': 'Qwen2.5-0.5B-Instruct',
             'number': 15,
             'api': 'openai',
             'dataset': 'openqa',

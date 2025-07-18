@@ -16,6 +16,21 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
+class DatabaseColumns:
+    REQUEST = 'request'
+    START_TIME = 'start_time'
+    CHUNK_TIMES = 'chunk_times'
+    SUCCESS = 'success'
+    RESPONSE_MESSAGES = 'response_messages'
+    COMPLETED_TIME = 'completed_time'
+    LATENCY = 'latency'
+    FIRST_CHUNK_LATENCY = 'first_chunk_latency'
+    PROMPT_TOKENS = 'prompt_tokens'
+    COMPLETION_TOKENS = 'completion_tokens'
+    MAX_GPU_MEMORY_COST = 'max_gpu_memory_cost'
+    TIME_PER_OUTPUT_TOKEN = 'time_per_output_token'
+
+
 def load_prompt(prompt_path_or_text):
     if prompt_path_or_text.startswith('@'):
         with open(prompt_path_or_text[1:], 'r', encoding='utf-8') as file:
@@ -41,20 +56,20 @@ def transpose_results(data):
 
 
 def create_result_table(cursor):
-    cursor.execute('''CREATE TABLE IF NOT EXISTS result(
-                      request TEXT,
-                      start_time REAL,
-                      chunk_times TEXT,
-                      success INTEGER,
-                      response_messages TEXT,
-                      completed_time REAL,
-                      latency REAL,
-                      first_chunk_latency REAL,
-                      n_chunks INTEGER,
-                      chunk_time REAL,
-                      prompt_tokens INTEGER,
-                      completion_tokens INTEGER,
-                      max_gpu_memory_cost REAL)''')
+    cursor.execute(f'''CREATE TABLE IF NOT EXISTS result(
+                      {DatabaseColumns.REQUEST} TEXT,
+                      {DatabaseColumns.START_TIME} REAL,
+                      {DatabaseColumns.CHUNK_TIMES} TEXT,
+                      {DatabaseColumns.SUCCESS} INTEGER,
+                      {DatabaseColumns.RESPONSE_MESSAGES} TEXT,
+                      {DatabaseColumns.COMPLETED_TIME} REAL,
+                      {DatabaseColumns.LATENCY} REAL,
+                      {DatabaseColumns.FIRST_CHUNK_LATENCY} REAL,
+                      {DatabaseColumns.PROMPT_TOKENS} INTEGER,
+                      {DatabaseColumns.COMPLETION_TOKENS} INTEGER,
+                      {DatabaseColumns.MAX_GPU_MEMORY_COST} REAL,
+                      {DatabaseColumns.TIME_PER_OUTPUT_TOKEN} REAL
+                   )''')
 
 
 def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData):
@@ -74,24 +89,21 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
 
     if benchmark_data.success:
         # Add additional columns for success case
-        additional_columns = (
-            benchmark_data.query_latency,
-            benchmark_data.first_chunk_latency,
-            benchmark_data.n_chunks,
-            benchmark_data.n_chunks_time,
-            benchmark_data.prompt_tokens,
-            benchmark_data.completion_tokens,
-            benchmark_data.max_gpu_memory_cost,
-        )
-        query = """INSERT INTO result(
-                      request, start_time, chunk_times, success, response_messages,
-                      completed_time, latency, first_chunk_latency,
-                      n_chunks, chunk_time, prompt_tokens, completion_tokens, max_gpu_memory_cost
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        additional_columns = (benchmark_data.query_latency, benchmark_data.first_chunk_latency,
+                              benchmark_data.prompt_tokens, benchmark_data.completion_tokens,
+                              benchmark_data.max_gpu_memory_cost, benchmark_data.time_per_output_token)
+        query = f"""INSERT INTO result(
+                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES},
+                      {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
+                      {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY}, {DatabaseColumns.PROMPT_TOKENS},
+                      {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.MAX_GPU_MEMORY_COST},
+                      {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns + additional_columns)
     else:
-        query = """INSERT INTO result(
-                      request, start_time, chunk_times, success, response_messages, completed_time
+        query = f"""INSERT INTO result(
+                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES},
+                      {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME}
                    ) VALUES (?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns)
 
@@ -167,44 +179,43 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
             logger.error(f'Error parsing chunk times: {e}')
             return []
 
-    query_sql = ('SELECT start_time, chunk_times, success, completed_time, latency, first_chunk_latency, '
-                 'n_chunks, chunk_time, prompt_tokens, completion_tokens '
-                 'FROM result WHERE success=1')
+    query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES}, {DatabaseColumns.SUCCESS},
+                    {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
+                    {DatabaseColumns.PROMPT_TOKENS},
+                    {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
+                    FROM result WHERE {DatabaseColumns.SUCCESS}=1'''
 
     percentiles = [10, 25, 50, 66, 75, 80, 90, 95, 98, 99]
 
     with sqlite3.connect(result_db_path) as con:
-        rows = con.execute(query_sql).fetchall()
+        cursor = con.cursor()
+        cursor.execute(query_sql)
+        columns = [description[0] for description in cursor.description]
+        rows = cursor.fetchall()
 
-    # Define index variables for columns
-    CHUNK_TIMES_INDEX = 1
-    LATENCY_INDEX = 4
-    FIRST_CHUNK_LATENCY_INDEX = 5
-    CHUNK_TIME_INDEX = 7
-    PROMPT_TOKENS_INDEX = 8
-    COMPLETION_TOKENS_INDEX = 9
+    # Create column index mapping
+    col_indices = {col: idx for idx, col in enumerate(columns)}
 
     # Prepare data for each metric
     inter_token_latencies_all = []
     for row in rows:
-        inter_token_latencies_all.extend(inter_token_latencies(row[CHUNK_TIMES_INDEX]))
+        inter_token_latencies_all.extend(inter_token_latencies(row[col_indices[DatabaseColumns.CHUNK_TIMES]]))
 
     metrics = {
-        PercentileMetrics.TTFT: [row[FIRST_CHUNK_LATENCY_INDEX] for row in rows],
+        PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
         PercentileMetrics.ITL:
         inter_token_latencies_all,
-        PercentileMetrics.TPOT:
-        [(row[CHUNK_TIME_INDEX] / row[COMPLETION_TOKENS_INDEX]) if row[COMPLETION_TOKENS_INDEX] > 0 else float('nan')
-         for row in rows],
-        PercentileMetrics.LATENCY: [row[LATENCY_INDEX] for row in rows],
-        PercentileMetrics.INPUT_TOKENS: [row[PROMPT_TOKENS_INDEX] for row in rows],
-        PercentileMetrics.OUTPUT_TOKENS: [row[COMPLETION_TOKENS_INDEX] for row in rows],
+        PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
+        PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
+        PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
+        PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
         PercentileMetrics.OUTPUT_THROUGHPUT:
-        [(row[COMPLETION_TOKENS_INDEX] / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
-         for row in rows],
-        PercentileMetrics.TOTAL_THROUGHPUT: [((row[PROMPT_TOKENS_INDEX] + row[COMPLETION_TOKENS_INDEX])
-                                              / row[LATENCY_INDEX]) if row[LATENCY_INDEX] > 0 else float('nan')
-                                             for row in rows]
+        [(row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
+         if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+        PercentileMetrics.TOTAL_THROUGHPUT:
+        [((row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
+          / row[col_indices[DatabaseColumns.LATENCY]])
+         if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
     }
 
     # Calculate percentiles for each metric
@@ -244,18 +255,18 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
 
 
 def speed_benchmark_result(result_db_path: str):
-    query_sql = """
+    query_sql = f"""
         SELECT
-            prompt_tokens,
-            ROUND(AVG(completion_tokens / latency), 2) AS avg_completion_token_per_second,
-            ROUND(AVG(max_gpu_memory_cost), 2)
+            {DatabaseColumns.PROMPT_TOKENS},
+            ROUND(AVG({DatabaseColumns.COMPLETION_TOKENS} / {DatabaseColumns.LATENCY}), 2) AS avg_completion_token_per_second,
+            ROUND(AVG({DatabaseColumns.MAX_GPU_MEMORY_COST}), 2)
         FROM
             result
         WHERE
-            success = 1 AND latency > 0
+            {DatabaseColumns.SUCCESS} = 1 AND {DatabaseColumns.LATENCY} > 0
         GROUP BY
-            prompt_tokens
-    """
+            {DatabaseColumns.PROMPT_TOKENS}
+    """  # noqa: E501
 
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()

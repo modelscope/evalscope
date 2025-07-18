@@ -106,7 +106,7 @@ class OpenaiPlugin(DefaultApiPlugin):
 
         # when stream, the last response is the full usage
         # when non-stream, the last response is the first response
-        last_response_js = json.loads(responses[-1])
+        last_response_js = responses[-1]
         if 'usage' in last_response_js and last_response_js['usage']:
             input_tokens = last_response_js['usage']['prompt_tokens']
             output_tokens = last_response_js['usage']['completion_tokens']
@@ -115,11 +115,10 @@ class OpenaiPlugin(DefaultApiPlugin):
         # no usage information in the response, parse the response to get the tokens
         delta_contents = {}
         for response in responses:
-            js = json.loads(response)
-            if 'object' in js:
-                self.__process_response_object(js, delta_contents)
+            if 'object' in response:
+                self.__process_response_object(response, delta_contents)
             else:
-                self.__process_no_object(js, delta_contents)
+                self.__process_no_object(response, delta_contents)
 
         input_tokens, output_tokens = self.__calculate_tokens_from_content(request, delta_contents)
         return input_tokens, output_tokens
