@@ -1,3 +1,4 @@
-from evalscope.perf.plugin.api.custom_api import CustomPlugin
-from evalscope.perf.plugin.api.dashscope_api import DashScopeApiPlugin
-from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
+from .base import ApiPluginBase
+from .custom_api import CustomPlugin
+from .dashscope_api import DashScopeApiPlugin
+from .openai_api import OpenaiPlugin

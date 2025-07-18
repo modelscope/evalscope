@@ -1,19 +1,29 @@
-WHL_BUILD_DIR :=package
-DOC_BUILD_DIR :=docs/build/
-
 # default rule
-default: whl docs
+default: install
 
 .PHONY: docs
+docs:
+	python docs/generate_dataset_md.py
+	$(MAKE) docs-en
+	$(MAKE) docs-zh
+
+.PHONY: docs-en
+docs-en:
+	cd docs/en && make clean && make html
+
+.PHONY: docs-zh
+docs-zh:
+	cd docs/zh && make clean && make html
 
 .PHONY: linter
 linter:
-	bash .dev_scripts/linter.sh
+	pre-commit run --all-files
 
-.PHONY: whl
-whl:
-	python setup.py sdist bdist_wheel
+.PHONY: dev
+dev:
+	pip install -e '.[dev,perf,docs]'
+	pip install pre-commit
 
-.PHONY: clean
-clean:
-	rm -rf  $(WHL_BUILD_DIR) $(DOC_BUILD_DIR)
+.PHONY: install
+install:
+	pip install -e .

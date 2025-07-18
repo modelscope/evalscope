@@ -6,15 +6,18 @@ import sqlite3
 import time
 from http import HTTPStatus
 from tqdm import tqdm
-from typing import AsyncGenerator, Dict, List, Tuple
+from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
-from evalscope.perf.arguments import Arguments
-from evalscope.perf.http_client import AioHttpClient, test_connection
-from evalscope.perf.plugin.registry import ApiRegistry, DatasetRegistry
-from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
-from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, summary_result
-from evalscope.perf.utils.handler import add_signal_handlers, exception_handler
 from evalscope.utils.logger import get_logger
+from .arguments import Arguments
+from .http_client import AioHttpClient, test_connection
+from .plugin import ApiRegistry, DatasetRegistry
+from .utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
+from .utils.handler import add_signal_handlers, exception_handler
+
+if TYPE_CHECKING:
+    from .plugin import ApiPluginBase, DatasetPluginBase
 
 logger = get_logger()
 
@@ -22,28 +25,22 @@ data_process_completed_event = asyncio.Event()
 
 
 @exception_handler
-async def get_requests(args: Arguments) -> AsyncGenerator[dict, None]:
-    query_generator_class = ApiRegistry(args.api)
-    query_generator = query_generator_class(args.tokenizer_path)
+async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[dict, None]:
 
-    def load_prompt(prompt_path_or_text):
-        if prompt_path_or_text.startswith('@'):
-            with open(prompt_path_or_text[1:], 'r', encoding='utf-8') as file:
-                return file.read()
-        return prompt_path_or_text
-
-    async def generate_requests_from_prompt(messages):
-        request = query_generator.build_request(messages, args)
+    async def generate_requests_from_prompt():
+        prompt = load_prompt(args.prompt)
+        messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
+        request = api_plugin.build_request(messages)
         for _ in range(args.number):
             yield request
 
     async def generate_requests_from_dataset():
-        message_generator_class = DatasetRegistry(args.dataset)
+        message_generator_class = DatasetRegistry.get_class(args.dataset)
         message_generator = message_generator_class(args)
 
         dataset_messages = []
         try:
-            for messages in message_generator:
+            for messages in message_generator.build_messages():
                 dataset_messages.append(messages)
         except StopIteration:
             pass
@@ -56,7 +53,7 @@ async def get_requests(args: Arguments) -> AsyncGenerator[dict, None]:
 
         while count < args.number:
             messages = dataset_messages[dataset_index]
-            request = query_generator.build_request(messages, args)
+            request = api_plugin.build_request(messages)
             if request is not None:
                 yield request
                 count += 1
@@ -64,13 +61,11 @@ async def get_requests(args: Arguments) -> AsyncGenerator[dict, None]:
             dataset_index = (dataset_index + 1) % len(dataset_messages)
 
     if args.prompt:
-        prompt = load_prompt(args.prompt)
-        messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
-        generator = generate_requests_from_prompt(messages)
+        generator = generate_requests_from_prompt()
     elif args.dataset:
         generator = generate_requests_from_dataset()
     else:
-        raise Exception('Either prompt or dataset is required!')
+        raise ValueError('Either prompt or dataset is required!')
 
     async for request in generator:
         yield request
@@ -85,9 +80,10 @@ async def send_request(
     request: dict,
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
+    api_plugin: 'ApiPluginBase',
 ):
     async with semaphore:
-        client = AioHttpClient(args)
+        client = AioHttpClient(args, api_plugin)
         async with client:
             benchmark_data = BenchmarkData(request=request)
             benchmark_data.start_time = time.perf_counter()
@@ -95,7 +91,8 @@ async def send_request(
             try:
                 async for is_error, state_code, response_data in client.post(request):
                     if is_error or state_code != HTTPStatus.OK:
-                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {response_data}')
+                        error_msg = str(response_data) if response_data else 'Unknown error'
+                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {error_msg}')
                         benchmark_data.success = False
                         break
                     if response_data:
@@ -116,11 +113,8 @@ async def send_request(
 
 
 @exception_handler
-async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments):
+async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments, api_plugin: 'ApiPluginBase'):
     metrics = BenchmarkMetrics(concurrency=args.parallel)
-
-    api_plugin_class = ApiRegistry(args.api)
-    api_plugin = api_plugin_class(args.tokenizer_path)
 
     result_db_path = get_result_db_path(args)
 
@@ -172,8 +166,8 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
 
 @exception_handler
-async def connect_test(args: Arguments) -> bool:
-    if (not args.no_test_connection) and (not await test_connection(args)):
+async def connect_test(args: Arguments, api_plugin) -> bool:
+    if (not args.no_test_connection) and (not await test_connection(args, api_plugin)):
         raise TimeoutError('Test connection failed')
 
 
@@ -183,19 +177,24 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
 
+    # Create API plugin instance for request/response processing
+    api_plugin_class = ApiRegistry.get_class(args.api)
+    api_plugin = api_plugin_class(args)
+
     # init queue
     benchmark_data_queue = asyncio.Queue()
     # reset event
     data_process_completed_event.clear()
     # test connection
-    await connect_test(args)
+    await connect_test(args, api_plugin)
     # start statistic benchmark metric
-    statistic_benchmark_metric_task = asyncio.create_task(statistic_benchmark_metric(benchmark_data_queue, args))
+    statistic_benchmark_metric_task = asyncio.create_task(
+        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin))
     # start send request
     semaphore = asyncio.Semaphore(args.parallel)
     send_request_tasks: List[asyncio.Task] = []
-    async for request in get_requests(args):
-        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args))
+    async for request in get_requests(args, api_plugin):
+        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, api_plugin))
         send_request_tasks.append(task)
 
     await asyncio.gather(*send_request_tasks, return_exceptions=True)

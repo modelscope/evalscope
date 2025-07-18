@@ -1,9 +1,9 @@
 import json
 import os
-from typing import Any, Dict, Iterator, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.logger import get_logger
 
@@ -11,25 +11,25 @@ logger = get_logger()
 
 
 @register_api(['openai', 'local_vllm', 'local'])
-class OpenaiPlugin(ApiPluginBase):
+class OpenaiPlugin(DefaultApiPlugin):
     """Base of openai interface."""
 
-    def __init__(self, mode_path: str):
-        """Init the plugin
+    def __init__(self, param: Arguments):
+        """Initialize the OpenaiPlugin.
 
         Args:
-            mode_path (str): The model path, we use the tokenizer
-                weight in the model to calculate the number of the
-                input and output tokens.
+            param (Arguments): Configuration object containing parameters
+                such as the tokenizer path and model details. If a tokenizer
+                path is provided, it is used to initialize the tokenizer.
         """
-        super().__init__(model_path=mode_path)
-        if mode_path is not None:
+        super().__init__(param=param)
+        if param.tokenizer_path is not None:
             from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(mode_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path)
         else:
             self.tokenizer = None
 
-    def build_request(self, messages: Union[List[Dict], str], param: Arguments) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 
         Args:
@@ -42,6 +42,7 @@ class OpenaiPlugin(ApiPluginBase):
         Returns:
             Dict: The request body. None if prompt format is error.
         """
+        param = param or self.param
         try:
             if param.query_template is not None:
                 if param.query_template.startswith('@'):
@@ -54,8 +55,6 @@ class OpenaiPlugin(ApiPluginBase):
                 else:
                     query = json.loads(param.query_template)
 
-                if 'stream' in query.keys():
-                    param.stream = query['stream']
                 # replace template messages with input messages.
                 query['messages'] = messages
             elif isinstance(messages, str):
