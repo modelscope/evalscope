@@ -146,6 +146,7 @@ if __name__ == '__main__':
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
     extra_requires['aigc'], _ = parse_requirements('requirements/aigc.txt')
     extra_requires['dev'], _ = parse_requirements('requirements/dev.txt')
+    extra_requires['docs'], _ = parse_requirements('requirements/docs.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])

@@ -1,7 +1,7 @@
 import json
 import sys
 from abc import abstractmethod
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 
@@ -64,3 +64,24 @@ class DatasetPluginBase:
         data = json.loads(content)
         for item in data:
             yield item
+
+    def create_message(self, text: str, image_urls: Union[List[str], str] = None, role: str = 'user') -> Dict:
+        """Create a message with text and optional image URLs.
+
+        Args:
+            text (str): The text content of the message.
+            image_urls (List[str], optional): List of image URLs. Defaults to None.
+            role (str, optional): The role of the message sender. Defaults to "user".
+
+        Returns:
+            Dict: A dictionary representing the message.
+        """
+        if image_urls is None:
+            message = {'role': role, 'content': text}
+        else:
+            message = {'role': role, 'content': [{'type': 'text', 'text': text}]}
+            if isinstance(image_urls, str):
+                image_urls = [image_urls]
+            for url in image_urls:
+                message['content'].append({'type': 'image_url', 'image_url': {'url': url}})
+        return message

@@ -79,7 +79,7 @@ results = run_perf_benchmark(task_cfg)
 - `url`: Request URL address
 - `model`: Name of the model used
 - `api`: API service used, default is `openai`
-- `dataset`: Dataset name, here it's `random`, indicating randomly generated dataset, for specific usage instructions [refer to](./examples.md#using-the-random-dataset)
+- `dataset`: Dataset name, here it's `random`, indicating randomly generated dataset, for specific usage instructions [refer to](./examples.md#using-the-random-dataset); for more available (multimodal) datasets, please refer to [Dataset Configuration](./parameters.md#dataset-configuration)
 - `tokenizer-path`: Model's tokenizer path, used to calculate the number of tokens (necessary for random datasets)
 - `extra-args`: Additional parameters in the request, passed as a JSON format string, e.g., `{"ignore_eos": true}` indicates ignoring the end token
 
