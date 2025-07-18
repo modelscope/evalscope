@@ -53,7 +53,10 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
         if task_cfg.eval_type == EvalType.SERVICE or task_cfg.api_url is not None:
 
             if 'server' not in model_adapter_cls_str:
+                logger.warning(f'Output type {model_adapter_cls_str} is not supported for service evaluation. '
+                               f'Using server model adapter instead.')
                 model_adapter_cls_str = 'server'
+                benchmark.model_adapter = model_adapter_cls_str
 
             # init server model adapter
             model_adapter_cls = get_model_adapter(model_adapter_cls_str)
@@ -71,6 +74,7 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
                 logger.warning(f'Output type {model_adapter_cls_str} is not supported for benchmark {benchmark.name}.'
                                f'Using {benchmark.output_types[0]} instead.')
                 model_adapter_cls_str = benchmark.output_types[0]
+                benchmark.model_adapter = model_adapter_cls_str
 
             model_adapter_cls = get_model_adapter(model_adapter_cls_str)
             return model_adapter_cls(

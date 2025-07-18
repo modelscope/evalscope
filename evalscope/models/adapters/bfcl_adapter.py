@@ -4,11 +4,13 @@ import uuid
 from typing import Any, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
+from ..register import register_model_adapter
 from .server_adapter import ServerModelAdapter
 
 logger = get_logger()
 
 
+@register_model_adapter(name='bfcl_server')
 class BFCLAdapter(ServerModelAdapter):
     """
     BFCL model adapter to request remote API model and generate results for BFCL evaluation.

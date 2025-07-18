@@ -47,6 +47,14 @@ JSONL文件需要为下面的格式：
 
 ### 2. 配置评测任务
 
+````{note}
+默认的`prompt_template`支持四个选项，如下所示，其中`{query}`是prompt填充的位置。如果需要更少或更多选项，可以自定义`prompt_template`。
+```text
+请回答问题，并选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
+{query}
+```
+````
+
 运行下面的代码，即可开始评测：
 
 ```python
@@ -57,6 +65,7 @@ task_cfg = TaskConfig(
     datasets=['general_mcq'],  # 数据格式，选择题格式固定为 'general_mcq'
     dataset_args={
         'general_mcq': {
+            # 'prompt_template': 'xxx',  # 可以自定义prompt模板
             "local_path": "custom_eval/text/mcq",  # 自定义数据集路径
             "subset_list": [
                 "example"  # 评测数据集名称，上述subset_name

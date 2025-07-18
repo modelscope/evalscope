@@ -78,8 +78,18 @@ def parse_requirements(fname='requirements.txt', with_version=True):
         with open(fpath, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 line = line.strip()
-                if line.startswith('http'):
+                if line.startswith('http') and not line.startswith('git+http'):
                     print('skip http requirements %s' % line)
+                    continue
+                # Handle git+https:// dependencies
+                if line.startswith('git+http'):
+                    # Extract package name from git URL
+                    if '#egg=' in line:
+                        package_name = line.split('#egg=')[1]
+                        info = {'line': line, 'package': package_name, 'is_git_dep': True, 'git_url': line}
+                        yield info
+                    else:
+                        print('skip git requirements without egg name: %s' % line)
                     continue
                 if line and not line.startswith('#') and not line.startswith('--'):
                     for info in parse_line(line):
@@ -98,16 +108,23 @@ def parse_requirements(fname='requirements.txt', with_version=True):
         if exists(require_fpath):
             for info in parse_require_file(require_fpath):
                 if 'dependency_links' not in info:
-                    parts = [info['package']]
-                    if with_version and 'version' in info:
-                        parts.extend(info['version'])
-                    if not sys.version.startswith('3.4'):
-                        # apparently package_deps are broken in 3.4
-                        platform_deps = info.get('platform_deps')
-                        if platform_deps is not None:
-                            parts.append(';' + platform_deps)
-                    item = ''.join(parts)
-                    items.append(item)
+                    # Handle git dependencies
+                    if info.get('is_git_dep'):
+                        # For git dependencies, add the package name, not the full URL
+                        # The git URL should go to dependency_links
+                        items.append(info['package'])
+                        deps_link.append(info['git_url'])
+                    else:
+                        parts = [info['package']]
+                        if with_version and 'version' in info:
+                            parts.extend(info['version'])
+                        if not sys.version.startswith('3.4'):
+                            # apparently package_deps are broken in 3.4
+                            platform_deps = info.get('platform_deps')
+                            if platform_deps is not None:
+                                parts.append(';' + platform_deps)
+                        item = ''.join(parts)
+                        items.append(item)
                 else:
                     deps_link.append(info['dependency_links'])
         return items, deps_link
@@ -129,6 +146,7 @@ if __name__ == '__main__':
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
     extra_requires['aigc'], _ = parse_requirements('requirements/aigc.txt')
     extra_requires['dev'], _ = parse_requirements('requirements/dev.txt')
+    extra_requires['docs'], _ = parse_requirements('requirements/docs.txt')
 
     all_requires.extend(install_requires)
     all_requires.extend(extra_requires['opencompass'])
@@ -149,7 +167,6 @@ if __name__ == '__main__':
         description='EvalScope: Lightweight LLMs Evaluation Framework',
         long_description=readme(),
         long_description_content_type='text/markdown',
-        # github url to be added
         url='https://github.com/modelscope/evalscope',
         include_package_data=True,
         package_data={
@@ -162,17 +179,18 @@ if __name__ == '__main__':
         packages=find_packages(exclude=('configs', 'demo')),
         classifiers=[
             'Development Status :: 4 - Beta',
-            'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
         ],
-        python_requires='>=3.8',
+        python_requires='>=3.9',
         zip_safe=False,
         install_requires=install_requires,
         entry_points={'console_scripts': ['evalscope=evalscope.cli.cli:run_cmd']},
         dependency_links=deps_link,
         extras_require=extra_requires,
+        license='Apache License 2.0',
     )

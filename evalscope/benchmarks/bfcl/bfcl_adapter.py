@@ -35,7 +35,7 @@ SUBJECT_MAPPING = {
 @Benchmark.register(
     name='bfcl_v3',
     pretty_name='BFCL-v3',
-    tags=['Agent'],
+    tags=['Agent', 'Function Calling'],
     description=
     'Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** '
     'dedicated to assessing Large Language Models\' (LLMs) ability to invoke functions. Unlike previous evaluations, '

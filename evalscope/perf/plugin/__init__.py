@@ -1,2 +1,3 @@
-from evalscope.perf.plugin.api import *
-from evalscope.perf.plugin.datasets import *
+from .api import *
+from .datasets import *
+from .registry import ApiRegistry, DatasetRegistry

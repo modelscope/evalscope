@@ -218,3 +218,10 @@ class ResponseParser:
         # Join options into a regex pattern separated by '|', to match any of the options
         options_pattern = '|'.join(escaped_options)
         return options_pattern
+
+
+if __name__ == '__main__':
+    result = '**Answer: A **Answer: C**'
+    options = ['A', 'B', 'C', 'D']
+    parsed_result = ResponseParser.parse_first_option(result, options)
+    print(f'Parsed result: {parsed_result}')  # Should print 'C'

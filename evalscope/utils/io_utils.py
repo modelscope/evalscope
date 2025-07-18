@@ -1,3 +1,4 @@
+import base64
 import csv
 import hashlib
 import json
@@ -5,6 +6,8 @@ import jsonlines as jsonl
 import os
 import re
 import yaml
+from io import BytesIO
+from PIL import Image
 
 from evalscope.constants import DumpMode
 from evalscope.utils.logger import get_logger
@@ -266,3 +269,10 @@ def get_valid_list(input_list, candidate_list):
     """
     return [i for i in input_list if i in candidate_list], \
            [i for i in input_list if i not in candidate_list]
+
+
+def PIL_to_base64(image: Image.Image, format: str = 'JPEG') -> str:
+    buffered = BytesIO()
+    image.save(buffered, format=format)
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return img_str
