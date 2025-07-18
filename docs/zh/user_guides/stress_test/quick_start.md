@@ -126,10 +126,6 @@ Benchmarking summary:
 +-----------------------------------+------------+
 | Average output tokens per request |  1024      |
 +-----------------------------------+------------+
-| Average package latency (s)       |     0.029  |
-+-----------------------------------+------------+
-| Average package per request       |  1023.43   |
-+-----------------------------------+------------+
 2025-05-16 11:36:33,122 - evalscope - INFO - 
 Percentile results:
 +-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
@@ -163,10 +159,9 @@ Percentile results:
 | 平均延迟 | Average latency | 从发送请求到接收完整响应的平均时间 | 总延迟时间 / 成功请求数 |
 | 平均首token时间 | Average time to first token | 从发送请求到接收到第一个响应标记的平均时间 | 总首chunk延迟 / 成功请求数 |
 | 平均每输出token时间 | Average time per output token | 生成每个输出标记所需的平均时间（不包含首token） | 总每输出token时间 / 成功请求数 |
+| 平均输出token间时延 | Average inter-token latency | 生成每个输出token之间的平均间隔时间 | 总输出token间时延 / 成功请求数 |
 | 平均输入token数 | Average input tokens per request | 每个请求的平均输入标记数 | 总输入token数 / 成功请求数 |
 | 平均输出token数 | Average output tokens per request | 每个请求的平均输出标记数 | 总输出token数 / 成功请求数 |
-| 平均数据包延迟 | Average package latency | 接收每个数据包的平均延迟时间 | 总数据包时间 / 总数据包数 |
-| 平均每请求数据包数 | Average package per request | 每个请求平均接收的数据包数量 | 总数据包数 / 成功请求数 |
 
 **百分位指标 (Percentile)**
 

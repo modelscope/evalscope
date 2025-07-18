@@ -47,20 +47,29 @@ class DefaultApiPlugin(ApiPluginBase):
             response: The aiohttp response object containing a stream
 
         Yields:
-            Tuple[bool, int, str]: (is_error, status_code, data)
+            Tuple[bool, int, Any]: (is_error, status_code, data)
         """
-        is_error = False
-        async for line in response.content:
-            line = line.decode('utf8').rstrip('\n\r')
-            sse_msg = ServerSentEvent.decode(line)
-            if sse_msg:
-                logger.debug(f'Response received: {line}')
-                if sse_msg.event == 'error':
-                    is_error = True
-                if sse_msg.data:
-                    if sse_msg.data.startswith('[DONE]'):
-                        break
-                    yield is_error, response.status, sse_msg.data
+        try:
+            async for chunk_bytes in response.content:
+                chunk_bytes = chunk_bytes.strip()
+                if not chunk_bytes:
+                    continue
+                chunk_bytes = chunk_bytes.decode('utf-8')
+                # NOTE: SSE comments (often used as pings) start with a colon.
+                # These are not JSON data payload and should be skipped.
+                if chunk_bytes.startswith(':'):
+                    continue
+
+                chunk = chunk_bytes.removeprefix('data: ')
+
+                if chunk != '[DONE]':
+                    data = json.loads(chunk)
+
+                    yield False, response.status, data
+
+        except Exception as e:
+            logger.error(f'Error in _handle_stream: {e}')
+            yield True, response.status, str(e)
 
     async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, str], None]:
         """Handle the HTTP response based on content type and status.
