@@ -27,7 +27,7 @@ class BenchmarkData:
     prompt_tokens = None
     completion_tokens = None
 
-    def _calculate_query_stream_metric(self) -> Tuple[float, int, float]:
+    def _calculate_query_stream_metric(self) -> None:
         self.query_latency = self.completed_time - self.start_time
         # only for stream responses
         if len(self.chunk_times) > 1:
