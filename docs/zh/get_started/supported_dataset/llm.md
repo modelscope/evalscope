@@ -588,7 +588,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 - **提示模板**: 
 ```text
-Complete the following python code:
+Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
 {query}
 ```
 
@@ -733,7 +733,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `AverageAccuracy`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 5-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
 - **支持输出格式**: `generation`, `multiple_choice_logits`

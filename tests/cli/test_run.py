@@ -266,9 +266,9 @@ class TestRun(unittest.TestCase):
                 # 'musr',
                 # 'process_bench',
                 # 'race',
-                # 'trivia_qa',
+                'trivia_qa',
                 # 'cmmlu',
-                'humaneval',
+                # 'humaneval',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
@@ -299,7 +299,7 @@ class TestRun(unittest.TestCase):
                 },
                 'mmlu_pro': {
                     'subset_list': ['math', 'health'],
-                    'few_shot_num': 4
+                    'few_shot_num': 0
                 },
                 'ceval': {
                     'subset_list': [

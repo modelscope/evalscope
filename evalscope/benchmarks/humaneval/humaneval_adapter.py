@@ -22,7 +22,8 @@ logger = get_logger()
     few_shot_num=0,
     train_split=None,
     eval_split='test',
-    prompt_template='Complete the following python code:\n{query}',
+    prompt_template=
+    'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{query}',  # noqa: E501
     extra_params={
         'num_workers': 4,
         'timeout': 4
@@ -76,26 +77,9 @@ class HumanevalAdapter(DataAdapter):
 
     @classmethod
     def _postprocess(cls, text: str) -> str:
-        if '```' in text:
-            blocks = re.findall(r'```(.*?)```', text, re.DOTALL)
-            if len(blocks) == 0:
-                text = text.split('```')[1]  # fall back to default strategy
-            else:
-                text = blocks[0]  # fetch the first code block
-                if not text.startswith('\n'):  # in case starting with ```python
-                    text = text[max(text.find('\n') + 1, 0):]
-        if text.strip().startswith('from') or text.strip().startswith('import'):
-            def_idx = text.find('def')
-            if def_idx != -1:
-                text = text[max(text.find('\n', def_idx) + 1, 0):]
-        text = text.split('\n\n')[0]
-        if text.strip().startswith('def'):
-            text = '\n'.join(text.split('\n')[1:])
-        if not text.startswith('    '):
-            if text.startswith(' '):
-                text = '    ' + text.lstrip()
-            else:
-                text = '\n'.join(['    ' + line for line in text.split('\n')])
+        blocks = re.findall(r'```\w*\n(.*?)```', text, re.DOTALL)
+        if len(blocks) >= 1:
+            text = blocks[0]
         return text
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
