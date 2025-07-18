@@ -57,6 +57,9 @@ datasets=[
         'tau_bench',
 ]
 
+# Reverse the datasets list to ensure the order is from most recent to oldest
+datasets.reverse()
+
 dataset_args={
     'mmlu': {
         'subset_list': ['elementary_mathematics', 'high_school_european_history', 'nutrition'],
