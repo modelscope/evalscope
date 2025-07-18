@@ -126,10 +126,6 @@ Benchmarking summary:
 +-----------------------------------+------------+
 | Average output tokens per request |  1024      |
 +-----------------------------------+------------+
-| Average package latency (s)       |     0.029  |
-+-----------------------------------+------------+
-| Average package per request       |  1023.43   |
-+-----------------------------------+------------+
 2025-05-16 11:36:33,122 - evalscope - INFO - 
 Percentile results:
 +-------------+----------+---------+----------+-------------+--------------+---------------+----------------+---------------+
@@ -166,10 +162,9 @@ Percentile results:
 | Average latency | Average time from sending a request to receiving a complete response | Total latency / Successful requests |
 | Average time to first token | Average time from sending a request to receiving the first response token | Total first chunk latency / Successful requests |
 | Average time per output token | Average time required to generate each output token (exclude first token) | Total time per output token / Successful requests |
+| Average inter-token latency | Average time interval between generating each output token | Total inter-token latency / Successful requests |
 | Average input tokens per request | Average number of input tokens per request | Total input tokens / Successful requests |
 | Average output tokens per request | Average number of output tokens per request | Total output tokens / Successful requests |
-| Average package latency | Average delay time for receiving each data package | Total package time / Total packages |
-| Average package per request | Average number of data packages received per request | Total packages / Successful requests |
 
 **Percentile Metrics**
 
