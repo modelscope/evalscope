@@ -47,7 +47,7 @@ class DefaultApiPlugin(ApiPluginBase):
             response: The aiohttp response object containing a stream
 
         Yields:
-            Tuple[bool, int, str]: (is_error, status_code, data)
+            Tuple[bool, int, Any]: (is_error, status_code, data)
         """
         try:
             async for chunk_bytes in response.content:
