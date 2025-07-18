@@ -145,6 +145,7 @@ if __name__ == '__main__':
     extra_requires['perf'], _ = parse_requirements('requirements/perf.txt')
     extra_requires['app'], _ = parse_requirements('requirements/app.txt')
     extra_requires['aigc'], _ = parse_requirements('requirements/aigc.txt')
+    extra_requires['agent'], _ = parse_requirements('requirements/agent.txt')
     extra_requires['dev'], _ = parse_requirements('requirements/dev.txt')
     extra_requires['docs'], _ = parse_requirements('requirements/docs.txt')
 
@@ -155,7 +156,7 @@ if __name__ == '__main__':
     all_requires.extend(extra_requires['perf'])
     all_requires.extend(extra_requires['app'])
     all_requires.extend(extra_requires['aigc'])
-    all_requires.extend(extra_requires['dev'])
+    all_requires.extend(extra_requires['agent'])
     extra_requires['all'] = all_requires
 
     setup(
