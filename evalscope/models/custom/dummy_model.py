@@ -78,8 +78,8 @@ class DummyCustomModel(CustomModel):
 
 class DummyT2IModel(CustomModel):
 
-    def __init__(self, config: dict = {}, **kwargs):
-        super(DummyT2IModel, self).__init__(config=config, **kwargs)
+    def __init__(self, config: dict = None, **kwargs):
+        super().__init__(config=config or {}, **kwargs)
 
     def predict(self, prompts: List[str], **kwargs) -> List[dict]:
         """
