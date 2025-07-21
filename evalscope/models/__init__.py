@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from .adapters import (BaseModelAdapter, BFCLAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
                            CustomModelAdapter, MultiChoiceModelAdapter, ServerModelAdapter, T2IModelAdapter,
                            TauBenchAdapter, initialize_model_adapter)
-    from .custom import CustomModel, DummyCustomModel
+    from .custom import CustomModel, DummyCustomModel, DummyT2IModel
     from .local_model import LocalModel, get_local_model
     from .register import get_model_adapter
 
@@ -28,6 +28,7 @@ else:
         'custom': [
             'CustomModel',
             'DummyCustomModel',
+            'DummyT2IModel',
         ],
         'local_model': [
             'LocalModel',

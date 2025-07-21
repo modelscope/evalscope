@@ -43,6 +43,8 @@ class HPDv2Adapter(T2IBaseAdapter):
     def match(self, gold: dict, pred: str) -> dict:
         # dummy match for general t2i
         # pred is the image path, gold is the prompt
+        self._init_metrics()
+
         res = {}
         for metric_name, metric_func in self.metrics.items():
             score = metric_func(images=[pred], texts=[gold['prompt']])[0][0]

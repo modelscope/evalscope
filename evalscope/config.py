@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
                                  JudgeStrategy, ModelTask, OutputType)
-from evalscope.models import CustomModel, DummyCustomModel
+from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash
 from evalscope.utils.logger import get_logger
@@ -68,10 +68,24 @@ class TaskConfig(BaseArgument):
     analysis_report: bool = False
 
     def __post_init__(self):
-        if self.model is None:
-            self.model = DummyCustomModel()
-            self.eval_type = EvalType.CUSTOM
+        self.__init_model_and_id()
 
+        self.__init_eval_data_config()
+
+        # Set default generation_config and model_args
+        self.__init_default_generation_config()
+        self.__init_default_model_args()
+
+    def __init_model_and_id(self):
+        # Set model to DummyCustomModel if not provided
+        if self.model is None:
+            self.eval_type = EvalType.CUSTOM
+            if self.model_task == ModelTask.IMAGE_GENERATION:
+                self.model = DummyT2IModel()
+            else:
+                self.model = DummyCustomModel()
+
+        # Set model_id if not provided
         if (not self.model_id) and self.model:
             if isinstance(self.model, CustomModel):
                 self.model_id = self.model.config.get('model_id', 'custom_model')
@@ -80,6 +94,7 @@ class TaskConfig(BaseArgument):
             # fix path error, see http://github.com/modelscope/evalscope/issues/377
             self.model_id = self.model_id.replace(':', '-')
 
+    def __init_eval_data_config(self):
         # Set default eval_batch_size based on eval_type
         if self.eval_batch_size is None:
             self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
@@ -87,10 +102,6 @@ class TaskConfig(BaseArgument):
         # Post process limit
         if self.limit is not None:
             self.limit = parse_int_or_float(self.limit)
-
-        # Set default generation_config and model_args
-        self.__init_default_generation_config()
-        self.__init_default_model_args()
 
     def __init_default_generation_config(self):
         if self.generation_config:

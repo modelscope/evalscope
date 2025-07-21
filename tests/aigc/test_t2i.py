@@ -25,11 +25,12 @@ class TestRun(unittest.TestCase):
             datasets=[
                 'general_t2i'
             ],
+            model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
             dataset_args={
                 'general_t2i': {
                     'metric_list': [
-                        # 'PickScore',
-                        'CLIPScore',
+                        'PickScore',
+                        # 'CLIPScore',
                         # 'HPSv2Score',
                         # 'HPSv2.1Score',
                         # 'BLIPv2Score',
@@ -66,13 +67,13 @@ class TestRun(unittest.TestCase):
             dataset_args={
                 'tifa160': {
                     'metric_list': [
-                        'PickScore',
+                        # 'PickScore',
                         # 'CLIPScore',
                         # 'HPSv2Score',
                         # 'BLIPv2Score',
                         # 'ImageRewardScore',
                         # 'VQAScore',
-                        # 'FGA_BLIP2Score',
+                        'FGA_BLIP2Score',
                     ]
                 }
             },

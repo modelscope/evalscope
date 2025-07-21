@@ -57,7 +57,7 @@ class DummyCustomModel(CustomModel):
                 'choices': [{
                     'index': 0,
                     'message': {
-                        'content': '*PlaceHolder*',
+                        'content': '',
                         'role': 'assistant'
                     }
                 }],
@@ -74,6 +74,41 @@ class DummyCustomModel(CustomModel):
             responses.append(res_d)
 
         return responses
+
+
+class DummyT2IModel(CustomModel):
+
+    def __init__(self, config: dict = {}, **kwargs):
+        super(DummyT2IModel, self).__init__(config=config, **kwargs)
+
+    def predict(self, prompts: List[str], **kwargs) -> List[dict]:
+        """
+        Dummy predict function for T2I model.
+        """
+        results = []
+        for prompt in prompts:
+            # Simulate image generation
+            results.append({
+                'choices': [{
+                    'index': 0,
+                    'message': {
+                        'content': '',  # Empty content for T2I dummy model
+                        'role': 'assistant'
+                    }
+                }],
+                'created':
+                int(time.time()),
+                'model':
+                self.config.get('model_id'),
+                'object':
+                'images.generations',
+                'usage': {
+                    'completion_tokens': 0,
+                    'prompt_tokens': 0,
+                    'total_tokens': 0
+                }
+            })
+        return results
 
 
 if __name__ == '__main__':

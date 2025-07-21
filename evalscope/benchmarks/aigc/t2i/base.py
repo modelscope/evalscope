@@ -1,3 +1,4 @@
+import threading
 from typing import List, Optional, Union
 
 from evalscope.benchmarks import DataAdapter
@@ -10,11 +11,22 @@ logger = get_logger()
 class T2IBaseAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
+        self.metrics = None
+        self._lock = threading.Lock()
 
-        logger.info(f'Initializing metrics: {self.metric_list}')
-        self.metrics = {m: metric_registry.get(m).object() for m in self.metric_list}
+    def _init_metrics(self):
+        """Lazy initialization of metrics with thread safety"""
+        if self.metrics is not None:
+            return
+
+        with self._lock:
+            # Double-check pattern to avoid race conditions
+            if self.metrics is not None:
+                return
+
+            logger.info(f'Initializing metrics: {self.metric_list}')
+            self.metrics = {m: metric_registry.get(m).object() for m in self.metric_list}
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         # dummy prompt for general t2i
@@ -29,6 +41,9 @@ class T2IBaseAdapter(DataAdapter):
         return result or raw_input_d.get('image_path', '')
 
     def match(self, gold: str, pred: str) -> dict:
+        # Initialize metrics only once before first use
+        self._init_metrics()
+
         # dummy match for general t2i
         # pred is the image path, gold is the prompt
         res = {}
@@ -38,7 +53,7 @@ class T2IBaseAdapter(DataAdapter):
                 for k, v in score.items():
                     res[f'{metric_name}_{k}'] = v.cpu().item()
             else:
-                res[metric_name] = score.cpu().item()  # Updated to use score.cpu().item()
+                res[metric_name] = score.cpu().item()
         return res
 
     def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
