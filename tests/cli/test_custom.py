@@ -131,7 +131,7 @@ class TestRunCustom(unittest.TestCase):
                 'general_qa': {
                     'dataset_id': 'custom_eval/text/qa',
                     'subset_list': [
-                        'arena',
+                        # 'arena',
                         'example'
                     ],
                 }

@@ -1,5 +1,6 @@
 {"system": "你是一位天文学家", "query": "太阳系中最大的行星是哪颗？", "response": "是木星"}
 {"query": "什么动物被称为沙漠之舟？", "response": "是骆驼"}
+{"messages": [{"role": "system", "content": "你是一位地理学家"}, {"role": "user", "content": "世界上最大的沙漠是哪个？"}], "response": "是撒哈拉沙漠"}
 {"query": "世界上最长的河流是哪条？", "response": "是尼罗河"}
 {"query": "地球上最大的洲是哪个？", "response": "是亚洲"}
 {"query": "什么是世界上最繁忙的航空港？", "response": "亚特兰大机场"}
