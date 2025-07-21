@@ -109,12 +109,12 @@ qa/
 ```json
 {"system": "你是一位地理学家", "query": "中国的首都是哪里？", "response": "中国的首都是北京"}
 {"query": "世界上最高的山是哪座山？", "response": "是珠穆朗玛峰"}
-{"query": "为什么北极见不到企鹅？", "response": "因为企鹅大多生活在南极"}
+{"messages": [{"role": "system", "content": "你是一位地理学家"}, {"role": "user", "content": "世界上最大的沙漠是哪个？"}], "response": "是撒哈拉沙漠"}
 ```
 
 其中：
-- `system`是系统prompt（可选字段）
-- `query`是问题（必须）
+- `system`是系统prompt（可选字段）。
+- `query`是问题，或者设置 `messages`对话消息列表，包含`role`（角色）和`content`（内容），用于模拟对话场景。同时设置时，`query`字段将被忽略。
 - `response`是正确回答。对于有参考答案的问答题，这个字段必须存在；对于无参考答案的问答题，这个字段可以为空。
 
 ### 有参考答案问答

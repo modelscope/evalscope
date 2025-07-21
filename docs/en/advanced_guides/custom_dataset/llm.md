@@ -109,14 +109,13 @@ The JSONL file should be formatted as follows:
 ```json
 {"system": "You are a geographer", "query": "What is the capital of China?", "response": "The capital of China is Beijing"}
 {"query": "What is the highest mountain in the world?", "response": "It is Mount Everest"}
-{"query": "Why are there no penguins in the Arctic?", "response": "Because penguins mostly live in Antarctica"}
+{"messages": [{"role": "system", "content": "You are a geographer"}, {"role": "user", "content": "What is the largest desert in the world?"}], "response": "It is the Sahara Desert"}
 ```
 
-Where:
-- `system` is the system prompt (optional field)
-- `query` is the question (mandatory)
-- `response` is the correct answer. For reference answer Q&A tasks, this field must exist; for non-reference answer Q&A tasks, it can be empty.
-
+In this context:
+- `system` is the system prompt (optional field).
+- `query` is the question, or you can set `messages` as a list of dialogue messages, including `role` (role) and `content` (content), to simulate a conversation scenario. When both are set, the `query` field will be ignored.
+- `response` is the correct answer. For Q&A tasks with reference answers, this field must exist; for those without reference answers, it can be empty.
 ### Reference Answer Q&A
 
 Below is how to configure the evaluation of reference answer Q&A tasks using the `Qwen2.5` model on `example.jsonl`.
