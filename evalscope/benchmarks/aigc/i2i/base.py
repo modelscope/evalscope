@@ -8,7 +8,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-class T2IBaseAdapter(DataAdapter):
+class I2IBaseAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -29,22 +29,22 @@ class T2IBaseAdapter(DataAdapter):
             self.metrics = {m: metric_registry.get(m).object() for m in self.metric_list}
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        # dummy prompt for general t2i
+        # dummy prompt for general i2i
         return self.gen_prompt_data(prompt=input_d.get('prompt', ''), id=input_d.get('id', 0))
 
     def get_gold_answer(self, input_d: dict) -> str:
-        # dummy gold answer for general t2i
+        # dummy gold answer for general i2i
         return input_d.get('prompt', '')
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        # dummy parse pred result for general t2i
+        # dummy parse pred result for general i2i
         return result or raw_input_d.get('image_path', '')
 
     def match(self, gold: str, pred: str) -> dict:
         # Initialize metrics only once before first use
         self._init_metrics()
 
-        # dummy match for general t2i
+        # dummy match for general i2i
         # pred is the image path, gold is the prompt
         res = {}
         for metric_name, metric_func in self.metrics.items():

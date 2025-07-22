@@ -161,6 +161,7 @@ from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
+    model_task='image_generation',  # must be 'image_generation'
     datasets=[
         'general_t2i'
     ],
@@ -230,6 +231,7 @@ from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
+    model_task='image_generation',  # must be 'image_generation'
     datasets=[
         'evalmuse',
     ],

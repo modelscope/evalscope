@@ -2,6 +2,7 @@
 
 import argparse
 
+from evalscope import __version__
 from evalscope.cli.start_app import StartAppCMD
 from evalscope.cli.start_eval import EvalCMD
 from evalscope.cli.start_perf import PerfBenchCMD
@@ -9,6 +10,7 @@ from evalscope.cli.start_perf import PerfBenchCMD
 
 def run_cmd():
     parser = argparse.ArgumentParser('EvalScope Command Line tool', usage='evalscope <command> [<args>]')
+    parser.add_argument('-v', '--version', action='version', version=f'evalscope {__version__}')
     subparsers = parser.add_subparsers(help='EvalScope command line helper.')
 
     PerfBenchCMD.define_args(subparsers)

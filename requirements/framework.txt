@@ -1,5 +1,5 @@
 accelerate
-datasets==3.2.0
+datasets==3.6.0
 immutabledict
 jieba
 jsonlines
@@ -19,11 +19,8 @@ rouge-score>=0.1.0
 sacrebleu
 scikit-learn
 seaborn
-# for evaluation
 sympy
-# streamlit
 tabulate
-# pip3 install --no-dependencies -r requirements/framework.txt
 torch
 tqdm
 transformers>=4.33
