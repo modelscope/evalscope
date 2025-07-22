@@ -8,7 +8,7 @@ from evalscope.constants import OutputType
 if TYPE_CHECKING:
     from evalscope.benchmarks import DataAdapter
 
-BENCHMARK_MAPPINGS = {}
+BENCHMARK_MAPPINGS: Dict[str, 'BenchmarkMeta'] = {}
 
 
 @dataclass
