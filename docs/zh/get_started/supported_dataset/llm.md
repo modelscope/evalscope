@@ -959,7 +959,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 - **数据集名称**: `tau_bench`
 - **数据集ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
 - **数据集描述**:  
-  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. 
+  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
 - **任务类别**: `Agent`, `Function Calling`, `Reasoning`
 - **评估指标**: `Pass^1`
 - **需要LLM Judge**: 否
