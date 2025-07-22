@@ -15,7 +15,8 @@ logger = get_logger()
     tags=['Reasoning', 'Agent', 'Function Calling'],
     description='A benchmark emulating dynamic conversations between a user (simulated by language models) '
     'and a language agent provided with domain-specific API tools and policy guidelines. '
-    'Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. ',  # noqa: E501
+    'Please install it with `pip install git+https://github.com/sierra-research/tau-bench` '
+    'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)',  # noqa: E501
     dataset_id='https://github.com/sierra-research/tau-bench',
     model_adapter='tau_bench_server',
     subset_list=['airline', 'retail'],

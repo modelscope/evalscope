@@ -72,7 +72,7 @@ task_cfg = TaskConfig(
     },
     generation_config={
         'temperature': 0,
-        'max_tokens': 4096,
+        'max_tokens': 32000,
         'parallel_tool_calls': True,  # 启用并行函数调用
     },
     limit=10,  # 限制评测数量，便于快速测试，正式评测时建议去掉此项

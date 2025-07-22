@@ -250,7 +250,7 @@ if __name__ == '__main__':
     # 示例用法
     from evalscope.benchmarks.benchmark import BENCHMARK_MAPPINGS
     
-    aigc_benchmarks = ['evalmuse', 'genai_bench', 'general_t2i', 'hpdv2', 'tifa160', 'data_collection']
+    aigc_benchmarks = ['evalmuse', 'genai_bench', 'general_t2i', 'general_i2i', 'hpdv2', 'tifa160', 'data_collection']
     # 获取所有DataAdapter实例
     adapters = []
     for benchmark in tqdm(BENCHMARK_MAPPINGS.values()):

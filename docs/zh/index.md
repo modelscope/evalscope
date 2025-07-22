@@ -51,6 +51,7 @@ advanced_guides/add_benchmark.md
 :::{toctree}
 :hidden:
 :caption: 🧰 第三方工具
+third_party/tau_bench.md
 third_party/bfcl_v3.md
 third_party/needle_haystack.md
 third_party/toolbench.md

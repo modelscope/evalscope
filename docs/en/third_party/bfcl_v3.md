@@ -72,7 +72,7 @@ task_cfg = TaskConfig(
     },
     generation_config={
         'temperature': 0,
-        'max_tokens': 4096,
+        'max_tokens': 32000,
         'parallel_tool_calls': True,  # Enable parallel function calls
     },
     limit=10,  # Limit the number of evaluations for quick testing; it is recommended to remove this for formal evaluations
