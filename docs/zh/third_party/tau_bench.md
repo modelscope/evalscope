@@ -30,7 +30,7 @@ pip install git+https://github.com/sierra-research/tau-bench  # 安装 tau-bench
 
 运行下面的代码即可启动评测。下面以qwen-plus模型为例进行评测。
 
-**⚠️ 注意：仅支持API模型服务评测，本地模型评测建议使用vLLM等框架预先拉起服务。**
+**⚠️ 注意：仅支持API模型服务评测，本地模型评测建议使用vLLM等框架预先拉起服务。官方默认使用user model为gpt-4o，要获得榜单效果，请使用此模型进行评测。**
 
 ```python
 import os

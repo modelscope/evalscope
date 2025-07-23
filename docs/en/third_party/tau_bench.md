@@ -30,7 +30,7 @@ pip install git+https://github.com/sierra-research/tau-bench  # Install tau-benc
 
 Run the following code to start the evaluation. The example below uses the qwen-plus model for evaluation.
 
-**⚠️ Note: Only API model service evaluation is supported. For local model evaluation, it is recommended to use frameworks like vLLM to pre-launch the service.**
+**⚠️ Note: Only API model service evaluation is supported. For local model evaluation, it is recommended to use frameworks like vLLM to pre-launch the service. The official default user model is gpt-4o, and to achieve leaderboard results, please use this model for evaluation.**
 
 ```python
 import os
