@@ -34,7 +34,7 @@ task_cfg = TaskConfig(
             'extra_params':{
                 # The model refuses to use dots ('.') in function names; set this option to automatically convert dots to underscores during evaluation.
                 'underscore_to_dot': True,
-                # Whether the mode is a function calling model; if true, function-calling-related configs are enabled, otherwise prompt-based bypass is used.
+                # Whether the model is a function calling model; if true, function-calling-related configs are enabled, otherwise prompt-based bypass is used.
                 'is_fc_model': True,
             }
         }
