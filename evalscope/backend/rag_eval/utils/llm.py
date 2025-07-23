@@ -6,7 +6,7 @@ from transformers.generation.configuration_utils import GenerationConfig
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
 from evalscope.constants import DEFAULT_MODEL_REVISION
-from evalscope.models import ChatGenerationModelAdapter, LocalModel
+from evalscope.models import ChatGenerationModelAdapter, LocalChatModel
 
 
 class LLM:
@@ -30,15 +30,20 @@ class LocalLLM(BaseLLM):
     model_name_or_path: str
     model_revision: str = DEFAULT_MODEL_REVISION
     template_type: Optional[str] = None
-    model_name: Optional[str]
-    model: Optional[ChatGenerationModelAdapter]
-    generation_config: Optional[Dict]
+    model_name: Optional[str] = None
+    model: Optional[ChatGenerationModelAdapter] = None
+    generation_config: Optional[Dict] = None
 
     def __init__(self, **kw):
         super().__init__(**kw)
         self.model_name = os.path.basename(self.model_name_or_path)
+
+        # Create and initialize the local model
+        local_model = LocalChatModel(model_id=self.model_name_or_path, model_revision=self.model_revision)
+        local_model.load_model()  # Ensure model and tokenizer are loaded
+
         self.model = ChatGenerationModelAdapter(
-            model=LocalModel(model_id=self.model_name_or_path, model_revision=self.model_revision),
+            model=local_model,
             generation_config=GenerationConfig(**self.generation_config) if self.generation_config else None,
         )
 
