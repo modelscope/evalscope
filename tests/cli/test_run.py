@@ -384,7 +384,7 @@ class TestRun(unittest.TestCase):
                 # 'extra_headers':{'key': 'value'},
             },
             ignore_errors=False,
-            use_cache='outputs/20250723_105528'
+            # use_cache='outputs/20250723_105528'
         )
 
         run_task(task_cfg=task_cfg)
