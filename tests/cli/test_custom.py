@@ -147,7 +147,7 @@ class TestRunCustom(unittest.TestCase):
             },
             ignore_errors=False,
             judge_model_args={
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen2.5-7b-instruct',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -155,9 +155,19 @@ class TestRunCustom(unittest.TestCase):
                     'max_tokens': 4096
                 },
                 'score_type': 'numeric',
+                'prompt_template': """Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+Begin your evaluation by providing a short explanation. Be as objective as possible.
+After providing your explanation, you must rate the response on a scale of 0 (worst) to 100 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[5]]\"
+
+[Question]
+{question}
+
+[Response]
+{pred}
+"""
             },
             judge_worker_num=5,
-            judge_strategy=JudgeStrategy.AUTO,
+            judge_strategy=JudgeStrategy.LLM,
         )
 
         run_task(task_cfg=task_cfg)

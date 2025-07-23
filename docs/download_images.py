@@ -40,8 +40,8 @@ def process_markdown(input_path, output_path, image_folder):
 
 # 主函数
 if __name__ == '__main__':
-    input_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/t2i_eval.md'  # 输入的Markdown文件路径
-    output_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/t2i_eval.md'  # 输出的Markdown文件路径
+    input_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/qwen3_coder.md'  # 输入的Markdown文件路径
+    output_markdown_file = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/qwen3_coder.md'  # 输出的Markdown文件路径
     image_folder = '/mnt/data/data/user/maoyunlin.myl/evalscope/docs/zh/best_practice/images'  # 保存图片的文件夹
 
     process_markdown(input_markdown_file, output_markdown_file, image_folder)

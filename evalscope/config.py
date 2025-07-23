@@ -92,7 +92,7 @@ class TaskConfig(BaseArgument):
             else:
                 self.model_id = os.path.basename(self.model).rstrip(os.sep)
             # fix path error, see http://github.com/modelscope/evalscope/issues/377
-            self.model_id = self.model_id.replace(':', '-')
+            self.model_id = self.model_id.replace(':', '-').replace('/', '-')
 
     def __init_eval_data_config(self):
         # Set default eval_batch_size based on eval_type
