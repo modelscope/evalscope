@@ -33,7 +33,7 @@ task_cfg = TaskConfig(
             'extra_params':{
                 # 模型在函数名称中拒绝使用点号（`.`）；设置此项，以便在评估期间自动将点号转换为下划线。
                 'underscore_to_dot': True,
-                # 模式是否为函数调用模型（Function Calling Model），如果是则会启用函数调用相关的配置；否则会使用prompt绕过函数调用。
+                # 模型是否为函数调用模型（Function Calling Model），如果是则会启用函数调用相关的配置；否则会使用prompt绕过函数调用。
                 'is_fc_model': True,
             }
         }
