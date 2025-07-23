@@ -86,7 +86,7 @@ class TestRun(unittest.TestCase):
         task_cfg = TaskConfig(
             model='qwen/Qwen2.5-0.5B-Instruct',
             datasets=[
-                'iquiz',
+                # 'iquiz',
                 # 'ifeval',
                 # 'mmlu',
                 # 'mmlu_pro',
@@ -254,7 +254,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-plus',
+            model='Qwen2.5-Coder-7B-Instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -268,7 +268,7 @@ class TestRun(unittest.TestCase):
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
-                # 'humaneval',
+                'humaneval',
                 # 'gsm8k',
                 # 'bbh',
                 # 'competition_math',
@@ -289,7 +289,7 @@ class TestRun(unittest.TestCase):
                 # 'frames',
                 # 'bfcl_v3',
                 # 'truthful_qa',
-                'tau_bench',
+                # 'tau_bench',
                 # 'hle'
             ],
             dataset_args={
@@ -374,7 +374,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=10,
-            limit=10,
+            limit=50,
             # debug=True,
             stream=True,
             generation_config={
@@ -384,7 +384,7 @@ class TestRun(unittest.TestCase):
                 # 'extra_headers':{'key': 'value'},
             },
             ignore_errors=False,
-            # use_cache='outputs/20250721_150826'
+            # use_cache='outputs/20250723_105528'
         )
 
         run_task(task_cfg=task_cfg)
