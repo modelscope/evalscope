@@ -49,7 +49,7 @@ task_cfg = TaskConfig(
     # limit=50,  # 限制评测数量，便于快速测试，正式评测时建议去掉此项
     ignore_errors=True,  # 忽略错误，可能会被模型拒绝的测试用例
 )
-    run_task(task_cfg=task_cfg)
+run_task(task_cfg=task_cfg)
 ```
 
 输出结果如下：
