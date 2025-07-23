@@ -1,4 +1,4 @@
-# Qwen3-Coder 模型评测最佳实践
+# Qwen3-Coder 模型评测最佳实践
 
 Qwen3的新模型来啦，分别是代码模型[Qwen/Qwen3-Coder-480B-A35B-Instruct](https://www.modelscope.cn/models/Qwen/Qwen3-Coder-480B-A35B-Instruct)和 通用模型 [Qwen/Qwen3-235B-A22B-Instruct-2507](https://modelscope.cn/models/Qwen/Qwen3-235B-A22B-Instruct-2507)，下面让我们使用[EvalScope](https://github.com/modelscope/evalscope)模型评测框架，来快速测一下这两个模型的性能吧。
 
