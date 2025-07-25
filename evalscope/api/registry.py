@@ -11,7 +11,7 @@ BENCHMARK_REGISTRY: Dict[str, 'BenchmarkMeta'] = {}
 def register_benchmark(metadata: 'BenchmarkMeta'):
     """Register a benchmark with its metadata."""
 
-    def register_wrapper(data_adapter: 'DataAdapter'):
+def register_wrapper(data_adapter: Type['DataAdapter']):
         if metadata.name in BENCHMARK_REGISTRY:
             raise ValueError(f'Benchmark {metadata.name} already registered')
         metadata.data_adapter = data_adapter
