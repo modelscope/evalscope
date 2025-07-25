@@ -5,6 +5,8 @@ import json
 import jsonlines as jsonl
 import os
 import re
+import string
+import unicodedata
 import yaml
 from io import BytesIO
 from PIL import Image
@@ -272,7 +274,68 @@ def get_valid_list(input_list, candidate_list):
 
 
 def PIL_to_base64(image: Image.Image, format: str = 'JPEG') -> str:
+    """
+    Convert a PIL Image to a base64 encoded string.
+
+    Args:
+        image (Image.Image): The PIL Image to convert.
+        format (str): The format to save the image in. Default is 'JPEG'.
+    Returns:
+        str: Base64 encoded string of the image.
+    """
     buffered = BytesIO()
     image.save(buffered, format=format)
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
     return img_str
+
+
+def safe_filename(s: str, max_length: int = 255) -> str:
+    """
+    Convert a string into a safe filename by removing or replacing unsafe characters.
+
+    Args:
+        s (str): The input string to convert
+        max_length (int): Maximum length of the resulting filename (default 255)
+
+    Returns:
+        str: A safe filename string
+
+    Examples:
+        >>> safe_filename("Hello/World?.txt")
+        'Hello_World.txt'
+    """
+    # normalize unicode characters
+    s = unicodedata.normalize('NFKD', s)
+    s = s.encode('ASCII', 'ignore').decode('ASCII')
+
+    # remove or replace unsafe characters
+    # Keep only alphanumeric characters, dots, dashes, and underscores
+    safe_chars = string.ascii_letters + string.digits + '.-_'
+    s = ''.join(c if c in safe_chars else '_' for c in s)
+
+    # remove consecutive underscores
+    s = re.sub(r'_+', '_', s)
+
+    # remove leading/trailing periods and underscores
+    s = s.strip('._')
+
+    # handle empty string case
+    if not s:
+        s = 'untitled'
+
+    # handle starting with a period (hidden files)
+    if s.startswith('.'):
+        s = '_' + s
+
+    # enforce length limit
+    if len(s) > max_length:
+        # If we need to truncate, preserve the file extension if present
+        name, ext = os.path.splitext(s)
+        ext_len = len(ext)
+        if ext_len > 0:
+            max_name_length = max_length - ext_len
+            s = name[:max_name_length] + ext
+        else:
+            s = s[:max_length]
+
+    return s
