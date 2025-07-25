@@ -14,7 +14,7 @@ class BenchmarkMeta:
     """Metadata for a benchmark, including dataset and model configurations."""
     name: str
     dataset_id: str
-    data_adapter: Type['DataAdapter']
+    data_adapter: Optional[Type['DataAdapter']] = None
     model_adapter: Optional[str] = OutputType.GENERATION
     output_types: Optional[List[str]] = field(default_factory=lambda: [OutputType.GENERATION])
     subset_list: List[str] = field(default_factory=lambda: ['default'])

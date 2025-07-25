@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
-
+from evalscope.api.dataset import DatasetDict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -22,8 +22,16 @@ class DataAdapter(ABC):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
+        self.reformat_subset = {}
+        self.split_as_subset = False
+        self.use_llm_judge = False
+
+        # dataset
+        self.test_dataset: Optional[DatasetDict] = None
+        self.fewshot_dataset: Optional[DatasetDict] = None
+
     @abstractmethod
-    def load_dataset(self):
+    def load_dataset(self) -> DatasetDict:
         pass
 
     @abstractmethod

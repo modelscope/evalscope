@@ -1,7 +1,8 @@
 import abc
 import random
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from evalscope.utils.chat_service import ChatMessage
 
@@ -22,7 +23,7 @@ class Sample:
     id: Optional[Union[int, str]] = None
     """Unique identifier for sample."""
 
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     """Arbitrary metadata associated with the sample."""
 
     sandbox: Optional[str] = None
@@ -105,6 +106,7 @@ class Dataset(Sequence[Sample], abc.ABC):
         Returns:
           Filtered dataset.
         """
+        ...
 
     @abc.abstractmethod
     def shuffle(self, seed: Optional[int] = None) -> None:
@@ -113,6 +115,7 @@ class Dataset(Sequence[Sample], abc.ABC):
         Args:
            seed: Random seed for shuffling (optional).
         """
+        ...
 
     @abc.abstractmethod
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
@@ -121,6 +124,7 @@ class Dataset(Sequence[Sample], abc.ABC):
         Args:
            seed: Random seed for shuffling (optional).
         """
+        ...
 
 
 class MemoryDataset(Dataset):
@@ -244,3 +248,55 @@ def answer_index(char: str) -> int:
         return 25 + int(char)
     else:
         raise ValueError(f'Unepxected multiple choice answer: {char} (must be a letter or number)')
+
+
+class DatasetDict:
+    """
+    A dictionary-like container for datasets.
+    """
+
+    def __init__(self, datasets: Dict[str, Dataset]):
+        self.datasets = datasets
+
+    def __getitem__(self, key: str) -> Dataset:
+        return self.datasets[key]
+
+    def __setitem__(self, key: str, value: Dataset) -> None:
+        self.datasets[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.datasets[key]
+
+    def items(self):
+        return self.datasets.items()
+
+    def keys(self):
+        return self.datasets.keys()
+
+    def values(self):
+        return self.datasets.values()
+
+    def __len__(self) -> int:
+        return len(self.datasets)
+
+    @classmethod
+    def from_dataset(cls, dataset: Dataset, subset_key: str = None, format: str = '{}') -> 'DatasetDict':
+        """
+        Create a DatasetDict from a single Dataset.
+
+        Args:
+            dataset (Dataset): The dataset to wrap in a DatasetDict.
+
+        Returns:
+            DatasetDict: A new DatasetDict containing the provided dataset.
+        """
+        if subset_key:
+            data_dict = defaultdict(list)
+            dataset_dict = defaultdict(list)
+            for sample in dataset:
+                key = sample.metadata.get(subset_key, 'default')
+                data_dict[format.format(key)].append(sample)
+            for key, samples in data_dict.items():
+                dataset_dict[key] = MemoryDataset(samples, name=dataset.name)
+            return cls(dataset_dict)
+        return cls({dataset.name or 'default': dataset})

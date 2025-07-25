@@ -1,10 +1,10 @@
 import json
-from typing import Any, Callable, Iterable, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
-from evalscope.api.dataset.dataset import FieldSpec, Sample
+from .dataset import FieldSpec, Sample
 
 
-def record_to_sample_fn(sample_fields: FieldSpec | Callable | None, ) -> Callable:
+def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, ) -> Callable:
     if sample_fields is None:
         sample_fields = FieldSpec()
 
@@ -12,7 +12,7 @@ def record_to_sample_fn(sample_fields: FieldSpec | Callable | None, ) -> Callabl
 
         def record_to_sample(record: dict) -> Sample:
             # collect metadata if specified
-            metadata: dict[str, Any] | None = None
+            metadata: Optional[Dict[str, Any]] = None
             if sample_fields.metadata:
                 if isinstance(sample_fields.metadata, list):
                     metadata = {}
@@ -46,10 +46,9 @@ def record_to_sample_fn(sample_fields: FieldSpec | Callable | None, ) -> Callabl
         return sample_fields
 
 
-def data_to_samples(data: Iterable[dict], data_to_sample: Callable[[dict], Sample | list[Sample]],
-                    auto_id: bool) -> list[Sample]:
+def data_to_samples(data: Iterable[dict], data_to_sample: Callable, auto_id: bool) -> List[Sample]:
     next_id = 0
-    samples: list[Sample] = []
+    samples: List[Sample] = []
     for record in data:
         record_samples = as_sample_list(data_to_sample(record))
         if auto_id:
@@ -60,27 +59,27 @@ def data_to_samples(data: Iterable[dict], data_to_sample: Callable[[dict], Sampl
     return samples
 
 
-def as_sample_list(samples: Sample | list[Sample]) -> list[Sample]:
+def as_sample_list(samples: Union[Sample, List[Sample]]) -> List[Sample]:
     if isinstance(samples, list):
         return samples
     else:
         return [samples]
 
 
-def read_input(input_val: Any | None) -> str:
+def read_input(input_val: Optional[Any]) -> str:
     if not input_val:
         raise ValueError('No input in dataset')
     return str(input_val)
 
 
-def read_target(obj: Any | None) -> str | list[str]:
+def read_target(obj: Optional[Any]) -> Union[str, List[str]]:
     if obj is not None:
         return [str(item) for item in obj] if isinstance(obj, list) else str(obj)
     else:
         return ''
 
 
-def read_choices(obj: Any | None) -> list[str] | None:
+def read_choices(obj: Optional[Any]) -> Optional[List[str]]:
     if obj is not None:
         if isinstance(obj, list):
             return [str(choice) for choice in obj]
@@ -95,14 +94,14 @@ def read_choices(obj: Any | None) -> list[str] | None:
         return None
 
 
-def read_setup(setup: Any | None) -> str | None:
+def read_setup(setup: Optional[Any]) -> Optional[str]:
     if setup is not None:
         return str(setup)
     else:
         return None
 
 
-def read_sandbox(sandbox: Any | None) -> str | None:
+def read_sandbox(sandbox: Optional[Any]) -> Optional[str]:
     if sandbox is not None:
         if isinstance(sandbox, str):
             return sandbox
@@ -114,13 +113,13 @@ def read_sandbox(sandbox: Any | None) -> str | None:
         return None
 
 
-def read_files(files: Any | None) -> dict[str, str] | None:
+def read_files(files: Optional[Any]) -> Optional[Dict[str, str]]:
     if files is not None:
         if isinstance(files, str):
             files = json.loads(files)
         if isinstance(files, dict):
             if all(isinstance(v, str) for v in files.values()):
-                return cast(dict[str, str], files)
+                return cast(Dict[str, str], files)
 
         # didn't find the right type
         raise ValueError(f"Unexpected type for 'files' field: {type(files)}")
