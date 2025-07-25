@@ -39,7 +39,7 @@ class BenchmarkMeta:
         self.__dict__.update(args)
 
     def to_dict(self) -> dict:
-        return self.__dict__
+        return self.__dict__.copy()
 
     def to_string_dict(self) -> dict:
         cur_dict = copy.deepcopy(self.to_dict())
