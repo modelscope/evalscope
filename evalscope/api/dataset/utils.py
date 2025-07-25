@@ -67,10 +67,10 @@ def as_sample_list(samples: Sample | list[Sample]) -> list[Sample]:
         return [samples]
 
 
-def read_input(input: Any | None) -> str:
-    if not input:
+def read_input(input_val: Any | None) -> str:
+    if not input_val:
         raise ValueError('No input in dataset')
-    return input
+    return str(input_val)
 
 
 def read_target(obj: Any | None) -> str | list[str]:
