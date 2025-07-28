@@ -39,8 +39,8 @@ def tie_encoder_decoder_weights(encoder: nn.Module, decoder: nn.Module, base_mod
         encoder_modules = encoder_pointer._modules
         decoder_modules = decoder_pointer._modules
         if len(decoder_modules) > 0:
-            assert (len(encoder_modules) >
-                    0), f'Encoder module {encoder_pointer} does not match decoder module {decoder_pointer}'
+            assert (len(encoder_modules)
+                    > 0), f'Encoder module {encoder_pointer} does not match decoder module {decoder_pointer}'
 
             all_encoder_weights = set([module_name + '/' + sub_name for sub_name in encoder_modules.keys()])
             encoder_layer_pos = 0

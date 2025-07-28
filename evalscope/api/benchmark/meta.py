@@ -18,6 +18,7 @@ class BenchmarkMeta:
     model_adapter: Optional[str] = OutputType.GENERATION
     output_types: Optional[List[str]] = field(default_factory=lambda: [OutputType.GENERATION])
     subset_list: List[str] = field(default_factory=lambda: ['default'])
+    default_subset: str = 'default'
     metric_list: List[str] = field(default_factory=list)
     few_shot_num: int = 0
     few_shot_random: bool = False

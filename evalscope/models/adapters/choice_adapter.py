@@ -5,8 +5,8 @@ from typing import List
 
 from evalscope.constants import OutputType
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage
+from ...api.registry import register_model_adapter
 from ..local_model import LocalModel
-from ..register import register_model_adapter
 from .base_adapter import BaseModelAdapter
 
 

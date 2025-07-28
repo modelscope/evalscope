@@ -7,8 +7,8 @@ from evalscope.constants import OutputType
 from evalscope.utils.chat_service import ChatCompletionResponse, ChatCompletionResponseChoice, ChatMessage, Usage
 from evalscope.utils.logger import get_logger
 from evalscope.utils.model_utils import fix_do_sample_warning
+from ...api.registry import register_model_adapter
 from ..local_model import LocalModel
-from ..register import register_model_adapter
 from .base_adapter import BaseModelAdapter
 
 logger = get_logger()

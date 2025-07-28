@@ -24,5 +24,5 @@ class FlickrDatasetPlugin(DatasetPluginBase):
             text = item['txt']
             base64_image = PIL_to_base64(pil_image)
 
-            message = self.create_message(text=text, image_url=f'data:image/jpeg;base64,{base64_image}')
+            message = self.create_message(text=text, image_urls=f'data:image/jpeg;base64,{base64_image}')
             yield [message]

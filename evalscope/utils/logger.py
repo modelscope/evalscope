@@ -1,7 +1,8 @@
 import importlib.util as iutil
 import logging
 import os
-from typing import Optional
+from logging import Logger
+from typing import List, Optional
 
 init_loggers = {}
 
@@ -12,7 +13,7 @@ detailed_formatter = logging.Formatter(detailed_format)
 simple_formatter = logging.Formatter(simple_format)
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL, force=True)
+logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
 
 # set logging level
 logging.getLogger('datasets').setLevel(logging.WARNING)
@@ -105,3 +106,12 @@ def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
         file_handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
         file_handler.setLevel(log_level)
         logger.addHandler(file_handler)
+
+
+def warn_once(logger: Logger, message: str) -> None:
+    if message not in _warned:
+        logger.warning(message)
+        _warned.append(message)
+
+
+_warned: List[str] = []

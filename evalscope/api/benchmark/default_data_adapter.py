@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Any, Callable, Dict
 
 from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
-from .base import DataAdapter
+from .benchmark import DataAdapter
 
 
 class DefaultDataAdapter(DataAdapter):
@@ -28,7 +28,7 @@ class DefaultDataAdapter(DataAdapter):
     def load_subsets(self, load_func: Callable[[str], Dataset]) -> DatasetDict:
 
         if self.reformat_subset:
-            subset_data = load_func('default')
+            subset_data = load_func(self.default_subset)
             dataset_dict = DatasetDict.from_dataset(subset_data, **self.reformat_subset)
         else:
             subset_dict = defaultdict()
@@ -43,7 +43,7 @@ class DefaultDataAdapter(DataAdapter):
         Load a specific subset of the dataset.
         """
         split = subset if self.split_as_subset else self.eval_split
-        subset_name = 'default' if self.split_as_subset else subset
+        subset_name = self.default_subset if self.split_as_subset else subset
 
         loader = RemoteDataLoader(
             data_id_or_path=self.dataset_id,
@@ -60,7 +60,7 @@ class DefaultDataAdapter(DataAdapter):
         Load a few-shot subset of the dataset.
         """
         split = subset if self.split_as_subset else self.train_split
-        subset_name = 'default' if self.split_as_subset else subset
+        subset_name = self.default_subset if self.split_as_subset else subset
 
         loader = RemoteDataLoader(
             data_id_or_path=self.dataset_id,

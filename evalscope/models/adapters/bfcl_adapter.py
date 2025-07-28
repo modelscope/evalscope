@@ -4,7 +4,7 @@ import uuid
 from typing import Any, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
-from ..register import register_model_adapter
+from ...api.registry import register_model_adapter
 from .server_adapter import ServerModelAdapter
 
 logger = get_logger()

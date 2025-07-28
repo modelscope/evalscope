@@ -96,6 +96,13 @@ class DataAdapter(ABC):
         return self._benchmark_meta.metric_list
 
     @property
+    def default_subset(self) -> str:
+        """
+        Return the default subset of the benchmark.
+        """
+        return self._benchmark_meta.default_subset
+
+    @property
     def few_shot_num(self) -> int:
         """
         Return the few shot number of the benchmark.

@@ -45,7 +45,7 @@ def initialize_model_adapter(task_cfg: 'TaskConfig', benchmark: 'DataAdapter', b
         from evalscope.models import CustomModelAdapter
         return CustomModelAdapter(custom_model=task_cfg.model)
     else:
-        from ..register import get_model_adapter
+        from ...api.registry import get_model_adapter
 
         # we need to determine the model adapter class based on the output type
         model_adapter_cls_str = benchmark.model_adapter

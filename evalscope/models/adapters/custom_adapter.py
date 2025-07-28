@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from ..register import register_model_adapter
+from ...api.registry import register_model_adapter
 from .base_adapter import BaseModelAdapter
 
 if TYPE_CHECKING:

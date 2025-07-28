@@ -1,3 +1,3 @@
-from .base import DataAdapter
+from .benchmark import DataAdapter
 from .default_data_adapter import DefaultDataAdapter
 from .meta import BenchmarkMeta
