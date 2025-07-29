@@ -80,7 +80,7 @@ class Summarizer:
 
                 summary_file_path = summary_files[0]
                 # Example: [{'dataset': 'gsm8k', 'version': '1d7fe4', 'metric': 'accuracy', 'mode': 'gen', 'qwen-7b-chat': '53.98'} # noqa: E501
-                summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
+                summary_res: List[dict] = csv_to_list(summary_file_path)
                 final_res_list.extend(summary_res)
             elif eval_backend == EvalBackend.VLM_EVAL_KIT:
                 eval_config = Summarizer.parse_eval_config(candidate_task)
