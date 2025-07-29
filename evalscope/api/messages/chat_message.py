@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, JsonValue, model_validator
-from shortuuid import uuid
+import uuid
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.tool import ToolCall, ToolCallError
@@ -28,7 +28,7 @@ class ChatMessageBase(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         # Generate ID
         if self.id is None:
-            self.id = uuid()
+            self.id = uuid.uuid4().hex[:8]  # Shorten to 8 characters for simplicity
 
     @property
     def text(self) -> str:

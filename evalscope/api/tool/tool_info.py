@@ -104,7 +104,7 @@ def parse_tool_info(func: Callable[..., Any]) -> ToolInfo:
     signature = inspect.signature(func)
     type_hints = get_type_hints(func)
     docstring = inspect.getdoc(func)
-    parsed_docstring: Docstring | None = parse(docstring) if docstring else None
+    parsed_docstring: Optional[Docstring] = parse(docstring) if docstring else None
 
     info = ToolInfo(name=func.__name__, description='')
 

@@ -18,7 +18,7 @@ class DataAdapter(ABC):
     Data Adapter for the benchmark.
     """
 
-    def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: 'TaskConfig'):
+    def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig']=None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
