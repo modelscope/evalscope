@@ -2,9 +2,10 @@ import abc
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from evalscope.api.messages import ChatMessage
-from evalscope.api.tool import ToolInfo, ToolChoice
+from evalscope.api.tool import ToolChoice, ToolInfo
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
+
 
 class ModelAPI(abc.ABC):
     """Model API provider."""

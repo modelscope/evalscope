@@ -1,9 +1,10 @@
 import inspect
 from dataclasses import dataclass
 from docstring_parser import Docstring, parse
-from evalscope.utils.json_schema import JSONType, json_schema, JSONSchema, python_type_to_json_type
 from pydantic import BaseModel, Field
 from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
+
+from evalscope.utils.json_schema import JSONSchema, JSONType, json_schema, python_type_to_json_type
 
 ToolParam: TypeAlias = JSONSchema
 """Description of tool parameter in JSON Schema format."""
@@ -170,5 +171,3 @@ def parse_docstring(docstring: Optional[str], param_name: str) -> Dict[str, str]
             return schema
 
     return {}
-
-

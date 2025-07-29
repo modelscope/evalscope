@@ -15,8 +15,8 @@ docs-en:
 docs-zh:
 	cd docs/zh && make clean && make html
 
-.PHONY: linter
-linter:
+.PHONY: lint
+lint:
 	pre-commit run --all-files
 
 .PHONY: dev
