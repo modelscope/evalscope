@@ -1,18 +1,18 @@
 import abc
-from typing import Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from evalscope.api.messages import ChatMessage
+from evalscope.api.tool import ToolInfo, ToolChoice
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
-
 
 class ModelAPI(abc.ABC):
     """Model API provider."""
 
     def __init__(self,
                  model_name: str,
-                 base_url: str | None = None,
-                 api_key: str | None = None,
+                 base_url: Optional[str] = None,
+                 api_key: Optional[str] = None,
                  config: GenerateConfig = GenerateConfig(),
                  **kwargs) -> None:
         """Create a model API provider.
@@ -34,8 +34,8 @@ class ModelAPI(abc.ABC):
     @abc.abstractmethod
     async def generate(
         self,
-        input: list[ChatMessage],
-        tools: list[ToolInfo],
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
         tool_choice: ToolChoice,
         config: GenerateConfig,
     ) -> ModelOutput:
@@ -56,11 +56,11 @@ class ModelAPI(abc.ABC):
         """
         ...
 
-    def max_tokens(self) -> int | None:
+    def max_tokens(self) -> Optional[int]:
         """Default max_tokens."""
         return None
 
-    def max_tokens_for_config(self, config: GenerateConfig) -> int | None:
+    def max_tokens_for_config(self, config: GenerateConfig) -> Optional[int]:
         """Default max_tokens for a given config.
 
         Args:
@@ -99,7 +99,7 @@ class Model:
     config: GenerateConfig
     """Generation config."""
 
-    def __init__(self, api: ModelAPI, config: GenerateConfig, model_args: dict[str, Any] = {}) -> None:
+    def __init__(self, api: ModelAPI, config: GenerateConfig, model_args: Dict[str, Any] = {}) -> None:
         """Create a model.
 
         Args:

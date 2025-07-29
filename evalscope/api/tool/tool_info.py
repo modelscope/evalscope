@@ -1,9 +1,9 @@
 import inspect
 from dataclasses import dataclass
 from docstring_parser import Docstring, parse
-# from inspect_ai.util._json import JSONType, json_schema
+from evalscope.utils.json_schema import JSONType, json_schema, JSONSchema, python_type_to_json_type
 from pydantic import BaseModel, Field
-from typing import Any, Callable, Dict, Literal, TypeAlias, get_args, get_type_hints
+from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
 
 ToolParam: TypeAlias = JSONSchema
 """Description of tool parameter in JSON Schema format."""
@@ -25,10 +25,10 @@ class ToolParams(BaseModel):
     type: Literal['object'] = Field(default='object')
     """Params type (always 'object')"""
 
-    properties: dict[str, ToolParam] = Field(default_factory=dict)
+    properties: Dict[str, ToolParam] = Field(default_factory=dict)
     """Tool function parameters."""
 
-    required: list[str] = Field(default_factory=list)
+    required: List[str] = Field(default_factory=list)
     """List of required fields."""
 
     additionalProperties: bool = Field(default=False)
@@ -37,9 +37,9 @@ class ToolParams(BaseModel):
 
 @dataclass
 class ToolDescription:
-    name: str | None = None
-    description: str | None = None
-    parameters: ToolParams | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    parameters: Optional[ToolParams] = None
 
 
 def tool_description(tool: Tool) -> ToolDescription:
@@ -86,7 +86,7 @@ class ToolInfo(BaseModel):
     """Short description of tool."""
     parameters: ToolParams = Field(default_factory=ToolParams)
     """JSON Schema of tool parameters object."""
-    options: dict[str, object] | None = Field(default=None)
+    options: Optional[Dict[str, object]] = Field(default=None)
     """Optional property bag that can be used by the model provider to customize the implementation of the tool"""
 
 
@@ -154,7 +154,7 @@ def parse_tool_info(func: Callable[..., Any]) -> ToolInfo:
     return info
 
 
-def parse_docstring(docstring: str | None, param_name: str) -> Dict[str, str]:
+def parse_docstring(docstring: Optional[str], param_name: str) -> Dict[str, str]:
     if not docstring:
         return {}
 
@@ -172,21 +172,3 @@ def parse_docstring(docstring: str | None, param_name: str) -> Dict[str, str]:
     return {}
 
 
-def python_type_to_json_type(python_type: str) -> JSONType | None:
-    match python_type:
-        case 'str':
-            return 'string'
-        case 'int':
-            return 'integer'
-        case 'float':
-            return 'number'
-        case 'bool':
-            return 'boolean'
-        case 'list':
-            return 'array'
-        case 'dict':
-            return 'object'
-        case 'None':
-            return 'null'
-        case _:
-            return None
