@@ -1,17 +1,16 @@
 import abc
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
-
 from pydantic_core import to_jsonable_python
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.registry import get_model_api
-from evalscope.api.tool import ToolChoice, ToolInfo, ToolFunction
+from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
+from evalscope.utils import get_logger
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 
-from evalscope.utils import get_logger
-
 logger = get_logger()
+
 
 class ModelAPI(abc.ABC):
     """Model API provider."""
@@ -117,7 +116,7 @@ class Model:
         self.api = api
         self.config = config
         self.model_args = model_args
-        
+
     @property
     def name(self) -> str:
         """Model name."""
@@ -127,20 +126,20 @@ class Model:
     def role(self) -> Optional[str]:
         """Model role."""
         return self._role
-    
+
     @role.setter
     def role(self, role: str) -> None:
         self._role = role
 
     def __str__(self) -> str:
-        return f"Model(name={self.name}, role={self.role})"
-    
+        return f'Model(name={self.name}, role={self.role})'
+
     def generate(
-        self,
-        input: Union[str, List[ChatMessage]],
-        tools: Sequence[ToolInfo] = [],
-        tool_choice: Optional[ToolChoice] = None,
-        config: GenerateConfig = GenerateConfig(),
+            self,
+            input: Union[str, List[ChatMessage]],
+            tools: Sequence[ToolInfo] = [],
+            tool_choice: Optional[ToolChoice] = None,
+            config: GenerateConfig = GenerateConfig(),
     ) -> ModelOutput:
         """Generate output from the model.
 
@@ -184,7 +183,7 @@ class Model:
 
         # return output
         return output
-        
+
     def _generate(
         self,
         input: List[ChatMessage],
@@ -194,7 +193,7 @@ class Model:
     ) -> ModelOutput:
 
         # default to 'auto' for tool_choice (same as underlying model apis)
-        tool_choice = tool_choice if tool_choice is not None else "auto"
+        tool_choice = tool_choice if tool_choice is not None else 'auto'
 
         # resolve all tools into tool_info
         tools_info = tools
@@ -209,23 +208,24 @@ class Model:
         # (they both 'semi' use the tool by placing the arguments in JSON
         # in their output!). on the other hand, anthropic actually errors if
         # there are tools anywhere in the message stream and no tools defined.
-        if tool_choice == "none" or len(tools_info) == 0:
+        if tool_choice == 'none' or len(tools_info) == 0:
             # allow model providers to implement a tools_required() method to
             # force tools to be passed (we need this for anthropic)
             if not self.api.tools_required():
                 tools_info = []
-            tool_choice = "none"
+            tool_choice = 'none'
 
         model_output = self.api.generate(
-                            input=input,
-                            tools=tools_info,
-                            tool_choice=tool_choice,
-                            config=config,
-                        )
+            input=input,
+            tools=tools_info,
+            tool_choice=tool_choice,
+            config=config,
+        )
 
         # return results
         return model_output
-    
+
+
 def get_model(
     model: Union[str, Model],
     *,
@@ -245,7 +245,7 @@ def get_model(
     Args:
        model: Model specification.
           If `Model` is passed it is returned unmodified.
-    
+
        role: Optional named role for model (e.g. for roles specified
           at the task or eval level). Provide a `default` as a fallback
           in the case where the `role` hasn't been externally specified.
@@ -267,34 +267,27 @@ def get_model(
 
     # see if we can return a memoized model instance
     # (exclude mockllm since custom_outputs is an infinite generator)
-    model_cache_key: str = ""
-    if model.startswith("mockllm/"):
+    model_cache_key: str = ''
+    if model.startswith('mockllm/'):
         memoize = False
     if memoize:
         model_cache_key = (
-            model
-            + str(role)
-            + config.model_dump_json(exclude_none=True)
-            + str(base_url)
-            + str(api_key)
-            + str(to_jsonable_python(model_args, fallback=lambda _: None))
-        )
+            model + str(role) + config.model_dump_json(exclude_none=True) + str(base_url) + str(api_key)
+            + str(to_jsonable_python(model_args, fallback=lambda _: None)))
         cached = cached_model(model_cache_key)
         if cached is not None:
             return cached
-    
+
     # split model into api name and model name if necessary
     api_name = None
-    original_model = model
-    parts = model.split("/")
+    parts = model.split('/')
     if len(parts) > 1:
         api_name = parts[0]
-        model = "/".join(parts[1:])
-    
-    logger.info(
-        f"Creating model {model} with api_name={api_name}, base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}"
-    )
-    
+        model = '/'.join(parts[1:])
+
+    logger.info(f'Creating model {model} with api_name={api_name}, '
+                f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}')
+
     # find a matching model type
     modelapi_type = get_model_api(api_name)
 

@@ -1,13 +1,11 @@
 import copy
 from typing import TYPE_CHECKING, Dict, Optional, Type, Union
 
-
-
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+    from evalscope.api.model.model import ModelAPI
     from evalscope.config import TaskConfig
     from evalscope.models import BaseModelAdapter
-    from evalscope.api.model.model import ModelAPI
 
 # BEGIN: Registry for benchmarks
 # Registry for benchmarks, allowing dynamic registration and retrieval of benchmark metadata and data adapters.
@@ -27,7 +25,7 @@ def register_benchmark(metadata: 'BenchmarkMeta'):
     return register_wrapper
 
 
-def get_benchmark(name: str, config: Optional['TaskConfig']=None) -> 'DataAdapter':
+def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdapter':
     """Retrieve a registered benchmark by name."""
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
@@ -81,6 +79,7 @@ def get_model_adapter(name) -> Type['BaseModelAdapter']:
 
 MODEL_APIS: Dict[str, Type['ModelAPI']] = {}
 
+
 def register_model_api(name: str):
     """
     Decorator to register a model API class with a given name.
@@ -94,7 +93,8 @@ def register_model_api(name: str):
         return api_class
 
     return decorator
-    
+
+
 def get_model_api(name: str) -> Type['ModelAPI']:
     """
     Retrieve a registered model API class by name.
@@ -103,7 +103,7 @@ def get_model_api(name: str) -> Type['ModelAPI']:
     """
     if name not in MODEL_APIS:
         raise ValueError(f"Model API '{name}' is not registered. Available model APIs: {list(MODEL_APIS.keys())}")
-    
+
     wrapped = MODEL_APIS[name]
     if not isinstance(wrapped, type):
         return wrapped()

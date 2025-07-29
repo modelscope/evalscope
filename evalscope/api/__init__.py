@@ -1,1 +1,1 @@
-from .registry import get_benchmark, register_benchmark, get_model_adapter, register_model_adapter
+from .registry import get_benchmark, get_model_adapter, register_benchmark, register_model_adapter

@@ -1,8 +1,9 @@
 from typing import Any, Dict, Generator, Iterable, Iterator, List, Optional, Union
 
-from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
+from evalscope.api.tool import ToolChoice, ToolInfo
+
 
 class MockLLM(ModelAPI):
     """A mock implementation of the ModelAPI class for testing purposes.
@@ -11,7 +12,7 @@ class MockLLM(ModelAPI):
     key "custom_outputs" with a value of an Iterable[ModelOutput]
     """
 
-    default_output = "Default output from mockllm/model"
+    default_output = 'Default output from mockllm/model'
 
     outputs: Iterator[ModelOutput]
 
@@ -27,22 +28,18 @@ class MockLLM(ModelAPI):
         super().__init__(model_name, base_url, api_key, config)
         self.model_args = model_args
         if custom_outputs is not None:
-            # We cannot rely on the user of this model giving custom_outputs the correct type since they do not call this constructor
+            # We cannot rely on the user of this model giving custom_outputs
+            # the correct type since they do not call this constructor
             # Hence this type check and the one in generate.
             if not isinstance(custom_outputs, (Iterable, Generator)):
                 raise ValueError(
-                    f"model_args['custom_outputs'] must be an Iterable or a Generator, got {custom_outputs}"
-                )
+                    f"model_args['custom_outputs'] must be an Iterable or a Generator, got {custom_outputs}")
             self.outputs = iter(custom_outputs)
         else:
-            self.outputs = iter(
-                (
-                    ModelOutput.from_content(
-                        model="mockllm", content=self.default_output
-                    )
-                    for _ in iter(int, 1)  # produce an infinite iterator
-                )
-            )
+            self.outputs = iter((
+                ModelOutput.from_content(model='mockllm', content=self.default_output)
+                for _ in iter(int, 1)  # produce an infinite iterator
+            ))
 
     def generate(
         self,
@@ -54,10 +51,8 @@ class MockLLM(ModelAPI):
         try:
             output = next(self.outputs)
         except StopIteration:
-            raise ValueError("custom_outputs ran out of values")
+            raise ValueError('custom_outputs ran out of values')
 
         if not isinstance(output, ModelOutput):
-            raise ValueError(
-                f"output must be an instance of ModelOutput; got {type(output)}; content: {repr(output)}"
-            )
+            raise ValueError(f'output must be an instance of ModelOutput; got {type(output)}; content: {repr(output)}')
         return output
