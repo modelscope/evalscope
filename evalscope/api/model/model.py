@@ -228,6 +228,7 @@ class Model:
 
 def get_model(
     model: Union[str, Model],
+    eval_type: Optional[str] = 'openai-api',
     *,
     role: Optional[str] = None,
     config: GenerateConfig = GenerateConfig(),
@@ -268,7 +269,7 @@ def get_model(
     # see if we can return a memoized model instance
     # (exclude mockllm since custom_outputs is an infinite generator)
     model_cache_key: str = ''
-    if model.startswith('mockllm/'):
+    if eval_type.startswith('mockllm'):
         memoize = False
     if memoize:
         model_cache_key = (
@@ -278,18 +279,11 @@ def get_model(
         if cached is not None:
             return cached
 
-    # split model into api name and model name if necessary
-    api_name = None
-    parts = model.split('/')
-    if len(parts) > 1:
-        api_name = parts[0]
-        model = '/'.join(parts[1:])
-
-    logger.info(f'Creating model {model} with api_name={api_name}, '
+    logger.info(f'Creating model {model} with api_name={eval_type} '
                 f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}')
 
     # find a matching model type
-    modelapi_type = get_model_api(api_name)
+    modelapi_type = get_model_api(eval_type)
 
     modelapi_instance = modelapi_type(
         model_name=model,

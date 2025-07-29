@@ -77,6 +77,8 @@ def get_model_adapter(name) -> Type['BaseModelAdapter']:
 
 # END: Registry for model adapters
 
+# BEGIN: Registry for model APIs
+# Registry for model APIs, allowing dynamic registration and retrieval of model API classes.
 MODEL_APIS: Dict[str, Type['ModelAPI']] = {}
 
 
@@ -109,3 +111,5 @@ def get_model_api(name: str) -> Type['ModelAPI']:
         return wrapped()
     else:
         return wrapped
+
+# END: Registry for model APIs

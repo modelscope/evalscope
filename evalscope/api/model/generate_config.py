@@ -2,6 +2,23 @@
 from copy import deepcopy
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Literal, Optional, Union
+from evalscope.utils.json_schema import JSONSchema
+
+class ResponseSchema(BaseModel):
+    """Schema for model response when using Structured Output."""
+
+    name: str
+    """The name of the response schema. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."""
+
+    json_schema: JSONSchema
+    """The schema for the response format, described as a JSON Schema object."""
+
+    description: Optional[str] = Field(default=None)
+    """A description of what the response format is for, used by the model to determine how to respond in the format."""
+
+    strict: Optional[bool] = Field(default=None)
+    """Whether to enable strict schema adherence when generating the output. If set to true, the model will always follow the exact schema defined in the schema field.
+    OpenAI and Mistral only."""
 
 
 class GenerateConfig(BaseModel):
@@ -81,6 +98,9 @@ class GenerateConfig(BaseModel):
 
     reasoning_history: Optional[Literal['none', 'all', 'last', 'auto']] = Field(default=None)
     """Include reasoning in chat message history sent to generate."""
+
+    response_schema: Optional[ResponseSchema] = Field(default=None)
+    """Request a response format as JSONSchema (output should still be validated). OpenAI, Google, and Mistral only."""
 
     extra_body: Optional[Dict[str, Any]] = Field(default=None)
     """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
