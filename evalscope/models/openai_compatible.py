@@ -1,41 +1,29 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from openai import (
-    APIStatusError,
-    OpenAI,
-    BadRequestError,
-    PermissionDeniedError,
-    UnprocessableEntityError,
-)
+from openai import APIStatusError, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletion
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages import ChatMessage
-from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput, ChatCompletionChoice
+from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
-from .utils.openai import (
-    model_output_from_openai,
-    openai_chat_messages,
-    openai_chat_tool_choice,
-    openai_chat_tools,
-    openai_completion_params,
-    openai_handle_bad_request,
-    chat_choices_from_openai
-)
+from .utils.openai import (chat_choices_from_openai, model_output_from_openai, openai_chat_messages,
+                           openai_chat_tool_choice, openai_chat_tools, openai_completion_params,
+                           openai_handle_bad_request)
 
 logger = get_logger()
 
 
 class OpenAICompatibleAPI(ModelAPI):
+
     def __init__(
-        self,
-        model_name: str,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
-        config: GenerateConfig = GenerateConfig(),
-        **model_args: Any,
+            self,
+            model_name: str,
+            base_url: Optional[str] = None,
+            api_key: Optional[str] = None,
+            config: GenerateConfig = GenerateConfig(),
+            **model_args: Any,
     ) -> None:
 
         super().__init__(
@@ -47,12 +35,11 @@ class OpenAICompatibleAPI(ModelAPI):
 
         # use service prefix to lookup api_key
         self.api_key = api_key or os.environ.get('EVALSCOPE_API_KEY', None)
-        assert self.api_key, f"API key for {model_name} not found"
-            
+        assert self.api_key, f'API key for {model_name} not found'
 
         # use service prefix to lookup base_url
         self.base_url = base_url or os.environ.get('EVALSCOPE_BASE_URL', None)
-        assert self.base_url, f"Base URL for {model_name} not found"
+        assert self.base_url, f'Base URL for {model_name} not found'
 
         # create http client
         self.client = OpenAI(
@@ -84,17 +71,13 @@ class OpenAICompatibleAPI(ModelAPI):
         request = dict(
             messages=openai_chat_messages(input),
             tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
-            tool_choice=openai_chat_tool_choice(tool_choice)
-            if len(tools) > 0
-            else NOT_GIVEN,
+            tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
             **completion_params,
         )
 
         try:
             # generate completion and save response for model call
-            completion: ChatCompletion = self.client.chat.completions.create(
-                **request
-            )
+            completion: ChatCompletion = self.client.chat.completions.create(**request)
             response = completion.model_dump()
             self.on_response(response)
 
@@ -105,12 +88,10 @@ class OpenAICompatibleAPI(ModelAPI):
         except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
             return self.handle_bad_request(ex)
 
-    def resolve_tools(
-        self, tools: List[ToolInfo], tool_choice: ToolChoice, config: GenerateConfig
-    ) -> Tuple[List[ToolInfo], ToolChoice, GenerateConfig]:
+    def resolve_tools(self, tools: List[ToolInfo], tool_choice: ToolChoice,
+                      config: GenerateConfig) -> Tuple[List[ToolInfo], ToolChoice, GenerateConfig]:
         """Provides an opportunity for concrete classes to customize tool resolution."""
         return tools, tool_choice, config
-
 
     def completion_params(self, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
         return openai_completion_params(
@@ -123,9 +104,8 @@ class OpenAICompatibleAPI(ModelAPI):
         """Hook for subclasses to do custom response handling."""
         pass
 
-    def chat_choices_from_completion(
-        self, completion: ChatCompletion, tools: List[ToolInfo]
-    ) -> List[ChatCompletionChoice]:
+    def chat_choices_from_completion(self, completion: ChatCompletion,
+                                     tools: List[ToolInfo]) -> List[ChatCompletionChoice]:
         """Hook for subclasses to do custom chat choice processing."""
         return chat_choices_from_openai(completion, tools)
 

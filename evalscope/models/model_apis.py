@@ -8,6 +8,7 @@ def mockllm() -> type[ModelAPI]:
 
     return MockLLM
 
+
 @register_model_api(name='openai-api')
 def openai_api() -> type[ModelAPI]:
     from .openai_compatible import OpenAICompatibleAPI

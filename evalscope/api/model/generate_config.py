@@ -2,7 +2,9 @@
 from copy import deepcopy
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Literal, Optional, Union
+
 from evalscope.utils.json_schema import JSONSchema
+
 
 class ResponseSchema(BaseModel):
     """Schema for model response when using Structured Output."""

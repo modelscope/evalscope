@@ -15,7 +15,7 @@ repos:
                 evalscope/metrics/t2v_metrics
             )
   - repo: https://github.com/PyCQA/isort.git
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
   - repo: https://github.com/google/yapf

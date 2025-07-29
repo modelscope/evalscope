@@ -1,16 +1,15 @@
 import json
+import yaml
 from typing import Any, Dict, List, Optional
 
-import yaml
+from evalscope.utils import get_logger
 from .tool_call import ToolCall
 from .tool_info import ToolInfo
-from evalscope.utils import get_logger
 
 logger = get_logger()
 
-def parse_tool_call(
-    id: str, function: str, arguments: str, tools: Optional[List[ToolInfo]] = None
-) -> ToolCall:
+
+def parse_tool_call(id: str, function: str, arguments: str, tools: Optional[List[ToolInfo]] = None) -> ToolCall:
     """Parse a tool call from a JSON payload.
 
     Note that this function doesn't know about internal tool names so the caller
@@ -28,7 +27,7 @@ def parse_tool_call(
 
     # if the arguments is a dict, then handle it with a plain json.loads
     arguments = arguments.strip()
-    if arguments.startswith("{"):
+    if arguments.startswith('{'):
         try:
             arguments_dict = json.loads(arguments)
         except json.JSONDecodeError as ex:
@@ -38,11 +37,7 @@ def parse_tool_call(
     # and then create a dict that maps it to the first function argument
     elif function and tools:
         tool_info = next(
-            (
-                tool
-                for tool in tools
-                if tool.name == function and len(tool.parameters.properties) > 0
-            ),
+            (tool for tool in tools if tool.name == function and len(tool.parameters.properties) > 0),
             None,
         )
         if tool_info:
@@ -61,6 +56,7 @@ def parse_tool_call(
         arguments=arguments_dict,
         parse_error=error,
     )
-    
+
+
 def tool_parse_error_message(arguments: str, ex: Exception) -> str:
-    return f"Error parsing the following tool call arguments:\n\n{arguments}\n\nError details: {ex}"
+    return f'Error parsing the following tool call arguments:\n\n{arguments}\n\nError details: {ex}'

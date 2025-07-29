@@ -112,4 +112,5 @@ def get_model_api(name: str) -> Type['ModelAPI']:
     else:
         return wrapped
 
+
 # END: Registry for model APIs
