@@ -1,5 +1,6 @@
 from typing import Any, Dict, Generator, Iterable, Iterator, List, Optional, Union
 
+from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
@@ -56,3 +57,6 @@ class MockLLM(ModelAPI):
         if not isinstance(output, ModelOutput):
             raise ValueError(f'output must be an instance of ModelOutput; got {type(output)}; content: {repr(output)}')
         return output
+
+    def batch_generate(inputs: Dataset, config: GenerateConfig) -> List[ModelOutput]:
+        return super().batch_generate(inputs, config)

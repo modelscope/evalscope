@@ -1,6 +1,6 @@
 import abc
 from pydantic_core import to_jsonable_python
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
+from typing import Any, Dict, Generator, List, Literal, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.registry import get_model_api
@@ -33,9 +33,8 @@ class ModelAPI(abc.ABC):
         """
         self.model_name = model_name
         self.base_url = base_url
-
-        # set any explicitly specified api key
         self.api_key = api_key
+        self.config = config
 
     @abc.abstractmethod
     def generate(
@@ -61,6 +60,45 @@ class ModelAPI(abc.ABC):
            ModelOutput
         """
         ...
+        
+    def batch_generate(
+        self,
+        inputs: List[List[ChatMessage]],
+        tools: List[List[ToolInfo]],
+        tool_choices: List[ToolChoice],
+        configs: List[GenerateConfig],
+    ) -> Generator[ModelOutput, None, None]:
+        """Default batch implementation using individual generate calls.
+        
+        ModelAPI implementations can override this for optimized batch processing.
+        
+        Args:
+          inputs: List of preprocessed chat message inputs.
+          tools: List of tools for each input.
+          tool_choices: List of tool choices for each input.
+          configs: List of configs for each input.
+          
+        Returns:
+            Generator yielding ModelOutput for each input.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        def single_generate(args):
+            input_msgs, input_tools, tool_choice, config = args
+            return self.generate(input_msgs, input_tools, tool_choice, config)
+        
+        with ThreadPoolExecutor(max_workers=self.config.batch_size) as executor:
+            futures = []
+            for input_msgs, input_tools, tool_choice, config in zip(inputs, tools, tool_choices, configs):
+                future = executor.submit(single_generate, (input_msgs, input_tools, tool_choice, config))
+                futures.append(future)
+            
+            for future in futures:
+                yield future.result()
+
+    def supports_batch(self) -> bool:
+        """Whether this ModelAPI supports optimized batch processing."""
+        return False
 
     def max_tokens(self) -> Optional[int]:
         """Default max_tokens."""
@@ -137,9 +175,9 @@ class Model:
     def generate(
             self,
             input: Union[str, List[ChatMessage]],
-            tools: Sequence[ToolInfo] = [],
+            tools: Optional[Sequence[ToolInfo]] = None,
             tool_choice: Optional[ToolChoice] = None,
-            config: GenerateConfig = GenerateConfig(),
+            config: Optional[GenerateConfig] = None,
     ) -> ModelOutput:
         """Generate output from the model.
 
@@ -153,11 +191,80 @@ class Model:
         Returns:
            ModelOutput
         """
-        # base config for this model
-        base_config = self.config
+        processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
+            input, tools, tool_choice, config
+        )
+        
+        # Call the model's generate method
+        output = self.api.generate(
+            input=processed_input,
+            tools=processed_tools,
+            tool_choice=processed_tool_choice,
+            config=processed_config,
+        )
+
+        # return output
+        return output
+
+
+    def batch_generate(
+        self,
+        inputs: List[List[ChatMessage]],
+        tools: List[List[ToolInfo]],
+        tool_choices: List[ToolChoice],
+        configs: List[GenerateConfig],
+    ) -> Generator[ModelOutput, None, None]:
+        """Generate output from the model for a batch of inputs.
+
+        Args:
+          inputs (List[List[ChatMessage]]): Batch of chat message inputs.
+          tools (List[List[ToolInfo]]): Batch of tools for each input.
+          tool_choices (List[ToolChoice]): Batch of tool choices for each input.
+          configs (List[GenerateConfig]): Batch of configs for each input.
+        """
+        preprocessed_data = []
+
+        for input_item, input_tools, input_tool_choice, input_config in zip(inputs, tools, tool_choices, configs):
+            processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
+                input=input_item,
+                tools=input_tools,
+                tool_choice=input_tool_choice,
+                config=input_config
+            )
+            preprocessed_data.append((processed_input, processed_tools, processed_tool_choice, processed_config))
+
+        # check if ModelAPI supports batch processing
+        if self.api.supports_batch() and len(preprocessed_data) > 1:
+            # use the batch_generate method of the ModelAPI
+            inputs, tools, tool_choices, configs = zip(*preprocessed_data)
+            batch_results = self.api.batch_generate(
+                inputs=list(inputs),
+                tools=list(tools),
+                tool_choices=list(tool_choices),
+                configs=list(configs)
+            )
+            for result in batch_results:
+                yield result
+        else:
+            # fall back to processing each input individually
+            for input_msgs, input_tools, tool_choice, config in preprocessed_data:
+                result = self.api.generate(input_msgs, input_tools, tool_choice, config)
+                yield result
+
+    def _preprocess_input(
+        self,
+        input: Union[str, List[ChatMessage]],
+        tools: Optional[Sequence[ToolInfo]] = None,
+        tool_choice: Optional[ToolChoice] = None,
+        config: Optional[GenerateConfig] = None,
+    ) -> tuple[List[ChatMessage], List[ToolInfo], ToolChoice, GenerateConfig]:
+        """pre process input for generate."""
 
         # merge passed config
-        config = base_config.merge(config)
+        if config is not None:
+            config = self.config.merge(config)
+        else:
+            config = self.config.model_copy(deep=True)
 
         # provide max_tokens from the model api if required
         if config.max_tokens is None:
@@ -173,58 +280,19 @@ class Model:
         if config.system_message:
             input = [ChatMessageSystem(content=config.system_message)] + input
 
-        # generate
-        output = self._generate(
-            input=input,
-            tools=tools,
-            tool_choice=tool_choice,
-            config=config,
-        )
-
-        # return output
-        return output
-
-    def _generate(
-        self,
-        input: List[ChatMessage],
-        tools: Sequence[ToolInfo],
-        tool_choice: Optional[ToolChoice],
-        config: GenerateConfig,
-    ) -> ModelOutput:
-
-        # default to 'auto' for tool_choice (same as underlying model apis)
+        # handle tools and tool_choice
         tool_choice = tool_choice if tool_choice is not None else 'auto'
+        tools_info = list(tools) if tools is not None else []
 
-        # resolve all tools into tool_info
-        tools_info = tools
-
-        # if we have a specific tool selected then filter out the others
         if isinstance(tool_choice, ToolFunction):
             tools_info = [tool for tool in tools_info if tool.name == tool_choice.name]
 
-        # if tool_choice is "none" or if there are no tools then fully purge
-        # the tools (as some models (e.g. openai and mistral) get confused
-        # if you pass them tool definitions along with tool_choice == "none"
-        # (they both 'semi' use the tool by placing the arguments in JSON
-        # in their output!). on the other hand, anthropic actually errors if
-        # there are tools anywhere in the message stream and no tools defined.
         if tool_choice == 'none' or len(tools_info) == 0:
-            # allow model providers to implement a tools_required() method to
-            # force tools to be passed (we need this for anthropic)
             if not self.api.tools_required():
                 tools_info = []
             tool_choice = 'none'
 
-        model_output = self.api.generate(
-            input=input,
-            tools=tools_info,
-            tool_choice=tool_choice,
-            config=config,
-        )
-
-        # return results
-        return model_output
-
+        return input, tools_info, tool_choice, config
 
 def get_model(
     model: Union[str, Model],

@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
-from evalscope.utils.chat_service import ChatMessage
+from evalscope.api.messages import ChatMessage
 
 
 @dataclass

@@ -12,6 +12,7 @@ from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, Ev
 from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash
+from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -60,7 +61,7 @@ class TaskConfig(BaseArgument):
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
     timeout: Optional[float] = None  # Only used for server model
-    stream: bool = False  # Only used for server model
+    stream: Optional[bool] = None  # Only used for server model
 
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.AUTO
@@ -96,10 +97,6 @@ class TaskConfig(BaseArgument):
             self.model_id = self.model_id.replace(':', '-').replace('/', '-')
 
     def __init_eval_data_config(self):
-        # Set default eval_batch_size based on eval_type
-        if self.eval_batch_size is None:
-            self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
-
         # Post process limit
         if self.limit is not None:
             self.limit = parse_int_or_float(self.limit)
@@ -116,12 +113,12 @@ class TaskConfig(BaseArgument):
             elif self.model_task == ModelTask.TEXT_GENERATION:
                 if self.eval_type == EvalType.CHECKPOINT:
                     self.generation_config = {
-                        'max_length': 2048,
-                        'max_new_tokens': 512,
+                        'max_tokens': 2048,
                         'do_sample': False,
                         'top_k': 50,
                         'top_p': 1.0,
                         'temperature': 1.0,
+                        'n': 1,
                     }
                 elif self.eval_type == EvalType.SERVICE:
                     self.generation_config = {
@@ -130,6 +127,19 @@ class TaskConfig(BaseArgument):
                     }
         if isinstance(self.generation_config, dict):
             self.generation_config = GenerateConfig(**self.generation_config)
+        
+        # Set default values for generation_config
+        if self.timeout is not None:
+            deprecated_warning(logger, 'The `timeout` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.timeout` instead.')  # noqa: E501
+            self.generation_config.timeout = self.timeout
+        
+        if self.stream is not None:
+            deprecated_warning(logger, 'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.')  # noqa: E501
+            self.generation_config.stream = self.stream
+
+        if self.eval_batch_size is not None:
+            deprecated_warning(logger, 'The `eval_batch_size` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.batch` instead.')
+            self.generation_config.batch_size = self.eval_batch_size
 
     def __init_default_model_args(self):
         if self.model_args:

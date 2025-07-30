@@ -32,8 +32,8 @@ class GenerateConfig(BaseModel):
     timeout: Optional[int] = Field(default=None)
     """Request timeout (in seconds)."""
 
-    max_connections: Optional[int] = Field(default=None)
-    """Maximum number of concurrent connections to Model API (default is model specific)."""
+    batch_size: Optional[int] = Field(default=None)
+    """Maximum number of concurrent connections to Model API (default is model specific) or batch size for generation."""
 
     stream: Optional[bool] = Field(default=None)
     """Whether to stream the response (default is model specific)."""
@@ -68,10 +68,13 @@ class GenerateConfig(BaseModel):
     seed: Optional[int] = Field(default=None)
     """Random seed. OpenAI, Google, Mistral, Groq, HuggingFace, and vLLM only."""
 
+    do_sample: Optional[bool] = Field(default=None)
+    """Whether to use sampling; use greedy decoding otherwise. Only transformers models support this parameter."""
+
     top_k: Optional[int] = Field(default=None)
     """Randomly sample the next word from the top_k most likely next words. Anthropic, Google, HuggingFace, vLLM, and SGLang only."""
 
-    num_choices: Optional[int] = Field(default=None)
+    n: Optional[int] = Field(default=None)
     """How many chat completion choices to generate for each input message. OpenAI, Grok, Google, TogetherAI, vLLM, and SGLang only."""
 
     logprobs: Optional[bool] = Field(default=None)
@@ -109,9 +112,6 @@ class GenerateConfig(BaseModel):
 
     extra_body: Optional[Dict[str, Any]] = Field(default=None)
     """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
-
-    batch: Union[bool, int, None] = Field(default=None)
-    """Use batching API when available. True to enable batching with default configuration, False to disable batching, a number to enable batching of the specified batch size."""
 
     # migrate reasoning_history as a bool
     @model_validator(mode='before')

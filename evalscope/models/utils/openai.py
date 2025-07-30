@@ -147,8 +147,8 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['temperature'] = config.temperature
     if config.top_p is not None:
         params['top_p'] = config.top_p
-    if config.num_choices is not None:
-        params['n'] = config.num_choices
+    if config.n is not None:
+        params['n'] = config.n
     if config.logprobs is not None:
         params['logprobs'] = config.logprobs
     if config.top_logprobs is not None:
