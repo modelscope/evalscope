@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+# flake8: noqa: E501
 import copy
 import os
 from argparse import Namespace
@@ -11,8 +11,8 @@ from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, Ev
                                  JudgeStrategy, ModelTask, OutputType)
 from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
-from evalscope.utils.io_utils import dict_to_yaml, gen_hash
 from evalscope.utils.deprecation_utils import deprecated_warning
+from evalscope.utils.io_utils import dict_to_yaml, gen_hash
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -127,18 +127,27 @@ class TaskConfig(BaseArgument):
                     }
         if isinstance(self.generation_config, dict):
             self.generation_config = GenerateConfig(**self.generation_config)
-        
+
         # Set default values for generation_config
         if self.timeout is not None:
-            deprecated_warning(logger, 'The `timeout` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.timeout` instead.')  # noqa: E501
+            deprecated_warning(
+                logger,
+                'The `timeout` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.timeout` instead.'
+            )
             self.generation_config.timeout = self.timeout
-        
+
         if self.stream is not None:
-            deprecated_warning(logger, 'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.')  # noqa: E501
+            deprecated_warning(
+                logger,
+                'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.'
+            )
             self.generation_config.stream = self.stream
 
         if self.eval_batch_size is not None:
-            deprecated_warning(logger, 'The `eval_batch_size` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.batch` instead.')
+            deprecated_warning(
+                logger,
+                'The `eval_batch_size` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.batch` instead.'
+            )
             self.generation_config.batch_size = self.eval_batch_size
 
     def __init_default_model_args(self):

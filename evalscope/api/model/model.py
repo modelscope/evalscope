@@ -60,7 +60,7 @@ class ModelAPI(abc.ABC):
            ModelOutput
         """
         ...
-        
+
     def batch_generate(
         self,
         inputs: List[List[ChatMessage]],
@@ -69,15 +69,15 @@ class ModelAPI(abc.ABC):
         configs: List[GenerateConfig],
     ) -> Generator[ModelOutput, None, None]:
         """Default batch implementation using individual generate calls.
-        
+
         ModelAPI implementations can override this for optimized batch processing.
-        
+
         Args:
           inputs: List of preprocessed chat message inputs.
           tools: List of tools for each input.
           tool_choices: List of tool choices for each input.
           configs: List of configs for each input.
-          
+
         Returns:
             Generator yielding ModelOutput for each input.
         """
@@ -86,13 +86,13 @@ class ModelAPI(abc.ABC):
         def single_generate(args):
             input_msgs, input_tools, tool_choice, config = args
             return self.generate(input_msgs, input_tools, tool_choice, config)
-        
+
         with ThreadPoolExecutor(max_workers=self.config.batch_size) as executor:
             futures = []
             for input_msgs, input_tools, tool_choice, config in zip(inputs, tools, tool_choices, configs):
                 future = executor.submit(single_generate, (input_msgs, input_tools, tool_choice, config))
                 futures.append(future)
-            
+
             for future in futures:
                 yield future.result()
 
@@ -173,11 +173,11 @@ class Model:
         return f'Model(name={self.name}, role={self.role})'
 
     def generate(
-            self,
-            input: Union[str, List[ChatMessage]],
-            tools: Optional[Sequence[ToolInfo]] = None,
-            tool_choice: Optional[ToolChoice] = None,
-            config: Optional[GenerateConfig] = None,
+        self,
+        input: Union[str, List[ChatMessage]],
+        tools: Optional[Sequence[ToolInfo]] = None,
+        tool_choice: Optional[ToolChoice] = None,
+        config: Optional[GenerateConfig] = None,
     ) -> ModelOutput:
         """Generate output from the model.
 
@@ -192,9 +192,8 @@ class Model:
            ModelOutput
         """
         processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
-            input, tools, tool_choice, config
-        )
-        
+            input, tools, tool_choice, config)
+
         # Call the model's generate method
         output = self.api.generate(
             input=processed_input,
@@ -205,7 +204,6 @@ class Model:
 
         # return output
         return output
-
 
     def batch_generate(
         self,
@@ -226,11 +224,7 @@ class Model:
 
         for input_item, input_tools, input_tool_choice, input_config in zip(inputs, tools, tool_choices, configs):
             processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
-                input=input_item,
-                tools=input_tools,
-                tool_choice=input_tool_choice,
-                config=input_config
-            )
+                input=input_item, tools=input_tools, tool_choice=input_tool_choice, config=input_config)
             preprocessed_data.append((processed_input, processed_tools, processed_tool_choice, processed_config))
 
         # check if ModelAPI supports batch processing
@@ -238,11 +232,7 @@ class Model:
             # use the batch_generate method of the ModelAPI
             inputs, tools, tool_choices, configs = zip(*preprocessed_data)
             batch_results = self.api.batch_generate(
-                inputs=list(inputs),
-                tools=list(tools),
-                tool_choices=list(tool_choices),
-                configs=list(configs)
-            )
+                inputs=list(inputs), tools=list(tools), tool_choices=list(tool_choices), configs=list(configs))
             for result in batch_results:
                 yield result
         else:
@@ -293,6 +283,7 @@ class Model:
             tool_choice = 'none'
 
         return input, tools_info, tool_choice, config
+
 
 def get_model(
     model: Union[str, Model],

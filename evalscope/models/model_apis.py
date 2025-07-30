@@ -2,6 +2,7 @@ from evalscope.api.model import ModelAPI
 from evalscope.api.registry import register_model_api
 from evalscope.utils.deprecation_utils import deprecated
 
+
 @register_model_api(name='mockllm')
 def mockllm() -> type[ModelAPI]:
     from .mockllm import MockLLM
@@ -23,16 +24,17 @@ def server() -> type[ModelAPI]:
 
     return OpenAICompatibleAPI
 
-@register_model_api(name="llm_ckpt")
+
+@register_model_api(name='llm_ckpt')
 def llm_ckpt() -> type[ModelAPI]:
     from .modelscope import ModelScopeAPI
- 
+
     return ModelScopeAPI
 
 
-@register_model_api(name="checkpoint")
+@register_model_api(name='checkpoint')
 @deprecated(since='1.0.0', remove_in='1.1.0', alternative='llm_ckpt')
 def checkpoint() -> type[ModelAPI]:
     from .modelscope import ModelScopeAPI
- 
+
     return ModelScopeAPI

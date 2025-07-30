@@ -42,6 +42,7 @@ def deprecated(since: str, remove_in: Optional[str] = None, alternative: Optiona
 
     return decorator
 
+
 def deprecated_warning(logger, message: str):
     """
     Log a deprecation warning.
