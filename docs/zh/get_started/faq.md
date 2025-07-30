@@ -201,9 +201,9 @@ A: 参考这个 https://evalscope.readthedocs.io/zh-cn/latest/get_started/parame
 
 A: 支持的，请使用`use_cache`参数定传入上次评测输出的路径即可重用模型预测结果以及review结果。
 
-### Q31: evalscope app 使用 `ttp://localhost:port` 和 `http://ip:port` 都无法访问
+### Q31: evalscope app 使用 `http://localhost:port` 和 `http://ip:port` 都无法访问
 
-A: 升级gradio版本到5.4.0后
+A: 升级gradio版本到5.4.0后即可解决。
 
 ### Q32: 使用Evalscope进行评测时，使用IFEval基准评测，指标为啥与技术报告上的指标相差很远？例如在qwen3的技术报告上IFEval strict prompt是39.9，但是我已经去掉思维链，指标才是23.5
 
@@ -211,7 +211,7 @@ A: 这里有最佳实践：https://evalscope.readthedocs.io/zh-cn/latest/best_pr
 
 需要对照着设置generation config
 
-### Q33: "remove_until": "" 已经移除了思维链，但是保存的json文件中回复仍然带着和
+### Q33: "remove_until": "" 已经移除了思维链，但是为什么保存的json文件中回复仍然带着“和”
 
 A: 这个不影响，计算指标时会进行后处理
 
@@ -238,13 +238,13 @@ A: 这个环境变量需要在启动vLLM模型服务的时候配置，
 
 ### Q37: evalscope[app]==0.16.3和bfcl-eval安装环境冲突
 
-A: 请安装bfcl-eval 2025.6.16版本
+A: 请安装bfcl-eval `2025.6.16` 版本
 
 并且尝试分别安装这两个库，不一起安装
 
 ### Q38: conda 创建py310环境，pip install evalscope[all] 安装依赖包时编译出现错误，未安装成功
 
-A: 先安装`pip install dotenv`，再执行全部安装，能否解决问题
+A: 先安装`pip install dotenv`，再执行全部安装，这通常可以解决问题。
 
 ### Q39: VLMEvalKit 后端处理VLM模型输出时，不支持流式么，stream参数不起效
 
@@ -334,7 +334,7 @@ evalscope框架使用chat方式进行评测，因此请使用instruct模型来�
 
 ### Q53: 评估指标原理，score的计算原理是什么？
 
-A： 可以通过这个文档来了解一下整个流程：https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html#id1
+A: 可以通过这个文档来了解一下整个流程：https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html#id1
 
 具体的score分数计算建议参考源代码 https://github.com/modelscope/evalscope/blob/main/evalscope/metrics/named_metrics.py
 
@@ -381,7 +381,7 @@ A: 不要在notebook环境中运行，请写一个python脚本，在终端中运
 
 ### Q59: 使用Qwen2.5-0.5B-Instruct模型，evalscope速度基准测试（本地vLLM推理）报Cannot connect to host 127.0.0.1:8877 ssl:default错误
 
-A: 多等待一会儿呢，会自动从本地vllm拉起服务
+A: 请等待一会儿，会自动从本地vllm拉起服务
 
 ### Q60: 如何针对多模态大模型进行测评
 
@@ -419,7 +419,7 @@ vlmevalkit不支持qwen2.5omni直接推理，但可以用vLLM拉起一个模型�
 
 A: speed_benchmark 只有8个请求，而默认 Expected number of requests 是 100
 
-### Q67: 是否支持NPU多卡只接测评
+### Q67: 是否支持NPU多卡直接评测
 
 A: 
 - 可以使用vLLM拉起模型API服务，这样可以指定tp
@@ -467,6 +467,81 @@ A: 在model参数里面设置：
 ### Q73: 从modelscope下载的数据集，dataset_infos.json中缺少dtype是什么问题？很多数据集从本地加载的话，貌似 dataset_id要指定精确到jsonl文件。mmlu数据集需要指定到data/test目录。都不能只指定数据集名那个目录
 
 A: 已知问题，临时解决方法是删掉数据集中的dataset_infos.json文件
+
+
+### Q74: ms-opencompass和ms-vlmeval的源码可以提供一下吗
+
+A: 这两个是fork了opencompass和vlmeval 原始仓库上进行了一些修改并打包：
+
+ms-vlmeval 是 https://github.com/Yunnglin/VLMEvalKit/tree/eval_scope
+ms-opencompass 是 https://github.com/wangxingjun778/opencompass
+
+### Q75: 配置--dataset-hub "local" --dataset-dir ~/.cache/modelscope/hub/datasets 还是走的在线下载
+
+A: 请查看教程：https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#id13
+执行的命令参数不对
+
+### Q76: realwordqa 评测模型最后输出来的是选abcd的准确率吗？
+
+A: 是选项的准确率，参考：https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html#id3
+
+MCQ基本都是选项的准确率
+
+### Q77: QwQ在ifeval上精度和官方不对齐, 我在A800上测QwQ-32B在IFEval数据集上的精度，用evalscope测出来只有51，但是用QwQ官方仓库的脚本测却有82，请问evalscope测QwQ是有啥特殊的设置嘛？
+
+A: datast-args 的 ifeval加上 `"filters": {"remove_until": "</think>"}'`
+
+### Q78: API模型服务评测embeddings报错,openai.BadRequestError: Error code: 400 - {'object': 'error', 'message': 'dimensions is currently not supported', 'type': 'BadRequestError', 'param': None, 'code': 400}
+
+A: 设置`'dimensions': None`再试试
+
+### Q79: 请教一下app里面的数据集概览显示情况，evalscope app里面界面中我选的单模型——数据集概览，分数表中显示的只有一个分数；但单模型——数据集详情显示很详细，每个指标都给出分数了。同时多模型比较里面显示的也是只有BLEU-1。所以有个疑问，概览里面只展示BLEU-1是比较看重这个指标吗？还是默认选择详情的第一条作为显示？
+
+A: 多模型比较里面默认使用了数据集的第一个metric进行展示
+
+### Q80: 为啥测ollama并发性能上不去？
+
+A: 可以加一个 export OLLAMA_NUM_PARALLEL=10 试试
+
+### Q81: 请问自己构建的多选题格式测试集，answer应该怎么写
+
+A: LLM的自定义多选题格式参考这里：https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq
+
+### Q82: 后端推理框架使用华为的mindie时，无法使用--min-tokens 2048 \--max-tokens 2048 \控制输出的长度
+
+A: `--min-tokens` 不是所有模型服务都支持该参数，请查看对应API服务的文档。
+
+### Q83: evalscope 当前内置的评测集（例如 LiveCodebench、AIME、MATH-500）等只支持 pass1 评测，与社区的主流做法存在差异（例如 QwQ 提供的评测方案
+
+A: 
+1. 本框架支持QwQ评测中的n_sample参数，在generation config中设置n可计算多个sample的平均指标，参考：https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5
+2. 本框架支持 pass@k 指标，参考 https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id3 中的metrics_list
+
+### Q84: evalscope Live_code_bench review阶段卡住
+
+A: 设置`judge_worker_num=1`
+
+### Q85: 评估Qwen2-audio的时候，跑了几个文本指标，回复的内容全是感叹号
+
+A: 目前对于本地加载的多模态模型支持并不完善，建议使用vllm等推理服务拉起api来评测
+
+### Q86: 速度基准测试脚本使用/v1/chat/completions运行报错
+
+A: 速度测试--url需要使用/v1/completions端点，而不是/v1/chat/completions，避免chat template的额外处理对输入长度有影响。
+
+### Q87: --stream 的统计是否需要加上reasoning_content的内容
+
+A: reasoning_content 也是模型输出的一部分，对于模型推理的速度没有影响，最终completion token长度里面是加上了reasoning的长度的
+
+### Q88: 评测多模态大模型时报错：Unknown benchmark
+
+A: 多模态评测参考[这里](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmevalkit) ，需要使用VLMEval 工具
+
+### Q89: 评估Gemma3系列模型时出现RuntimeError: CUDA error: device-side assert triggered错误
+
+A: gemma3是多模态模型，目前框架的chat_adapter对于多模态模型的支持不是很完善，建议使用模型推理框架（vllm等）拉起模型服务来进行评测
+
+
 
 
 ## 模型压测
@@ -608,7 +683,7 @@ A: 压测不支持app可视化，但可以用wandb和swanlab来可视化，参�
 
 ### Q20: 我想使用eval命令调用本地https服务评测自己的数据集，请求服务时需要往请求头里塞一个token, 调用https模型服务的时候需要在headers里放入一个token参数，我使用perf命令是支持的，通过--header参数，类似于--headers 参数名=mytoken这种形式
 
-A: 在generation_config中设置 `{"extra_headers": {"key": "value"}}`试试呢
+A: 在generation_config中设置 `{"extra_headers": {"key": "value"}}`即可。
 
 ### Q21: 使用 evalscope perf 如何 调用 本地的数据集
 
@@ -616,6 +691,22 @@ A: 参考这里：https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stre
 
 需指定dataset为 line_by_line 并提供dataset_path，会逐行将txt文件的每一行作为一个提示
 
-### Q22: valscope - WARNING - Retrying... <404> {"detail": "Not Found"} perf 端口连接不上
+### Q22: evalscope - WARNING - Retrying... <404> {"detail": "Not Found"} perf 端口连接不上
 
 A: 你需要先部署模型服务才能开始压测
+
+### Q23: speed_benchmark代码判断接口是否为"v1/chat/completion",会导致v1/chat/completion压测报错
+
+A: speed_benchmark 只支持 v1/completions 接口
+
+https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/speed_benchmark.html#api
+
+### Q24: 模型是ollma运行的，evalscope perf --max-tokens这个参数设置后看结果的输出token不到4096
+
+A: 应该是ollama的服务不支持max-tokens这个参数
+
+### Q25: 本地vllm部署qwen2.5vl-3b模型，如何通过perf压测？
+
+A: 参考：https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/parameters.html#id5
+
+数据集设置`flickr8k`
