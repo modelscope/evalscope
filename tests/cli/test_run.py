@@ -254,7 +254,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-Coder-7B-Instruct',
+            model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -374,7 +374,7 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=10,
-            limit=50,
+            limit=5,
             # debug=True,
             stream=True,
             generation_config={
