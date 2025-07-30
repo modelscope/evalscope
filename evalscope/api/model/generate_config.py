@@ -35,6 +35,9 @@ class GenerateConfig(BaseModel):
     max_connections: Optional[int] = Field(default=None)
     """Maximum number of concurrent connections to Model API (default is model specific)."""
 
+    stream: Optional[bool] = Field(default=None)
+    """Whether to stream the response (default is model specific)."""
+
     system_message: Optional[str] = Field(default=None)
     """Override the default system message."""
 

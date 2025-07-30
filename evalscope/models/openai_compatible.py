@@ -8,8 +8,8 @@ from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
-from .utils.openai import (chat_choices_from_openai, model_output_from_openai, openai_chat_messages,
-                           openai_chat_tool_choice, openai_chat_tools, openai_completion_params,
+from .utils.openai import (chat_choices_from_openai, collect_stream_response, model_output_from_openai,
+                           openai_chat_messages, openai_chat_tool_choice, openai_chat_tools, openai_completion_params,
                            openai_handle_bad_request)
 
 logger = get_logger()
@@ -67,7 +67,6 @@ class OpenAICompatibleAPI(ModelAPI):
             tools=len(tools) > 0,
         )
 
-        # prepare request (we do this so we can log the ModelCall)
         request = dict(
             messages=openai_chat_messages(input),
             tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
@@ -77,7 +76,10 @@ class OpenAICompatibleAPI(ModelAPI):
 
         try:
             # generate completion and save response for model call
-            completion: ChatCompletion = self.client.chat.completions.create(**request)
+            completion = self.client.chat.completions.create(**request)
+            # handle streaming response
+            if not isinstance(completion, ChatCompletion):
+                completion = collect_stream_response(completion)
             response = completion.model_dump()
             self.on_response(response)
 

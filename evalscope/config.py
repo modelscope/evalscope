@@ -6,6 +6,7 @@ from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
+from evalscope.api.model import GenerateConfig
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
                                  JudgeStrategy, ModelTask, OutputType)
 from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
@@ -35,7 +36,7 @@ class TaskConfig(BaseArgument):
     dataset_hub: str = HubType.MODELSCOPE
 
     # Generation configuration arguments
-    generation_config: Dict = field(default_factory=dict)
+    generation_config: Union[Dict, GenerateConfig] = field(default_factory=dict)
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT
@@ -104,30 +105,31 @@ class TaskConfig(BaseArgument):
             self.limit = parse_int_or_float(self.limit)
 
     def __init_default_generation_config(self):
-        if self.generation_config:
-            return
-        if self.model_task == ModelTask.IMAGE_GENERATION:
-            self.generation_config = {
-                'height': 1024,
-                'width': 1024,
-                'num_inference_steps': 50,
-                'guidance_scale': 9.0,
-            }
-        elif self.model_task == ModelTask.TEXT_GENERATION:
-            if self.eval_type == EvalType.CHECKPOINT:
+        if not self.generation_config:
+            if self.model_task == ModelTask.IMAGE_GENERATION:
                 self.generation_config = {
-                    'max_length': 2048,
-                    'max_new_tokens': 512,
-                    'do_sample': False,
-                    'top_k': 50,
-                    'top_p': 1.0,
-                    'temperature': 1.0,
+                    'height': 1024,
+                    'width': 1024,
+                    'num_inference_steps': 50,
+                    'guidance_scale': 9.0,
                 }
-            elif self.eval_type == EvalType.SERVICE:
-                self.generation_config = {
-                    'max_tokens': 2048,
-                    'temperature': 0.0,
-                }
+            elif self.model_task == ModelTask.TEXT_GENERATION:
+                if self.eval_type == EvalType.CHECKPOINT:
+                    self.generation_config = {
+                        'max_length': 2048,
+                        'max_new_tokens': 512,
+                        'do_sample': False,
+                        'top_k': 50,
+                        'top_p': 1.0,
+                        'temperature': 1.0,
+                    }
+                elif self.eval_type == EvalType.SERVICE:
+                    self.generation_config = {
+                        'max_tokens': 2048,
+                        'temperature': 0.0,
+                    }
+        if isinstance(self.generation_config, dict):
+            self.generation_config = GenerateConfig(**self.generation_config)
 
     def __init_default_model_args(self):
         if self.model_args:

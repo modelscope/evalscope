@@ -1,16 +1,17 @@
 import base64
 import json
 import re
+from collections import defaultdict
 from copy import copy
 from openai import APIStatusError, OpenAIError
-from openai.types.chat import (ChatCompletion, ChatCompletionAssistantMessageParam, ChatCompletionContentPartImageParam,
-                               ChatCompletionContentPartInputAudioParam, ChatCompletionContentPartParam,
-                               ChatCompletionContentPartRefusalParam, ChatCompletionContentPartTextParam,
-                               ChatCompletionDeveloperMessageParam, ChatCompletionMessage, ChatCompletionMessageParam,
-                               ChatCompletionMessageToolCall, ChatCompletionMessageToolCallParam,
-                               ChatCompletionNamedToolChoiceParam, ChatCompletionSystemMessageParam,
-                               ChatCompletionToolChoiceOptionParam, ChatCompletionToolMessageParam,
-                               ChatCompletionToolParam, ChatCompletionUserMessageParam)
+from openai.types.chat import (ChatCompletion, ChatCompletionAssistantMessageParam, ChatCompletionChunk,
+                               ChatCompletionContentPartImageParam, ChatCompletionContentPartInputAudioParam,
+                               ChatCompletionContentPartParam, ChatCompletionContentPartRefusalParam,
+                               ChatCompletionContentPartTextParam, ChatCompletionDeveloperMessageParam,
+                               ChatCompletionMessage, ChatCompletionMessageParam, ChatCompletionMessageToolCall,
+                               ChatCompletionMessageToolCallParam, ChatCompletionNamedToolChoiceParam,
+                               ChatCompletionSystemMessageParam, ChatCompletionToolChoiceOptionParam,
+                               ChatCompletionToolMessageParam, ChatCompletionToolParam, ChatCompletionUserMessageParam)
 from openai.types.chat.chat_completion import Choice, ChoiceLogprobs
 from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.completion_usage import CompletionUsage
@@ -125,6 +126,11 @@ def openai_chat_messages(
 
 def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
     params: Dict[str, Any] = dict(model=model)
+    # handle stream option
+    if config.stream is not None:
+        params['stream'] = config.stream
+        if config.stream:
+            params['stream_options'] = {'include_usage': True}
     if config.max_tokens is not None:
         params['max_tokens'] = config.max_tokens
     if config.frequency_penalty is not None:
@@ -551,3 +557,94 @@ def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValu
         re.sub(internal_pattern, '', content, flags=re.DOTALL).strip(),
         json.loads(base64.b64decode(internal_match.group(1)).decode('utf-8')),
     ) if internal_match else (content, None))
+
+
+def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatCompletion:
+    collected_chunks: List[ChatCompletionChunk] = []
+    collected_messages = defaultdict(list)
+    collected_reasoning = defaultdict(list)
+    collected_tool_calls = defaultdict(dict)
+
+    for chunk in response_stream:
+        collected_chunks.append(chunk)
+        for choice in chunk.choices:
+            # Handle reasoning content
+            if hasattr(choice.delta, 'reasoning_content') and choice.delta.reasoning_content is not None:
+                collected_reasoning[choice.index].append(choice.delta.reasoning_content)
+
+            # Handle regular content
+            if choice.delta.content is not None:
+                collected_messages[choice.index].append(choice.delta.content)
+
+            # Handle tool calls
+            if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
+                for tool_call in choice.delta.tool_calls:
+                    tool_id = tool_call.index
+
+                    # Initialize tool call if not present
+                    if tool_id not in collected_tool_calls[choice.index]:
+                        collected_tool_calls[choice.index][tool_id] = {
+                            'id': tool_call.id if hasattr(tool_call, 'id') and tool_call.id else None,
+                            'type': tool_call.type if hasattr(tool_call, 'type') and tool_call.type else None,
+                            'function': {
+                                'name': '',
+                                'arguments': ''
+                            }
+                        }
+
+                    # Update tool call with new chunks
+                    if hasattr(tool_call, 'function'):
+                        if hasattr(tool_call.function, 'name') and tool_call.function.name:
+                            collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
+
+                        if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
+                            collected_tool_calls[
+                                choice.index][tool_id]['function']['arguments'] += tool_call.function.arguments
+
+                    # Update ID if it was received later
+                    if hasattr(tool_call, 'id') and tool_call.id:
+                        collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
+
+    # Get all unique choice indices from all collections
+    all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(collected_tool_calls.keys())
+
+    choices = []
+    for index in all_indices:
+        full_reply_content = ''.join(collected_messages.get(index, []))
+        reasoning = ''.join(collected_reasoning.get(index, []))
+
+        # Process tool_calls for this choice if any exists
+        tool_calls_list = None
+        if index in collected_tool_calls and collected_tool_calls[index]:
+            tool_calls_list = list(collected_tool_calls[index].values())
+            # Filter out any tool calls with None id (incomplete tool calls)
+            tool_calls_list = [tc for tc in tool_calls_list if tc['id'] is not None]
+
+        # use the finish_reason from the last chunk that generated this choice
+        finish_reason = None
+        for chunk in reversed(collected_chunks):
+            if chunk.choices and chunk.choices[0].index == index:
+                finish_reason = chunk.choices[0].finish_reason
+                break
+
+        message_kwargs = {'role': 'assistant', 'content': full_reply_content}
+
+        if reasoning:
+            message_kwargs['reasoning_content'] = reasoning
+
+        if tool_calls_list:
+            message_kwargs['tool_calls'] = tool_calls_list
+
+        choice = Choice(
+            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs))
+        choices.append(choice)
+
+    # build the final completion object
+    return ChatCompletion(
+        id=collected_chunks[0].id,
+        choices=choices,
+        created=collected_chunks[0].created,
+        model=collected_chunks[0].model,
+        object='chat.completion',
+        usage=collected_chunks[-1].usage  # use the usage from the last chunk
+    )
