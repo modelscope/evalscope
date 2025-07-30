@@ -21,7 +21,11 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
+def get_logger(log_file: Optional[str] = None,
+               name: Optional[str] = None,
+               log_level: int = DEFAULT_LEVEL,
+               file_mode: str = 'w',
+               force=False):
     """Get logging logger
 
     Args:
@@ -32,7 +36,7 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
             specified (if filemode is unspecified, it defaults to 'w').
     """
 
-    logger_name = __name__.split('.')[0]
+    logger_name = name or __name__.split('.')[0]
     logger = logging.getLogger(logger_name)
     logger.propagate = False
 

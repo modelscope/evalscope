@@ -9,7 +9,7 @@ from evalscope.utils import gen_hash, get_logger, safe_filename
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
 from .utils import data_to_samples
 
-logger = get_logger()
+logger = get_logger(name=__name__)
 
 
 class DataLoader(ABC):

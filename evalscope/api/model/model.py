@@ -9,7 +9,7 @@ from evalscope.utils import get_logger
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 
-logger = get_logger()
+logger = get_logger(name=__name__)
 
 
 class ModelAPI(abc.ABC):
