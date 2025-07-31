@@ -3,9 +3,10 @@ import os
 from collections import defaultdict
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import Metric, mean, metric_registry
+from evalscope.metrics import mean, metric_registry
 from evalscope.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
 

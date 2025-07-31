@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
@@ -114,3 +114,64 @@ def get_model_api(name: str) -> Type['ModelAPI']:
 
 
 # END: Registry for model APIs
+
+# BEGIN: Registry for metrics
+# The following code is adapted from lm-evaluation-harness
+METRIC_REGISTRY = {}
+METRIC_AGGREGATION_REGISTRY = {}
+AGGREGATION_REGISTRY: Dict[str, Callable[[], Dict[str, Callable]]] = {}
+HIGHER_IS_BETTER_REGISTRY = {}
+
+
+def register_metric(**args):
+
+    def decorate(fn):
+        assert 'metric' in args
+        name = args['metric']
+
+        for key, registry in [
+            ('metric', METRIC_REGISTRY),
+            ('higher_is_better', HIGHER_IS_BETTER_REGISTRY),
+            ('aggregation', METRIC_AGGREGATION_REGISTRY),
+        ]:
+            if key in args:
+                value = args[key]
+                assert value not in registry, (f"{key} named '{value}' conflicts with existing registered {key}!")
+
+                if key == 'metric':
+                    registry[name] = fn
+                elif key == 'aggregation':
+                    registry[name] = AGGREGATION_REGISTRY[value]
+                else:
+                    registry[name] = value
+
+        return fn
+
+    return decorate
+
+
+def get_metric(name: str) -> Callable:
+    if name in METRIC_REGISTRY:
+        return METRIC_REGISTRY[name]
+    else:
+        raise KeyError(f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}")
+
+
+def register_aggregation(name: str):
+
+    def decorate(fn):
+        assert name not in AGGREGATION_REGISTRY, (
+            f"aggregation named '{name}' conflicts with existing registered aggregation!")
+
+        AGGREGATION_REGISTRY[name] = fn
+        return fn
+
+    return decorate
+
+
+def get_aggregation(name: str) -> Callable[[], Dict[str, Callable]]:
+    if name not in AGGREGATION_REGISTRY:
+        raise KeyError(
+            f"Aggregation '{name}' not found in the registry. Available aggregations: {list(AGGREGATION_REGISTRY.keys())}"  # noqa: E501
+        )
+    return AGGREGATION_REGISTRY[name]

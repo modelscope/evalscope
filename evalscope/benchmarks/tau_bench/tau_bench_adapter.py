@@ -2,8 +2,9 @@ import importlib
 from collections import defaultdict
 from typing import Dict, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import Metric, mean, metric_registry
+from evalscope.metrics import mean, metric_registry
 from evalscope.utils import get_logger
 
 logger = get_logger()

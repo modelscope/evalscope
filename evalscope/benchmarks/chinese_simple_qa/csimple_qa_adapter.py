@@ -1,8 +1,9 @@
 import re
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.metrics import LLMJudge, mean, metric_registry
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa

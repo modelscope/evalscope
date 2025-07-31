@@ -177,6 +177,11 @@ class ModelOutput(BaseModel):
                     stop_reason='stop',
                 ))
 
+    @property
+    def completions(self) -> List[str]:
+        """List of all message choices text."""
+        return [choice.message.text for choice in self.choices]
+
     @staticmethod
     def from_content(
         model: str,

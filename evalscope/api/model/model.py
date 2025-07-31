@@ -1,4 +1,5 @@
 import abc
+import os
 from pydantic_core import to_jsonable_python
 from typing import Any, Dict, Generator, List, Literal, Optional, Sequence, Union
 
@@ -6,6 +7,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessag
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger
+from evalscope.utils.io_utils import safe_filename
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 
@@ -32,6 +34,7 @@ class ModelAPI(abc.ABC):
            config (GenerateConfig): Model configuration.
         """
         self.model_name = model_name
+        self.model_id = safe_filename(os.path.basename(model_name))
         self.base_url = base_url
         self.api_key = api_key
         self.config = config
@@ -161,6 +164,11 @@ class Model:
         return self.api.model_name
 
     @property
+    def model_id(self) -> str:
+        """Model ID."""
+        return self.api.model_id
+
+    @property
     def role(self) -> Optional[str]:
         """Model role."""
         return self._role
@@ -170,7 +178,7 @@ class Model:
         self._role = role
 
     def __str__(self) -> str:
-        return f'Model(name={self.name}, role={self.role})'
+        return f'Model(name={self.model_id}, role={self.role})'
 
     def generate(
         self,

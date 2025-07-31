@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage
+from evalscope.api.tool import ToolInfo
 
 
 @dataclass
@@ -23,13 +24,22 @@ class Sample:
     id: Optional[Union[int, str]] = None
     """Unique identifier for sample."""
 
-    metadata: dict[str, Any] = field(default_factory=dict)
+    tools: Optional[List[ToolInfo]] = None
+    """List of tools available to the model during inference (optional)."""
+
+    category: Optional[str] = None
+    """Category of the sample (optional)."""
+
+    subset_key: Optional[str] = None
+    """Key for the subset this sample belongs to, used for generating subsets (optional)."""
+
+    metadata: Dict[str, Any] = field(default_factory=dict)
     """Arbitrary metadata associated with the sample."""
 
     sandbox: Optional[str] = None
     """Sandbox environment type and optional config file."""
 
-    files: Optional[dict[str, str]] = None
+    files: Optional[Dict[str, str]] = None
     """Files that go along with the sample (copied to SandboxEnvironment)"""
 
     setup: Optional[str] = None
@@ -209,7 +219,7 @@ class MemoryDataset(Dataset):
             sample.choices = shuffled_choices
             sample.target = self._remap_target(sample.target, position_map=position_map)
 
-    def _remap_target(self, target: Union[str, List[str]], position_map: dict[int, str]) -> Union[str, List[str]]:
+    def _remap_target(self, target: Union[str, List[str]], position_map: Dict[int, str]) -> Union[str, List[str]]:
         if isinstance(target, list):
             return [position_map[answer_index(t)] for t in target]
         else:
@@ -280,7 +290,7 @@ class DatasetDict:
         return len(self.datasets)
 
     @classmethod
-    def from_dataset(cls, dataset: Dataset, subset_key: str = None, format: str = '{}') -> 'DatasetDict':
+    def from_dataset(cls, dataset: Dataset) -> 'DatasetDict':
         """
         Create a DatasetDict from a single Dataset.
 
@@ -290,13 +300,11 @@ class DatasetDict:
         Returns:
             DatasetDict: A new DatasetDict containing the provided dataset.
         """
-        if subset_key:
-            data_dict = defaultdict(list)
-            dataset_dict = defaultdict(list)
-            for sample in dataset:
-                key = sample.metadata.get(subset_key, 'default')
-                data_dict[format.format(key)].append(sample)
-            for key, samples in data_dict.items():
-                dataset_dict[key] = MemoryDataset(samples, name=dataset.name)
-            return cls(dataset_dict)
-        return cls({dataset.name or 'default': dataset})
+        data_dict = defaultdict(list)
+        dataset_dict = defaultdict(list)
+        for sample in dataset:
+            subset_key = sample.subset_key or 'default'
+            data_dict[subset_key].append(sample)
+        for key, samples in data_dict.items():
+            dataset_dict[key] = MemoryDataset(samples, name=dataset.name)
+        return cls(dataset_dict)

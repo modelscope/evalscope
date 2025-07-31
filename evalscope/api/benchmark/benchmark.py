@@ -4,11 +4,15 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.metric import AggScore, SampleScore, TaskState
+from evalscope.api.model import Model
+from evalscope.report import Report
+from evalscope.utils.logger import get_logger
+
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
-from evalscope.api.dataset import DatasetDict
-from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -22,7 +26,7 @@ class DataAdapter(ABC):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
-        self.reformat_subset = {}
+        self.reformat_subset = False  # Whether to reformat the subset data with subset key
         self.split_as_subset = False
         self.use_llm_judge = False
 
@@ -35,19 +39,15 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def generate_prompts(self):
+    def run_inference(self, model: Model, sample: Sample) -> TaskState:
         pass
 
     @abstractmethod
-    def run_inference(self):
+    def calculate_metrics(self, task_state: TaskState) -> List[SampleScore]:
         pass
 
     @abstractmethod
-    def evaluate(self):
-        pass
-
-    @abstractmethod
-    def generate_report(self):
+    def generate_report(self, scores: List[AggScore]) -> Report:
         """
         Generate a report based on the evaluation results.
         """
