@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.model import Model
 from evalscope.report import Report
@@ -35,6 +36,9 @@ class DataAdapter(ABC):
         self.test_dataset: Optional[DatasetDict] = None
         self.fewshot_dataset: Optional[DatasetDict] = None
 
+        # filters
+        self._filter_ensemble: Optional[OrderedDict] = None
+
     @abstractmethod
     def load_dataset(self) -> DatasetDict:
         pass
@@ -48,7 +52,11 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def generate_report(self, scores: List[SampleScore]) -> Report:
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        pass
+
+    @abstractmethod
+    def generate_report(self, scores: List[AggScore]) -> Report:
         """
         Generate a report based on the evaluation results.
         """
@@ -153,11 +161,11 @@ class DataAdapter(ABC):
         return self._benchmark_meta.query_template
 
     @property
-    def fewshot_prompt_template(self) -> Optional[str]:
+    def few_shot_prompt_template(self) -> Optional[str]:
         """
         Return the few-shot prompt template of the benchmark.
         """
-        return self._benchmark_meta.fewshot_prompt_template
+        return self._benchmark_meta.few_shot_prompt_template
 
     @property
     def pretty_name(self) -> Optional[str]:
@@ -186,6 +194,23 @@ class DataAdapter(ABC):
         Return the filters of the benchmark.
         """
         return self._benchmark_meta.filters
+
+    @property
+    def filter_ensemble(self) -> Optional[FilterEnsemble]:
+        """
+        Return the filter ensemble of the benchmark.
+        """
+        if self._filter_ensemble is None:
+            if self.filters:
+                self._filter_ensemble = build_filter_ensemble(filters=self.filters)
+        return self._filter_ensemble
+
+    @property
+    def aggregation(self) -> str:
+        """
+        Return the aggregation function for the metrics.
+        """
+        return self._benchmark_meta.aggregation
 
     @property
     def extra_params(self) -> Optional[Dict]:

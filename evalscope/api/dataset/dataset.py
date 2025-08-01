@@ -280,6 +280,9 @@ class DatasetDict:
     def __delitem__(self, key: str) -> None:
         del self.datasets[key]
 
+    def get(self, key: str, default: Optional[Dataset] = None) -> Optional[Dataset]:
+        return self.datasets.get(key, default)
+
     def items(self):
         return self.datasets.items()
 

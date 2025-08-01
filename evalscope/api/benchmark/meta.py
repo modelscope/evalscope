@@ -34,9 +34,6 @@ class BenchmarkMeta:
     default_subset: str = 'default'
     """ Default subset to use for the benchmark."""
 
-    metric_list: List[str] = field(default_factory=list)
-    """ List of metrics to evaluate the benchmark."""
-
     few_shot_num: int = 0
     """ Number of few-shot examples to use."""
 
@@ -52,7 +49,7 @@ class BenchmarkMeta:
     prompt_template: Optional[str] = None
     """ Prompt template to use for the benchmark."""
 
-    fewshot_prompt_template: Optional[str] = None
+    few_shot_prompt_template: Optional[str] = None
     """ Few-shot prompt template to use for the benchmark."""
 
     system_prompt: Optional[str] = None
@@ -72,6 +69,12 @@ class BenchmarkMeta:
 
     filters: Optional[OrderedDict] = None
     """ Filters to apply to the dataset on model output."""
+
+    metric_list: List[str] = field(default_factory=list)
+    """ List of metrics to evaluate the benchmark."""
+
+    aggregation: str = 'mean'
+    """ Aggregation function for the metrics. Default is 'mean'. Can be 'mean', 'pass@<k>' or a custom function name."""
 
     extra_params: Dict = field(default_factory=dict)
     """ Additional parameters for the benchmark."""

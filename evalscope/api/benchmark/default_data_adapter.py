@@ -1,14 +1,13 @@
 import os
 from collections import defaultdict
-from functools import partial
+from overrides import override
 from typing import Any, Callable, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.registry import get_filter, get_metric
-from evalscope.filters.ensemble import build_filter_ensemble
+from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.report import Report, ReportGenerator
 from .benchmark import DataAdapter
 
@@ -18,8 +17,12 @@ class DefaultDataAdapter(DataAdapter):
     Default Data Adapter for the benchmark.
     This class can be extended to implement specific data loading and processing logic.
     """
-    """ DATA LOADING HOOKS """
 
+    # ####################
+    # DATA LOADING METHODS
+    # ####################
+
+    @override
     def load_dataset(self) -> DatasetDict:
         if os.path.exists(self.dataset_id):
             # Load dataset from local path
@@ -28,13 +31,40 @@ class DefaultDataAdapter(DataAdapter):
             # Load dataset from remote source
             self.test_dataset = self.load_subsets(self.load_subset)
 
-            if self.few_shot_num > 0 and self.train_split:
+            if self.few_shot_num > 0:
+                assert self.train_split is not None, \
+                    'Train split must be specified for few-shot prompting.'
                 self.fewshot_dataset = self.load_subsets(self.load_fewshot_subset)
 
+        # process the sample input
+        for subset in self.test_dataset.keys():
+            for sample in self.test_dataset[subset]:
+                sample.input = self.process_sample_input(sample, subset=subset)
         return self.test_dataset
 
-    def load_subsets(self, load_func: Callable[[str], Dataset]) -> DatasetDict:
+    def process_sample_input(self, sample: Sample, subset: str) -> str:
+        if self.few_shot_num > 0:
+            few_shot_samples = self.fewshot_dataset.get(subset)
+            if few_shot_samples is None:
+                # Use the first key if subset is not found
+                first_key = next(iter(self.fewshot_dataset))
+                few_shot_samples = self.fewshot_dataset[first_key]
+            # join few-shot samples into a string
+            few_shot = '\n\n'.join([self.sample_to_fewshot(sample) for sample in few_shot_samples])
+            # Format the input text with few-shot examples
+            input_text = self.format_fewshot_template(fewshot=few_shot, prompt=sample.input)
+        else:
+            # No few-shot examples, use the prompt template directly
+            input_text = self.format_query_template(prompt=sample.input)
+        return input_text
 
+    def load_subsets(self, load_func: Callable[[str], Dataset]) -> DatasetDict:
+        """
+        Load subsets of the dataset using the provided load function.
+        This method handles the case where the dataset is split into multiple subsets.
+        If `reformat_subset` is True, it loads the default subset only.
+        Otherwise, it loads all subsets specified in `subset_list`.
+        """
         if self.reformat_subset:
             subset_data = load_func(self.default_subset)
             dataset_dict = DatasetDict.from_dataset(subset_data)
@@ -57,7 +87,7 @@ class DefaultDataAdapter(DataAdapter):
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
-            sample_fields=partial(self.record_to_sample, few_shot_num=self.few_shot_num),
+            sample_fields=self.record_to_sample,
             limit=self._task_config.limit,
             repeats=self._task_config.repeats,
             data_source=self._task_config.dataset_hub,
@@ -75,34 +105,42 @@ class DefaultDataAdapter(DataAdapter):
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
-            sample_fields=partial(self.record_to_sample, few_shot_num=0),
+            sample_fields=self.record_to_sample,
             limit=self.few_shot_num,
             shuffle=self.few_shot_random,
             data_source=self._task_config.dataset_hub,
         )
         return loader.load()
 
-    def record_to_sample(self, few_shot_num: int, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a record dictionary to a Sample object.
+        This method should be overridden in subclasses to implement specific data processing logic.
+        """
         raise NotImplementedError('This method should be implemented in subclasses')
 
     def sample_to_fewshot(self, sample: Sample) -> str:
+        """
+        Convert a Sample object to a few-shot example string.
+        This method should be overridden in subclasses to implement specific few-shot formatting logic.
+        """
         raise NotImplementedError('This method should be implemented in subclasses')
 
     def format_query_template(self, prompt: str) -> str:
         """
         Format the prompt template with the sample data.
-        This method can be overridden in subclasses to implement specific formatting logic.
         """
         return self.query_template.format(prompt=prompt)
 
     def format_fewshot_template(self, fewshot: str, prompt: str) -> str:
         """
         Format the few-shot template with the few-shot examples.
-        This method can be overridden in subclasses to implement specific formatting logic.
         """
-        return self.fewshot_prompt_template.format(fewshot=fewshot, prompt=prompt)
+        return self.few_shot_prompt_template.format(fewshot=fewshot, prompt=prompt)
 
-    """ INFERENCE HOOKS """
+    # #################
+    # INFERENCE METHODS
+    # #################
 
     def _on_inference_start(self, model: Model, sample: Sample) -> None:
         """
@@ -130,6 +168,7 @@ class DefaultDataAdapter(DataAdapter):
             completed=True,
         )
 
+    @override
     def run_inference(self, model: Model, sample: Sample) -> TaskState:
         self._on_inference_start(model, sample)
         model_output = self._on_inference(model, sample)
@@ -137,16 +176,17 @@ class DefaultDataAdapter(DataAdapter):
 
         return task_state
 
-    """ METRIC CALCULATION HOOKS """
+    # ##########################
+    # METRIC CALCULATION METHODS
+    # ##########################
 
     def filter_prediction(self, prediction: str) -> str:
         """
         Hook method called before calculating metrics. Typically filters or prepares the prediction.
         """
-        if self.filters:
+        if self.filter_ensemble is not None:
             # Apply filters to the result
-            filter_ensemble = build_filter_ensemble(filters=self.filters)
-            prediction = filter_ensemble(prediction)
+            prediction = self.filter_ensemble(prediction)
         return prediction
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str,
@@ -166,14 +206,16 @@ class DefaultDataAdapter(DataAdapter):
         # Calculate scores for each metric
         for metric in self.metric_list:
             metric_scorer = get_metric(metric)
-            metric_score = metric_scorer(
-                reference=reference,
+            metric_func = metric_scorer()
+            metric_score = metric_func(
                 prediction=filtered_prediction,
+                reference=reference,
             )
             score.value[metric] = metric_score
 
         return score
 
+    @override
     def calculate_metrics(self, task_state: TaskState) -> SampleScore:
         """
         Calculate evaluation metrics for the given task state.
@@ -203,15 +245,19 @@ class DefaultDataAdapter(DataAdapter):
 
         return sample_score
 
-    """ REPORT GENERATION HOOKS """
-
-    def _on_generate_report_start(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+    # #########################
+    # REPORT GENERATION METHODS
+    # #########################
+    @override
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Hook method called before generating the report. Typically used to aggregate scores.
-        First, aggregate scores by sample group ID.
-        Then, aggregate scores by sample ID.
         """
-        pass
+        aggregate_cls = get_aggregation(self.aggregation)
+        aggregator = aggregate_cls()
+        agg_scores = aggregator(sample_scores)
+
+        return agg_scores
 
     def _on_generate_report_end(self, report: Report) -> None:
         """
@@ -225,8 +271,8 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def generate_report(self, scores: List[SampleScore]) -> Report:
-        agg_scores = self._on_generate_report_start(scores)
-        report = self._on_generate_report(agg_scores)
+    @override
+    def generate_report(self, scores: List[AggScore]) -> Report:
+        report = self._on_generate_report(scores)
         self._on_generate_report_end(report)
         return report

@@ -36,33 +36,30 @@ Here are some examples of how to solve similar problems:
         description=
         'GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',  # noqa: E501
         subset_list=['main'],
-        metric_list=['AverageAccuracy'],
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        filters={'regex': {}},
+        filters={'regex': {
+            'regex_pattern': r'(-?[0-9.,]{2,})|(-?[0-9]+)',
+            'group_select': -1
+        }},
+        metric_list=['exact_match'],
         prompt_template=PROMPT_TEMPLATE,
-        fewshot_prompt_template=FEWSHOT_TEMPLATE,
+        few_shot_prompt_template=FEWSHOT_TEMPLATE,
     ))
 class GSM8KAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def record_to_sample(self, few_shot_num: int, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         DELIM = '####'
         question = record['question']
         answer = record['answer'].split(DELIM)
         target = answer.pop().strip()
         reasoning = DELIM.join(answer)
 
-        if few_shot_num > 0:
-            few_shot = '\n\n'.join(
-                [self.sample_to_fewshot(sample) for sample in self.fewshot_dataset[self.default_subset]])
-            input_text = self.format_fewshot_template(fewshot=few_shot, prompt=question)
-        else:
-            input_text = self.format_query_template(prompt=question)
-        return Sample(input=input_text, target=target, metadata={'reasoning': reasoning.strip()})
+        return Sample(input=question, target=target, metadata={'reasoning': reasoning.strip()})
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         if sample.metadata:
