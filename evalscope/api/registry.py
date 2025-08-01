@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional, Type, Union
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+    from evalscope.api.filter import Filter
     from evalscope.api.model.model import ModelAPI
     from evalscope.config import TaskConfig
     from evalscope.models import BaseModelAdapter
@@ -154,14 +155,15 @@ def get_metric(name: str) -> Callable:
     if name in METRIC_REGISTRY:
         return METRIC_REGISTRY[name]
     else:
-        raise KeyError(f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}")
+        raise ValueError(
+            f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}")
 
 
 def register_aggregation(name: str):
 
     def decorate(fn):
-        assert name not in AGGREGATION_REGISTRY, (
-            f"aggregation named '{name}' conflicts with existing registered aggregation!")
+        if name in AGGREGATION_REGISTRY:
+            raise ValueError(f"Aggregation named '{name}' conflicts with existing registered aggregation!")
 
         AGGREGATION_REGISTRY[name] = fn
         return fn
@@ -171,7 +173,35 @@ def register_aggregation(name: str):
 
 def get_aggregation(name: str) -> Callable[[], Dict[str, Callable]]:
     if name not in AGGREGATION_REGISTRY:
-        raise KeyError(
+        raise ValueError(
             f"Aggregation '{name}' not found in the registry. Available aggregations: {list(AGGREGATION_REGISTRY.keys())}"  # noqa: E501
         )
     return AGGREGATION_REGISTRY[name]
+
+
+# END: Registry for metrics
+
+# BEGIN: Registry for filters
+
+FILTER_REGISTRY: Dict[str, Type['Filter']] = {}
+
+
+def register_filter(name):
+
+    def decorate(cls):
+        if name in FILTER_REGISTRY:
+            raise ValueError(f'Registering filter `{name}` that is already in Registry {FILTER_REGISTRY}')
+        FILTER_REGISTRY[name] = cls
+        return cls
+
+    return decorate
+
+
+def get_filter(filter_name: str) -> Type['Filter']:
+    if filter_name not in FILTER_REGISTRY:
+        raise KeyError(
+            f"Filter '{filter_name}' not found in the registry. Available filters: {list(FILTER_REGISTRY.keys())}")
+    return FILTER_REGISTRY[filter_name]
+
+
+# END: Registry for filters

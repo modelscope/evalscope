@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
+from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
@@ -15,20 +16,21 @@ class TaskState:
     is completed or has hit a limit.
     """
 
-    def __init__(self,
-                 model: str,
-                 sample_id: Union[int, str],
-                 input: Union[str, List[ChatMessage]],
-                 messages: List[ChatMessage],
-                 target: str = '',
-                 output: Optional[ModelOutput] = None,
-                 completed: bool = False,
-                 metadata: Dict[str, Any] = {}) -> None:
+    def __init__(
+        self,
+        model: str,
+        sample: Sample,
+        messages: List[ChatMessage],
+        output: Optional[ModelOutput] = None,
+        completed: bool = False,
+    ) -> None:
         self._model = model
-        self._sample_id = sample_id
-        self._input = input
-        self._target = target
-        self._metadata = metadata
+        self._sample = sample
+        self._sample_id = sample.id
+        self._group_id = sample.group_id
+        self._input = sample.input
+        self._target = sample.target
+        self._metadata = sample.metadata
         self._messages: List[ChatMessage] = messages
         self._output = output if output else ModelOutput(model=str(model))
         self._completed = completed
@@ -44,6 +46,11 @@ class TaskState:
     def sample_id(self) -> Union[int, str]:
         """Unique id for sample."""
         return self._sample_id
+
+    @property
+    def group_id(self) -> Union[int, str]:
+        """Group id for sample."""
+        return self._group_id
 
     @property
     def input(self) -> Union[str, List[ChatMessage]]:

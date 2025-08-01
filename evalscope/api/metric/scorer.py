@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from .state import TaskState
+    from evalscope.api.evaluator import TaskState
 
 logger = get_logger(name=__name__)
 
@@ -48,6 +48,9 @@ class SampleScore(BaseModel):
 
     sample_id: Optional[Union[str, int]] = Field(default=None)
     """A sample id"""
+
+    group_id: Optional[Union[str, int]] = Field(default=None)
+    """A group id for the sample, used for grouping k repeated samples."""
 
     sample_metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Metadata from the sample"""

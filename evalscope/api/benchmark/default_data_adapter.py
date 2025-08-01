@@ -1,11 +1,14 @@
 import os
 from collections import defaultdict
+from functools import partial
 from typing import Any, Callable, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
-from evalscope.api.metric import AggScore, SampleScore, Score, TaskState
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.registry import get_metric
+from evalscope.api.registry import get_filter, get_metric
+from evalscope.filters.ensemble import build_filter_ensemble
 from evalscope.report import Report, ReportGenerator
 from .benchmark import DataAdapter
 
@@ -54,8 +57,9 @@ class DefaultDataAdapter(DataAdapter):
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
-            sample_fields=self.record_to_sample,
+            sample_fields=partial(self.record_to_sample, few_shot_num=self.few_shot_num),
             limit=self._task_config.limit,
+            repeats=self._task_config.repeats,
             data_source=self._task_config.dataset_hub,
         )
         return loader.load()
@@ -71,18 +75,32 @@ class DefaultDataAdapter(DataAdapter):
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
-            sample_fields=self.record_to_sample,
+            sample_fields=partial(self.record_to_sample, few_shot_num=0),
             limit=self.few_shot_num,
             shuffle=self.few_shot_random,
             data_source=self._task_config.dataset_hub,
         )
         return loader.load()
 
-    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, few_shot_num: int, record: Dict[str, Any]) -> Sample:
         raise NotImplementedError('This method should be implemented in subclasses')
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         raise NotImplementedError('This method should be implemented in subclasses')
+
+    def format_query_template(self, prompt: str) -> str:
+        """
+        Format the prompt template with the sample data.
+        This method can be overridden in subclasses to implement specific formatting logic.
+        """
+        return self.query_template.format(prompt=prompt)
+
+    def format_fewshot_template(self, fewshot: str, prompt: str) -> str:
+        """
+        Format the few-shot template with the few-shot examples.
+        This method can be overridden in subclasses to implement specific formatting logic.
+        """
+        return self.fewshot_prompt_template.format(fewshot=fewshot, prompt=prompt)
 
     """ INFERENCE HOOKS """
 
@@ -106,12 +124,10 @@ class DefaultDataAdapter(DataAdapter):
         """
         return TaskState(
             model=model.model_id,
-            sample_id=sample.id,
-            input=sample.input,
-            target=sample.target,
+            sample=sample,
+            messages=[model_output.message],
             output=model_output,
             completed=True,
-            metadata=sample.metadata,
         )
 
     def run_inference(self, model: Model, sample: Sample) -> TaskState:
@@ -123,60 +139,77 @@ class DefaultDataAdapter(DataAdapter):
 
     """ METRIC CALCULATION HOOKS """
 
-    def _on_calculate_metrics_start(self, prediction: str) -> str:
+    def filter_prediction(self, prediction: str) -> str:
         """
         Hook method called before calculating metrics. Typically filters or prepares the prediction.
         """
+        if self.filters:
+            # Apply filters to the result
+            filter_ensemble = build_filter_ensemble(filters=self.filters)
+            prediction = filter_ensemble(prediction)
         return prediction
 
-    def _on_calculate_metrics(self, reference: str, prediction: str, task_state: TaskState) -> Score:
+    def match_score(self, original_prediction: str, filtered_prediction: str, reference: str,
+                    task_state: TaskState) -> Score:
         """
         Hook method called to calculate metrics for the task state.
+        This method should be overridden in subclasses to implement specific metric calculations.
         """
-        # Filter or prepare the prediction
-        answer = self._on_calculate_metrics_start(prediction)
 
         # Initialize the score
-        score = Score(value={}, answer=answer, prediction=prediction, metadata=task_state.metadata)
+        score = Score(
+            answer=filtered_prediction,
+            prediction=original_prediction,
+            explanation=original_prediction,
+            metadata=task_state.metadata)
 
         # Calculate scores for each metric
         for metric in self.metric_list:
             metric_scorer = get_metric(metric)
             metric_score = metric_scorer(
-                reference=answer,
-                prediction=prediction,
+                reference=reference,
+                prediction=filtered_prediction,
             )
             score.value[metric] = metric_score
 
         return score
 
-    def calculate_metrics(self, task_state: TaskState) -> List[SampleScore]:
+    def calculate_metrics(self, task_state: TaskState) -> SampleScore:
         """
         Calculate evaluation metrics for the given task state.
         Note: There may be multiple choices in the task state output,
             handle by metrics, typically average over choices or calculate pass@k.
         """
-        sample_scores = []
-        for text in task_state.output.completions:
-            # Calculate the score
-            score = self._on_calculate_metrics(task_state.target, text, task_state)
+        assert task_state.completed, \
+            'TaskState must be completed before calculating metrics.'
 
-            sample_scores.append(
-                SampleScore(
-                    score=score,
-                    sample_id=task_state.sample_id,
-                    sample_metadata=task_state.metadata,
-                ))
+        prediction = task_state.output.completion
+        # Filter or prepare the prediction
+        filtered_prediction = self.filter_prediction(prediction)
 
-        return sample_scores
+        # Calculate the score
+        score = self.match_score(
+            original_prediction=prediction,
+            filtered_prediction=filtered_prediction,
+            reference=task_state.target,
+            task_state=task_state)
+
+        sample_score = SampleScore(
+            score=score,
+            sample_id=task_state.sample_id,
+            group_id=task_state.group_id,
+            sample_metadata=task_state.metadata,
+        )
+
+        return sample_score
 
     """ REPORT GENERATION HOOKS """
 
-    def _on_generate_report_start(self, sample_scores: List[List[SampleScore]]) -> List[AggScore]:
+    def _on_generate_report_start(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Hook method called before generating the report. Typically used to aggregate scores.
-        First, aggregate scores by sample ID.
-        Then, aggregate scores by metric.
+        First, aggregate scores by sample group ID.
+        Then, aggregate scores by sample ID.
         """
         pass
 
@@ -192,7 +225,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def generate_report(self, scores: List[AggScore]) -> Report:
+    def generate_report(self, scores: List[SampleScore]) -> Report:
         agg_scores = self._on_generate_report_start(scores)
         report = self._on_generate_report(agg_scores)
         self._on_generate_report_end(report)

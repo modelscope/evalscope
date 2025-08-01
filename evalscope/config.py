@@ -35,6 +35,7 @@ class TaskConfig(BaseArgument):
     dataset_args: Dict = field(default_factory=dict)
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
     dataset_hub: str = HubType.MODELSCOPE
+    repeats: int = 1  # Number of times to repeat the dataset items for k-metrics
 
     # Generation configuration arguments
     generation_config: Union[Dict, GenerateConfig] = field(default_factory=dict)
@@ -149,6 +150,14 @@ class TaskConfig(BaseArgument):
                 'The `eval_batch_size` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.batch` instead.'
             )
             self.generation_config.batch_size = self.eval_batch_size
+
+        if self.generation_config.n is not None and self.generation_config.n > 1:
+            self.repeats = self.generation_config.n
+            self.generation_config.n = 1
+            deprecated_warning(
+                logger,
+                'The `n` parameter in generation_config is deprecated and will be removed in v1.1.0. Use `TaskConfig.repeats` instead.'
+            )
 
     def __init_default_model_args(self):
         if self.model_args:

@@ -5,7 +5,8 @@ from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import DatasetDict, Sample
-from evalscope.api.metric import AggScore, SampleScore, TaskState
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.model import Model
 from evalscope.report import Report
 from evalscope.utils.logger import get_logger
@@ -43,11 +44,11 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def calculate_metrics(self, task_state: TaskState) -> List[SampleScore]:
+    def calculate_metrics(self, task_state: TaskState) -> SampleScore:
         pass
 
     @abstractmethod
-    def generate_report(self, scores: List[AggScore]) -> Report:
+    def generate_report(self, scores: List[SampleScore]) -> Report:
         """
         Generate a report based on the evaluation results.
         """
@@ -150,6 +151,13 @@ class DataAdapter(ABC):
         Return the query template of the benchmark.
         """
         return self._benchmark_meta.query_template
+
+    @property
+    def fewshot_prompt_template(self) -> Optional[str]:
+        """
+        Return the few-shot prompt template of the benchmark.
+        """
+        return self._benchmark_meta.fewshot_prompt_template
 
     @property
     def pretty_name(self) -> Optional[str]:

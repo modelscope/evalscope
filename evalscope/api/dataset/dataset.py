@@ -24,6 +24,9 @@ class Sample:
     id: Optional[Union[int, str]] = None
     """Unique identifier for sample."""
 
+    group_id: Optional[Union[int, str]] = None
+    """Identifier for the group this sample belongs to, used for grouping k repeated samples."""
+
     tools: Optional[List[ToolInfo]] = None
     """List of tools available to the model during inference (optional)."""
 

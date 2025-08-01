@@ -46,14 +46,15 @@ def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, 
         return sample_fields
 
 
-def data_to_samples(data: Iterable[dict], data_to_sample: Callable, auto_id: bool) -> List[Sample]:
+def data_to_samples(data: Iterable[dict], data_to_sample: Callable, auto_id: bool, group_k: int = 1) -> List[Sample]:
     next_id = 0
     samples: List[Sample] = []
     for record in data:
-        record_samples = as_sample_list(data_to_sample(record))
+        record_samples = as_sample_list(data_to_sample(record=record))
         if auto_id:
             for record_sample in record_samples:
                 record_sample.id = next_id
+                record_sample.group_id = next_id // group_k
                 next_id += 1
         samples.extend(record_samples)
     return samples

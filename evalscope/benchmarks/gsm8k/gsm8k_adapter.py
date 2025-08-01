@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Dict
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -8,6 +8,23 @@ from evalscope.api.registry import register_benchmark
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+PROMPT_TEMPLATE = """
+Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+
+{prompt}
+
+Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
+
+Reasoning:
+"""  # noqa: E501
+
+FEWSHOT_TEMPLATE = """
+Here are some examples of how to solve similar problems:
+
+{fewshot}
+
+""" + PROMPT_TEMPLATE
 
 
 @register_benchmark(
@@ -23,20 +40,29 @@ logger = get_logger()
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        prompt_template="Question: {query}\nLet's think step by step\nAnswer:",
+        filters={'regex': {}},
+        prompt_template=PROMPT_TEMPLATE,
+        fewshot_prompt_template=FEWSHOT_TEMPLATE,
     ))
 class GSM8KAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def record_to_sample(self, record: Dict) -> Sample:
+    def record_to_sample(self, few_shot_num: int, record: Dict[str, Any]) -> Sample:
         DELIM = '####'
-        input = record['question']
+        question = record['question']
         answer = record['answer'].split(DELIM)
         target = answer.pop().strip()
         reasoning = DELIM.join(answer)
-        return Sample(input=input, target=target, metadata={'reasoning': reasoning.strip()})
+
+        if few_shot_num > 0:
+            few_shot = '\n\n'.join(
+                [self.sample_to_fewshot(sample) for sample in self.fewshot_dataset[self.default_subset]])
+            input_text = self.format_fewshot_template(fewshot=few_shot, prompt=question)
+        else:
+            input_text = self.format_query_template(prompt=question)
+        return Sample(input=input_text, target=target, metadata={'reasoning': reasoning.strip()})
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         if sample.metadata:
@@ -44,6 +70,3 @@ class GSM8KAdapter(DefaultDataAdapter):
                     + f'ANSWER: {sample.target}')
         else:
             return ''
-
-    def generate_prompts(self):
-        return super().generate_prompts()

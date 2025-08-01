@@ -1,3 +1,4 @@
+import copy
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -28,6 +29,7 @@ class DataLoader(ABC):
                  shuffle: bool = False,
                  seed: Optional[int] = None,
                  auto_id: bool = True,
+                 repeats: int = 1,
                  trust_remote: bool = True,
                  **kwargs):
         self.data_id_or_path = data_id_or_path
@@ -40,6 +42,7 @@ class DataLoader(ABC):
         self.shuffle = shuffle
         self.seed = seed
         self.auto_id = auto_id
+        self.repeats = repeats
         self.trust_remote = trust_remote
         self.kwargs = kwargs
 
@@ -95,9 +98,17 @@ class RemoteDataLoader(DataLoader):
                 raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
             dataset = dataset.select(range(self.limit))
 
+        # convert to list
+        dataset = dataset.to_list()
+
+        # repeat k times
+        if self.repeats > 1:
+            dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
+
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(dataset.to_list(), data_to_sample, self.auto_id),
+            samples=data_to_samples(
+                data=dataset, data_to_sample=data_to_sample, auto_id=self.auto_id, group_k=self.repeats),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
