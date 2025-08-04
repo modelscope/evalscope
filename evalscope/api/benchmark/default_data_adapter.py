@@ -180,13 +180,21 @@ class DefaultDataAdapter(DataAdapter):
     # METRIC CALCULATION METHODS
     # ##########################
 
-    def filter_prediction(self, prediction: str) -> str:
+    def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
         """
         Hook method called before calculating metrics. Typically filters or prepares the prediction.
         """
         if self.filter_ensemble is not None:
             # Apply filters to the result
             prediction = self.filter_ensemble(prediction)
+        # apply custom extract answer method
+        extracted_prediction = self.extract_answer(prediction, task_state)
+        return extracted_prediction
+
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        """
+        Hook method for custom extract answer.
+        """
         return prediction
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str,
@@ -198,7 +206,7 @@ class DefaultDataAdapter(DataAdapter):
 
         # Initialize the score
         score = Score(
-            answer=filtered_prediction,
+            extracted_prediction=filtered_prediction,
             prediction=original_prediction,
             explanation=original_prediction,
             metadata=task_state.metadata)
@@ -227,7 +235,7 @@ class DefaultDataAdapter(DataAdapter):
 
         prediction = task_state.output.completion
         # Filter or prepare the prediction
-        filtered_prediction = self.filter_prediction(prediction)
+        filtered_prediction = self.filter_prediction(prediction, task_state)
 
         # Calculate the score
         score = self.match_score(
@@ -245,13 +253,10 @@ class DefaultDataAdapter(DataAdapter):
 
         return sample_score
 
-    # #########################
-    # REPORT GENERATION METHODS
-    # #########################
     @override
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
-        Hook method called before generating the report. Typically used to aggregate scores.
+        Aggregate scores by calling the aggregation method.
         """
         aggregate_cls = get_aggregation(self.aggregation)
         aggregator = aggregate_cls()
@@ -259,20 +264,23 @@ class DefaultDataAdapter(DataAdapter):
 
         return agg_scores
 
+    # #########################
+    # REPORT GENERATION METHODS
+    # #########################
     def _on_generate_report_end(self, report: Report) -> None:
         """
         Hook method called after generating the report.
         """
         pass
 
-    def _on_generate_report(self, scores: List[AggScore]) -> Report:
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         """
         Hook method called during report generation.
         """
-        pass
+        return ReportGenerator.generate_report(score_dict=scores, model_name=model_name, data_adapter=self)
 
     @override
-    def generate_report(self, scores: List[AggScore]) -> Report:
-        report = self._on_generate_report(scores)
+    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+        report = self._on_generate_report(scores, model_name=model_name)
         self._on_generate_report_end(report)
         return report

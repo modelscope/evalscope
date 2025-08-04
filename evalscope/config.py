@@ -184,9 +184,11 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = self.__dict__.copy()
+        result = copy.deepcopy(self.__dict__)
         if isinstance(self.model, CustomModel):
             result['model'] = self.model.__class__.__name__
+        if isinstance(self.generation_config, GenerateConfig):
+            result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)
         return result
 
 

@@ -28,9 +28,17 @@ class DataAdapter(ABC):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
-        self.reformat_subset = False  # Whether to reformat the subset data with subset key
+        self.reformat_subset = False
+        """Whether to reformat the subset data with subset key"""
+
         self.split_as_subset = False
+        """Whether to use the split name as the dataset subsets"""
+
         self.use_llm_judge = False
+        """Whether to use LLM as a judge"""
+
+        self.category_map = {}
+        """Category map for the benchmark"""
 
         # dataset
         self.test_dataset: Optional[DatasetDict] = None
@@ -38,6 +46,10 @@ class DataAdapter(ABC):
 
         # filters
         self._filter_ensemble: Optional[OrderedDict] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the benchmark metadata to a dictionary."""
+        return self._benchmark_meta.to_string_dict()
 
     @abstractmethod
     def load_dataset(self) -> DatasetDict:
@@ -56,7 +68,7 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def generate_report(self, scores: List[AggScore]) -> Report:
+    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         """
         Generate a report based on the evaluation results.
         """

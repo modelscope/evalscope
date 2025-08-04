@@ -20,7 +20,7 @@ class TaskState:
         self,
         model: str,
         sample: Sample,
-        messages: List[ChatMessage],
+        messages: List[ChatMessage] = [],
         output: Optional[ModelOutput] = None,
         completed: bool = False,
     ) -> None:
@@ -34,8 +34,6 @@ class TaskState:
         self._messages: List[ChatMessage] = messages
         self._output = output if output else ModelOutput(model=str(model))
         self._completed = completed
-        # Scores for this task
-        self.score: Optional[Score] = None
 
     @property
     def model(self) -> str:

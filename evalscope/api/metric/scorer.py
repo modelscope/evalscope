@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
 
-if TYPE_CHECKING:
-    from evalscope.api.evaluator import TaskState
-
 logger = get_logger(name=__name__)
 
 Value = Dict[str, Union[int, float, bool]]
@@ -17,7 +14,7 @@ class Score(BaseModel):
     value: Value = Field(default_factory=dict)
     """Score value as a dictionary. Key is the score name, value is the score value."""
 
-    answer: Optional[str] = Field(default=None)
+    extracted_prediction: Optional[str] = Field(default=None)
     """Answer extracted from model output (optional)"""
 
     prediction: Optional[str] = Field(default=None)
@@ -29,14 +26,14 @@ class Score(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Additional metadata related to the score"""
 
-    main_score: Optional[str] = Field(default=None)
+    main_score_name: Optional[str] = Field(default=None)
     """Main score name, if applicable. This is used to indicate which score is the primary score in a multi-score scenario."""  # noqa: E501
 
     @property
     def main_value(self) -> Union[int, float, bool]:
         """Main score value."""
-        if self.main_score and self.main_score in self.value:
-            return self.value[self.main_score]
+        if self.main_score_name and self.main_score_name in self.value:
+            return self.value[self.main_score_name]
         return next(iter(self.value.values()), None)
 
 
@@ -55,28 +52,6 @@ class SampleScore(BaseModel):
     sample_metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Metadata from the sample"""
 
-    scorer: Optional[str] = Field(default=None)
-    """Registry name of scorer that created this score."""
-
-
-class Scorer:
-
-    def __call__(
-        self,
-        state: 'TaskState',
-    ) -> SampleScore:
-        r"""Score model outputs.
-
-        Evaluate the passed outputs and targets and return a
-        dictionary with scoring outcomes and context.
-
-        Args:
-            state: Task state
-        Returns:
-            Score: Scoring outcome
-        """
-        ...
-
 
 class AggScore(BaseModel):
     """Output of an aggregation operation."""
@@ -86,6 +61,9 @@ class AggScore(BaseModel):
 
     metric_name: str = Field(default='')
     """Name of the metric being aggregated."""
+
+    aggregation_name: str = Field(default='')
+    """Name of the aggregation methods"""
 
     num: int = Field(default=0)
     """Number of samples used in the aggregation."""
@@ -98,6 +76,8 @@ class AggScore(BaseModel):
 
 
 class Aggregator:
+
+    name = 'default'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
         r"""Aggregate a metric on a list of scores.

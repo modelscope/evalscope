@@ -159,7 +159,7 @@ class ModelOutput(BaseModel):
         if len(self.choices) > 0:
             return self.choices[0].message.text
         else:
-            return ''
+            return '\n'.join(choice.message.text for choice in self.choices)
 
     @completion.setter
     def completion(self, completion: str) -> None:

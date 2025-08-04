@@ -131,6 +131,8 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['stream'] = config.stream
         if config.stream:
             params['stream_options'] = {'include_usage': True}
+    if config.timeout is not None:
+        params['timeout'] = config.timeout
     if config.max_tokens is not None:
         params['max_tokens'] = config.max_tokens
     if config.frequency_penalty is not None:

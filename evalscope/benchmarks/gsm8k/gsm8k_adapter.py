@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.utils.logger import get_logger
 
@@ -39,11 +40,7 @@ Here are some examples of how to solve similar problems:
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        filters={'regex': {
-            'regex_pattern': r'(-?[0-9.,]{2,})|(-?[0-9]+)',
-            'group_select': -1
-        }},
-        metric_list=['exact_match'],
+        metric_list=['acc'],
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     ))
@@ -67,3 +64,10 @@ class GSM8KAdapter(DefaultDataAdapter):
                     + f'ANSWER: {sample.target}')
         else:
             return ''
+
+    def extract_answer(self, prediction: str, task_state: TaskState):
+        from evalscope.filters.extraction import RegexFilter
+
+        regex = RegexFilter(regex_pattern=r'(-?[0-9.,]{2,})|(-?[0-9]+)', group_select=-1)
+        res = regex(prediction)
+        return res.replace(',', '').replace('+', '').strip().strip('.')

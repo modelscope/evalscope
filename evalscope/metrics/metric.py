@@ -12,6 +12,11 @@ class ExactMatch(Metric):
         return [float(prediction == reference) for prediction, reference in zip(predictions, references)]
 
 
+@register_metric(name='acc')
+class Accuracy(ExactMatch):
+    ...
+
+
 @register_metric(name='numeric_match')
 class NumericMatch(Metric):
 
@@ -37,6 +42,8 @@ class MathExactMatch(Metric):
 @register_aggregation(name='mean')
 class Mean(Aggregator):
 
+    name = 'mean'
+
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate scores by computing the mean for each metric.
 
@@ -52,11 +59,8 @@ class Mean(Aggregator):
         # Group score values by metric name
         metric_values = defaultdict(list)
         metric_sample_ids = defaultdict(list)
-        sample_metadata = None
 
         for score in scores:
-            if sample_metadata is None:
-                sample_metadata = score.sample_metadata
 
             for metric_name, value in score.score.value.items():
                 metric_values[metric_name].append(value)
@@ -71,8 +75,8 @@ class Mean(Aggregator):
                     AggScore(
                         score=mean_value,
                         metric_name=metric_name,
+                        aggregation_name=self.name,
                         num=len(values),
-                        ids=metric_sample_ids[metric_name],
-                        metadata=sample_metadata))
+                        ids=metric_sample_ids[metric_name]))
 
         return aggregated_scores

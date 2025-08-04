@@ -159,3 +159,21 @@ class ChatMessageTool(ChatMessageBase):
 
 ChatMessage = Union[ChatMessageSystem, ChatMessageUser, ChatMessageAssistant, ChatMessageTool]
 """Message in a chat conversation"""
+
+
+def dict_to_chat_message(data: Dict[str, Any]) -> ChatMessage:
+    """Convert a dictionary to a ChatMessage."""
+    if 'role' not in data:
+        raise ValueError('ChatMessage must have a "role" field')
+
+    role = data['role']
+    if role == 'system':
+        return ChatMessageSystem.model_validate(data)
+    elif role == 'user':
+        return ChatMessageUser.model_validate(data)
+    elif role == 'assistant':
+        return ChatMessageAssistant.model_validate(data)
+    elif role == 'tool':
+        return ChatMessageTool.model_validate(data)
+    else:
+        raise ValueError(f'Unknown chat message role: {role}')
