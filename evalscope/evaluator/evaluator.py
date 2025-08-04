@@ -75,8 +75,13 @@ class DefaultEvaluator(Evaluator):
             task_state_list.append(task_state)
 
             #  model result are only used for saving the predictions
-            model_result = ModelResult(index=task_state.sample_id, model_output=task_state.output.completion)
-            logger.debug(f'Model result: {model_result.to_json_str()}')
+            model_result = ModelResult.from_task_state(task_state=task_state, )
+            # Convert TaskState to ModelResult for sanity check
+            # json_output = model_result.model_dump_json(indent=2)
+            # origin_model_result = ModelResult.model_validate_json(json_output)
+            # origin_state = origin_model_result.to_task_state(dataset=dataset)
+
+            logger.debug(f'Model result: \n{model_result.model_dump_json(indent=2)}')
             model_result_list.append(model_result)
 
         return task_state_list
@@ -91,14 +96,17 @@ class DefaultEvaluator(Evaluator):
             sample_score = self.benchmark.calculate_metrics(task_state=task_state)
             sample_score_list.append(sample_score)
 
-            review_result = ReviewResult(
-                index=task_state.sample_id,
-                input=task_state.input,
-                prediction=sample_score.score.prediction,
-                extracted_prediction=sample_score.score.extracted_prediction,
-                gold=task_state.target,
-                score=sample_score.score.value)
-            logger.debug(f'Review result: {review_result.to_json_str()}')
+            review_result = ReviewResult.from_score_state(
+                sample_score=sample_score,
+                state=task_state,
+            )
+
+            # json_output = review_result.model_dump_json(indent=2)
+            # origin_review_result = ReviewResult.model_validate_json(json_output)
+            # origin_score = origin_review_result.to_sample_score()
+
+            logger.debug(f'Sample score: \n{sample_score.model_dump_json(indent=2)}')
+            logger.debug(f'Review result: \n{review_result.model_dump_json(indent=2)}')
             review_result_list.append(review_result)
 
         return sample_score_list

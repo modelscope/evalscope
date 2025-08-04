@@ -1,12 +1,12 @@
 import json
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.api.dataset import Dataset, Sample
-from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessage, dict_to_chat_message
-from evalscope.api.metric import SampleScore, Score
+from evalscope.api.dataset import Dataset
+from evalscope.api.messages import ChatMessage
+from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
+from .state import TaskState
 
 
 class ModelResult(BaseModel):
@@ -25,12 +25,12 @@ class ModelResult(BaseModel):
     """Messages exchanged during the evaluation, if applicable."""
 
     @classmethod
-    def from_task_state(cls, state: TaskState) -> 'ModelResult':
+    def from_task_state(cls, task_state: TaskState) -> 'ModelResult':
         return cls(
-            model=state.model,
-            index=state.sample_id,
-            messages=state.messages,
-            model_output=state.output,
+            model=task_state.model,
+            index=task_state.sample_id,
+            messages=task_state.messages,
+            model_output=task_state.output,
         )
 
     def to_task_state(self, dataset: Dataset) -> TaskState:
@@ -41,7 +41,7 @@ class ModelResult(BaseModel):
         return TaskState(
             model=self.model,
             sample=sample,
-            messages=[dict_to_chat_message(msg) for msg in self.messages],
+            messages=self.messages,
             output=ModelOutput.model_validate(self.model_output),
             completed=True,
         )
@@ -52,7 +52,7 @@ class ReviewResult(BaseModel):
 
     index: int
     """Index of the sample in the dataset."""
-    input: Dict[str, Any]
+    input: Union[str, List[ChatMessage]] = ''
     """Input from the sample, should be considered immutable."""
     target: Optional[str] = None
     """Target answer for the sample, if applicable."""
@@ -67,3 +67,6 @@ class ReviewResult(BaseModel):
             taget=state.target,
             sample_score=sample_score,
         )
+
+    def to_sample_score(self) -> SampleScore:
+        return self.sample_score

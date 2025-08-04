@@ -5,7 +5,6 @@ from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import DatasetDict, Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.model import Model
@@ -14,6 +13,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
+    from evalscope.api.evaluator import TaskState
     from evalscope.config import TaskConfig
 
 logger = get_logger()
@@ -56,11 +56,11 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def run_inference(self, model: Model, sample: Sample) -> TaskState:
+    def run_inference(self, model: Model, sample: Sample) -> 'TaskState':
         pass
 
     @abstractmethod
-    def calculate_metrics(self, task_state: TaskState) -> SampleScore:
+    def calculate_metrics(self, task_state: 'TaskState') -> SampleScore:
         pass
 
     @abstractmethod

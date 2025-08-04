@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessage, ChatMessageUser
-from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
 
 

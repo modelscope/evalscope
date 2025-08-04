@@ -1,9 +1,9 @@
 import abc
 from typing import TYPE_CHECKING, List, Union
 
-from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
 from evalscope.report import Report
+from .state import TaskState
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
