@@ -1,5 +1,6 @@
 # Security Policy
 The EvalScope team and community take all security bugs in EvalScope seriously. We appreciate your efforts and responsible disclosure and will make every effort to acknowledge your contributions.
+
 ## Reporting a Vulnerability
 To report a security issue, please use the **[GitHub Security Advisory "Report a Vulnerability" tab](https://github.com/modelscope/evalscope/security/advisories/new)**.
 **Please do not report security vulnerabilities through public GitHub issues.**
