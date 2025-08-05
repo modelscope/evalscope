@@ -3,7 +3,7 @@ from evalscope.api.registry import register_model_api
 from evalscope.utils.deprecation_utils import deprecated
 
 
-@register_model_api(name='mockllm')
+@register_model_api(name='mock_llm')
 def mockllm() -> type[ModelAPI]:
     from .mockllm import MockLLM
 

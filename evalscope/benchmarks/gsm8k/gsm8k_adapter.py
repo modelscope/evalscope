@@ -18,14 +18,14 @@ Solve the following math problem step by step. The last line of your response sh
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
 
 Reasoning:
-"""  # noqa: E501
+""".lstrip()  # noqa: E501
 
 FEWSHOT_TEMPLATE = """
 Here are some examples of how to solve similar problems:
 
 {fewshot}
 
-""" + PROMPT_TEMPLATE
+""".lstrip() + PROMPT_TEMPLATE
 
 
 @register_benchmark(

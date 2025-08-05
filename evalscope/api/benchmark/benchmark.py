@@ -56,7 +56,7 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def run_inference(self, model: Model, sample: Sample) -> 'TaskState':
+    def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> 'TaskState':
         pass
 
     @abstractmethod
@@ -68,7 +68,7 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:
         """
         Generate a report based on the evaluation results.
         """
@@ -77,14 +77,14 @@ class DataAdapter(ABC):
     @property
     def name(self) -> str:
         """
-        Return the name of the benchmark.
+        Return the unique name of the benchmark.
         """
         return self._benchmark_meta.name
 
     @property
     def dataset_id(self) -> str:
         """
-        Return the dataset ID of the benchmark.
+        Return the dataset ID or path to the benchmark.
         """
         return self._benchmark_meta.dataset_id
 

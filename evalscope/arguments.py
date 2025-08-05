@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from evalscope.constants import EvalBackend, EvalStage, EvalType, JudgeStrategy, ModelTask, OutputType
+from evalscope.constants import EvalBackend, EvalType, JudgeStrategy, ModelTask, OutputType
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -47,7 +47,6 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--model-task', type=str, default=ModelTask.TEXT_GENERATION, choices=[ModelTask.TEXT_GENERATION, ModelTask.IMAGE_GENERATION], help='The model task for model id.')  # noqa: E501
 
     # Template-related arguments
-    parser.add_argument('--template-type', type=str, required=False, help='Deprecated, will be removed in v1.0.0.')
     parser.add_argument('--chat-template', type=str, required=False, help='The custom jinja template for chat generation.')  # noqa: E501
 
     # Dataset-related arguments
@@ -65,13 +64,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
-    parser.add_argument('--stage', type=str, default='all', help='The stage of evaluation pipeline.',
-                        choices=[EvalStage.ALL, EvalStage.INFER, EvalStage.REVIEW])
-    parser.add_argument('--limit', type=float, default=None, help='Max evaluation samples num for each subset.')
     parser.add_argument('--eval-batch-size', type=int, default=1, help='The batch size for evaluation.')
+    parser.add_argument('--limit', type=float, default=None, help='Max evaluation samples num for each subset.')
+    parser.add_argument('--repeats', type=int, default=1, help='Number of times to repeat the dataset items for k-metrics.')  # noqa: E501
 
     # Cache and working directory arguments
-    parser.add_argument('--mem-cache', action='store_true', default=False, help='Deprecated, will be removed in v1.0.0.')  # noqa: E501
     parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
 

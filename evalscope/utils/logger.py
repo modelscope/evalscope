@@ -36,7 +36,10 @@ def get_logger(log_file: Optional[str] = None,
             specified (if filemode is unspecified, it defaults to 'w').
     """
 
-    logger_name = name or __name__.split('.')[0]
+    if name:
+        logger_name = f"evalscope.{name.split('.')[-1]}"
+    else:
+        logger_name = 'evalscope'
     logger = logging.getLogger(logger_name)
     logger.propagate = False
 

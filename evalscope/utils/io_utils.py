@@ -35,7 +35,7 @@ class OutputsStructure:
             'configs_dir': None
         }
 
-    def _get_dir(self, attr_name, dir_name):
+    def _get_dir(self, attr_name, dir_name) -> str:
         if self._dirs[attr_name] is None:
             dir_path = os.path.join(self.outputs_dir, dir_name)
             if self.is_make:

@@ -120,13 +120,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     # Initialize evaluator
     eval_results = {}
     # Initialize model
-    model = get_model(
-        model=task_config.model,
-        eval_type=task_config.eval_type,
-        base_url=task_config.api_url,
-        api_key=task_config.api_key,
-        config=task_config.generation_config,
-        **task_config.model_args)
+    model = get_model(task_config=task_config)
     # Initialize evaluators for each dataset
     evaluators: List[Evaluator] = []
     for dataset_name in task_config.datasets:

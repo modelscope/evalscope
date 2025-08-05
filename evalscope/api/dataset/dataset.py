@@ -2,14 +2,14 @@ import abc
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.tool import ToolInfo
 
 
-@dataclass
-class Sample:
+class Sample(BaseModel):
     r"""Sample for an evaluation task."""
 
     input: Union[str, List[ChatMessage]]
@@ -36,7 +36,7 @@ class Sample:
     subset_key: Optional[str] = None
     """Key for the subset this sample belongs to, used for generating subsets (optional)."""
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default=dict)
     """Arbitrary metadata associated with the sample."""
 
     sandbox: Optional[str] = None

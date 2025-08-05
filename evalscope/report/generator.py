@@ -3,7 +3,7 @@ from pandas import DataFrame
 from typing import TYPE_CHECKING
 
 from evalscope.constants import DataCollection
-from evalscope.report.utils import *
+from evalscope.report.report import *
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter

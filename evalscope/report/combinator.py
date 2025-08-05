@@ -6,7 +6,7 @@ import pandas as pd
 from tabulate import tabulate
 from typing import List, Tuple
 
-from evalscope.report.utils import Report
+from evalscope.report.report import Report
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

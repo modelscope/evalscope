@@ -122,8 +122,9 @@ class EvalStage:
 class EvalType:
 
     CUSTOM = 'custom'
-    CHECKPOINT = 'checkpoint'  # native model checkpoint
-    SERVICE = 'service'  # model service
+    MOCK_LLM = 'mock_llm'
+    CHECKPOINT = 'llm_ckpt'  # native model checkpoint
+    SERVICE = 'openai_api'  # model service
 
 
 class OutputType:

@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import concurrent
-import concurrent.futures
 import copy
 import functools
 import json
-import os
 import time
 import torch  # type: ignore
 from concurrent.futures import Future
@@ -67,8 +64,10 @@ class ModelScopeAPI(ModelAPI):
         self.device = device_map or get_device()
 
         # torch dtype
+        DTYPE_MAP = {'float16': torch.float16, 'float32': torch.float32, 'bfloat16': torch.bfloat16, 'auto': 'auto'}
+
         if isinstance(torch_dtype, str) and torch_dtype != 'auto':
-            torch_dtype = eval(torch_dtype)
+            torch_dtype = DTYPE_MAP.get(torch_dtype, torch.float32)
         self.torch_dtype = torch_dtype
 
         # model
@@ -85,7 +84,13 @@ class ModelScopeAPI(ModelAPI):
         tokenizer_name_or_path = tokenizer_path or model_name_or_path
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, trust_remote_code=True)
         # LLMs generally don't have a pad token and we need one for batching
-        self.tokenizer.pad_token = self.tokenizer.eos_token
+        if self.tokenizer.pad_token is None:
+            if self.tokenizer.eos_token is not None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            else:
+                # add a pad token
+                self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        # set padding side to left for LLMs
         self.tokenizer.padding_side = 'left'
         # set chat template if provided
         if self.chat_template:

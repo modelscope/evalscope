@@ -1,15 +1,17 @@
 import abc
 import os
 from pydantic_core import to_jsonable_python
-from typing import Any, Dict, Generator, List, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger
-from evalscope.utils.io_utils import safe_filename
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
+
+if TYPE_CHECKING:
+    from evalscope.config import TaskConfig
 
 logger = get_logger(name=__name__)
 
@@ -34,7 +36,6 @@ class ModelAPI(abc.ABC):
            config (GenerateConfig): Model configuration.
         """
         self.model_name = model_name
-        self.model_id = safe_filename(os.path.basename(model_name))
         self.base_url = base_url
         self.api_key = api_key
         self.config = config
@@ -130,14 +131,7 @@ class ModelAPI(abc.ABC):
 class Model:
     """Model interface.
 
-    Use `get_model()` to get an instance of a model. Model provides an
-    async context manager for closing the connection to it after use.
-    For example:
-
-    ```python
-    async with get_model("openai/gpt-4o") as model:
-        response = await model.generate("Say hello")
-    ```
+    Use `get_model()` to get an instance of a model.
     """
 
     api: ModelAPI
@@ -160,13 +154,8 @@ class Model:
 
     @property
     def name(self) -> str:
-        """Model name."""
+        """Model name or path to model."""
         return self.api.model_name
-
-    @property
-    def model_id(self) -> str:
-        """Model ID."""
-        return self.api.model_id
 
     @property
     def role(self) -> Optional[str]:
@@ -294,15 +283,9 @@ class Model:
 
 
 def get_model(
-    model: Union[str, Model],
-    eval_type: Optional[str] = 'openai-api',
-    *,
+    task_config: 'TaskConfig',
     role: Optional[str] = None,
-    config: GenerateConfig = GenerateConfig(),
-    base_url: Optional[str] = None,
-    api_key: Optional[str] = None,
     memoize: bool = True,
-    **model_args: Any,
 ) -> Model:
     """Get an instance of a model.
 
@@ -311,24 +294,20 @@ def get_model(
     new one). You can disable this with `memoize=False`.
 
     Args:
-       model: Model specification.
-          If `Model` is passed it is returned unmodified.
-
-       role: Optional named role for model (e.g. for roles specified
-          at the task or eval level). Provide a `default` as a fallback
-          in the case where the `role` hasn't been externally specified.
-       config: Configuration for model.
-       base_url: Optional. Alternate base URL for model.
-       api_key: Optional. API key for model.
-       memoize: Use/store a cached version of the model based on
-          the parameters to `get_model()`
-       **model_args: Additional args to
-          pass to model constructor.
+        task_config (TaskConfig): Task configuration.
+        memoize (bool): Whether to memoize the model instance.
 
     Returns:
         Model instance.
 
     """
+    model = task_config.model
+    eval_type = task_config.eval_type
+    base_url = task_config.api_url
+    api_key = task_config.api_key
+    config = task_config.generation_config
+    model_args = task_config.model_args or {}
+
     # start with seeing if a model was passed
     if isinstance(model, Model):
         return model
@@ -336,7 +315,7 @@ def get_model(
     # see if we can return a memoized model instance
     # (exclude mockllm since custom_outputs is an infinite generator)
     model_cache_key: str = ''
-    if eval_type.startswith('mockllm'):
+    if eval_type.startswith('mock_llm'):
         memoize = False
     if memoize:
         model_cache_key = (
@@ -346,7 +325,7 @@ def get_model(
         if cached is not None:
             return cached
 
-    logger.info(f'Creating model {model} with api_name={eval_type} '
+    logger.info(f'Creating model {model} with eval_type={eval_type} '
                 f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}')
 
     # find a matching model type

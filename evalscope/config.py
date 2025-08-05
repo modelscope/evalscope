@@ -7,12 +7,12 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from evalscope.api.model import GenerateConfig
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
+from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalType, HubType,
                                  JudgeStrategy, ModelTask, OutputType)
 from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
-from evalscope.utils.io_utils import dict_to_yaml, gen_hash
+from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -21,13 +21,12 @@ logger = get_logger()
 @dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
-    model: Union[str, 'CustomModel', None] = None
+    model: Optional[Union[str, 'CustomModel']] = None
     model_id: Optional[str] = None
     model_args: Dict = field(default_factory=dict)
     model_task: str = ModelTask.TEXT_GENERATION
 
     # Template-related arguments
-    template_type: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
     chat_template: Optional[str] = None
 
     # Dataset-related arguments
@@ -44,15 +43,12 @@ class TaskConfig(BaseArgument):
     eval_type: str = EvalType.CHECKPOINT
     eval_backend: str = EvalBackend.NATIVE
     eval_config: Union[str, Dict, None] = None
-    stage: str = EvalStage.ALL
     limit: Optional[Union[int, float]] = None
-    eval_batch_size: Optional[int] = None
+    eval_batch_size: int = 1
 
     # Cache and working directory arguments
-    mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
     use_cache: Optional[str] = None
     work_dir: str = DEFAULT_WORK_DIR
-    outputs: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
 
     # Debug and runtime mode arguments
     ignore_errors: bool = False
@@ -90,12 +86,7 @@ class TaskConfig(BaseArgument):
 
         # Set model_id if not provided
         if (not self.model_id) and self.model:
-            if isinstance(self.model, CustomModel):
-                self.model_id = self.model.config.get('model_id', 'custom_model')
-            else:
-                self.model_id = os.path.basename(self.model).rstrip(os.sep)
-            # fix path error, see http://github.com/modelscope/evalscope/issues/377
-            self.model_id = self.model_id.replace(':', '-').replace('/', '-')
+            self.model_id = safe_filename(os.path.basename(self.model))
 
     def __init_eval_data_config(self):
         # Post process limit
@@ -129,6 +120,9 @@ class TaskConfig(BaseArgument):
         if isinstance(self.generation_config, dict):
             self.generation_config = GenerateConfig(**self.generation_config)
 
+        # Set eval_batch_size to generation_config.batch_size
+        self.generation_config.batch_size = self.eval_batch_size
+
         # Set default values for generation_config
         if self.timeout is not None:
             deprecated_warning(
@@ -143,13 +137,6 @@ class TaskConfig(BaseArgument):
                 'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.'
             )
             self.generation_config.stream = self.stream
-
-        if self.eval_batch_size is not None:
-            deprecated_warning(
-                logger,
-                'The `eval_batch_size` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.batch` instead.'
-            )
-            self.generation_config.batch_size = self.eval_batch_size
 
         if self.generation_config.n is not None and self.generation_config.n > 1:
             self.repeats = self.generation_config.n

@@ -297,23 +297,26 @@ class DefaultDataAdapter(DataAdapter):
         model_output = model.generate(input=sample.input, tools=sample.tools)
         return model_output
 
-    def _on_inference_end(self, model: Model, sample: Sample, model_output: ModelOutput) -> TaskState:
+    def _on_inference_end(self, model: Model, sample: Sample, model_output: ModelOutput, output_dir: str,
+                          **kwargs) -> TaskState:
         """
         Hook method called after inference completes.
 
         This method processes the model output and creates a TaskState object
         that encapsulates all information about the completed inference task.
+        You can save the model output to the specified output directory.
 
         Args:
             model (Model): The model that performed inference
             sample (Sample): The processed sample
             model_output (ModelOutput): The raw model output
+            output_dir (str): The directory where the model output was saved
 
         Returns:
             TaskState: Complete state object for the inference task
         """
         return TaskState(
-            model=model.model_id,
+            model=model.name,
             sample=sample,
             messages=[model_output.message],
             output=model_output,
@@ -321,7 +324,7 @@ class DefaultDataAdapter(DataAdapter):
         )
 
     @override
-    def run_inference(self, model: Model, sample: Sample) -> TaskState:
+    def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         """
         Execute the complete inference pipeline for a single sample.
 
@@ -333,13 +336,14 @@ class DefaultDataAdapter(DataAdapter):
         Args:
             model (Model): The model to use for inference
             sample (Sample): The sample to process
+            output_dir (str): The directory to store the generated files
 
         Returns:
             TaskState: Complete state object containing inference results
         """
         self._on_inference_start(model, sample)
         model_output = self._on_inference(model, sample)
-        task_state = self._on_inference_end(model, sample, model_output)
+        task_state = self._on_inference_end(model, sample, model_output, output_dir, **kwargs)
 
         return task_state
 
@@ -406,8 +410,7 @@ class DefaultDataAdapter(DataAdapter):
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
-            explanation=original_prediction,
-            metadata=task_state.metadata)
+        )
 
         # Calculate scores for each configured metric
         for metric in self.metric_list:
@@ -493,7 +496,7 @@ class DefaultDataAdapter(DataAdapter):
     # REPORT GENERATION METHODS
     # #########################
 
-    def _on_generate_report_end(self, report: Report) -> None:
+    def _on_generate_report_end(self, report: Report, output_dir: str, **kwargs) -> None:
         """
         Hook method called after generating the evaluation report.
 
@@ -503,6 +506,7 @@ class DefaultDataAdapter(DataAdapter):
 
         Args:
             report (Report): The generated evaluation report
+            output_dir (str): Directory where the report should be saved
         """
         pass
 
@@ -524,7 +528,7 @@ class DefaultDataAdapter(DataAdapter):
         return ReportGenerator.generate_report(score_dict=scores, model_name=model_name, data_adapter=self)
 
     @override
-    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+    def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:
         """
         Generate a comprehensive evaluation report from aggregated scores.
 
@@ -540,5 +544,5 @@ class DefaultDataAdapter(DataAdapter):
             Report: Complete evaluation report with results and analysis
         """
         report = self._on_generate_report(scores, model_name=model_name)
-        self._on_generate_report_end(report)
+        self._on_generate_report_end(report, output_dir, **kwargs)
         return report
