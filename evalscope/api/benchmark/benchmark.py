@@ -5,21 +5,22 @@ from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.api.mixin import LLMJudgeMixin
 from evalscope.api.model import Model
 from evalscope.report import Report
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
-    from evalscope.api.evaluator import TaskState
     from evalscope.config import TaskConfig
 
 logger = get_logger()
 
 
-class DataAdapter(ABC):
+class DataAdapter(LLMJudgeMixin, ABC):
     """
     Data Adapter for the benchmark.
     """
@@ -27,15 +28,13 @@ class DataAdapter(ABC):
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
+        super().__init__(task_config=task_config)
 
         self.reformat_subset = False
         """Whether to reformat the subset data with subset key"""
 
         self.split_as_subset = False
         """Whether to use the split name as the dataset subsets"""
-
-        self.use_llm_judge = False
-        """Whether to use LLM as a judge"""
 
         self.category_map = {}
         """Category map for the benchmark"""
@@ -56,11 +55,11 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> 'TaskState':
+    def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         pass
 
     @abstractmethod
-    def calculate_metrics(self, task_state: 'TaskState') -> SampleScore:
+    def calculate_metrics(self, task_state: TaskState) -> SampleScore:
         pass
 
     @abstractmethod

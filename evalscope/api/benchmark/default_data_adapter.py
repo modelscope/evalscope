@@ -8,6 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
+from evalscope.constants import JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from .benchmark import DataAdapter
 

@@ -11,12 +11,12 @@ import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
-from evalscope.report import Report
+from evalscope.report import Report, gen_table
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
 
-from evalscope.report import gen_table
 from evalscope.utils.logger import get_logger
 
 logger = get_logger(name=__name__)

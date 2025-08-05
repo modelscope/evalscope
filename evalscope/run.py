@@ -112,7 +112,7 @@ def get_backend_manager_class(eval_backend: EvalBackend):
 def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
     from evalscope.api.evaluator import Evaluator
-    from evalscope.api.model import get_model
+    from evalscope.api.model import get_model_with_task_config
     from evalscope.api.registry import get_benchmark
     from evalscope.evaluator import DefaultEvaluator
     from evalscope.report import gen_table
@@ -120,7 +120,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     # Initialize evaluator
     eval_results = {}
     # Initialize model
-    model = get_model(task_config=task_config)
+    model = get_model_with_task_config(task_config=task_config)
     # Initialize evaluators for each dataset
     evaluators: List[Evaluator] = []
     for dataset_name in task_config.datasets:

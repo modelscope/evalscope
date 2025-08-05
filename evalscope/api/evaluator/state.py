@@ -72,7 +72,7 @@ class TaskState:
             if input:
                 return input
             else:
-                raise ValueError('input_text requested from TaskState but none available')
+                return ''
 
     @property
     def user_prompt(self) -> ChatMessageUser:

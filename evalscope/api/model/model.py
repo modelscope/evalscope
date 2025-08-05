@@ -282,8 +282,33 @@ class Model:
         return input, tools_info, tool_choice, config
 
 
+def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
+    """Get an instance of a model with the specified task configuration.
+
+    Args:
+        task_config (TaskConfig): Task configuration.
+
+    Returns:
+        Model: An instance of the model.
+    """
+    model = task_config.model
+    eval_type = task_config.eval_type
+    base_url = task_config.api_url
+    api_key = task_config.api_key
+    config = task_config.generation_config
+    model_args = task_config.model_args or {}
+
+    return get_model(
+        model=model, eval_type=eval_type, base_url=base_url, api_key=api_key, config=config, model_args=model_args)
+
+
 def get_model(
-    task_config: 'TaskConfig',
+    model: str,
+    eval_type: str,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    config: GenerateConfig = GenerateConfig(),
+    model_args: dict = {},
     role: Optional[str] = None,
     memoize: bool = True,
 ) -> Model:
@@ -301,12 +326,6 @@ def get_model(
         Model instance.
 
     """
-    model = task_config.model
-    eval_type = task_config.eval_type
-    base_url = task_config.api_url
-    api_key = task_config.api_key
-    config = task_config.generation_config
-    model_args = task_config.model_args or {}
 
     # start with seeing if a model was passed
     if isinstance(model, Model):
