@@ -117,11 +117,10 @@ class LLMJudge:
         """
         from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 
-        input_messages = [
-            ChatMessageSystem(content=system_prompt or self.system_prompt),
-            ChatMessageUser(content=prompt)
-        ]
-
+        system_content = system_prompt or self.system_prompt
+        input_messages = [ChatMessageUser(content=prompt)]
+        if system_content:
+            input_messages.insert(0, ChatMessageSystem(content=system_content))
         try:
             # Send request using ServerModelAdapter
             response = self.model.generate(input_messages)

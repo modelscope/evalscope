@@ -1,5 +1,6 @@
 import abc
 import os
+import threading  # 新增
 from pydantic_core import to_jsonable_python
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Sequence, Union
 
@@ -7,6 +8,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessag
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger
+from evalscope.utils.io_utils import thread_safe
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 
@@ -282,6 +284,18 @@ class Model:
         return input, tools_info, tool_choice, config
 
 
+class ModelCache:
+    _models: Dict[str, 'Model'] = {}
+
+    @classmethod
+    def get(cls, key: str) -> Optional['Model']:
+        return cls._models.get(key, None)
+
+    @classmethod
+    def set(cls, key: str, model: 'Model') -> None:
+        cls._models[key] = model
+
+
 def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
     """Get an instance of a model with the specified task configuration.
 
@@ -302,6 +316,7 @@ def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
         model=model, eval_type=eval_type, base_url=base_url, api_key=api_key, config=config, model_args=model_args)
 
 
+@thread_safe
 def get_model(
     model: str,
     eval_type: str,
@@ -340,7 +355,7 @@ def get_model(
         model_cache_key = (
             model + str(role) + config.model_dump_json(exclude_none=True) + str(base_url) + str(api_key)
             + str(to_jsonable_python(model_args, fallback=lambda _: None)))
-        cached = cached_model(model_cache_key)
+        cached = ModelCache.get(model_cache_key)
         if cached is not None:
             return cached
 
@@ -361,15 +376,5 @@ def get_model(
     if role is not None:
         m.role = role
     if memoize:
-        _models[model_cache_key] = m
+        ModelCache.set(model_cache_key, m)
     return m
-
-
-# cache for memoization of get_model
-_models: Dict[str, Model] = {}
-
-
-def cached_model(key: str) -> Optional[Model]:
-
-    # read from the cache
-    return _models.get(key, None)

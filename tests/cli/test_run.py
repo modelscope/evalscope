@@ -268,8 +268,8 @@ class TestRun(unittest.TestCase):
                 # 'race',
                 # 'trivia_qa',
                 # 'cmmlu',
-                'humaneval',
-                # 'gsm8k',
+                # 'humaneval',
+                'gsm8k',
                 # 'bbh',
                 # 'competition_math',
                 # 'math_500',
@@ -405,7 +405,7 @@ class TestRun(unittest.TestCase):
                 # 'aime24',
                 # 'competition_math',
                 # 'arc',
-                # 'gsm8k',
+                'gsm8k',
                 # 'truthful_qa',
                 # 'simple_qa',
                 # 'chinese_simpleqa',
@@ -418,7 +418,7 @@ class TestRun(unittest.TestCase):
                 # 'docmath',
                 # 'needle_haystack',
                 # 'ifeval',
-                'hle'
+                # 'hle'
             ],
             dataset_args={
                 'needle_haystack': {
@@ -457,8 +457,13 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=10,
-            limit=3,
-            judge_strategy=JudgeStrategy.LLM,
+            limit=10,
+            generation_config={
+                'max_tokens': 8096,
+                'temperature': 0.0,
+                'seed': 42,
+            },
+            judge_strategy=JudgeStrategy.LLM_RECALL,
             judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',
@@ -469,18 +474,9 @@ class TestRun(unittest.TestCase):
                     'max_tokens': 4096
                 }
             },
-            generation_config={
-                'max_new_tokens': 20000,
-                'temperature': 0.0,
-                'seed': 42,
-                'n': 1
-            },
-            timeout=60000,
-            stream=True,
-            use_cache='outputs/20250714_150626'
+            # use_cache='outputs/20250714_150626'
             # analysis_report=True,
             # debug=True,
-            # use_cache='outputs/20250616_161931'
         )
 
         run_task(task_cfg=task_cfg)

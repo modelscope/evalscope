@@ -8,9 +8,11 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
-from evalscope.constants import JudgeStrategy
 from evalscope.report import Report, ReportGenerator
+from evalscope.utils import get_logger
 from .benchmark import DataAdapter
+
+logger = get_logger()
 
 
 class DefaultDataAdapter(DataAdapter):
@@ -415,13 +417,17 @@ class DefaultDataAdapter(DataAdapter):
 
         # Calculate scores for each configured metric
         for metric in self.metric_list:
-            metric_scorer = get_metric(metric)  # Get metric implementation from registry
-            metric_func = metric_scorer()  # Instantiate the metric scorer
-            metric_score = metric_func(
-                prediction=filtered_prediction,
-                reference=reference,
-            )
-            score.value[metric] = metric_score
+            try:
+                metric_scorer = get_metric(metric)  # Get metric implementation from registry
+                metric_func = metric_scorer()  # Instantiate the metric scorer
+                metric_score = metric_func(
+                    prediction=filtered_prediction,
+                    reference=reference,
+                )
+                score.value[metric] = metric_score
+            except Exception as e:
+                logger.error(f'Error calculating metric {metric}: {e}')
+                return None
 
         return score
 
@@ -452,16 +458,24 @@ class DefaultDataAdapter(DataAdapter):
         # Apply filtering and answer extraction
         filtered_prediction = self.filter_prediction(prediction, task_state)
 
-        # Calculate all metric scores
-        score = self.match_score(
+        # Step 1: Calculate standard metric scores (rule-based)
+        rule_based_score = self.match_score(
             original_prediction=prediction,
             filtered_prediction=filtered_prediction,
             reference=task_state.target,
             task_state=task_state)
 
+        # Step 2: Apply LLM judge if enabled and get final score
+        final_score = self.maybe_llm_match_score(
+            original_prediction=prediction,
+            filtered_prediction=filtered_prediction,
+            reference=task_state.target,
+            task_state=task_state,
+            rule_based_score=rule_based_score)
+
         # Package the results into a sample score object
         sample_score = SampleScore(
-            score=score,
+            score=final_score,
             sample_id=task_state.sample_id,
             group_id=task_state.group_id,
             sample_metadata=task_state.metadata,

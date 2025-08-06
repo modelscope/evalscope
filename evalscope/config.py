@@ -9,7 +9,6 @@ from typing import Dict, List, Optional, Union
 from evalscope.api.model import GenerateConfig
 from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalType, HubType,
                                  JudgeStrategy, ModelTask, OutputType)
-from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
@@ -21,7 +20,7 @@ logger = get_logger()
 @dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
-    model: Optional[Union[str, 'CustomModel']] = None
+    model: Optional[Union[str]] = None
     model_id: Optional[str] = None
     model_args: Dict = field(default_factory=dict)
     model_task: str = ModelTask.TEXT_GENERATION
@@ -79,10 +78,10 @@ class TaskConfig(BaseArgument):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
             self.eval_type = EvalType.CUSTOM
-            if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.model = DummyT2IModel()
-            else:
-                self.model = DummyCustomModel()
+            # if self.model_task == ModelTask.IMAGE_GENERATION:
+            #     self.model = DummyT2IModel()
+            # else:
+            #     self.model = DummyCustomModel()
 
         # Set model_id if not provided
         if (not self.model_id) and self.model:
@@ -172,8 +171,7 @@ class TaskConfig(BaseArgument):
 
     def to_dict(self):
         result = copy.deepcopy(self.__dict__)
-        if isinstance(self.model, CustomModel):
-            result['model'] = self.model.__class__.__name__
+
         if isinstance(self.generation_config, GenerateConfig):
             result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)
         return result

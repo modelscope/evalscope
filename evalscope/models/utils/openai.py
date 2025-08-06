@@ -511,7 +511,7 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
     if stop_reason:
         return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)
     else:
-        return e
+        raise e
 
 
 def openai_media_filter(key: Optional[JsonValue], value: JsonValue) -> JsonValue:

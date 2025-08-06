@@ -1,1 +1,1 @@
-from .llm_judge import LLMJudgeMixin
+from .llm_judge_mixin import LLMJudgeMixin

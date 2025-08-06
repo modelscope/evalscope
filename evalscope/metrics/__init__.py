@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from typing import TYPE_CHECKING
 
-from evalscope.api.metric import Metric
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:

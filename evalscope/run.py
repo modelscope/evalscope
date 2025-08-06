@@ -114,7 +114,11 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.model import get_model_with_task_config
     from evalscope.api.registry import get_benchmark
+    from evalscope.benchmarks import Benchmark  # registered benchmarks
     from evalscope.evaluator import DefaultEvaluator
+    from evalscope.filters import extraction, selection  # registered filters
+    from evalscope.metrics import metric  # registered metrics
+    from evalscope.models import model_apis  # need for register model apis
     from evalscope.report import gen_table
 
     # Initialize evaluator
