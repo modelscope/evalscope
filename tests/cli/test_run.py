@@ -457,13 +457,13 @@ class TestRun(unittest.TestCase):
                 },
             },
             eval_batch_size=10,
-            limit=10,
+            limit=100,
             generation_config={
-                'max_tokens': 8096,
+                'max_tokens': 2048,
                 'temperature': 0.0,
                 'seed': 42,
             },
-            judge_strategy=JudgeStrategy.LLM_RECALL,
+            judge_strategy=JudgeStrategy.AUTO,
             judge_worker_num=5,
             judge_model_args={
                 'model_id': 'qwen2.5-72b-instruct',

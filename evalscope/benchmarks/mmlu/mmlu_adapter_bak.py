@@ -1,14 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import csv
+import os
 
-from typing import Any, Dict
-
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
-from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks import Benchmark, DataAdapter
+from evalscope.constants import EvalType, OutputType
+from evalscope.metrics import exact_match
+from evalscope.metrics.completion_parsers import ResponseParser
 from evalscope.utils.logger import get_logger
 
-logger = get_logger()
+# flake8: noqa
+
 logger = get_logger()
 
 SUBSET_LIST = [
@@ -132,45 +133,77 @@ SUBJECT_MAPPING = {
 }
 
 
-@register_benchmark(
-    BenchmarkMeta(
+@Benchmark.register(
     name='mmlu',
     pretty_name='MMLU',
     tags=['Knowledge', 'MCQ'],
     description=
     "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",  # noqa: E501
-    dataset_id='cais/mmlu',
-    metric_list=['acc'],
+    dataset_id='modelscope/mmlu',
+    model_adapter=OutputType.GENERATION,
+    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
     subset_list=SUBSET_LIST,
-    default_subset='all',
-    few_shot_num=5,
-    train_split='dev',
+    metric_list=['AverageAccuracy'],
+    few_shot_num=0,
+    train_split='train',
     eval_split='test',
     prompt_template=
-    """Answer the following multiple choice question. The last line of your response should be of the following format: 'Answer: $LETTER' (without quotes) where LETTER is one of ABCD. Think step by step before answering.\n\n{query}""",  # noqa: E501
-    )
+    """Answer the following multiple choice question about {subset_name}. The last line of your response should be of the following format: 'Answer: $LETTER' (without quotes) where LETTER is one of ABCD. Think step by step before answering.\n\n{query}""",  # noqa: E501
 )
-class MMLUAdapter(DefaultDataAdapter):
+class MMLUAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
+
+        few_shot_num = kwargs.get('few_shot_num', 5)
+        if few_shot_num > 5:
+            logger.warning(f'few_shot_num <= 5 for MMLU, but got {few_shot_num}. Use 5-shot by default.')
+            kwargs['few_shot_num'] = 5
 
         super().__init__(**kwargs)
 
         self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
         self.choices = ['A', 'B', 'C', 'D']
-    def record_to_sample(self, record) -> Sample:
-        return Sample(
-            input=record["question"],
-            choices=record["choices"],
-            # converts 0 -> A, 1 -> B, etc.
-            target=("ABCD"[record["answer"]]),
-            subset_key=record["subject"],
-            metadata={"subject": record["subject"]},
-        )
 
-    def sample_to_fewshot(self, sample):
-        return super().sample_to_fewshot(sample)
-    
+    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
+        data_dict = {}
+        for subset_name in subset_list:
+            data_dict[subset_name] = {}
+
+            for split_name in [self.train_split, self.eval_split]:
+                if split_name == 'train':
+                    split_name_suffix = 'dev'
+                elif split_name == 'test':
+                    split_name_suffix = 'test'
+                elif split_name == 'validation':
+                    split_name_suffix = 'val'
+                else:
+                    raise ValueError(f'Invalid split name: {split_name}')
+
+                if os.path.exists(dataset_name_or_path):
+                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+                else:
+                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name_suffix}.csv')
+
+                if os.path.exists(file_path):
+                    with open(file_path, encoding='utf-8') as f:
+                        rows = []
+                        reader = csv.reader(f)
+                        for row in reader:
+                            if len(row) != 6:
+                                logger.error(f'Mismatch len of row: {row}, len of row should be 6. Skip this row.')
+                                continue
+                            rows.append({
+                                'input': row[0],
+                                'A': row[1],
+                                'B': row[2],
+                                'C': row[3],
+                                'D': row[4],
+                                'target': row[5],
+                            })
+
+                        data_dict[subset_name].update({split_name: rows})
+
+        return data_dict
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
         """
