@@ -1,5 +1,5 @@
 
-# Qwen3-Coder Model Evaluation
+# Qwen3-Coder+Instruct Model Evaluation
 
 The new Qwen3 models have arrived! These include the coding model [Qwen/Qwen3-Coder-480B-A35B-Instruct](https://www.modelscope.cn/models/Qwen/Qwen3-Coder-480B-A35B-Instruct) and the general-purpose model [Qwen/Qwen3-235B-A22B-Instruct-2507](https://modelscope.cn/models/Qwen/Qwen3-235B-A22B-Instruct-2507). Let's quickly assess the performance of these two models using the [EvalScope](https://github.com/modelscope/evalscope) model evaluation framework.
 
