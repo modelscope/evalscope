@@ -63,6 +63,7 @@ experiments/speed_benchmark/index.md
 :::{toctree}
 :hidden:
 :caption: 📖 Best Practices
+best_practice/gpt_oss.md
 best_practice/qwen3_coder.md
 best_practice/t2i_eval.md
 best_practice/qwen3.md
