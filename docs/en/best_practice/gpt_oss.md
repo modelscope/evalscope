@@ -151,5 +151,16 @@ The test result here is 0.8. You can try different model generation parameters a
 
 For more supported benchmarks, please refer to the [EvalScope documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html).
 
+## Result Visualization
+
+EvalScope supports visualizing results so you can see the model’s specific outputs.
+
+```bash
+pip install 'evalscope[app]'
+evalscope app --lang en
+```
+
+
+
 ## Summary
 Through the above steps, we have successfully tested the inference speed and benchmark capabilities of the GPT-OSS model using EvalScope. GPT-OSS performs excellently in both inference speed and benchmarking, making it suitable for production and high-performance scenarios.
