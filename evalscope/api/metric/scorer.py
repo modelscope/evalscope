@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
 
-logger = get_logger(name=__name__)
+logger = get_logger()
 
 Value = Dict[str, Union[int, float, bool]]
 

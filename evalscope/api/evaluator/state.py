@@ -1,8 +1,125 @@
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass
+from random import Random
+from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
+
+
+class Target(Sequence[str]):
+    """Target for scoring against the current TaskState.
+
+    Target is a sequence of one or more strings. Use the
+    `text` property to access the value as a single string.
+    """
+
+    def __init__(self, target: str | list[str]) -> None:
+        self.target = target if isinstance(target, list) else [target]
+
+    @overload
+    def __getitem__(self, index: int) -> str:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[str]:
+        ...
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[str, Sequence[str]]:
+        return self.target[index]
+
+    def __len__(self) -> int:
+        return len(self.target)
+
+    @property
+    def text(self) -> str:
+        return ''.join(self.target)
+
+
+@dataclass
+class Choice:
+    """
+    A `Choice` represents a single choice in a multiple choice question.
+
+    It is only relevant for the `multiple_choice` solver and corresponding
+    `choice` scorer.
+    """
+
+    value: str
+    """The original value of the choice from the `Sample`."""
+
+    correct: bool | None
+    """Did the model think this choice satisfies the question? `None`
+    indicates this has not been set yet"""
+
+    original_position: int
+    """Choices may be re-ordered during processing, this represents the
+    original position in the sample's list of choices"""
+
+
+class Choices(Sequence[Choice]):
+    """
+    Wrapper class for a list of `Choice` objects.
+
+    Primarily simply to abstract away implementations of choice-specific
+    functionality from the already-big `TaskState` class.
+    """
+
+    def __init__(self, choices: list[str] | list[Choice]) -> None:
+        """
+        Setter for choices, intended to only be used with the `multiple_choice` scorer.
+
+        Choices come from a list of choices for the sample, specifically used by
+        the `multiple_choice` scorer.
+
+        For example, if the sample was a multiple choice question like "What is
+        the capital of France? A) Paris B) London C) Berlin", we would store the
+        possible answers here.
+        """
+        self._choices: list[Choice] = []
+
+        for i, choice in enumerate(choices):
+            if isinstance(choice, str):
+                self._choices.append(Choice(value=choice, correct=None, original_position=i))
+            elif isinstance(choice, Choice):
+                self._choices.append(choice)
+
+    @overload
+    def __getitem__(self, index: int) -> Choice:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[Choice]:
+        ...
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[Choice, Sequence[Choice]]:
+        return self._choices[index]
+
+    def __len__(self) -> int:
+        return len(self._choices)
+
+    def mark_choice(self, index: int, correct: bool) -> None:
+        """Set the value of a specific choice"""
+        self._choices[index].correct = correct
+
+    def shuffle(self, rand: Random = Random()) -> None:
+        """
+        Shuffle the choice order, setting the `original_position` so they can be mapped back to their original order.
+
+        Some evals will shuffle the choices from the original sample to try to
+        avoid the model answering correctly due to fine-tuning (or similar) on
+        specific datasets.
+        """
+        shuffled_positions = list(range(len(self._choices)))
+        rand.shuffle(shuffled_positions)
+
+        shuffled_choices = [Choice('notachoice', None, -1)] * len(self._choices)
+
+        for i, shuffled_position in enumerate(shuffled_positions):
+            shuffled_choices[i] = self._choices[shuffled_position]
+            shuffled_choices[i].original_position = shuffled_position
+
+        self._choices = shuffled_choices
 
 
 class TaskState:
@@ -28,11 +145,15 @@ class TaskState:
         self._sample_id = sample.id
         self._group_id = sample.group_id
         self._input = sample.input
-        self._target = sample.target
+        self._target = Target(sample.target)
         self._metadata = sample.metadata
         self._messages: List[ChatMessage] = messages
         self._output = output if output else ModelOutput(model=str(model))
         self._completed = completed
+        if sample.choices:
+            self._choices = Choices(sample.choices)
+        else:
+            self._choices = Choices([])
 
     @property
     def model(self) -> str:
@@ -73,6 +194,11 @@ class TaskState:
                 return input
             else:
                 return ''
+
+    @property
+    def choices(self) -> Choices:
+        """Choices for the sample, if applicable."""
+        return self._choices
 
     @property
     def user_prompt(self) -> ChatMessageUser:
@@ -142,4 +268,4 @@ class TaskState:
     @property
     def target(self) -> str:
         """The scoring target for this `Sample`."""
-        return self._target
+        return self._target.text

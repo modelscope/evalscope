@@ -1,4 +1,5 @@
 accelerate
+colorlog
 datasets==3.6.0
 docstring_parser
 immutabledict

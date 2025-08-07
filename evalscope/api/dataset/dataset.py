@@ -271,12 +271,18 @@ class DatasetDict:
         return len(self.datasets)
 
     @classmethod
-    def from_dataset(cls, dataset: Dataset) -> 'DatasetDict':
+    def from_dataset(cls,
+                     dataset: Dataset,
+                     subset_list: List[str],
+                     limit: Optional[Union[int, float]] = None) -> 'DatasetDict':
         """
-        Create a DatasetDict from a single Dataset.
+        Create a DatasetDict from a single Dataset using subset key in the sample.
 
         Args:
             dataset (Dataset): The dataset to wrap in a DatasetDict.
+            subset_list (List[str]): List of subset keys to include.
+            limit (int | float | None): Optional limit on number of samples per subset.
+                If int, limits to that many samples. If float, limits to that fraction of samples.
 
         Returns:
             DatasetDict: A new DatasetDict containing the provided dataset.
@@ -286,6 +292,14 @@ class DatasetDict:
         for sample in dataset:
             subset_key = sample.subset_key or 'default'
             data_dict[subset_key].append(sample)
+
         for key, samples in data_dict.items():
+            if key not in subset_list:
+                continue
+            if limit is not None:
+                if isinstance(limit, int):
+                    samples = samples[:limit]
+                elif isinstance(limit, float):
+                    samples = samples[:int(len(samples) * limit)]
             dataset_dict[key] = MemoryDataset(samples, name=dataset.name)
         return cls(dataset_dict)

@@ -102,6 +102,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         return self._benchmark_meta.output_types
 
     @property
+    def limit(self) -> Optional[Union[int, float]]:
+        """
+        Return the limit for the benchmark.
+        """
+        return self._task_config.limit
+
+    @property
     def subset_list(self) -> List[str]:
         """
         Return the subset list of the benchmark.

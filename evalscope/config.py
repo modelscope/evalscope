@@ -171,6 +171,7 @@ class TaskConfig(BaseArgument):
 
     def to_dict(self):
         result = copy.deepcopy(self.__dict__)
+        del result['api_key']  # Do not expose api_key in the config
 
         if isinstance(self.generation_config, GenerateConfig):
             result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)

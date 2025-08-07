@@ -106,10 +106,10 @@ class DefaultDataAdapter(DataAdapter):
             few_shot = '\n\n'.join([self.sample_to_fewshot(sample) for sample in few_shot_samples])
 
             # Format the input text with few-shot examples and main prompt
-            input_text = self.format_fewshot_template(fewshot=few_shot, prompt=sample.input)
+            input_text = self.format_fewshot_template(fewshot=few_shot, sample=sample)
         else:
             # No few-shot examples: use the prompt template directly
-            input_text = self.format_prompt_template(prompt=sample.input)
+            input_text = self.format_prompt_template(sample=sample)
         return input_text
 
     def load_subsets(self, load_func: Callable[[str], Dataset]) -> DatasetDict:
@@ -127,9 +127,11 @@ class DefaultDataAdapter(DataAdapter):
             DatasetDict: Dictionary containing all loaded subsets
         """
         if self.reformat_subset:
-            # Load only the default subset and create a single-entry DatasetDict
+            # Load only the default subset
             subset_data = load_func(self.default_subset)
-            dataset_dict = DatasetDict.from_dataset(subset_data)
+            # Reformat the subset to create multiple subsets based on sample keys
+            # NOTE: subset_list and limit is applied here if specified
+            dataset_dict = DatasetDict.from_dataset(dataset=subset_data, subset_list=self.subset_list, limit=self.limit)
         else:
             # Load all specified subsets into separate entries
             subset_dict = defaultdict()
@@ -162,7 +164,7 @@ class DefaultDataAdapter(DataAdapter):
             split=split,
             subset=subset_name,
             sample_fields=self.record_to_sample,  # Custom sample conversion function
-            limit=self._task_config.limit,  # Limit number of samples if specified
+            limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self._task_config.repeats,  # Number of repetitions for each sample
             data_source=self._task_config.dataset_hub,  # Data source configuration
         )
@@ -191,7 +193,8 @@ class DefaultDataAdapter(DataAdapter):
             split=split,
             subset=subset_name,
             sample_fields=self.record_to_sample,
-            limit=self.few_shot_num,  # Limit to specified number of few-shot examples
+            limit=self.few_shot_num
+            if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             data_source=self._task_config.dataset_hub,
         )
@@ -233,7 +236,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         raise NotImplementedError('This method should be implemented in subclasses')
 
-    def format_prompt_template(self, prompt: str) -> str:
+    def format_prompt_template(self, sample: Sample) -> str:
         """
         Format the basic prompt template with the sample data.
 
@@ -241,14 +244,14 @@ class DefaultDataAdapter(DataAdapter):
         for models when no few-shot examples are used.
 
         Args:
-            prompt (str): The raw prompt text to format
+            sample (Sample): The sample object containing the prompt data
 
         Returns:
             str: The formatted prompt ready for model input
         """
-        return self.prompt_template.format(prompt=prompt)
+        return self.prompt_template.format(question=sample.input)
 
-    def format_fewshot_template(self, fewshot: str, prompt: str) -> str:
+    def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
         """
         Format the few-shot template with demonstrations and the main prompt.
 
@@ -257,12 +260,12 @@ class DefaultDataAdapter(DataAdapter):
 
         Args:
             fewshot (str): The formatted few-shot demonstration examples
-            prompt (str): The main prompt for the current sample
+            sample (Sample): The sample object containing the prompt data
 
         Returns:
             str: The complete formatted input with few-shot context
         """
-        return self.few_shot_prompt_template.format(fewshot=fewshot, prompt=prompt)
+        return self.few_shot_prompt_template.format(fewshot=fewshot, question=sample.input)
 
     # #################
     # INFERENCE METHODS

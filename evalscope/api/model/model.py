@@ -15,7 +15,7 @@ from .model_output import ModelOutput
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
-logger = get_logger(name=__name__)
+logger = get_logger()
 
 
 class ModelAPI(abc.ABC):

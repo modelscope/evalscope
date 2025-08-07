@@ -11,7 +11,7 @@ from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to
 from evalscope.utils.logger import get_logger
 from .state import TaskState
 
-logger = get_logger(name=__name__)
+logger = get_logger()
 
 
 class CacheManager:

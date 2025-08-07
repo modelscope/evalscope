@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 from evalscope.utils.logger import get_logger
 
-logger = get_logger(name=__name__)
+logger = get_logger()
 
 
 class DefaultEvaluator(Evaluator):
