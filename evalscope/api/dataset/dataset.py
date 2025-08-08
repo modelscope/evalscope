@@ -49,6 +49,11 @@ class Sample(BaseModel):
     setup: Optional[str] = None
     """Setup script to run for sample (run within default SandboxEnvironment)."""
 
+    def pretty_print(self) -> str:
+        """Return a pretty-printed string representation of the sample."""
+        input_text = self.input if isinstance(self.input, str) else '\n'.join(str(m) for m in self.input)
+        return f'Sample ID: {self.id}\nInput: {input_text}\nTarget: {self.target}'
+
 
 @dataclass
 class FieldSpec:

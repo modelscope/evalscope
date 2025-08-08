@@ -202,7 +202,7 @@ class DefaultEvaluator(Evaluator):
         Returns:
             TaskState: The task state containing the prediction result.
         """
-        logger.debug(f'Item input: \n{sample.input}')
+        logger.debug(f'\n{sample.pretty_print()}')
 
         # Run model inference on the current sample
         task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)

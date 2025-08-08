@@ -7,7 +7,7 @@ import unittest
 from unittest import TestCase
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalStage, EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
 
@@ -24,7 +24,7 @@ class TestBenchmark(TestCase):
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.SERVICE,
-            'eval_batch_size': 1,
+            'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
                 'max_tokens': 2048,
@@ -70,9 +70,18 @@ class TestBenchmark(TestCase):
     def test_mmlu(self):
         """Test MMLU reasoning dataset."""
         dataset_args = {
-            'subset_list': ['abstract_algebra', 'computer_security']
+            'few_shot_num': 0,
+            # 'subset_list': ['abstract_algebra', 'computer_security']
         }
         self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
+
+    def test_mmlu_pro(self):
+        """Test MMLU-Pro reasoning dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['computer science', 'math']
+        }
+        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args)
 
     def test_math_500(self):
         """Test MATH 500 dataset."""

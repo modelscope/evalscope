@@ -8,12 +8,14 @@ from typing import List, Optional
 init_loggers = {}
 # Define log formats
 data_format = '%Y-%m-%d %H:%M:%S'
-detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(log_color)s%(levelname)s%(reset)s: %(message)s'  # noqa:E501
-simple_format = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
 # For console output
-color_detailed_formatter = colorlog.ColoredFormatter(detailed_format, datefmt=data_format)
-color_simple_formatter = colorlog.ColoredFormatter(simple_format, datefmt=data_format)
+color_detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(log_color)s%(levelname)s%(reset)s: %(message)s'  # noqa:E501
+color_simple_format = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
+color_detailed_formatter = colorlog.ColoredFormatter(color_detailed_format, datefmt=data_format)
+color_simple_formatter = colorlog.ColoredFormatter(color_simple_format, datefmt=data_format)
 # For file output
+detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s: %(message)s'  # noqa:E501
+simple_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
 plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_format)
 plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
 
@@ -54,7 +56,13 @@ def get_logger(log_file: Optional[str] = None,
             logger.setLevel(log_level)
             for handler in logger.handlers:
                 handler.setLevel(log_level)
-                handler.setFormatter(color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter)
+                # 区分不同类型的 handler，使用相应的格式化器
+                if isinstance(handler, logging.FileHandler):
+                    handler.setFormatter(plain_detailed_formatter if log_level ==
+                                         logging.DEBUG else plain_simple_formatter)
+                else:
+                    handler.setFormatter(color_detailed_formatter if log_level ==
+                                         logging.DEBUG else color_simple_formatter)
             add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 
@@ -80,7 +88,11 @@ def get_logger(log_file: Optional[str] = None,
         handlers.append(file_handler)
 
     for handler in handlers:
-        handler.setFormatter(color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter)
+        # 区分不同类型的 handler，使用相应的格式化器
+        if isinstance(handler, logging.FileHandler):
+            handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
+        else:
+            handler.setFormatter(color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter)
         handler.setLevel(log_level)
         logger.addHandler(handler)
 

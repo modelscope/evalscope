@@ -6,6 +6,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -33,7 +34,7 @@ Here are some examples of how to solve similar problems:
         name='gsm8k',
         pretty_name='GSM8K',
         dataset_id='AI-ModelScope/gsm8k',
-        tags=['Mathematics'],
+        tags=[Tags.MATH, Tags.REASONING],
         description=
         'GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',  # noqa: E501
         subset_list=['main'],

@@ -10,7 +10,7 @@ import subprocess
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalStage, EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger

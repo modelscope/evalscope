@@ -1,15 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Dict
-
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-logger = get_logger()
 logger = get_logger()
 
 SUBJECT_MAPPING = {
@@ -77,7 +74,7 @@ SUBJECT_MAPPING = {
     BenchmarkMeta(
         name='mmlu',
         pretty_name='MMLU',
-        tags=['Knowledge', 'MCQ'],
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=
         "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",  # noqa: E501
         dataset_id='cais/mmlu',
@@ -87,7 +84,7 @@ SUBJECT_MAPPING = {
         few_shot_num=5,
         train_split='dev',
         eval_split='test',
-        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,  # noqa: E501
+        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
     ))
 class MMLUAdapter(MultiChoiceAdapter):
 

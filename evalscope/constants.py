@@ -46,20 +46,10 @@ class MetricsConstant:
 class ArenaWinner:
 
     MODEL_A = 'model_a'
-
     MODEL_B = 'model_b'
-
     TIE = 'tie'
-
     TIE_BOTH_BAD = 'tie_both_bad'
-
     UNKNOWN = 'unknown'
-
-
-class ArenaMode:
-    SINGLE = 'single'
-    PAIRWISE = 'pairwise'
-    PAIRWISE_BASELINE = 'pairwise_baseline'
 
 
 class AnswerKeys:
@@ -70,53 +60,6 @@ class AnswerKeys:
     MODEL_SPEC = 'model_spec'
     SUBSET_NAME = 'subset_name'
     CHOICES = 'choices'
-
-
-class ReviewKeys:
-    REVIEW_ID = 'review_id'
-    REVIEWED = 'reviewed'
-    REVIEWER_SPEC = 'reviewer_spec'
-    REVIEW_TIME = 'review_time'
-    MESSAGE = 'message'
-    CONTENT = 'content'
-    GOLD = 'gold'
-    PRED = 'pred'
-    RESULT = 'result'
-    REVIEW = 'review'
-
-
-class EvalConfigKeys:
-    CLASS_REF = 'ref'
-    CLASS_ARGS = 'args'
-    ENABLE = 'enable'
-    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
-    RANDOM_SEED = 'random_seed'
-    FN_COMPLETION_PARSER = 'fn_completion_parser'
-    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
-    OUTPUT_FILE = 'output_file'
-    MODEL_ID_OR_PATH = 'model_id_or_path'
-    MODEL_REVISION = 'revision'
-    GENERATION_CONFIG = 'generation_config'
-    PRECISION = 'precision'
-    TEMPLATE_TYPE = 'template_type'
-
-
-class FnCompletionParser:
-    LMSYS_PARSER: str = 'lmsys_parser'
-    RANKING_PARSER: str = 'ranking_parser'
-
-
-class PositionBiasMitigation:
-    NONE = 'none'
-    RANDOMIZE_ORDER = 'randomize_order'
-    SWAP_POSITION = 'swap_position'
-
-
-class EvalStage:
-    # Enums: `all`, `infer`, `review`
-    ALL = 'all'
-    INFER = 'infer'
-    REVIEW = 'review'
 
 
 class EvalType:
@@ -162,3 +105,11 @@ class JudgeScoreType:
 class ModelTask:
     TEXT_GENERATION = 'text_generation'
     IMAGE_GENERATION = 'image_generation'
+
+
+class Tags:
+    KNOWLEDGE = 'Knowledge'
+    MULTIPLE_CHOICE = 'MCQ'
+    MATH = 'Math'
+    REASONING = 'Reasoning'
+    CODING = 'Coding'

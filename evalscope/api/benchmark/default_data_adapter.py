@@ -101,7 +101,10 @@ class DefaultDataAdapter(DataAdapter):
                 # Fallback: use the first available subset if current subset not found
                 first_key = next(iter(self.fewshot_dataset))
                 few_shot_samples = self.fewshot_dataset[first_key]
-
+            # Select fewshot samples
+            assert len(few_shot_samples) >= self.few_shot_num, (
+                f"""The dataset only have ({len(few_shot_samples)}) few-shot samples, but requested ({self.few_shot_num}) fewshot samples, please reduce 'few_shot_num'."""  # noqa: E501
+            )
             # Convert few-shot samples to demonstration string
             few_shot = '\n\n'.join([self.sample_to_fewshot(sample) for sample in few_shot_samples])
 

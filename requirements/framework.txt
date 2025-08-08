@@ -17,6 +17,7 @@ pyarrow
 pydantic
 pyyaml>=5.1
 requests
+rich
 rouge-chinese
 rouge-score>=0.1.0
 sacrebleu

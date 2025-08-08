@@ -64,7 +64,7 @@ def answer_options(choices: Choices) -> str:
     return '\n'.join([f'{answer_character(i)}) {choices[j].value}' for i, j in enumerate(indexes)])
 
 
-def prompt(question: str, choices: Choices, template: str, fewshot: Optional[str]) -> str:
+def prompt(question: str, choices: Choices, template: str, fewshot: Optional[str] = None) -> str:
 
     choices_text = answer_options(choices)
     letters = ','.join(answer_character(i) for i in range(len(choices)))
