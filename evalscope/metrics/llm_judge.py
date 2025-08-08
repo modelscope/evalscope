@@ -48,17 +48,18 @@ class LLMJudge:
     """
 
     def __init__(
-            self,
-            api_key: Optional[str] = None,
-            api_url: Optional[str] = None,
-            model_id: Optional[str] = None,
-            system_prompt: Optional[str] = None,
-            prompt_template: Optional[str] = None,
-            generation_config: Optional[Dict[str, Any]] = None,
-            score_pattern: Optional[str] = None,
-            score_mapping: Optional[Dict[str, float]] = None,
-            score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
-            **kwargs):
+        self,
+        api_key: Optional[str] = None,
+        api_url: Optional[str] = None,
+        model_id: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        prompt_template: Optional[str] = None,
+        generation_config: Optional[Dict[str, Any]] = None,
+        score_pattern: Optional[str] = None,
+        score_mapping: Optional[Dict[str, float]] = None,
+        score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
+        **kwargs
+    ):
         """
         Initialize LLMJudge metric.
 
@@ -79,14 +80,15 @@ class LLMJudge:
         self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
-        self.generation_config = generation_config or {}
+        self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 1024}
 
         # Default score mapping for A/B pattern
         self.score_type = score_type
         if self.score_type == JudgeScoreType.NUMERIC:
             self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
-            self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE',
-                                                                     DEFAULT_NUMERIC_SCORE_TEMPLATE)
+            self.prompt_template = prompt_template or os.environ.get(
+                'JUDGE_PROMPT_TEMPLATE', DEFAULT_NUMERIC_SCORE_TEMPLATE
+            )
         elif self.score_type == JudgeScoreType.PATTERN:
             self.score_pattern = score_pattern or r'(A|B)'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
@@ -97,12 +99,17 @@ class LLMJudge:
         self._init_server_adapter()
 
     def _init_server_adapter(self):
-        from evalscope.models import ServerModelAdapter
+        from evalscope.api.model import GenerateConfig, get_model
 
-        # Initialize ServerModelAdapter
-        self.server_adapter = ServerModelAdapter(api_url=self.api_url, model_id=self.model_id, api_key=self.api_key)
+        self.model = get_model(
+            model=self.model_id,
+            eval_type='openai_api',
+            base_url=self.api_url,
+            api_key=self.api_key,
+            config=GenerateConfig(**self.generation_config),
+        )
 
-    def __call__(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def judge(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Args:
             prompt (str): The prompt to evaluate
@@ -110,23 +117,18 @@ class LLMJudge:
         Returns:
             str: The response from the LLM
         """
-        input_data = {'data': [prompt], 'system_prompt': system_prompt or self.system_prompt}
+        from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 
-        # Inference configuration
-        infer_cfg = {'temperature': 0.0, 'max_tokens': 1024}
-        if self.generation_config:
-            infer_cfg.update(self.generation_config)
-
-        if self.model_id == DEFAULT_JUDGE_MODEL:
-            # Disable thinking for the default judge model
-            infer_cfg['enable_thinking'] = self.generation_config.get('enable_thinking', False)
-
+        system_content = system_prompt or self.system_prompt
+        input_messages = [ChatMessageUser(content=prompt)]
+        if system_content:
+            input_messages.insert(0, ChatMessageSystem(content=system_content))
         try:
             # Send request using ServerModelAdapter
-            response = self.server_adapter.process_single_input(input_data, infer_cfg)
+            response = self.model.generate(input_messages)
 
             # Extract content from response
-            llm_response = response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            llm_response = response.completion
             return llm_response
         except Exception as e:
             logger.error(f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}')

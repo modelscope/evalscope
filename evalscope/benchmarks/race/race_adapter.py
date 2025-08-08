@@ -77,7 +77,8 @@ class RACEAdapter(DataAdapter):
 
         """
         prompt = 'The following are multiple choice reading comprehension questions (with answers).\n\n'.format(
-            self._format_subject(subset_name))
+            self._format_subject(subset_name)
+        )
         few_shot_prompts = [self._generate_prompt(input_d=sample, include_answer=True) for sample in few_shot_list]
 
         context: str = '\n'.join(few_shot_prompts) + '\n'

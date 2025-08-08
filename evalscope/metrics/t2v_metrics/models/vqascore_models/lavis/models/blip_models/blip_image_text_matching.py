@@ -119,7 +119,8 @@ class BlipITM(BlipBase):
         elif match_head == 'itc':
             encoder_input_ids[:, 0] = self.tokenizer.cls_token_id
             text_output = self.text_encoder(
-                encoder_input_ids, attention_mask=text_attention_mask, return_dict=True, mode='text')
+                encoder_input_ids, attention_mask=text_attention_mask, return_dict=True, mode='text'
+            )
             image_feat = F.normalize(self.vision_proj(image_embeds[:, 0, :]), dim=-1)
             text_feat = F.normalize(self.text_proj(text_output.last_hidden_state[:, 0, :]), dim=-1)
 
@@ -155,13 +156,14 @@ def compute_gradcam(model, visual_input, text_input, tokenized_text, block_num=6
     model.zero_grad()
     loss.backward()
     with torch.no_grad():
-        mask = tokenized_text.attention_mask.view(tokenized_text.attention_mask.size(0), 1, -1, 1,
-                                                  1)  # (bsz,1,token_len, 1,1)
+        mask = tokenized_text.attention_mask.view(
+            tokenized_text.attention_mask.size(0), 1, -1, 1, 1
+        )  # (bsz,1,token_len, 1,1)
         token_length = tokenized_text.attention_mask.sum(dim=-1) - 2
         token_length = token_length.cpu()
         # grads and cams [bsz, num_head, seq_len, image_patch]
-        grads = model.text_encoder.base_model.base_model.encoder.layer[
-            block_num].crossattention.self.get_attn_gradients()
+        grads = model.text_encoder.base_model.base_model.encoder.layer[block_num
+                                                                       ].crossattention.self.get_attn_gradients()
         cams = model.text_encoder.base_model.base_model.encoder.layer[block_num].crossattention.self.get_attention_map()
 
         # assume using vit with 576 num image patch

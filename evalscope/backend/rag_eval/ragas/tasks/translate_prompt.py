@@ -34,7 +34,8 @@ async def translate_prompt(
 
     logger.info(f'Translating prompts to {target_lang}')
     adapted_prompts = await prompt_user.adapt_prompts(
-        language=target_lang, llm=llm, adapt_instruction=adapt_instruction)
+        language=target_lang, llm=llm, adapt_instruction=adapt_instruction
+    )
     prompt_user.set_prompts(**adapted_prompts)
     try:
         prompt_user.save_prompts(prompt_dir)

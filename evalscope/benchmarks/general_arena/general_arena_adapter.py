@@ -3,9 +3,10 @@ import os
 from collections import defaultdict
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType
-from evalscope.metrics import Metric, mean, metric_registry
+from evalscope.metrics import mean, metric_registry
 from evalscope.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
 
@@ -45,7 +46,8 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
         }],
         'baseline':
         'qwen2.5-7b'
-    })
+    }
+)
 class GeneralArenaAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):
@@ -128,7 +130,8 @@ class GeneralArenaAdapter(DataAdapter):
                 dataset_file_path = os.path.join(dataset_path, f'{dataset_name}_{subset_name}.jsonl')
                 if not os.path.exists(dataset_file_path):
                     raise ValueError(
-                        f'Dataset {dataset_name} with subset {subset_name} not found in model {model["name"]}.')
+                        f'Dataset {dataset_name} with subset {subset_name} not found in model {model["name"]}.'
+                    )
                 dataset = jsonl_to_list(dataset_file_path)
                 # sort by index
                 dataset.sort(key=lambda x: x.get('index'))
@@ -153,7 +156,8 @@ class GeneralArenaAdapter(DataAdapter):
                 pairs = []
                 for model_item, baseline_item in zip(model_data[name], model_data[self.baseline]):
                     for model_choice, baseline_choice in zip(
-                            process_review_item(model_item), process_review_item(baseline_item)):
+                        process_review_item(model_item), process_review_item(baseline_item)
+                    ):
                         pairs.append({
                             'question': model_choice['Question'],
                             'answer_1': model_choice['Generated'],
@@ -231,7 +235,8 @@ class GeneralArenaAdapter(DataAdapter):
         bt_model_coef = compute_mle_elo(battles, baseline_model=self.baseline)
 
         bootstrap_model_coef = get_bootstrap_result(
-            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline)
+            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline
+        )
 
         stats = pd.DataFrame()
         stats['results'] = None
@@ -288,7 +293,8 @@ class GeneralArenaAdapter(DataAdapter):
             """Format DataFrame as leaderboard with CI."""
             # Pivot to get winrate, winrate_lower, winrate_upper as columns
             pivot_df = data_df.pivot_table(
-                index=[ReportKey.model_name], columns=ReportKey.metric_name, values=ReportKey.score, aggfunc='first')
+                index=[ReportKey.model_name], columns=ReportKey.metric_name, values=ReportKey.score, aggfunc='first'
+            )
 
             # Add baseline model with 50% winrate
             baseline_data = {'winrate': 0.5, 'winrate_lower': 0.5, 'winrate_upper': 0.5}
@@ -392,7 +398,8 @@ class GeneralArenaAdapter(DataAdapter):
             subset_df = parsed_df[(parsed_df['dataset_name'] == dataset_name)
                                   & (parsed_df['subset_name'] == subset_name)]
             leaderboard_outputs.append(
-                format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ==='))
+                format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ===')
+            )
 
         # Write all leaderboard outputs to file
         with open(leaderboard_file, 'w', encoding='utf-8') as f:

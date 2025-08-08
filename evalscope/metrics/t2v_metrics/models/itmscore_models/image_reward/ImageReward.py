@@ -47,7 +47,8 @@ class MLP(nn.Module):
             nn.Dropout(0.1),
             nn.Linear(64, 16),
             #nn.ReLU(),
-            nn.Linear(16, 1))
+            nn.Linear(16, 1)
+        )
 
         # initial MLP param
         for name, param in self.layers.named_parameters():
@@ -100,7 +101,8 @@ class ImageReward(nn.Module):
 
         # text encode
         text_input = self.blip.tokenizer(
-            prompt, padding='max_length', truncation=True, max_length=35, return_tensors='pt').to(self.device)
+            prompt, padding='max_length', truncation=True, max_length=35, return_tensors='pt'
+        ).to(self.device)
 
         # image encode
         if isinstance(image, Image.Image):
@@ -109,7 +111,8 @@ class ImageReward(nn.Module):
             pil_image = Image.open(image)
         else:
             raise TypeError(
-                r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.')
+                r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.'
+            )
 
         image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
         image_embeds = self.blip.visual_encoder(image)
@@ -133,7 +136,8 @@ class ImageReward(nn.Module):
     def inference_rank(self, prompt, generations_list):
 
         text_input = self.blip.tokenizer(
-            prompt, padding='max_length', truncation=True, max_length=35, return_tensors='pt').to(self.device)
+            prompt, padding='max_length', truncation=True, max_length=35, return_tensors='pt'
+        ).to(self.device)
 
         txt_set = []
         for generation in generations_list:
@@ -145,7 +149,8 @@ class ImageReward(nn.Module):
                     pil_image = Image.open(generation)
             else:
                 raise TypeError(
-                    r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.')
+                    r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.'
+                )
             image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
             image_embeds = self.blip.visual_encoder(image)
 

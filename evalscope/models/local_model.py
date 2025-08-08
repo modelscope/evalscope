@@ -14,13 +14,15 @@ logger = get_logger()
 
 class LocalModel(ABC):
 
-    def __init__(self,
-                 model_id: str,
-                 model_revision: str = None,
-                 device_map: str = None,
-                 torch_dtype: str = 'auto',
-                 cache_dir: str = None,
-                 **kwargs):
+    def __init__(
+        self,
+        model_id: str,
+        model_revision: str = None,
+        device_map: str = None,
+        torch_dtype: str = 'auto',
+        cache_dir: str = None,
+        **kwargs
+    ):
 
         self.model_id = model_id
         self.model_revision = model_revision or DEFAULT_MODEL_REVISION

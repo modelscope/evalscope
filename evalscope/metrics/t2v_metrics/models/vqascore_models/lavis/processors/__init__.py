@@ -7,8 +7,12 @@
 
 from ..common.registry import registry
 from .base_processor import BaseProcessor
-from .blip_processors import (Blip2ImageTrainProcessor, BlipCaptionProcessor, BlipImageEvalProcessor,
-                              BlipImageTrainProcessor)
+from .blip_processors import (
+    Blip2ImageTrainProcessor,
+    BlipCaptionProcessor,
+    BlipImageEvalProcessor,
+    BlipImageTrainProcessor,
+)
 
 __all__ = [
     'BaseProcessor',

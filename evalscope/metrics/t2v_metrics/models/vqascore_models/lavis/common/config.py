@@ -227,8 +227,8 @@ class ConfigValidator:
         """
         for k, v in config.items():
             assert (
-                k
-                in self.arguments), f"""{k} is not a valid argument. Support arguments are {self.format_arguments()}."""
+                k in self.arguments
+            ), f"""{k} is not a valid argument. Support arguments are {self.format_arguments()}."""
 
             if self.arguments[k].type is not None:
                 try:

@@ -10,6 +10,7 @@
 __author__ = 'aagrawal'
 
 import re
+
 # This code is based on the code written by Tsung-Yi Lin for MSCOCO Python API available at the following link:
 # (https://github.com/tylin/coco-caption/blob/master/pycocoevalcap/eval.py).
 import sys
@@ -312,7 +313,8 @@ class VQAEval:
             progress = 1
             status = 'Done...\r\n'
         block = int(round(barLength * progress))
-        text = '\rFinshed Percent: [{0}] {1}% {2}'.format('#' * block + '-' * (barLength - block), int(progress * 100),
-                                                          status)
+        text = '\rFinshed Percent: [{0}] {1}% {2}'.format(
+            '#' * block + '-' * (barLength - block), int(progress * 100), status
+        )
         sys.stdout.write(text)
         sys.stdout.flush()

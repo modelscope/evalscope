@@ -3,7 +3,7 @@ import time
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
-from ..register import register_model_adapter
+from ...api.registry import register_model_adapter
 from .server_adapter import ServerModelAdapter
 
 logger = get_logger()
@@ -80,11 +80,13 @@ class TauBenchAdapter(ServerModelAdapter):
         from tau_bench.types import RESPOND_ACTION_NAME, SolveResult
         from typing import List, Optional
 
-        def patched_solve(self,
-                          env: Env,
-                          task_index: Optional[int] = None,
-                          max_num_steps: int = 30,
-                          infer_cfg: Optional[dict] = {}) -> SolveResult:
+        def patched_solve(
+            self,
+            env: Env,
+            task_index: Optional[int] = None,
+            max_num_steps: int = 30,
+            infer_cfg: Optional[dict] = {}
+        ) -> SolveResult:
             env_reset_res = env.reset(task_index=task_index)
             obs = env_reset_res.observation
             info = env_reset_res.info.model_dump()
@@ -106,7 +108,8 @@ class TauBenchAdapter(ServerModelAdapter):
                     input_item={
                         'messages': messages,
                         'tools': self.tools_info
-                    }, infer_cfg=infer_cfg)
+                    }, infer_cfg=infer_cfg
+                )
                 res = adapter_instance.send_request(request_json)
 
                 next_message = res['choices'][0]['message']

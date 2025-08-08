@@ -2,9 +2,10 @@ import os
 import re
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import Metric, mean, metric_registry, simple_f1_score
+from evalscope.metrics import mean, metric_registry, simple_f1_score
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 

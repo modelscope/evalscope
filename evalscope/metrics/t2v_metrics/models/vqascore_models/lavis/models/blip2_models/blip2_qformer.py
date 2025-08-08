@@ -54,16 +54,18 @@ class Blip2Qformer(Blip2Base):
 
         self.tokenizer = self.init_tokenizer()
 
-        self.visual_encoder, self.ln_vision = self.init_vision_encoder(vit_model, img_size, drop_path_rate,
-                                                                       use_grad_checkpoint, vit_precision)
+        self.visual_encoder, self.ln_vision = self.init_vision_encoder(
+            vit_model, img_size, drop_path_rate, use_grad_checkpoint, vit_precision
+        )
         if freeze_vit:
             for name, param in self.visual_encoder.named_parameters():
                 param.requires_grad = False
             self.visual_encoder = self.visual_encoder.eval()
             self.visual_encoder.train = disabled_train
             logging.info('freeze vision encoder')
-        self.Qformer, self.query_tokens = self.init_Qformer(num_query_token, self.visual_encoder.num_features,
-                                                            cross_attention_freq)
+        self.Qformer, self.query_tokens = self.init_Qformer(
+            num_query_token, self.visual_encoder.num_features, cross_attention_freq
+        )
         self.Qformer.resize_token_embeddings(len(self.tokenizer))
         state_dict = self.Qformer.state_dict()
         for name, param in self.Qformer.named_parameters():
@@ -135,8 +137,10 @@ class Blip2Qformer(Blip2Base):
         bs = image.size(0)
         targets = torch.linspace(rank * bs, rank * bs + bs - 1, bs, dtype=int).to(image.device)
 
-        loss_itc = (F.cross_entropy(sim_i2t, targets, label_smoothing=0.1)
-                    + F.cross_entropy(sim_t2i, targets, label_smoothing=0.1)) / 2
+        loss_itc = (
+            F.cross_entropy(sim_i2t, targets, label_smoothing=0.1)
+            + F.cross_entropy(sim_t2i, targets, label_smoothing=0.1)
+        ) / 2
 
         ###============== Image-text Matching ===================###
         text_input_ids_world = concat_all_gather(text_tokens.input_ids)
@@ -274,7 +278,8 @@ class Blip2Qformer(Blip2Base):
             top_p=top_p,
             eos_token_id=self.tokenizer.sep_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
-            **model_kwargs)
+            **model_kwargs
+        )
         captions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         return captions
 

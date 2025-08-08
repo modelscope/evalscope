@@ -39,7 +39,8 @@ def scan_for_report_folders(root_path):
                 datasets.append(os.path.splitext(os.path.basename(dataset_item))[0])
             datasets = DATASET_TOKEN.join(datasets)
             reports.append(
-                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}')
+                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}'
+            )
 
     reports = sorted(reports, reverse=True)
     logger.debug(f'reports: {reports}')
@@ -61,7 +62,8 @@ def load_single_report(root_path: str, report_name: str):
     config_files = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))
     if not config_files:
         raise FileNotFoundError(
-            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}')
+            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}'
+        )
     task_cfg_path = config_files[0]
     task_cfg = yaml_to_dict(task_cfg_path)
     return report_list, datasets, task_cfg

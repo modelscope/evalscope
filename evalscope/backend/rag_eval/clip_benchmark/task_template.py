@@ -4,8 +4,11 @@ import torch
 from itertools import product
 
 from evalscope.backend.rag_eval.clip_benchmark.arguments import Arguments
-from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (build_dataset, get_dataloader,
-                                                                       get_dataset_default_task)
+from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (
+    build_dataset,
+    get_dataloader,
+    get_dataset_default_task,
+)
 from evalscope.backend.rag_eval.clip_benchmark.tasks import image_caption, zeroshot_classification, zeroshot_retrieval
 from evalscope.backend.rag_eval.utils.clip import VisionModel
 from evalscope.utils.logger import get_logger
@@ -66,8 +69,9 @@ def evaluate(args: Arguments):
             if verbose:
                 logger.info(f'Zero-shot templates: {zeroshot_templates}')
             classnames = dataset.classes if hasattr(dataset, 'classes') else None
-            assert (zeroshot_templates is not None
-                    and classnames is not None), 'Dataset does not support classification'
+            assert (
+                zeroshot_templates is not None and classnames is not None
+            ), 'Dataset does not support classification'
             metrics = zeroshot_classification.evaluate(
                 model,
                 dataloader,

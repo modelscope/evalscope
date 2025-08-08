@@ -130,8 +130,8 @@ def evaluate_generations(
         results[index] = result
         metadata[index] = meta
 
-    assert len(results) == len(
-        generations_list), f'results = {len(results)} inputs = {len(generations_list)} {results=}'
+    assert len(results
+               ) == len(generations_list), f'results = {len(results)} inputs = {len(generations_list)} {results=}'
 
     return results, metadata
 

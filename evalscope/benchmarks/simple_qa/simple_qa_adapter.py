@@ -2,8 +2,9 @@ import re
 from collections import defaultdict
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.metrics import LLMJudge, mean, metric_registry
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -102,7 +103,8 @@ Just return the letters "A", "B", or "C", with no text around it.
     metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
     few_shot_num=0,
     train_split=None,
-    eval_split='test')
+    eval_split='test'
+)
 class SimpleQAAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):

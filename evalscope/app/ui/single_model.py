@@ -10,8 +10,13 @@ from typing import TYPE_CHECKING
 from evalscope.report import Report, ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
 from ..constants import DATASET_TOKEN, LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOKEN
-from ..utils.data_utils import (get_acc_report_df, get_model_prediction, get_report_analysis, get_single_dataset_df,
-                                load_single_report)
+from ..utils.data_utils import (
+    get_acc_report_df,
+    get_model_prediction,
+    get_report_analysis,
+    get_single_dataset_df,
+    load_single_report,
+)
 from ..utils.localization import get_single_model_locale
 from ..utils.text_utils import convert_markdown_image, process_json_content, process_model_prediction
 from ..utils.visualization import plot_single_dataset_scores, plot_single_report_scores, plot_single_report_sunburst
@@ -63,7 +68,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
 
         with gr.Row():
             answer_mode_radio = gr.Radio(
-                label=locale_dict['answer_mode'], choices=['All', 'Pass', 'Fail'], value='All', interactive=True)
+                label=locale_dict['answer_mode'], choices=['All', 'Pass', 'Fail'], value='All', interactive=True
+            )
             score_threshold = gr.Number(value=0.99, label=locale_dict['score_threshold'], interactive=True)
 
         data_review_df = gr.State(None)
@@ -76,7 +82,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
                 answer_mode_counts = gr.Markdown('')
             with gr.Column():
                 page_number = gr.Number(
-                    value=1, label=locale_dict['page'], minimum=1, maximum=1, step=1, interactive=True)
+                    value=1, label=locale_dict['page'], minimum=1, maximum=1, step=1, interactive=True
+                )
 
         # show data review table
         with gr.Row(variant='panel'):
@@ -105,7 +112,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
 
     @report_name.change(
         inputs=[sidebar.root_path, report_name],
-        outputs=[report_list, task_config, dataset_radio, work_dir, model_name])
+        outputs=[report_list, task_config, dataset_radio, work_dir, model_name]
+    )
     def update_single_report_data(root_path, report_name):
         report_list, datasets, task_cfg = load_single_report(root_path, report_name)
         work_dir = os.path.join(root_path, report_name.split(REPORT_TOKEN)[0])
@@ -122,7 +130,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[dataset_radio.change, report_list.change],
         inputs=[dataset_radio, report_list],
-        outputs=[dataset_plot, dataset_table, subset_select, data_review_df, report_analysis])
+        outputs=[dataset_plot, dataset_table, subset_select, data_review_df, report_analysis]
+    )
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
         report_df = get_data_frame(report_list=report_list)
@@ -136,7 +145,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[subset_select.change],
         inputs=[work_dir, model_name, dataset_radio, subset_select],
-        outputs=[data_review_df, page_number])
+        outputs=[data_review_df, page_number]
+    )
     def update_single_report_subset(work_dir, model_name, dataset_name, subset_name):
         if not subset_name:
             return gr.skip()
@@ -146,7 +156,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[data_review_df.change, answer_mode_radio.change, score_threshold.change],
         inputs=[data_review_df, answer_mode_radio, score_threshold],
-        outputs=[filtered_review_df, page_number, answer_mode_counts])
+        outputs=[filtered_review_df, page_number, answer_mode_counts]
+    )
     def filter_data(data_review_df, answer_mode, score_threshold):
         if data_review_df is None:
             return None, gr.update(value=1, maximum=1), ''
@@ -172,7 +183,8 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[filtered_review_df.change, page_number.change],
         inputs=[filtered_review_df, page_number, score_threshold],
-        outputs=[input_text, generated_text, gold_text, pred_text, score_text, nscore])
+        outputs=[input_text, generated_text, gold_text, pred_text, score_text, nscore]
+    )
     def update_table_components(filtered_df, page_number, score_threshold):
         if filtered_df is None or len(filtered_df) == 0:
             return '', '', '', '', '', ''

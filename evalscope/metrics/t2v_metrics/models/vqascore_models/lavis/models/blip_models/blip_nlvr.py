@@ -157,8 +157,9 @@ class BlipNLVR(BlipBase, MomentumDistilationMixin):
             raise RuntimeError('checkpoint url or path is invalid')
         state_dict = checkpoint['model']
 
-        state_dict['visual_encoder.pos_embed'] = interpolate_pos_embed(state_dict['visual_encoder.pos_embed'],
-                                                                       self.visual_encoder)
+        state_dict['visual_encoder.pos_embed'] = interpolate_pos_embed(
+            state_dict['visual_encoder.pos_embed'], self.visual_encoder
+        )
 
         for key in list(state_dict.keys()):
             if 'crossattention.self.' in key:

@@ -1,7 +1,8 @@
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.metrics import LLMJudge, mean, metric_registry
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -27,7 +28,8 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
     metric_list=['winrate'],
     few_shot_num=0,
     train_split=None,
-    eval_split='test')
+    eval_split='test'
+)
 class ArenaHardAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):

@@ -66,7 +66,8 @@ class BLIP2ITMScoreModel(ScoreModel):
         query_att = torch.ones(query_token.size()[:-1], dtype=torch.long).to(query_token.device)
 
         text_input = self.model.tokenizer(
-            texts, padding='max_length', truncation=True, max_length=35, return_tensors='pt').to(self.device)
+            texts, padding='max_length', truncation=True, max_length=35, return_tensors='pt'
+        ).to(self.device)
 
         attention_mask_all = torch.cat([query_att, text_input.attention_mask], dim=1)
         output_itm = self.model.Qformer.bert(

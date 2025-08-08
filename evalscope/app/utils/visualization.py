@@ -47,7 +47,8 @@ def plot_single_report_sunburst(report_list: List[Report]):
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num]),
         template=PLOTLY_THEME,
-        maxdepth=4)
+        maxdepth=4
+    )
     plot.update_traces(insidetextorientation='radial')
     plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1), height=600)
     return plot
@@ -61,7 +62,8 @@ def plot_single_dataset_scores(df: pd.DataFrame):
         y=df[ReportKey.score],
         color=df[ReportKey.subset_name],
         text=df[ReportKey.score],
-        barmode='group')
+        barmode='group'
+    )
 
     width = 0.2 if len(df[ReportKey.subset_name]) <= 3 else None
     plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
@@ -82,10 +84,13 @@ def plot_multi_report_radar(df: pd.DataFrame):
                 r=common_group[ReportKey.score],
                 theta=common_group[ReportKey.dataset_name],
                 name=model_name,
-                fill='toself'))
+                fill='toself'
+            )
+        )
 
     fig.update_layout(
         template=PLOTLY_THEME,
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-        margin=dict(t=20, l=20, r=20, b=20))
+        margin=dict(t=20, l=20, r=20, b=20)
+    )
     return fig

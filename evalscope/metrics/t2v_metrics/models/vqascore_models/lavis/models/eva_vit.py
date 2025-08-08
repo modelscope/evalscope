@@ -72,15 +72,17 @@ class Mlp(nn.Module):
 
 class Attention(nn.Module):
 
-    def __init__(self,
-                 dim,
-                 num_heads=8,
-                 qkv_bias=False,
-                 qk_scale=None,
-                 attn_drop=0.,
-                 proj_drop=0.,
-                 window_size=None,
-                 attn_head_dim=None):
+    def __init__(
+        self,
+        dim,
+        num_heads=8,
+        qkv_bias=False,
+        qk_scale=None,
+        attn_drop=0.,
+        proj_drop=0.,
+        window_size=None,
+        attn_head_dim=None
+    ):
         super().__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
@@ -100,8 +102,9 @@ class Attention(nn.Module):
         if window_size:
             self.window_size = window_size
             self.num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1) + 3
-            self.relative_position_bias_table = nn.Parameter(torch.zeros(self.num_relative_distance,
-                                                                         num_heads))  # 2*Wh-1 * 2*Ww-1, nH
+            self.relative_position_bias_table = nn.Parameter(
+                torch.zeros(self.num_relative_distance, num_heads)
+            )  # 2*Wh-1 * 2*Ww-1, nH
             # cls to token & token 2 cls & cls to cls
 
             # get pair-wise relative position index for each token inside the window
@@ -166,20 +169,22 @@ class Attention(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self,
-                 dim,
-                 num_heads,
-                 mlp_ratio=4.,
-                 qkv_bias=False,
-                 qk_scale=None,
-                 drop=0.,
-                 attn_drop=0.,
-                 drop_path=0.,
-                 init_values=None,
-                 act_layer=nn.GELU,
-                 norm_layer=nn.LayerNorm,
-                 window_size=None,
-                 attn_head_dim=None):
+    def __init__(
+        self,
+        dim,
+        num_heads,
+        mlp_ratio=4.,
+        qkv_bias=False,
+        qk_scale=None,
+        drop=0.,
+        attn_drop=0.,
+        drop_path=0.,
+        init_values=None,
+        act_layer=nn.GELU,
+        norm_layer=nn.LayerNorm,
+        window_size=None,
+        attn_head_dim=None
+    ):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
@@ -190,7 +195,8 @@ class Block(nn.Module):
             attn_drop=attn_drop,
             proj_drop=drop,
             window_size=window_size,
-            attn_head_dim=attn_head_dim)
+            attn_head_dim=attn_head_dim
+        )
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -244,8 +250,9 @@ class RelativePositionBias(nn.Module):
         super().__init__()
         self.window_size = window_size
         self.num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1) + 3
-        self.relative_position_bias_table = nn.Parameter(torch.zeros(self.num_relative_distance,
-                                                                     num_heads))  # 2*Wh-1 * 2*Ww-1, nH
+        self.relative_position_bias_table = nn.Parameter(
+            torch.zeros(self.num_relative_distance, num_heads)
+        )  # 2*Wh-1 * 2*Ww-1, nH
         # cls to token & token 2 cls & cls to cls
 
         # get pair-wise relative position index for each token inside the window
@@ -281,28 +288,30 @@ class VisionTransformer(nn.Module):
     """ Vision Transformer with support for patch or hybrid CNN input stage
     """
 
-    def __init__(self,
-                 img_size=224,
-                 patch_size=16,
-                 in_chans=3,
-                 num_classes=1000,
-                 embed_dim=768,
-                 depth=12,
-                 num_heads=12,
-                 mlp_ratio=4.,
-                 qkv_bias=False,
-                 qk_scale=None,
-                 drop_rate=0.,
-                 attn_drop_rate=0.,
-                 drop_path_rate=0.,
-                 norm_layer=nn.LayerNorm,
-                 init_values=None,
-                 use_abs_pos_emb=True,
-                 use_rel_pos_bias=False,
-                 use_shared_rel_pos_bias=False,
-                 use_mean_pooling=True,
-                 init_scale=0.001,
-                 use_checkpoint=False):
+    def __init__(
+        self,
+        img_size=224,
+        patch_size=16,
+        in_chans=3,
+        num_classes=1000,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4.,
+        qkv_bias=False,
+        qk_scale=None,
+        drop_rate=0.,
+        attn_drop_rate=0.,
+        drop_path_rate=0.,
+        norm_layer=nn.LayerNorm,
+        init_values=None,
+        use_abs_pos_emb=True,
+        use_rel_pos_bias=False,
+        use_shared_rel_pos_bias=False,
+        use_mean_pooling=True,
+        init_scale=0.001,
+        use_checkpoint=False
+    ):
         super().__init__()
         self.image_size = img_size
         self.num_classes = num_classes
@@ -338,7 +347,8 @@ class VisionTransformer(nn.Module):
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
                 init_values=init_values,
-                window_size=self.patch_embed.patch_shape if use_rel_pos_bias else None) for i in range(depth)
+                window_size=self.patch_embed.patch_shape if use_rel_pos_bias else None
+            ) for i in range(depth)
         ])
         #         self.norm = nn.Identity() if use_mean_pooling else norm_layer(embed_dim)
         #         self.fc_norm = norm_layer(embed_dim) if use_mean_pooling else None
@@ -450,7 +460,8 @@ def interpolate_pos_embed(model, checkpoint_model):
             pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
             pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
             pos_tokens = torch.nn.functional.interpolate(
-                pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
+                pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False
+            )
             pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
             new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
             checkpoint_model['pos_embed'] = new_pos_embed

@@ -37,11 +37,13 @@ class BlipBase(BaseModel):
 
         state_dict = checkpoint['model']
 
-        state_dict['visual_encoder.pos_embed'] = interpolate_pos_embed(state_dict['visual_encoder.pos_embed'],
-                                                                       self.visual_encoder)
+        state_dict['visual_encoder.pos_embed'] = interpolate_pos_embed(
+            state_dict['visual_encoder.pos_embed'], self.visual_encoder
+        )
         if 'visual_encoder_m.pos_embed' in self.state_dict().keys():
-            state_dict['visual_encoder_m.pos_embed'] = interpolate_pos_embed(state_dict['visual_encoder_m.pos_embed'],
-                                                                             self.visual_encoder_m)
+            state_dict['visual_encoder_m.pos_embed'] = interpolate_pos_embed(
+                state_dict['visual_encoder_m.pos_embed'], self.visual_encoder_m
+            )
 
         for key in self.state_dict().keys():
             if key in state_dict.keys():

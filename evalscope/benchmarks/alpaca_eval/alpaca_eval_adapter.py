@@ -2,8 +2,9 @@ import re
 from collections import defaultdict
 from typing import Any, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.metrics import LLMJudge, mean, metric_registry
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -57,7 +58,8 @@ Evaluate the models based on the quality and relevance of their outputs, and sel
     metric_list=['winrate'],
     few_shot_num=0,
     train_split=None,
-    eval_split='eval')
+    eval_split='eval'
+)
 class AlpacaEvalAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):

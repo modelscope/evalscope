@@ -178,15 +178,9 @@ class ParallelTransformerBlock(nn.Module):
 
 class CrossAttention(nn.Module):
 
-    def __init__(self,
-                 dim,
-                 *,
-                 context_dim=None,
-                 dim_head=64,
-                 heads=12,
-                 parallel_ff=False,
-                 ff_mult=4,
-                 norm_context=False):
+    def __init__(
+        self, dim, *, context_dim=None, dim_head=64, heads=12, parallel_ff=False, ff_mult=4, norm_context=False
+    ):
         super().__init__()
         self.heads = heads
         self.scale = dim_head**-0.5
@@ -205,8 +199,8 @@ class CrossAttention(nn.Module):
         ff_inner_dim = ff_mult * dim
 
         self.ff = nn.Sequential(
-            nn.Linear(dim, ff_inner_dim
-                      * 2, bias=False), SwiGLU(), nn.Linear(ff_inner_dim, dim, bias=False)) if parallel_ff else None
+            nn.Linear(dim, ff_inner_dim * 2, bias=False), SwiGLU(), nn.Linear(ff_inner_dim, dim, bias=False)
+        ) if parallel_ff else None
 
     def forward(self, x, context, mask):
         """
@@ -273,9 +267,11 @@ class Cross_model(nn.Module):
             self.layers.append(
                 nn.ModuleList([
                     Residual(
-                        CrossAttention(dim=dim, dim_head=dim_head, heads=heads, parallel_ff=True, ff_mult=ff_mult)),
+                        CrossAttention(dim=dim, dim_head=dim_head, heads=heads, parallel_ff=True, ff_mult=ff_mult)
+                    ),
                     Residual(ParallelTransformerBlock(dim=dim, dim_head=dim_head, heads=heads, ff_mult=ff_mult))
-                ]))
+                ])
+            )
 
     def forward(self, query_tokens, context_tokens, mask):
 

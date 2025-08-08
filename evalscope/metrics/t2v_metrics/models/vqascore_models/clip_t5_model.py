@@ -98,7 +98,8 @@ class CLIPT5Model(VQAScoreModel):
             mmprojector_repo=mmprojector_repo,
             mmprojector_name=mmprojector_name,
             device=self.device,
-            cache_dir=self.cache_dir)
+            cache_dir=self.cache_dir
+        )
 
     def load_images(self, image: List[str]) -> torch.Tensor:
         """Load the image(s), and return a tensor (after preprocessing) put on self.device
@@ -115,11 +116,13 @@ class CLIPT5Model(VQAScoreModel):
 
     @torch.no_grad()
     @torch.autocast(device_type='cuda', dtype=torch.bfloat16)
-    def forward(self,
-                images: List[str],
-                texts: List[str],
-                question_template: str = default_question_template,
-                answer_template: str = default_answer_template) -> torch.Tensor:
+    def forward(
+        self,
+        images: List[str],
+        texts: List[str],
+        question_template: str = default_question_template,
+        answer_template: str = default_answer_template
+    ) -> torch.Tensor:
         """Forward pass of the model to return n scores for n (image, text) pairs (in PyTorch Tensor)
         """
         assert len(images) == len(texts), 'Number of images and texts must match'
@@ -139,7 +142,8 @@ class CLIPT5Model(VQAScoreModel):
         labels = [t5_tokenizer_image_token(ans, self.tokenizer, return_tensors='pt') for ans in answers]
 
         input_ids = torch.nn.utils.rnn.pad_sequence(
-            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id
+        )
         labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
         input_ids = input_ids[:, :self.tokenizer.model_max_length]
         labels = labels[:, :self.tokenizer.model_max_length]
@@ -169,8 +173,8 @@ class CLIPT5Model(VQAScoreModel):
         lm_prob = torch.zeros(logits.shape[0])
         loss_fct = torch.nn.CrossEntropyLoss(reduction='mean')
         for k in range(lm_prob.shape[0]):
-            lm_prob[k] = (
-                -loss_fct(logits[k], labels[k])).exp()  # exp to cancel the log and get raw prob between 0 and 1
+            lm_prob[k] = (-loss_fct(logits[k],
+                                    labels[k])).exp()  # exp to cancel the log and get raw prob between 0 and 1
         return lm_prob
 
     @torch.no_grad()
@@ -191,7 +195,8 @@ class CLIPT5Model(VQAScoreModel):
 
         input_ids = [t5_tokenizer_image_token(qs, self.tokenizer, return_tensors='pt') for qs in questions]
         input_ids = torch.nn.utils.rnn.pad_sequence(
-            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id
+        )
         input_ids = input_ids[:, :self.tokenizer.model_max_length]
 
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id)

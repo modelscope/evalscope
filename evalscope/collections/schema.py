@@ -111,8 +111,10 @@ if __name__ == '__main__':
             ]),
             CollectionSchema(
                 name='chinese',
-                datasets=[DatasetInfo(name='ceval', weight=1, tags=['zh'], args={'subset_list': ['logic']})])
-        ])
+                datasets=[DatasetInfo(name='ceval', weight=1, tags=['zh'], args={'subset_list': ['logic']})]
+            )
+        ]
+    )
     print(schema)
     print(schema.flatten())
     schema.dump_json('outputs/schema.json')

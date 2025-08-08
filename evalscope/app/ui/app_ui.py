@@ -32,7 +32,8 @@ def create_app_ui(args: argparse.Namespace):
 
         @sidebar.load_btn.click(
             inputs=[sidebar.reports_dropdown],
-            outputs=[visualization.single_model.report_name, visualization.multi_model.multi_report_name])
+            outputs=[visualization.single_model.report_name, visualization.multi_model.multi_report_name]
+        )
         def update_displays(reports_dropdown):
             if not reports_dropdown:
                 gr.Warning(locale_dict['note'], duration=3)

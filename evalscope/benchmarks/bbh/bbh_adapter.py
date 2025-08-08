@@ -80,8 +80,10 @@ class BBHAdapter(DataAdapter):
         few_shot_num = kwargs.get('few_shot_num', 3)
 
         if few_shot_num != 3 and few_shot_num != 0:
-            logger.error(f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
-                         f'Use 3-shot by default.')
+            logger.error(
+                f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
+                f'Use 3-shot by default.'
+            )
             kwargs['few_shot_num'] = 3
 
         super().__init__(**kwargs)
@@ -146,17 +148,19 @@ class BBHAdapter(DataAdapter):
         if self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'Use default settings: '
-                    f'> few_shot_num: {self.few_shot_num}, '
-                    f'> few_shot_split: {self.train_split}, '
-                    f'> target_eval_split: {self.eval_split}')
+        logger.info(
+            f'Use default settings: '
+            f'> few_shot_num: {self.few_shot_num}, '
+            f'> few_shot_split: {self.train_split}, '
+            f'> target_eval_split: {self.eval_split}'
+        )
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
             if self.few_shot_num > 0:
                 with open(
-                        os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r',
-                        encoding='utf-8') as f:
+                    os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r', encoding='utf-8'
+                ) as f:
                     cot_prompt_str = f.read()
                 few_shot_data = [cot_prompt_str]
 

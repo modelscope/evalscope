@@ -86,7 +86,8 @@ class CLIPScoreModel(ScoreModel):
         model_file_path = download_open_clip_model(self.arch, self.pretrained, self.cache_dir)
 
         self.model, _, self.preprocess = open_clip.create_model_and_transforms(
-            self.arch, pretrained=model_file_path, device=self.device)
+            self.arch, pretrained=model_file_path, device=self.device
+        )
         self.tokenizer = open_clip.get_tokenizer(self.arch)
         self.model.eval()
 

@@ -30,7 +30,8 @@ class SimpleEvaluator(Evaluator):
             data_adapter=data_adapter,
             model_adapter=model_adapter,
             task_cfg=task_cfg,
-            outputs=outputs)
+            outputs=outputs
+        )
 
     def get_answer(self, samples: List[DatasetEntry], infer_cfg: dict) -> List[dict]:
         input_prompts = [sample.prompt for sample in samples]
@@ -124,8 +125,9 @@ class EvaluatorCollection:
             cur_dataset_args.update(common_args)
             # get data adapter
             data_adapter = benchmark.get_data_adapter(cur_dataset_args)
-            evaluators[dataset_name] = SimpleEvaluator(dataset_name, data_adapter, model_adapter, self.task_cfg,
-                                                       self.outputs)
+            evaluators[dataset_name] = SimpleEvaluator(
+                dataset_name, data_adapter, model_adapter, self.task_cfg, self.outputs
+            )
         return evaluators
 
     def get_report(self, scores):
@@ -147,7 +149,9 @@ class EvaluatorCollection:
                                     subset_name=subset_name,
                                     tags=row_data.tags,
                                     metric=metric['metric_name'],
-                                    score=metric['score']))
+                                    score=metric['score']
+                                )
+                            )
             return pd.DataFrame(data)
 
         def aggregate_and_sort(df, group_by_cols):
@@ -176,10 +180,12 @@ class EvaluatorCollection:
         # multi-level aggregation for categories
         max_depth = df_categories['categories'].apply(len).max()
         for level in range(max_depth):
-            df_categories[f'category{level}'] = df_categories['categories'].apply(lambda x: x[level]
-                                                                                  if len(x) > level else '')
-        category_report_df = aggregate_and_sort(df_categories,
-                                                [f'category{level}' for level in range(max_depth)] + ['metric'])
+            df_categories[f'category{level}'] = df_categories['categories'].apply(
+                lambda x: x[level] if len(x) > level else ''
+            )
+        category_report_df = aggregate_and_sort(
+            df_categories, [f'category{level}' for level in range(max_depth)] + ['metric']
+        )
 
         # convert to dict format
         report_dict = {
@@ -235,8 +241,9 @@ class EvaluatorCollection:
             return answer_dict, self.dataset, self.dataset_name_map
 
     def get_answers(self):
-        pred_file_path = os.path.join(self.outputs.predictions_dir, self.task_cfg.model_id,
-                                      f'{self.dataset_name}.jsonl')
+        pred_file_path = os.path.join(
+            self.outputs.predictions_dir, self.task_cfg.model_id, f'{self.dataset_name}.jsonl'
+        )
         os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
 
         answers, dataset, dataset_name_map = self._filter_answer(pred_file_path)

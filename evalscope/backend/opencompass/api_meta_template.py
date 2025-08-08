@@ -49,7 +49,8 @@ register_template(
         reserved_roles=[
             dict(role='SYSTEM', api_role='SYSTEM'),
         ],
-    ))
+    )
+)
 
 if __name__ == '__main__':
     res = MetaTemplateType.get_template_name_list()

@@ -196,7 +196,8 @@ class APIEmbeddingModel(BaseModel):
             openai_api_base=self.openai_api_base,
             openai_api_key=self.openai_api_key,
             dimensions=self.dimensions,
-            check_embedding_ctx_length=False)
+            check_embedding_ctx_length=False
+        )
 
         super().__init__(model_name_or_path=self.model_name, **kwargs)
 

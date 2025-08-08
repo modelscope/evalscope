@@ -26,7 +26,8 @@ class AioHttpClient:
         self.api_plugin = api_plugin
         self.client = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
-            trace_configs=[self._create_trace_config()] if args.debug else [])
+            trace_configs=[self._create_trace_config()] if args.debug else []
+        )
 
     async def __aenter__(self):
         pass
@@ -105,7 +106,8 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     while True:
         try:
             is_error, state_code, response_data = await asyncio.wait_for(
-                attempt_connection(), timeout=args.connect_timeout)
+                attempt_connection(), timeout=args.connect_timeout
+            )
             if not is_error:
                 logger.info('Test connection successful.')
                 return True

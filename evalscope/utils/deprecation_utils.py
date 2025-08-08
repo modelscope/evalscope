@@ -1,5 +1,6 @@
 import functools
 import inspect
+import os
 from typing import Callable, Optional
 
 from .logger import get_logger
@@ -22,7 +23,7 @@ def deprecated(since: str, remove_in: Optional[str] = None, alternative: Optiona
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # Get the file name where the function is defined
-            file_name = inspect.getfile(func)
+            file_name = os.path.basename(inspect.getfile(func))
 
             # Construct the warning message
             warning_parts = [
@@ -40,3 +41,13 @@ def deprecated(since: str, remove_in: Optional[str] = None, alternative: Optiona
         return wrapper
 
     return decorator
+
+
+def deprecated_warning(logger, message: str):
+    """
+    Log a deprecation warning.
+
+    :param logger: Logger instance to log the warning
+    :param message: Warning message to log
+    """
+    logger.warning(f'Deprecated: {message}')

@@ -17,7 +17,8 @@ class CustomDatasetPlugin(DatasetPluginBase):
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             prompt = item.strip()
             if len(prompt) > self.query_parameters.min_prompt_length and len(
-                    prompt) < self.query_parameters.max_prompt_length:
+                prompt
+            ) < self.query_parameters.max_prompt_length:
                 if self.query_parameters.apply_chat_template:
                     message = self.create_message(prompt)
                     yield [message]

@@ -4,18 +4,22 @@ import faulthandler
 import json
 import numpy as np
 import platform
+
 # to run the solution files we're using a timing based approach
 import signal
 import sys
 import time
+
 # used for debugging to time steps
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import partial
 from io import StringIO
+
 # from pyext import RuntimeModule
 from types import ModuleType
+
 # used for testing the code that reads from input
 from unittest.mock import mock_open, patch
 
@@ -342,8 +346,8 @@ def grade_stdio(
             return all_results, WA_send_args
 
         for output_line_idx, (
-                stripped_prediction_line,
-                stripped_gt_out_line,
+            stripped_prediction_line,
+            stripped_gt_out_line,
         ) in enumerate(zip(stripped_prediction_lines, stripped_gt_out_lines)):
             WA_send_args['error_message'] = (
                 f'Wrong answer at {output_line_idx=}: {truncatefn(stripped_prediction_line)} != {truncatefn(stripped_gt_out_line)}'

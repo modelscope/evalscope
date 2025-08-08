@@ -6,7 +6,7 @@ from evalscope.utils.import_utils import _LazyModule
 if TYPE_CHECKING:
     from .combinator import gen_table, get_data_frame, get_report_list
     from .generator import ReportGenerator
-    from .utils import Category, Report, ReportKey, Subset
+    from .report import Category, Report, ReportKey, Subset
 
 else:
     _import_structure = {
@@ -19,7 +19,7 @@ else:
         'generator': [
             'ReportGenerator',
         ],
-        'utils': [
+        'report': [
             'Category',
             'Report',
             'ReportKey',

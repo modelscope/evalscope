@@ -33,8 +33,8 @@ class BenchmarkData:
         if len(self.chunk_times) > 1:
             self.first_chunk_latency = self.chunk_times[0] - self.start_time
             # remove the first chunk time from the total latency
-            self.time_per_output_token = (self.query_latency - self.first_chunk_latency) / (
-                self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
+            self.time_per_output_token = (self.query_latency - self.first_chunk_latency
+                                          ) / (self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
             self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
         else:
             self.first_chunk_latency = self.query_latency
@@ -126,11 +126,13 @@ class BenchmarkMetrics:
             self.avg_completion_tokens = self.n_total_completion_tokens / self.n_succeed_queries
             self.avg_input_token_per_seconds = self.n_total_prompt_tokens / self.total_first_chunk_latency
             self.avg_output_token_per_seconds = self.n_total_completion_tokens / self.total_time
-            self.avg_total_token_per_seconds = (self.n_total_prompt_tokens
-                                                + self.n_total_completion_tokens) / self.total_time
+            self.avg_total_token_per_seconds = (
+                self.n_total_prompt_tokens + self.n_total_completion_tokens
+            ) / self.total_time
             self.avg_time_per_token = self.n_time_per_output_token / self.n_succeed_queries
             self.avg_inter_token_latency = sum(self.n_total_inter_token_latency) / len(
-                self.n_total_inter_token_latency) if self.n_total_inter_token_latency else 0.0
+                self.n_total_inter_token_latency
+            ) if self.n_total_inter_token_latency else 0.0
             self.qps = self.n_succeed_queries / self.total_time
         except ZeroDivisionError as e:
             logger.exception(e)

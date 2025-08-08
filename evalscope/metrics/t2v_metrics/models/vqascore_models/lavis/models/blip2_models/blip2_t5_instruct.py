@@ -61,8 +61,9 @@ class Blip2T5Instruct(Blip2Base):
 
         self.tokenizer = self.init_tokenizer(truncation_side='left')
 
-        self.visual_encoder, self.ln_vision = self.init_vision_encoder(vit_model, img_size, drop_path_rate,
-                                                                       use_grad_checkpoint, vit_precision)
+        self.visual_encoder, self.ln_vision = self.init_vision_encoder(
+            vit_model, img_size, drop_path_rate, use_grad_checkpoint, vit_precision
+        )
         if freeze_vit:
             for name, param in self.visual_encoder.named_parameters():
                 param.requires_grad = False
@@ -171,8 +172,9 @@ class Blip2T5Instruct(Blip2Base):
 
             encoder_atts = torch.cat([atts_t5, input_tokens.attention_mask], dim=1)
 
-            targets = output_tokens.input_ids.masked_fill(output_tokens.input_ids == self.t5_tokenizer.pad_token_id,
-                                                          -100)
+            targets = output_tokens.input_ids.masked_fill(
+                output_tokens.input_ids == self.t5_tokenizer.pad_token_id, -100
+            )
 
             inputs_embeds = self.t5_model.encoder.embed_tokens(input_tokens.input_ids)
             inputs_embeds = torch.cat([inputs_t5, inputs_embeds], dim=1)
@@ -196,7 +198,8 @@ class Blip2T5Instruct(Blip2Base):
         this_n_fs = random.choices(
             list(range(self.num_few_shot_examples + 1)),
             weights=[1 - self.few_shot_prob]
-            + [self.few_shot_prob / self.num_few_shot_examples] * self.num_few_shot_examples)[0]
+            + [self.few_shot_prob / self.num_few_shot_examples] * self.num_few_shot_examples
+        )[0]
 
         if this_n_fs == 0:
             return None, None
@@ -263,7 +266,8 @@ class Blip2T5Instruct(Blip2Base):
             encoder_atts = encoder_atts.reshape(encoder_atts.size(0) // this_n_fs, encoder_atts.size(1) * this_n_fs)
             inputs_embeds = inputs_embeds.reshape(
                 inputs_embeds.size(0) // this_n_fs,
-                inputs_embeds.size(1) * this_n_fs, inputs_embeds.size(2))
+                inputs_embeds.size(1) * this_n_fs, inputs_embeds.size(2)
+            )
 
         return inputs_embeds, encoder_atts
 
@@ -397,17 +401,19 @@ class Blip2T5Instruct(Blip2Base):
 
         return output_text
 
-    def predict_answers(self,
-                        samples,
-                        num_beams=5,
-                        inference_method='generate',
-                        max_len=10,
-                        min_len=1,
-                        num_ans_candidates=128,
-                        answer_list=None,
-                        prompt='',
-                        length_penalty=-1,
-                        **kwargs):
+    def predict_answers(
+        self,
+        samples,
+        num_beams=5,
+        inference_method='generate',
+        max_len=10,
+        min_len=1,
+        num_ans_candidates=128,
+        answer_list=None,
+        prompt='',
+        length_penalty=-1,
+        **kwargs
+    ):
         if isinstance(samples['text_input'], str):
             samples['text_input'] = [samples['text_input']]
 
@@ -434,7 +440,8 @@ class Blip2T5Instruct(Blip2Base):
         samples['prompt'] = text_input
 
         output_text = self.generate(
-            samples, num_beams=num_beams, max_length=max_len, min_length=min_len, length_penalty=length_penalty)
+            samples, num_beams=num_beams, max_length=max_len, min_length=min_len, length_penalty=length_penalty
+        )
 
         if self._apply_lemmatizer or ('apply_lemmatizer' in samples.keys() and samples['apply_lemmatizer']):
             output_text = self._lemmatize(output_text)
@@ -530,8 +537,8 @@ class Blip2T5Instruct(Blip2Base):
         query_tokens = self.query_tokens.expand(bs, -1, -1)
         if self.qformer_text_input:
             text_Qformer = self.tokenizer(
-                prompt, padding='longest', truncation=True, max_length=self.max_txt_len,
-                return_tensors='pt').to(image.device)
+                prompt, padding='longest', truncation=True, max_length=self.max_txt_len, return_tensors='pt'
+            ).to(image.device)
             query_atts = torch.ones(query_tokens.size()[:-1], dtype=torch.long).to(image.device)
             Qformer_atts = torch.cat([query_atts, text_Qformer.attention_mask], dim=1)
 
@@ -625,7 +632,8 @@ class Blip2T5Instruct(Blip2Base):
                 this_output_tokens_atts = output_tokens.attention_mask[start_i:end_i].repeat(bs, 1)
 
                 this_targets = this_output_tokens_ids.masked_fill(
-                    this_output_tokens_ids == self.t5_tokenizer.pad_token_id, -100)
+                    this_output_tokens_ids == self.t5_tokenizer.pad_token_id, -100
+                )
 
                 outputs = self.t5_model(
                     encoder_outputs=this_encoder_outputs,
@@ -692,13 +700,15 @@ class Blip2T5Instruct(Blip2Base):
 
                 self._lemmatizer = spacy.load('en_core_web_sm')
             except ImportError:
-                logging.error("""
+                logging.error(
+                    """
                     Please install spacy and en_core_web_sm model to apply lemmatization.
                     python -m spacy download en_core_web_sm
                     OR
                     import spacy.cli
                     spacy.cli.download("en_core_web_sm")
-                    """)
+                    """
+                )
                 exit(1)
 
         return self._lemmatizer

@@ -1,9 +1,10 @@
 import json
 from typing import Dict, List
 
+from evalscope.api.metric import Metric
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import Metric, mean, metric_registry
+from evalscope.metrics import mean, metric_registry
 
 
 @Benchmark.register(

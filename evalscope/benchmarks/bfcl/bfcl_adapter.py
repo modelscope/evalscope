@@ -52,7 +52,8 @@ SUBJECT_MAPPING = {
     extra_params={
         'underscore_to_dot': True,
         'is_fc_model': True,
-    })
+    }
+)
 class BFCLAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
@@ -61,7 +62,8 @@ class BFCLAdapter(DataAdapter):
         spec = importlib.util.find_spec('bfcl_eval')
         if spec is None:
             raise ImportError(
-                '`bfcl_eval` not found, please install it with `pip install bfcl-eval` before evaluating.')
+                '`bfcl_eval` not found, please install it with `pip install bfcl-eval` before evaluating.'
+            )
 
         self.category_map = SUBJECT_MAPPING
 
@@ -117,8 +119,11 @@ class BFCLAdapter(DataAdapter):
     def match(self, gold: dict, pred: dict) -> dict:
         from bfcl_eval.eval_checker.ast_eval.ast_checker import ast_checker
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_checker import multi_turn_checker
-        from bfcl_eval.model_handler.utils import (convert_to_function_call, default_decode_ast_prompting,
-                                                   default_decode_execute_prompting)
+        from bfcl_eval.model_handler.utils import (
+            convert_to_function_call,
+            default_decode_ast_prompting,
+            default_decode_execute_prompting,
+        )
         from bfcl_eval.utils import is_empty_output
 
         # NOTE: This is hardcoded dummy model since its only use is to infer underscore_to_dot

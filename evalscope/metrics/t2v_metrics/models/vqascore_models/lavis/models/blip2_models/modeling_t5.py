@@ -22,13 +22,24 @@ from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.utils.checkpoint import checkpoint
 from transformers.activations import ACT2FN
-from transformers.modeling_outputs import (BaseModelOutput, BaseModelOutputWithPastAndCrossAttentions, Seq2SeqLMOutput,
-                                           Seq2SeqModelOutput)
+from transformers.modeling_outputs import (
+    BaseModelOutput,
+    BaseModelOutputWithPastAndCrossAttentions,
+    Seq2SeqLMOutput,
+    Seq2SeqModelOutput,
+)
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.t5.configuration_t5 import T5Config
 from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS, find_pruneable_heads_and_indices, prune_linear_layer
-from transformers.utils import (DUMMY_INPUTS, DUMMY_MASK, add_start_docstrings, add_start_docstrings_to_model_forward,
-                                is_torch_fx_proxy, logging, replace_return_docstrings)
+from transformers.utils import (
+    DUMMY_INPUTS,
+    DUMMY_MASK,
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+    is_torch_fx_proxy,
+    logging,
+    replace_return_docstrings,
+)
 from transformers.utils.model_parallel_utils import assert_device_map, get_device_map
 from typing import Optional, Tuple, Union
 
@@ -63,8 +74,10 @@ def load_tf_weights_in_t5(model, config, tf_checkpoint_path):
         import re
         import tensorflow as tf
     except ImportError:
-        logger.error('Loading a TensorFlow model in PyTorch, requires TensorFlow to be installed. Please see '
-                     'https://www.tensorflow.org/install/ for installation instructions.')
+        logger.error(
+            'Loading a TensorFlow model in PyTorch, requires TensorFlow to be installed. Please see '
+            'https://www.tensorflow.org/install/ for installation instructions.'
+        )
         raise
     tf_path = os.path.abspath(tf_checkpoint_path)
     logger.info(f'Converting TensorFlow checkpoint from {tf_path}')
@@ -82,13 +95,15 @@ def load_tf_weights_in_t5(model, config, tf_checkpoint_path):
         name = txt_name.split('/')
         # adam_v and adam_m are variables used in AdamWeightDecayOptimizer to calculated m and v
         # which are not required for using pretrained model
-        if any(n in [
+        if any(
+            n in [
                 'adam_v',
                 'adam_m',
                 'AdamWeightDecayOptimizer',
                 'AdamWeightDecayOptimizer_1',
                 'global_step',
-        ] for n in name):
+            ] for n in name
+        ):
             logger.info(f"Skipping {'/'.join(name)}")
             tf_weights.pop(txt_name, None)
             continue
@@ -149,7 +164,8 @@ def load_tf_weights_in_t5(model, config, tf_checkpoint_path):
             array = np.transpose(array)
         try:
             assert (
-                pointer.shape == array.shape), f'Pointer shape {pointer.shape} and array shape {array.shape} mismatched'
+                pointer.shape == array.shape
+            ), f'Pointer shape {pointer.shape} and array shape {array.shape} mismatched'
         except AssertionError as e:
             e.args += (pointer.shape, array.shape)
             raise
@@ -392,9 +408,10 @@ class T5Attention(nn.Module):
         is_small = relative_position < max_exact
 
         # The other half of the buckets are for logarithmically bigger bins in positions up to max_distance
-        relative_position_if_large = max_exact + (torch.log(relative_position.float() / max_exact)
-                                                  / math.log(max_distance / max_exact) *
-                                                  (num_buckets - max_exact)).to(torch.long)
+        relative_position_if_large = max_exact + (
+            torch.log(relative_position.float() / max_exact) / math.log(max_distance / max_exact) *
+            (num_buckets - max_exact)
+        ).to(torch.long)
         relative_position_if_large = torch.min(
             relative_position_if_large,
             torch.full_like(relative_position_if_large, num_buckets - 1),
@@ -497,8 +514,9 @@ class T5Attention(nn.Module):
         )
 
         # compute scores
-        scores = torch.matmul(query_states, key_states.transpose(
-            3, 2))  # equivalent of torch.einsum("bnqd,bnkd->bnqk", query_states, key_states), compatible with onnx op>9
+        scores = torch.matmul(
+            query_states, key_states.transpose(3, 2)
+        )  # equivalent of torch.einsum("bnqd,bnkd->bnqk", query_states, key_states), compatible with onnx op>9
 
         if position_bias is None:
             if not self.has_relative_attention_bias:
@@ -528,10 +546,11 @@ class T5Attention(nn.Module):
             position_bias_masked = position_bias
 
         scores += position_bias_masked
-        attn_weights = nn.functional.softmax(
-            scores.float(), dim=-1).type_as(scores)  # (batch_size, n_heads, seq_length, key_length)
+        attn_weights = nn.functional.softmax(scores.float(),
+                                             dim=-1).type_as(scores)  # (batch_size, n_heads, seq_length, key_length)
         attn_weights = nn.functional.dropout(
-            attn_weights, p=self.dropout, training=self.training)  # (batch_size, n_heads, seq_length, key_length)
+            attn_weights, p=self.dropout, training=self.training
+        )  # (batch_size, n_heads, seq_length, key_length)
 
         # Mask heads if we want to
         if layer_head_mask is not None:
@@ -655,7 +674,8 @@ class T5Block(nn.Module):
                 raise ValueError(
                     f'There should be {expected_num_past_key_values} past states. '
                     f"{'2 (past / key) for cross attention. ' if expected_num_past_key_values == 4 else ''}"
-                    f'Got {len(past_key_value)} past key / value states')
+                    f'Got {len(past_key_value)} past key / value states'
+                )
 
             self_attn_past_key_value = past_key_value[:2]
             cross_attn_past_key_value = past_key_value[2:]
@@ -809,7 +829,8 @@ class T5PreTrainedModel(PreTrainedModel):
 
         assert decoder_start_token_id is not None, (
             'self.model.config.decoder_start_token_id has to be defined. In T5 it is usually set to the pad_token_id.'
-            ' See T5 docs for more information')
+            ' See T5 docs for more information'
+        )
 
         # shift inputs to the right
         if is_torch_fx_proxy(input_ids):
@@ -836,8 +857,9 @@ class T5Stack(T5PreTrainedModel):
         self.embed_tokens = embed_tokens
         self.is_decoder = config.is_decoder
 
-        self.block = nn.ModuleList(
-            [T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(config.num_layers)])
+        self.block = nn.ModuleList([
+            T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(config.num_layers)
+        ])
         self.final_layer_norm = T5LayerNorm(config.d_model, eps=config.layer_norm_epsilon)
         self.dropout = nn.Dropout(config.dropout_rate)
 
@@ -852,7 +874,8 @@ class T5Stack(T5PreTrainedModel):
     def parallelize(self, device_map=None):
         # Check validity of device_map
         self.device_map = (
-            get_device_map(len(self.block), range(torch.cuda.device_count())) if device_map is None else device_map)
+            get_device_map(len(self.block), range(torch.cuda.device_count())) if device_map is None else device_map
+        )
         assert_device_map(self.device_map, len(self.block))
         self.model_parallel = True
         self.first_device = ('cpu' if 'cpu' in self.device_map.keys() else 'cuda:' + str(min(self.device_map.keys())))
@@ -908,13 +931,15 @@ class T5Stack(T5PreTrainedModel):
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         output_attentions = (output_attentions if output_attentions is not None else self.config.output_attentions)
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
         return_dict = (return_dict if return_dict is not None else self.config.use_return_dict)
 
         if input_ids is not None and inputs_embeds is not None:
             err_msg_prefix = 'decoder_' if self.is_decoder else ''
             raise ValueError(
-                f'You cannot specify both {err_msg_prefix}input_ids and {err_msg_prefix}inputs_embeds at the same time')
+                f'You cannot specify both {err_msg_prefix}input_ids and {err_msg_prefix}inputs_embeds at the same time'
+            )
         elif input_ids is not None:
             input_shape = input_ids.size()
             input_ids = input_ids.view(-1, input_shape[-1])
@@ -1009,7 +1034,8 @@ class T5Stack(T5PreTrainedModel):
             if self.gradient_checkpointing and self.training:
                 if use_cache:
                     logger.warning(
-                        '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...')
+                        '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...'
+                    )
                     use_cache = False
 
                 def create_custom_forward(module):
@@ -1082,13 +1108,15 @@ class T5Stack(T5PreTrainedModel):
             all_hidden_states = all_hidden_states + (hidden_states, )
 
         if not return_dict:
-            return tuple(v for v in [
-                hidden_states,
-                present_key_value_states,
-                all_hidden_states,
-                all_attentions,
-                all_cross_attentions,
-            ] if v is not None)
+            return tuple(
+                v for v in [
+                    hidden_states,
+                    present_key_value_states,
+                    all_hidden_states,
+                    all_attentions,
+                    all_cross_attentions,
+                ] if v is not None
+            )
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
             past_key_values=present_key_value_states,
@@ -1298,7 +1326,8 @@ class T5Model(T5PreTrainedModel):
     def parallelize(self, device_map=None):
         self.device_map = (
             get_device_map(len(self.encoder.block), range(torch.cuda.device_count()))
-            if device_map is None else device_map)
+            if device_map is None else device_map
+        )
         assert_device_map(self.device_map, len(self.encoder.block))
         self.encoder.parallelize(self.device_map)
         self.decoder.parallelize(self.device_map)
@@ -1493,7 +1522,8 @@ class T5ForConditionalGeneration(T5PreTrainedModel):
     def parallelize(self, device_map=None):
         self.device_map = (
             get_device_map(len(self.encoder.block), range(torch.cuda.device_count()))
-            if device_map is None else device_map)
+            if device_map is None else device_map
+        )
         assert_device_map(self.device_map, len(self.encoder.block))
         self.encoder.parallelize(self.device_map)
         self.decoder.parallelize(self.device_map)
@@ -1731,8 +1761,9 @@ class T5ForConditionalGeneration(T5PreTrainedModel):
             reordered_layer_past_states = ()
             for layer_past_state in layer_past_states:
                 # need to set correct `past` for each of the four key / value states
-                reordered_layer_past_states = reordered_layer_past_states + (layer_past_state.index_select(
-                    0, beam_idx.to(layer_past_state.device)), )
+                reordered_layer_past_states = reordered_layer_past_states + (
+                    layer_past_state.index_select(0, beam_idx.to(layer_past_state.device)),
+                )
 
             assert reordered_layer_past_states[0].shape == layer_past_states[0].shape
             assert len(reordered_layer_past_states) == len(layer_past_states)
@@ -1770,7 +1801,8 @@ class T5EncoderModel(T5PreTrainedModel):
     def parallelize(self, device_map=None):
         self.device_map = (
             get_device_map(len(self.encoder.block), range(torch.cuda.device_count()))
-            if device_map is None else device_map)
+            if device_map is None else device_map
+        )
         assert_device_map(self.device_map, len(self.encoder.block))
         self.encoder.parallelize(self.device_map)
         self.model_parallel = True

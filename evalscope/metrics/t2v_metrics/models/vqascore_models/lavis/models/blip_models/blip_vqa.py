@@ -111,7 +111,8 @@ class BlipVQA(BlipBase):
 
         image_embeds = self.visual_encoder.forward_features(samples['image'])
         encoder_output = self.text_encoder.forward_automask(
-            tokenized_text=samples['tokenized_text'], visual_embeds=image_embeds)
+            tokenized_text=samples['tokenized_text'], visual_embeds=image_embeds
+        )
 
         return encoder_output, image_embeds
 
@@ -150,15 +151,17 @@ class BlipVQA(BlipBase):
 
         return loss, answer_output, answer_targets
 
-    def predict_answers(self,
-                        samples,
-                        num_beams=3,
-                        inference_method='rank',
-                        max_len=10,
-                        min_len=1,
-                        num_ans_candidates=128,
-                        answer_list=None,
-                        **kwargs):
+    def predict_answers(
+        self,
+        samples,
+        num_beams=3,
+        inference_method='rank',
+        max_len=10,
+        min_len=1,
+        num_ans_candidates=128,
+        answer_list=None,
+        **kwargs
+    ):
         """
         Args:
             samples (dict): A dictionary containing the following keys:
@@ -204,8 +207,8 @@ class BlipVQA(BlipBase):
         if isinstance(samples['text_input'], str):
             samples['text_input'] = [samples['text_input']]
 
-        assert len(samples['text_input']) == samples['image'].size(
-            0), 'The number of questions must be equal to the batch size.'
+        assert len(samples['text_input']
+                   ) == samples['image'].size(0), 'The number of questions must be equal to the batch size.'
 
         if inference_method == 'generate':
             return self._generate_answers(samples, num_beams=num_beams, max_length=max_len, min_length=min_len)
@@ -239,7 +242,8 @@ class BlipVQA(BlipBase):
             num_beams=num_beams,
             eos_token_id=self.tokenizer.sep_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
-            **model_kwargs)
+            **model_kwargs
+        )
 
         # collect answers
         answers = []

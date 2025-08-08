@@ -100,16 +100,16 @@ class DatasetWrapper(TorchDataset):
 
 def get_dataset_default_task(dataset):
     if dataset in (
-            'custom',
-            'muge',
-            'flickr30k',
-            'flickr8k',
-            'mscoco_captions',
-            'mscoco_captions2017',
-            'multilingual_mscoco_captions',
-            'flickr30k-200',
-            'crossmodal3600',
-            'xtd200',
+        'custom',
+        'muge',
+        'flickr30k',
+        'flickr8k',
+        'mscoco_captions',
+        'mscoco_captions2017',
+        'multilingual_mscoco_captions',
+        'flickr30k-200',
+        'crossmodal3600',
+        'xtd200',
     ):
         return 'zeroshot_retrieval'
     else:

@@ -42,10 +42,12 @@ class FGA_BLIP2ScoreModel(ScoreModel):
         # load model
         self.variant = FGA_BLIP2_MODELS[self.model_name]['variant']
         self.model, self.vis_processors, self.text_processors = load_model_and_preprocess(
-            'fga_blip2', self.variant, is_eval=True, device=self.device)
+            'fga_blip2', self.variant, is_eval=True, device=self.device
+        )
         # load pretrained weights
         model_weight_path = download_file(
-            'AI-ModelScope/FGA-BLIP2', file_name='fga_blip2.pth', cache_dir=self.cache_dir)
+            'AI-ModelScope/FGA-BLIP2', file_name='fga_blip2.pth', cache_dir=self.cache_dir
+        )
         self.model.load_checkpoint(model_weight_path)
         self.model.eval()
 

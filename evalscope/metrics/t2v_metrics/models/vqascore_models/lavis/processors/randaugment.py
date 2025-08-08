@@ -107,8 +107,9 @@ def color_func(img, factor):
     #      np.eye(3) * factor
     #      + np.float32([0.114, 0.587, 0.299]).reshape(3, 1) * (1. - factor)
     #  )[np.newaxis, np.newaxis, :]
-    M = np.float32([[0.886, -0.114, -0.114], [-0.587, 0.413, -0.587], [-0.299, -0.299, 0.701]]) * factor + np.float32(
-        [[0.114], [0.587], [0.299]])
+    M = np.float32([[0.886, -0.114, -0.114], [-0.587, 0.413, -0.587], [-0.299, -0.299, 0.701]]) * factor + np.float32([[
+        0.114
+    ], [0.587], [0.299]])
     out = np.matmul(img, M).clip(0, 255).astype(np.uint8)
     return out
 
