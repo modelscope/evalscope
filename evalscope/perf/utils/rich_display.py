@@ -32,8 +32,9 @@ def analyze_results(all_results):
             avg_tps = total_metrics.get(Metrics.OUTPUT_TOKEN_THROUGHPUT, 0)
             avg_ttft = total_metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0)
             p99_ttft = percentile_metrics.get(PercentileMetrics.TTFT)[percentiles.index('99%')]
-            success_rate = (total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
-                            / total_metrics.get(Metrics.TOTAL_REQUESTS, 1)) * 100
+            success_rate = (
+                total_metrics.get(Metrics.SUCCEED_REQUESTS, 0) / total_metrics.get(Metrics.TOTAL_REQUESTS, 1)
+            ) * 100
             avg_tpot = total_metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0)
             p99_tpot = percentile_metrics.get(PercentileMetrics.TPOT)[percentiles.index('99%')]
 
@@ -55,12 +56,13 @@ def analyze_results(all_results):
                 f'{p99_tpot:.3f}' if p99_tpot is not None else 'N/A',
             ])
 
-            total_tokens += total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, 0) * total_metrics.get(
-                Metrics.SUCCEED_REQUESTS, 0)
+            total_tokens += total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
+                                              0) * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
             total_time += total_metrics.get(Metrics.TIME_TAKEN_FOR_TESTS, 0)
         except Exception as e:
             logger.warning(
-                f"Warning: Error processing results for concurrency {result.get('concurrency', 'unknown')}: {str(e)}")
+                f"Warning: Error processing results for concurrency {result.get('concurrency', 'unknown')}: {str(e)}"
+            )
             continue
 
     if not summary:
@@ -138,7 +140,8 @@ def print_summary(all_results, model_name):
                 f'{float(row[8]):.3f}',  # Average TPOT
                 f'{float(row[9]):.3f}',  # P99 TPOT
                 row[6],  # Success Rate
-                style=row_style)
+                style=row_style
+            )
         except ValueError as e:
             console.print(f'Warning: Error processing row data: {str(e)}', style='bold red')
             continue
@@ -156,8 +159,9 @@ def print_summary(all_results, model_name):
         perf_info.add_column('Value', style='green', width=40)
 
         perf_info.add_row('Highest RPS', f'Concurrency {summary[best_rps_idx][0]} ({summary[best_rps_idx][1]} req/sec)')
-        perf_info.add_row('Lowest Latency',
-                          f'Concurrency {summary[best_latency_idx][0]} ({summary[best_latency_idx][2]} seconds)')
+        perf_info.add_row(
+            'Lowest Latency', f'Concurrency {summary[best_latency_idx][0]} ({summary[best_latency_idx][2]} seconds)'
+        )
 
         console.print('\n')
         console.print(perf_info)
@@ -166,7 +170,8 @@ def print_summary(all_results, model_name):
         recommendations = []
         if best_rps_idx == len(summary) - 1:
             recommendations.append(
-                'The system seems not to have reached its performance bottleneck, try higher concurrency')
+                'The system seems not to have reached its performance bottleneck, try higher concurrency'
+            )
         elif best_rps_idx == 0:
             recommendations.append('Consider lowering concurrency, current load may be too high')
         else:
@@ -175,7 +180,8 @@ def print_summary(all_results, model_name):
         success_rate = float(summary[-1][6][:-1])
         if success_rate < 95:
             recommendations.append(
-                'Success rate is low at high concurrency, check system resources or reduce concurrency')
+                'Success rate is low at high concurrency, check system resources or reduce concurrency'
+            )
 
         recommend_text = Text('\nPerformance Recommendations:', style='bold cyan')
         console.print(recommend_text)

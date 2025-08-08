@@ -7,8 +7,15 @@ if TYPE_CHECKING:
     from .completion_parsers import ResponseParser, lmsys_parser, ranking_parser
     from .llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
     from .math_parser import extract_answer, math_equal, strip_answer_string
-    from .metrics import (bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score,
-                          weighted_mean)
+    from .metrics import (
+        bleu_ngram_one_sample,
+        exact_match,
+        macro_mean,
+        mean,
+        micro_mean,
+        simple_f1_score,
+        weighted_mean,
+    )
     from .named_metrics import metric_registry
     from .rouge_metric import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
 

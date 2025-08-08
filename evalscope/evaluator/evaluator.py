@@ -300,7 +300,8 @@ class DefaultEvaluator(Evaluator):
 
         # Generate the main evaluation report using benchmark-specific logic
         report = self.benchmark.generate_report(
-            scores=agg_score_dict, model_name=self.model_name, output_dir=report_path)
+            scores=agg_score_dict, model_name=self.model_name, output_dir=report_path
+        )
 
         # Generate and display a summary table of results
         try:

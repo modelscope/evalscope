@@ -43,7 +43,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         try:
             remote_config = GenerationConfig.from_pretrained(
-                self.model_id, revision=self.model_revision, trust_remote_code=True)
+                self.model_id, revision=self.model_revision, trust_remote_code=True
+            )
             generation_config.update(**remote_config.to_dict())
         except Exception:
             logger.warning(f'Failed to get generation config of {self.model_id} from model hub, use default.')
@@ -93,8 +94,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
         # Get input ids
         inputs = self.tokenizer(
-            formatted_prompts, return_tensors='pt', padding=True, truncation=True,
-            padding_side='left').to(self.model.device)  # padding_side='left' is important for chat model
+            formatted_prompts, return_tensors='pt', padding=True, truncation=True, padding_side='left'
+        ).to(self.model.device)  # padding_side='left' is important for chat model
         input_ids = inputs['input_ids']
 
         # Run inference
@@ -108,7 +109,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             for j in range(num_return_sequences):
                 output = output_ids[i + j]
                 response = self.tokenizer.decode(
-                    output[len(input_ids[i // num_return_sequences]):], skip_special_tokens=True)
+                    output[len(input_ids[i // num_return_sequences]):], skip_special_tokens=True
+                )
                 query_responses.append(response)
             responses.append(query_responses)
 
@@ -153,7 +155,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             chat_template_kwargs = infer_cfg.get('chat_template_kwargs', None)
             if chat_template_kwargs is not None:
                 prompts = self.tokenizer.apply_chat_template(
-                    messages, tokenize=False, add_generation_prompt=True, **chat_template_kwargs)
+                    messages, tokenize=False, add_generation_prompt=True, **chat_template_kwargs
+                )
             else:
                 prompts = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             formatted_prompts.append(prompts)
@@ -185,7 +188,8 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
 
             for index, one_response in enumerate(response):
                 choice = ChatCompletionResponseChoice(
-                    index=index, message=ChatMessage(content=one_response, role='assistant'), finish_reason='stop')
+                    index=index, message=ChatMessage(content=one_response, role='assistant'), finish_reason='stop'
+                )
                 choices_list.append(choice)
 
                 completion_tokens += len(self.tokenizer.encode(one_response))
@@ -193,14 +197,16 @@ class ChatGenerationModelAdapter(BaseModelAdapter):
             usage = Usage(
                 prompt_tokens=input_length,
                 completion_tokens=completion_tokens,
-                total_tokens=input_length + completion_tokens)
+                total_tokens=input_length + completion_tokens
+            )
 
             res_d = ChatCompletionResponse(
                 model=self.model_id,
                 choices=choices_list,
                 object='chat.completion',
                 created=int(time.time()),
-                usage=usage).model_dump(exclude_unset=True)
+                usage=usage
+            ).model_dump(exclude_unset=True)
 
             results.append(res_d)
 

@@ -29,7 +29,8 @@ class MPSModel(ScoreModel):
 
         config = download_file('AI-ModelScope/MPS', file_name='config.json', cache_dir=self.cache_dir)
         model_pretrained_path = download_file(
-            'AI-ModelScope/MPS', file_name='MPS_overall_state_dict.pt', cache_dir=self.cache_dir)  # modelscope model
+            'AI-ModelScope/MPS', file_name='MPS_overall_state_dict.pt', cache_dir=self.cache_dir
+        )  # modelscope model
         model_weight = torch.load(model_pretrained_path, weights_only=True, map_location='cpu')
 
         self.model = CLIPModel(config=CLIPConfig.from_json_file(config))

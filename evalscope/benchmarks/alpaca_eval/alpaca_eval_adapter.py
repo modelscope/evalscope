@@ -58,7 +58,8 @@ Evaluate the models based on the quality and relevance of their outputs, and sel
     metric_list=['winrate'],
     few_shot_num=0,
     train_split=None,
-    eval_split='eval')
+    eval_split='eval'
+)
 class AlpacaEvalAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):

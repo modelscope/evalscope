@@ -44,7 +44,8 @@ Here are some examples of how to solve similar problems:
         metric_list=['acc'],
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
-    ))
+    )
+)
 class GSM8KAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
@@ -61,8 +62,9 @@ class GSM8KAdapter(DefaultDataAdapter):
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         if sample.metadata:
-            return (f'{sample.input}\n\nReasoning:\n' + f"{sample.metadata['reasoning']}\n\n"
-                    + f'ANSWER: {sample.target}')
+            return (
+                f'{sample.input}\n\nReasoning:\n' + f"{sample.metadata['reasoning']}\n\n" + f'ANSWER: {sample.target}'
+            )
         else:
             return ''
 

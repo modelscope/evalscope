@@ -47,7 +47,8 @@ SUBSET_LIST = [
         eval_split='test',
         prompt_template=USER_PROMPT_TEMPLATE,
         few_shot_prompt_template=SYSTEM_W_EXAMPLES_PROMPT_TEMPLATE + USER_PROMPT_TEMPLATE,
-    ))
+    )
+)
 class MMLUProAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):

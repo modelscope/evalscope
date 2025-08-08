@@ -5,8 +5,22 @@ from dataclasses import is_dataclass
 from datetime import date, datetime, time
 from enum import EnumMeta
 from pydantic import BaseModel, Field
-from typing import (Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast, get_args, get_origin,
-                    get_type_hints, is_typeddict)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+    get_type_hints,
+    is_typeddict,
+)
 
 JSONType = Literal['string', 'integer', 'number', 'boolean', 'array', 'object', 'null']
 """Valid types within JSON schema."""

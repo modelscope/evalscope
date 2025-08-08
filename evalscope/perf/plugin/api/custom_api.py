@@ -153,7 +153,8 @@ class CustomPlugin(ApiPluginBase):
 
             # If no usage information and no tokenizer, raise an error
             raise ValueError(
-                'Cannot determine token counts: no usage information in response and no tokenizer provided.')
+                'Cannot determine token counts: no usage information in response and no tokenizer provided.'
+            )
 
         except Exception as e:
             logger.error(f'Error parsing responses: {e}')
@@ -186,8 +187,7 @@ class CustomPlugin(ApiPluginBase):
             data = json.dumps(body, ensure_ascii=False)
 
             # Send the request
-            async with client_session.request(
-                'POST', url=url, data=data, headers=headers) as response:  # noqa: E125
+            async with client_session.request('POST', url=url, data=data, headers=headers) as response:  # noqa: E125
                 # Get the status code
                 status_code = response.status
 
@@ -244,6 +244,7 @@ if __name__ == '__main__':
         api='custom',  # Use the custom API plugin registered above
         dataset='openqa',
         number=1,
-        max_tokens=10)
+        max_tokens=10
+    )
 
     run_perf_benchmark(args)

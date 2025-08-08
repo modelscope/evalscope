@@ -61,7 +61,9 @@ class ReportGenerator:
                             score=score_item['score'],
                             num=score_item['num'],
                             metric_name=score_item['metric_name'],
-                            categories=tuple(categories)))
+                            categories=tuple(categories)
+                        )
+                    )
             df = pd.DataFrame(subsets)
             return df
 
@@ -85,7 +87,8 @@ class ReportGenerator:
             dataset_name=dataset_name,
             model_name=model_name,
             dataset_description=data_adapter.description,
-            dataset_pretty_name=data_adapter.pretty_name)
+            dataset_pretty_name=data_adapter.pretty_name
+        )
         return report
 
     @staticmethod
@@ -103,11 +106,13 @@ class ReportGenerator:
             name=DataCollection.NAME,
             metrics=[Metric(name='Average', categories=categories)],
             dataset_name=all_dataset_name,
-            model_name=model_name)
+            model_name=model_name
+        )
 
     @staticmethod
-    def generate_report(score_dict: Dict[str, List['AggScore']], model_name: str,
-                        data_adapter: 'DataAdapter') -> Report:
+    def generate_report(
+        score_dict: Dict[str, List['AggScore']], model_name: str, data_adapter: 'DataAdapter'
+    ) -> Report:
         """
         Generate a report for a specific dataset based on provided subset scores.
 
@@ -155,7 +160,9 @@ class ReportGenerator:
                             score=agg_score_item.score,
                             num=agg_score_item.num,
                             metric_name=f'{agg_score_item.aggregation_name}_{agg_score_item.metric_name}',
-                            categories=tuple(categories)))
+                            categories=tuple(categories)
+                        )
+                    )
             df = pd.DataFrame(subsets)
             return df
 
@@ -179,5 +186,6 @@ class ReportGenerator:
             dataset_name=dataset_name,
             model_name=model_name,
             dataset_description=data_adapter.description,
-            dataset_pretty_name=data_adapter.pretty_name)
+            dataset_pretty_name=data_adapter.pretty_name
+        )
         return report

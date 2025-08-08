@@ -189,7 +189,8 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     await connect_test(args, api_plugin)
     # start statistic benchmark metric
     statistic_benchmark_metric_task = asyncio.create_task(
-        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin))
+        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
+    )
     # start send request
     semaphore = asyncio.Semaphore(args.parallel)
     send_request_tasks: List[asyncio.Task] = []

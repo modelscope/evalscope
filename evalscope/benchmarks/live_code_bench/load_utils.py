@@ -33,7 +33,8 @@ def transform(item):
     except Exception as e:  # noqa: F841
         private_test_cases = json.loads(
             pickle.loads(zlib.decompress(base64.b64decode(private_test_cases.encode('utf-8'))  # type: ignore
-                                         )))  # type: ignore
+                                         ))
+        )  # type: ignore
 
     # load metadata
     metadata = json.loads(item['metadata'])

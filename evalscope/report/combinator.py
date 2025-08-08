@@ -32,25 +32,30 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
     return report_list
 
 
-def get_data_frame(report_list: List[Report],
-                   flatten_metrics: bool = True,
-                   flatten_categories: bool = True,
-                   add_overall_metric: bool = False) -> pd.DataFrame:
+def get_data_frame(
+    report_list: List[Report],
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False
+) -> pd.DataFrame:
     tables = []
     for report in report_list:
         df = report.to_dataframe(
             flatten_metrics=flatten_metrics,
             flatten_categories=flatten_categories,
-            add_overall_metric=add_overall_metric)
+            add_overall_metric=add_overall_metric
+        )
         tables.append(df)
     return pd.concat(tables, ignore_index=True)
 
 
-def gen_table(reports_path_list: list[str] = None,
-              report_list: list[Report] = None,
-              flatten_metrics: bool = True,
-              flatten_categories: bool = True,
-              add_overall_metric: bool = False) -> str:
+def gen_table(
+    reports_path_list: list[str] = None,
+    report_list: list[Report] = None,
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False
+) -> str:
     """
     Generates a formatted table from a list of report paths or Report objects.
 
@@ -78,7 +83,8 @@ def gen_table(reports_path_list: list[str] = None,
         report_list,
         flatten_metrics=flatten_metrics,
         flatten_categories=flatten_categories,
-        add_overall_metric=add_overall_metric)
+        add_overall_metric=add_overall_metric
+    )
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
 
 

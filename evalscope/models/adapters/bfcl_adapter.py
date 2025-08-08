@@ -81,8 +81,10 @@ class BFCLAdapter(ServerModelAdapter):
         return results
 
     def generate_turn(self, row: dict[str, Any], infer_cfg: dict[str, Any]) -> list[str]:
-        from bfcl_eval.constants.default_prompts import (DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING,
-                                                         MAXIMUM_STEP_LIMIT)
+        from bfcl_eval.constants.default_prompts import (
+            DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING,
+            MAXIMUM_STEP_LIMIT,
+        )
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_utils import execute_multi_turn_func_call
         from bfcl_eval.model_handler.utils import default_decode_execute_prompting
 
@@ -101,7 +103,8 @@ class BFCLAdapter(ServerModelAdapter):
                     'user',
                     'content':
                     DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING.format(
-                        functions=row['missing_functions'][str(turn_idx)]),
+                        functions=row['missing_functions'][str(turn_idx)]
+                    ),
                 }]
                 current_messages += new_turn
 
@@ -159,8 +162,10 @@ class BFCLAdapter(ServerModelAdapter):
         return all_model_responses
 
     def generate_turn_with_tools(self, row: dict[str, Any], infer_cfg: dict[str, Any]) -> list[str]:
-        from bfcl_eval.constants.default_prompts import (DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
-                                                         MAXIMUM_STEP_LIMIT)
+        from bfcl_eval.constants.default_prompts import (
+            DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
+            MAXIMUM_STEP_LIMIT,
+        )
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_utils import execute_multi_turn_func_call
         from bfcl_eval.model_handler.utils import convert_to_function_call
 

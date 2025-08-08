@@ -45,7 +45,8 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         assert valid_template(few_shot_prompt_template), 'Few-shot prompt template is not valid'
 
         return prompt(
-            question=sample.input, choices=Choices(sample.choices), template=few_shot_prompt_template, fewshot=fewshot)
+            question=sample.input, choices=Choices(sample.choices), template=few_shot_prompt_template, fewshot=fewshot
+        )
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         """

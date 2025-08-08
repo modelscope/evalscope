@@ -34,7 +34,8 @@ def rag_eval(args: EvaluationArguments, ) -> None:
             target_lang=args.language,
             llm=LangchainLLMWrapper(llm),
             adapt_instruction=True,
-        ))
+        )
+    )
     # load dataset
     dataset = Dataset.from_json(args.testset_file)
 

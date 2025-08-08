@@ -166,10 +166,12 @@ def load_model_and_preprocess(name, model_type, is_eval=False, device='cpu'):
         vis_processors, txt_processors = load_preprocess(preprocess_cfg)
     else:
         vis_processors, txt_processors = None, None
-        logging.info(f"""No default preprocess for model {name} ({model_type}).
+        logging.info(
+            f"""No default preprocess for model {name} ({model_type}).
                 This can happen if the model is not finetuned on downstream datasets,
                 or it is not intended for direct use without finetuning.
-            """)
+            """
+        )
 
     if device == 'cpu' or device == torch.device('cpu'):
         model = model.float()
@@ -195,8 +197,10 @@ class ModelZoo:
         }
 
     def __str__(self) -> str:
-        return ('=' * 50 + '\n' + f"{'Architectures':<30} {'Types'}\n" + '=' * 50 + '\n'
-                + '\n'.join([f"{name:<30} {', '.join(types)}" for name, types in self.model_zoo.items()]))
+        return (
+            '=' * 50 + '\n' + f"{'Architectures':<30} {'Types'}\n" + '=' * 50 + '\n'
+            + '\n'.join([f"{name:<30} {', '.join(types)}" for name, types in self.model_zoo.items()])
+        )
 
     def __iter__(self):
         return iter(self.model_zoo.items())

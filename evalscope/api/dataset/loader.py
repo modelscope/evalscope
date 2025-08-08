@@ -18,20 +18,22 @@ class DataLoader(ABC):
     Abstract base class for data loaders.
     """
 
-    def __init__(self,
-                 data_id_or_path: str,
-                 split: str,
-                 sample_fields: Union[FieldSpec, Callable] = None,
-                 subset: str = 'default',
-                 version: str = None,
-                 limit: Union[int, float] = None,
-                 data_source: Optional[str] = None,
-                 shuffle: bool = False,
-                 seed: Optional[int] = None,
-                 auto_id: bool = True,
-                 repeats: int = 1,
-                 trust_remote: bool = True,
-                 **kwargs):
+    def __init__(
+        self,
+        data_id_or_path: str,
+        split: str,
+        sample_fields: Union[FieldSpec, Callable] = None,
+        subset: str = 'default',
+        version: str = None,
+        limit: Union[int, float] = None,
+        data_source: Optional[str] = None,
+        shuffle: bool = False,
+        seed: Optional[int] = None,
+        auto_id: bool = True,
+        repeats: int = 1,
+        trust_remote: bool = True,
+        **kwargs
+    ):
         self.data_id_or_path = data_id_or_path
         self.split = split
         self.sample_fields = sample_fields
@@ -108,7 +110,8 @@ class RemoteDataLoader(DataLoader):
         # return the dataset
         memory_dataset = MemoryDataset(
             samples=data_to_samples(
-                data=dataset, data_to_sample=data_to_sample, auto_id=self.auto_id, group_k=self.repeats),
+                data=dataset, data_to_sample=data_to_sample, auto_id=self.auto_id, group_k=self.repeats
+            ),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )

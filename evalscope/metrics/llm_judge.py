@@ -48,17 +48,18 @@ class LLMJudge:
     """
 
     def __init__(
-            self,
-            api_key: Optional[str] = None,
-            api_url: Optional[str] = None,
-            model_id: Optional[str] = None,
-            system_prompt: Optional[str] = None,
-            prompt_template: Optional[str] = None,
-            generation_config: Optional[Dict[str, Any]] = None,
-            score_pattern: Optional[str] = None,
-            score_mapping: Optional[Dict[str, float]] = None,
-            score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
-            **kwargs):
+        self,
+        api_key: Optional[str] = None,
+        api_url: Optional[str] = None,
+        model_id: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        prompt_template: Optional[str] = None,
+        generation_config: Optional[Dict[str, Any]] = None,
+        score_pattern: Optional[str] = None,
+        score_mapping: Optional[Dict[str, float]] = None,
+        score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
+        **kwargs
+    ):
         """
         Initialize LLMJudge metric.
 
@@ -85,8 +86,9 @@ class LLMJudge:
         self.score_type = score_type
         if self.score_type == JudgeScoreType.NUMERIC:
             self.score_pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
-            self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE',
-                                                                     DEFAULT_NUMERIC_SCORE_TEMPLATE)
+            self.prompt_template = prompt_template or os.environ.get(
+                'JUDGE_PROMPT_TEMPLATE', DEFAULT_NUMERIC_SCORE_TEMPLATE
+            )
         elif self.score_type == JudgeScoreType.PATTERN:
             self.score_pattern = score_pattern or r'(A|B)'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)

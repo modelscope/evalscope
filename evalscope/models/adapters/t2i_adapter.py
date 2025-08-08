@@ -26,8 +26,9 @@ class T2IModelAdapter(BaseModelAdapter):
         self.task_config = kwargs.get('task_cfg', None)
         assert self.task_config is not None, 'Task config is required for T2I model adapter.'
 
-        self.save_path = os.path.join(self.task_config.work_dir, OutputsStructure.PREDICTIONS_DIR,
-                                      self.task_config.model_id, 'images')
+        self.save_path = os.path.join(
+            self.task_config.work_dir, OutputsStructure.PREDICTIONS_DIR, self.task_config.model_id, 'images'
+        )
         os.makedirs(self.save_path, exist_ok=True)
 
     def _model_generate(self, prompt, infer_cfg=None) -> List:
@@ -67,12 +68,13 @@ class T2IModelAdapter(BaseModelAdapter):
                 logger.debug(f'Saved image to {image_file_path}')
 
                 choice = ChatCompletionResponseChoice(
-                    index=index, message=ChatMessage(content=image_file_path, role='assistant'), finish_reason='stop')
+                    index=index, message=ChatMessage(content=image_file_path, role='assistant'), finish_reason='stop'
+                )
                 choices_list.append(choice)
 
             res_d = ChatCompletionResponse(
-                model=self.model_id, choices=choices_list, object='images.generations',
-                created=int(time.time())).model_dump(exclude_unset=True)
+                model=self.model_id, choices=choices_list, object='images.generations', created=int(time.time())
+            ).model_dump(exclude_unset=True)
 
             results.append(res_d)
 

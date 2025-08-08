@@ -306,8 +306,9 @@ class DefaultDataAdapter(DataAdapter):
         model_output = model.generate(input=sample.input, tools=sample.tools)
         return model_output
 
-    def _on_inference_end(self, model: Model, sample: Sample, model_output: ModelOutput, output_dir: str,
-                          **kwargs) -> TaskState:
+    def _on_inference_end(
+        self, model: Model, sample: Sample, model_output: ModelOutput, output_dir: str, **kwargs
+    ) -> TaskState:
         """
         Hook method called after inference completes.
 
@@ -398,8 +399,9 @@ class DefaultDataAdapter(DataAdapter):
         """
         return prediction
 
-    def match_score(self, original_prediction: str, filtered_prediction: str, reference: str,
-                    task_state: TaskState) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         """
         Calculate evaluation scores by comparing prediction with reference.
 
@@ -469,7 +471,8 @@ class DefaultDataAdapter(DataAdapter):
             original_prediction=prediction,
             filtered_prediction=filtered_prediction,
             reference=task_state.target,
-            task_state=task_state)
+            task_state=task_state
+        )
 
         # Step 2: Apply LLM judge if enabled and get final score
         final_score = self.maybe_llm_match_score(
@@ -477,7 +480,8 @@ class DefaultDataAdapter(DataAdapter):
             filtered_prediction=filtered_prediction,
             reference=task_state.target,
             task_state=task_state,
-            rule_based_score=rule_based_score)
+            rule_based_score=rule_based_score
+        )
 
         # Package the results into a sample score object
         sample_score = SampleScore(

@@ -4,14 +4,27 @@ import re
 from collections import defaultdict
 from copy import copy
 from openai import APIStatusError, OpenAIError
-from openai.types.chat import (ChatCompletion, ChatCompletionAssistantMessageParam, ChatCompletionChunk,
-                               ChatCompletionContentPartImageParam, ChatCompletionContentPartInputAudioParam,
-                               ChatCompletionContentPartParam, ChatCompletionContentPartRefusalParam,
-                               ChatCompletionContentPartTextParam, ChatCompletionDeveloperMessageParam,
-                               ChatCompletionMessage, ChatCompletionMessageParam, ChatCompletionMessageToolCall,
-                               ChatCompletionMessageToolCallParam, ChatCompletionNamedToolChoiceParam,
-                               ChatCompletionSystemMessageParam, ChatCompletionToolChoiceOptionParam,
-                               ChatCompletionToolMessageParam, ChatCompletionToolParam, ChatCompletionUserMessageParam)
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionChunk,
+    ChatCompletionContentPartImageParam,
+    ChatCompletionContentPartInputAudioParam,
+    ChatCompletionContentPartParam,
+    ChatCompletionContentPartRefusalParam,
+    ChatCompletionContentPartTextParam,
+    ChatCompletionDeveloperMessageParam,
+    ChatCompletionMessage,
+    ChatCompletionMessageParam,
+    ChatCompletionMessageToolCall,
+    ChatCompletionMessageToolCallParam,
+    ChatCompletionNamedToolChoiceParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolMessageParam,
+    ChatCompletionToolParam,
+    ChatCompletionUserMessageParam,
+)
 from openai.types.chat.chat_completion import Choice, ChoiceLogprobs
 from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.completion_usage import CompletionUsage
@@ -19,11 +32,28 @@ from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import JsonValue
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
-from evalscope.api.messages import (ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageTool,
-                                    ChatMessageUser, Content, ContentAudio, ContentImage, ContentReasoning, ContentText,
-                                    parse_content_with_reasoning)
-from evalscope.api.model import (ChatCompletionChoice, GenerateConfig, Logprobs, ModelOutput, ModelUsage, StopReason,
-                                 as_stop_reason)
+from evalscope.api.messages import (
+    ChatMessage,
+    ChatMessageAssistant,
+    ChatMessageSystem,
+    ChatMessageTool,
+    ChatMessageUser,
+    Content,
+    ContentAudio,
+    ContentImage,
+    ContentReasoning,
+    ContentText,
+    parse_content_with_reasoning,
+)
+from evalscope.api.model import (
+    ChatCompletionChoice,
+    GenerateConfig,
+    Logprobs,
+    ModelOutput,
+    ModelUsage,
+    StopReason,
+    as_stop_reason,
+)
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
 from evalscope.utils.url_utils import file_as_data_uri, is_http_url
 
@@ -77,14 +107,16 @@ def openai_chat_completion_part(content: Content, ) -> ChatCompletionContentPart
         audio_data = audio_data_uri.split('base64,')[1]
 
         return ChatCompletionContentPartInputAudioParam(
-            type='input_audio', input_audio=dict(data=audio_data, format=content.format))
+            type='input_audio', input_audio=dict(data=audio_data, format=content.format)
+        )
 
     else:
         raise RuntimeError('Video content is not currently supported by Open AI chat models.')
 
 
-def openai_chat_message(message: ChatMessage,
-                        system_role: Literal['user', 'system', 'developer'] = 'system') -> ChatCompletionMessageParam:
+def openai_chat_message(
+    message: ChatMessage, system_role: Literal['user', 'system', 'developer'] = 'system'
+) -> ChatCompletionMessageParam:
     if message.role == 'system':
         if system_role == 'user':
             return ChatCompletionUserMessageParam(role='user', content=message.text)
@@ -95,8 +127,10 @@ def openai_chat_message(message: ChatMessage,
     elif message.role == 'user':
         return ChatCompletionUserMessageParam(
             role=message.role,
-            content=(message.content if isinstance(message.content, str) else
-                     [openai_chat_completion_part(content) for content in message.content]),
+            content=(
+                message.content if isinstance(message.content, str) else
+                [openai_chat_completion_part(content) for content in message.content]
+            ),
         )
     elif message.role == 'assistant':
         if message.tool_calls:
@@ -221,7 +255,8 @@ def openai_chat_choices(choices: List[ChatCompletionChoice]) -> List[Choice]:
                 index=index,
                 message=message,
                 logprobs=ChoiceLogprobs(**choice.logprobs.model_dump()) if choice.logprobs is not None else None,
-            ))
+            )
+        )
 
     return oai_choices
 
@@ -235,7 +270,8 @@ def openai_completion_usage(usage: ModelUsage) -> CompletionUsage:
 
 
 def openai_finish_reason(
-        stop_reason: StopReason) -> Literal['stop', 'length', 'tool_calls', 'content_filter', 'function_call']:
+    stop_reason: StopReason
+) -> Literal['stop', 'length', 'tool_calls', 'content_filter', 'function_call']:
     if stop_reason in ('stop', 'tool_calls', 'content_filter'):
         return stop_reason
     elif stop_reason == 'model_length':
@@ -361,7 +397,8 @@ def chat_messages_from_openai(
                     model=model,
                     source='generate',
                     internal=internal,
-                ))
+                )
+            )
         elif message['role'] == 'tool':
             tool_content = message.get('content', None) or ''
             if isinstance(tool_content, str):
@@ -381,7 +418,8 @@ def chat_messages_from_openai(
                     content=content,
                     tool_call_id=message['tool_call_id'],
                     function=tool_names.get(message['tool_call_id'], ''),
-                ))
+                )
+            )
         else:
             raise ValueError(f'Unexpected message param type: {type(message)}')
 
@@ -432,8 +470,9 @@ def content_from_openai(
         raise ValueError(f"Unexpected content type '{content_type}' in message.")
 
 
-def chat_message_assistant_from_openai(model: str, message: ChatCompletionMessage,
-                                       tools: List[ToolInfo]) -> ChatMessageAssistant:
+def chat_message_assistant_from_openai(
+    model: str, message: ChatCompletionMessage, tools: List[ToolInfo]
+) -> ChatMessageAssistant:
     refusal = getattr(message, 'refusal', None)
     reasoning = getattr(message, 'reasoning_content', None) or getattr(message, 'reasoning', None)
 
@@ -471,10 +510,13 @@ def model_output_from_openai(
                     completion.usage.prompt_tokens_details.cached_tokens if completion.usage.prompt_tokens_details
                     is not None else None  # openai only have cache read stats/pricing.
                 ),
-                reasoning_tokens=(completion.usage.completion_tokens_details.reasoning_tokens
-                                  if completion.usage.completion_tokens_details is not None else None),
+                reasoning_tokens=(
+                    completion.usage.completion_tokens_details.reasoning_tokens
+                    if completion.usage.completion_tokens_details is not None else None
+                ),
                 total_tokens=completion.usage.total_tokens,
-            ) if completion.usage else None),
+            ) if completion.usage else None
+        ),
     )
 
 
@@ -485,8 +527,10 @@ def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) ->
         ChatCompletionChoice(
             message=chat_message_assistant_from_openai(response.model, choice.message, tools),
             stop_reason=as_stop_reason(choice.finish_reason),
-            logprobs=(Logprobs(
-                **choice.logprobs.model_dump()) if choice.logprobs and choice.logprobs.content is not None else None),
+            logprobs=(
+                Logprobs(**choice.logprobs.model_dump())
+                if choice.logprobs and choice.logprobs.content is not None else None
+            ),
         ) for choice in choices
     ]
 
@@ -502,10 +546,11 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
     stop_reason: Optional[StopReason] = None
     if e.code == 'context_length_exceeded':
         stop_reason = 'model_length'
-    elif (e.code == 'invalid_prompt'  # seems to happen for o1/o3
-          or e.code == 'content_policy_violation'  # seems to happen for vision
-          or e.code == 'content_filter'  # seems to happen on azure
-          ):
+    elif (
+        e.code == 'invalid_prompt'  # seems to happen for o1/o3
+        or e.code == 'content_policy_violation'  # seems to happen for vision
+        or e.code == 'content_filter'  # seems to happen on azure
+    ):
         stop_reason = 'content_filter'
 
     if stop_reason:
@@ -600,8 +645,8 @@ def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatC
                             collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
 
                         if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
-                            collected_tool_calls[
-                                choice.index][tool_id]['function']['arguments'] += tool_call.function.arguments
+                            collected_tool_calls[choice.index
+                                                 ][tool_id]['function']['arguments'] += tool_call.function.arguments
 
                     # Update ID if it was received later
                     if hasattr(tool_call, 'id') and tool_call.id:
@@ -638,7 +683,8 @@ def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatC
             message_kwargs['tool_calls'] = tool_calls_list
 
         choice = Choice(
-            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs))
+            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
+        )
         choices.append(choice)
 
     # build the final completion object

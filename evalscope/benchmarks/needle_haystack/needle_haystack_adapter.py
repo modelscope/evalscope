@@ -53,7 +53,8 @@ Don't give information outside the document or repeat your findings."""
         'document_depth_percent_intervals': 10,
         'tokenizer_path': 'Qwen/Qwen3-0.6B',
         'show_score': False,
-    })
+    }
+)
 class NeedleHaystackAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
@@ -62,11 +63,13 @@ class NeedleHaystackAdapter(DataAdapter):
         self.llm_as_a_judge = True
         # set extra params
         extra_params = kwargs.get('extra_params', {})
-        self.retrieval_question = extra_params.get('retrieval_question',
-                                                   'What is the best thing to do in San Francisco?')
+        self.retrieval_question = extra_params.get(
+            'retrieval_question', 'What is the best thing to do in San Francisco?'
+        )
         self.needles = extra_params.get(
             'needles',
-            ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'])
+            ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n']
+        )
         self.context_lengths_min = extra_params.get('context_lengths_min', 1000)
         self.context_lengths_max = extra_params.get('context_lengths_max', 32000)
         self.context_lengths_num_intervals = extra_params.get('context_lengths_num_intervals', 10)
@@ -88,14 +91,18 @@ class NeedleHaystackAdapter(DataAdapter):
                 self.context_lengths_min,
                 self.context_lengths_max,
                 num=self.context_lengths_num_intervals,
-                endpoint=True)).astype(int)
+                endpoint=True
+            )
+        ).astype(int)
 
         self.document_depth_percents = np.round(
             np.linspace(
                 self.document_depth_percent_min,
                 self.document_depth_percent_max,
                 num=self.document_depth_percent_intervals,
-                endpoint=True)).astype(int)
+                endpoint=True
+            )
+        ).astype(int)
 
     def _init_tokenizer(self):
         """ Initialize the tokenizer based on the provided tokenizer path."""
@@ -130,8 +137,8 @@ class NeedleHaystackAdapter(DataAdapter):
                 # Generate prompts for each sample in the dataset
                 tokens_context = self._get_context_tokens(sample_d['text'])
                 for context_length, depth_percent in tqdm(
-                        product(self.context_lengths, self.document_depth_percents),
-                        desc=f'Generating {sub_name} prompts'):
+                    product(self.context_lengths, self.document_depth_percents), desc=f'Generating {sub_name} prompts'
+                ):
                     # Insert needles into the context at the specified depth percentage
                     context = self._insert_needles(tokens_context, depth_percent, context_length)
                     # Build the input dictionary for the prompt
@@ -227,7 +234,8 @@ class NeedleHaystackAdapter(DataAdapter):
                 # We want to make sure that we place our needle at a sentence break
                 # so we first see what token a '.' is
                 period_tokens = self.tokenizer.encode('.') + self.tokenizer.encode(
-                    '。')  # Handle both English and Chinese periods
+                    '。'
+                )  # Handle both English and Chinese periods
 
                 # Then we iteration backwards until we find the first period
                 while tokens_new_context and tokens_new_context[-1] not in period_tokens:
@@ -240,8 +248,10 @@ class NeedleHaystackAdapter(DataAdapter):
                 # Log
                 insertion_percentage = (insertion_point / len(tokens_context)) * 100
                 self.insertion_percentages.append(insertion_percentage)
-                logger.debug(f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, "
-                             f'total length now: {len(tokens_context)} tokens')
+                logger.debug(
+                    f"Inserted '{needle}' at {insertion_percentage:.2f}% of the context, "
+                    f'total length now: {len(tokens_context)} tokens'
+                )
 
                 # Adjust depth for next needle
                 depth_percent += depth_percent_interval
@@ -336,13 +346,14 @@ class NeedleHaystackAdapter(DataAdapter):
             for subset in data_frame['Subset'].unique():
                 sub_df = data_frame[data_frame['Subset'] == subset]
                 # draw charts for each subset
-                pivot_table = sub_df.pivot_table(
-                    values='Score', index=['Depth', 'Context'], aggfunc='mean').reset_index()
+                pivot_table = sub_df.pivot_table(values='Score', index=['Depth', 'Context'],
+                                                 aggfunc='mean').reset_index()
                 pivot_table = pivot_table.pivot(index='Depth', columns='Context', values='Score')
                 draw_score_chat(
                     pivot_table,
                     outpath=os.path.join(report_path, f'needle_haystack_heatmap_{subset}.png'),
-                    show_score=self.show_score)
+                    show_score=self.show_score
+                )
 
         except Exception as e:
             logger.error(f'Error generating charts: {e}')

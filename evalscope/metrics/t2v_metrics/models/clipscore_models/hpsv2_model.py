@@ -44,7 +44,8 @@ class HPSV2ScoreModel(ScoreModel):
             image_std=None,
             image_resize_mode='longest',
             aug_cfg={},
-            output_dict=True)
+            output_dict=True
+        )
 
         # update weight
         model_weight_path = download_file('AI-ModelScope/HPSv2', HPS_VERSION_MAP[self.model_name], self.cache_dir)

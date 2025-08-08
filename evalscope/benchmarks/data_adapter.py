@@ -23,24 +23,26 @@ class DataAdapter(ABC):
         - match
     """
 
-    def __init__(self,
-                 name: str,
-                 dataset_id: str,
-                 model_adapter: str,
-                 subset_list: list,
-                 metric_list: List[str],
-                 llm_as_a_judge: bool = False,
-                 output_types: Optional[List[str]] = None,
-                 few_shot_num: Optional[int] = 0,
-                 train_split: Optional[str] = None,
-                 eval_split: Optional[str] = None,
-                 prompt_template: Optional[str] = None,
-                 system_prompt: Optional[str] = None,
-                 query_template: Optional[str] = None,
-                 pretty_name: Optional[str] = None,
-                 description: Optional[str] = None,
-                 tags: Optional[List[str]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str,
+        dataset_id: str,
+        model_adapter: str,
+        subset_list: list,
+        metric_list: List[str],
+        llm_as_a_judge: bool = False,
+        output_types: Optional[List[str]] = None,
+        few_shot_num: Optional[int] = 0,
+        train_split: Optional[str] = None,
+        eval_split: Optional[str] = None,
+        prompt_template: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        query_template: Optional[str] = None,
+        pretty_name: Optional[str] = None,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        **kwargs
+    ):
         """
         Args:
             name: str, the name of the benchmark.
@@ -90,11 +92,13 @@ class DataAdapter(ABC):
             original_method = cls.parse_pred_result
             cls.parse_pred_result = preprocess_decorator(original_method)
 
-    def load(self,
-             dataset_name_or_path: str = None,
-             subset_list: list = None,
-             work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-             **kwargs) -> dict:
+    def load(
+        self,
+        dataset_name_or_path: str = None,
+        subset_list: list = None,
+        work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+        **kwargs
+    ) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
         You can rewrite this method to support your own local dataset, just follow the format of the output.
@@ -111,12 +115,14 @@ class DataAdapter(ABC):
             logger.info(f'Loading dataset from local disk: {dataset_name_or_path}')
             trust_remote_code = kwargs.pop('trust_remote_code', False)
             data_dict = self.load_from_disk(
-                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs)
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs
+            )
         else:
             logger.info(f'Loading dataset from hub: {dataset_name_or_path}')
             trust_remote_code = kwargs.pop('trust_remote_code', True)
             data_dict = self.load_from_hub(
-                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs)
+                dataset_name_or_path, subset_list, work_dir, trust_remote_code=trust_remote_code, **kwargs
+            )
         if len(data_dict) == 0:
             raise ValueError(f'Dataset is empty: {dataset_name_or_path}')
         return data_dict
@@ -144,7 +150,8 @@ class DataAdapter(ABC):
                         split=sub_name,  # load subset from split
                         cache_dir=work_dir,
                         hub=datasets_hub,
-                        **kwargs)
+                        **kwargs
+                    )
                     data_dict[sub_name].update({split: dataset})
         else:
             for sub_name in subset_list:
@@ -157,7 +164,8 @@ class DataAdapter(ABC):
                         split=split,
                         cache_dir=work_dir,
                         hub=datasets_hub,
-                        **kwargs)
+                        **kwargs
+                    )
                     data_dict[sub_name].update({split: dataset})
 
         return data_dict
@@ -175,12 +183,14 @@ class DataAdapter(ABC):
             os.remove(dataset_infos_path)
         return self.load_from_hub(dataset_name_or_path, subset_list, None, **kwargs)
 
-    def load_with_snapshot(self,
-                           file_structure: Dict[str, List[str]],
-                           dataset_name_or_path: str = None,
-                           subset_list: list = None,
-                           work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-                           **kwargs) -> dict:
+    def load_with_snapshot(
+        self,
+        file_structure: Dict[str, List[str]],
+        dataset_name_or_path: str = None,
+        subset_list: list = None,
+        work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+        **kwargs
+    ) -> dict:
         """
         For datasets that cannot be correctly loaded using MsDataset, utilize snapshot downloading to load the data.
         This feature supports both remote and local datasets.
@@ -208,7 +218,8 @@ class DataAdapter(ABC):
             file_names = [file for sub_files in file_structure.values() for file in sub_files]
             # download dataset snapshot
             dataset_path = dataset_snapshot_download(
-                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern=file_names)
+                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern=file_names
+            )
         # read and process files
         data_dict = defaultdict(dict)
         for sub_name in subset_list:
@@ -253,10 +264,12 @@ class DataAdapter(ABC):
         if self.few_shot_num and self.few_shot_num < 0:
             raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
 
-        logger.info(f'Use settings: '
-                    f'> few_shot_num: {self.few_shot_num}, '
-                    f'> few_shot_split: {self.train_split}, '
-                    f'> target_eval_split: {self.eval_split}')
+        logger.info(
+            f'Use settings: '
+            f'> few_shot_num: {self.few_shot_num}, '
+            f'> few_shot_split: {self.train_split}, '
+            f'> target_eval_split: {self.eval_split}'
+        )
 
         for sub_name, sub_data_dict in data_dict.items():
             few_shot_data = []
@@ -386,14 +399,16 @@ class DataAdapter(ABC):
         """
         pass
 
-    def gen_prompt_data(self,
-                        prompt: str = '',
-                        system_prompt: Optional[str] = None,
-                        choices: Optional[List[str]] = None,
-                        index: Optional[Union[int, str]] = None,
-                        id: Optional[Union[int, str]] = None,
-                        messages: Optional[List[dict]] = None,
-                        **kwargs) -> dict:
+    def gen_prompt_data(
+        self,
+        prompt: str = '',
+        system_prompt: Optional[str] = None,
+        choices: Optional[List[str]] = None,
+        index: Optional[Union[int, str]] = None,
+        id: Optional[Union[int, str]] = None,
+        messages: Optional[List[dict]] = None,
+        **kwargs
+    ) -> dict:
         """
         Generates a dictionary representation of prompt data for evaluation or inference.
 
@@ -419,7 +434,8 @@ class DataAdapter(ABC):
             index=index or 0,
             id=id,
             messages=messages,
-            extra_data=kwargs.get('extra_data', None))
+            extra_data=kwargs.get('extra_data', None)
+        )
         return prompt_data.to_dict()
 
     def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:

@@ -7,8 +7,16 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from evalscope.api.model import GenerateConfig
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalType, HubType,
-                                 JudgeStrategy, ModelTask, OutputType)
+from evalscope.constants import (
+    DEFAULT_DATASET_CACHE_DIR,
+    DEFAULT_WORK_DIR,
+    EvalBackend,
+    EvalType,
+    HubType,
+    JudgeStrategy,
+    ModelTask,
+    OutputType,
+)
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename

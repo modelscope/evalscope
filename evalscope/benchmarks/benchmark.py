@@ -75,7 +75,8 @@ class Benchmark:
             if name in BENCHMARK_MAPPINGS:
                 raise Exception(f'Benchmark {name} already registered')
             BENCHMARK_MAPPINGS[name] = BenchmarkMeta(
-                name=name, data_adapter=data_adapter, dataset_id=dataset_id, **kwargs)
+                name=name, data_adapter=data_adapter, dataset_id=dataset_id, **kwargs
+            )
             return data_adapter
 
         return register_wrapper

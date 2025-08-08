@@ -35,8 +35,10 @@ class CompetitionMathAdapter(DataAdapter):
 
         few_shot_num = kwargs.get('few_shot_num', 4)
         if few_shot_num != 4 and few_shot_num != 0:
-            logger.error(f'The MATH benchmark ONLY supports 4-shot by system or 0-shot settings, '
-                         f'but got {few_shot_num}. Use 4-shot by default.')
+            logger.error(
+                f'The MATH benchmark ONLY supports 4-shot by system or 0-shot settings, '
+                f'but got {few_shot_num}. Use 4-shot by default.'
+            )
             kwargs['few_shot_num'] = 4
 
         super().__init__(**kwargs)
@@ -119,7 +121,8 @@ class CompetitionMathAdapter(DataAdapter):
                 'Problem:\nIf $\det \mathbf{{A}} = 2$ and $\det \mathbf{{B}} = 12,$ then find $\det (\mathbf{{A}} \mathbf{{B}}).$\nSolution:\nWe have that $\det (\mathbf{{A}} \mathbf{{B}}) = (\det \mathbf{{A}})(\det \mathbf{{B}}) = (2)(12) = \\boxed{{24}}.$\nFinal Answer: The final answer is $24$. I hope it is correct.\n'
                 'Problem:\nTerrell usually lifts two 20-pound weights 12 times. If he uses two 15-pound weights instead, how many times must Terrell lift them in order to lift the same total weight?\nSolution:\nIf Terrell lifts two 20-pound weights 12 times, he lifts a total of $2\cdot 12\cdot20=480$ pounds of weight. If he lifts two 15-pound weights instead for $n$ times, he will lift a total of $2\cdot15\cdot n=30n$ pounds of weight. Equating this to 480 pounds, we can solve for $n$: \\begin{{align*}} 30n&=480\\\\ \Rightarrow\qquad n&=480/30=\\boxed{{16}} \end{{align*}}\nFinal Answer: The final answer is $16$. I hope it is correct.\n'
                 'Problem:\nIf the system of equations: \\begin{{align*}} 6x-4y&=a,\\\\ 6y-9x &=b. \end{{align*}}has a solution $(x, y)$ where $x$ and $y$ are both nonzero, find $\\frac{{a}}{{b}},$ assuming $b$ is nonzero.\nSolution:\nIf we multiply the first equation by $-\\frac{{3}}{{2}}$, we obtain $$6y-9x=-\\frac{{3}}{{2}}a.$$Since we also know that $6y-9x=b$, we have $$-\\frac{{3}}{{2}}a=b\Rightarrow\\frac{{a}}{{b}}=\\boxed{{-\\frac{{2}}{{3}}}}.$$\nFinal Answer: The final answer is $-\\frac{{2}}{{3}}$. I hope it is correct.\n'
-                f'Problem:\n{problem}\nSolution:\n')
+                f'Problem:\n{problem}\nSolution:\n'
+            )
         else:
             context = 'Problem:\n' + problem + '\nSolution:\n'
         return context

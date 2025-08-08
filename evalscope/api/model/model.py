@@ -21,12 +21,14 @@ logger = get_logger()
 class ModelAPI(abc.ABC):
     """Model API provider."""
 
-    def __init__(self,
-                 model_name: str,
-                 base_url: Optional[str] = None,
-                 api_key: Optional[str] = None,
-                 config: GenerateConfig = GenerateConfig(),
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **kwargs
+    ) -> None:
         """Create a model API provider.
 
         Args:
@@ -191,7 +193,8 @@ class Model:
            ModelOutput
         """
         processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
-            input, tools, tool_choice, config)
+            input, tools, tool_choice, config
+        )
 
         # Call the model's generate method
         output = self.api.generate(
@@ -223,7 +226,8 @@ class Model:
 
         for input_item, input_tools, input_tool_choice, input_config in zip(inputs, tools, tool_choices, configs):
             processed_input, processed_tools, processed_tool_choice, processed_config = self._preprocess_input(
-                input=input_item, tools=input_tools, tool_choice=input_tool_choice, config=input_config)
+                input=input_item, tools=input_tools, tool_choice=input_tool_choice, config=input_config
+            )
             preprocessed_data.append((processed_input, processed_tools, processed_tool_choice, processed_config))
 
         # check if ModelAPI supports batch processing
@@ -231,7 +235,8 @@ class Model:
             # use the batch_generate method of the ModelAPI
             inputs, tools, tool_choices, configs = zip(*preprocessed_data)
             batch_results = self.api.batch_generate(
-                inputs=list(inputs), tools=list(tools), tool_choices=list(tool_choices), configs=list(configs))
+                inputs=list(inputs), tools=list(tools), tool_choices=list(tool_choices), configs=list(configs)
+            )
             for result in batch_results:
                 yield result
         else:
@@ -313,7 +318,8 @@ def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
     model_args = task_config.model_args or {}
 
     return get_model(
-        model=model, eval_type=eval_type, base_url=base_url, api_key=api_key, config=config, model_args=model_args)
+        model=model, eval_type=eval_type, base_url=base_url, api_key=api_key, config=config, model_args=model_args
+    )
 
 
 @thread_safe
@@ -354,13 +360,16 @@ def get_model(
     if memoize:
         model_cache_key = (
             model + str(role) + config.model_dump_json(exclude_none=True) + str(base_url) + str(api_key)
-            + str(to_jsonable_python(model_args, fallback=lambda _: None)))
+            + str(to_jsonable_python(model_args, fallback=lambda _: None))
+        )
         cached = ModelCache.get(model_cache_key)
         if cached is not None:
             return cached
 
-    logger.info(f'Creating model {model} with eval_type={eval_type} '
-                f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}')
+    logger.info(
+        f'Creating model {model} with eval_type={eval_type} '
+        f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}'
+    )
 
     # find a matching model type
     modelapi_type = get_model_api(eval_type)

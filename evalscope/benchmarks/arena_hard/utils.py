@@ -106,7 +106,8 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
         return elo_scores.sort_values(ascending=False)
 
     lr = LogisticRegression(
-        fit_intercept=False, penalty=None, tol=1e-8)  # May need to set a small value when not use GPT4 as judge model
+        fit_intercept=False, penalty=None, tol=1e-8
+    )  # May need to set a small value when not use GPT4 as judge model
     lr.fit(X, Y)
 
     elo_scores = SCALE * lr.coef_[0] + INIT_RATING

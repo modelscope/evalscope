@@ -122,11 +122,13 @@ class GPT4VModel(VQAScoreModel):
             print(completion.choices[0].logprobs.content[0].top_logprobs)
             return torch.Tensor([0.0])
 
-    def forward(self,
-                images: List[str],
-                texts: List[str],
-                question_template: str = default_question_template,
-                answer_template: str = default_answer_template) -> torch.Tensor:
+    def forward(
+        self,
+        images: List[str],
+        texts: List[str],
+        question_template: str = default_question_template,
+        answer_template: str = default_answer_template
+    ) -> torch.Tensor:
         """Forward pass of the model to return n scores for n (image, text) pairs (in PyTorch Tensor)
         """
         assert len(images) == len(texts), 'Number of images and texts must match'

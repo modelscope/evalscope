@@ -7,8 +7,11 @@
 
 import torch
 from dataclasses import dataclass
-from transformers.modeling_outputs import (BaseModelOutputWithPoolingAndCrossAttentions,
-                                           CausalLMOutputWithCrossAttentions, ModelOutput)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPoolingAndCrossAttentions,
+    CausalLMOutputWithCrossAttentions,
+    ModelOutput,
+)
 from typing import Optional
 
 

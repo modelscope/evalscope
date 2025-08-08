@@ -182,8 +182,10 @@ class OpenCompassBackendManager(BackendManager):
             else:
                 valid_dataset_names, invalid_dataset_names = get_valid_list(dataset_names, dataset_names_all)
                 if len(invalid_dataset_names) > 0:
-                    logger.error(f'Invalid datasets: {invalid_dataset_names}, '
-                                 f'refer to the following list to get proper dataset name: {dataset_names_all}')
+                    logger.error(
+                        f'Invalid datasets: {invalid_dataset_names}, '
+                        f'refer to the following list to get proper dataset name: {dataset_names_all}'
+                    )
                 assert len(valid_dataset_names) > 0, f'No valid datasets. ' \
                                                      f'To get the valid datasets, please refer to {dataset_names_all}'
 
@@ -252,7 +254,8 @@ if __name__ == '__main__':
                 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'
             }],
             'limit': 5
-        })
+        }
+    )
     all_datasets = OpenCompassBackendManager.list_datasets()
     print(f'all_datasets: {all_datasets}')
     oc_backend_manager.run()

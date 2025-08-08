@@ -29,11 +29,13 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
 
 
-def get_logger(log_file: Optional[str] = None,
-               name: Optional[str] = None,
-               log_level: int = DEFAULT_LEVEL,
-               file_mode: str = 'w',
-               force=False):
+def get_logger(
+    log_file: Optional[str] = None,
+    name: Optional[str] = None,
+    log_level: int = DEFAULT_LEVEL,
+    file_mode: str = 'w',
+    force=False
+):
     """Get logging logger
 
     Args:
@@ -58,11 +60,13 @@ def get_logger(log_file: Optional[str] = None,
                 handler.setLevel(log_level)
                 # 区分不同类型的 handler，使用相应的格式化器
                 if isinstance(handler, logging.FileHandler):
-                    handler.setFormatter(plain_detailed_formatter if log_level ==
-                                         logging.DEBUG else plain_simple_formatter)
+                    handler.setFormatter(
+                        plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter
+                    )
                 else:
-                    handler.setFormatter(color_detailed_formatter if log_level ==
-                                         logging.DEBUG else color_simple_formatter)
+                    handler.setFormatter(
+                        color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter
+                    )
             add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 

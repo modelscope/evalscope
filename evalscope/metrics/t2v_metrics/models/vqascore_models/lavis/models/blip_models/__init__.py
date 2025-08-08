@@ -26,7 +26,8 @@ def tie_encoder_decoder_weights(encoder: nn.Module, decoder: nn.Module, base_mod
         depth=0,
     ):
         assert isinstance(decoder_pointer, nn.Module) and isinstance(
-            encoder_pointer, nn.Module), f'{decoder_pointer} and {encoder_pointer} have to be of type torch.nn.Module'
+            encoder_pointer, nn.Module
+        ), f'{decoder_pointer} and {encoder_pointer} have to be of type torch.nn.Module'
         if hasattr(decoder_pointer, 'weight') and skip_key not in module_name:
             assert hasattr(encoder_pointer, 'weight')
             encoder_pointer.weight = decoder_pointer.weight
@@ -39,8 +40,9 @@ def tie_encoder_decoder_weights(encoder: nn.Module, decoder: nn.Module, base_mod
         encoder_modules = encoder_pointer._modules
         decoder_modules = decoder_pointer._modules
         if len(decoder_modules) > 0:
-            assert (len(encoder_modules)
-                    > 0), f'Encoder module {encoder_pointer} does not match decoder module {decoder_pointer}'
+            assert (
+                len(encoder_modules) > 0
+            ), f'Encoder module {encoder_pointer} does not match decoder module {decoder_pointer}'
 
             all_encoder_weights = set([module_name + '/' + sub_name for sub_name in encoder_modules.keys()])
             encoder_layer_pos = 0
@@ -49,8 +51,8 @@ def tie_encoder_decoder_weights(encoder: nn.Module, decoder: nn.Module, base_mod
                     encoder_name = str(int(name) + encoder_layer_pos)
                     decoder_name = name
                     if not isinstance(
-                            decoder_modules[decoder_name],
-                            type(encoder_modules[encoder_name]),
+                        decoder_modules[decoder_name],
+                        type(encoder_modules[encoder_name]),
                     ) and len(encoder_modules) != len(decoder_modules):
                         # this can happen if the name corresponds to the position in a list module list of layers
                         # in this case the decoder has added a cross-attention that the encoder does not have

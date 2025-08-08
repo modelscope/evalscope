@@ -91,11 +91,13 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
                 model=self.model_id,
                 choices=[
                     ChatCompletionResponseChoice(
-                        index=0, message=ChatMessage(content=pred, role='assistant'), finish_reason='stop')
+                        index=0, message=ChatMessage(content=pred, role='assistant'), finish_reason='stop'
+                    )
                 ],
                 object='chat.completion',
                 created=int(time.time()),
-                usage=None).model_dump(exclude_unset=True)
+                usage=None
+            ).model_dump(exclude_unset=True)
 
             results.append(res_d)
 
@@ -103,8 +105,8 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
 
     @staticmethod
     def _get_logits(tokenizer, model, inputs: List[str]):
-        input_ids = tokenizer(
-            inputs, padding=True, return_tensors='pt', padding_side='left')['input_ids'].to(model.device)
+        input_ids = tokenizer(inputs, padding=True, return_tensors='pt',
+                              padding_side='left')['input_ids'].to(model.device)
         tokens = {'input_ids': input_ids}
 
         outputs = model(input_ids)['logits']
@@ -172,7 +174,8 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
                 }],
                 object='chat.completion',
                 created=int(time.time()),
-                usage=None).model_dump(exclude_unset=True)
+                usage=None
+            ).model_dump(exclude_unset=True)
             results.append(res_d)
 
         return results
@@ -186,10 +189,9 @@ class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
             # ctx_enc shape: [context_tok_len]  cont_enc shape: [continuation_tok_len]
             ctx_enc, cont_enc = self._encode_pair(ctx, continuation)
 
-            inputs_tokens = torch.tensor(
-                (ctx_enc.tolist() + cont_enc.tolist())[-(self.max_length + 1):][:-1],
-                dtype=torch.long,
-                device=self.model.device).unsqueeze(0)
+            inputs_tokens = torch.tensor((ctx_enc.tolist() + cont_enc.tolist())[-(self.max_length + 1):][:-1],
+                                         dtype=torch.long,
+                                         device=self.model.device).unsqueeze(0)
 
             logits = self.model(inputs_tokens)[0]
             logits = torch.nn.functional.log_softmax(logits.float(), dim=-1)

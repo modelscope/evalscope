@@ -179,20 +179,20 @@ class ServerModelAdapter(BaseModelAdapter):
                         # Update tool call with new chunks
                         if hasattr(tool_call, 'function'):
                             if hasattr(tool_call.function, 'name') and tool_call.function.name:
-                                collected_tool_calls[
-                                    choice.index][tool_id]['function']['name'] = tool_call.function.name
+                                collected_tool_calls[choice.index
+                                                     ][tool_id]['function']['name'] = tool_call.function.name
 
                             if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
-                                collected_tool_calls[
-                                    choice.index][tool_id]['function']['arguments'] += tool_call.function.arguments
+                                collected_tool_calls[choice.index
+                                                     ][tool_id]['function']['arguments'] += tool_call.function.arguments
 
                         # Update ID if it was received later
                         if hasattr(tool_call, 'id') and tool_call.id:
                             collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
 
         # Get all unique choice indices from all collections
-        all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(
-            collected_tool_calls.keys())
+        all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()
+                                                           ) | set(collected_tool_calls.keys())
 
         choices = []
         for index in all_indices:
@@ -222,7 +222,8 @@ class ServerModelAdapter(BaseModelAdapter):
                 message_kwargs['tool_calls'] = tool_calls_list
 
             choice = Choice(
-                finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs))
+                finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
+            )
             choices.append(choice)
 
         # build the final completion object

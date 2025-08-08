@@ -29,7 +29,8 @@ logger = get_logger()
     train_split='dev',
     eval_split='val',
     prompt_template='请回答问题，并选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。\n{query}',
-    query_template='问题：{question}\n{choices}\n答案: {answer}\n\n')
+    query_template='问题：{question}\n{choices}\n答案: {answer}\n\n'
+)
 class GeneralMCQAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
@@ -114,6 +115,7 @@ class GeneralMCQAdapter(DataAdapter):
 
         if include_answer:
             return self.query_template.format(
-                question=input_d['question'], choices=choices_str, answer=input_d['answer'])
+                question=input_d['question'], choices=choices_str, answer=input_d['answer']
+            )
         else:
             return self.query_template.format(question=input_d['question'], choices=choices_str, answer='').rstrip()

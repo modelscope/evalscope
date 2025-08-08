@@ -34,7 +34,8 @@ class MockLLM(ModelAPI):
             # Hence this type check and the one in generate.
             if not isinstance(custom_outputs, (Iterable, Generator)):
                 raise ValueError(
-                    f"model_args['custom_outputs'] must be an Iterable or a Generator, got {custom_outputs}")
+                    f"model_args['custom_outputs'] must be an Iterable or a Generator, got {custom_outputs}"
+                )
             self.outputs = iter(custom_outputs)
         else:
             self.outputs = iter((

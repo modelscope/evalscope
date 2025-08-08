@@ -32,7 +32,8 @@ class TakeKFilter(Filter):
         Take the first k responses from the instance list.
         """
         assert len(instance) >= self.k, (
-            f'Need at least {self.k} responses to take first {self.k}, but got {len(instance)} only!')
+            f'Need at least {self.k} responses to take first {self.k}, but got {len(instance)} only!'
+        )
         return instance[:self.k]
 
 

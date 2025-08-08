@@ -3,8 +3,17 @@ from functools import partial
 from typing import Callable, Dict
 
 from evalscope.metrics.metrics import mean, pass_at_k, weighted_mean
-from evalscope.metrics.t2v_metrics import (blip2_score, clip_flant5_score, clip_score, fga_blip2_score, hpsv2_1_score,
-                                           hpsv2_score, image_reward_score, mps_score, pick_score)
+from evalscope.metrics.t2v_metrics import (
+    blip2_score,
+    clip_flant5_score,
+    clip_score,
+    fga_blip2_score,
+    hpsv2_1_score,
+    hpsv2_score,
+    image_reward_score,
+    mps_score,
+    pick_score,
+)
 
 
 @dataclass

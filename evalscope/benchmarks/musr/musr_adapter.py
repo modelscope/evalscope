@@ -42,7 +42,8 @@ class MuSRAdapter(DataAdapter):
         choices = self.format_choice(ast.literal_eval(input_d['choices']))
 
         full_prompt = self.prompt_template.format(
-            narrative=input_d['narrative'], question=input_d['question'], choices=choices)
+            narrative=input_d['narrative'], question=input_d['question'], choices=choices
+        )
 
         return self.gen_prompt_data(full_prompt)
 

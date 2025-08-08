@@ -127,7 +127,8 @@ class SuperGPQAAdapter(DataAdapter):
         few_shot_num = kwargs.get('few_shot_num', 0)
         if few_shot_num > 0 and few_shot_num != 5:
             logger.warning(
-                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.')
+                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.'
+            )
             kwargs['few_shot_num'] = 5
         super().__init__(**kwargs)
 

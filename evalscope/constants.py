@@ -12,8 +12,9 @@ DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
 DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub/models
 DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/hub/datasets
 DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old version
-DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(os.getenv('EVALSCOPE_CACHE',
-                                                           '~/.cache/evalscope'))  # ~/.cache/evalscope
+DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
+    os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
+)  # ~/.cache/evalscope
 
 
 class HubType:

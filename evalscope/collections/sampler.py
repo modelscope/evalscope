@@ -43,7 +43,8 @@ class Sampler(ABC):
                         weight=dataset.weight,
                         dataset_name=dataset.name,
                         subset_name=subset_name,
-                    ))
+                    )
+                )
         count = min(count, len(all_data))  # avoid sampling more than the dataset size
         sampled_data = random.sample(all_data, k=count)
         return sampled_data

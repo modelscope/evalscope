@@ -77,6 +77,8 @@ class Mean(Aggregator):
                         metric_name=metric_name,
                         aggregation_name=self.name,
                         num=len(values),
-                        ids=metric_sample_ids[metric_name]))
+                        ids=metric_sample_ids[metric_name]
+                    )
+                )
 
         return aggregated_scores

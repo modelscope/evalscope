@@ -5,9 +5,18 @@ from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
     from ..api.registry import get_model_adapter
-    from .adapters import (BaseModelAdapter, BFCLAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
-                           CustomModelAdapter, MultiChoiceModelAdapter, ServerModelAdapter, T2IModelAdapter,
-                           TauBenchAdapter, initialize_model_adapter)
+    from .adapters import (
+        BaseModelAdapter,
+        BFCLAdapter,
+        ChatGenerationModelAdapter,
+        ContinuationLogitsModelAdapter,
+        CustomModelAdapter,
+        MultiChoiceModelAdapter,
+        ServerModelAdapter,
+        T2IModelAdapter,
+        TauBenchAdapter,
+        initialize_model_adapter,
+    )
     from .custom import CustomModel, DummyCustomModel, DummyT2IModel
     from .local_model import LocalChatModel, LocalImageModel, LocalModel, get_local_model
 

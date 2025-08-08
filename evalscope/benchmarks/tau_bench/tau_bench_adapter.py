@@ -31,7 +31,8 @@ logger = get_logger()
             'temperature': 0.7,
             'max_new_tokens': 1024
         }
-    })
+    }
+)
 class TauBenchAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
@@ -63,9 +64,11 @@ class TauBenchAdapter(DataAdapter):
             user_server = ServerModelAdapter(
                 api_url=adapter_instance.api_base,
                 model_id=adapter_instance.user_model,
-                api_key=adapter_instance.api_key)
+                api_key=adapter_instance.api_key
+            )
             request_json = user_server.make_request(
-                input_item={'messages': messages}, infer_cfg=adapter_instance.generation_config)
+                input_item={'messages': messages}, infer_cfg=adapter_instance.generation_config
+            )
             res = user_server.send_request(request_json)
 
             message = res['choices'][0]['message']

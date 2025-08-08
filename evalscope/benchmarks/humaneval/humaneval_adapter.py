@@ -39,9 +39,11 @@ class HumanevalAdapter(DataAdapter):
             from human_eval.data import stream_jsonl, write_jsonl
             from human_eval.evaluation import check_correctness
         except ImportError:
-            raise ImportError('Please install human_eval:'
-                              'https://github.com/openai/human-eval/tree/master#installation , '
-                              'Note that you need to enable the execution code in the human_eval/execution.py first.')
+            raise ImportError(
+                'Please install human_eval:'
+                'https://github.com/openai/human-eval/tree/master#installation , '
+                'Note that you need to enable the execution code in the human_eval/execution.py first.'
+            )
         super().__init__(**kwargs)
 
         extra_params = kwargs.get('extra_params', {})

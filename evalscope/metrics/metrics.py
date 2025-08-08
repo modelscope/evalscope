@@ -322,11 +322,11 @@ def bootstrap_stderr(f, xs, iters):
 
     print('bootstrapping for stddev:', f.__name__)
     for bootstrap in tqdm(
-            pool.imap(
-                _bootstrap_internal(f, chunk_size),
-                [(i, xs) for i in range(iters // chunk_size)],
-            ),
-            total=iters // chunk_size,
+        pool.imap(
+            _bootstrap_internal(f, chunk_size),
+            [(i, xs) for i in range(iters // chunk_size)],
+        ),
+        total=iters // chunk_size,
     ):
         # sample w replacement
         res.extend(bootstrap)
@@ -361,15 +361,17 @@ def yesno(x):
         return 'no'
 
 
-def compute_elo(battles,
-                col_model_a='model_a',
-                col_model_b='model_b',
-                col_win='win',
-                tie_values=['tie', 'tie (bothbad)'],
-                k=32,
-                scale=400,
-                base=10,
-                init_rating=1000):
+def compute_elo(
+    battles,
+    col_model_a='model_a',
+    col_model_b='model_b',
+    col_win='win',
+    tie_values=['tie', 'tie (bothbad)'],
+    k=32,
+    scale=400,
+    base=10,
+    init_rating=1000
+):
     rating = defaultdict(lambda: init_rating)
 
     for rd, model_a, model_b, win in battles[[col_model_a, col_model_b, col_win]].itertuples():
@@ -434,9 +436,11 @@ def calculate_arc_accuracy(question_answers: Dict[str, str], predictions: Dict[s
     return score / len(question_answers)
 
 
-def calculate_pass_at_k(num_samples: Union[int, List[int], np.ndarray],
-                        num_correct: Union[List[int], np.ndarray],
-                        k: int = 1) -> np.ndarray:
+def calculate_pass_at_k(
+    num_samples: Union[int, List[int], np.ndarray],
+    num_correct: Union[List[int], np.ndarray],
+    k: int = 1
+) -> np.ndarray:
     """
     Estimates pass@k of each problem and returns them in an array.
     Examples:

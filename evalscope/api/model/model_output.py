@@ -175,7 +175,8 @@ class ModelOutput(BaseModel):
                 ChatCompletionChoice(
                     message=ChatMessageAssistant(content=completion, model=self.model),
                     stop_reason='stop',
-                ))
+                )
+            )
 
     @property
     def completions(self) -> List[str]:

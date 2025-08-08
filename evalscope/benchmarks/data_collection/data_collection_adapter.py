@@ -30,12 +30,14 @@ class DataCollectionAdapter(DataAdapter):
         """
         super().__init__(**kwargs)
 
-    def load(self,
-             dataset_name_or_path: str = None,
-             subset_list: list = None,
-             work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
-             datasets_hub: str = HubType.MODELSCOPE,
-             **kwargs) -> dict:
+    def load(
+        self,
+        dataset_name_or_path: str = None,
+        subset_list: list = None,
+        work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR,
+        datasets_hub: str = HubType.MODELSCOPE,
+        **kwargs
+    ) -> dict:
         """
         Load the dataset. Remote and local datasets are supported.
         """
@@ -55,7 +57,8 @@ class DataCollectionAdapter(DataAdapter):
             logger.info(f'Loading dataset from {datasets_hub}: > dataset_name: {dataset_name_or_path}')
 
             dataset_path = dataset_snapshot_download(
-                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern='*.jsonl')
+                dataset_name_or_path, cache_dir=work_dir, allow_file_pattern='*.jsonl'
+            )
             # find the jsonl file
             dataset_files = [os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f.endswith('.jsonl')]
             dataset = jsonl_to_list(dataset_files[0])

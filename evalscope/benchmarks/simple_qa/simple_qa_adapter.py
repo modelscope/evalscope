@@ -103,7 +103,8 @@ Just return the letters "A", "B", or "C", with no text around it.
     metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
     few_shot_num=0,
     train_split=None,
-    eval_split='test')
+    eval_split='test'
+)
 class SimpleQAAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):

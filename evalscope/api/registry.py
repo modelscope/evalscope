@@ -73,7 +73,8 @@ def get_model_adapter(name) -> Type['BaseModelAdapter']:
     """
     if name not in MODEL_ADAPTERS:
         raise ValueError(
-            f"Model adapter '{name}' is not registered. Available model adapters: {list(MODEL_ADAPTERS.keys())}")
+            f"Model adapter '{name}' is not registered. Available model adapters: {list(MODEL_ADAPTERS.keys())}"
+        )
     return MODEL_ADAPTERS[name]
 
 
@@ -140,7 +141,8 @@ def get_metric(name: str) -> Type['Metric']:
         return METRIC_REGISTRY[name]
     else:
         raise ValueError(
-            f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}")
+            f"Metric '{name}' not found in the registry. Available metrics: {list(METRIC_REGISTRY.keys())}"
+        )
 
 
 # END: Registry for metrics
@@ -164,7 +166,8 @@ def register_filter(name):
 def get_filter(filter_name: str) -> Type['Filter']:
     if filter_name not in FILTER_REGISTRY:
         raise KeyError(
-            f"Filter '{filter_name}' not found in the registry. Available filters: {list(FILTER_REGISTRY.keys())}")
+            f"Filter '{filter_name}' not found in the registry. Available filters: {list(FILTER_REGISTRY.keys())}"
+        )
     return FILTER_REGISTRY[filter_name]
 
 
@@ -198,8 +201,10 @@ def get_aggregation(name: str) -> Type['Aggregator']:
     :return: The aggregation function.
     """
     if name not in AGGREGATION_REGISTRY:
-        raise ValueError(f"Aggregation function '{name}' is not registered. "
-                         f'Available aggregations: {list(AGGREGATION_REGISTRY.keys())}')
+        raise ValueError(
+            f"Aggregation function '{name}' is not registered. "
+            f'Available aggregations: {list(AGGREGATION_REGISTRY.keys())}'
+        )
     return AGGREGATION_REGISTRY[name]
 
 

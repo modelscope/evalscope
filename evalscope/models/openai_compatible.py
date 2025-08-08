@@ -8,9 +8,16 @@ from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
-from .utils.openai import (chat_choices_from_openai, collect_stream_response, model_output_from_openai,
-                           openai_chat_messages, openai_chat_tool_choice, openai_chat_tools, openai_completion_params,
-                           openai_handle_bad_request)
+from .utils.openai import (
+    chat_choices_from_openai,
+    collect_stream_response,
+    model_output_from_openai,
+    openai_chat_messages,
+    openai_chat_tool_choice,
+    openai_chat_tools,
+    openai_completion_params,
+    openai_handle_bad_request,
+)
 
 logger = get_logger()
 
@@ -18,12 +25,12 @@ logger = get_logger()
 class OpenAICompatibleAPI(ModelAPI):
 
     def __init__(
-            self,
-            model_name: str,
-            base_url: Optional[str] = None,
-            api_key: Optional[str] = None,
-            config: GenerateConfig = GenerateConfig(),
-            **model_args: Any,
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **model_args: Any,
     ) -> None:
 
         super().__init__(

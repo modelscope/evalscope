@@ -15,10 +15,24 @@ from torch import Tensor  # type: ignore
 from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, cast
 from typing_extensions import override
 
-from evalscope.api.messages import (ChatMessage, ChatMessageAssistant, ContentAudio, ContentImage, ContentText,
-                                    ContentVideo)
-from evalscope.api.model import (ChatCompletionChoice, GenerateConfig, Logprob, Logprobs, ModelAPI, ModelOutput,
-                                 ModelUsage, TopLogprob)
+from evalscope.api.messages import (
+    ChatMessage,
+    ChatMessageAssistant,
+    ContentAudio,
+    ContentImage,
+    ContentText,
+    ContentVideo,
+)
+from evalscope.api.model import (
+    ChatCompletionChoice,
+    GenerateConfig,
+    Logprob,
+    Logprobs,
+    ModelAPI,
+    ModelOutput,
+    ModelUsage,
+    TopLogprob,
+)
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils.model_utils import get_device
 
@@ -28,12 +42,12 @@ logger = getLogger()
 class ModelScopeAPI(ModelAPI):
 
     def __init__(
-            self,
-            model_name: str,
-            base_url: Optional[str] = None,
-            api_key: Optional[str] = None,
-            config: GenerateConfig = GenerateConfig(),
-            **model_args: Any,
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **model_args: Any,
     ):
         super().__init__(
             model_name=model_name,
@@ -78,7 +92,8 @@ class ModelScopeAPI(ModelAPI):
             token=self.api_key,
             torch_dtype=self.torch_dtype,
             trust_remote_code=True,
-            **model_args)
+            **model_args
+        )
 
         # tokenizer
         tokenizer_name_or_path = tokenizer_path or model_name_or_path
@@ -162,7 +177,8 @@ class ModelScopeAPI(ModelAPI):
                 generator=generator,
                 decoder=decoder,
                 batch_size=config.batch_size or self.max_connections(),
-            ))
+            )
+        )
 
         choices: List[ChatCompletionChoice] = []
         for response in responses:
@@ -235,10 +251,12 @@ def message_content_to_string(messages: List[ChatMessage]) -> List[ChatMessage]:
     for message in messages:
         if isinstance(message.content, list):
             is_multimodal = any(
-                isinstance(item, (ContentAudio, ContentImage, ContentVideo)) for item in message.content)
+                isinstance(item, (ContentAudio, ContentImage, ContentVideo)) for item in message.content
+            )
             if is_multimodal:
                 raise NotImplementedError(
-                    'Transformer model does not support multimodal content, please provide text inputs only.')
+                    'Transformer model does not support multimodal content, please provide text inputs only.'
+                )
             message.content = message.text
     return messages
 
@@ -392,7 +410,8 @@ def process_batches() -> None:
                             total_tokens=input_tokens + output_tokens,
                             logprobs=logprobs_tensor,
                             time=total_time,
-                        ))
+                        )
+                    )
 
                 # asyncio futures are not thread safe, so we need to pass the event loop
                 # down to this point, so we can mark the future as done in a thread safe manner.
@@ -431,5 +450,6 @@ def extract_logprobs(
                 logprob=top_logprobs[0].logprob,
                 bytes=top_logprobs[0].bytes,
                 top_logprobs=top_logprobs,
-            ))
+            )
+        )
     return final_logprobs

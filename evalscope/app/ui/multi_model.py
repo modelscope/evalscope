@@ -10,8 +10,14 @@ from typing import TYPE_CHECKING
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.utils.logger import get_logger
 from ..constants import LATEX_DELIMITERS, MODEL_TOKEN, REPORT_TOKEN
-from ..utils.data_utils import (get_acc_report_df, get_compare_report_df, get_model_prediction, get_single_dataset_df,
-                                load_multi_report, load_single_report)
+from ..utils.data_utils import (
+    get_acc_report_df,
+    get_compare_report_df,
+    get_model_prediction,
+    get_single_dataset_df,
+    load_multi_report,
+    load_single_report,
+)
 from ..utils.localization import get_multi_model_locale
 from ..utils.text_utils import convert_markdown_image, process_model_prediction
 from ..utils.visualization import plot_multi_report_radar
@@ -62,7 +68,8 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
                 label=locale_dict.get('answer_mode'),
                 choices=['All', 'Pass A & B', 'Fail A & B', 'Pass A, Fail B', 'Fail A, Pass B'],
                 value='All',
-                interactive=True)
+                interactive=True
+            )
             score_threshold = gr.Number(value=0.99, label=locale_dict['score_threshold'], interactive=True)
 
         data_comparison_df = gr.State(None)
@@ -75,7 +82,8 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
                 comparison_counts = gr.Markdown('')
             with gr.Column():
                 page_number = gr.Number(
-                    value=1, label=locale_dict['page'], minimum=1, maximum=1, step=1, interactive=True)
+                    value=1, label=locale_dict['page'], minimum=1, maximum=1, step=1, interactive=True
+                )
 
         # Input and Gold answer sections remain at the top
         with gr.Row(variant='panel'):
@@ -133,7 +141,8 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
 
     @multi_report_name.change(
         inputs=[sidebar.root_path, multi_report_name],
-        outputs=[report_list, radar_plot, score_table, model_a_select, model_b_select])
+        outputs=[report_list, radar_plot, score_table, model_a_select, model_b_select]
+    )
     def update_multi_report_data(root_path, multi_report_names):
         if not multi_report_names:
             return gr.skip(), gr.skip(), gr.skip(), gr.skip(), gr.skip()
@@ -147,13 +156,14 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         model_choices = multi_report_names
 
         return report_list, report_radar_plot, styler, gr.update(
-            choices=model_choices, value=model_choices[0]), gr.update(
-                choices=model_choices, value=model_choices[1] if len(model_choices) > 1 else None)
+            choices=model_choices, value=model_choices[0]
+        ), gr.update(choices=model_choices, value=model_choices[1] if len(model_choices) > 1 else None)
 
     @gr.on(
         triggers=[model_a_select.change, model_b_select.change],
         inputs=[sidebar.root_path, model_a_select, model_b_select],
-        outputs=[model_a_report, model_b_report, model_a_dir, model_b_dir, model_a_name, model_b_name, dataset_radio])
+        outputs=[model_a_report, model_b_report, model_a_dir, model_b_dir, model_a_name, model_b_name, dataset_radio]
+    )
     def update_selected_models(root_path, model_a, model_b):
         if not model_a or not model_b:
             return gr.skip()
@@ -172,13 +182,16 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         model_a_name = model_a.split(REPORT_TOKEN)[1].split(MODEL_TOKEN)[0]
         model_b_name = model_b.split(REPORT_TOKEN)[1].split(MODEL_TOKEN)[0]
 
-        return (model_a_reports, model_b_reports, model_a_dir, model_b_dir, model_a_name, model_b_name,
-                gr.update(choices=common_datasets, value=common_datasets[0] if common_datasets else None))
+        return (
+            model_a_reports, model_b_reports, model_a_dir, model_b_dir, model_a_name, model_b_name,
+            gr.update(choices=common_datasets, value=common_datasets[0] if common_datasets else None)
+        )
 
     @gr.on(
         triggers=[dataset_radio.change],
         inputs=[dataset_radio, model_a_report, model_b_report],
-        outputs=[subset_select, data_comparison_df])
+        outputs=[subset_select, data_comparison_df]
+    )
     def update_dataset_comparison(dataset_name, model_a_report, model_b_report):
         if not dataset_name or model_a_report is None or model_b_report is None:
             return gr.skip()
@@ -198,7 +211,8 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[subset_select.change],
         inputs=[model_a_dir, model_b_dir, model_a_name, model_b_name, dataset_radio, subset_select],
-        outputs=[data_comparison_df, page_number])
+        outputs=[data_comparison_df, page_number]
+    )
     def update_comparison_data(model_a_dir, model_b_dir, model_a_name, model_b_name, dataset_name, subset_name):
         if not subset_name or not dataset_name:
             return gr.skip()
@@ -230,7 +244,8 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
     @gr.on(
         triggers=[data_comparison_df.change, answer_mode_radio.change, score_threshold.change],
         inputs=[data_comparison_df, answer_mode_radio, score_threshold],
-        outputs=[filtered_comparison_df, page_number, comparison_counts])
+        outputs=[filtered_comparison_df, page_number, comparison_counts]
+    )
     def filter_comparison_data(comparison_df, answer_mode, score_threshold):
         if comparison_df is None:
             return None, gr.update(value=1, maximum=1), ''
@@ -256,13 +271,19 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         # Count statistics
         pass_a_count = len(comparison_df[comparison_df['A_NScore'] >= score_threshold])
         pass_b_count = len(comparison_df[comparison_df['B_NScore'] >= score_threshold])
-        pass_both_count = len(comparison_df[(comparison_df['A_NScore'] >= score_threshold)
-                                            & (comparison_df['B_NScore'] >= score_threshold)])
-        fail_both_count = len(comparison_df[(comparison_df['A_NScore'] < score_threshold)
-                                            & (comparison_df['B_NScore'] < score_threshold)])
+        pass_both_count = len(
+            comparison_df[(comparison_df['A_NScore'] >= score_threshold)
+                          & (comparison_df['B_NScore'] >= score_threshold)]
+        )
+        fail_both_count = len(
+            comparison_df[(comparison_df['A_NScore'] < score_threshold)
+                          & (comparison_df['B_NScore'] < score_threshold)]
+        )
 
-        counts_text = (f'### All: {all_count} | Pass A: {pass_a_count} | Pass B: {pass_b_count} | '
-                       f'Pass Both: {pass_both_count} | Fail Both: {fail_both_count}')
+        counts_text = (
+            f'### All: {all_count} | Pass A: {pass_a_count} | Pass B: {pass_b_count} | '
+            f'Pass Both: {pass_both_count} | Fail Both: {fail_both_count}'
+        )
 
         max_page = max(1, len(filtered_df))
 
@@ -277,9 +298,11 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         outputs=[
             input_text, gold_text, model_a_generated, model_a_pred, model_a_score, model_a_nscore, model_b_generated,
             model_b_pred, model_b_score, model_b_nscore
-        ])
-    def update_comparison_display(filtered_df, page_number, score_threshold, model_a_select, model_b_select,
-                                  model_a_name_val, model_b_name_val):
+        ]
+    )
+    def update_comparison_display(
+        filtered_df, page_number, score_threshold, model_a_select, model_b_select, model_a_name_val, model_b_name_val
+    ):
         if filtered_df is None or len(filtered_df) == 0:
             return '', '', '', '', '', '', '', '', '', ''
 
@@ -317,7 +340,9 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         else:
             b_nscore_html = f"<div style='background-color:rgb(151, 31, 44); padding:10px;'>{b_nscore_val}</div>"
 
-        return (input_md, gold_md, a_generated_md, a_pred_md, a_score_md, a_nscore_html, b_generated_md, b_pred_md,
-                b_score_md, b_nscore_html)
+        return (
+            input_md, gold_md, a_generated_md, a_pred_md, a_score_md, a_nscore_html, b_generated_md, b_pred_md,
+            b_score_md, b_nscore_html
+        )
 
     return MultiModelComponents(multi_report_name=multi_report_name)

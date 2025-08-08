@@ -44,8 +44,9 @@ def default_transforms(
         return bins
 
     def filter_doc_with_num_tokens(node, min_num_tokens=500):
-        return (node.type == NodeType.DOCUMENT
-                and num_tokens_from_string(node.properties['page_content']) > min_num_tokens)
+        return (
+            node.type == NodeType.DOCUMENT and num_tokens_from_string(node.properties['page_content']) > min_num_tokens
+        )
 
     def filter_docs(node):
         return node.type == NodeType.DOCUMENT
@@ -90,7 +91,8 @@ def default_transforms(
                 target_lang=language,
                 llm=llm,
                 adapt_instruction=True,
-            ))
+            )
+        )
 
         transforms = [
             headline_extractor,
@@ -121,7 +123,8 @@ def default_transforms(
                 target_lang=language,
                 llm=llm,
                 adapt_instruction=True,
-            ))
+            )
+        )
 
         transforms = [
             summary_extractor,

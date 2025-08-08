@@ -85,7 +85,8 @@ SUBJECT_MAPPING = {
         train_split='dev',
         eval_split='test',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
-    ))
+    )
+)
 class MMLUAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):

@@ -97,7 +97,8 @@ SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应�
     metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
     few_shot_num=0,
     train_split=None,
-    eval_split='train')
+    eval_split='train'
+)
 class ChineseSimpleQAAdapter(DataAdapter):
 
     def __init__(self, *args, **kwargs):
