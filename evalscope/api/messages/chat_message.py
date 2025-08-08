@@ -177,3 +177,17 @@ def dict_to_chat_message(data: Dict[str, Any]) -> ChatMessage:
         return ChatMessageTool.model_validate(data)
     else:
         raise ValueError(f'Unknown chat message role: {role}')
+
+def messages_pretty_str(messages: List[ChatMessage]) -> str:
+    """Pretty print a list of chat messages."""
+    output = []
+    for message in messages:
+        role = message.role.capitalize()
+        content = message.text
+        if isinstance(message, ChatMessageTool):
+            if message.error:
+                content += f"\nError: {message.error.message}"
+            if message.function:
+                content += f"\nFunction: {message.function}"
+        output.append(f"**{role}**: {content}")
+    return "\n\n".join(output)

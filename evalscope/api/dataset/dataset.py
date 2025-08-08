@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
-from evalscope.api.messages import ChatMessage
+from evalscope.api.messages import ChatMessage, messages_pretty_str
 from evalscope.api.tool import ToolInfo
 from evalscope.utils.multi_choices import answer_character, answer_index
 
@@ -22,10 +22,10 @@ class Sample(BaseModel):
     target: Union[str, List[str]] = ''
     """Ideal target output. May be a literal value or narrative text to be used by a model grader."""
 
-    id: Optional[Union[int, str]] = None
+    id: Optional[int] = None
     """Unique identifier for sample."""
 
-    group_id: Optional[Union[int, str]] = None
+    group_id: Optional[int] = None
     """Identifier for the group this sample belongs to, used for grouping k repeated samples."""
 
     tools: Optional[List[ToolInfo]] = None
@@ -51,7 +51,10 @@ class Sample(BaseModel):
 
     def pretty_print(self) -> str:
         """Return a pretty-printed string representation of the sample."""
-        input_text = self.input if isinstance(self.input, str) else '\n'.join(str(m) for m in self.input)
+        if isinstance(self.input, str):
+            input_text = self.input
+        else:
+            input_text = messages_pretty_str(self.input)
         return f'Sample ID: {self.id}\nInput: {input_text}\nTarget: {self.target}'
 
 
@@ -68,7 +71,7 @@ class FieldSpec:
     choices: str = field(default='choices')
     """Name of field containing the list of answer choices."""
 
-    id: str = field(default='id')
+    id: int = field(default=0)
     """ Unique identifier for the sample."""
 
     metadata: Optional[List[str]] = field(default=None)

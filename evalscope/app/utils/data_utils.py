@@ -9,8 +9,9 @@ from typing import Any, Dict, List, Union
 
 from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
-from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
+from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict, jsonl_to_list
 from evalscope.utils.logger import get_logger
+from evalscope.api.evaluator import CacheManager, ReviewResult
 from ..constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN
 
 logger = get_logger()
@@ -136,31 +137,33 @@ def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
 
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
-    data_path = os.path.join(work_dir, OutputsStructure.REVIEWS_DIR, model_name)
-    subset_name = subset_name.replace('/', '_')  # for collection report
-    review_path = os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl')
-    logger.debug(f'review_path: {review_path}')
-    origin_df = pd.read_json(review_path, lines=True)
+    outputs = OutputsStructure(work_dir, is_make=False)
+    cache_manager = CacheManager(outputs, model_name, dataset_name)
+    
+    review_cache_path = cache_manager.get_review_cache_path(subset_name)
+    logger.debug(f'review_path: {review_cache_path}')
+    review_caches = jsonl_to_list(review_cache_path)
+
 
     ds = []
-    for i, item in origin_df.iterrows():
-        raw_input = item['raw_input']
-        sample_index = item['index']
-        for choice_index, choice in enumerate(item['choices']):
-            raw_pred_answer = choice['message']['content']
-            parsed_gold_answer = choice['review']['gold']
-            parsed_pred_answer = choice['review']['pred']
-            score = choice['review']['result']
-            raw_d = {
-                'Index': f'{sample_index}_{choice_index}',
-                'Input': raw_input,
-                'Generated': raw_pred_answer if raw_pred_answer != parsed_pred_answer else '*Same as Pred*',
-                'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
-                'Pred': parsed_pred_answer,
-                'Score': score,
-                'NScore': normalize_score(score)
-            }
-            ds.append(raw_d)
+    for cache in review_caches:
+        review_result = ReviewResult.model_validate(cache)
+        sample_score = review_result.sample_score
+
+        prediction = sample_score.score.prediction
+        target = review_result.target
+        extracted_prediction = sample_score.score.extracted_prediction
+        score = sample_score.score
+        raw_d = {
+            'Index': str(review_result.index),
+            'Input': review_result.input,
+            'Generated': prediction if prediction != extracted_prediction else '*Same as Pred*',
+            'Gold': target,
+            'Pred': extracted_prediction,
+            'Score': score.model_dump(exclude_none=True),
+            'NScore': normalize_score(score.main_value)
+        }
+        ds.append(raw_d)
 
     df_subset = pd.DataFrame(ds)
     return df_subset

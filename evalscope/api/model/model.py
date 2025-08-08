@@ -270,10 +270,6 @@ class Model:
         if isinstance(input, str):
             input = [ChatMessageUser(content=input)]
 
-        # insert any system message provided in config
-        if config.system_message:
-            input = [ChatMessageSystem(content=config.system_message)] + input
-
         # handle tools and tool_choice
         tool_choice = tool_choice if tool_choice is not None else 'auto'
         tools_info = list(tools) if tools is not None else []

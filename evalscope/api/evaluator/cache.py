@@ -91,7 +91,8 @@ class CacheManager:
         """
         file_path = os.path.join(self.outputs.predictions_dir, self.model_name, f'{self.benchmark_name}_{subset}.jsonl')
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        if self.outputs.is_make:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return file_path
 
     def save_prediction_cache(self, subset: str, task_state: TaskState) -> 'ModelResult':
@@ -162,7 +163,8 @@ class CacheManager:
         """
         file_path = os.path.join(self.outputs.reviews_dir, self.model_name, f'{self.benchmark_name}_{subset}.jsonl')
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        if self.outputs.is_make:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return file_path
 
     def save_review_cache(self, subset: str, task_state: TaskState, sample_score: SampleScore) -> 'ReviewResult':
@@ -195,7 +197,8 @@ class CacheManager:
         """
         report_path = os.path.join(self.outputs.reports_dir, self.model_name)
         # Ensure the directory exists
-        os.makedirs(report_path, exist_ok=True)
+        if self.outputs.is_make:
+            os.makedirs(report_path, exist_ok=True)
         return report_path
 
     def get_report_file(self) -> str:
@@ -286,7 +289,7 @@ class ReviewResult(BaseModel):
     index: int
     """Index of the sample that was reviewed."""
 
-    input: Union[str, List[ChatMessage]] = ''
+    input: str = ''
     """Original input from the sample (immutable reference)."""
 
     target: Optional[str] = None
@@ -309,7 +312,7 @@ class ReviewResult(BaseModel):
         """
         return cls(
             index=state.sample_id,
-            input=state.input,
+            input=state.input_text,
             target=state.target,  # Fixed typo: was 'taget'
             sample_score=sample_score,
         )

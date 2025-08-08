@@ -3,7 +3,7 @@ from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessage, ChatMessageUser
+from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str
 from evalscope.api.model import ModelOutput
 
 
@@ -161,12 +161,12 @@ class TaskState:
         return self._model
 
     @property
-    def sample_id(self) -> Union[int, str]:
+    def sample_id(self) -> int:
         """Unique id for sample."""
         return self._sample_id
 
     @property
-    def group_id(self) -> Union[int, str]:
+    def group_id(self) -> int:
         """Group id for sample."""
         return self._group_id
 
@@ -186,14 +186,7 @@ class TaskState:
         if isinstance(self._input, str):
             return self._input
         else:
-            input = next(
-                (message.text for message in reversed(self._input) if message.role == 'user'),
-                None,
-            )
-            if input:
-                return input
-            else:
-                return ''
+            return messages_pretty_str(self._input)
 
     @property
     def choices(self) -> Choices:

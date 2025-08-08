@@ -7,6 +7,7 @@ from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
+from evalscope.api.messages import ChatMessageUser, ChatMessageSystem, ChatMessage
 from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
@@ -75,9 +76,17 @@ class DefaultDataAdapter(DataAdapter):
         # Process each sample's input by applying prompt templates and few-shot formatting
         for subset in self.test_dataset.keys():
             for sample in self.test_dataset[subset]:
-                sample.input = self.process_sample_input(sample, subset=subset)
+                if isinstance(sample.input, str):
+                    sample.input = self.process_sample_str_input(sample, subset)
         return self.test_dataset
 
+    def process_sample_str_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        input_text = self.process_sample_input(sample, subset=subset)
+        input_messages = [ChatMessageUser(content=input_text)]
+        if self.system_prompt:
+            input_messages.insert(0, ChatMessageSystem(content=self.system_prompt))
+        return input_messages
+    
     def process_sample_input(self, sample: Sample, subset: str) -> str:
         """
         Process a single sample's input by applying prompt templates and few-shot formatting.
@@ -157,6 +166,7 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             Dataset: The loaded dataset subset with processed samples
         """
+        # TODO: 拆分不同情况下的加载逻辑
         # Determine the split and subset names based on configuration
         split = subset if self.split_as_subset else self.eval_split
         subset_name = self.default_subset if self.split_as_subset else subset

@@ -61,11 +61,11 @@ class MMLUProAdapter(MultiChoiceAdapter):
             input=record['question'],
             choices=record['options'],
             target=record['answer'],
-            id=record['question_id'],
             subset_key=record['category'].lower(),
             metadata={
                 'cot_content': record['cot_content'],
                 'subject': record['category'].lower(),
+                'question_id': record['question_id'],
             },
         )
 

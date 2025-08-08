@@ -4,6 +4,7 @@ from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.utils.io_utils import thread_safe
 
 
 class MockLLM(ModelAPI):
@@ -43,6 +44,7 @@ class MockLLM(ModelAPI):
                 for _ in iter(int, 1)  # produce an infinite iterator
             ))
 
+    @thread_safe
     def generate(
         self,
         input: List[ChatMessage],
