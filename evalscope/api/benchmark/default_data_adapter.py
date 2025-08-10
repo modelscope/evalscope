@@ -5,9 +5,9 @@ from typing import Any, Callable, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
-from evalscope.api.messages import ChatMessageUser, ChatMessageSystem, ChatMessage
 from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
@@ -86,7 +86,7 @@ class DefaultDataAdapter(DataAdapter):
         if self.system_prompt:
             input_messages.insert(0, ChatMessageSystem(content=self.system_prompt))
         return input_messages
-    
+
     def process_sample_input(self, sample: Sample, subset: str) -> str:
         """
         Process a single sample's input by applying prompt templates and few-shot formatting.
@@ -143,7 +143,9 @@ class DefaultDataAdapter(DataAdapter):
             subset_data = load_func(self.default_subset)
             # Reformat the subset to create multiple subsets based on sample keys
             # NOTE: subset_list and limit is applied here if specified
-            dataset_dict = DatasetDict.from_dataset(dataset=subset_data, subset_list=self.subset_list, limit=self.limit)
+            dataset_dict = DatasetDict.from_dataset(
+                dataset=subset_data, subset_list=self.subset_list, limit=self.limit, repeats=self.repeats
+            )
         else:
             # Load all specified subsets into separate entries
             subset_dict = defaultdict()
@@ -166,7 +168,6 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             Dataset: The loaded dataset subset with processed samples
         """
-        # TODO: 拆分不同情况下的加载逻辑
         # Determine the split and subset names based on configuration
         split = subset if self.split_as_subset else self.eval_split
         subset_name = self.default_subset if self.split_as_subset else subset
@@ -178,7 +179,7 @@ class DefaultDataAdapter(DataAdapter):
             subset=subset_name,
             sample_fields=self.record_to_sample,  # Custom sample conversion function
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
-            repeats=self._task_config.repeats,  # Number of repetitions for each sample
+            repeats=self.repeats,  # Number of repetitions for each sample
             data_source=self._task_config.dataset_hub,  # Data source configuration
         )
         return loader.load()

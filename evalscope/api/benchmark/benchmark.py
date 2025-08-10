@@ -109,6 +109,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         return self._task_config.limit
 
     @property
+    def repeats(self) -> int:
+        """
+        Return the number of repeats for each sample in the benchmark.
+        """
+        return self._task_config.repeats
+
+    @property
     def subset_list(self) -> List[str]:
         """
         Return the subset list of the benchmark.

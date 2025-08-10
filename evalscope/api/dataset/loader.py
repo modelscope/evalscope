@@ -109,11 +109,13 @@ class RemoteDataLoader(DataLoader):
 
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(
-                data=dataset, data_to_sample=data_to_sample, auto_id=self.auto_id, group_k=self.repeats
-            ),
+            samples=data_to_samples(data=dataset, data_to_sample=data_to_sample),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
+
+        # assign ids and group_ids if requested
+        if self.auto_id:
+            memory_dataset.reindex(group_size=self.repeats)
 
         return memory_dataset

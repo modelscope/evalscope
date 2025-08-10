@@ -109,7 +109,7 @@ class ChatMessageAssistant(ChatMessageBase):
     # with a <think> block. If this ends up being an overeach we can fall back
     # to each provider manually parsing out <think> using a helper function.
     # The implementation isn't important here, the critical thing to establish
-    # is that Inspect makes reasoning content available separately.
+    # is that EvalScope makes reasoning content available separately.
     @model_validator(mode='before')
     @classmethod
     def extract_reasoning(cls, data: Any) -> Any:
@@ -178,6 +178,7 @@ def dict_to_chat_message(data: Dict[str, Any]) -> ChatMessage:
     else:
         raise ValueError(f'Unknown chat message role: {role}')
 
+
 def messages_pretty_str(messages: List[ChatMessage]) -> str:
     """Pretty print a list of chat messages."""
     output = []
@@ -186,8 +187,8 @@ def messages_pretty_str(messages: List[ChatMessage]) -> str:
         content = message.text
         if isinstance(message, ChatMessageTool):
             if message.error:
-                content += f"\nError: {message.error.message}"
+                content += f'\nError: {message.error.message}'
             if message.function:
-                content += f"\nFunction: {message.function}"
-        output.append(f"**{role}**: {content}")
-    return "\n\n".join(output)
+                content += f'\nFunction: {message.function}'
+        output.append(f'**{role}**: {content}')
+    return '\n\n'.join(output)

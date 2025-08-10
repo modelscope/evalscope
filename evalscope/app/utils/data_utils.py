@@ -7,11 +7,11 @@ import os
 import pandas as pd
 from typing import Any, Dict, List, Union
 
+from evalscope.api.evaluator import CacheManager, ReviewResult
 from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
-from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict, jsonl_to_list
+from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
-from evalscope.api.evaluator import CacheManager, ReviewResult
 from ..constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN
 
 logger = get_logger()
@@ -139,11 +139,10 @@ def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     outputs = OutputsStructure(work_dir, is_make=False)
     cache_manager = CacheManager(outputs, model_name, dataset_name)
-    
+
     review_cache_path = cache_manager.get_review_cache_path(subset_name)
     logger.debug(f'review_path: {review_cache_path}')
     review_caches = jsonl_to_list(review_cache_path)
-
 
     ds = []
     for cache in review_caches:

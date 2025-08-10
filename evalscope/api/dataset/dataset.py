@@ -148,6 +148,15 @@ class Dataset(Sequence[Sample], abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    def reindex(self, group_size=1):
+        """Reindex the dataset samples to ensure consistent ordering.
+
+        Args:
+           group_size: Number of samples per group for setting group_id.
+        """
+        ...
+
 
 class MemoryDataset(Dataset):
     r"""A Dataset stored in memory."""
@@ -245,6 +254,12 @@ class MemoryDataset(Dataset):
             shuffled=self.shuffled,
         )
 
+    def reindex(self, group_size=1):
+        # Reindex the dataset samples to ensure consistent ordering
+        for i, sample in enumerate(self.samples):
+            sample.id = i
+            sample.group_id = i // group_size
+
 
 class DatasetDict:
     """
@@ -280,7 +295,11 @@ class DatasetDict:
 
     @classmethod
     def from_dataset(
-        cls, dataset: Dataset, subset_list: List[str], limit: Optional[Union[int, float]] = None
+        cls,
+        dataset: Dataset,
+        subset_list: List[str],
+        limit: Optional[Union[int, float]] = None,
+        repeats: int = 1
     ) -> 'DatasetDict':
         """
         Create a DatasetDict from a single Dataset using subset key in the sample.
@@ -296,17 +315,22 @@ class DatasetDict:
         """
         data_dict = defaultdict(list)
         dataset_dict = defaultdict(list)
+        # Loop through each sample in the dataset
         for sample in dataset:
             subset_key = sample.subset_key or 'default'
             data_dict[subset_key].append(sample)
-
+        # Create a MemoryDataset for each subset key
         for key, samples in data_dict.items():
             if key not in subset_list:
                 continue
+            # Apply limit if specified
             if limit is not None:
-                if isinstance(limit, int):
-                    samples = samples[:limit]
-                elif isinstance(limit, float):
-                    samples = samples[:int(len(samples) * limit)]
-            dataset_dict[key] = MemoryDataset(samples, name=dataset.name)
+                if isinstance(limit, float):
+                    limit = int(len(samples) * limit)
+                total_limit = limit * repeats
+                samples = samples[:total_limit]
+            cur_dataset = MemoryDataset(samples, name=dataset.name)
+            # Reindex the dataset to ensure consistent IDs and group IDs
+            cur_dataset.reindex(group_size=repeats)
+            dataset_dict[key] = cur_dataset
         return cls(dataset_dict)

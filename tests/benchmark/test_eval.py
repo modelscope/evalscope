@@ -81,7 +81,7 @@ class TestBenchmark(TestCase):
             'few_shot_num': 0,
             'subset_list': ['computer science', 'math']
         }
-        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, use_cache='outputs/20250808_174117')
+        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, repeats=2, use_cache='outputs/20250810_121607')
 
     def test_math_500(self):
         """Test MATH 500 dataset."""
