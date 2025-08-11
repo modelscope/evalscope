@@ -126,6 +126,33 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('arc', dataset_args=dataset_args)
 
+    def test_ceval(self):
+        """Test CEval dataset."""
+        dataset_args = {
+            'subset_list': ['logic', 'law'],
+            # 'few_shot_num': 0,
+        }
+        # self._run_dataset_load_test('ceval')
+        self._run_dataset_test('ceval', dataset_args=dataset_args)
+
+    def test_super_gpqa(self):
+        """Test Super GPQA dataset."""
+        # self._run_dataset_load_test('super_gpqa')
+
+        dataset_args = {
+            'subset_list': ['History', 'Psychology'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('super_gpqa', dataset_args=dataset_args, ignore_errors=True)
+
+    def test_gpqa(self):
+        """Test GPQA dataset."""
+        # self._run_dataset_load_test('gpqa_diamond')
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('gpqa_diamond', dataset_args=dataset_args, ignore_errors=True)
+
     def test_truthful_qa(self):
         """Test TruthfulQA dataset."""
         self._run_dataset_test('truthful_qa')

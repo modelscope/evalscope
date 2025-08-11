@@ -1,5 +1,6 @@
 # flake8: noqa
 import re
+from collections.abc import Sequence
 
 
 def safe_regex_search(pattern, text, flags=0):
@@ -51,7 +52,7 @@ def extract_option_labels(text, options='ABCDEFGHIJ'):
 
 
 def extract_option_content(text, options_content=None):
-    if not isinstance(text, str) or not isinstance(options_content, list):
+    if not isinstance(text, str) or not isinstance(options_content, Sequence):
         return 'error'
 
     escaped_options_content = [re.escape(option_content) for option_content in options_content]

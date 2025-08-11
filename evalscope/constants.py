@@ -114,3 +114,4 @@ class Tags:
     MATH = 'Math'
     REASONING = 'Reasoning'
     CODING = 'Coding'
+    CHINESE = 'Chinese'

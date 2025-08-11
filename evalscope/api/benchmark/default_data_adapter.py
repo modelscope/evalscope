@@ -68,9 +68,7 @@ class DefaultDataAdapter(DataAdapter):
             self.test_dataset = self.load_subsets(self.load_subset)
 
             # Load few-shot examples if few-shot prompting is enabled
-            if self.few_shot_num > 0:
-                assert self.train_split is not None, \
-                    'Train split must be specified for few-shot prompting.'
+            if self.few_shot_num > 0 and self.train_split is not None:
                 self.fewshot_dataset = self.load_subsets(self.load_fewshot_subset)
 
         # Process each sample's input by applying prompt templates and few-shot formatting
@@ -104,19 +102,22 @@ class DefaultDataAdapter(DataAdapter):
             str: The formatted input text ready for model inference
         """
         if self.few_shot_num > 0:
-            # Retrieve few-shot examples for the current subset
-            few_shot_samples = self.fewshot_dataset.get(subset)
-            if few_shot_samples is None:
-                # Fallback: use the first available subset if current subset not found
-                first_key = next(iter(self.fewshot_dataset))
-                few_shot_samples = self.fewshot_dataset[first_key]
-            # Select fewshot samples
-            assert len(few_shot_samples) >= self.few_shot_num, (
-                f"""The dataset only have ({len(few_shot_samples)}) few-shot samples, but requested ({self.few_shot_num}) fewshot samples, please reduce 'few_shot_num'."""  # noqa: E501
-            )
-            # Convert few-shot samples to demonstration string
-            few_shot = '\n\n'.join([self.sample_to_fewshot(sample) for sample in few_shot_samples])
-
+            if self.fewshot_dataset is not None:
+                # Retrieve few-shot examples for the current subset
+                few_shot_samples = self.fewshot_dataset.get(subset)
+                if few_shot_samples is None:
+                    # Fallback: use the first available subset if current subset not found
+                    first_key = next(iter(self.fewshot_dataset))
+                    few_shot_samples = self.fewshot_dataset[first_key]
+                # Select fewshot samples
+                assert len(few_shot_samples) >= self.few_shot_num, (
+                    f"""The dataset only have ({len(few_shot_samples)}) few-shot samples, but requested ({self.few_shot_num}) fewshot samples, please reduce 'few_shot_num'."""  # noqa: E501
+                )
+                # Convert few-shot samples to demonstration string
+                few_shot = '\n\n'.join([self.sample_to_fewshot(sample) for sample in few_shot_samples])
+            else:
+                # Build few-shot examples inside the format method
+                few_shot = ''
             # Format the input text with few-shot examples and main prompt
             input_text = self.format_fewshot_template(fewshot=few_shot, sample=sample)
         else:

@@ -1,5 +1,5 @@
 from evalscope.api.dataset.dataset import Sample
-from evalscope.api.evaluator import Choices, Target
+from evalscope.api.evaluator import Choices, Target, TaskState
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, format_example, parse_answers, prompt, valid_template
 from .default_data_adapter import DefaultDataAdapter
 
@@ -60,6 +60,6 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         """
         return format_example(question=sample.input, choices=Choices(sample.choices), answer=Target(sample.target))
 
-    def extract_answer(self, prediction, task_state) -> str:
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answers = parse_answers(task_state, multiple_correct=False)
         return ''.join(list(answers))
