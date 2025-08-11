@@ -105,7 +105,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         with gr.Row(variant='panel'):
             with gr.Column():
                 gr.Markdown('### *Input*')
-                input_text = gr.Code('', elem_id='input_text', language='json', wrap_lines=False)
+                input_text = gr.Markdown('', elem_id='input_text', latex_delimiters=LATEX_DELIMITERS)
             with gr.Column():
                 gr.Markdown('### *Generated*')
                 generated_text = gr.Markdown('', elem_id='generated_text', latex_delimiters=LATEX_DELIMITERS)
@@ -197,7 +197,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         row = filtered_df.iloc[start]
 
         # Process the data for display
-        input_md = process_json_content(row['Input'])
+        input_md = row['Input'] + '\n\n' + process_model_prediction(row['Metadata'])
         generated_md = process_model_prediction(row['Generated'])
         gold_md = process_model_prediction(row['Gold'])
         pred_md = convert_markdown_image(process_model_prediction(row['Pred']))
