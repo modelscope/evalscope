@@ -74,7 +74,7 @@ class MMLUProAdapter(MultiChoiceAdapter):
         options = sample.choices if sample.choices is not None else []
         opt_str_list = []
         for i, opt in enumerate(options):
-            opt_str_list.append(f"""{chr(65 + i)}) {opt}""")
+            opt_str_list.append(f"""{chr(65 + i)} {opt}""")
         opt_str = '\n'.join(opt_str_list)
         opt_str = f"""Options:\n{opt_str}"""
         ans_str = sample.metadata['cot_content'] if sample.metadata is not None else ''

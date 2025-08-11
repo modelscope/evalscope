@@ -83,10 +83,10 @@ class TestBenchmark(TestCase):
     def test_mmlu_pro(self):
         """Test MMLU-Pro reasoning dataset."""
         dataset_args = {
-            'few_shot_num': 0,
+            'few_shot_num': 2,
             'subset_list': ['computer science', 'math']
         }
-        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, repeats=2, use_cache='outputs/20250810_121607')
+        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, repeats=2)
 
     def test_mmlu_redux(self):
         """Test MMLU-Redux reasoning dataset."""
@@ -95,6 +95,15 @@ class TestBenchmark(TestCase):
         }
         # self._run_dataset_load_test('mmlu_redux', dataset_args)
         self._run_dataset_test('mmlu_redux', dataset_args=dataset_args)
+
+    def test_cmmlu(self):
+        """Test C-MMLU reasoning dataset."""
+        dataset_args = {
+            'subset_list': ['agronomy', 'computer_security'],
+            'few_shot_num': 0,
+        }
+        # self._run_dataset_load_test('cmmlu')
+        self._run_dataset_test('cmmlu', dataset_args=dataset_args)
 
     def test_math_500(self):
         """Test MATH 500 dataset."""

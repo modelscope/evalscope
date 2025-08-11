@@ -13,6 +13,26 @@ FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar question
 
 """.lstrip()
 
+CHINESE_FEW_SHOT_TEMPLATE = r"""以下是一些示例问题：
+
+{fewshot}
+
+""".lstrip()
+
+CHINESE_SINGLE_ANSWER_TEMPLATE = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
+
+问题：{question}
+选项：
+{choices}
+""".lstrip()
+
+CHINESE_SINGLE_ANSWER_TEMPLATE_COT = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+问题：{question}
+选项：
+{choices}
+""".lstrip()
+
 SINGLE_ANSWER_TEMPLATE = r"""
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -192,6 +212,9 @@ class MultipleChoiceTemplate:
     SINGLE_ANSWER_COT = SINGLE_ANSWER_TEMPLATE_COT
     MULTIPLE_ANSWER = MULTIPLE_ANSWER_TEMPLATE
     MULTIPLE_ANSWER_COT = MULTIPLE_ANSWER_TEMPLATE_COT
+    CHINESE_FEW_SHOT_TEMPLATE = CHINESE_FEW_SHOT_TEMPLATE
+    CHINESE_SINGLE_ANSWER_TEMPLATE = CHINESE_SINGLE_ANSWER_TEMPLATE
+    CHINESE_SINGLE_ANSWER_TEMPLATE_COT = CHINESE_SINGLE_ANSWER_TEMPLATE_COT
 
 
 def answer_character(index: int) -> str:
