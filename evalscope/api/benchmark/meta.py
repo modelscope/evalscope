@@ -1,7 +1,7 @@
 import copy
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from evalscope.constants import OutputType
 
@@ -70,7 +70,7 @@ class BenchmarkMeta:
     filters: Optional[OrderedDict] = None
     """ Filters to apply to the dataset on model output."""
 
-    metric_list: List[str] = field(default_factory=list)
+    metric_list: List[Union[str, Dict[str, Any]]] = field(default_factory=list)
     """ List of metrics to evaluate the benchmark."""
 
     aggregation: str = 'mean'

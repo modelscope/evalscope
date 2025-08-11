@@ -437,13 +437,19 @@ class DefaultDataAdapter(DataAdapter):
         # Calculate scores for each configured metric
         for metric in self.metric_list:
             try:
-                metric_scorer = get_metric(metric)  # Get metric implementation from registry
-                metric_func = metric_scorer()  # Instantiate the metric scorer
+                if isinstance(metric, str):
+                    metric_name = metric
+                    metric_scorer = get_metric(metric)  # Get metric implementation from registry
+                    metric_func = metric_scorer()  # Instantiate the metric scorer
+                elif isinstance(metric, dict):
+                    metric_name = list(metric.keys())[0]
+                    metric_cls = get_metric(metric_name)
+                    metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
                 metric_score = metric_func(
                     prediction=filtered_prediction,
                     reference=reference,
                 )
-                score.value[metric] = metric_score
+                score.value[metric_name] = metric_score
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
                 return None

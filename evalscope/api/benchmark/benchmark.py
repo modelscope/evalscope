@@ -123,7 +123,7 @@ class DataAdapter(LLMJudgeMixin, ABC):
         return self._benchmark_meta.subset_list
 
     @property
-    def metric_list(self) -> List[str]:
+    def metric_list(self) -> List[Union[str, Dict[str, Any]]]:
         """
         Return the metric list of the benchmark.
         """

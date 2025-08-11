@@ -75,7 +75,9 @@ class RemoteDataLoader(DataLoader):
         if os.path.exists(dataset_cache_dir):
             dataset = datasets.load_from_disk(dataset_cache_dir)
         else:
-            logger.info(f'Loading dataset {path} from {self.data_source}...')
+            logger.info(
+                f'Loading dataset {path} from {self.data_source} > subset: {self.subset} > split: {self.split}...'
+            )
             if self.data_source == HubType.MODELSCOPE:
                 dataset = MsDataset.load(
                     dataset_name=path,

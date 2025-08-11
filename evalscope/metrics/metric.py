@@ -14,7 +14,32 @@ class ExactMatch(Metric):
 
 @register_metric(name='acc')
 class Accuracy(ExactMatch):
-    ...
+
+    def __init__(self, allow_inclusion: bool = False, numeric: bool = False):
+        self.allow_inclusion = allow_inclusion
+        self.numeric = numeric
+
+    def apply(self, predictions, references):
+        if self.allow_inclusion:
+            results = []
+            for prediction, reference in zip(predictions, references):
+                if prediction and prediction in reference:
+                    results.append(1.0)
+                else:
+                    results.append(0.0)
+            return results
+        elif self.numeric:
+            from .math_parser import extract_answer, math_equal, strip_answer_string
+
+            results = []
+            for prediction, reference in zip(predictions, references):
+                pred_answer = strip_answer_string(extract_answer(prediction))
+                ref_answer = strip_answer_string(reference)
+                results.append(float(math_equal(pred_answer, ref_answer)))
+
+            return results
+        else:
+            return super().apply(predictions, references)
 
 
 @register_metric(name='numeric_match')
@@ -24,8 +49,8 @@ class NumericMatch(Metric):
         return [float(prediction == reference) for prediction, reference in zip(predictions, references)]
 
 
-@register_metric(name='math_exact_match')
-class MathExactMatch(Metric):
+@register_metric(name='math_acc')
+class MathAcc(Metric):
 
     def apply(self, predictions, references):
         from .math_parser import extract_answer, math_equal, strip_answer_string

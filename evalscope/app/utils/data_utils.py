@@ -155,7 +155,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
         score = sample_score.score
         raw_d = {
             'Index': str(review_result.index),
-            'Input': review_result.input.replace('\n', '\n\n'), # for markdown
+            'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
             'Metadata': sample_score.sample_metadata,
             'Generated': prediction if prediction != extracted_prediction else '*Same as Pred*',
             'Gold': target,

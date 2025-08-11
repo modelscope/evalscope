@@ -27,7 +27,7 @@ class TestBenchmark(TestCase):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 2048,
+                'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
             },
@@ -62,6 +62,11 @@ class TestBenchmark(TestCase):
         task_cfg = TaskConfig(**config)
         run_task(task_cfg=task_cfg)
 
+    def _run_dataset_load_test(self, dataset_name, dataset_args=None):
+        """Helper method to test dataset loading."""
+
+        self._run_dataset_test(dataset_name, dataset_args, use_mock=True, limit=None)
+
     # Math & Reasoning datasets
     def test_gsm8k(self):
         """Test GSM8K math reasoning dataset."""
@@ -83,13 +88,26 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, repeats=2, use_cache='outputs/20250810_121607')
 
+    def test_mmlu_redux(self):
+        """Test MMLU-Redux reasoning dataset."""
+        dataset_args = {
+            'subset_list': ['abstract_algebra', 'computer_security'],
+        }
+        # self._run_dataset_load_test('mmlu_redux', dataset_args)
+        self._run_dataset_test('mmlu_redux', dataset_args=dataset_args)
+
     def test_math_500(self):
         """Test MATH 500 dataset."""
+        # self._run_dataset_load_test('math_500')
         self._run_dataset_test('math_500')
 
     def test_aime24(self):
         """Test AIME 2024 dataset."""
         self._run_dataset_test('aime24')
+
+    def test_aime25(self):
+        """Test AIME 2025 dataset."""
+        self._run_dataset_test('aime25')
 
     def test_competition_math(self):
         """Test Competition Math dataset."""
@@ -101,7 +119,12 @@ class TestBenchmark(TestCase):
     # Knowledge & QA datasets
     def test_arc(self):
         """Test ARC dataset."""
-        self._run_dataset_test('arc')
+        # self._run_dataset_load_test('arc')
+        dataset_args = {
+            'subset_list': ['ARC-Easy', 'ARC-Challenge'],
+            'few_shot_num': 2,
+        }
+        self._run_dataset_test('arc', dataset_args=dataset_args)
 
     def test_truthful_qa(self):
         """Test TruthfulQA dataset."""

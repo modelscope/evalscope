@@ -37,7 +37,7 @@ class Sample(BaseModel):
     subset_key: Optional[str] = None
     """Key for the subset this sample belongs to, used for generating subsets (optional)."""
 
-    metadata: Dict[str, Any] = Field(default=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     """Arbitrary metadata associated with the sample."""
 
     sandbox: Optional[str] = None
@@ -315,6 +315,11 @@ class DatasetDict:
         """
         data_dict = defaultdict(list)
         dataset_dict = defaultdict(list)
+        # init subset keys to prevent order issues
+        for key in subset_list:
+            data_dict[key] = []
+            dataset_dict[key] = []
+
         # Loop through each sample in the dataset
         for sample in dataset:
             subset_key = sample.subset_key or 'default'
