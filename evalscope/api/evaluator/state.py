@@ -14,7 +14,7 @@ class Target(Sequence[str]):
     `text` property to access the value as a single string.
     """
 
-    def __init__(self, target: str | list[str]) -> None:
+    def __init__(self, target: Union[str, List[str]]) -> None:
         self.target = target if isinstance(target, list) else [target]
 
     @overload
@@ -48,7 +48,7 @@ class Choice:
     value: str
     """The original value of the choice from the `Sample`."""
 
-    correct: bool | None
+    correct: Optional[bool]
     """Did the model think this choice satisfies the question? `None`
     indicates this has not been set yet"""
 
@@ -65,7 +65,7 @@ class Choices(Sequence[Choice]):
     functionality from the already-big `TaskState` class.
     """
 
-    def __init__(self, choices: list[str] | list[Choice]) -> None:
+    def __init__(self, choices: Union[List[str], List[Choice]]) -> None:
         """
         Setter for choices, intended to only be used with the `multiple_choice` scorer.
 
@@ -76,7 +76,7 @@ class Choices(Sequence[Choice]):
         the capital of France? A) Paris B) London C) Berlin", we would store the
         possible answers here.
         """
-        self._choices: list[Choice] = []
+        self._choices: List[Choice] = []
 
         for i, choice in enumerate(choices):
             if isinstance(choice, str):

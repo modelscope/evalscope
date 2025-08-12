@@ -187,6 +187,33 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
 
     return set()
 
+def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[str]:
+    """
+    Convenience function for extracting answers from the state output in Chinese format.
+
+    The generated response must be in the format '答案：选项',
+    otherwise we can't extract what the model thinks is "true". We can be a
+    bit flexible whether these are "AB" vs "A,B" vs "A B".
+    """
+    # Simple pattern to capture answers with optional bold markdown
+    pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
+    match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
+
+    if match is None:
+        return set()
+
+    matched = match.group(1).strip().rstrip('。.')
+    allowed_options = set(answer_character(i) for i in range(len(state.choices)))
+
+    if multiple_correct:
+        # Handle comma-separated or continuous letters
+        matched = matched.replace(' 和 ', '').replace(' ', '').replace('，', ',')
+        answers = set(matched.split(',')) if ',' in matched else set(matched)
+        return answers if answers.issubset(allowed_options) else set()
+    else:
+        # Single answer
+        return {matched} if matched in allowed_options else set()
+
 
 def set_choices_based_on_generated_response(state: TaskState, answers: set[str]) -> None:
     true_answers = [answer_index(letter) for letter in answers]

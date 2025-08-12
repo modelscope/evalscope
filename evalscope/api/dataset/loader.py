@@ -8,7 +8,7 @@ from evalscope.api.dataset.utils import record_to_sample_fn
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
 from evalscope.utils import gen_hash, get_logger, safe_filename
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
-from .utils import data_to_samples
+from .utils import data_to_samples, shuffle_choices_if_requested
 
 logger = get_logger()
 
@@ -28,6 +28,7 @@ class DataLoader(ABC):
         limit: Union[int, float] = None,
         data_source: Optional[str] = None,
         shuffle: bool = False,
+        shuffle_choices: Optional[Union[bool, int]] = None,
         seed: Optional[int] = None,
         auto_id: bool = True,
         repeats: int = 1,
@@ -42,6 +43,7 @@ class DataLoader(ABC):
         self.limit = limit
         self.data_source = data_source
         self.shuffle = shuffle
+        self.shuffle_choices = shuffle_choices
         self.seed = seed
         self.auto_id = auto_id
         self.repeats = repeats
@@ -119,5 +121,7 @@ class RemoteDataLoader(DataLoader):
         # assign ids and group_ids if requested
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
+
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
 
         return memory_dataset

@@ -1,7 +1,7 @@
 import json
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
-from .dataset import FieldSpec, Sample
+from .dataset import FieldSpec, Sample, Dataset
 
 
 def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, ) -> Callable:
@@ -120,3 +120,25 @@ def read_files(files: Optional[Any]) -> Optional[Dict[str, str]]:
         raise ValueError(f"Unexpected type for 'files' field: {type(files)}")
     else:
         return None
+
+
+def shuffle_choices_if_requested(
+    dataset: Dataset, shuffle_choices: Optional[Union[bool, int]]
+) -> None:
+    """
+    Shuffle the choices in the dataset if requested.
+
+    The `shuffle_choices` parameter passed to `json_dataset`, `csv_dataset`,
+    and `hf_dataset` can be a boolean, an integer, or `None` (default).
+    If it is a boolean, it will shuffle the choices if the value is `True`,
+    and do nothing if it is `False`.
+    If it is an integer, it will shuffle the choices using the integer as the seed.
+    """
+    # Note that `isinstance(x, int)` returns True if x is True or False,
+    # so we need to check for both explicitly
+    if shuffle_choices is True:
+        dataset.shuffle_choices()
+    elif shuffle_choices is False:
+        pass
+    elif isinstance(shuffle_choices, int):
+        dataset.shuffle_choices(seed=shuffle_choices)

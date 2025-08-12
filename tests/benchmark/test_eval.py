@@ -162,9 +162,46 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('gpqa_diamond', dataset_args=dataset_args, ignore_errors=True)
 
+    def test_iquiz(self):
+        """Test IQuiz dataset."""
+        dataset_args = {
+            'subset_list': ['IQ', 'EQ'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('iquiz', dataset_args=dataset_args)
+
+    def test_maritime_bench(self):
+        """Test MaritimeBench dataset."""
+        dataset_args = {
+            'subset_list': ['default'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('maritime_bench', dataset_args=dataset_args)
+
+    def test_musr(self):
+        """Test MuSR dataset."""
+        dataset_args = {
+            'subset_list': ['murder_mysteries', 'object_placements', 'team_allocation'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('musr', dataset_args=dataset_args)
+
+    def test_hellaswag(self):
+        """Test HellaSwag dataset."""
+        self._run_dataset_test('hellaswag')
+
     def test_truthful_qa(self):
         """Test TruthfulQA dataset."""
-        self._run_dataset_test('truthful_qa')
+        dataset_args = {
+            'extra_params': {
+                'multiple_correct': True
+            }
+        }
+        self._run_dataset_test('truthful_qa', dataset_args=dataset_args)
+
+    def test_trivia_qa(self):
+        """Test TriviaQA dataset."""
+        self._run_dataset_test('trivia_qa')
 
     def test_simple_qa(self):
         """Test SimpleQA dataset."""

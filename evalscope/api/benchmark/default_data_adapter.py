@@ -181,6 +181,7 @@ class DefaultDataAdapter(DataAdapter):
             sample_fields=self.record_to_sample,  # Custom sample conversion function
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self.repeats,  # Number of repetitions for each sample
+            shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self._task_config.dataset_hub,  # Data source configuration
         )
         return loader.load()
@@ -211,6 +212,7 @@ class DefaultDataAdapter(DataAdapter):
             limit=self.few_shot_num
             if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
+            shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self._task_config.dataset_hub,
         )
         return loader.load()

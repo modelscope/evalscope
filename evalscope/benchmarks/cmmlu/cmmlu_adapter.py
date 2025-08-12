@@ -120,24 +120,3 @@ class CMMLUAdapter(MultiChoiceAdapter):
             subset_key=record['category'],
             metadata={'subject': record['category']},
         )
-
-    def extract_answer(self, prediction, task_state) -> str:
-        """
-        Extract the answer from the prediction based on the task state.
-
-        Args:
-            prediction (str): The model's prediction string
-            task_state (dict): The current task state containing metadata
-
-        Returns:
-            str: The extracted answer from the prediction
-        """
-        import re
-
-        # Use regex to find the answer in the format "答案：LETTER"
-        match = re.search(r'答案：([A-D])', prediction)
-        if match:
-            return match.group(1)
-        else:
-            logger.warning(f'No valid answer found in prediction: {prediction}')
-            return ''

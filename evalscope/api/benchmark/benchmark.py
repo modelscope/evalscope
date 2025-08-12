@@ -35,6 +35,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.split_as_subset = False
         """Whether to use the split name as the dataset subsets"""
+        
+        self.shuffle_choices = False
+        """Whether to shuffle the choices in the dataset"""
 
         self.category_map = {}
         """Category map for the benchmark"""
@@ -170,6 +173,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the prompt template of the benchmark.
         """
         return self._benchmark_meta.prompt_template
+    
+    @prompt_template.setter
+    def prompt_template(self, value: str):
+        """
+        Set the prompt template of the benchmark.
+        """
+        self._benchmark_meta.prompt_template = value
 
     @property
     def system_prompt(self) -> Optional[str]:
@@ -243,3 +253,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the extra parameters of the benchmark.
         """
         return self._benchmark_meta.extra_params
+
+    @property
+    def seed(self) -> Optional[int]:
+        """
+        Return the seed for the benchmark.
+        """
+        return self._task_config.seed

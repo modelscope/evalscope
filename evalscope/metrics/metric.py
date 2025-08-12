@@ -64,6 +64,32 @@ class MathAcc(Metric):
         return results
 
 
+@register_metric(name='multi_choice_acc')
+class MultiChoiceAcc(Metric):
+
+    def apply(self, predictions, references):
+        """
+        Calculate accuracy for multiple-choice questions.
+
+        Args:
+            predictions (List[str]): List of predicted answers.
+            references (List[str]): List of correct answers.
+
+        Returns:
+            List[float]: List of accuracy scores (1.0 for correct, 0.0 for incorrect).
+        """
+        res = []
+        for prediction, reference in zip(predictions, references):
+            prediction = set(prediction.strip().upper())
+            reference = set(reference.strip().upper())
+            # if the prediction has answer that not in reference, it is wrong
+            if not prediction.issubset(reference):
+                res.append(0.0)
+                continue
+            common = prediction.intersection(reference)
+            res.append(len(common) / len(reference) if reference else 0.0)
+        return res
+
 @register_aggregation(name='mean')
 class Mean(Aggregator):
 

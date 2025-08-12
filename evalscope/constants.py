@@ -115,3 +115,6 @@ class Tags:
     REASONING = 'Reasoning'
     CODING = 'Coding'
     CHINESE = 'Chinese'
+    COMMONSENSE = 'Commonsense'
+    QA = 'QA'
+    READING_COMPREHENSION = 'ReadingComprehension'

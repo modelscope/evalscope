@@ -1,6 +1,6 @@
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
-from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, format_example, parse_answers, prompt, valid_template
+from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, format_example, parse_answers, prompt, valid_template, parse_answers_zh, MultipleChoiceTemplate
 from .default_data_adapter import DefaultDataAdapter
 
 
@@ -9,6 +9,9 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     Adapter for multi-choice benchmarks.
     This adapter formats the input for multi-choice questions and handles few-shot examples.
     """
+    
+    multiple_correct: bool = False
+    """Whether the benchmark allows multiple correct answers."""
 
     def format_prompt_template(self, sample: Sample) -> str:
         """
@@ -61,5 +64,10 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         return format_example(question=sample.input, choices=Choices(sample.choices), answer=Target(sample.target))
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state, multiple_correct=False)
-        return ''.join(list(answers))
+        if self.prompt_template in [MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
+                                    MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE]:
+            # For Chinese COT template, we use a different extraction method
+            answers = parse_answers_zh(task_state, multiple_correct=self.multiple_correct)
+        else:
+            answers = parse_answers(task_state, multiple_correct=self.multiple_correct)
+        return ''.join(sorted(list(answers)))
