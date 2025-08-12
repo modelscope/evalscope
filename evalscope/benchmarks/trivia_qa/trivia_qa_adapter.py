@@ -21,7 +21,7 @@ Content: {content}
 Question: {question}
 
 Keep your The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-""".lstrip()
+""".lstrip()  # noqa: E501
 
 
 @register_benchmark(
@@ -36,7 +36,11 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
         few_shot_num=0,
         train_split=None,
         eval_split='validation',
-        metric_list=[{'acc': {'allow_inclusion': True}}],
+        metric_list=[{
+            'acc': {
+                'allow_inclusion': True
+            }
+        }],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
@@ -50,28 +54,21 @@ class TriviaQaAdapter(DefaultDataAdapter):
         answers = record['answer']['aliases'] + record['answer']['normalized_aliases']
         content = record['entity_pages']['wiki_context']
         return Sample(
-            input=question, 
-            target=answers,
-            metadata={
+            input=question, target=answers, metadata={
                 'question_id': record['question_id'],
                 'content': content
             }
         )
-    
-    def format_prompt_template(self, sample):
-        return self.prompt_template.format(
-            content=sample.metadata['content'],
-            question=sample.input
-        )
 
+    def format_prompt_template(self, sample):
+        return self.prompt_template.format(content=sample.metadata['content'], question=sample.input)
 
     def extract_answer(self, prediction: str, task_state: TaskState):
         # use regex to extract the answer from the prediction
         import re
-        
+
         pattern = r'ANSWER:\s*(.*)'
         match = re.search(pattern, prediction)
         if match:
             return match.group(1).strip()
         return prediction.strip()
-

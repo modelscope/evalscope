@@ -7,8 +7,8 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 # flake8: noqa
 
@@ -36,18 +36,17 @@ class HellaSwagAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-
     def record_to_sample(self, record) -> Sample:
         # Preprocess endings
         endings = [self._preprocess(ending) for ending in record['endings']]
-        
+
         # Create context
         ctx = record['ctx_a'] + ' ' + record['ctx_b'].capitalize()
         context = self._preprocess(ctx)
-        
+
         # Get target choice letter
         target_letter = ['A', 'B', 'C', 'D'][int(record['label'])]
-        
+
         return Sample(
             input=context,
             choices=endings,

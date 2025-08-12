@@ -1,7 +1,7 @@
 import json
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
-from .dataset import FieldSpec, Sample, Dataset
+from .dataset import Dataset, FieldSpec, Sample
 
 
 def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, ) -> Callable:
@@ -122,9 +122,7 @@ def read_files(files: Optional[Any]) -> Optional[Dict[str, str]]:
         return None
 
 
-def shuffle_choices_if_requested(
-    dataset: Dataset, shuffle_choices: Optional[Union[bool, int]]
-) -> None:
+def shuffle_choices_if_requested(dataset: Dataset, shuffle_choices: Optional[Union[bool, int]]) -> None:
     """
     Shuffle the choices in the dataset if requested.
 

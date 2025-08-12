@@ -187,6 +187,7 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
 
     return set()
 
+
 def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[str]:
     """
     Convenience function for extracting answers from the state output in Chinese format.

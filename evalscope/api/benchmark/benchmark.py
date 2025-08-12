@@ -35,7 +35,7 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.split_as_subset = False
         """Whether to use the split name as the dataset subsets"""
-        
+
         self.shuffle_choices = False
         """Whether to shuffle the choices in the dataset"""
 
@@ -173,7 +173,7 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the prompt template of the benchmark.
         """
         return self._benchmark_meta.prompt_template
-    
+
     @prompt_template.setter
     def prompt_template(self, value: str):
         """

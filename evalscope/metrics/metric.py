@@ -90,6 +90,7 @@ class MultiChoiceAcc(Metric):
             res.append(len(common) / len(reference) if reference else 0.0)
         return res
 
+
 @register_aggregation(name='mean')
 class Mean(Aggregator):
 

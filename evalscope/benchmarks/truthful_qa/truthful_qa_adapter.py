@@ -4,8 +4,8 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate
 from evalscope.utils import get_logger
+from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 # flake8: noqa
 
@@ -54,7 +54,7 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
-        
+
         self.shuffle_choices = self.seed
 
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
@@ -62,7 +62,6 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
             self.prompt_template = MultipleChoiceTemplate.MULTIPLE_ANSWER
         else:
             self.prompt_template = MultipleChoiceTemplate.SINGLE_ANSWER
-
 
     def record_to_sample(self, record) -> Sample:
         if not self.multiple_correct:
@@ -84,7 +83,7 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
             mc2_choices = record['mc2_targets']['choices']
             mc2_labels = record['mc2_targets']['labels']
             mc2_targets = [chr(65 + i) for i, label in enumerate(mc2_labels) if label == 1]
-            
+
             return Sample(
                 input=TRUTHFUL_QA_PROMPT.format(question=record['question']),
                 choices=mc2_choices,

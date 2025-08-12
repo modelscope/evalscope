@@ -7,6 +7,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
+
 @register_benchmark(
     BenchmarkMeta(
         name='musr',
