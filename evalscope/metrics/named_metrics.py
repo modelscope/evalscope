@@ -40,7 +40,7 @@ metric_registry.register(Metric(name='AverageBLEU', object=mean))
 metric_registry.register(Metric(name='AverageRouge', object=mean))
 metric_registry.register(Metric(name='WeightedAverageBLEU', object=weighted_mean))
 metric_registry.register(Metric(name='AveragePass@1', object=mean))
-for k in range(1, 17):
+for k in range(1, 256):
     metric_registry.register(Metric(name=f'Pass@{k}', object=partial(pass_at_k, k=k)))
 
 # t2v_metrics
