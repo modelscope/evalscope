@@ -95,9 +95,8 @@ class LLMJudgeMixin:
             return rule_based_score
 
         # For LLM_RECALL, if rule-based score is already perfect, skip LLM judge
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            if float(rule_based_score.main_value) > 0.99:
-                return rule_based_score
+        if float(rule_based_score.main_value) > 0.99:
+            return rule_based_score
 
         # Compute LLM judge score
         llm_score = self.llm_match_score(
@@ -108,10 +107,7 @@ class LLMJudgeMixin:
         )
 
         # For LLM RECALL, merge the scores
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            return self._merge_scores(rule_based_score, llm_score)
-
-        return llm_score
+        return self._merge_scores(rule_based_score, llm_score)
 
     def llm_match_score(
         self,
@@ -145,7 +141,11 @@ class LLMJudgeMixin:
 
         score.value = {'acc': judge_score}
         score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {'source': 'llm_judge', 'model': self.llm_judge.model_id}
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id
+        }
 
         return score
 
@@ -163,6 +163,6 @@ class LLMJudgeMixin:
         # Update the main value with LLM judge result
         rule_based_score.main_value = llm_score.main_value
         rule_based_score.explanation = llm_score.explanation
-        rule_based_score.metadata.update(llm_score.metadata)
+        rule_based_score.metadata = llm_score.metadata
 
         return rule_based_score

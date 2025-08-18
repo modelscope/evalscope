@@ -41,10 +41,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.category_map = {}
         """Category map for the benchmark"""
-        
-        self.current_subset_name = ""
+
+        self.current_subset_name = ''
         """Subset name when loading datasets"""
-        
 
         # dataset
         self.test_dataset: Optional[DatasetDict] = None
@@ -121,6 +120,20 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the number of repeats for each sample in the benchmark.
         """
         return self._task_config.repeats
+
+    @property
+    def dataset_hub(self) -> str:
+        """
+        Return the dataset hub type for the benchmark.
+        """
+        return self._task_config.dataset_hub
+
+    @dataset_hub.setter
+    def dataset_hub(self, value: str):
+        """
+        Set the dataset hub type for the benchmark.
+        """
+        self._task_config.dataset_hub = value
 
     @property
     def subset_list(self) -> List[str]:

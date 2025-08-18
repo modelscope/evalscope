@@ -213,8 +213,9 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
                 },
                 'score_type': 'pattern',
             },
-            judge_worker_num=5,
-            judge_strategy=JudgeStrategy.LLM,
+            judge_worker_num=1,
+            judge_strategy=JudgeStrategy.LLM_RECALL,
+            use_cache='outputs/20250818_170420'
         )
 
         run_task(task_cfg=task_cfg)

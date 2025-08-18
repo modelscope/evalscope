@@ -118,3 +118,4 @@ class Tags:
     COMMONSENSE = 'Commonsense'
     QA = 'QA'
     READING_COMPREHENSION = 'ReadingComprehension'
+    CUSTOM = 'Custom'

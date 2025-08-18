@@ -191,7 +191,7 @@ def bleu(items):
     return sacrebleu.corpus_bleu(preds, refs).score
 
 
-def bleu_ngram_one_sample(predict, reference):
+def bleu_ngram_one_sample(predict: str, reference: str):
     """
     Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
 

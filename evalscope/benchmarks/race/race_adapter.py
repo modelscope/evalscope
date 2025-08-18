@@ -4,8 +4,8 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 # flake8: noqa
 

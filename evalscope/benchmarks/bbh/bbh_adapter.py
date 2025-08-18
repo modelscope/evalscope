@@ -57,7 +57,7 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 PROMPT_TEMPLATE = """
 Q: {question}
 A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
-""".lstrip()
+""".lstrip()  # noqa: E501
 
 FEWSHOT_TEMPLATE = """
 {fewshot}
@@ -102,7 +102,7 @@ class BBHAdapter(DefaultDataAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         input = record['input']
         target = record['target'].replace('(', '').replace(')', '').strip()  # Clean up the target answer
-        
+
         # Determine task type based on subset name
         task_type = None
         subset_name = getattr(self, 'current_subset_name', '')
@@ -110,12 +110,12 @@ class BBHAdapter(DefaultDataAdapter):
             task_type = MULTIPLE_CHOICE
         elif subset_name in FREE_FORM_LIST:
             task_type = FREE_FORM
-            
+
         metadata = {TASK_TYPE: task_type}
-        
+
         return Sample(input=input, target=target, metadata=metadata, subset_key=subset_name)
 
-    def format_fewshot_template(self, fewshot: str,  sample: Sample) -> str:
+    def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
         # Load CoT prompts from file for BBH
         subset_name = sample.subset_key
         if subset_name:
@@ -130,7 +130,7 @@ class BBHAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState):
         task_type = task_state.metadata.get(TASK_TYPE)
-        
+
         if task_type == MULTIPLE_CHOICE:
             return self._extract_mc_answer(prediction)
         elif task_type == FREE_FORM:

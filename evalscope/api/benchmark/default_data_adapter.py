@@ -1,14 +1,16 @@
 import os
 from collections import defaultdict
+from functools import partial
 from overrides import override
 from typing import Any, Callable, Dict, List
 
-from evalscope.api.dataset import Dataset, DatasetDict, RemoteDataLoader, Sample
+from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
+from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
 from .benchmark import DataAdapter
@@ -55,30 +57,70 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             DatasetDict: A dictionary containing the loaded and processed datasets,
                         organized by subset names.
-
-        Raises:
-            AssertionError: If train_split is None when few_shot_num > 0
         """
         if os.path.exists(self.dataset_id):
             # Load dataset from local file system path
-            # TODO: Implement local dataset loading logic
-            pass
+            self.dataset_hub = HubType.LOCAL
+            self.load_from_disk()
         else:
-            # Load dataset from remote source (e.g., HuggingFace Hub)
-            self.test_dataset = self.load_subsets(self.load_subset)
-
-            # Load few-shot examples if few-shot prompting is enabled
-            if self.few_shot_num > 0 and self.train_split is not None:
-                self.fewshot_dataset = self.load_subsets(self.load_fewshot_subset)
+            # Load dataset from remote source (e.g., ModelScope, Huggingface)
+            self.load_from_remote()
 
         # Process each sample's input by applying prompt templates and few-shot formatting
+        self._process_sample_inputs()
+
+        return self.test_dataset
+
+    def _process_sample_inputs(self):
+        """Process all sample inputs with prompt formatting."""
         for subset in self.test_dataset.keys():
             for sample in self.test_dataset[subset]:
                 if isinstance(sample.input, str):
                     sample.input = self.process_sample_str_input(sample, subset)
-        return self.test_dataset
+
+    def load_from_remote(self):
+        """Load dataset from remote source and prepare few-shot examples if needed."""
+        # Load dataset from remote source
+        test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
+        self.test_dataset = self.load_subsets(test_load_func)
+
+        # Load few-shot examples if few-shot prompting is enabled
+        if self._should_load_fewshot():
+            fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
+            self.fewshot_dataset = self.load_subsets(fewshot_load_func)
+
+    def load_from_disk(self, use_local_loader: bool = False):
+        """
+        Load dataset from local disk path.
+
+        Args:
+            use_local_loader: If True, use local file loading; otherwise use remote loading
+                             for local ModelScope datasets.
+        """
+        if use_local_loader:
+            # Use LocalDataLoader for actual local file loading
+            test_load_func = partial(self.load_subset, data_loader=LocalDataLoader)
+            self.test_dataset = self.load_subsets(test_load_func)
+
+            # Load few-shot examples if few-shot prompting is enabled
+            if self._should_load_fewshot():
+                fewshot_load_func = partial(self.load_fewshot_subset, data_loader=LocalDataLoader)
+                self.fewshot_dataset = self.load_subsets(fewshot_load_func)
+        else:
+            # Fallback to remote loading for local ModelScope datasets
+            self.load_from_remote()
+
+    def _should_load_fewshot(self) -> bool:
+        """Check if few-shot dataset should be loaded."""
+        return self.few_shot_num > 0 and self.train_split is not None
 
     def process_sample_str_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        """
+        Convert a sample's input string to a list of ChatMessage objects.
+
+        This method formats the sample input into a structured message format
+        suitable for model inference, including system prompts if configured.
+        """
         input_text = self.process_sample_input(sample, subset=subset)
         input_messages = [ChatMessageUser(content=input_text)]
         if self.system_prompt:
@@ -158,12 +200,9 @@ class DefaultDataAdapter(DataAdapter):
             dataset_dict = DatasetDict(subset_dict)
         return dataset_dict
 
-    def load_subset(self, subset: str) -> Dataset:
+    def load_subset(self, subset: str, data_loader: DataLoader) -> Dataset:
         """
         Load a specific subset of the dataset for evaluation.
-
-        This method configures and executes the data loading for a single subset,
-        handling both split-as-subset and traditional subset configurations.
 
         Args:
             subset (str): The subset identifier to load
@@ -176,7 +215,7 @@ class DefaultDataAdapter(DataAdapter):
         subset_name = self.default_subset if self.split_as_subset else subset
 
         # Create and configure the remote data loader
-        loader = RemoteDataLoader(
+        loader = data_loader(
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
@@ -184,16 +223,13 @@ class DefaultDataAdapter(DataAdapter):
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self.repeats,  # Number of repetitions for each sample
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
-            data_source=self._task_config.dataset_hub,  # Data source configuration
+            data_source=self.dataset_hub,  # Data source configuration
         )
         return loader.load()
 
-    def load_fewshot_subset(self, subset: str) -> Dataset:
+    def load_fewshot_subset(self, subset: str, data_loader: DataLoader) -> Dataset:
         """
         Load a subset specifically for few-shot examples.
-
-        This method loads training data to be used as demonstrations in few-shot prompting.
-        It typically loads from the training split with limited samples and optional shuffling.
 
         Args:
             subset (str): The subset identifier to load few-shot examples from
@@ -206,7 +242,7 @@ class DefaultDataAdapter(DataAdapter):
         subset_name = self.default_subset if self.split_as_subset else subset
 
         # Create loader specifically configured for few-shot sampling
-        loader = RemoteDataLoader(
+        loader = data_loader(
             data_id_or_path=self.dataset_id,
             split=split,
             subset=subset_name,
@@ -215,7 +251,7 @@ class DefaultDataAdapter(DataAdapter):
             if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
-            data_source=self._task_config.dataset_hub,
+            data_source=self.dataset_hub,
         )
         return loader.load()
 
@@ -231,9 +267,6 @@ class DefaultDataAdapter(DataAdapter):
 
         Returns:
             Sample: Processed sample object ready for evaluation
-
-        Raises:
-            NotImplementedError: This method must be implemented in subclasses
         """
         raise NotImplementedError('This method should be implemented in subclasses')
 
@@ -249,9 +282,6 @@ class DefaultDataAdapter(DataAdapter):
 
         Returns:
             str: Formatted few-shot demonstration string
-
-        Raises:
-            NotImplementedError: This method must be implemented in subclasses
         """
         raise NotImplementedError('This method should be implemented in subclasses')
 
@@ -488,22 +518,40 @@ class DefaultDataAdapter(DataAdapter):
         # Apply filtering and answer extraction
         filtered_prediction = self.filter_prediction(prediction, task_state)
 
-        # Step 1: Calculate standard metric scores (rule-based)
-        rule_based_score = self.match_score(
-            original_prediction=prediction,
-            filtered_prediction=filtered_prediction,
-            reference=task_state.target,
-            task_state=task_state
-        )
+        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
+            # Step 1: Calculate standard metric scores (rule-based)
+            rule_based_score = self.match_score(
+                original_prediction=prediction,
+                filtered_prediction=filtered_prediction,
+                reference=task_state.target,
+                task_state=task_state
+            )
 
-        # Step 2: Apply LLM judge if enabled and get final score
-        final_score = self.maybe_llm_match_score(
-            original_prediction=prediction,
-            filtered_prediction=filtered_prediction,
-            reference=task_state.target,
-            task_state=task_state,
-            rule_based_score=rule_based_score
-        )
+            # Step 2: Apply LLM judge if enabled and get final score
+            final_score = self.maybe_llm_match_score(
+                original_prediction=prediction,
+                filtered_prediction=filtered_prediction,
+                reference=task_state.target,
+                task_state=task_state,
+                rule_based_score=rule_based_score
+            )
+        else:
+            if self.use_llm_judge:
+                # Use LLM judge to compute the match score directly
+                final_score = self.llm_match_score(
+                    original_prediction=prediction,
+                    filtered_prediction=filtered_prediction,
+                    reference=task_state.target,
+                    task_state=task_state
+                )
+            else:
+                # Use standard match score calculation without LLM judge
+                final_score = self.match_score(
+                    original_prediction=prediction,
+                    filtered_prediction=filtered_prediction,
+                    reference=task_state.target,
+                    task_state=task_state
+                )
 
         # Package the results into a sample score object
         sample_score = SampleScore(

@@ -72,6 +72,13 @@ class TestBenchmark(TestCase):
         """Test GSM8K math reasoning dataset."""
         self._run_dataset_test('gsm8k')
 
+    def test_gsm8k_local(self):
+        """Test GSM8K math reasoning dataset with local path."""
+        dataset_args = {
+            'local_path': 'data/gsm8k',
+        }
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, use_mock=True)
+
     def test_mmlu(self):
         """Test MMLU reasoning dataset."""
         dataset_args = {
@@ -252,6 +259,14 @@ class TestBenchmark(TestCase):
             'subset_list': ['example']
         }
         self._run_dataset_test('general_qa', dataset_args)
+
+    def test_general_mcq(self):
+        """Test custom general MCQ dataset."""
+        dataset_args = {
+            'local_path': 'custom_eval/text/mcq',
+            'subset_list': ['example']
+        }
+        self._run_dataset_test('general_mcq', dataset_args)
 
     def test_alpaca_eval(self):
         """Test AlpacaEval dataset."""
