@@ -106,32 +106,10 @@ class CEVALAdapter(MultiChoiceAdapter):
 
         self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
 
-    def load_subset(self, subset: str) -> Dataset:
-        """
-        Custom method to load a specific subset of the C-Eval dataset.
-
-        Args:
-            subset (str): The subset identifier to load
-
-        Returns:
-            Dataset: The loaded dataset subset with processed samples
-        """
-        # Create and configure the remote data loader
-        loader = RemoteDataLoader(
-            data_id_or_path=self.dataset_id,
-            split=self.eval_split,
-            subset=subset,
-            sample_fields=partial(self.record_to_sample, subset=subset),  # Custom sample conversion function
-            limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
-            repeats=self.repeats,  # Number of repetitions for each sample
-            data_source=self._task_config.dataset_hub,  # Data source configuration
-        )
-        return loader.load()
-
-    def record_to_sample(self, record: Dict[str, Any], **kwargs) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         # Build choices list from A, B, C, D fields
         choices = [record['A'], record['B'], record['C'], record['D']]
-        subset = kwargs.get('subset', '')
+        subset = self.current_subset_name
 
         return Sample(
             input=record['question'],

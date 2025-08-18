@@ -203,6 +203,20 @@ class TestBenchmark(TestCase):
         """Test TriviaQA dataset."""
         self._run_dataset_test('trivia_qa')
 
+    def test_race(self):
+        """Test RACE dataset."""
+        self._run_dataset_test('race')
+
+    def test_winogrande(self):
+        """Test winogrande"""
+        self._run_dataset_test('winogrande')
+
+    def test_bbh(self):
+        dataset_args = {
+            'subset_list': ['temporal_sequences', 'navigate'],
+        }
+        self._run_dataset_test('bbh', dataset_args=dataset_args)
+
     def test_simple_qa(self):
         """Test SimpleQA dataset."""
         self._run_dataset_test('simple_qa')

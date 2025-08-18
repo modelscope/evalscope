@@ -41,6 +41,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.category_map = {}
         """Category map for the benchmark"""
+        
+        self.current_subset_name = ""
+        """Subset name when loading datasets"""
+        
 
         # dataset
         self.test_dataset: Optional[DatasetDict] = None

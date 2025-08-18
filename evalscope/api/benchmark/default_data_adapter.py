@@ -151,6 +151,8 @@ class DefaultDataAdapter(DataAdapter):
             # Load all specified subsets into separate entries
             subset_dict = defaultdict()
             for subset in self.subset_list:
+                # Set current subset, since same benchmark need to differentiate
+                self.current_subset_name = subset
                 subset_data = load_func(subset)
                 subset_dict[subset] = subset_data
             dataset_dict = DatasetDict(subset_dict)
