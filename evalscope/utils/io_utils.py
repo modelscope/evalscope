@@ -76,10 +76,20 @@ def jsonl_to_list(jsonl_file):
     Returns:
         list: list of lines. Each line is a dict.
     """
-    res_list = []
-    with jsonl.open(jsonl_file, mode='r') as reader:
-        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
-            res_list.append(line)
+    try:
+        res_list = []
+        with jsonl.open(jsonl_file, mode='r') as reader:
+            for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
+                res_list.append(line)
+    except Exception:
+        # Fallback to reading line by line
+        res_list = []
+        with open(jsonl_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():  # Skip empty lines
+                    res_list.append(json.loads(line.strip()))
+    if not res_list:
+        logger.warning(f'No data found in {jsonl_file}.')
     return res_list
 
 

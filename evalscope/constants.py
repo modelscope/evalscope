@@ -121,3 +121,4 @@ class Tags:
     CUSTOM = 'Custom'
     INSTRUCTION_FOLLOWING = 'InstructionFollowing'
     ARENA = 'Arena'
+    LONG_CONTEXT = 'LongContext'

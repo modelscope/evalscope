@@ -1,6 +1,15 @@
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import LLMJudge, exact_match
+import os
+from typing import Any, Dict
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 TEMPLATE_0SHOT = """Please read the following text and answer the question below.
 
@@ -13,52 +22,84 @@ TEMPLATE_0SHOT = """Please read the following text and answer the question below
 Format your response as follows: "Therefore, the answer is (insert answer here)"."""
 
 
-@Benchmark.register(
-    name='frames',
-    pretty_name='FRAMES',
-    tags=['Reasoning', 'Long Context'],
-    description=
-    'FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.',  # noqa: E501
-    dataset_id='iic/frames',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.GENERATION],
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    prompt_template=TEMPLATE_0SHOT,
+@register_benchmark(
+    BenchmarkMeta(
+        name='frames',
+        pretty_name='FRAMES',
+        tags=[Tags.REASONING, Tags.LONG_CONTEXT],
+        description=
+        'FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.',  # noqa: E501
+        dataset_id='iic/frames',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template=TEMPLATE_0SHOT,
+    )
 )
-class FramesAdapter(DataAdapter):
+class FramesAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._use_llm_judge = True  # Enable LLM judge for FRAMES
 
-    def load(self, **kwargs):
-        # default load with snapshot
-        kwargs['file_structure'] = {'default': ['test.jsonl']}
-        data_dict = super().load_with_snapshot(**kwargs)
-        return data_dict
+    def load_dataset(self):
+        # Try to load dataset from local disk
+        dataset_name_or_path = self.dataset_id
+        if os.path.exists(dataset_name_or_path):
+            logger.info(f'Loading dataset from {dataset_name_or_path}')
+            dataset_path = dataset_name_or_path
+        else:
+            from modelscope import dataset_snapshot_download
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate model prompt from input data.
-        """
-        context = '\n'.join([f"{i['title']}\n{i['text']}" for i in input_d['wiki_items']])
-        question = input_d['Prompt']
-        prompt = self.prompt_template.format(context=context, question=question)
-        return self.gen_prompt_data(prompt)
+            # Load dataset from remote
+            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
+            # download dataset snapshot
+            dataset_path = dataset_snapshot_download(dataset_name_or_path, allow_file_pattern='test.jsonl')
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-        """
-        return input_d['Answer']
+        dataset = LocalDataLoader(
+            data_id_or_path=dataset_path,
+            split=self.eval_split,
+            sample_fields=self.record_to_sample,
+            subset='test',
+            limit=self.limit,
+            repeats=self.repeats
+        ).load()
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
+        self.test_dataset = DatasetDict({'test': dataset})
+        # Process each sample's input by applying prompt templates and few-shot formatting
+        self._process_sample_inputs()
+
+        return self.test_dataset
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
-        Parse the predicted result and extract proper answer.
+        Convert a data record to a Sample object.
+
+        Args:
+            record (Dict[str, Any]): Input data record.
+
+        Returns:
+            Sample: Sample object with input, target, and metadata.
         """
-        response = result.replace('*', '')
+        context = '\n'.join([f"{i['title']}\n{i['text']}" for i in record['wiki_items']])
+        question = record['Prompt']
+
+        return Sample(
+            input=question, target=record['Answer'], metadata={
+                'context': context,
+                'wiki_items': record['wiki_items']
+            }
+        )
+
+    def format_prompt_template(self, sample):
+        context = sample.metadata['context']
+        question = sample.input
+        return self.prompt_template.format(context=context, question=question)
+
+    def extract_answer(self, prediction: str, task_state: TaskState):
+        """
+        Extract the answer from the model prediction.
+        """
+        response = prediction.replace('*', '')
 
         if 'the answer is' in response:
             ans = response.rsplit('the answer is', 1)[-1].strip().strip('.').strip()
@@ -67,25 +108,69 @@ class FramesAdapter(DataAdapter):
 
         return ans
 
-    def match(self, gold: str, pred: str) -> float:
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
         """
-        Match the gold answer and the predicted answer.
+        Calculate accuracy score by matching prediction with reference.
         """
+        from evalscope.metrics import exact_match
         from .utils import normalize_answer
-        gold = normalize_answer(gold)
-        pred = normalize_answer(pred)
-        return exact_match(gold=gold, pred=pred)
 
-    def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> float:
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        gold = normalize_answer(reference)
+        pred = normalize_answer(filtered_prediction)
+        accuracy = exact_match(gold=gold, pred=pred)
+
+        score.value = {'acc': accuracy}
+        score.main_score_name = 'acc'
+
+        return score
+
+    def llm_match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        """
+        Use LLM judge to evaluate the prediction against the reference.
+        """
         from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
 
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input['Prompt']
-        # get grading response
-        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=gold, answer_2=pred)
-        orm_response = judge(prompt=prompt, system_prompt=GENERAL_ORM_PROMPT)
-        # parse grading response
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        question = task_state.input_text
+
+        # Get grading response
+        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=reference, answer_2=filtered_prediction)
+        orm_response = self.llm_judge.judge(prompt, system_prompt=GENERAL_ORM_PROMPT)
+
+        # Parse grading response
         if 'YES' in orm_response:
-            return 1.0
+            accuracy = 1.0
         else:
-            return 0.0
+            accuracy = 0.0
+
+        score.value = {'acc': accuracy}
+        score.explanation = f'LLM judge: {orm_response}'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id
+        }
+        score.main_score_name = 'acc'
+
+        return score

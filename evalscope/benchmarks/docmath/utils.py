@@ -193,23 +193,22 @@ def compare_two_numbers(p, gt):
     return within_eps(pred=p, gt=gt)
 
 
-def get_acc(prediction, gt, cot=True):
+def get_acc(prediction, gt, answer_type, cot=True):
     try:
         if cot:
             prediction = normalize(prediction)
         else:
             prediction = float(prediction)
 
-        answer_type = type(gt).__name__
         assert answer_type in ['int', 'float', 'float64', 'bool'], answer_type
         if isinstance(prediction, (str, int, float, bool)) or isinstance(prediction, list):
             # Comparing prediction against the reference
             if answer_type in ['bool']:
-                acc = int(prediction == gt)
+                acc = int(prediction == bool(gt))
             elif answer_type == 'int':
-                acc = int(compare_two_numbers(prediction, gt))
+                acc = int(compare_two_numbers(prediction, int(gt)))
             elif answer_type == 'float' or answer_type == 'float64':
-                acc = int(compare_two_numbers(prediction, gt))
+                acc = int(compare_two_numbers(prediction, float(gt)))
             else:
                 acc = 0
         else:

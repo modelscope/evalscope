@@ -107,14 +107,13 @@ SUBSET_MAPPING = {
 class SuperGPQAAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
-        few_shot_num = kwargs.get('few_shot_num', 0)
-        if few_shot_num > 0 and few_shot_num != 5:
-            logger.warning(
-                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.'
-            )
-            kwargs['few_shot_num'] = 5
 
         super().__init__(**kwargs)
+        if self.few_shot_num > 0 and self.few_shot_num != 5:
+            logger.warning(
+                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {self.few_shot_num}. Use 5-shot by default.'
+            )
+            self.few_shot_num = 5
 
         self.reformat_subset = True
         self.category_map = SUBSET_MAPPING

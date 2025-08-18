@@ -279,13 +279,20 @@ class TestBenchmark(TestCase):
     def test_frames(self):
         """Test Frames dataset."""
         dataset_args = {
-            'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
+            # 'local_path': '/root/.cache/modelscope/hub/datasets/iic/frames'
         }
         self._run_dataset_test('frames', dataset_args)
 
     def test_docmath(self):
         """Test DocMath dataset."""
         self._run_dataset_test('docmath')
+
+    def test_drop(self):
+        """Test DROP dataset."""
+        dataset_args = {
+            'few_shot_num': 3,
+        }
+        self._run_dataset_test('drop', dataset_args=dataset_args)
 
     def test_needle_haystack(self):
         """Test Needle in Haystack dataset."""

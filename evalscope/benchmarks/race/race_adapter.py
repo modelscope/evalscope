@@ -31,12 +31,11 @@ logger = get_logger()
 class RACEAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
-        few_shot_num = kwargs.get('few_shot_num', 3)
-        if few_shot_num > 3:
-            logger.warning(f'few_shot_num <= 3 for RACE, but got {few_shot_num}. Use 3-shot by default.')
-            kwargs['few_shot_num'] = 3
-
         super().__init__(**kwargs)
+
+        if self.few_shot_num > 3:
+            logger.warning(f'few_shot_num <= 3 for RACE, but got {self.few_shot_num}. Use 3-shot by default.')
+            self.few_shot_num = 3
 
     def record_to_sample(self, record) -> Sample:
         # Format the article and question as context

@@ -1,8 +1,13 @@
+import ast
 import re
-from typing import List
+from typing import Any, Dict, List
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -28,54 +33,82 @@ Answer:  43
 '''  # noqa: E501
 
 
-@Benchmark.register(
-    name='drop',
-    pretty_name='DROP',
-    tags=['Reasoning'],
-    description=
-    'The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.',  # noqa: E501
-    dataset_id='AI-ModelScope/DROP',
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='validation',
-    prompt_template=
-    'You will be asked to read a passage and answer a question.{drop_examples}# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.',  # noqa: E501
+@register_benchmark(
+    BenchmarkMeta(
+        name='drop',
+        pretty_name='DROP',
+        tags=[Tags.REASONING],
+        description=
+        'The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.',  # noqa: E501
+        dataset_id='AI-ModelScope/DROP',
+        metric_list=['acc'],
+        few_shot_num=3,
+        train_split=None,
+        eval_split='validation',
+        prompt_template=
+        'You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.',  # noqa: E501
+    )
 )
-class DROPAdapter(DataAdapter):
+class DROPAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        few_shot_num = kwargs.get('few_shot_num', 0)
-        if few_shot_num != 0:
+        if self.few_shot_num != 0:
             self.few_shot_num = 3
             logger.info(f'Few shot num is set to {self.few_shot_num} for DROP dataset by system.')
         else:
             self.few_shot_num = 0
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
-        Generate model prompt from input data.
+        Convert a data record to a Sample object.
+
+        Args:
+            record (Dict[str, Any]): Input data record.
+
+        Returns:
+            Sample: Sample object with input, target, and metadata.
         """
-        drop_examples = '' if self.few_shot_num == 0 else DROP_EXAMPLES
-        query = f"Passage: {input_d['passage']}\nQuestion: {input_d['question']}"
-        prompt = self.prompt_template.format(
+
+        # Parse gold answers
+        gold_answers = self._get_gold_answers(record)
+
+        return Sample(
+            input=record['question'],
+            target=str(gold_answers),
+            metadata={
+                'passage': record['passage'],
+                'answer': record['answer'],
+                'validated_answers': record['validated_answers']
+            }
+        )
+
+    def format_prompt_template(self, sample: Sample) -> str:
+        drop_examples = ''
+        query = f"Passage: {sample.metadata['passage']}\nQuestion: {sample.input}"
+
+        return self.prompt_template.format(
             drop_examples=drop_examples,
             query=query,
         )
-        return self.gen_prompt_data(prompt)
 
-    def get_gold_answer(self, input_d: dict) -> List[str]:
+    def format_fewshot_template(self, fewshot, sample):
+        drop_examples = DROP_EXAMPLES
+        query = f"Passage: {sample.metadata['passage']}\nQuestion: {sample.input}"
+
+        return self.prompt_template.format(
+            drop_examples=drop_examples,
+            query=query,
+        )
+
+    def _get_gold_answers(self, input_d: dict) -> List[str]:
         """
         Parse the raw input labels (gold).
         """
 
         def _flatten_validated_answers(validated_answers):
-            """Flattens a dict of lists of validated answers.
-            {"number": ['1', '8'], ...}
-            -> [{"number": ['1'], ...}, {"number": ['8'], ...}]
-            """
+            """Flattens a dict of lists of validated answers."""
             valid_answers = []
             for i in range(len(validated_answers['number'])):
                 valid_answers.append({
@@ -96,24 +129,36 @@ class DROPAdapter(DataAdapter):
             answers.append(answer)
         return answers
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
+    def extract_answer(self, prediction: str, task_state: TaskState):
         """
-        Parse the predicted result and extract proper answer.
+        Extract the answer from the model prediction.
         """
-        match = re.search(r'(?i)Answer\s*:\s*([^\n]+)', result)
-        extracted_answer = match.group(1) if match else result
+        match = re.search(r'(?i)Answer\s*:\s*([^\n]+)', prediction)
+        extracted_answer = match.group(1) if match else prediction
         return extracted_answer
 
-    def match(self, gold: List[str], pred: str) -> float:
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
         """
-        Match the gold answer and the predicted answer.
+        Calculate accuracy score by matching prediction with reference answers.
         """
         from .utils import _answer_to_bags
 
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
         max_em = 0
-        for gold_answer in gold:
+        reference = ast.literal_eval(reference) if isinstance(reference, str) else reference
+        for gold_answer in reference:
             # Convert the answers to bags of answers
-            predicted_bags = _answer_to_bags(pred)
+            predicted_bags = _answer_to_bags(filtered_prediction)
             gold_bags = _answer_to_bags(gold_answer)
 
             if set(predicted_bags[0]) == set(gold_bags[0]) and len(predicted_bags[0]) == len(gold_bags[0]):
@@ -124,7 +169,10 @@ class DROPAdapter(DataAdapter):
             if gold_answer[0].strip():
                 max_em = max(max_em, exact_match)
 
-        return max_em
+        score.value = {'acc': max_em}
+        score.main_score_name = 'acc'
+
+        return score
 
     @staticmethod
     def parse_answer(answer):

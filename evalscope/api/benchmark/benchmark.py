@@ -164,6 +164,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         return self._benchmark_meta.few_shot_num
 
+    @few_shot_num.setter
+    def few_shot_num(self, value: int):
+        """
+        Set the few shot number of the benchmark.
+        """
+        self._benchmark_meta.few_shot_num = value
+
     @property
     def few_shot_random(self) -> bool:
         """
