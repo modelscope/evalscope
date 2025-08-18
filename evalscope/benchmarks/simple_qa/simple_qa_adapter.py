@@ -1,13 +1,14 @@
+import ast
 import re
-from collections import defaultdict
-from typing import Any, List
+from typing import Any, Dict
 
-from evalscope.api.metric import Metric
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, mean, metric_registry
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
-# flake8: noqa
 
 logger = get_logger()
 
@@ -77,7 +78,7 @@ Also note the following things:
     - For example, if the gold target is "Hyung Won Chung", you can consider the following predicted answers as correct: "Hyoong Won Choong", "Hyungwon Chung", or "Hyun Won Chung".
 
 
-Here is a new example. Simply reply with either CORRECT, INCORRECT, NOT ATTEMPTED. Don't apologize or correct yourself if there was a mistake; we are just trying to grade the answer.
+Here is a new example. Simply reply with either CORRECT, INCORRECT, NOT_ATTEMPTED. Don't apologize or correct yourself if there was a mistake; we are just trying to grade the answer.
 ```
 Question: {question}
 Gold target: {target}
@@ -93,77 +94,76 @@ Just return the letters "A", "B", or "C", with no text around it.
 """.strip()  # noqa: E501
 
 
-@Benchmark.register(
-    name='simple_qa',
-    pretty_name='SimpleQA',
-    tags=['Knowledge', 'QA'],
-    description=
-    'SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.',  # noqa: E501
-    dataset_id='AI-ModelScope/SimpleQA',
-    metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test'
+@register_benchmark(
+    BenchmarkMeta(
+        name='simple_qa',
+        pretty_name='SimpleQA',
+        tags=[Tags.KNOWLEDGE, Tags.QA],
+        description=
+        'SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.',  # noqa: E501
+        dataset_id='AI-ModelScope/SimpleQA',
+        metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template='Answer the question:\n\n{question}'
+    )
 )
-class SimpleQAAdapter(DataAdapter):
+class SimpleQAAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # register metrics
-        metric_registry.register(Metric(name='is_correct', object=mean))
-        metric_registry.register(Metric(name='is_incorrect', object=mean))
-        metric_registry.register(Metric(name='is_not_attempted', object=mean))
+        self._use_llm_judge = True  # Use LLM as a judge by default
 
-        # whether to use LLM as a judge
-        self.llm_as_a_judge = True
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a data record to a Sample object.
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        question = input_d['problem']
-        return self.gen_prompt_data(question)
+        Args:
+            record (Dict[str, Any]): Input data record.
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        return input_d['answer']
+        Returns:
+            Sample: Sample object with input, target, and metadata.
+        """
+        question = record['problem']
+        answer = record['answer']
+        metadata = record.get('metadata')
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, **kwargs) -> str:
-        return result.strip()
+        return Sample(input=question, target=answer, metadata=ast.literal_eval(metadata))
 
-    def match(self, gold: str, pred: str) -> float:
-        # simple match
-        logger.warning(f'Please use LLMJudge to match the result for {self.name}')
-        is_correct = 1 if gold.lower().strip() == pred.lower().strip() else 0
-        is_incorrect = not is_correct
-        is_not_attempted = 0
-        return {
-            'is_correct': is_correct,
-            'is_incorrect': is_incorrect,
-            'is_not_attempted': is_not_attempted,
-        }
+    def llm_match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-    def llm_match(self, gold: Any, pred: Any, judge: LLMJudge, **kwargs) -> dict:
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input['problem']
-        # get grading response
-        prompt = GRADER_TEMPLATE.format(question=question, target=gold, predicted_answer=pred)
-        grading_response = judge(prompt)
+        question = task_state.input_text
+
+        # Request judge and obtain score
+        prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
+        judge_response = self.llm_judge.judge(prompt)
         # parse grading response
-        match = re.search(r'(A|B|C)', grading_response)
+        match = re.search(r'(A|B|C)', judge_response)
         res = match.group(0) if match else 'C'
-        return {
+
+        # Set score based on the match result
+        score.value = {
             'is_correct': 1 if res == 'A' else 0,
             'is_incorrect': 1 if res == 'B' else 0,
             'is_not_attempted': 1 if res == 'C' else 0,
-            'judge_response': grading_response,
         }
-
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
-        """
-        compute weighted mean of the bleu score of all samples
-
-        Args:
-            review_res_list: [{'is_correct': 1, 'is_incorrect': 0, 'is_not_attempted': 0}, ...]
-        """
-        # zip dict answers
-        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
-
-        return super().compute_metric(res_dict, **kwargs)
+        score.explanation = f'LLM judge: {judge_response}'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id
+        }
+        score.main_score_name = 'is_correct'
+        return score

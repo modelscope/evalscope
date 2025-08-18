@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import contextlib
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -277,3 +278,24 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the seed for the benchmark.
         """
         return self._task_config.seed
+
+    @contextlib.contextmanager
+    def _temporary_attribute(self, attr_name: str, new_value):
+        """
+        Set a temporary value for an attribute and restore the original value after the context block.
+
+        Args:
+            attr_name: The name of the attribute to temporarily set.
+            new_value: The new value to set for the attribute.
+        """
+        had_attr = hasattr(self, attr_name)
+        original_value = getattr(self, attr_name, None) if had_attr else None
+
+        setattr(self, attr_name, new_value)
+        try:
+            yield
+        finally:
+            if had_attr:
+                setattr(self, attr_name, original_value)
+            else:
+                delattr(self, attr_name)

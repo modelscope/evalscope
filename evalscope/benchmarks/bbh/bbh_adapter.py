@@ -105,7 +105,7 @@ class BBHAdapter(DefaultDataAdapter):
 
         # Determine task type based on subset name
         task_type = None
-        subset_name = getattr(self, 'current_subset_name', '')
+        subset_name = self.current_subset_name
         if subset_name in MULTIPLE_CHOICE_LIST:
             task_type = MULTIPLE_CHOICE
         elif subset_name in FREE_FORM_LIST:

@@ -60,8 +60,8 @@ class DefaultDataAdapter(DataAdapter):
         """
         if os.path.exists(self.dataset_id):
             # Load dataset from local file system path
-            self.dataset_hub = HubType.LOCAL
-            self.load_from_disk()
+            with self._temporary_attribute('dataset_hub', HubType.LOCAL):
+                self.load_from_disk()
         else:
             # Load dataset from remote source (e.g., ModelScope, Huggingface)
             self.load_from_remote()
@@ -194,9 +194,9 @@ class DefaultDataAdapter(DataAdapter):
             subset_dict = defaultdict()
             for subset in self.subset_list:
                 # Set current subset, since same benchmark need to differentiate
-                self.current_subset_name = subset
-                subset_data = load_func(subset)
-                subset_dict[subset] = subset_data
+                with self._temporary_attribute('current_subset_name', subset):
+                    subset_data = load_func(subset)
+                    subset_dict[subset] = subset_data
             dataset_dict = DatasetDict(subset_dict)
         return dataset_dict
 

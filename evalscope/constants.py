@@ -119,3 +119,5 @@ class Tags:
     QA = 'QA'
     READING_COMPREHENSION = 'ReadingComprehension'
     CUSTOM = 'Custom'
+    INSTRUCTION_FOLLOWING = 'InstructionFollowing'
+    ARENA = 'Arena'
