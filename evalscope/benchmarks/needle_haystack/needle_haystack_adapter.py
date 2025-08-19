@@ -1,12 +1,15 @@
+import os
 from itertools import product
 from tqdm import tqdm
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys, EvalType
-from evalscope.metrics import LLMJudge, exact_match
-from evalscope.metrics.metrics import mean
-from evalscope.utils import get_logger
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.report import Report
@@ -26,58 +29,66 @@ PROMPT_TEMPLATE = """Please read the following text and answer the question belo
 Don't give information outside the document or repeat your findings."""
 
 
-@Benchmark.register(
-    name='needle_haystack',
-    pretty_name='Needle-in-a-Haystack',
-    tags=['Retrieval', 'Long Context'],
-    description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
-    'It requires the model to find specific information within a large corpus of text. '
-    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)',  # noqa: E501
-    dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
-    metric_list=['AverageAccuracy'],
-    subset_list=['english', 'chinese'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
-    prompt_template=PROMPT_TEMPLATE,
-    extra_params={
-        'retrieval_question': 'What is the best thing to do in San Francisco?',
-        'needles':
-        ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
-        'context_lengths_min': 1000,
-        'context_lengths_max': 32000,
-        'context_lengths_num_intervals': 10,
-        'document_depth_percent_min': 0,
-        'document_depth_percent_max': 100,
-        'document_depth_percent_intervals': 10,
-        'tokenizer_path': 'Qwen/Qwen3-0.6B',
-        'show_score': False,
-    }
+@register_benchmark(
+    BenchmarkMeta(
+        name='needle_haystack',
+        pretty_name='Needle-in-a-Haystack',
+        tags=[Tags.RETRIEVAL, Tags.LONG_CONTEXT],
+        description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
+        'It requires the model to find specific information within a large corpus of text. '
+        '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)',  # noqa: E501
+        dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
+        metric_list=['acc'],
+        subset_list=['english', 'chinese'],
+        eval_split='test',
+        system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
+        prompt_template=PROMPT_TEMPLATE,
+        extra_params={
+            'retrieval_question':
+            'What is the best thing to do in San Francisco?',
+            'needles':
+            ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
+            'context_lengths_min':
+            1000,
+            'context_lengths_max':
+            32000,
+            'context_lengths_num_intervals':
+            10,
+            'document_depth_percent_min':
+            0,
+            'document_depth_percent_max':
+            100,
+            'document_depth_percent_intervals':
+            10,
+            'tokenizer_path':
+            'Qwen/Qwen3-0.6B',
+            'show_score':
+            False,
+        }
+    )
 )
-class NeedleHaystackAdapter(DataAdapter):
+class NeedleHaystackAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.llm_as_a_judge = True
+        self._use_llm_judge = True
         # set extra params
-        extra_params = kwargs.get('extra_params', {})
-        self.retrieval_question = extra_params.get(
+        self.retrieval_question = self.extra_params.get(
             'retrieval_question', 'What is the best thing to do in San Francisco?'
         )
-        self.needles = extra_params.get(
+        self.needles = self.extra_params.get(
             'needles',
             ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n']
         )
-        self.context_lengths_min = extra_params.get('context_lengths_min', 1000)
-        self.context_lengths_max = extra_params.get('context_lengths_max', 32000)
-        self.context_lengths_num_intervals = extra_params.get('context_lengths_num_intervals', 10)
-        self.document_depth_percent_min = extra_params.get('document_depth_percent_min', 0)
-        self.document_depth_percent_max = extra_params.get('document_depth_percent_max', 100)
-        self.document_depth_percent_intervals = extra_params.get('document_depth_percent_intervals', 10)
-        self.tokenizer_path = extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
-        self.show_score = extra_params.get('show_score', False)
+        self.context_lengths_min = self.extra_params.get('context_lengths_min', 1000)
+        self.context_lengths_max = self.extra_params.get('context_lengths_max', 32000)
+        self.context_lengths_num_intervals = self.extra_params.get('context_lengths_num_intervals', 10)
+        self.document_depth_percent_min = self.extra_params.get('document_depth_percent_min', 0)
+        self.document_depth_percent_max = self.extra_params.get('document_depth_percent_max', 100)
+        self.document_depth_percent_intervals = self.extra_params.get('document_depth_percent_intervals', 10)
+        self.tokenizer_path = self.extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
+        self.show_score = self.extra_params.get('show_score', False)
 
         self._init_tokenizer()
         self._init_length()
@@ -109,51 +120,73 @@ class NeedleHaystackAdapter(DataAdapter):
         from modelscope import AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path)
 
-    def load(self, **kwargs):
-        # default load with snapshot
-        kwargs['file_structure'] = {'english': ['PaulGraham_Essays.txt'], 'chinese': ['Journey_to_the_West.txt']}
-        data_dict = super().load_with_snapshot(**kwargs)
-        return data_dict
+    def load(self):
+        """Load dataset from local disk or remote."""
+        dataset_name_or_path = self.dataset_id
+        if os.path.exists(dataset_name_or_path):
+            logger.info(f'Loading dataset from {dataset_name_or_path}')
+            dataset_path = dataset_name_or_path
+        else:
+            from modelscope import dataset_snapshot_download
+            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
+            dataset_path = dataset_snapshot_download(
+                dataset_name_or_path, allow_file_pattern=['PaulGraham_Essays.txt', 'Journey_to_the_West.txt']
+            )
 
-    def gen_prompts(self, data_dict: dict) -> dict:
-        """
-        Generate dataset prompts from raw input, unify the prompt format for different datasets.
+        # Load datasets for both subsets
+        datasets = {}
+        file_structure = {'english': ['PaulGraham_Essays.txt'], 'chinese': ['Journey_to_the_West.txt']}
 
-        Args:
-            data_dict: {'english': {'test': [sample_d_1, sample_d_2, ...]},
-                        'chinese': {'test': [sample_d_1, sample_d_2, ...]}}
+        for subset_name, files in file_structure.items():
+            if subset_name not in self.subset_list:
+                continue
+            file_path = os.path.join(dataset_path, files[0])
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    text = f.read()
 
-        Returns:
-            {'subset_name': [prompt_d_1, prompt_d_2, ...]}
-            prompt_d_i (dict): refer to the output of gen_prompt method.
-
-        e.g. train -- few-shot data, test -- target dataset to evaluate.
-        """
-        res_dict: dict = {}
-
-        for sub_name, sub_data_dict in data_dict.items():
-            res_dict[sub_name] = []
-            for sample_d in sub_data_dict[self.eval_split]:
-                # Generate prompts for each sample in the dataset
-                tokens_context = self._get_context_tokens(sample_d['text'])
+                # Generate samples for all combinations of context length and depth
+                samples = []
+                tokens_context = self._get_context_tokens(text)
                 for context_length, depth_percent in tqdm(
-                    product(self.context_lengths, self.document_depth_percents), desc=f'Generating {sub_name} prompts'
+                    product(self.context_lengths, self.document_depth_percents),
+                    desc=f'Generating {subset_name} samples'
                 ):
-                    # Insert needles into the context at the specified depth percentage
                     context = self._insert_needles(tokens_context, depth_percent, context_length)
-                    # Build the input dictionary for the prompt
-                    input_d = {
+                    record = {
+                        'text': text,
                         'context_length': int(context_length),
                         'depth_percent': int(depth_percent),
                         'question': self.retrieval_question,
                         'answer': '\n'.join(self.needles),
                         'context': context,
                     }
-                    prompt_d = self.gen_prompt(input_d=input_d)
-                    prompt_d[AnswerKeys.RAW_INPUT] = input_d
-                    res_dict[sub_name].append(prompt_d)
+                    samples.append(self.record_to_sample(record))
 
-        return res_dict
+                dataset = MemoryDataset(samples)
+                dataset.reindex()
+                datasets[subset_name] = dataset
+
+        test_dataset = DatasetDict(datasets)
+        return test_dataset, None
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert a data record to a Sample object."""
+        return Sample(
+            input=record['question'],
+            target=record['answer'],
+            metadata={
+                'context': record['context'],
+                'context_length': record['context_length'],
+                'depth_percent': record['depth_percent'],
+            }
+        )
+
+    def format_prompt_template(self, sample):
+        """Format the prompt template with context and question."""
+        context = sample.metadata['context']
+        question = sample.input
+        return self.prompt_template.format(context=context, question=question)
 
     def _get_context_tokens(self, input_context: str) -> list:
         """
@@ -259,84 +292,78 @@ class NeedleHaystackAdapter(DataAdapter):
         new_context = self.tokenizer.decode(tokens_context)
         return new_context
 
-    def gen_prompt(self, input_d: dict, **kwargs) -> dict:
-        """
-        Generate the prompt for each sample in the dataset.
-        Args:
-            input_d: A dictionary containing the input data for the prompt.
-                It should contain 'context' and optionally 'question'.
-        Returns:
-            A dictionary containing the prompt data
-        """
-        context = input_d.get('context')
-        question = input_d.get('question')
-
-        prompt = self.prompt_template.format(context=context, question=question)
-
-        return self.gen_prompt_data(prompt, system_prompt=self.system_prompt)
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-        """
-        return input_d.get('answer', '').strip()
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the predicted result and extract proper answer.
-        """
-        return result
-
-    def match(self, gold: str, pred: str) -> float:
-        """
-        Match the gold answer and the predicted answer.
-        """
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Calculate evaluation scores by comparing prediction with reference."""
+        from evalscope.metrics import exact_match
         from .utils import normalize_answer
-        norm_gold = normalize_answer(gold)
-        norm_pred = normalize_answer(pred)
-        # Use exact match for Needle in a Haystack
-        return exact_match(gold=norm_gold, pred=norm_pred)
 
-    def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> dict:
-        """
-        Use LLM as a judge to evaluate the predicted answer against the gold answer.
-        """
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        # Get metadata from task state
+        context_length = task_state.metadata.get('context_length', 0)
+        depth_percent = task_state.metadata.get('depth_percent', 0)
+
+        norm_gold = normalize_answer(reference)
+        norm_pred = normalize_answer(filtered_prediction)
+        accuracy = exact_match(gold=norm_gold, pred=norm_pred)
+
+        metric_name = f'Context#{context_length} Depth#{depth_percent}'
+        score.value = {metric_name: accuracy}
+        score.main_score_name = metric_name
+
+        return score
+
+    def llm_match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Use LLM as a judge to evaluate the predicted answer against the gold answer."""
         from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE, parse_score
 
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input.get('question')
-        context_length = raw_input.get('context_length')
-        depth_percent = raw_input.get('depth_percent')
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-        # get grading response
-        prompt = ORM_USER_TEMPLATE.format(question=question, gold=gold, pred=pred)
-        orm_response = judge(prompt=prompt, system_prompt=GENERAL_ORM_PROMPT)
+        # Get metadata from task state
+        context_length = task_state.metadata.get('context_length', 0)
+        depth_percent = task_state.metadata.get('depth_percent', 0)
+        question = task_state.input_text
 
-        # parse grading score with regex, [[score]]
-        score = parse_score(orm_response) if orm_response else 0.0
-        return {f'Context#{context_length} Depth#{depth_percent}': score}
+        # Get grading response
+        prompt = ORM_USER_TEMPLATE.format(question=question, gold=reference, pred=filtered_prediction)
+        orm_response = self.llm_judge.judge(prompt, system_prompt=GENERAL_ORM_PROMPT)
 
-    def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
-        """
-        compute weighted mean of the bleu score of all samples
+        # Parse grading score with regex, [[score]]
+        accuracy = parse_score(orm_response) if orm_response else 0.0
 
-        Args:
-            review_res_list: [score1, score2, ...]
+        metric_name = f'Context#{context_length} Depth#{depth_percent}'
+        score.value = {metric_name: accuracy}
+        score.explanation = f'LLM judge: {orm_response}'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': getattr(self, 'judge_strategy', 'default'),
+            'model': self.llm_judge.model_id if hasattr(self.llm_judge, 'model_id') else 'unknown'
+        }
+        score.main_score_name = metric_name
 
-        Returns:
-            avg_res: List[dict]
+        return score
 
-        """
-        items = super().compute_dict_metric(review_res_list, **kwargs)
-        return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]
+    def _on_generate_report(self, scores, model_name, add_aggregation_name=True):
+        # Don't add aggregation name for needle haystack adapter
+        return super()._on_generate_report(scores, model_name, False)
 
-    def post_process_report(self, report: 'Report', **kwargs):
+    def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         try:
             import os
 
             from .utils import draw_score_chat
 
-            report_path = kwargs.get('report_path')
+            report_path = output_dir
             data_frame = report.to_dataframe()
             # split `Metric` to `Context` and `Depth`
             data_frame[['Context', 'Depth']] = data_frame['Metric'].str.split(' ', n=1, expand=True)

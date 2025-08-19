@@ -119,7 +119,7 @@ class Dataset(Sequence[Sample], abc.ABC):
 
     @abc.abstractmethod
     def filter(self, predicate: Callable[[Sample], bool], name: Optional[str] = None) -> 'Dataset':
-        """Filter the dataset using a predicate.
+        """Filter the dataset using a predicate. Only samples matching the predicate will be included.
 
         Args:
           predicate: Filtering function.

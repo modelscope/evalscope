@@ -41,7 +41,7 @@ class FramesAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
         self._use_llm_judge = True  # Enable LLM judge for FRAMES
 
-    def load_dataset(self):
+    def load(self):
         # Try to load dataset from local disk
         dataset_name_or_path = self.dataset_id
         if os.path.exists(dataset_name_or_path):
@@ -64,11 +64,9 @@ class FramesAdapter(DefaultDataAdapter):
             repeats=self.repeats
         ).load()
 
-        self.test_dataset = DatasetDict({'test': dataset})
-        # Process each sample's input by applying prompt templates and few-shot formatting
-        self._process_sample_inputs()
+        test_dataset = DatasetDict({'test': dataset})
 
-        return self.test_dataset
+        return test_dataset, None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

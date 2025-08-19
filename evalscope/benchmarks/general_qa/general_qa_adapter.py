@@ -84,6 +84,7 @@ class GeneralQAAdapter(DefaultDataAdapter):
                     score.value.update(compute_rouge_score_one_sample_zh([filtered_prediction], [reference]))
                 elif metric == 'BLEU':
                     from evalscope.metrics import bleu_ngram_one_sample
+
                     score.value.update(bleu_ngram_one_sample(filtered_prediction, reference))
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')

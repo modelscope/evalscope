@@ -127,7 +127,7 @@ def get_result_db_path(args: Arguments):
 
     logger.info(f'Save the data base to: {result_db_path}')
     if os.path.exists(result_db_path):
-        logger.warning('The db file exists, delete it and start again!.')
+        logger.error(f'The db file {result_db_path} exists, delete it and start again!.')
         sys.exit(1)
 
     return result_db_path

@@ -21,7 +21,7 @@ import re
 import string
 from typing import Dict, Optional, Sequence, Union
 
-from evalscope.benchmarks.ifeval import instructions_util
+from . import instructions_util
 
 _InstructionArgsDtype = Optional[Dict[str, Union[int, str, Sequence[str]]]]
 

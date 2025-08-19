@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Dict, Optional, Union
 
-from evalscope.benchmarks.ifeval import instructions_registry
+from . import instructions_registry
 
 
 @dataclasses.dataclass
@@ -121,14 +121,13 @@ def process_results(doc, results):
     out_loose = test_instruction_following_loose(inp, response)
 
     return {
-        'prompt_level_strict_acc': out_strict.follow_all_instructions,
-        'inst_level_strict_acc': out_strict.follow_instruction_list,
-        'prompt_level_loose_acc': out_loose.follow_all_instructions,
-        'inst_level_loose_acc': out_loose.follow_instruction_list,
+        'prompt_level_strict': float(out_strict.follow_all_instructions),
+        'inst_level_strict': agg_inst_level_acc(out_strict.follow_instruction_list),
+        'prompt_level_loose': float(out_loose.follow_all_instructions),
+        'inst_level_loose': agg_inst_level_acc(out_loose.follow_instruction_list),
     }
 
 
 def agg_inst_level_acc(items):
-    flat_items = [item for sublist in items for item in sublist]
-    inst_level_acc = sum(flat_items) / len(flat_items)
+    inst_level_acc = sum(items) / len(items) if items else 0
     return inst_level_acc

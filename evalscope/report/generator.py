@@ -111,7 +111,10 @@ class ReportGenerator:
 
     @staticmethod
     def generate_report(
-        score_dict: Dict[str, List['AggScore']], model_name: str, data_adapter: 'DataAdapter'
+        score_dict: Dict[str, List['AggScore']],
+        model_name: str,
+        data_adapter: 'DataAdapter',
+        add_aggregation_name: bool = True
     ) -> Report:
         """
         Generate a report for a specific dataset based on provided subset scores.
@@ -152,6 +155,11 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
+                    if add_aggregation_name:
+                        metric_name = f'{agg_score_item.aggregation_name}_{agg_score_item.metric_name}'
+                    else:
+                        metric_name = agg_score_item.metric_name
+
                     if isinstance(categories, str):
                         categories = [categories]
                     subsets.append(
@@ -159,7 +167,7 @@ class ReportGenerator:
                             name=subset_name,
                             score=agg_score_item.score,
                             num=agg_score_item.num,
-                            metric_name=f'{agg_score_item.aggregation_name}_{agg_score_item.metric_name}',
+                            metric_name=metric_name,
                             categories=tuple(categories)
                         )
                     )

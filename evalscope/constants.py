@@ -122,3 +122,4 @@ class Tags:
     INSTRUCTION_FOLLOWING = 'InstructionFollowing'
     ARENA = 'Arena'
     LONG_CONTEXT = 'LongContext'
+    RETRIEVAL = 'Retrieval'

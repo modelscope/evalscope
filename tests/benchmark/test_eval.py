@@ -294,15 +294,22 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('drop', dataset_args=dataset_args)
 
+    def test_ifeval(self):
+        """Test IFEval dataset."""
+        self._run_dataset_test('ifeval')
+
     def test_needle_haystack(self):
         """Test Needle in Haystack dataset."""
         dataset_args = {
             'subset_list': ['english'],
             'extra_params': {
+                'context_lengths_max': 10000,
+                'context_lengths_num_intervals': 5,
+                'document_depth_percent_intervals': 5,
                 'show_score': True,
             }
         }
-        self._run_dataset_test('needle_haystack', dataset_args)
+        self._run_dataset_test('needle_haystack', dataset_args, use_cache='outputs/20250819_154916')
 
     def test_ifeval(self):
         """Test IFEval dataset."""
@@ -312,6 +319,9 @@ class TestBenchmark(TestCase):
         """Test HLE dataset."""
         dataset_args = {
             'subset_list': ['Math', 'Other'],
+            'extra_params': {
+                'include_multi_modal': False
+            }
         }
         self._run_dataset_test('hle', dataset_args)
 

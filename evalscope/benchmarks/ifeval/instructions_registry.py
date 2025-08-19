@@ -13,7 +13,7 @@
 # limitations under the License.
 """Registry of all instructions."""
 
-from evalscope.benchmarks.ifeval import instructions
+from . import instructions
 
 _KEYWORD = 'keywords:'
 

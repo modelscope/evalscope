@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from functools import partial
 from overrides import override
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
@@ -58,36 +58,41 @@ class DefaultDataAdapter(DataAdapter):
             DatasetDict: A dictionary containing the loaded and processed datasets,
                         organized by subset names.
         """
-        if os.path.exists(self.dataset_id):
-            # Load dataset from local file system path
-            with self._temporary_attribute('dataset_hub', HubType.LOCAL):
-                self.load_from_disk()
-        else:
-            # Load dataset from remote source (e.g., ModelScope, Huggingface)
-            self.load_from_remote()
+        # Load the dataset
+        self.test_dataset, self.fewshot_dataset = self.load()
 
         # Process each sample's input by applying prompt templates and few-shot formatting
-        self._process_sample_inputs()
+        self._post_process_samples()
 
         return self.test_dataset
 
-    def _process_sample_inputs(self):
-        """Process all sample inputs with prompt formatting."""
-        for subset in self.test_dataset.keys():
-            for sample in self.test_dataset[subset]:
-                if isinstance(sample.input, str):
-                    sample.input = self.process_sample_str_input(sample, subset)
+    def load(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
+        """Load the dataset from disk or remote source.
+
+        Returns:
+            Tuple[DatasetDict, Optional[DatasetDict]]: The test dataset and few-shot dataset.
+        """
+        if os.path.exists(self.dataset_id):
+            # Load dataset from local file system path
+            with self._temporary_attribute('dataset_hub', HubType.LOCAL):
+                return self.load_from_disk()
+        else:
+            # Load dataset from remote source (e.g., ModelScope, Huggingface)
+            return self.load_from_remote()
 
     def load_from_remote(self):
         """Load dataset from remote source and prepare few-shot examples if needed."""
+        test_dataset = None
+        fewshot_dataset = None
         # Load dataset from remote source
         test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
-        self.test_dataset = self.load_subsets(test_load_func)
+        test_dataset = self.load_subsets(test_load_func)
 
         # Load few-shot examples if few-shot prompting is enabled
         if self._should_load_fewshot():
             fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
-            self.fewshot_dataset = self.load_subsets(fewshot_load_func)
+            fewshot_dataset = self.load_subsets(fewshot_load_func)
+        return test_dataset, fewshot_dataset
 
     def load_from_disk(self, use_local_loader: bool = False):
         """
@@ -97,22 +102,32 @@ class DefaultDataAdapter(DataAdapter):
             use_local_loader: If True, use local file loading; otherwise use remote loading
                              for local ModelScope datasets.
         """
+        test_dataset = None
+        fewshot_dataset = None
         if use_local_loader:
             # Use LocalDataLoader for actual local file loading
             test_load_func = partial(self.load_subset, data_loader=LocalDataLoader)
-            self.test_dataset = self.load_subsets(test_load_func)
+            test_dataset = self.load_subsets(test_load_func)
 
             # Load few-shot examples if few-shot prompting is enabled
             if self._should_load_fewshot():
                 fewshot_load_func = partial(self.load_fewshot_subset, data_loader=LocalDataLoader)
-                self.fewshot_dataset = self.load_subsets(fewshot_load_func)
+                fewshot_dataset = self.load_subsets(fewshot_load_func)
+            return test_dataset, fewshot_dataset
         else:
             # Fallback to remote loading for local ModelScope datasets
-            self.load_from_remote()
+            return self.load_from_remote()
 
     def _should_load_fewshot(self) -> bool:
         """Check if few-shot dataset should be loaded."""
         return self.few_shot_num > 0 and self.train_split is not None
+
+    def _post_process_samples(self):
+        """Process all sample inputs with prompt formatting."""
+        for subset in self.test_dataset.keys():
+            for sample in self.test_dataset[subset]:
+                if isinstance(sample.input, str):
+                    sample.input = self.process_sample_str_input(sample, subset)
 
     def process_sample_str_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
         """
@@ -200,12 +215,13 @@ class DefaultDataAdapter(DataAdapter):
             dataset_dict = DatasetDict(subset_dict)
         return dataset_dict
 
-    def load_subset(self, subset: str, data_loader: DataLoader) -> Dataset:
+    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """
         Load a specific subset of the dataset for evaluation.
 
         Args:
             subset (str): The subset identifier to load
+            data_loader (Type[DataLoader]): The data loader class to use for loading
 
         Returns:
             Dataset: The loaded dataset subset with processed samples
@@ -220,19 +236,22 @@ class DefaultDataAdapter(DataAdapter):
             split=split,
             subset=subset_name,
             sample_fields=self.record_to_sample,  # Custom sample conversion function
+            filter_func=self.sample_filter,
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self.repeats,  # Number of repetitions for each sample
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
         )
-        return loader.load()
+        dataset = loader.load()
+        return dataset
 
-    def load_fewshot_subset(self, subset: str, data_loader: DataLoader) -> Dataset:
+    def load_fewshot_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """
         Load a subset specifically for few-shot examples.
 
         Args:
             subset (str): The subset identifier to load few-shot examples from
+            data_loader (Type[DataLoader]): The data loader class to use for loading
 
         Returns:
             Dataset: The loaded few-shot dataset with demonstration examples
@@ -247,13 +266,27 @@ class DefaultDataAdapter(DataAdapter):
             split=split,
             subset=subset_name,
             sample_fields=self.record_to_sample,
+            filter_func=self.sample_filter,  # Apply sample filtering if defined
             limit=self.few_shot_num
             if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,
         )
-        return loader.load()
+        dataset = loader.load()
+        return dataset
+
+    def sample_filter(self, sample: Sample) -> bool:
+        """
+        Apply filtering to a dataset, only samples matching the predicate will be included.
+
+        Args:
+            sample (Sample): The sample to filter
+
+        Returns:
+            bool: True if the sample passes the filter, False otherwise
+        """
+        return True  # Default implementation allows all samples
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
@@ -605,7 +638,9 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+    def _on_generate_report(
+        self, scores: Dict[str, List[AggScore]], model_name: str, add_aggregation_name: bool = True
+    ) -> Report:
         """
         Hook method called during report generation.
 
@@ -620,7 +655,9 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             Report: The generated evaluation report
         """
-        return ReportGenerator.generate_report(score_dict=scores, model_name=model_name, data_adapter=self)
+        return ReportGenerator.generate_report(
+            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=add_aggregation_name
+        )
 
     @override
     def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:

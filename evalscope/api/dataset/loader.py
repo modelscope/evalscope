@@ -25,6 +25,7 @@ class DataLoader(ABC):
         data_id_or_path: str,
         split: str,
         sample_fields: Union[FieldSpec, Callable] = None,
+        filter_func: Callable = None,
         subset: str = 'default',
         version: str = None,
         limit: Union[int, float] = None,
@@ -40,6 +41,7 @@ class DataLoader(ABC):
         self.data_id_or_path = data_id_or_path
         self.split = split
         self.sample_fields = sample_fields
+        self.filter_func = filter_func
         self.subset = subset
         self.version = version
         self.limit = limit
@@ -140,6 +142,10 @@ class RemoteDataLoader(DataLoader):
             location=path,
         )
 
+        # Apply filtering if a filter function is provided
+        if self.filter_func is not None:
+            memory_dataset = memory_dataset.filter(self.filter_func)
+
         # assign ids and group_ids if requested
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
@@ -195,6 +201,10 @@ class LocalDataLoader(DataLoader):
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
+
+        # Apply filtering if a filter function is provided
+        if self.filter_func is not None:
+            memory_dataset = memory_dataset.filter(self.filter_func)
 
         # assign ids and group_ids if requested
         if self.auto_id:
