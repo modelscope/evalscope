@@ -1,82 +1,102 @@
 import json
-from typing import Dict, List
+from typing import Any, Dict
 
-from evalscope.api.metric import Metric
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import mean, metric_registry
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages.chat_message import ChatMessage, dict_to_chat_message
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
-@Benchmark.register(
-    name='tool_bench',
-    pretty_name='ToolBench-Static',
-    tags=['Reasoning', 'Agent', 'Function Calling'],
-    description='ToolBench is a benchmark for evaluating AI models on tool use tasks. '
-    'It includes various subsets such as in-domain and out-of-domain, '
-    'each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. '
-    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)',  # noqa: E501
-    dataset_id='AI-ModelScope/ToolBench-Static',
-    subset_list=['in_domain', 'out_of_domain'],
-    metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
+@register_benchmark(
+    BenchmarkMeta(
+        name='tool_bench',
+        pretty_name='ToolBench-Static',
+        tags=[Tags.REASONING, Tags.FUNCTION_CALLING],
+        description='ToolBench is a benchmark for evaluating AI models on tool use tasks. '
+        'It includes various subsets such as in-domain and out-of-domain, '
+        'each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. '
+        '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)',
+        dataset_id='AI-ModelScope/ToolBench-Static',
+        subset_list=['in_domain', 'out_of_domain'],
+        metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
+        eval_split='test',
+    )
 )
-class ToolBenchAdapter(DataAdapter):
+class ToolBenchAdapter(DefaultDataAdapter):
+    """
+    ToolBench adapter using the new data processing framework.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        metric_registry.register(Metric(name='Rouge-L', object=mean))
-        metric_registry.register(Metric(name='Act.EM', object=mean))
-        metric_registry.register(Metric(name='Plan.EM', object=mean))
-        metric_registry.register(Metric(name='F1', object=mean))
-        metric_registry.register(Metric(name='HalluRate', object=mean))
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert a data record to a Sample object."""
+        messages = record['messages']
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate model prompt from input data.
-        """
-        messages = input_d['messages']
-        # use prepared messages and remove the name field
+        # Process messages and remove the name field, convert function messages
+        processed_messages = []
         for message in messages:
-            if 'name' in message:
-                del message['name']
-            if 'role' in message:
-                if message['role'] == 'function':
-                    content = json.dumps(message, ensure_ascii=False)
-                    message['role'] = 'user'
-                    message['content'] = content
-        return self.gen_prompt_data(prompt='', messages=messages)
+            msg_dict = message.copy()
+            if 'name' in msg_dict:
+                del msg_dict['name']
+            if 'role' in msg_dict:
+                if msg_dict['role'] == 'function':
+                    content = json.dumps(msg_dict, ensure_ascii=False)
+                    msg_dict['role'] = 'user'
+                    msg_dict['content'] = content
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-        """
-        return input_d
+            # Convert to ChatMessage object
+            chat_msg = dict_to_chat_message(msg_dict)
+            processed_messages.append(chat_msg)
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the predicted result and extract proper answer.
-        """
-        return result
+        return Sample(
+            input=processed_messages,
+            target='',  # Store the full record as target for evaluation
+            metadata={
+                'target': record['target'],
+                'tools': record['tools'],
+                'messages': record['messages']
+            }
+        )
 
-    def match(self, gold: dict, pred: str) -> Dict:
-        """
-        Match the gold answer and the predicted answer.
-        """
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         from .utils import calculate_metrics
 
-        data = {
-            'target': gold['target'],
-            'predictions': pred,
-            'tools': gold['tools'],
-        }
-        metrics = calculate_metrics(data)
-        return metrics
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> Dict:
-        # aggregate review results
-        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
+        doc = task_state.metadata
 
-        return super().compute_metric(res_dict, **kwargs)
+        try:
+            data = {
+                'target': doc['target'],
+                'predictions': filtered_prediction,
+                'tools': doc['tools'],
+            }
+            metrics = calculate_metrics(data)
+
+            score.value = metrics
+            score.explanation = f'Metrics: {metrics}'
+            score.metadata = {'target': doc['target'], 'tools': doc['tools'], 'detailed_metrics': metrics}
+            # Set the main score (you can choose the most important metric)
+            score.main_score_name = 'F1'
+
+        except Exception as e:
+            # Handle evaluation errors
+            score.value = {'Act.EM': 0.0, 'Plan.EM': 0.0, 'F1': 0.0, 'HalluRate': 1.0, 'Rouge-L': 0.0}
+            score.explanation = f'Evaluation failed: {str(e)}'
+            score.metadata = {'error': str(e)}
+            score.main_score_name = 'F1'
+
+        return score

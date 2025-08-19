@@ -350,6 +350,10 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('live_code_bench', dataset_args, use_cache='outputs/20250819_203933', judge_worker_num=1)
 
+    def test_tool_bench(self):
+        """Test ToolBench dataset."""
+        self._run_dataset_test('tool_bench')
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

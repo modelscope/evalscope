@@ -123,3 +123,4 @@ class Tags:
     ARENA = 'Arena'
     LONG_CONTEXT = 'LongContext'
     RETRIEVAL = 'Retrieval'
+    FUNCTION_CALLING = 'FunctionCalling'
