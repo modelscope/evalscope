@@ -339,6 +339,17 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('humaneval', dataset_args, repeats=5)
 
+    def test_live_code_bench(self):
+        """Test LiveCodeBench dataset."""
+        dataset_args = {
+            'subset_list': ['v6'],
+            'extra_params': {
+                'start_date': '2024-08-01',
+                'end_date': '2025-02-28'
+            },
+        }
+        self._run_dataset_test('live_code_bench', dataset_args, use_cache='outputs/20250819_203933', judge_worker_num=1)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

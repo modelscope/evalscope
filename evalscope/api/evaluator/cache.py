@@ -1,3 +1,4 @@
+import copy
 import os
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -167,7 +168,13 @@ class CacheManager:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return file_path
 
-    def save_review_cache(self, subset: str, task_state: TaskState, sample_score: SampleScore) -> 'ReviewResult':
+    def save_review_cache(
+        self,
+        subset: str,
+        task_state: TaskState,
+        sample_score: SampleScore,
+        save_metadata: bool = True
+    ) -> 'ReviewResult':
         """
         Save a review result to the cache.
 
@@ -181,7 +188,7 @@ class CacheManager:
         """
         cache_file = self.get_review_cache_path(subset)
         # Convert score and state to serializable review result
-        review_result = ReviewResult.from_score_state(sample_score, task_state)
+        review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
         # Serialize to dictionary
         review_result_dict = review_result.model_dump()
         # Append to JSONL cache file
@@ -299,7 +306,9 @@ class ReviewResult(BaseModel):
     """The computed evaluation score for this sample."""
 
     @classmethod
-    def from_score_state(cls, sample_score: SampleScore, state: TaskState) -> 'ReviewResult':
+    def from_score_state(
+        cls, sample_score: SampleScore, state: TaskState, save_metadata: bool = True
+    ) -> 'ReviewResult':
         """
         Create a ReviewResult from a score and task state for caching.
 
@@ -310,10 +319,14 @@ class ReviewResult(BaseModel):
         Returns:
             ReviewResult object ready for caching
         """
+        if not save_metadata:
+            sample_score = copy.deepcopy(sample_score)
+            sample_score.sample_metadata = None
+
         return cls(
             index=state.sample_id,
             input=state.input_text,
-            target=state.target,  # Fixed typo: was 'taget'
+            target=state.target,
             sample_score=sample_score,
         )
 

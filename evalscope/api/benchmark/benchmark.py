@@ -40,6 +40,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self.shuffle_choices = False
         """Whether to shuffle the choices in the dataset"""
 
+        self.save_metadata = True
+        """Whether to save metadata in the review result"""
+
         self.category_map = {}
         """Category map for the benchmark"""
 

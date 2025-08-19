@@ -250,7 +250,12 @@ class DefaultEvaluator(Evaluator):
                         sample_score_list.append(sample_score)
 
                         # Save the review result to cache for future use
-                        review_result = self.cache_manager.save_review_cache(subset, task_state, sample_score)
+                        review_result = self.cache_manager.save_review_cache(
+                            subset=subset,
+                            task_state=task_state,
+                            sample_score=sample_score,
+                            save_metadata=self.benchmark.save_metadata
+                        )
                         logger.debug(f'Review result: \n{review_result.model_dump_json(indent=2)}')
 
                     except Exception as exc:
@@ -294,6 +299,8 @@ class DefaultEvaluator(Evaluator):
         Returns:
             Report: The complete evaluation report.
         """
+        assert agg_score_dict, 'No scores to generate report from.'
+
         # Get paths for saving the report
         report_path = self.cache_manager.get_report_path()
         report_file = self.cache_manager.get_report_file()

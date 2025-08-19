@@ -1,4 +1,5 @@
 import json
+from tqdm import tqdm
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 from .dataset import Dataset, FieldSpec, Sample
@@ -48,7 +49,7 @@ def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, 
 
 def data_to_samples(data: Iterable[dict], data_to_sample: Callable) -> List[Sample]:
     samples: List[Sample] = []
-    for record in data:
+    for record in tqdm(data, desc='Processing records'):
         record_samples = as_sample_list(data_to_sample(record=record))
         samples.extend(record_samples)
     return samples
