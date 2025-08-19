@@ -61,7 +61,7 @@ class GeneralQAAdapter(DefaultDataAdapter):
                 message_list.append(ChatMessageSystem(content=system_prompt))
             message_list.append(ChatMessageUser(content=query))
 
-        return Sample(input=message_list, target=answer)
+        return Sample(input=message_list, target=answer or '')
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState

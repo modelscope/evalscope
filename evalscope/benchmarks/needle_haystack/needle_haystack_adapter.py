@@ -4,7 +4,7 @@ from tqdm import tqdm
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
+from evalscope.api.dataset import DatasetDict, DictDataLoader, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -146,7 +146,7 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
                     text = f.read()
 
                 # Generate samples for all combinations of context length and depth
-                samples = []
+                records = []
                 tokens_context = self._get_context_tokens(text)
                 for context_length, depth_percent in tqdm(
                     product(self.context_lengths, self.document_depth_percents),
@@ -161,10 +161,12 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
                         'answer': '\n'.join(self.needles),
                         'context': context,
                     }
-                    samples.append(self.record_to_sample(record))
+                    records.append(record)
 
-                dataset = MemoryDataset(samples)
-                dataset.reindex()
+                dataset = DictDataLoader(
+                    dict_list=records, limit=self.limit, repeats=self.repeats, sample_fields=self.record_to_sample
+                ).load()
+
                 datasets[subset_name] = dataset
 
         test_dataset = DatasetDict(datasets)

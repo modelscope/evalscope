@@ -309,7 +309,7 @@ class TestBenchmark(TestCase):
                 'show_score': True,
             }
         }
-        self._run_dataset_test('needle_haystack', dataset_args, use_cache='outputs/20250819_154916')
+        self._run_dataset_test('needle_haystack', dataset_args)
 
     def test_ifeval(self):
         """Test IFEval dataset."""
@@ -325,6 +325,19 @@ class TestBenchmark(TestCase):
         }
         self._run_dataset_test('hle', dataset_args)
 
+    def test_process_bench(self):
+        """Test ProcessBench dataset."""
+        dataset_args = {
+            'subset_list': ['gsm8k', 'math'],
+        }
+        self._run_dataset_test('process_bench', dataset_args, use_cache='outputs/20250819_161844')
+
+    def test_humaneval(self):
+        """Test HumanEval dataset."""
+        dataset_args = {
+            'metric_list': ['Pass@1', 'Pass@2', 'Pass@5']
+        }
+        self._run_dataset_test('humaneval', dataset_args, repeats=5)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

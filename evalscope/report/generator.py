@@ -155,7 +155,7 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
-                    if add_aggregation_name:
+                    if add_aggregation_name and agg_score_item.aggregation_name:
                         metric_name = f'{agg_score_item.aggregation_name}_{agg_score_item.metric_name}'
                     else:
                         metric_name = agg_score_item.metric_name

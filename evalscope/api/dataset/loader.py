@@ -213,3 +213,46 @@ class LocalDataLoader(DataLoader):
         shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
 
         return memory_dataset
+
+
+class DictDataLoader(DataLoader):
+    """Load dataset from a list of dictionaries."""
+
+    def __init__(self, dict_list: list, **kwargs):
+        super().__init__(data_id_or_path='', split='', **kwargs)
+        self.dict_list = dict_list
+
+    def load(self) -> Dataset:
+        data_to_sample = record_to_sample_fn(self.sample_fields)
+        dataset = self.dict_list
+
+        # shuffle if requested
+        if self.shuffle:
+            random.shuffle(dataset, self.seed)
+
+        # limit if requested
+        if self.limit:
+            if isinstance(self.limit, float):
+                self.limit = int(len(dataset) * self.limit)
+            elif isinstance(self.limit, int) and self.limit < 0:
+                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
+            dataset = dataset[:self.limit]
+
+        # repeat k times
+        if self.repeats > 1:
+            dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
+
+        # return the dataset
+        memory_dataset = MemoryDataset(samples=data_to_samples(data=dataset, data_to_sample=data_to_sample), )
+
+        # Apply filtering if a filter function is provided
+        if self.filter_func is not None:
+            memory_dataset = memory_dataset.filter(self.filter_func)
+
+        # assign ids and group_ids if requested
+        if self.auto_id:
+            memory_dataset.reindex(group_size=self.repeats)
+
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+
+        return memory_dataset

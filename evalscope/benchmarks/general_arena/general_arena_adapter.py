@@ -1,16 +1,18 @@
+# flake8: noqa: E501
 import glob
 import os
 from collections import defaultdict
-from typing import Any, List
+from typing import Any, Dict, List
 
-from evalscope.api.metric import Metric
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
-from evalscope.metrics import mean, metric_registry
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import DatasetDict, DictDataLoader, Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages.chat_message import ChatMessageUser
+from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.report import Report, ReportKey
 from evalscope.utils.logger import get_logger
-
-# flake8: noqa
 
 logger = get_logger()
 
@@ -20,60 +22,77 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
 )  # noqa: E501
 
 
-@Benchmark.register(
-    name='general_arena',
-    pretty_name='GeneralArena',
-    tags=['Custom', 'Arena'],
-    description=
-    'GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, '
-    'where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should '
-    'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. '
-    'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).',
-    dataset_id='general_arena',
-    metric_list=['winrate'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    system_prompt=GRADER_SYSTEM_PROMPT,
-    prompt_template=GRADER_TEMPLATE,
-    extra_params={
-        'models': [{
-            'name': 'qwen-plus',
-            'report_path': 'outputs/20250627_172550/reports/qwen-plus'
-        }, {
-            'name': 'qwen2.5-7b',
-            'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
-        }],
-        'baseline':
-        'qwen2.5-7b'
-    }
+@register_benchmark(
+    BenchmarkMeta(
+        name='general_arena',
+        pretty_name='GeneralArena',
+        tags=[Tags.CUSTOM, Tags.ARENA],
+        description=
+        'GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, '
+        'where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should '
+        'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. '
+        'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).',
+        dataset_id='general_arena',
+        metric_list=['winrate'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        system_prompt=GRADER_SYSTEM_PROMPT,
+        prompt_template=GRADER_TEMPLATE,
+        extra_params={
+            'models': [{
+                'name': 'qwen-plus',
+                'report_path': 'outputs/20250627_172550/reports/qwen-plus'
+            }, {
+                'name': 'qwen2.5-7b',
+                'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
+            }],
+            'baseline':
+            'qwen2.5-7b'
+        }
+    )
 )
-class GeneralArenaAdapter(DataAdapter):
+class GeneralArenaAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # register metrics
-        metric_registry.register(Metric(name='winrate', object=mean))
+        self._use_llm_judge = True
 
-        # whether to use LLM as a judge
-        self.llm_as_a_judge = True
+        self.models = self.extra_params.get('models', [])
+        self.baseline = self.extra_params.get('baseline', None)
 
-        extra_params = kwargs.get('extra_params', {})
-        self.models = extra_params.get('models', [])
-        self.baseline = extra_params.get('baseline', None)
-
-    def load(self, **kwargs):
+    def load(self):
+        """Load dataset by processing model reports."""
         self._check_names()
         self._check_reports()
         self._check_datasets()
         logger.info(f'Overall datasets: {self.overall_datasets}')
         dataset_model_dict = self._load_common_datasets()
-        data_dict = self._build_pair_wise_data(dataset_model_dict)
-        return data_dict
+        datasets = self._build_pair_wise_data(dataset_model_dict)
 
-    def gen_prompt(self, input_d, subset_name, few_shot_list, **kwargs):
-        return self.gen_prompt_data(input_d['question'])
+        # Convert to DatasetDict format
+        dataset_dict = {}
+        for subset_name, samples in datasets.items():
+            dataset = DictDataLoader(
+                dict_list=samples, limit=self.limit, repeats=self.repeats, sample_fields=self.record_to_sample
+            ).load()
+            dataset_dict[subset_name] = dataset
+
+        test_dataset = DatasetDict(dataset_dict)
+        return test_dataset, None
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert a data record to a Sample object."""
+        return Sample(
+            input=[ChatMessageUser(content=record['question'])],
+            target=record['answer_2'],  # baseline answer
+            metadata={
+                'answer_1': record['answer_1'],
+                'model_1': record['model_1'],
+                'model_2': record['model_2'],
+            }
+        )
 
     def _check_names(self):
         """Check the names of the models and baseline."""
@@ -121,7 +140,8 @@ class GeneralArenaAdapter(DataAdapter):
 
     def _load_common_datasets(self):
         """Load common datasets from the local path."""
-        from evalscope.utils import OutputsStructure, jsonl_to_list
+        from evalscope.utils import OutputsStructure
+        from evalscope.utils.io_utils import jsonl_to_list
 
         dataset_dict = defaultdict(dict)
         for dataset_name, subset_name in self.overall_datasets:
@@ -141,9 +161,10 @@ class GeneralArenaAdapter(DataAdapter):
 
     def _build_pair_wise_data(self, dataset_dict):
         """Build pairwise data for the models."""
+        from evalscope.api.evaluator import ReviewResult
         from .utils import process_review_item
 
-        pairwise_data = defaultdict(dict)
+        pairwise_data = defaultdict(list)
         for (dataset_name, subset_name), model_data in dataset_dict.items():
             if len(model_data) < 2:
                 logger.warning(f'Not enough models for dataset {dataset_name} with subset {subset_name}. Skipping.')
@@ -155,8 +176,12 @@ class GeneralArenaAdapter(DataAdapter):
                     continue
                 pairs = []
                 for model_item, baseline_item in zip(model_data[name], model_data[self.baseline]):
+                    # Convert to ReviewResult objects like in get_model_prediction
+                    model_review = ReviewResult.model_validate(model_item)
+                    baseline_review = ReviewResult.model_validate(baseline_item)
+
                     for model_choice, baseline_choice in zip(
-                        process_review_item(model_item), process_review_item(baseline_item)
+                        process_review_item(model_review), process_review_item(baseline_review)
                     ):
                         pairs.append({
                             'question': model_choice['Question'],
@@ -165,23 +190,26 @@ class GeneralArenaAdapter(DataAdapter):
                             'model_1': name,
                             'model_2': self.baseline
                         })
-                pairwise_data[f'{dataset_name}&{subset_name}@{name}&{self.baseline}'][self.eval_split] = pairs
+                pairwise_data[f'{dataset_name}&{subset_name}@{name}&{self.baseline}'] = pairs
 
         return pairwise_data
 
-    def llm_match(self, gold, pred, judge=None, **kwargs):
+    def llm_match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Use LLM as a judge to evaluate the predicted answer against the baseline."""
         from .utils import get_judge_score, post_process_result
 
-        try:
-            raw_input = kwargs.get('raw_input', None)
-            question = raw_input['question']
-            answer_1 = raw_input['answer_1']
-            answer_2 = raw_input['answer_2']
-            model_1 = raw_input['model_1']
-            model_2 = raw_input['model_2']
-        except KeyError as e:
-            logger.error(f'Missing key in raw input: {e}. Raw input: {raw_input}')
-            raise
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        question = task_state.input_text
+        answer_1 = task_state.metadata['answer_1']
+        answer_2 = reference  # baseline answer
+        model_1 = task_state.metadata['model_1']
+        model_2 = task_state.metadata['model_2']
 
         system_template = self.system_prompt
         prompt_template = self.prompt_template
@@ -189,9 +217,11 @@ class GeneralArenaAdapter(DataAdapter):
         prompt1 = prompt_template.format(question=question, answer_1=answer_1, answer_2=answer_2)
         # reverse the order
         prompt2 = prompt_template.format(question=question, answer_1=answer_2, answer_2=answer_1)
+
         # get grading response
-        game1_response = judge(prompt1, system_prompt=system_template)
-        game2_response = judge(prompt2, system_prompt=system_template)
+        game1_response = self.llm_judge.judge(prompt1, system_prompt=system_template)
+        game2_response = self.llm_judge.judge(prompt2, system_prompt=system_template)
+
         # parse grading response
         # game1
         res1 = post_process_result(game1_response)
@@ -199,9 +229,9 @@ class GeneralArenaAdapter(DataAdapter):
         # game2
         res2 = post_process_result(game2_response)
         score2 = get_judge_score(res2, reverse=True)
-        return {
-            'score':
-            mean([score1, score2]),
+
+        battle_result = {
+            'score': (score1 + score2) / 2,
             'games': [
                 {
                     'model_a': model_1,
@@ -218,19 +248,26 @@ class GeneralArenaAdapter(DataAdapter):
             ]
         }
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
-        """
-        compute score of the model
-        """
+        score.value = {'score': battle_result['score']}
+        score.explanation = f'LLM judge battles: Game1: {game1_response[:100]}... Game2: {game2_response[:100]}...'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': getattr(self, 'judge_strategy', 'default'),
+            'model': self.llm_judge.model_id if hasattr(self.llm_judge, 'model_id') else 'unknown',
+            'battle_result': battle_result
+        }
+        score.main_score_name = 'score'
+
+        return score
+
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate scores to compute winrate."""
         import numpy as np
         import pandas as pd
 
         from .utils import compute_mle_elo, get_battles_from_row, get_bootstrap_result, get_win_rate_column
 
-        if isinstance(review_res_list[0], list):
-            review_res_list = [item for sublist in review_res_list for item in sublist]
-
-        battles = pd.concat([get_battles_from_row(res) for res in review_res_list])
+        battles = pd.concat([get_battles_from_row(res.score.metadata['battle_result']) for res in sample_scores])
 
         bt_model_coef = compute_mle_elo(battles, baseline_model=self.baseline)
 
@@ -243,7 +280,6 @@ class GeneralArenaAdapter(DataAdapter):
         stats['results'] = stats['results'].astype('object')
 
         for i, model in enumerate(bt_model_coef.index):
-            # assert model in bootstrap_elo_lu.columns
             stats.at[i, 'model'] = model
             stats.at[i, 'score'] = bt_model_coef[model]
             stats.at[i, 'lower'] = np.percentile(bootstrap_model_coef[model], 2.5)
@@ -254,20 +290,25 @@ class GeneralArenaAdapter(DataAdapter):
         metrics_dict['winrate_lower'] = get_win_rate_column(stats, 'lower', self.baseline).to_dict()
         metrics_dict['winrate_upper'] = get_win_rate_column(stats, 'upper', self.baseline).to_dict()
 
-        metrics = []
+        agg_scores = []
         for metric_name, models in metrics_dict.items():
-            for model_name, score in models.items():
+            for model_name, score_val in models.items():
                 if model_name == self.baseline:
                     continue
-                metrics.append({'metric_name': metric_name, 'score': score, 'num': len(review_res_list)})
-        return metrics
+                agg_scores.append(AggScore(score=score_val, metric_name=metric_name, num=len(sample_scores)))
 
-    def post_process_report(self, report: 'Report', **kwargs):
+        return agg_scores
+
+    def extract_answer(self, prediction, task_state):
+        # NOTE: This is a hacky way to extract the answer from the prediction
+        return task_state.metadata['answer_1']
+
+    def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         """Post-process the report to convert it to a DataFrame with winrate leaderboards."""
         import pandas as pd
         import tabulate
 
-        report_path = kwargs.get('report_path')
+        report_path = output_dir
         leaderboard_file = os.path.join(report_path, 'leaderboard.txt')
 
         # Ensure report directory exists
@@ -406,13 +447,3 @@ class GeneralArenaAdapter(DataAdapter):
             f.write('\n'.join(leaderboard_outputs))
 
         logger.info(f'Leaderboard results saved to: {leaderboard_file}')
-
-    def get_gold_answer(self, input_d):
-        return f"model_1: {input_d['model_1']}\n---\n" + input_d['answer_1']
-
-    def llm_parse_pred_result(self, result, raw_input_d=None, eval_type=EvalType.CHECKPOINT):
-        return f"model_2: {raw_input_d['model_2']}\n---\n" + raw_input_d['answer_2']
-
-    def match(self, gold, pred):
-        logger.warning(f'Please use LLMJudge to match the result for {self.name}')
-        return

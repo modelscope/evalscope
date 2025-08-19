@@ -134,3 +134,69 @@ class Mean(Aggregator):
                 )
 
         return aggregated_scores
+
+
+@register_aggregation(name='pass_at_k')
+class PassAtK(Aggregator):
+
+    def __init__(self, k: int = 1):
+        self.k = k
+        self.name = f'pass_at_{k}'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate scores by computing the pass@k for each metric using group_id.
+
+        Args:
+            scores: List of sample scores to aggregate
+
+        Returns:
+            List of aggregated scores with pass@k values
+        """
+        if not scores:
+            return []
+
+        import numpy as np
+
+        from .metrics import calculate_pass_at_k
+
+        # Group scores by metric name and group_id
+        metric_groups = defaultdict(lambda: defaultdict(list))
+
+        for score in scores:
+            group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
+
+            for metric_name, value in score.score.value.items():
+                metric_groups[metric_name][group_id].append(float(value))
+
+        # Calculate pass@k for each metric
+        aggregated_scores = []
+        for metric_name, groups in metric_groups.items():
+            if not groups:
+                continue
+
+            # Calculate pass@k for each group (problem)
+            num_samples = []
+            num_correct = []
+            all_sample_ids = []
+
+            for group_id, group_values in groups.items():
+                num_samples.append(len(group_values))
+                num_correct.append(sum(group_values))  # count how many passed in this group
+                all_sample_ids.extend([f'{group_id}_{i}' for i in range(len(group_values))])
+
+            if num_samples:
+                # Use the calculate_pass_at_k function from metrics
+                pass_at_k_values = calculate_pass_at_k(num_samples, num_correct, self.k)
+                overall_pass_at_k = float(np.mean(pass_at_k_values))
+
+                aggregated_scores.append(
+                    AggScore(
+                        score=overall_pass_at_k,
+                        metric_name=f'pass@{self.k}',
+                        aggregation_name='',
+                        num=len(scores),
+                        ids=all_sample_ids
+                    )
+                )
+
+        return aggregated_scores

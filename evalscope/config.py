@@ -85,15 +85,19 @@ class TaskConfig(BaseArgument):
     def __init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
-            self.eval_type = EvalType.CUSTOM
-            # if self.model_task == ModelTask.IMAGE_GENERATION:
-            #     self.model = DummyT2IModel()
-            # else:
-            #     self.model = DummyCustomModel()
+
+            if self.model_task == ModelTask.IMAGE_GENERATION:
+                self.model = DummyT2IModel()
+            else:
+                self.model = EvalType.MOCK_LLM
+                self.eval_type = EvalType.MOCK_LLM
 
         # Set model_id if not provided
-        if (not self.model_id) and self.model:
-            self.model_id = safe_filename(os.path.basename(self.model))
+        if not self.model_id:
+            if self.model:
+                self.model_id = safe_filename(os.path.basename(self.model))
+            else:
+                self.model_id = 'dummy_model'
 
     def __init_eval_data_config(self):
         # Post process limit
