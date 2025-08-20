@@ -1,12 +1,17 @@
-import copy
 import importlib
 import json
 import re
 import traceback
-from typing import Any, List
+from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages.chat_message import ChatMessageUser
+from evalscope.api.metric import Score
+from evalscope.api.model import Model, ModelOutput
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -32,29 +37,32 @@ SUBJECT_MAPPING = {
 }
 
 
-@Benchmark.register(
-    name='bfcl_v3',
-    pretty_name='BFCL-v3',
-    tags=['Agent', 'Function Calling'],
-    description=
-    'Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** '
-    'dedicated to assessing Large Language Models\' (LLMs) ability to invoke functions. Unlike previous evaluations, '
-    'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
-    'Need to run `pip install bfcl-eval` before evaluating. '
-    '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)',  # noqa: E501
-    dataset_id='AI-ModelScope/bfcl_v3',
-    subset_list=list(SUBJECT_MAPPING.keys()),
-    model_adapter='bfcl_server',
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='train',
-    extra_params={
-        'underscore_to_dot': True,
-        'is_fc_model': True,
-    }
+@register_benchmark(
+    BenchmarkMeta(
+        name='bfcl_v3',
+        pretty_name='BFCL-v3',
+        tags=[Tags.FUNCTION_CALLING],
+        description='Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive '
+        'and executable function call evaluation** '
+        'dedicated to assessing Large Language Models\' (LLMs) ability to invoke '
+        'functions. Unlike previous evaluations, '
+        'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
+        'Need to run `pip install bfcl-eval==2025.6.16` before evaluating. '
+        '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)',
+        dataset_id='AI-ModelScope/bfcl_v3',
+        subset_list=list(SUBJECT_MAPPING.keys()),
+        metric_list=['acc'],
+        eval_split='train',
+        extra_params={
+            'underscore_to_dot': True,
+            'is_fc_model': True,
+        }
+    )
 )
-class BFCLAdapter(DataAdapter):
+class BFCLAdapter(DefaultDataAdapter):
+    """
+    BFCL adapter using the new data processing framework.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -62,19 +70,14 @@ class BFCLAdapter(DataAdapter):
         spec = importlib.util.find_spec('bfcl_eval')
         if spec is None:
             raise ImportError(
-                '`bfcl_eval` not found, please install it with `pip install bfcl-eval` before evaluating.'
+                '`bfcl_eval` not found, please install it with `pip install bfcl-eval==2025.6.16` before evaluating.'
             )
 
         self.category_map = SUBJECT_MAPPING
+        self.reformat_subset = True
 
-        extra_params = kwargs.get('extra_params', {})
-        self.underscore_to_dot = extra_params.get('underscore_to_dot', False)
-        self.is_fc_model = extra_params.get('is_fc_model', True)
-
-    def load(self, **kwargs):
-        kwargs['subset_list'] = ['default']
-        data_dict = super().load(**kwargs)
-        return self.reformat_subset(data_dict, subset_key='subset', format='{}')
+        self.underscore_to_dot = self.extra_params.get('underscore_to_dot', False)
+        self.is_fc_model = self.extra_params.get('is_fc_model', True)
 
     def preprocess_row(self, row: dict):
         """
@@ -89,34 +92,35 @@ class BFCLAdapter(DataAdapter):
         row['initial_config'] = json.loads(row['initial_config'])
         row['is_fc_model'] = self.is_fc_model
 
-    def gen_prompt(self, input_d, subset_name, few_shot_list, **kwargs):
-        self.preprocess_row(input_d)
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert a data record to a Sample object."""
+        self.preprocess_row(record)
 
         # If the model is a function calling model, we need to remove the system prompt
         if self.is_fc_model:
-            turns = input_d['turns']
+            turns = record['turns']
             new_turns = []
             for turn_idx, messages in enumerate(turns):
                 current_messages = messages.copy()
                 if len(current_messages) > 0 and current_messages[0]['role'] == 'system':
                     current_messages = current_messages[1:]
                 new_turns.append(current_messages)
-            input_d['turns'] = new_turns
+            record['turns'] = new_turns
 
-        return self.gen_prompt_data(prompt='', messages=input_d)
+        return Sample(
+            input=[ChatMessageUser(content='')],
+            target='',  # Will use the record for evaluation
+            subset_key=record['subset'],
+            metadata=record  # Store the full record for evaluation
+        )
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Get the gold choice
-        return input_d.get('ground_truth', )
+    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+        from .generation import predict
+        return predict(model, sample)
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> dict:
-        row = copy.deepcopy(raw_input_d)
-        del row['turns']  # Remove turns as they are not needed for the match function
-
-        row['generation'] = result
-        return row
-
-    def match(self, gold: dict, pred: dict) -> dict:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         from bfcl_eval.eval_checker.ast_eval.ast_checker import ast_checker
         from bfcl_eval.eval_checker.multi_turn_eval.multi_turn_checker import multi_turn_checker
         from bfcl_eval.model_handler.utils import (
@@ -126,117 +130,129 @@ class BFCLAdapter(DataAdapter):
         )
         from bfcl_eval.utils import is_empty_output
 
-        # NOTE: This is hardcoded dummy model since its only use is to infer underscore_to_dot
-        # which decides if model was provided with functions of the type
-        # spotify.list_songs or spotify_list_songs
-        # It is False for all llama models (when using via prompting)
-        # and True for API calls
-        if self.underscore_to_dot:
-            dummy_model = 'gpt-4o-2024-11-20-FC'
-        else:
-            dummy_model = 'meta-llama/Llama-3.3-70B-Instruct-FC'
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-        row = pred
-        test_category = re.sub(r'_[0-9_-]+$', '', row['id'])
-        if test_category in {'irrelevance', 'live_irrelevance', 'live_relevance'}:
-            error = None
-            try:
-                if self.is_fc_model:
-                    decoded_tool_calls = []
-                    for tool_call in row['generation'][0]:
-                        name = list(tool_call.keys())[0]
-                        params = json.loads(tool_call[name])
-                        decoded_tool_calls.append({name: params})
-                else:
-                    decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
+        try:
+            # NOTE: This is hardcoded dummy model since its only use is to infer underscore_to_dot
+            if self.underscore_to_dot:
+                dummy_model = 'gpt-4o-2024-11-20-FC'
+            else:
+                dummy_model = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 
-                # successful decode means valid function call was present
-                contains_func_call = True
-                if is_empty_output(decoded_tool_calls):
-                    # Empty output is not considered as a valid function call
+            row = task_state.metadata
+            test_category = re.sub(r'_[0-9_-]+$', '', row['id'])
+
+            if test_category in {'irrelevance', 'live_irrelevance', 'live_relevance'}:
+                error = None
+                try:
+                    if self.is_fc_model:
+                        decoded_tool_calls = []
+                        for tool_call in row['generation'][0]:
+                            name = list(tool_call.keys())[0]
+                            params = tool_call[name]
+                            decoded_tool_calls.append({name: params})
+                    else:
+                        decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
+
+                    # successful decode means valid function call was present
+                    contains_func_call = True
+                    if is_empty_output(decoded_tool_calls):
+                        # Empty output is not considered as a valid function call
+                        contains_func_call = False
+                        error = 'Empty decoded output.'
+                except Exception:
                     contains_func_call = False
-                    error = 'Empty decoded output.'
-            except Exception:
-                contains_func_call = False
-                error = f'Failed to decode with traceback: {traceback.format_exc()}'
-            finally:
-                valid = contains_func_call if test_category == 'live_relevance' else not contains_func_call
-                score_result = {'valid': valid, 'error_message': error}
+                    error = f'Failed to decode with traceback: {traceback.format_exc()}'
+                finally:
+                    valid = contains_func_call if test_category == 'live_relevance' else not contains_func_call
+                    score_result = {'valid': valid, 'error_message': error}
 
-        elif row['multi_turn']:
-            # each step might give a list of tool calls and each turn is multi-step
-            # and multi-turn has generations of all the turns
-            # hence in a multi-turn setting,
-            # multi_turn_decoded_generations is a list of list of list of strings
-            multi_turn_decoded_generations: list[list[list[str]]] = []
-            for single_turn_generations in row['generation']:
-                single_turn_decoded_generations: list[list[str]] = []
-                for generation in single_turn_generations:
-                    try:
-                        if self.is_fc_model:
-                            tool_calls = convert_to_function_call(generation)
-                        else:
-                            tool_calls = default_decode_execute_prompting(generation)
+            elif row['multi_turn']:
+                # each step might give a list of tool calls and each turn is multi-step
+                # and multi-turn has generations of all the turns
+                # hence in a multi-turn setting,
+                # multi_turn_decoded_generations is a list of list of list of strings
+                multi_turn_decoded_generations: list[list[list[str]]] = []
+                for single_turn_generations in row['generation']:
+                    single_turn_decoded_generations: list[list[str]] = []
+                    for generation in single_turn_generations:
+                        try:
+                            if self.is_fc_model:
+                                tool_calls = convert_to_function_call(generation)
+                            else:
+                                tool_calls = default_decode_execute_prompting(generation)
 
-                        single_turn_decoded_generations.append(tool_calls)
-                    except Exception:
-                        single_turn_decoded_generations.append([generation])
+                            single_turn_decoded_generations.append(tool_calls)
+                        except Exception:
+                            single_turn_decoded_generations.append([generation])
 
-                multi_turn_decoded_generations.append(single_turn_decoded_generations)
+                    multi_turn_decoded_generations.append(single_turn_decoded_generations)
 
-            try:
-                raw_score_result = multi_turn_checker(
-                    multi_turn_decoded_generations,
-                    row['ground_truth'],
-                    row,
-                    test_category,
-                    dummy_model,
-                )
-            except Exception:
-                raw_score_result = {
-                    'valid': False,
-                    'error_type': 'multi_turn:checker_failed',
-                    'error_message': f'Failed to grade multi-turn. Traceback: {traceback.format_exc()}',
-                }
+                try:
+                    raw_score_result = multi_turn_checker(
+                        multi_turn_decoded_generations,
+                        row['ground_truth'],
+                        row,
+                        test_category,
+                        dummy_model,
+                    )
+                except Exception:
+                    raw_score_result = {
+                        'valid': False,
+                        'error_type': 'multi_turn:checker_failed',
+                        'error_message': f'Failed to grade multi-turn. Traceback: {traceback.format_exc()}',
+                    }
 
-            score_result = {
-                'valid': float(raw_score_result['valid']),
-                'error_message': raw_score_result.get('error_message', ''),
-                'error_type': raw_score_result.get('error_type', ''),
-            }
-        else:
-            try:
-                if self.is_fc_model:
-                    decoded_tool_calls = []
-                    for tool_call in row['generation'][0]:
-                        name = list(tool_call.keys())[0]
-                        params = json.loads(tool_call[name])
-                        decoded_tool_calls.append({name: params})
-                else:
-                    decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
-
-                score_result = ast_checker(
-                    row['functions'],
-                    decoded_tool_calls,
-                    row['ground_truth'],
-                    row['language'],
-                    row['test_category'],
-                    dummy_model,
-                )
-            except Exception:
                 score_result = {
-                    'valid': False,
-                    'error_message': f'Invalid syntax. Failed to decode AST. Traceback: {traceback.format_exc()}',
-                    'error_type': 'ast_decoder:decoder_failed',
+                    'valid': float(raw_score_result['valid']),
+                    'error_message': raw_score_result.get('error_message', ''),
+                    'error_type': raw_score_result.get('error_type', ''),
                 }
+            else:
+                try:
+                    if self.is_fc_model:
+                        decoded_tool_calls = []
+                        for tool_call in row['generation'][0]:
+                            name = list(tool_call.keys())[0]
+                            params = tool_call[name]
+                            decoded_tool_calls.append({name: params})
+                    else:
+                        decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
 
-        return {
-            'AverageAccuracy': float(score_result['valid']),
-            'raw_score_result': score_result,
-        }
+                    score_result = ast_checker(
+                        row['functions'],
+                        decoded_tool_calls,
+                        row['ground_truth'],
+                        row['language'],
+                        row['test_category'],
+                        dummy_model,
+                    )
+                except Exception:
+                    score_result = {
+                        'valid': False,
+                        'error_message': f'Invalid syntax. Failed to decode AST. Traceback: {traceback.format_exc()}',
+                        'error_type': 'ast_decoder:decoder_failed',
+                    }
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:
-        # aggregate review results
-        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
+            score.value = {
+                'acc': float(score_result['valid']),
+            }
+            score.explanation = score_result.get('error_message', 'Evaluation completed')
+            score.metadata = {
+                'raw_score_result': score_result,
+                'test_category': test_category,
+                'underscore_to_dot': self.underscore_to_dot,
+                'is_fc_model': self.is_fc_model
+            }
+            score.main_score_name = 'acc'
 
-        return super().compute_metric(res_dict, **kwargs)
+        except Exception as e:
+            score.value = {'acc': 0.0}
+            score.explanation = f'Evaluation failed: {str(e)}'
+            score.metadata = {'error': str(e)}
+            score.main_score_name = 'acc'
+
+        return score

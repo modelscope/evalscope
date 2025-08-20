@@ -117,6 +117,14 @@ class ChatCompletionChoice(BaseModel):
 
         return values
 
+    @classmethod
+    def from_content(cls, content: str) -> 'ChatCompletionChoice':
+        """Create a ChatCompletionChoice from content string."""
+        return cls(
+            message=ChatMessageAssistant(content=content),
+            stop_reason='stop',
+        )
+
 
 class ModelOutput(BaseModel):
     """Output from model generation."""

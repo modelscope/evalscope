@@ -30,6 +30,7 @@ class TestBenchmark(TestCase):
                 'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
+                'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
@@ -39,7 +40,7 @@ class TestBenchmark(TestCase):
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
-                    'max_tokens': 4096
+                    'max_tokens': 4096,
                 }
             },
             'debug': True,
@@ -348,11 +349,21 @@ class TestBenchmark(TestCase):
                 'end_date': '2025-02-28'
             },
         }
-        self._run_dataset_test('live_code_bench', dataset_args, use_cache='outputs/20250819_203933', judge_worker_num=1)
+        self._run_dataset_test('live_code_bench', dataset_args, judge_worker_num=1)
 
     def test_tool_bench(self):
         """Test ToolBench dataset."""
         self._run_dataset_test('tool_bench')
+
+    def test_bfcl(self):
+        """Test BFCL dataset."""
+        dataset_args = {
+            # 'subset_list': ['simple', 'live_multiple', 'multi_turn_base'],
+            'extra_params': {
+                'is_fc_model': False
+            }
+        }
+        self._run_dataset_test('bfcl_v3', dataset_args)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

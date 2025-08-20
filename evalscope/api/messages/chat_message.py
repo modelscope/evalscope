@@ -163,6 +163,10 @@ ChatMessage = Union[ChatMessageSystem, ChatMessageUser, ChatMessageAssistant, Ch
 
 def dict_to_chat_message(data: Dict[str, Any]) -> ChatMessage:
     """Convert a dictionary to a ChatMessage."""
+
+    if isinstance(data, ChatMessage):
+        return data
+
     if 'role' not in data:
         raise ValueError('ChatMessage must have a "role" field')
 

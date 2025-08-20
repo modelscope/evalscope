@@ -110,6 +110,11 @@ class Dataset(Sequence[Sample], abc.ABC):
         ...
 
     @abc.abstractmethod
+    def __iter__(self):
+        """Return an iterator over the samples."""
+        ...
+
+    @abc.abstractmethod
     def __getitem__(self, index: Union[int, slice]) -> Union[Sample, 'Dataset']:
         ...
 
@@ -200,6 +205,9 @@ class MemoryDataset(Dataset):
         """Was the dataset shuffled."""
         return self._shuffled
 
+    def __iter__(self):
+        return iter(self.samples)
+
     def __getitem__(self, index: Union[int, slice]) -> Union[Sample, Dataset]:
         if isinstance(index, int):
             return self.samples[index]
@@ -250,7 +258,7 @@ class MemoryDataset(Dataset):
         return MemoryDataset(
             name=name or self.name,
             location=self.location,
-            samples=[sample for sample in self if predicate(sample)],
+            samples=[sample for sample in self.samples if predicate(sample)],
             shuffled=self.shuffled,
         )
 
@@ -321,7 +329,7 @@ class DatasetDict:
             dataset_dict[key] = []
 
         # Loop through each sample in the dataset
-        for sample in dataset:
+        for sample in dataset.samples:
             subset_key = sample.subset_key or 'default'
             data_dict[subset_key].append(sample)
         # Create a MemoryDataset for each subset key

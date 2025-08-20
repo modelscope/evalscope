@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .completion_parsers import ResponseParser, lmsys_parser, ranking_parser
     from .llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
     from .math_parser import extract_answer, math_equal, strip_answer_string
+    from .metric import PassAtK
     from .metrics import (
         bleu_ngram_one_sample,
         exact_match,
@@ -30,6 +30,9 @@ else:
             'simple_f1_score',
             'weighted_mean',
         ],
+        'metric': [
+            'PassAtK',
+        ],
         'named_metrics': [
             'Metric',
             'metric_registry',
@@ -48,12 +51,7 @@ else:
             'extract_answer',
             'math_equal',
             'strip_answer_string',
-        ],
-        'completion_parsers': [
-            'ResponseParser',
-            'lmsys_parser',
-            'ranking_parser',
-        ],
+        ]
     }
 
     import sys
