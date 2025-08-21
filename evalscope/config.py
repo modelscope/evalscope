@@ -128,7 +128,7 @@ class TaskConfig(BaseArgument):
                         'temperature': 0.0,
                     }
         if isinstance(self.generation_config, dict):
-            self.generation_config = GenerateConfig(**self.generation_config)
+            self.generation_config = GenerateConfig.model_validate(self.generation_config)
 
         # Set eval_batch_size to generation_config.batch_size
         self.generation_config.batch_size = self.eval_batch_size

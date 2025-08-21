@@ -3,6 +3,7 @@ import os
 
 from evalscope.api.dataset import DataLoader, Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.messages.content import ContentImage
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
@@ -19,6 +20,19 @@ class Text2ImageAdapter(DefaultDataAdapter):
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
+
+    def record_to_sample(self, record) -> Sample:
+        """Convert a record dictionary to a Sample object."""
+        return Sample(
+            input=[ChatMessageUser(content=record['prompt'])],
+            metadata={
+                'id': record['id'],
+                'prompt': record['prompt'],
+                'category': record.get('category', ''),
+                'tags': record.get('tags', []),
+                'image_path': record.get('image_path', ''),  # Optional field for existing image path
+            }
+        )
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
         """
@@ -93,6 +107,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
         # Get prediction and prompt from task state
         image_path = task_state.metadata.get('image_path', original_prediction)
         prompt = task_state.input[0].content
+        meta = task_state.metadata
 
         # Initialize the score object with prediction details
         score = Score(
@@ -112,6 +127,11 @@ class Text2ImageAdapter(DefaultDataAdapter):
                     metric_cls = get_metric(metric_name)
                     metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
                 metric_score = metric_func(image_path, prompt)[0]
+
+                # fine-granular metrics
+                category = meta.get('category')
+                if category:
+                    metric_name = f'{metric_name}_{category}'
                 if isinstance(metric_score, dict):
                     for k, v in metric_score.items():
                         score.value[f'{metric_name}_{k}'] = v.cpu().item()

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from evalscope.benchmarks.utils import PromptData, load_file_with_extension, preprocess_decorator
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, AnswerKeys, EvalType, HubType
-from evalscope.metrics import LLMJudge, metric_registry
+from evalscope.metrics import LLMJudge
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils.logger import get_logger
 

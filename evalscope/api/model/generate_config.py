@@ -113,16 +113,16 @@ class GenerateConfig(BaseModel):
     extra_body: Optional[Dict[str, Any]] = Field(default=None)
     """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
-    height: Optional[int] = Field(default=None),
+    height: Optional[int] = Field(default=None)
     """Image height for image generation model only"""
 
-    width: Optional[int] = Field(default=None),
+    width: Optional[int] = Field(default=None)
     """Image width for image generation model only"""
 
-    num_inference_steps: Optional[int] = Field(default=None),
+    num_inference_steps: Optional[int] = Field(default=None)
     """Number of inference steps for image generation model only"""
 
-    guidance_scale: Optional[float] = Field(default=None),
+    guidance_scale: Optional[float] = Field(default=None)
     """Guidance scale for image generation model only"""
 
     # migrate reasoning_history as a bool

@@ -3,6 +3,7 @@ from typing import List
 
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
+from .metrics import mean
 
 
 @register_metric(name='exact_match')
@@ -227,10 +228,9 @@ class Mean(Aggregator):
         aggregated_scores = []
         for metric_name, values in metric_values.items():
             if values:  # Only process non-empty value lists
-                mean_value = sum(values) / len(values)
                 aggregated_scores.append(
                     AggScore(
-                        score=mean_value,
+                        score=mean(values),
                         metric_name=metric_name,
                         aggregation_name=self.name,
                         num=len(values),

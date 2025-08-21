@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
 from evalscope.api.dataset import Sample

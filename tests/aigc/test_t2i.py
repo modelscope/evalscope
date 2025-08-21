@@ -46,6 +46,23 @@ class TestRun(unittest.TestCase):
 
         run_task(task_cfg=task_cfg)
 
+    def test_run_local_evalmuse(self):
+        from evalscope import TaskConfig, run_task
+
+        task_cfg = TaskConfig(
+            model_id='T2I-Model', # 只用于展示，实际运行时不需要指定模型ID
+            model_task=ModelTask.IMAGE_GENERATION,
+            datasets=[
+                'evalmuse',  # 使用 EvalMuse benchmark
+            ],
+            dataset_args={
+                'evalmuse': {
+                    'dataset_id': 'data/example.jsonl',  # 构建的jsonl路径
+                }
+            },
+        )
+
+        run_task(task_cfg=task_cfg)
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_benchmark(self):
