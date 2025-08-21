@@ -38,3 +38,10 @@ def checkpoint() -> type[ModelAPI]:
     from .modelscope import ModelScopeAPI
 
     return ModelScopeAPI
+
+
+@register_model_api(name='text2image')
+def text2image() -> type[ModelAPI]:
+    from .text2image_model import Text2ImageAPI
+
+    return Text2ImageAPI

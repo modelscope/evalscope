@@ -140,11 +140,25 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self._task_config.dataset_hub = value
 
     @property
+    def eval_type(self) -> str:
+        """
+        Return the evaluation type for the benchmark.
+        """
+        return self._task_config.eval_type
+
+    @property
     def subset_list(self) -> List[str]:
         """
         Return the subset list of the benchmark.
         """
         return self._benchmark_meta.subset_list
+
+    @subset_list.setter
+    def subset_list(self, value: List[str]):
+        """
+        Set the subset list of the benchmark.
+        """
+        self._benchmark_meta.subset_list = value
 
     @property
     def metric_list(self) -> List[Union[str, Dict[str, Any]]]:

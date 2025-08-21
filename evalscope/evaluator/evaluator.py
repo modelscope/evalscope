@@ -96,6 +96,7 @@ class DefaultEvaluator(Evaluator):
 
         # Process each subset (e.g., test, validation) independently
         for subset, dataset in dataset_dict.items():
+            assert len(dataset) > 0, f'No samples found in subset: {subset}'
             subset_score = self.evaluate_subset(subset, dataset)
             agg_score_dict[subset] = subset_score
 

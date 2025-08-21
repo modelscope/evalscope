@@ -118,7 +118,7 @@ class ChatCompletionChoice(BaseModel):
         return values
 
     @classmethod
-    def from_content(cls, content: str) -> 'ChatCompletionChoice':
+    def from_content(cls, content: Union[str, List[Content]]) -> 'ChatCompletionChoice':
         """Create a ChatCompletionChoice from content string."""
         return cls(
             message=ChatMessageAssistant(content=content),

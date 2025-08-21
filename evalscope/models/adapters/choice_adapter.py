@@ -113,7 +113,6 @@ class MultiChoiceModelAdapter(BaseModelAdapter):
         return log_probs, {'tokens': tokens}
 
 
-@register_model_adapter(name=OutputType.CONTINUOUS)
 class ContinuationLogitsModelAdapter(MultiChoiceModelAdapter):
     """
     Continuation-logits model adapter.

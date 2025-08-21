@@ -78,7 +78,7 @@ def openai_chat_tool_call(tool_call: ToolCall) -> ChatCompletionMessageToolCall:
     )
 
 
-def openai_chat_tool_call_param(tool_call: ToolCall, ) -> ChatCompletionMessageToolCallParam:
+def openai_chat_tool_call_param(tool_call: ToolCall) -> ChatCompletionMessageToolCallParam:
     return ChatCompletionMessageToolCallParam(
         id=tool_call.id,
         function=dict(name=tool_call.function.name, arguments=json.dumps(tool_call.function.arguments)),
@@ -86,7 +86,7 @@ def openai_chat_tool_call_param(tool_call: ToolCall, ) -> ChatCompletionMessageT
     )
 
 
-def openai_chat_completion_part(content: Content, ) -> ChatCompletionContentPartParam:
+def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartParam:
     if content.type == 'text':
         return ChatCompletionContentPartTextParam(type='text', text=content.text)
     elif content.type == 'image':

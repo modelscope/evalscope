@@ -85,12 +85,11 @@ class TaskConfig(BaseArgument):
     def __init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
-
+            self.model = self.model_task
+            self.eval_type = EvalType.MOCK_LLM
+        else:
             if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.model = DummyT2IModel()
-            else:
-                self.model = EvalType.MOCK_LLM
-                self.eval_type = EvalType.MOCK_LLM
+                self.eval_type = EvalType.TEXT2IMAGE
 
         # Set model_id if not provided
         if not self.model_id:

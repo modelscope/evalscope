@@ -16,7 +16,6 @@ if TYPE_CHECKING:
         simple_f1_score,
         weighted_mean,
     )
-    from .named_metrics import metric_registry
     from .rouge_metric import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
 
 else:
@@ -32,10 +31,6 @@ else:
         ],
         'metric': [
             'PassAtK',
-        ],
-        'named_metrics': [
-            'Metric',
-            'metric_registry',
         ],
         'rouge_metric': [
             'compute_rouge_score_one_sample_zh',

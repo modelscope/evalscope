@@ -169,10 +169,13 @@ class LocalDataLoader(DataLoader):
         # Check for JSONL or CSV files in the specified path
         for ext, loader in [('.jsonl', jsonl_to_list), ('.csv', csv_to_list)]:
             # Check if the file exists with the given extension
-            file_paths = [
-                os.path.join(path, f'{self.subset}_{self.split}{ext}'),
-                os.path.join(path, f'{self.subset}{ext}')
-            ]
+            if os.path.isfile(path) and path.endswith(ext):
+                file_paths = [path]
+            else:
+                file_paths = [
+                    os.path.join(path, f'{self.subset}_{self.split}{ext}'),
+                    os.path.join(path, f'{self.subset}{ext}')
+                ]
             # If the file exists, load it
             for file_path in file_paths:
                 if os.path.exists(file_path):

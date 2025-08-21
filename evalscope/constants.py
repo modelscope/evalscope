@@ -69,6 +69,7 @@ class EvalType:
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     SERVICE = 'openai_api'  # model service
+    TEXT2IMAGE = 'text2image'  # image generation service
 
 
 class OutputType:
@@ -124,3 +125,4 @@ class Tags:
     LONG_CONTEXT = 'LongContext'
     RETRIEVAL = 'Retrieval'
     FUNCTION_CALLING = 'FunctionCalling'
+    TEXT_TO_IMAGE = 'TextToImage'

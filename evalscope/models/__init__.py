@@ -6,14 +6,10 @@ from evalscope.utils.import_utils import _LazyModule
 if TYPE_CHECKING:
     from .adapters import (
         BaseModelAdapter,
-        BFCLAdapter,
-        ChatGenerationModelAdapter,
         ContinuationLogitsModelAdapter,
         CustomModelAdapter,
         MultiChoiceModelAdapter,
-        ServerModelAdapter,
         T2IModelAdapter,
-        TauBenchAdapter,
         initialize_model_adapter,
     )
     from .custom import CustomModel, DummyCustomModel, DummyT2IModel
@@ -25,14 +21,10 @@ else:
         'adapters': [
             'BaseModelAdapter',
             'initialize_model_adapter',
-            'ChatGenerationModelAdapter',
             'ContinuationLogitsModelAdapter',
             'MultiChoiceModelAdapter',
             'CustomModelAdapter',
-            'ServerModelAdapter',
             'T2IModelAdapter',
-            'TauBenchAdapter',
-            'BFCLAdapter',
         ],
         'model_apis': [
             'openai_api',

@@ -13,7 +13,7 @@ from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
-from .benchmark import DataAdapter
+from ..benchmark import DataAdapter
 
 logger = get_logger()
 
@@ -520,7 +520,8 @@ class DefaultDataAdapter(DataAdapter):
                 score.value[metric_name] = metric_score
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                return None
+                score.value[metric_name] = 0
+                score.metadata[metric_name] = f'error: {str(e)}'
 
         return score
 

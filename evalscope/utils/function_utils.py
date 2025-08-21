@@ -3,6 +3,7 @@ from functools import wraps
 
 
 def run_once(func):
+    """Decorator to ensure a function is only run once."""
     has_run = False
     result = None
 

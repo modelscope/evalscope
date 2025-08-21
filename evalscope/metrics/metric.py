@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List
 
-from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore
+from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
 
 
@@ -91,6 +91,111 @@ class MultiChoiceAcc(Metric):
         return res
 
 
+# ##################
+# T2I Metrics ######
+####################
+@register_metric(name='VQAScore')
+class VQAScore(T2IMetric):
+
+    def _init_once(self, model: str = 'clip-flant5-xxl'):
+        from .t2v_metrics.vqascore import VQAScore
+        self.model = VQAScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='PickScore')
+class PickScore(T2IMetric):
+
+    def _init_once(self, model: str = 'pickscore-v1'):
+        from .t2v_metrics.clipscore import CLIPScore
+        self.model = CLIPScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='CLIPScore')
+class CLIPScore(T2IMetric):
+
+    def _init_once(self, model: str = 'openai:ViT-L-14-336'):
+        from .t2v_metrics.clipscore import CLIPScore
+        self.model = CLIPScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='BLIPv2Score')
+class BLIPv2Score(T2IMetric):
+
+    def _init_once(self, model: str = 'blip2-itm'):
+        from .t2v_metrics.itmscore import ITMScore
+        self.model = ITMScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='HPSv2Score')
+class HPSv2Score(T2IMetric):
+
+    def _init_once(self, model: str = 'hpsv2'):
+        from .t2v_metrics.clipscore import CLIPScore
+        self.model = CLIPScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='HPSv2.1Score')
+class HPSv2_1Score(T2IMetric):
+
+    def _init_once(self, model: str = 'hpsv2.1'):
+        from .t2v_metrics.clipscore import CLIPScore
+        self.model = CLIPScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='ImageRewardScore')
+class ImageRewardScore(T2IMetric):
+
+    def _init_once(self, model: str = 'image-reward-v1'):
+        from .t2v_metrics.itmscore import ITMScore
+        self.model = ITMScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='FGA_BLIP2Score')
+class FGA_BLIP2Score(T2IMetric):
+
+    def _init_once(self, model: str = 'fga_blip2'):
+        from .t2v_metrics.itmscore import ITMScore
+        self.model = ITMScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+@register_metric(name='MPS')
+class MPS(T2IMetric):
+
+    def _init_once(self, model: str = 'mps'):
+        from .t2v_metrics.clipscore import CLIPScore
+        self.model = CLIPScore(model=model)
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        return self.model(images, texts, **kwargs)
+
+
+# ##################
+# Aggregators ######
+# ##################
 @register_aggregation(name='mean')
 class Mean(Aggregator):
 
