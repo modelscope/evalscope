@@ -1,6 +1,28 @@
-from dataclasses import dataclass, field
-from pydantic import BaseModel, Field, JsonValue
+import json
+from pydantic import BaseModel, Field, JsonValue, field_validator
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
+
+
+class ToolFunction(BaseModel):
+    """Indicate that a specific tool function should be called."""
+
+    name: str
+    """The name of the tool function to call."""
+
+    arguments: Dict[str, Any]
+    """The arguments of the tool function to call"""
+
+    @field_validator('arguments', mode='before')
+    @classmethod
+    def parse_arguments(cls, v):
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except Exception as e:
+                raise ValueError(f'arguments field string is not valid JSON: {e}')
+        if not isinstance(v, dict):
+            raise ValueError('arguments must be a dict or a JSON string representing a dict')
+        return v
 
 
 class ToolCallContent(BaseModel):
@@ -30,32 +52,27 @@ class ToolCallView(BaseModel):
     """Custom representation of tool call."""
 
 
-@dataclass
-class ToolCall:
+class ToolCall(BaseModel):
     id: str
     """Unique identifier for tool call."""
 
-    function: str
-    """Function called."""
+    function: ToolFunction
+    """Function to call."""
 
-    arguments: Dict[str, Any]
-    """Arguments to function."""
-
-    internal: Optional[JsonValue] = field(default=None)
+    internal: Optional[JsonValue] = Field(default=None)
     """Model provider specific payload - typically used to aid transformation back to model types."""
 
-    parse_error: Optional[str] = field(default=None)
+    parse_error: Optional[str] = Field(default=None)
     """Error which occurred parsing tool call."""
 
-    view: Optional[ToolCallContent] = field(default=None)
+    view: Optional[ToolCallContent] = Field(default=None)
     """Custom view of tool call input."""
 
-    type: Optional[str] = field(default=None)
+    type: Optional[str] = Field(default=None)
     """Tool call type (deprecated)."""
 
 
-@dataclass
-class ToolCallError:
+class ToolCallError(BaseModel):
     """Error raised by a tool call."""
 
     type: Literal[
@@ -73,14 +90,6 @@ class ToolCallError:
 
     message: str
     """Error message."""
-
-
-@dataclass
-class ToolFunction:
-    """Indicate that a specific tool function should be called."""
-
-    name: str
-    """The name of the tool function to call."""
 
 
 ToolChoice = Union[Literal['auto', 'any', 'none'], ToolFunction]

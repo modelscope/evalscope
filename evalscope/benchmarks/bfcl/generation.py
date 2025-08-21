@@ -28,7 +28,6 @@ def predict(model: Model, sample: Sample) -> ModelOutput:
         model=model.name,
         choices=[ChatCompletionChoice.from_content(json.dumps(response, ensure_ascii=False, indent=2))],
         model_usage=model_usage,
-        metadata=sample.metadata,
         time=time.time()
     )
 
@@ -180,7 +179,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
                 model_responses = [message]
                 tool_call_strs = None
             elif message.tool_calls:
-                model_responses = [{tc.function: tc.arguments} for tc in message.tool_calls]
+                model_responses = [{tc.function.name: tc.function.arguments} for tc in message.tool_calls]
                 try:
                     tool_call_strs = convert_to_function_call(model_responses)
                 except Exception as e:

@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.messages import ChatMessageAssistant, Content
-from evalscope.api.tool import ToolCall
+from evalscope.api.tool import ToolCall, ToolFunction
 
 
 class ModelUsage(BaseModel):
@@ -257,9 +257,11 @@ class ModelOutput(BaseModel):
                         tool_calls=[
                             ToolCall(
                                 id=tool_call_id,
-                                function=tool_name,
                                 internal=internal,
-                                arguments=tool_arguments,
+                                function=ToolFunction(
+                                    name=tool_name,
+                                    arguments=tool_arguments,
+                                )
                             )
                         ],
                     ),

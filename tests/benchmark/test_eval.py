@@ -358,12 +358,27 @@ class TestBenchmark(TestCase):
     def test_bfcl(self):
         """Test BFCL dataset."""
         dataset_args = {
-            # 'subset_list': ['simple', 'live_multiple', 'multi_turn_base'],
+            'subset_list': ['simple', 'live_multiple', 'multi_turn_base'],
             'extra_params': {
-                'is_fc_model': False
+                'is_fc_model': True,
+                'underscore_to_dot': True
             }
         }
         self._run_dataset_test('bfcl_v3', dataset_args)
+
+    def test_tau_bench(self):
+        dataset_args = {
+            'extra_params': {
+                'user_model': 'qwen-plus',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'generation_config': {
+                    'temperature': 0.7,
+                    'max_new_tokens': 1024
+                }
+            }
+        }
+        self._run_dataset_test('tau_bench', dataset_args, limit=1)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

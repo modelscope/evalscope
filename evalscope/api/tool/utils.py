@@ -3,7 +3,7 @@ import yaml
 from typing import Any, Dict, List, Optional
 
 from evalscope.utils import get_logger
-from .tool_call import ToolCall
+from .tool_call import ToolCall, ToolFunction
 from .tool_info import ToolInfo
 
 logger = get_logger()
@@ -52,8 +52,10 @@ def parse_tool_call(id: str, function: str, arguments: str, tools: Optional[List
     # return ToolCall with error payload
     return ToolCall(
         id=id,
-        function=function,
-        arguments=arguments_dict,
+        function=ToolFunction(
+            name=function,
+            arguments=arguments_dict,
+        ),
         parse_error=error,
     )
 

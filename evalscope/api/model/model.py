@@ -8,7 +8,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessag
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger
-from evalscope.utils.io_utils import thread_safe
+from evalscope.utils.function_utils import thread_safe
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 

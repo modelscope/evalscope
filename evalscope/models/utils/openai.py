@@ -74,14 +74,14 @@ def openai_chat_tool_call(tool_call: ToolCall) -> ChatCompletionMessageToolCall:
     return ChatCompletionMessageToolCall(
         type='function',
         id=tool_call.id,
-        function=Function(name=tool_call.function, arguments=json.dumps(tool_call.arguments)),
+        function=Function(name=tool_call.function.name, arguments=json.dumps(tool_call.function.arguments)),
     )
 
 
 def openai_chat_tool_call_param(tool_call: ToolCall, ) -> ChatCompletionMessageToolCallParam:
     return ChatCompletionMessageToolCallParam(
         id=tool_call.id,
-        function=dict(name=tool_call.function, arguments=json.dumps(tool_call.arguments)),
+        function=dict(name=tool_call.function.name, arguments=json.dumps(tool_call.function.arguments)),
         type='function',
     )
 

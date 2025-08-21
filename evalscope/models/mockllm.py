@@ -4,7 +4,7 @@ from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
-from evalscope.utils.io_utils import thread_safe
+from evalscope.utils.function_utils import thread_safe
 
 
 class MockLLM(ModelAPI):

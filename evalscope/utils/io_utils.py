@@ -6,10 +6,8 @@ import jsonlines as jsonl
 import os
 import re
 import string
-import threading
 import unicodedata
 import yaml
-from functools import wraps
 from io import BytesIO
 from PIL import Image
 
@@ -351,18 +349,6 @@ def safe_filename(s: str, max_length: int = 255) -> str:
             s = s[:max_length]
 
     return s
-
-
-def thread_safe(func):
-    """Thread-safe decorator for functions that need to be executed in a thread-safe manner."""
-    lock = threading.RLock()
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        with lock:
-            return func(*args, **kwargs)
-
-    return wrapper
 
 
 def convert_numpy_types(obj):
