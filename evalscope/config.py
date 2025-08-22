@@ -28,7 +28,7 @@ logger = get_logger()
 @dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
-    model: Optional[Union[str]] = None
+    model: Optional[str] = None
     model_id: Optional[str] = None
     model_args: Dict = field(default_factory=dict)
     model_task: str = ModelTask.TEXT_GENERATION
