@@ -2,6 +2,7 @@ accelerate
 colorlog
 datasets==3.6.0
 docstring_parser
+dotenv
 immutabledict
 jieba
 jsonlines
@@ -11,6 +12,7 @@ matplotlib
 modelscope[framework]>=1.27
 nltk>=3.9
 openai
+overrides
 pandas
 pillow
 pyarrow

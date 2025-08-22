@@ -10,6 +10,7 @@ from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
 from evalscope.api.registry import get_metric
 from evalscope.constants import EvalType
 from evalscope.utils import get_logger
+from evalscope.utils.function_utils import thread_safe
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
@@ -82,7 +83,10 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
         else:
-            output_path = os.path.join(output_dir, 'images', f'{sample.id}_{sample.group_id}.png')
+            image_id = f"{sample.metadata.get('id',sample.id)}_{sample.group_id}"
+            output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
+            if not os.path.exists(os.path.dirname(output_path)):
+                os.makedirs(os.path.dirname(output_path))
             # get base64 image from model_output
             content = model_output.message.content[0]
 
@@ -101,6 +105,8 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
 
+    # NOTE: thread safe is needed, since we can't batch inference here.
+    @thread_safe
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:

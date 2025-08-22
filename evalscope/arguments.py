@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 import argparse
 import json
 
@@ -70,6 +71,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Cache and working directory arguments
     parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
+    parser.add_argument('--rerun-review', action='store_true', default=False, help='Rerun the review process when use_cache.')
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
 
     # Debug and runtime mode arguments

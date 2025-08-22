@@ -24,7 +24,7 @@ class Score(BaseModel):
     explanation: Optional[str] = Field(default=None)
     """Explanation of score (optional)."""
 
-    metadata: Optional[Dict[str, Any]] = Field(default=None)
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     """Additional metadata related to the score"""
 
     main_score_name: Optional[str] = Field(default=None)

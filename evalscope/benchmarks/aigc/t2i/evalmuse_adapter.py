@@ -7,6 +7,7 @@ from evalscope.api.metric.scorer import AggScore, Score
 from evalscope.api.registry import get_metric, register_benchmark
 from evalscope.constants import Tags
 from evalscope.metrics import mean
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -32,6 +33,7 @@ class EvalMuseAdapter(Text2ImageAdapter):
         assert len(self.metric_list
                    ) == 1 and self.metric_list[0] == 'FGA_BLIP2Score', 'Only FGA_BLIP2Score is supported for EvalMuse'
 
+    @thread_safe
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
         # Get prediction and prompt from task state
         image_path = task_state.metadata.get('image_path', original_prediction)

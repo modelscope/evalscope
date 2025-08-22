@@ -57,7 +57,7 @@ class Text2ImageAPI(ModelAPI):
             return value
 
         model_path = collect_model_arg('model_path')
-        torch_dtype = collect_model_arg('precision')
+        torch_dtype = collect_model_arg('precision') or collect_model_arg('torch_dtype')
         device_map = collect_model_arg('device_map')
         # torch dtype
         DTYPE_MAP = {'float16': torch.float16, 'float32': torch.float32, 'bfloat16': torch.bfloat16, 'auto': 'auto'}

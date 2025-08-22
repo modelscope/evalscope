@@ -1,6 +1,5 @@
 import base64
 import os
-import tiktoken
 import torch
 from openai import OpenAI
 from typing import List
@@ -42,6 +41,8 @@ class GPT4VModel(VQAScoreModel):
     def load_model(self):
         """Load the model, tokenizer, image transform
         """
+        import tiktoken
+
         self.tokenizer = tiktoken.encoding_for_model(self.model_name)
         self.client = OpenAI(api_key=self.openai_key)
         # self.candidate_answers = GPT4V_MODELS[self.model_name]['candidate_answers']

@@ -178,7 +178,9 @@ class DefaultEvaluator(Evaluator):
                         task_state_list.append(task_state)
 
                         # Save the prediction result to cache for future use
-                        model_result = self.cache_manager.save_prediction_cache(subset, task_state)
+                        model_result = self.cache_manager.save_prediction_cache(
+                            subset, task_state, self.benchmark.save_metadata
+                        )
                         logger.debug(f'Model result: \n{model_result.model_dump_json(indent=2)}')
 
                     except Exception as exc:
@@ -226,10 +228,12 @@ class DefaultEvaluator(Evaluator):
             List[SampleScore]: Evaluation scores for each sample.
         """
         # Initialize sample score list and filter cached reviews if caching is enabled
-        if self.use_cache:
+        if self.use_cache and not self.task_config.rerun_review:
             sample_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
         else:
+            # Init a clean sample score list
             sample_score_list = []
+            self.cache_manager.delete_review_cache(subset)
 
         if not task_states:
             return sample_score_list

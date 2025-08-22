@@ -96,7 +96,7 @@ class CacheManager:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return file_path
 
-    def save_prediction_cache(self, subset: str, task_state: TaskState) -> 'ModelResult':
+    def save_prediction_cache(self, subset: str, task_state: TaskState, save_metadata: bool = True) -> 'ModelResult':
         """
         Save a prediction result to the cache.
 
@@ -109,7 +109,7 @@ class CacheManager:
         """
         cache_file = self.get_prediction_cache_path(subset)
         # Convert task state to serializable model result
-        model_result = ModelResult.from_task_state(task_state)
+        model_result = ModelResult.from_task_state(task_state, save_metadata)
         # Serialize to dictionary
         model_result_dict = model_result.model_dump()
         # Append to JSONL cache file
@@ -167,6 +167,13 @@ class CacheManager:
         if self.outputs.is_make:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return file_path
+
+    def delete_review_cache(self, subset: str):
+        """Delete the review cache for a specific subset. If the cache exists, it will be removed."""
+        file_path = self.get_review_cache_path(subset)
+        if os.path.exists(file_path):
+            logger.info(f'Deleting review cache file: {file_path}')
+            os.remove(file_path)
 
     def save_review_cache(
         self,
@@ -241,8 +248,11 @@ class ModelResult(BaseModel):
     messages: List[ChatMessage] = []
     """Chat messages exchanged during evaluation (for conversational models)."""
 
+    metadata: Optional[Dict[str, Any]] = None
+    """Additional metadata associated with the model result."""
+
     @classmethod
-    def from_task_state(cls, task_state: TaskState) -> 'ModelResult':
+    def from_task_state(cls, task_state: TaskState, save_metadata: bool = True) -> 'ModelResult':
         """
         Create a ModelResult from a TaskState for caching.
 
@@ -257,6 +267,7 @@ class ModelResult(BaseModel):
             index=task_state.sample_id,
             messages=task_state.messages,
             model_output=task_state.output,
+            metadata=task_state.metadata if save_metadata else {},
         )
 
     def to_task_state(self, dataset: Dataset) -> TaskState:
@@ -275,6 +286,10 @@ class ModelResult(BaseModel):
         sample = dataset[self.index]
         if not sample:
             raise ValueError(f'Sample with index {self.index} not found in dataset')
+
+        # update metadata if exists
+        if self.metadata:
+            sample.metadata.update(self.metadata)
 
         return TaskState(
             model=self.model,

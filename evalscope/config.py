@@ -55,6 +55,7 @@ class TaskConfig(BaseArgument):
 
     # Cache and working directory arguments
     use_cache: Optional[str] = None
+    rerun_review: bool = False
     work_dir: str = DEFAULT_WORK_DIR
 
     # Debug and runtime mode arguments
