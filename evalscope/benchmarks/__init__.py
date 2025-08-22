@@ -4,8 +4,6 @@ import importlib
 import os
 import time
 
-from evalscope.benchmarks.benchmark import Benchmark, BenchmarkMeta
-from evalscope.benchmarks.data_adapter import DataAdapter
 from evalscope.utils import get_logger
 
 logger = get_logger()

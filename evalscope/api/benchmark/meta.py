@@ -22,9 +22,6 @@ class BenchmarkMeta:
     data_adapter: Optional[Type['DataAdapter']] = None
     """ Data adapter class for the benchmark."""
 
-    model_adapter: Optional[str] = OutputType.GENERATION
-    """ Model adapter type, default is generation."""
-
     output_types: List[str] = field(default_factory=lambda: [OutputType.GENERATION])
     """ List of output types supported by the benchmark."""
 

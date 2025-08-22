@@ -55,7 +55,7 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
 
         super().__init__(**kwargs)
 
-        self.shuffle_choices = self.seed
+        self.shuffle_choices = True
 
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
         if self.multiple_correct:

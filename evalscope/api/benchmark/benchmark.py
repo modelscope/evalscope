@@ -98,13 +98,6 @@ class DataAdapter(LLMJudgeMixin, ABC):
         return self._benchmark_meta.dataset_id
 
     @property
-    def model_adapter(self) -> Optional[str]:
-        """
-        Return the model adapter of the benchmark.
-        """
-        return self._benchmark_meta.model_adapter
-
-    @property
     def output_types(self) -> Optional[List[str]]:
         """
         Return the output types of the benchmark.

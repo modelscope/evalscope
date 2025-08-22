@@ -1,4 +1,4 @@
-bfcl-eval
+bfcl-eval==2025.6.16
 human_eval
 pytest
 pytest-cov
