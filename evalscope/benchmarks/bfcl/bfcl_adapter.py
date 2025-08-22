@@ -249,10 +249,10 @@ class BFCLAdapter(DefaultDataAdapter):
             }
             score.main_score_name = 'acc'
 
-        except Exception as e:
+        except Exception:
+            logger.error(f"Evaluation failed for sample: {task_state.sample_id}\n{traceback.format_exc()}")
             score.value = {'acc': 0.0}
-            score.explanation = f'Evaluation failed: {str(e)}'
-            score.metadata = {'error': str(e)}
+            score.explanation = f'Evaluation failed with an unexpected error.'
+            score.metadata = {'error': traceback.format_exc()}
             score.main_score_name = 'acc'
-
         return score
