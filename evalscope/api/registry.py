@@ -28,7 +28,15 @@ def register_benchmark(metadata: 'BenchmarkMeta'):
 
 
 def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdapter':
-    """Retrieve a registered benchmark by name."""
+    """
+    Retrieve a registered benchmark by name.
+
+    Args:
+        name (str): The name of the benchmark.
+        config (Optional['TaskConfig']): The task configuration.
+        dataset_args (Optional[dict]): The dataset-specific arguments.
+
+    """
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
     if not metadata:
@@ -36,8 +44,7 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
 
     # Update metadata with dataset-specific configuration
     if config is not None:
-        dataset_config = config.dataset_args.get(name, {})
-        metadata._update(dataset_config)
+        metadata._update(config.dataset_args.get(name, {}))
     # Return the data adapter initialized with the benchmark metadata
     data_adapter_cls = metadata.data_adapter
     return data_adapter_cls(benchmark_meta=metadata, task_config=config)

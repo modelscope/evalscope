@@ -3,7 +3,7 @@ import random
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
 
 from evalscope.api.messages import ChatMessage, messages_pretty_str
 from evalscope.api.tool import ToolInfo
@@ -110,7 +110,7 @@ class Dataset(Sequence[Sample], abc.ABC):
         ...
 
     @abc.abstractmethod
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Sample]:
         """Return an iterator over the samples."""
         ...
 
@@ -205,7 +205,7 @@ class MemoryDataset(Dataset):
         """Was the dataset shuffled."""
         return self._shuffled
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Sample]:
         return iter(self.samples)
 
     def __getitem__(self, index: Union[int, slice]) -> Union[Sample, Dataset]:

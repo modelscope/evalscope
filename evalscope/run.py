@@ -13,9 +13,6 @@ from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 
-if TYPE_CHECKING:
-    from evalscope.models import LocalModel
-
 logger = get_logger()
 
 

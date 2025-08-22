@@ -90,6 +90,7 @@ class EvalBackend:
 
 class DataCollection:
     NAME = 'data_collection'
+    INFO = 'collection_info'
 
 
 class JudgeStrategy:

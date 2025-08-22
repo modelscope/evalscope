@@ -1,3 +1,6 @@
+from dotenv import dotenv_values
+
+env = dotenv_values('.env')
 import json
 import os
 import unittest
@@ -15,7 +18,6 @@ class TestCollection(unittest.TestCase):
                     CollectionSchema(name='math', datasets=[
                         CollectionSchema(name='generation', datasets=[
                             DatasetInfo(name='gsm8k', weight=1, task_type='math', tags=['en', 'math']),
-                            DatasetInfo(name='competition_math', weight=1, task_type='math', tags=['en', 'math']),
                         ]),
                         CollectionSchema(name='multiple_choice', datasets=[
                             DatasetInfo(name='cmmlu', weight=2, task_type='math', tags=['zh', 'math'], args={'subset_list': ['college_mathematics', 'high_school_mathematics']}),
@@ -45,15 +47,22 @@ class TestCollection(unittest.TestCase):
         from evalscope import TaskConfig, run_task
 
         task_cfg = TaskConfig(
-            model='Qwen2.5-0.5B-Instruct',
-            api_url='http://127.0.0.1:8801/v1/chat/completions',
-            api_key='EMPTY',
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key=env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=['data_collection'],
             dataset_args={'data_collection': {
                 'local_path': 'outputs/mixed_data_test.jsonl'
                 # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
+            eval_batch_size=5,
+            generation_config = {
+                'max_tokens': 10000,
+                'temperature': 0.0,
+            },
+            limit=50,
+            # use_cache='outputs/20250822_161804'
         )
         run_task(task_cfg=task_cfg)
 
