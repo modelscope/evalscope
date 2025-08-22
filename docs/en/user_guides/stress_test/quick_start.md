@@ -75,7 +75,7 @@ results = run_perf_benchmark(task_cfg)
 **Parameter description**:
 
 - `parallel`: Number of concurrent requests, multiple values can be passed, separated by spaces
-- `number`: Number of requests for each concurrency, multiple values can be passed, separated by spaces (corresponding one-to-one with `parallel`)
+- `number`: Number of total requests for each concurrency, multiple values can be passed, separated by spaces (corresponding one-to-one with `parallel`)
 - `url`: Request URL address
 - `model`: Name of the model used
 - `api`: API service used, default is `openai`

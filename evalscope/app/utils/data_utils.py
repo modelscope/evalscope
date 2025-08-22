@@ -137,10 +137,13 @@ def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
 
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
+    # Load review cache
     outputs = OutputsStructure(work_dir, is_make=False)
     cache_manager = CacheManager(outputs, model_name, dataset_name)
-
-    review_cache_path = cache_manager.get_review_cache_path(subset_name)
+    if dataset_name == DataCollection.NAME:
+        review_cache_path = cache_manager.get_review_cache_path('default')
+    else:
+        review_cache_path = cache_manager.get_review_cache_path(subset_name)
     logger.debug(f'review_path: {review_cache_path}')
     review_caches = jsonl_to_list(review_cache_path)
 
@@ -148,6 +151,14 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     for cache in review_caches:
         review_result = ReviewResult.model_validate(cache)
         sample_score = review_result.sample_score
+
+        if dataset_name == DataCollection.NAME:
+            # Filter subset name
+            collection_info = sample_score.sample_metadata[DataCollection.INFO]
+            sample_dataset_name = collection_info.get('dataset_name', 'default')
+            sample_subset_name = collection_info.get('subset_name', 'default')
+            if f'{sample_dataset_name}/{sample_subset_name}' != subset_name:
+                continue
 
         prediction = sample_score.score.prediction
         target = review_result.target
