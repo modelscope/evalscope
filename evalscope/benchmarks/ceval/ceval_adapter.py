@@ -1,73 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import csv
-import os
-from collections import defaultdict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
-from evalscope.metrics.completion_parsers import ResponseParser
-from evalscope.utils.io_utils import csv_to_list
+from functools import partial
+from typing import Any, Dict
+
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Dataset, RemoteDataLoader, Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
-# flake8: noqa
-
 logger = get_logger()
-
-SUBSET_LIST = [
-    'computer_network',
-    'operating_system',
-    'computer_architecture',
-    'college_programming',
-    'college_physics',
-    'college_chemistry',
-    'advanced_mathematics',
-    'probability_and_statistics',
-    'discrete_mathematics',
-    'electrical_engineer',
-    'metrology_engineer',
-    'high_school_mathematics',
-    'high_school_physics',
-    'high_school_chemistry',
-    'high_school_biology',
-    'middle_school_mathematics',
-    'middle_school_biology',
-    'middle_school_physics',
-    'middle_school_chemistry',
-    'veterinary_medicine',
-    'college_economics',
-    'business_administration',
-    'marxism',
-    'mao_zedong_thought',
-    'education_science',
-    'teacher_qualification',
-    'high_school_politics',
-    'high_school_geography',
-    'middle_school_politics',
-    'middle_school_geography',
-    'modern_chinese_history',
-    'ideological_and_moral_cultivation',
-    'logic',
-    'law',
-    'chinese_language_and_literature',
-    'art_studies',
-    'professional_tour_guide',
-    'legal_professional',
-    'high_school_chinese',
-    'high_school_history',
-    'middle_school_history',
-    'civil_servant',
-    'sports_science',
-    'plant_protection',
-    'basic_medicine',
-    'clinical_medicine',
-    'urban_and_rural_planner',
-    'accountant',
-    'fire_engineer',
-    'environmental_impact_assessment_engineer',
-    'tax_accountant',
-    'physician',
-]
 
 SUBJECT_MAPPING = {
     'computer_network': ['Computer Network', '计算机网络', 'STEM'],
@@ -124,115 +66,105 @@ SUBJECT_MAPPING = {
     'physician': ['Physician', '医师资格', 'Other']
 }
 
+# Based on the prompt template for Chinese evaluation
+USER_PROMPT_TEMPLATE = """以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
 
-@Benchmark.register(
-    name='ceval',
-    pretty_name='C-Eval',
-    tags=['Knowledge', 'MCQ', 'Chinese'],
-    description=
-    'C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.',  # noqa: E501
-    dataset_id='modelscope/ceval-exam',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split='dev',
-    eval_split='val',
-    prompt_template=
-    '以下是中国关于{subset_name}考试的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式：“答案是：LETTER”（不带引号），其中 LETTER 是 A、B、C、D 中的一个。\n{query}',
+问题：{question}
+选项：
+{choices}
+""".lstrip()  # noqa: E501
+
+FEWSHOT_TEMPLATE = """以下是一些示例问题：
+
+{fewshot}
+
+""".lstrip()
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='ceval',
+        pretty_name='C-Eval',
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
+        description=
+        'C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.',  # noqa: E501
+        dataset_id='evalscope/ceval',
+        subset_list=list(SUBJECT_MAPPING.keys()),
+        metric_list=['acc'],
+        few_shot_num=5,
+        train_split='dev',
+        eval_split='val',
+        prompt_template=USER_PROMPT_TEMPLATE,
+        few_shot_prompt_template=FEWSHOT_TEMPLATE,
+    )
 )
-class CEVALAdapter(DataAdapter):
+class CEVALAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
 
-        few_shot_num = kwargs.get('few_shot_num', 0)
-        if few_shot_num > 5:
-            logger.warning(f'few_shot_num <= 5 for C-Eval, but got {few_shot_num}. Use 5-shot by default.')
-            kwargs['few_shot_num'] = 5
         super().__init__(**kwargs)
 
         self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
-        self.choices = ['A', 'B', 'C', 'D']
 
-    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict = defaultdict(dict)
-        for subset_name in subset_list:
-            for split_name in [self.train_split, self.eval_split]:
-                if os.path.exists(dataset_name_or_path):
-                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}_{split_name}.csv')
-                else:
-                    file_path = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}_{split_name}.csv')
-                if os.path.exists(file_path):
-                    data_dict[subset_name][split_name] = csv_to_list(file_path)
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        # Build choices list from A, B, C, D fields
+        choices = [record['A'], record['B'], record['C'], record['D']]
+        subset = self.current_subset_name
 
-        return data_dict
+        return Sample(
+            input=record['question'],
+            choices=choices,
+            target=record['answer'],
+            metadata={
+                'id': record.get('id', ''),
+                'explanation': record.get('explanation', ''),
+                'subject': subset
+            },
+        )
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def sample_to_fewshot(self, sample: Sample) -> str:
+        q_str = f"""问题：{sample.input}"""
+        choices = sample.choices if sample.choices is not None else []
+        opt_str_list = []
+        for i, choice in enumerate(choices):
+            opt_str_list.append(f"""{chr(65 + i)}. {choice}""")
+        opt_str = '\n'.join(opt_str_list)
+        opt_str = f"""选项：\n{opt_str}"""
+        exp_str = f"""解析：{sample.metadata.get('explanation', '')}"""
+        ans_str = f"""答案：{sample.target}"""
+        final_str = '\n'.join([q_str, opt_str, exp_str, ans_str])
+
+        return final_str
+
+    def format_fewshot_template(self, fewshot, sample):
+        fewshot_str = FEWSHOT_TEMPLATE.format(fewshot=fewshot)
+        prompt_str = self.format_prompt_template(sample)
+        return fewshot_str + '\n' + prompt_str
+
+    def format_prompt_template(self, sample):
+        subject_name = SUBJECT_MAPPING.get(sample.metadata['subject'])[1]
+        choices = sample.choices if sample.choices is not None else []
+        choices_str = '\n'.join([f'{chr(65 + i)}. {choice}' for i, choice in enumerate(choices)])
+
+        return USER_PROMPT_TEMPLATE.format(subject=subject_name, question=sample.input, choices=choices_str)
+
+    def extract_answer(self, prediction, task_state) -> str:
         """
-        Generate model prompt from raw input, unify the prompt format for C-Eval benchmark.
+        Extract the answer from the prediction based on the task state.
 
         Args:
-            input_d (dict): The raw input. A single data format of the C-Eval:
-
-            {'id': 0,
-            'question': '下列关于税法基本原则的表述中，不正确的是____。',
-            'A': '税收法定原则包括税收要件法定原则和税务合法性原则',
-            'B': '税收公平原则源于法律上的平等性原则',
-            'C': '税收效率原则包含经济效率和行政效率两个方面',
-            'D': '税务机关按法定程序依法征税，可以自由做出减征、停征或免征税款的决定',
-            'answer': 'D',
-            'explanation': ''}
+            prediction (str): The model's prediction string
+            task_state (dict): The current task state containing metadata
 
         Returns:
-            {'data': ['prompt ...']}
+            str: The extracted answer from the prediction
         """
+        import re
 
-        few_shot_prompts = [self._format_example(input_d=sample, include_answer=True) for sample in few_shot_list]
-
-        if len(few_shot_prompts) > 0:
-            context: str = '\n'.join(few_shot_prompts) + '\n'
+        # Use regex to find the answer in the format "答案：LETTER"
+        match = re.search(r'答案：([A-D])', prediction)
+        if match:
+            return match.group(1)
         else:
-            context = ''
-
-        query: str = context.strip() + self._format_example(input_d=input_d, include_answer=False)
-
-        subject_name: str = SUBJECT_MAPPING.get(subset_name)[1] if SUBJECT_MAPPING.get(subset_name) else subset_name
-        full_prompt = self.prompt_template.format(subset_name=subject_name, query=query)
-
-        return self.gen_prompt_data(full_prompt)
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Get the gold choice
-        return input_d.get('answer', '')
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d (dict): The raw input. Depending on the dataset.
-            eval_type: `checkpoint` or `service` or `custom`. Default is `checkpoint`.
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            return result
-        else:
-            return ResponseParser.parse_first_option_with_choices(text=result, options=self.choices)
-
-    def match(self, gold: str, pred: str) -> float:
-        return exact_match(gold=gold, pred=pred)
-
-    def _format_example(self, input_d: dict, include_answer=True):
-        example = '问题：' + input_d['question']
-        for choice in self.choices:
-            example += f'\n{choice}. {input_d[f"{choice}"]}'
-
-        if include_answer:
-            example += '\n答案: ' + input_d['answer'] + '\n\n'
-        else:
-            example += '\n答案: '
-        return example
+            logger.warning(f'No valid answer found in prediction: {prediction}')
+            return ''

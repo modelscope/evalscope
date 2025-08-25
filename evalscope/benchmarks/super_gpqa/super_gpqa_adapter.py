@@ -1,34 +1,16 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
 import os
-import random
-import re
+from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
-from evalscope.utils import logger
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-SUBSET_LIST = [
-    'Electronic Science and Technology', 'Philosophy', 'Traditional Chinese Medicine', 'Applied Economics',
-    'Mathematics', 'Physics', 'Clinical Medicine', 'Computer Science and Technology',
-    'Information and Communication Engineering', 'Control Science and Engineering', 'Theoretical Economics', 'Law',
-    'History', 'Basic Medicine', 'Education', 'Materials Science and Engineering', 'Electrical Engineering',
-    'Systems Science', 'Power Engineering and Engineering Thermophysics', 'Military Science', 'Biology',
-    'Business Administration', 'Language and Literature', 'Public Health and Preventive Medicine', 'Political Science',
-    'Chemistry', 'Hydraulic Engineering', 'Chemical Engineering and Technology', 'Pharmacy', 'Geography', 'Art Studies',
-    'Architecture', 'Forestry Engineering', 'Public Administration', 'Oceanography', 'Journalism and Communication',
-    'Nuclear Science and Technology', 'Weapon Science and Technology', 'Naval Architecture and Ocean Engineering',
-    'Environmental Science and Engineering', 'Transportation Engineering', 'Geology', 'Physical Oceanography',
-    'Musicology', 'Stomatology', 'Aquaculture', 'Mechanical Engineering',
-    'Aeronautical and Astronautical Science and Technology', 'Civil Engineering', 'Mechanics',
-    'Petroleum and Natural Gas Engineering', 'Sociology', 'Food Science and Engineering', 'Agricultural Engineering',
-    'Surveying and Mapping Science and Technology', 'Metallurgical Engineering',
-    'Library, Information and Archival Management', 'Mining Engineering', 'Astronomy',
-    'Geological Resources and Geological Engineering', 'Atmospheric Science', 'Optical Engineering', 'Animal Husbandry',
-    'Geophysics', 'Crop Science', 'Management Science and Engineering', 'Psychology', 'Forestry',
-    'Textile Science and Engineering', 'Veterinary Medicine', 'Instrument Science and Technology', 'Physical Education'
-]
+logger = get_logger()
 
 SUBSET_MAPPING = {
     'Electronic Science and Technology': ['Engineering'],
@@ -106,104 +88,78 @@ SUBSET_MAPPING = {
 }
 
 
-@Benchmark.register(
-    name='super_gpqa',
-    pretty_name='SuperGPQA',
-    tags=['MCQ', 'Knowledge'],
-    description=
-    'SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
-    dataset_id='m-a-p/SuperGPQA',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='train',  # only have train split
+@register_benchmark(
+    BenchmarkMeta(
+        name='super_gpqa',
+        pretty_name='SuperGPQA',
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
+        description=
+        'SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
+        dataset_id='m-a-p/SuperGPQA',
+        subset_list=list(SUBSET_MAPPING.keys()),
+        metric_list=['acc'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='train',  # only have train split
+        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
+    )
 )
-class SuperGPQAAdapter(DataAdapter):
+class SuperGPQAAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
-        few_shot_num = kwargs.get('few_shot_num', 0)
-        if few_shot_num > 0 and few_shot_num != 5:
-            logger.warning(
-                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {few_shot_num}. Use 5-shot by default.')
-            kwargs['few_shot_num'] = 5
+
         super().__init__(**kwargs)
+        if self.few_shot_num > 0 and self.few_shot_num != 5:
+            logger.warning(
+                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {self.few_shot_num}. Use 5-shot by default.'
+            )
+            self.few_shot_num = 5
 
-        self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+        self.reformat_subset = True
         self.category_map = SUBSET_MAPPING
-        self.few_shot_prompt = open(os.path.join(current_dir, 'five_shot_prompt.txt'), encoding='utf-8').read()
-        self.zero_shot_prompt = open(os.path.join(current_dir, 'zero_shot_prompt.txt'), encoding='utf-8').read()
 
-    def load(self, **kwargs):
-        kwargs['subset_list'] = ['default']
-        data_dict = super().load(**kwargs)
-        return self.reformat_subset(data_dict, subset_key='field', format='{}')
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        return Sample(
+            input=record['question'],
+            choices=record['options'],
+            target=record['answer_letter'],
+            subset_key=record['field'],
+            metadata={
+                'field': record['field'],
+                'discipline': record['discipline'],
+                'uuid': record.get('uuid', ''),
+                'explanation': record.get('answer', ''),
+            },
+        )
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        question = input_d['question']
-        choices = self._format_choices(input_d['options'])
-        if not self.prompt_template:
-            if few_shot_list:
-                prompt = self.few_shot_prompt.format(query=question, choices=choices)
-            else:
-                prompt = self.zero_shot_prompt.format(query=question, choices=choices)
+    def format_fewshot_template(self, fewshot, sample):
+        from .prompt import FEW_SHOT_SAMPLES
+
+        return FEW_SHOT_TEMPLATE.format(fewshot=FEW_SHOT_SAMPLES, ) + self.format_prompt_template(sample)
+
+    def extract_answer(self, prediction: str, task_state) -> str:
+        """
+        Extract the answer from the prediction.
+        """
+        from .utils import extract_option_content, extract_option_labels
+
+        choices = [choice.value for choice in task_state.choices]
+        if self.few_shot_num == 0:
+            predict = extract_option_labels(prediction, 'ABCDEFGHIJ')
+            if predict is None:
+                # Try to extract by content matching
+                predict = extract_option_content(prediction, choices)
+                predict = chr(choices.index(predict) + 65) if predict else None
         else:
-            prompt = self.prompt_template.format(query=question, choices=choices)
-        return self.gen_prompt_data(prompt)
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Get the gold choice
-        return input_d.get('answer_letter')
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d: The raw input. Depending on the dataset.
-            eval_type: 'checkpoint' or 'service' or 'custom'
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            return result
-        else:
-            from evalscope.benchmarks.super_gpqa.utils import extract_option_content, extract_option_labels
-            sample = raw_input_d
-            if self.few_shot_num == 0:
-                predict = extract_option_labels(result, 'ABCDEFGHIJ')
+            response = prediction.split('Question:')[0]
+            predict = extract_option_labels(response, 'ABCDEFGHIJ')
+            if predict is None:
+                predict = extract_option_content(response, choices)
+                predict = chr(choices.index(predict) + 65) if predict else None
+            if predict is None:
+                predict = extract_option_labels(prediction, 'ABCDEFGHIJ')
                 if predict is None:
-                    predict = extract_option_content(result, sample['options'])
-                    predict = chr(sample['options'].index(predict) + 65) if predict else None
-            else:
-                response = result.split('Question:')[0]
-                predict = extract_option_labels(response, 'ABCDEFGHIJ')
-                if predict is None:
-                    predict = extract_option_content(response, sample['options'])
-                    predict = chr(sample['options'].index(predict) + 65) if predict else None
-                if predict is None:
-                    predict = extract_option_labels(result, 'ABCDEFGHIJ')
-                    if predict is None:
-                        predict = extract_option_content(result, sample['options'])
-                        predict = chr(sample['options'].index(predict) + 65) if predict else None
-            return predict
+                    predict = extract_option_content(prediction, choices)
+                    predict = chr(choices.index(predict) + 65) if predict else None
 
-    def match(self, gold: str, pred: str) -> float:
-        return exact_match(gold=gold, pred=pred)
-
-    def _format_choices(self, choices: list) -> str:
-        """
-        Format the choices into a string for display.
-
-        Args:
-            choices (list): List of choices.
-
-        Returns:
-            str: Formatted string of choices.
-        """
-        choice_list = [f'{option}) {content}' for option, content in zip(self.choices, choices)]
-        return '\n'.join(choice_list)
+        return predict or ''

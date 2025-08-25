@@ -19,6 +19,41 @@ def post_process_arenahard(completion):
         return None
 
 
+def get_judge_score(result, reverse=False):
+    """
+    Calculate the judge score, considering confidence weight.
+
+    Args:
+        result: Judgment result ('A=B', 'A>B', 'A>>B', 'B>A', 'B>>A')
+        reverse: Whether to reverse the score
+
+    Returns:
+        float: Weighted score
+    """
+
+    # Base score mapping - using finer-grained scores
+    if not reverse:
+        score_mapping = {
+            'A=B': 0.5,  # Tie
+            'A>B': 0.75,  # A slightly wins
+            'A>>B': 1.0,  # A significantly wins
+            'B>A': 0.25,  # B slightly wins
+            'B>>A': 0.0,  # B significantly wins
+        }
+    else:
+        score_mapping = {
+            'A=B': 0.5,  # Tie
+            'A>B': 0.25,  # A slightly wins
+            'A>>B': 0.0,  # A significantly wins
+            'B>A': 0.75,  # B slightly wins
+            'B>>A': 1.0,  # B significantly wins
+        }
+
+    base_score = score_mapping.get(result, 0.5)
+
+    return base_score
+
+
 def get_battles_from_row(row, first_game_only=False, multiplier=3):
     results = []
     output = {'model_a': row['model_a'], 'model_b': row['model_b']}
@@ -106,7 +141,8 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
         return elo_scores.sort_values(ascending=False)
 
     lr = LogisticRegression(
-        fit_intercept=False, penalty=None, tol=1e-8)  # May need to set a small value when not use GPT4 as judge model
+        fit_intercept=False, penalty=None, tol=1e-8
+    )  # May need to set a small value when not use GPT4 as judge model
     lr.fit(X, Y)
 
     elo_scores = SCALE * lr.coef_[0] + INIT_RATING

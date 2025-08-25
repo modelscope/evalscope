@@ -1,6 +1,14 @@
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
-from evalscope.metrics import LLMJudge
+from typing import Any, Dict
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 TEMPLATE_0SHOT = """Please read the following text and answer the question below.
 
@@ -13,73 +21,123 @@ TEMPLATE_0SHOT = """Please read the following text and answer the question below
 Format your response as follows: "Therefore, the answer is (insert answer here)"."""
 
 
-@Benchmark.register(
-    name='docmath',
-    pretty_name='DocMath',
-    tags=['Reasoning', 'Mathematics', 'Long Context'],
-    description=
-    'DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.',  # noqa: E501
-    dataset_id='yale-nlp/DocMath-Eval',
-    metric_list=['AverageAccuracy'],
-    subset_list=['complong_testmini', 'compshort_testmini', 'simplong_testmini', 'simpshort_testmini'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    prompt_template=TEMPLATE_0SHOT,
+@register_benchmark(
+    BenchmarkMeta(
+        name='docmath',
+        pretty_name='DocMath',
+        tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],
+        description=
+        'DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.',  # noqa: E501
+        dataset_id='yale-nlp/DocMath-Eval',
+        metric_list=['acc'],
+        subset_list=['complong_testmini', 'compshort_testmini', 'simplong_testmini', 'simpshort_testmini'],
+        eval_split='test',
+        prompt_template=TEMPLATE_0SHOT,
+    )
 )
-class DocMathAdapter(DataAdapter):
+class DocMathAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._use_llm_judge = True  # Enable LLM judge for DocMath
+        self.split_as_subset = True  # Use split as subset for DocMath
 
-    def load(self, **kwargs):
-        # default load mini test
-        kwargs['split_as_subset'] = True
-        data_dict = super().load(**kwargs)
-        return data_dict
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a data record to a Sample object.
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate model prompt from input data.
-        """
-        context = context = '\n'.join(input_d['paragraphs'])
-        question = input_d['question']
-        prompt = self.prompt_template.format(context=context, question=question)
-        return self.gen_prompt_data(prompt)
+        Args:
+            record (Dict[str, Any]): Input data record.
 
-    def get_gold_answer(self, input_d: dict) -> str:
+        Returns:
+            Sample: Sample object with input, target, and metadata.
         """
-        Parse the raw input labels (gold).
-        """
-        return input_d['ground_truth']
+        ground_truth = record['ground_truth']
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
+        return Sample(
+            input=record['question'],
+            target=str(ground_truth),
+            metadata={
+                'question_id': record.get('question_id', ''),
+                'paragraphs': record['paragraphs'],
+                'answer_type': type(ground_truth).__name__
+            }
+        )
+
+    def format_prompt_template(self, sample):
+        context = '\n'.join(sample.metadata['paragraphs'])
+        question = sample.input
+        return self.prompt_template.format(context=context, question=question)
+
+    def extract_answer(self, prediction: str, task_state: TaskState):
         """
-        Parse the predicted result and extract proper answer.
+        Extract the answer from the model prediction.
         """
         from .utils import extract_answer
 
-        extracted_answer = extract_answer(result)
+        extracted_answer = extract_answer(prediction)
         return extracted_answer
 
-    def match(self, gold: str, pred: str) -> float:
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
         """
-        Match the gold answer and the predicted answer.
+        Calculate accuracy score by matching prediction with reference.
         """
         from .utils import get_acc
 
-        return get_acc(prediction=pred, gt=gold)
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-    def llm_match(self, gold: str, pred: str, judge: LLMJudge, **kwargs) -> float:
+        answer_type = task_state.metadata.get('answer_type', 'unknown')
+        accuracy = get_acc(prediction=filtered_prediction, gt=reference, answer_type=answer_type)
+        score.value = {'acc': accuracy}
+        score.main_score_name = 'acc'
+
+        return score
+
+    def llm_match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        """
+        Use LLM judge to evaluate the prediction against the reference.
+        """
         from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
 
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input['question']
-        # get grading response
-        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=gold, answer_2=pred)
-        orm_response = judge(prompt=prompt, system_prompt=GENERAL_ORM_PROMPT)
-        # parse grading response
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        question = task_state.metadata.get('question', '')
+
+        # Get grading response
+        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=reference, answer_2=filtered_prediction)
+        orm_response = self.llm_judge.judge(prompt, system_prompt=GENERAL_ORM_PROMPT)
+
+        # Parse grading response
         if 'YES' in orm_response:
-            return 1.0
+            accuracy = 1.0
         else:
-            return 0.0
+            accuracy = 0.0
+
+        score.value = {'acc': accuracy}
+        score.explanation = f'LLM judge: {orm_response}'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id
+        }
+        score.main_score_name = 'acc'
+
+        return score

@@ -25,14 +25,16 @@ def add_perf_args(parser):
         '--logdir',
         required=True,
         type=str,
-        help='The monitor log save dir, tensorboard start at this path for display!')
+        help='The monitor log save dir, tensorboard start at this path for display!'
+    )
     parser.add_argument('--host', type=str, default='0.0.0.0', help='The tensorboard host')
     parser.add_argument('--tensorboard-port', type=str, default='6006', help='The tensorboard port')
 
 
 def async_run_command_with_popen(cmd):
     sub_process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True, encoding='utf8')
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True, encoding='utf8'
+    )
     return sub_process
 
 
@@ -61,7 +63,8 @@ def start_server(args):
         bufsize=1,
         shell=True,
         universal_newlines=True,
-        encoding='utf8')
+        encoding='utf8'
+    )
 
     os.set_blocking(sub_process.stdout.fileno(), False)
     return sub_process

@@ -28,9 +28,9 @@
 - [📝 Introduction](#-introduction)
 - [☎ User Groups](#-user-groups)
 - [🎉 News](#-news)
-- [🛠️ Installation](#️-installation)
-  - [Method 1: Install Using pip](#method-1-install-using-pip)
-  - [Method 2: Install from Source](#method-2-install-from-source)
+- [🛠️ Environment Setup](#️-environment-setup)
+  - [Method 1. Install via pip](#method-1-install-via-pip)
+  - [Method 2. Install from source](#method-2-install-from-source)
 - [🚀 Quick Start](#-quick-start)
   - [Method 1. Using Command Line](#method-1-using-command-line)
   - [Method 2. Using Python Code](#method-2-using-python-code)
@@ -111,6 +111,13 @@ Please scan the QR code below to join our community groups:
 
 
 ## 🎉 News
+
+> [!IMPORTANT]
+> **Version 1.0 Refactoring**
+>
+> Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
+
+- 🔥 **[2025.08.22]** Version 1.0 Refactoring.
 - 🔥 **[2025.07.18]** The model stress testing now supports randomly generating image-text data for multimodal model evaluation. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#id4).
 - 🔥 **[2025.07.16]** Support for [τ-bench](https://github.com/sierra-research/tau-bench) has been added, enabling the evaluation of AI Agent performance and reliability in real-world scenarios involving dynamic user and tool interactions. For usage instructions, please refer to the [documentation](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/llm.html#bench).
 - 🔥 **[2025.07.14]** Support for "Humanity's Last Exam" ([Humanity's-Last-Exam](https://modelscope.cn/datasets/cais/hle)), a highly challenging evaluation benchmark. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html#humanity-s-last-exam).
@@ -121,12 +128,12 @@ Please scan the QR code below to join our community groups:
 - 🔥 **[2025.05.29]** Added support for two long document evaluation benchmarks: [DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) and [FRAMES](https://modelscope.cn/datasets/iic/frames/summary). For usage guidelines, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html).
 - 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
 - 🔥 **[2025.05.13]** Added support for the [ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static) dataset to evaluate model's tool-calling capabilities. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) for usage instructions. Also added support for the [DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/dataPeview) and [Winogrande](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val) benchmarks to assess the reasoning capabilities of models.
+<details><summary>More</summary>
+
 - 🔥 **[2025.04.29]** Added Qwen3 Evaluation Best Practices, [welcome to read 📖](https://evalscope.readthedocs.io/en/latest/best_practice/qwen3.html)
 - 🔥 **[2025.04.27]** Support for text-to-image evaluation: Supports 8 metrics including MPS, HPSv2.1Score, etc., and evaluation benchmarks such as EvalMuse, GenAI-Bench. Refer to the [user documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html) for more details.
 - 🔥 **[2025.04.10]** Model service stress testing tool now supports the `/v1/completions` endpoint (the default endpoint for vLLM benchmarking)
 - 🔥 **[2025.04.08]** Support for evaluating embedding model services compatible with the OpenAI API has been added. For more details, check the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html#configure-evaluation-parameters).
-<details><summary>More</summary>
-
 - 🔥 **[2025.03.27]** Added support for [AlpacaEval](https://www.modelscope.cn/datasets/AI-ModelScope/alpaca_eval/dataPeview) and [ArenaHard](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) evaluation benchmarks. For usage notes, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
 - 🔥 **[2025.03.20]** The model inference service stress testing now supports generating prompts of specified length using random values. Refer to the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#using-the-random-dataset) for more details.
 - 🔥 **[2025.03.13]** Added support for the [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) code evaluation benchmark, which can be used by specifying `live_code_bench`. Supports evaluating QwQ-32B on LiveCodeBench, refer to the [best practices](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html).
@@ -159,58 +166,87 @@ Please scan the QR code below to join our community groups:
 
 </details>
 
-## 🛠️ Installation
-### Method 1: Install Using pip
-We recommend using conda to manage your environment and installing dependencies with pip:
+## 🛠️ Environment Setup
+
+### Method 1. Install via pip
+
+We recommend using conda to manage your environment and pip to install dependencies. This allows you to use the latest evalscope PyPI package.
 
 1. Create a conda environment (optional)
+```shell
+# Python 3.10 is recommended
+conda create -n evalscope python=3.10
+
+# Activate the conda environment
+conda activate evalscope
+```
+2. Install dependencies via pip
+```shell
+pip install evalscope
+```
+3. Install additional dependencies (optional)
+  - To use model service inference benchmarking features, install the perf dependency:
     ```shell
-    # It is recommended to use Python 3.10
-    conda create -n evalscope python=3.10
-    # Activate the conda environment
-    conda activate evalscope
+    pip install 'evalscope[perf]'
+    ```
+  - To use visualization features, install the app dependency:
+    ```shell
+    pip install 'evalscope[app]'
+    ```
+  - If you need to use other evaluation backends, you can install OpenCompass, VLMEvalKit, or RAGEval as needed:
+    ```shell
+    pip install 'evalscope[opencompass]'
+    pip install 'evalscope[vlmeval]'
+    pip install 'evalscope[rag]'
+    ```
+  - To install all dependencies:
+    ```shell
+    pip install 'evalscope[all]'
     ```
 
-2. Install dependencies using pip
-    ```shell
-    pip install evalscope                # Install Native backend (default)
-    # Additional options
-    pip install 'evalscope[opencompass]'   # Install OpenCompass backend
-    pip install 'evalscope[vlmeval]'       # Install VLMEvalKit backend
-    pip install 'evalscope[rag]'           # Install RAGEval backend
-    pip install 'evalscope[perf]'          # Install dependencies for the model performance testing module
-    pip install 'evalscope[app]'           # Install dependencies for visualization
-    pip install 'evalscope[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-    ```
-
-> [!WARNING]
-> As the project has been renamed to `evalscope`, for versions `v0.4.3` or earlier, you can install using the following command:
+> [!NOTE]
+> The project has been renamed to `evalscope`. For version `v0.4.3` or earlier, you can install it with:
 > ```shell
-> pip install llmuses<=0.4.3
+>  pip install llmuses<=0.4.3
 > ```
-> To import relevant dependencies using `llmuses`:
-> ``` python
+> Then, import related dependencies using `llmuses`:
+> ```python
 > from llmuses import ...
 > ```
 
-### Method 2: Install from Source
-1. Download the source code
-    ```shell
-    git clone https://github.com/modelscope/evalscope.git
-    ```
+### Method 2. Install from source
 
+Installing from source allows you to use the latest code and makes it easier for further development and debugging.
+
+1. Clone the source code
+```shell
+git clone https://github.com/modelscope/evalscope.git
+```
 2. Install dependencies
-    ```shell
-    cd evalscope/
-    pip install -e .                  # Install Native backend
-    # Additional options
-    pip install -e '.[opencompass]'   # Install OpenCompass backend
-    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-    pip install -e '.[rag]'           # Install RAGEval backend
-    pip install -e '.[perf]'          # Install Perf dependencies
-    pip install -e '.[app]'           # Install visualization dependencies
-    pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-    ```
+```shell
+cd evalscope/
+
+pip install -e .
+```
+3. Install additional dependencies
+ - To use model service inference benchmarking features, install the perf dependency:
+   ```shell
+   pip install '.[perf]'
+   ```
+ - To use visualization features, install the app dependency:
+   ```shell
+   pip install '.[app]'
+   ```
+ - If you need to use other evaluation backends, you can install OpenCompass, VLMEvalKit, or RAGEval as needed:
+   ```shell
+   pip install '.[opencompass]'
+   pip install '.[vlmeval]'
+   pip install '.[rag]'
+   ```
+ - To install all dependencies:
+   ```shell
+   pip install '.[all]'
+   ```
 
 
 ## 🚀 Quick Start

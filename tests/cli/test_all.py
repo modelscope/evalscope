@@ -32,7 +32,7 @@ datasets=[
         'competition_math',
         'math_500',
         'aime24',
-        'gpqa',
+        'gpqa_diamond',
         'arc',
         'ceval',
         'hellaswag',
@@ -82,8 +82,7 @@ dataset_args={
     'bbh': {
         'subset_list': ['word_sorting', 'movie_recommendation'],
     },
-    'gpqa': {
-        'subset_list': ['gpqa_diamond'],
+    'gpqa_diamond': {
         'few_shot_num': 0,
     },
     'humaneval': {
@@ -112,8 +111,7 @@ dataset_args={
         'subset_list': [
             'example',  # 评测数据集名称，上述 *_dev.csv 中的 *
             # 'test'
-        ],
-        'metric_list': ['AverageBLEU']
+        ]
     },
     'super_gpqa': {
         'subset_list': ['Philosophy', 'Education'],

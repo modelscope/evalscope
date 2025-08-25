@@ -1,58 +1,51 @@
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import extract_answer, math_equal, strip_answer_string
-from evalscope.utils.logger import get_logger
+# Copyright (c) Alibaba, Inc. and its affiliates.
 
-# flake8: noqa
+from typing import Any, Dict
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-@Benchmark.register(
-    name='math_500',
-    pretty_name='MATH-500',
-    tags=['Mathematics'],
-    description=
-    "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",  # noqa: E501
-    dataset_id='AI-ModelScope/MATH-500',
-    subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    metric_list=['AveragePass@1'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+@register_benchmark(
+    BenchmarkMeta(
+        name='math_500',
+        pretty_name='MATH-500',
+        tags=[Tags.MATH, Tags.REASONING],
+        description=
+        "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",  # noqa: E501
+        dataset_id='AI-ModelScope/MATH-500',
+        subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+    )
 )
-class Math500Adapter(DataAdapter):
+class Math500Adapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def load(self, **kwargs):
-        # default load all levels
-        kwargs['subset_list'] = ['default']
-        data_dict = super().load(**kwargs)
-        return self.reformat_subset(data_dict, subset_key='level', format='Level {}')
+        self.reformat_subset = True
 
-    def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate the prompt for the model input.
-        """
-        problem = input_d['problem']
-        full_prompt = self.prompt_template.format(query=problem)
-
-        return self.gen_prompt_data(full_prompt)
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Extract the gold answer from the input dict.
-        return strip_answer_string(input_d['answer'])
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-        """
-        # Note: Use same extraction method for both of checkpoint/service/custom
-        result = strip_answer_string(extract_answer(result))
-        return result
-
-    def match(self, gold: str, pred: str) -> float:
-        res = math_equal(pred, gold)
-        return 1.0 if res else 0.0
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        return Sample(
+            input=record['problem'],
+            target=record['answer'],
+            subset_key=f"Level {record['level']}",
+            metadata={
+                'question_id': record['unique_id'],
+                'solution': record['solution'],
+            },
+        )

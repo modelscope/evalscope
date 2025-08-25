@@ -109,8 +109,6 @@ def process_json_content(content: Any) -> str:
     Returns:
         str: The processed content formatted for markdown display.
     """
-    if isinstance(content, (np.bool_, np.int_, np.float_)):
-        content = str(content)
 
     if isinstance(content, str):
         content = {'content': content}

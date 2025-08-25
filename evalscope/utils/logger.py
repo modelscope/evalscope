@@ -1,18 +1,27 @@
+import colorlog
 import importlib.util as iutil
 import logging
 import os
-from typing import Optional
+from logging import Logger
+from typing import List, Optional
 
 init_loggers = {}
+# Define log formats
+data_format = '%Y-%m-%d %H:%M:%S'
+# For console output
+color_detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(log_color)s%(levelname)s%(reset)s: %(message)s'  # noqa:E501
+color_simple_format = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
+color_detailed_formatter = colorlog.ColoredFormatter(color_detailed_format, datefmt=data_format)
+color_simple_formatter = colorlog.ColoredFormatter(color_simple_format, datefmt=data_format)
+# For file output
+detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s: %(message)s'  # noqa:E501
+simple_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
+plain_detailed_formatter = logging.Formatter(detailed_format, datefmt=data_format)
+plain_simple_formatter = logging.Formatter(simple_format, datefmt=data_format)
 
-detailed_format = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s'
-simple_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
-detailed_formatter = logging.Formatter(detailed_format)
-simple_formatter = logging.Formatter(simple_format)
 DEFAULT_LEVEL = logging.DEBUG if os.getenv('EVALSCOPE_LOG_LEVEL', 'INFO') == 'DEBUG' else logging.INFO
 
-logging.basicConfig(format=simple_format, level=DEFAULT_LEVEL, force=True)
+logging.basicConfig(format=simple_format, level=logging.INFO, force=True)
 
 # set logging level
 logging.getLogger('datasets').setLevel(logging.WARNING)
@@ -20,7 +29,13 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
 
 
-def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, file_mode: str = 'w', force=False):
+def get_logger(
+    log_file: Optional[str] = None,
+    name: Optional[str] = None,
+    log_level: int = DEFAULT_LEVEL,
+    file_mode: str = 'w',
+    force=False
+):
     """Get logging logger
 
     Args:
@@ -31,7 +46,10 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
             specified (if filemode is unspecified, it defaults to 'w').
     """
 
-    logger_name = __name__.split('.')[0]
+    if name:
+        logger_name = f"evalscope.{name.split('.')[-1]}"
+    else:
+        logger_name = 'evalscope'
     logger = logging.getLogger(logger_name)
     logger.propagate = False
 
@@ -40,7 +58,15 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
             logger.setLevel(log_level)
             for handler in logger.handlers:
                 handler.setLevel(log_level)
-                handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+                # 区分不同类型的 handler，使用相应的格式化器
+                if isinstance(handler, logging.FileHandler):
+                    handler.setFormatter(
+                        plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter
+                    )
+                else:
+                    handler.setFormatter(
+                        color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter
+                    )
             add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 
@@ -66,7 +92,11 @@ def get_logger(log_file: Optional[str] = None, log_level: int = DEFAULT_LEVEL, f
         handlers.append(file_handler)
 
     for handler in handlers:
-        handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+        # 区分不同类型的 handler，使用相应的格式化器
+        if isinstance(handler, logging.FileHandler):
+            handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
+        else:
+            handler.setFormatter(color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter)
         handler.setLevel(log_level)
         logger.addHandler(handler)
 
@@ -102,6 +132,15 @@ def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
 
     if is_worker0 and log_file is not None:
         file_handler = logging.FileHandler(log_file, file_mode)
-        file_handler.setFormatter(detailed_formatter if log_level == logging.DEBUG else simple_formatter)
+        file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
         file_handler.setLevel(log_level)
         logger.addHandler(file_handler)
+
+
+def warn_once(logger: Logger, message: str) -> None:
+    if message not in _warned:
+        logger.warning(message)
+        _warned.append(message)
+
+
+_warned: List[str] = []

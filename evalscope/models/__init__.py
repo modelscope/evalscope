@@ -4,41 +4,15 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .adapters import (BaseModelAdapter, BFCLAdapter, ChatGenerationModelAdapter, ContinuationLogitsModelAdapter,
-                           CustomModelAdapter, MultiChoiceModelAdapter, ServerModelAdapter, T2IModelAdapter,
-                           TauBenchAdapter, initialize_model_adapter)
-    from .custom import CustomModel, DummyCustomModel, DummyT2IModel
-    from .local_model import LocalChatModel, LocalImageModel, LocalModel, get_local_model
-    from .register import get_model_adapter
+    from .model_apis import llm_ckpt, mockllm, openai_api
 
 else:
     _import_structure = {
-        'adapters': [
-            'BaseModelAdapter',
-            'initialize_model_adapter',
-            'ChatGenerationModelAdapter',
-            'ContinuationLogitsModelAdapter',
-            'MultiChoiceModelAdapter',
-            'CustomModelAdapter',
-            'ServerModelAdapter',
-            'T2IModelAdapter',
-            'TauBenchAdapter',
-            'BFCLAdapter',
-        ],
-        'custom': [
-            'CustomModel',
-            'DummyCustomModel',
-            'DummyT2IModel',
-        ],
-        'local_model': [
-            'LocalModel',
-            'get_local_model',
-            'LocalChatModel',
-            'LocalImageModel',
-        ],
-        'register': [
-            'get_model_adapter',
-        ],
+        'model_apis': [
+            'openai_api',
+            'mockllm',
+            'llm_ckpt',
+        ]
     }
 
     import sys

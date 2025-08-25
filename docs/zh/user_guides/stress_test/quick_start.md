@@ -75,7 +75,7 @@ results = run_perf_benchmark(task_cfg)
 **参数说明**：
 
 - `parallel`: 请求的并发数，可以传入多个值，用空格隔开
-- `number`: 每个并发请求的数量，可以传入多个值，用空格隔开（与`parallel`一一对应）
+- `number`: 发出的请求的总数量，可以传入多个值，用空格隔开（与`parallel`一一对应）
 - `url`: 请求的URL地址
 - `model`: 使用的模型名称
 - `api`: 使用的API服务，默认为`openai`

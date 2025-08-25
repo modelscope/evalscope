@@ -7,9 +7,10 @@ import os
 import pandas as pd
 from typing import Any, Dict, List, Union
 
+from evalscope.api.evaluator import CacheManager, ReviewResult
 from evalscope.constants import DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
-from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
+from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
 from ..constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN
 
@@ -39,7 +40,8 @@ def scan_for_report_folders(root_path):
                 datasets.append(os.path.splitext(os.path.basename(dataset_item))[0])
             datasets = DATASET_TOKEN.join(datasets)
             reports.append(
-                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}')
+                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}'
+            )
 
     reports = sorted(reports, reverse=True)
     logger.debug(f'reports: {reports}')
@@ -61,7 +63,8 @@ def load_single_report(root_path: str, report_name: str):
     config_files = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))
     if not config_files:
         raise FileNotFoundError(
-            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}')
+            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}'
+        )
     task_cfg_path = config_files[0]
     task_cfg = yaml_to_dict(task_cfg_path)
     return report_list, datasets, task_cfg
@@ -134,31 +137,44 @@ def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
 
 
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
-    data_path = os.path.join(work_dir, OutputsStructure.REVIEWS_DIR, model_name)
-    subset_name = subset_name.replace('/', '_')  # for collection report
-    review_path = os.path.join(data_path, f'{dataset_name}_{subset_name}.jsonl')
-    logger.debug(f'review_path: {review_path}')
-    origin_df = pd.read_json(review_path, lines=True)
+    # Load review cache
+    outputs = OutputsStructure(work_dir, is_make=False)
+    cache_manager = CacheManager(outputs, model_name, dataset_name)
+    if dataset_name == DataCollection.NAME:
+        review_cache_path = cache_manager.get_review_cache_path('default')
+    else:
+        review_cache_path = cache_manager.get_review_cache_path(subset_name)
+    logger.debug(f'review_path: {review_cache_path}')
+    review_caches = jsonl_to_list(review_cache_path)
 
     ds = []
-    for i, item in origin_df.iterrows():
-        raw_input = item['raw_input']
-        sample_index = item['index']
-        for choice_index, choice in enumerate(item['choices']):
-            raw_pred_answer = choice['message']['content']
-            parsed_gold_answer = choice['review']['gold']
-            parsed_pred_answer = choice['review']['pred']
-            score = choice['review']['result']
-            raw_d = {
-                'Index': f'{sample_index}_{choice_index}',
-                'Input': raw_input,
-                'Generated': raw_pred_answer if raw_pred_answer != parsed_pred_answer else '*Same as Pred*',
-                'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
-                'Pred': parsed_pred_answer,
-                'Score': score,
-                'NScore': normalize_score(score)
-            }
-            ds.append(raw_d)
+    for cache in review_caches:
+        review_result = ReviewResult.model_validate(cache)
+        sample_score = review_result.sample_score
+
+        if dataset_name == DataCollection.NAME:
+            # Filter subset name
+            collection_info = sample_score.sample_metadata[DataCollection.INFO]
+            sample_dataset_name = collection_info.get('dataset_name', 'default')
+            sample_subset_name = collection_info.get('subset_name', 'default')
+            if f'{sample_dataset_name}/{sample_subset_name}' != subset_name:
+                continue
+
+        prediction = sample_score.score.prediction
+        target = review_result.target
+        extracted_prediction = sample_score.score.extracted_prediction
+        score = sample_score.score
+        raw_d = {
+            'Index': str(review_result.index),
+            'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
+            'Metadata': sample_score.sample_metadata,
+            'Generated': prediction if prediction != extracted_prediction else '*Same as Pred*',
+            'Gold': target,
+            'Pred': extracted_prediction,
+            'Score': score.model_dump(exclude_none=True),
+            'NScore': normalize_score(score.main_value)
+        }
+        ds.append(raw_d)
 
     df_subset = pd.DataFrame(ds)
     return df_subset

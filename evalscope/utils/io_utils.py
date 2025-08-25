@@ -5,6 +5,8 @@ import json
 import jsonlines as jsonl
 import os
 import re
+import string
+import unicodedata
 import yaml
 from io import BytesIO
 from PIL import Image
@@ -33,7 +35,7 @@ class OutputsStructure:
             'configs_dir': None
         }
 
-    def _get_dir(self, attr_name, dir_name):
+    def _get_dir(self, attr_name, dir_name) -> str:
         if self._dirs[attr_name] is None:
             dir_path = os.path.join(self.outputs_dir, dir_name)
             if self.is_make:
@@ -72,10 +74,20 @@ def jsonl_to_list(jsonl_file):
     Returns:
         list: list of lines. Each line is a dict.
     """
-    res_list = []
-    with jsonl.open(jsonl_file, mode='r') as reader:
-        for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
-            res_list.append(line)
+    try:
+        res_list = []
+        with jsonl.open(jsonl_file, mode='r') as reader:
+            for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
+                res_list.append(line)
+    except Exception:
+        # Fallback to reading line by line
+        res_list = []
+        with open(jsonl_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():  # Skip empty lines
+                    res_list.append(json.loads(line.strip()))
+    if not res_list:
+        logger.warning(f'No data found in {jsonl_file}.')
     return res_list
 
 
@@ -272,7 +284,90 @@ def get_valid_list(input_list, candidate_list):
 
 
 def PIL_to_base64(image: Image.Image, format: str = 'JPEG') -> str:
+    """
+    Convert a PIL Image to a base64 encoded string.
+
+    Args:
+        image (Image.Image): The PIL Image to convert.
+        format (str): The format to save the image in. Default is 'JPEG'.
+    Returns:
+        str: Base64 encoded string of the image.
+    """
     buffered = BytesIO()
     image.save(buffered, format=format)
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
     return img_str
+
+
+def safe_filename(s: str, max_length: int = 255) -> str:
+    """
+    Convert a string into a safe filename by removing or replacing unsafe characters.
+
+    Args:
+        s (str): The input string to convert
+        max_length (int): Maximum length of the resulting filename (default 255)
+
+    Returns:
+        str: A safe filename string
+
+    Examples:
+        >>> safe_filename("Hello/World?.txt")
+        'Hello_World.txt'
+    """
+    # normalize unicode characters
+    s = unicodedata.normalize('NFKD', s)
+    s = s.encode('ASCII', 'ignore').decode('ASCII')
+
+    # remove or replace unsafe characters
+    # Keep only alphanumeric characters, dots, dashes, and underscores
+    safe_chars = string.ascii_letters + string.digits + '.-_'
+    s = ''.join(c if c in safe_chars else '_' for c in s)
+
+    # remove consecutive underscores
+    s = re.sub(r'_+', '_', s)
+
+    # remove leading/trailing periods and underscores
+    s = s.strip('._')
+
+    # handle empty string case
+    if not s:
+        s = 'untitled'
+
+    # handle starting with a period (hidden files)
+    if s.startswith('.'):
+        s = '_' + s
+
+    # enforce length limit
+    if len(s) > max_length:
+        # If we need to truncate, preserve the file extension if present
+        name, ext = os.path.splitext(s)
+        ext_len = len(ext)
+        if ext_len > 0:
+            max_name_length = max_length - ext_len
+            s = name[:max_name_length] + ext
+        else:
+            s = s[:max_length]
+
+    return s
+
+
+def convert_numpy_types(obj):
+    """Recursively convert numpy types to native Python types for JSON serialization."""
+    import numpy as np
+
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_numpy_types(item) for item in obj)
+    else:
+        return obj

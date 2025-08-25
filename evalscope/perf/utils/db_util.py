@@ -56,7 +56,8 @@ def transpose_results(data):
 
 
 def create_result_table(cursor):
-    cursor.execute(f'''CREATE TABLE IF NOT EXISTS result(
+    cursor.execute(
+        f'''CREATE TABLE IF NOT EXISTS result(
                       {DatabaseColumns.REQUEST} TEXT,
                       {DatabaseColumns.START_TIME} REAL,
                       {DatabaseColumns.CHUNK_TIMES} TEXT,
@@ -69,7 +70,8 @@ def create_result_table(cursor):
                       {DatabaseColumns.COMPLETION_TOKENS} INTEGER,
                       {DatabaseColumns.MAX_GPU_MEMORY_COST} REAL,
                       {DatabaseColumns.TIME_PER_OUTPUT_TOKEN} REAL
-                   )''')
+                   )'''
+    )
 
 
 def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData):
@@ -89,9 +91,10 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
 
     if benchmark_data.success:
         # Add additional columns for success case
-        additional_columns = (benchmark_data.query_latency, benchmark_data.first_chunk_latency,
-                              benchmark_data.prompt_tokens, benchmark_data.completion_tokens,
-                              benchmark_data.max_gpu_memory_cost, benchmark_data.time_per_output_token)
+        additional_columns = (
+            benchmark_data.query_latency, benchmark_data.first_chunk_latency, benchmark_data.prompt_tokens,
+            benchmark_data.completion_tokens, benchmark_data.max_gpu_memory_cost, benchmark_data.time_per_output_token
+        )
         query = f"""INSERT INTO result(
                       {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
@@ -124,7 +127,7 @@ def get_result_db_path(args: Arguments):
 
     logger.info(f'Save the data base to: {result_db_path}')
     if os.path.exists(result_db_path):
-        logger.warning('The db file exists, delete it and start again!.')
+        logger.error(f'The db file {result_db_path} exists, delete it and start again!.')
         sys.exit(1)
 
     return result_db_path

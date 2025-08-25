@@ -2,11 +2,10 @@ import os
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from langchain_openai import ChatOpenAI
-from transformers.generation.configuration_utils import GenerationConfig
 from typing import Any, Dict, Iterator, List, Mapping, Optional
 
-from evalscope.constants import DEFAULT_MODEL_REVISION
-from evalscope.models import ChatGenerationModelAdapter, LocalChatModel
+from evalscope.api.model import GenerateConfig, Model, get_model
+from evalscope.constants import DEFAULT_MODEL_REVISION, EvalType
 
 
 class LLM:
@@ -31,20 +30,18 @@ class LocalLLM(BaseLLM):
     model_revision: str = DEFAULT_MODEL_REVISION
     template_type: Optional[str] = None
     model_name: Optional[str] = None
-    model: Optional[ChatGenerationModelAdapter] = None
-    generation_config: Optional[Dict] = None
+    model: Optional[Model] = None
+    generation_config: Optional[Dict] = {}
 
     def __init__(self, **kw):
         super().__init__(**kw)
         self.model_name = os.path.basename(self.model_name_or_path)
 
         # Create and initialize the local model
-        local_model = LocalChatModel(model_id=self.model_name_or_path, model_revision=self.model_revision)
-        local_model.load_model()  # Ensure model and tokenizer are loaded
-
-        self.model = ChatGenerationModelAdapter(
-            model=local_model,
-            generation_config=GenerationConfig(**self.generation_config) if self.generation_config else None,
+        self.model = get_model(
+            model=self.model_name_or_path,
+            eval_type=EvalType.CHECKPOINT,
+            config=GenerateConfig(**self.generation_config),
         )
 
     def _call(
@@ -55,10 +52,9 @@ class LocalLLM(BaseLLM):
         **kwargs: Any,
     ) -> str:
         """Run the LLM on the given input."""
-        infer_cfg = {'stop': stop}
 
-        response, _ = self.model.predict([{'data': [prompt]}], infer_cfg=infer_cfg)
-        return response[0][0]
+        response = self.model.generate(input=prompt)
+        return response.completion
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:

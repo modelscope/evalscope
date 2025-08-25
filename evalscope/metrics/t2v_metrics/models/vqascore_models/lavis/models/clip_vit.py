@@ -39,7 +39,8 @@ class Bottleneck(nn.Module):
             self.downsample = nn.Sequential(
                 OrderedDict([('-1', nn.AvgPool2d(stride)),
                              ('0', nn.Conv2d(inplanes, planes * self.expansion, 1, stride=1, bias=False)),
-                             ('1', nn.BatchNorm2d(planes * self.expansion))]))
+                             ('1', nn.BatchNorm2d(planes * self.expansion))])
+            )
 
     def forward(self, x: torch.Tensor):
         identity = x
@@ -91,7 +92,8 @@ class AttentionPool2d(nn.Module):
             out_proj_bias=self.c_proj.bias,
             use_separate_proj_weight=True,
             training=self.training,
-            need_weights=False)
+            need_weights=False
+        )
 
         return x[0]
 
@@ -120,7 +122,8 @@ class ResidualAttentionBlock(nn.Module):
         self.ln_1 = LayerNorm(d_model)
         self.mlp = nn.Sequential(
             OrderedDict([('c_fc', nn.Linear(d_model, d_model * 4)), ('gelu', QuickGELU()),
-                         ('c_proj', nn.Linear(d_model * 4, d_model))]))
+                         ('c_proj', nn.Linear(d_model * 4, d_model))])
+        )
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
 
@@ -141,18 +144,16 @@ class ResidualAttentionBlock(nn.Module):
 
 class Transformer(nn.Module):
 
-    def __init__(self,
-                 width: int,
-                 layers: int,
-                 heads: int,
-                 attn_mask: torch.Tensor = None,
-                 use_grad_checkpointing=False):
+    def __init__(
+        self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, use_grad_checkpointing=False
+    ):
         super().__init__()
         self.width = width
         self.layers = layers
         self.resblocks = nn.Sequential(
             *
-            [ResidualAttentionBlock(width, heads, attn_mask, use_grad_checkpointing and i > 12) for i in range(layers)])
+            [ResidualAttentionBlock(width, heads, attn_mask, use_grad_checkpointing and i > 12) for i in range(layers)]
+        )
 
     def forward(self, x: torch.Tensor):
         return self.resblocks(x)
@@ -160,8 +161,9 @@ class Transformer(nn.Module):
 
 class VisionTransformer(nn.Module):
 
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int,
-                 use_grad_checkpointing: bool):
+    def __init__(
+        self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, use_grad_checkpointing: bool
+    ):
         super().__init__()
         self.input_resolution = input_resolution
         self.num_features = width

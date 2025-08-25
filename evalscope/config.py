@@ -1,16 +1,25 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+# flake8: noqa: E501
 import copy
 import os
 from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
-from evalscope.constants import (DEFAULT_DATASET_CACHE_DIR, DEFAULT_WORK_DIR, EvalBackend, EvalStage, EvalType, HubType,
-                                 JudgeStrategy, ModelTask, OutputType)
-from evalscope.models import CustomModel, DummyCustomModel, DummyT2IModel
+from evalscope.api.model import GenerateConfig
+from evalscope.constants import (
+    DEFAULT_DATASET_CACHE_DIR,
+    DEFAULT_WORK_DIR,
+    EvalBackend,
+    EvalType,
+    HubType,
+    JudgeStrategy,
+    ModelTask,
+    OutputType,
+)
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
-from evalscope.utils.io_utils import dict_to_yaml, gen_hash
+from evalscope.utils.deprecation_utils import deprecated_warning
+from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -19,13 +28,12 @@ logger = get_logger()
 @dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
-    model: Union[str, 'CustomModel', None] = None
+    model: Optional[str] = None
     model_id: Optional[str] = None
     model_args: Dict = field(default_factory=dict)
     model_task: str = ModelTask.TEXT_GENERATION
 
     # Template-related arguments
-    template_type: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
     chat_template: Optional[str] = None
 
     # Dataset-related arguments
@@ -33,23 +41,22 @@ class TaskConfig(BaseArgument):
     dataset_args: Dict = field(default_factory=dict)
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
     dataset_hub: str = HubType.MODELSCOPE
+    repeats: int = 1  # Number of times to repeat the dataset items for k-metrics
 
     # Generation configuration arguments
-    generation_config: Dict = field(default_factory=dict)
+    generation_config: Union[Dict, GenerateConfig] = field(default_factory=dict)
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT
     eval_backend: str = EvalBackend.NATIVE
     eval_config: Union[str, Dict, None] = None
-    stage: str = EvalStage.ALL
     limit: Optional[Union[int, float]] = None
-    eval_batch_size: Optional[int] = None
+    eval_batch_size: int = 1
 
     # Cache and working directory arguments
-    mem_cache: bool = False  # Deprecated, will be removed in v1.0.0.
     use_cache: Optional[str] = None
+    rerun_review: bool = False
     work_dir: str = DEFAULT_WORK_DIR
-    outputs: Optional[str] = None  # Deprecated, will be removed in v1.0.0.
 
     # Debug and runtime mode arguments
     ignore_errors: bool = False
@@ -59,7 +66,7 @@ class TaskConfig(BaseArgument):
     api_url: Optional[str] = None  # Only used for server model
     api_key: Optional[str] = 'EMPTY'  # Only used for server model
     timeout: Optional[float] = None  # Only used for server model
-    stream: bool = False  # Only used for server model
+    stream: Optional[bool] = None  # Only used for server model
 
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.AUTO
@@ -79,55 +86,76 @@ class TaskConfig(BaseArgument):
     def __init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
-            self.eval_type = EvalType.CUSTOM
+            self.model = self.model_task
+            self.eval_type = EvalType.MOCK_LLM
+        else:
             if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.model = DummyT2IModel()
-            else:
-                self.model = DummyCustomModel()
+                self.eval_type = EvalType.TEXT2IMAGE
 
         # Set model_id if not provided
-        if (not self.model_id) and self.model:
-            if isinstance(self.model, CustomModel):
-                self.model_id = self.model.config.get('model_id', 'custom_model')
+        if not self.model_id:
+            if self.model:
+                self.model_id = safe_filename(os.path.basename(self.model))
             else:
-                self.model_id = os.path.basename(self.model).rstrip(os.sep)
-            # fix path error, see http://github.com/modelscope/evalscope/issues/377
-            self.model_id = self.model_id.replace(':', '-').replace('/', '-')
+                self.model_id = 'dummy_model'
 
     def __init_eval_data_config(self):
-        # Set default eval_batch_size based on eval_type
-        if self.eval_batch_size is None:
-            self.eval_batch_size = 8 if self.eval_type == EvalType.SERVICE else 1
-
         # Post process limit
         if self.limit is not None:
             self.limit = parse_int_or_float(self.limit)
 
     def __init_default_generation_config(self):
-        if self.generation_config:
-            return
-        if self.model_task == ModelTask.IMAGE_GENERATION:
-            self.generation_config = {
-                'height': 1024,
-                'width': 1024,
-                'num_inference_steps': 50,
-                'guidance_scale': 9.0,
-            }
-        elif self.model_task == ModelTask.TEXT_GENERATION:
-            if self.eval_type == EvalType.CHECKPOINT:
+        if not self.generation_config:
+            if self.model_task == ModelTask.IMAGE_GENERATION:
                 self.generation_config = {
-                    'max_length': 2048,
-                    'max_new_tokens': 512,
-                    'do_sample': False,
-                    'top_k': 50,
-                    'top_p': 1.0,
-                    'temperature': 1.0,
+                    'height': 1024,
+                    'width': 1024,
+                    'num_inference_steps': 50,
+                    'guidance_scale': 9.0,
                 }
-            elif self.eval_type == EvalType.SERVICE:
-                self.generation_config = {
-                    'max_tokens': 2048,
-                    'temperature': 0.0,
-                }
+            elif self.model_task == ModelTask.TEXT_GENERATION:
+                if self.eval_type == EvalType.CHECKPOINT:
+                    self.generation_config = {
+                        'max_tokens': 2048,
+                        'do_sample': False,
+                        'top_k': 50,
+                        'top_p': 1.0,
+                        'temperature': 1.0,
+                        'n': 1,
+                    }
+                elif self.eval_type == EvalType.SERVICE:
+                    self.generation_config = {
+                        'max_tokens': 2048,
+                        'temperature': 0.0,
+                    }
+        if isinstance(self.generation_config, dict):
+            self.generation_config = GenerateConfig.model_validate(self.generation_config)
+
+        # Set eval_batch_size to generation_config.batch_size
+        self.generation_config.batch_size = self.eval_batch_size
+
+        # Set default values for generation_config
+        if self.timeout is not None:
+            deprecated_warning(
+                logger,
+                'The `timeout` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.timeout` instead.'
+            )
+            self.generation_config.timeout = self.timeout
+
+        if self.stream is not None:
+            deprecated_warning(
+                logger,
+                'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.'
+            )
+            self.generation_config.stream = self.stream
+
+        if self.generation_config.n is not None and self.generation_config.n > 1:
+            self.repeats = self.generation_config.n
+            self.generation_config.n = 1
+            deprecated_warning(
+                logger,
+                'The `n` parameter in generation_config is deprecated and will be removed in v1.1.0. Use `TaskConfig.repeats` instead.'
+            )
 
     def __init_default_model_args(self):
         if self.model_args:
@@ -154,9 +182,11 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = self.__dict__.copy()
-        if isinstance(self.model, CustomModel):
-            result['model'] = self.model.__class__.__name__
+        result = copy.deepcopy(self.__dict__)
+        del result['api_key']  # Do not expose api_key in the config
+
+        if isinstance(self.generation_config, GenerateConfig):
+            result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)
         return result
 
 

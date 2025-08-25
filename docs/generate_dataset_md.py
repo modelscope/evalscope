@@ -1,9 +1,9 @@
 import json
 import os
 from tqdm import tqdm
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from evalscope.benchmarks import DataAdapter
+from evalscope.api.benchmark import DataAdapter
 
 # Language dictionaries for dataset markdown generation
 DATASET_DETAIL_LOCALE = {
@@ -172,7 +172,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> st
         f'- **{text["description"]}**:  \n  > {description}',
         f'- **{text["task_categories"]}**: {wrap_key_words(data_adapter.tags)}',
         f'- **{text["evaluation_metrics"]}**: {wrap_key_words(data_adapter.metric_list)}',
-        f'- **{text["requires_llm_judge"]}**: {text["yes"] if data_adapter.llm_as_a_judge else text["no"]}',
+        f'- **{text["requires_llm_judge"]}**: {text["yes"] if data_adapter._use_llm_judge else text["no"]}',
         f'- **{text["default_shots"]}**: {data_adapter.few_shot_num}-shot'
     ]
     
@@ -186,7 +186,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> st
     ]
     
     # Add extra parameters
-    extra_params = data_adapter.config_kwargs.get('extra_params', {})
+    extra_params = data_adapter.extra_params
     if extra_params:
         technical_info.append(f'- **{text["extra_parameters"]}**: \n```json\n{process_dictionary(extra_params)}\n```')
 
@@ -248,14 +248,14 @@ def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -
 
 if __name__ == '__main__':
     # 示例用法
-    from evalscope.benchmarks.benchmark import BENCHMARK_MAPPINGS
+    from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
     
     aigc_benchmarks = ['evalmuse', 'genai_bench', 'general_t2i', 'general_i2i', 'hpdv2', 'tifa160', 'data_collection']
     # 获取所有DataAdapter实例
-    adapters = []
-    for benchmark in tqdm(BENCHMARK_MAPPINGS.values()):
+    adapters: List[DataAdapter] = []
+    for benchmark in tqdm(BENCHMARK_REGISTRY.values()):
         if benchmark.name not in aigc_benchmarks:
-            adapters.append(benchmark.get_data_adapter())
+            adapters.append(get_benchmark(benchmark.name))
 
     adapters.sort(key=lambda x: x.name)  # 按名称排序
     

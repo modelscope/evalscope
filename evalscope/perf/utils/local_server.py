@@ -1,6 +1,5 @@
 import os
 import subprocess
-import torch
 import uvicorn
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -61,8 +60,12 @@ class ServerSentEvent(object):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except ImportError:
+        pass
 
 
 def create_app(model, attn_implementation=None) -> FastAPI:
@@ -102,6 +105,8 @@ def start_app(args: Arguments):
         uvicorn.run(app, host='0.0.0.0', port=args.port, workers=1)
 
     elif args.api == 'local_vllm':
+        import torch
+
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
         os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
         os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'

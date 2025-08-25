@@ -1,10 +1,30 @@
-from collections import defaultdict
 from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
-from evalscope.metrics.completion_parsers import ResponseParser
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+# Based on the prompt provided here:
+# https://github.com/EleutherAI/lm-evaluation-harness/tree/main/lm_eval/tasks/mmlu_pro
+SYSTEM_W_EXAMPLES_PROMPT_TEMPLATE = """
+The following are multiple choice questions (with answers) about {subject}. Think step by step and then finish your answer with 'ANSWER: $LETTER' (without quotes) where LETTER is the correct letter choice.
+
+{examples}
+""".lstrip()  # noqa: E501
+
+# Based on MultipleChoiceTemplate.SINGLE_ANSWER provided in the multiple choice solver:
+# https://github.com/UKGovernmentBEIS/inspect_ai/blob/main/src/inspect_ai/solver/_multiple_choice.py
+USER_PROMPT_TEMPLATE = """Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+Question:
+{question}
+Options:
+{choices}
+""".lstrip()  # noqa: E501
 
 SUBSET_LIST = [
     'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
@@ -12,102 +32,63 @@ SUBSET_LIST = [
 ]
 
 
-@Benchmark.register(
-    name='mmlu_pro',
-    pretty_name='MMLU-Pro',
-    tags=['MCQ', 'Knowledge'],
-    description=
-    'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
-    dataset_id='modelscope/MMLU-Pro',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=5,
-    train_split='validation',
-    eval_split='test',
-    prompt_template=
-    'The following are multiple choice questions (with answers) about {subset_name}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n{query}',  # noqa: E501
+@register_benchmark(
+    BenchmarkMeta(
+        name='mmlu_pro',
+        pretty_name='MMLU-Pro',
+        tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
+        description=
+        'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
+        dataset_id='modelscope/MMLU-Pro',
+        subset_list=SUBSET_LIST,
+        metric_list=['acc'],
+        few_shot_num=5,
+        train_split='validation',
+        eval_split='test',
+        prompt_template=USER_PROMPT_TEMPLATE,
+        few_shot_prompt_template=SYSTEM_W_EXAMPLES_PROMPT_TEMPLATE + USER_PROMPT_TEMPLATE,
+    )
 )
-class MMLUProAdapter(DataAdapter):
+class MMLUProAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+        self.reformat_subset = True
 
-    def load(self, **kwargs):
-        # default load all data
-        kwargs['subset_list'] = ['default']
-        data_dict = super().load(**kwargs)
-        return self.reformat_subset(data_dict, subset_key='category')
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        return Sample(
+            input=record['question'],
+            choices=record['options'],
+            target=record['answer'],
+            subset_key=record['category'].lower(),
+            metadata={
+                'cot_content': record['cot_content'],
+                'subject': record['category'].lower(),
+                'question_id': record['question_id'],
+            },
+        )
 
-    def gen_prompt(self, input_d: Dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        if self.few_shot_num > 0:
-            prefix = self.format_fewshot_examples(few_shot_list)
-        else:
-            prefix = ''
-        query = prefix + 'Q: ' + input_d['question'] + '\n' + \
-            self.__form_options(input_d['options']) + '\n'
+    def sample_to_fewshot(self, sample: Sample) -> str:
+        q_str = f"""Question:\n{str(sample.input)}"""
+        options = sample.choices if sample.choices is not None else []
+        opt_str_list = []
+        for i, opt in enumerate(options):
+            opt_str_list.append(f"""{chr(65 + i)} {opt}""")
+        opt_str = '\n'.join(opt_str_list)
+        opt_str = f"""Options:\n{opt_str}"""
+        ans_str = sample.metadata['cot_content'] if sample.metadata is not None else ''
+        ans_str = ans_str.replace('The answer is', 'ANSWER:')
+        ans_opt = ans_str.split('ANSWER:')[-1].split('.')[0].strip().strip('(').strip(')')
+        ans_str = ans_str.replace(f'ANSWER: ({ans_opt})', f'ANSWER: {ans_opt}')
+        final_str = '\n'.join([q_str, opt_str, ans_str])
 
-        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-        return self.gen_prompt_data(full_prompt)
+        return final_str
 
-    def format_fewshot_examples(self, few_shot_list):
-        # load few-shot prompts for each category
-        prompts = ''
-        for index, d in enumerate(few_shot_list):
-            prompts += 'Q: ' + d['question'] + '\n' + \
-                self.__form_options(d['options']) + '\n' + \
-                d['cot_content'] + '\n\n'
-        return prompts
-
-    def __form_options(self, options: list):
-        option_str = 'Options are:\n'
-        for opt, choice in zip(options, self.choices):
-            option_str += f'({choice}): {opt}' + '\n'
-        return option_str
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-
-        Args:
-            input_d: input raw data. Depending on the dataset.
-
-        Returns:
-            The parsed input. e.g. gold answer ... Depending on the dataset.
-        """
-        return input_d['answer']
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the predicted result and extract proper answer.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d: The raw input. Depending on the dataset.
-            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            return result
-        else:
-            return ResponseParser.parse_first_option(result, options=self.choices)
-
-    def match(self, gold: str, pred: str) -> float:
-        """
-        Match the gold answer and the predicted answer.
-
-        Args:
-            gold (Any): The golden answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'A', extracted from get_gold_answer method.
-            pred (Any): The predicted answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'B', extracted from parse_pred_result method.
-
-        Returns:
-            The match result. Usually a score (float) for chat/multiple-choice-questions.
-        """
-        return exact_match(gold=gold, pred=pred)
+    def format_fewshot_template(self, fewshot, sample):
+        fewshot_str = SYSTEM_W_EXAMPLES_PROMPT_TEMPLATE.format(
+            subject=sample.metadata['subject'],
+            examples=fewshot,
+        )
+        prompt_str = self.format_prompt_template(sample)
+        return fewshot_str + '\n' + prompt_str

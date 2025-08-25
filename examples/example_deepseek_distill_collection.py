@@ -16,6 +16,7 @@ mixed_data = WeightedSampler(schema).sample(100000)  # set a large number to ens
 dump_jsonl_data(mixed_data, 'outputs/deepseek_distill_test.jsonl')
 
 from evalscope import TaskConfig, run_task
+
 #  start the task
 from evalscope.constants import EvalType
 

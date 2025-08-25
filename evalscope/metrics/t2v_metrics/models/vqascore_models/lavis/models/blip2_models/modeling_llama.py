@@ -23,12 +23,19 @@ import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from transformers.activations import ACT2FN
-from transformers.modeling_outputs import (BaseModelOutputWithPast, CausalLMOutputWithPast,
-                                           SequenceClassifierOutputWithPast)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPast,
+    CausalLMOutputWithPast,
+    SequenceClassifierOutputWithPast,
+)
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.llama.configuration_llama import LlamaConfig
-from transformers.utils import (add_start_docstrings, add_start_docstrings_to_model_forward, logging,
-                                replace_return_docstrings)
+from transformers.utils import (
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+    logging,
+    replace_return_docstrings,
+)
 from typing import List, Optional, Tuple, Union
 
 logger = logging.get_logger(__name__)
@@ -37,10 +44,9 @@ _CONFIG_FOR_DOC = 'LlamaConfig'
 
 
 # Copied from transformers.models.bart.modeling_bart._make_causal_mask
-def _make_causal_mask(input_ids_shape: torch.Size,
-                      dtype: torch.dtype,
-                      device: torch.device,
-                      past_key_values_length: int = 0):
+def _make_causal_mask(
+    input_ids_shape: torch.Size, dtype: torch.dtype, device: torch.device, past_key_values_length: int = 0
+):
     """
     Make causal mask used for bi-directional self-attention.
     """
@@ -171,8 +177,10 @@ class LlamaAttention(nn.Module):
         self.max_position_embeddings = config.max_position_embeddings
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
-            raise ValueError(f'hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}'
-                             f' and `num_heads`: {self.num_heads}).')
+            raise ValueError(
+                f'hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}'
+                f' and `num_heads`: {self.num_heads}).'
+            )
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
@@ -214,13 +222,16 @@ class LlamaAttention(nn.Module):
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
         if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
-            raise ValueError(f'Attention weights should be of size {(bsz * self.num_heads, q_len, kv_seq_len)}, but is'
-                             f' {attn_weights.size()}')
+            raise ValueError(
+                f'Attention weights should be of size {(bsz * self.num_heads, q_len, kv_seq_len)}, but is'
+                f' {attn_weights.size()}'
+            )
 
         if attention_mask is not None:
             if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
                 raise ValueError(
-                    f'Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}')
+                    f'Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}'
+                )
             attn_weights = attn_weights + attention_mask
             attn_weights = torch.max(attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min))
 
@@ -229,8 +240,10 @@ class LlamaAttention(nn.Module):
         attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
-            raise ValueError(f'`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is'
-                             f' {attn_output.size()}')
+            raise ValueError(
+                f'`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is'
+                f' {attn_output.size()}'
+            )
 
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
@@ -466,10 +479,11 @@ class LlamaModel(LlamaPreTrainedModel):
 
         if attention_mask is not None:
             # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-            expanded_attn_mask = _expand_mask(
-                attention_mask, inputs_embeds.dtype, tgt_len=input_shape[-1]).to(inputs_embeds.device)
+            expanded_attn_mask = _expand_mask(attention_mask, inputs_embeds.dtype,
+                                              tgt_len=input_shape[-1]).to(inputs_embeds.device)
             combined_attention_mask = (
-                expanded_attn_mask if combined_attention_mask is None else expanded_attn_mask + combined_attention_mask)
+                expanded_attn_mask if combined_attention_mask is None else expanded_attn_mask + combined_attention_mask
+            )
 
         return combined_attention_mask
 
@@ -488,7 +502,8 @@ class LlamaModel(LlamaPreTrainedModel):
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
@@ -513,7 +528,8 @@ class LlamaModel(LlamaPreTrainedModel):
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
             position_ids = torch.arange(
-                past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device)
+                past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device
+            )
             position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
         else:
             position_ids = position_ids.view(-1, seq_length).long()
@@ -525,15 +541,17 @@ class LlamaModel(LlamaPreTrainedModel):
             attention_mask = torch.ones((batch_size, seq_length_with_past),
                                         dtype=torch.bool,
                                         device=inputs_embeds.device)
-        attention_mask = self._prepare_decoder_attention_mask(attention_mask, (batch_size, seq_length), inputs_embeds,
-                                                              past_key_values_length)
+        attention_mask = self._prepare_decoder_attention_mask(
+            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+        )
 
         hidden_states = inputs_embeds
 
         if self.gradient_checkpointing and self.training:
             if use_cache:
                 logger.warning_once(
-                    '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...')
+                    '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...'
+                )
                 use_cache = False
 
         # decoder layers
@@ -672,7 +690,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
@@ -719,12 +738,9 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-    def prepare_inputs_for_generation(self,
-                                      input_ids,
-                                      past_key_values=None,
-                                      attention_mask=None,
-                                      inputs_embeds=None,
-                                      **kwargs):
+    def prepare_inputs_for_generation(
+        self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
+    ):
         if past_key_values:
             input_ids = input_ids[:, -1:]
 

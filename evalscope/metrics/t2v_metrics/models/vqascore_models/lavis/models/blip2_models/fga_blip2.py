@@ -32,7 +32,8 @@ class MLP(nn.Module):
             # nn.Dropout(0.1),
             nn.Linear(64, 16),
             nn.ReLU(),
-            nn.Linear(16, 1))
+            nn.Linear(16, 1)
+        )
 
         # initial MLP param
         for name, param in self.layers.named_parameters():

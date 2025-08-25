@@ -27,7 +27,8 @@ def default_query_distribution(llm: BaseRagasLLM, kg: KnowledgeGraph, language: 
             target_lang=language,
             llm=llm,
             adapt_instruction=True,
-        ))
+        )
+    )
 
     default_queries = [
         single_hop,

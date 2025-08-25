@@ -1,82 +1,56 @@
 from typing import Any
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
-from evalscope.metrics.completion_parsers import ResponseParser
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 
-SUBSET_LIST = ['default']
+MARITIME_PROMPT_TEMPLATE = '请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：[A]\n 当前题目\n {question}\n选项：\n{choices}'  # noqa: E501
 
 
-@Benchmark.register(
-    name='maritime_bench',
-    pretty_name='MaritimeBench',
-    tags=['Maritime', 'MCQ', 'Knowledge'],
-    description=
-    'MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.',  # noqa: E501
-    dataset_id='HiDolphin/MaritimeBench',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    eval_split='test',
-    prompt_template=
-    '题目来自于{subset_name}请回答单选题。要求只输出选项，不输出解释，将选项放在<>里，直接输出答案。示例：\n\n题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。\n选项：\nA. 电磁力\nB. 压拉应力\nC. 弯曲应力\nD. 扭应力\n答：<A> 当前题目\n {query}',  # noqa: E501
+@register_benchmark(
+    BenchmarkMeta(
+        name='maritime_bench',
+        pretty_name='MaritimeBench',
+        tags=[Tags.CHINESE, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
+        description=
+        'MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.',  # noqa: E501
+        dataset_id='HiDolphin/MaritimeBench',
+        metric_list=['acc'],
+        few_shot_num=0,
+        eval_split='test',
+        prompt_template=MARITIME_PROMPT_TEMPLATE,
+    )
 )
-class MaritimeBenchAdapter(DataAdapter):
+class MaritimeBenchAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.choices = ['A', 'B', 'C', 'D']
+        self.reformat_subset = True
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
+    def record_to_sample(self, record) -> Sample:
+        # Extract available choices from the record
+        choices = []
+        choice_letters = ['A', 'B', 'C', 'D']
+        for letter in choice_letters:
+            if letter in record and record[letter]:
+                choices.append(record[letter])
 
-        prefix = ''
-        query = prefix + input_d['question'] + '\n'
-        available_choices = []
-        for option in self.choices:
-            if option in input_d and input_d[option]:
-                query += option + ':' + input_d[option] + '\n'
-                available_choices.append(option)
+        return Sample(
+            input=record['question'],
+            choices=choices,
+            target=record['answer'],
+        )
 
-        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-        return self.gen_prompt_data(full_prompt, choices=available_choices)
+    def format_prompt_template(self, sample):
+        choices = '\n'.join([f'{chr(65 + i)}. {choice}' for i, choice in enumerate(sample.choices)])
+        return MARITIME_PROMPT_TEMPLATE.format(question=sample.input, choices=choices)
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-
-        Args:
-            input_d: input raw data. Depending on the dataset.
-
-        Returns:
-            The parsed input. e.g. gold answer ... Depending on the dataset.
-        """
-        return input_d['answer']
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the raw model prediction (pred).
-
-        Args:
-            pred: model prediction. Depending on the model.
-
-        Returns:
-            The parsed prediction. e.g. model answer... Depending on the model.
-        """
-
-        return ResponseParser.parse_bracketed_answer(result, options=self.choices)
-
-    def match(self, gold: Any, pred: Any) -> Any:
-        """
-        Match the gold answer with the predicted answer.
-
-        Args:
-            gold: The gold answer.
-            pred: The predicted answer.
-
-        Returns:
-            The result of the match.
-        """
-        return exact_match(gold=gold, pred=pred)
+    def extract_answer(self, prediction, task_state):
+        # use regex to extract the answer from the prediction
+        import re
+        match = re.search(r'\[([A-D])\]', prediction)
+        if match:
+            return match.group(1)
+        return ''

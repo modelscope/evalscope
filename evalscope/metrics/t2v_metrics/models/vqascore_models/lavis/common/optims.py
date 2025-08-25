@@ -13,15 +13,9 @@ from . import registry
 @registry.register_lr_scheduler('linear_warmup_step_lr')
 class LinearWarmupStepLRScheduler:
 
-    def __init__(self,
-                 optimizer,
-                 max_epoch,
-                 min_lr,
-                 init_lr,
-                 decay_rate=1,
-                 warmup_start_lr=-1,
-                 warmup_steps=0,
-                 **kwargs):
+    def __init__(
+        self, optimizer, max_epoch, min_lr, init_lr, decay_rate=1, warmup_start_lr=-1, warmup_steps=0, **kwargs
+    ):
         self.optimizer = optimizer
 
         self.max_epoch = max_epoch

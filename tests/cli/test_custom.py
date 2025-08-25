@@ -10,7 +10,7 @@ import subprocess
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalStage, EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.run import run_task
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
@@ -120,7 +120,7 @@ class TestRunCustom(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen2.5-72b-instruct',
+            model='qwen2.5-7b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -131,8 +131,8 @@ class TestRunCustom(unittest.TestCase):
                 'general_qa': {
                     'dataset_id': 'custom_eval/text/qa',
                     'subset_list': [
-                        # 'arena',
-                        'example'
+                        'arena',
+                        # 'example'
                     ],
                 }
             },
@@ -213,8 +213,9 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
                 },
                 'score_type': 'pattern',
             },
-            judge_worker_num=5,
-            judge_strategy=JudgeStrategy.LLM,
+            judge_worker_num=1,
+            judge_strategy=JudgeStrategy.LLM_RECALL,
+            use_cache='outputs/20250818_170420'
         )
 
         run_task(task_cfg=task_cfg)
@@ -234,19 +235,15 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
                     'extra_params':{
                         'models':[
                             {
-                                'name': 'qwen2.5-0.5b',
-                                'report_path': 'outputs/20250702_140354/reports/qwen2.5-0.5b-instruct'
-                            },
-                            {
                                 'name': 'qwen2.5-7b',
-                                'report_path': 'outputs/20250702_140702/reports/qwen2.5-7b-instruct'
+                                'report_path': 'outputs/20250819_165034/reports/qwen2.5-7b-instruct'
                             },
                             {
                                 'name': 'qwen2.5-72b',
-                                'report_path': 'outputs/20250702_140802/reports/qwen2.5-72b-instruct'
+                                'report_path': 'outputs/20250819_164926/reports/qwen2.5-72b-instruct'
                             }
                         ],
-                        'baseline': 'qwen2.5-7b'
+                        'baseline': 'qwen2.5-72b'
                     }
                 }
             },
@@ -265,7 +262,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
                 },
             },
             judge_worker_num=5,
-            use_cache='outputs/20250702_165727'
+            # use_cache='outputs/20250819_173546'
         )
 
         run_task(task_cfg=task_cfg)

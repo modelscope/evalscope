@@ -1,54 +1,83 @@
-from collections import defaultdict
 from typing import Any, Dict, List
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType
-from evalscope.metrics import Metric, mean, metric_registry
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
-@Benchmark.register(
-    name='ifeval',
-    pretty_name='IFEval',
-    tags=['Instruction-Following'],
-    description=
-    'IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.',  # noqa: E501
-    dataset_id='opencompass/ifeval',
-    subset_list=['default'],
-    metric_list=[
-        'prompt_level_strict_acc',
-        'inst_level_strict_acc',
-        'prompt_level_loose_acc',
-        'inst_level_loose_acc',
-    ],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='train',
-    prompt_template='',
+@register_benchmark(
+    BenchmarkMeta(
+        name='ifeval',
+        pretty_name='IFEval',
+        description=
+        'IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.',  # noqa: E501
+        tags=[Tags.INSTRUCTION_FOLLOWING],
+        dataset_id='opencompass/ifeval',
+        subset_list=['default'],
+        metric_list=[
+            'prompt_level_strict',
+            'inst_level_strict',
+            'prompt_level_loose',
+            'inst_level_loose',
+        ],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='train',
+        prompt_template='',
+    )
 )
-class IFEvalAdapter(DataAdapter):
+class IFEvalAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # register metrics
-        metric_registry.register(Metric(name='prompt_level_strict_acc', object=mean))
-        metric_registry.register(Metric(name='inst_level_strict_acc', object=mean))
-        metric_registry.register(Metric(name='prompt_level_loose_acc', object=mean))
-        metric_registry.register(Metric(name='inst_level_loose_acc', object=mean))
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a data record to a Sample object.
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        return self.gen_prompt_data(input_d['prompt'])
+        Args:
+            record (Dict[str, Any]): Input data record.
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        return input_d
+        Returns:
+            Sample: Sample object with input, target, and metadata.
+        """
+        prompt = record.get('prompt', '')
+        message_list = [ChatMessageUser(content=prompt)]
 
-    def match(self, gold: Any, pred: Any) -> Dict:
+        return Sample(input=message_list, target='', metadata=record)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: Dict, task_state: TaskState
+    ) -> Score:
+        """
+        Calculate evaluation scores by comparing prediction with reference.
+        """
         from evalscope.benchmarks.ifeval.utils import process_results
 
-        return process_results(gold, [pred])
+        # Initialize the score object with prediction details
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> Any:
-        # aggregate review results
-        res_dict = super().compute_dict_metric(review_res_list, **kwargs)
+        doc = task_state.metadata
+        try:
+            # Process results using the existing ifeval utility
+            results = process_results(doc, [filtered_prediction])
+            score.value.update(results)
 
-        return super().compute_metric(res_dict, **kwargs)
+            # Set main score name
+            score.main_score_name = 'prompt_level_strict'
+
+        except Exception as e:
+            logger.error(f'Error calculating ifeval metrics: {e}')
+            score.value = {}
+
+        return score

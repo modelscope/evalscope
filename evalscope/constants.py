@@ -9,9 +9,12 @@ from modelscope.utils.file_utils import get_dataset_cache_root, get_model_cache_
 
 DEFAULT_WORK_DIR = './outputs'
 DEFAULT_MODEL_REVISION = DEFAULT_REPOSITORY_REVISION  # master
-DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub
-DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/datasets
+DEFAULT_MODEL_CACHE_DIR = get_model_cache_root()  # ~/.cache/modelscope/hub/models
+DEFAULT_DATASET_CACHE_DIR = get_dataset_cache_root()  # ~/.cache/modelscope/hub/datasets
 DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old version
+DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
+    os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
+)  # ~/.cache/evalscope
 
 
 class HubType:
@@ -44,20 +47,10 @@ class MetricsConstant:
 class ArenaWinner:
 
     MODEL_A = 'model_a'
-
     MODEL_B = 'model_b'
-
     TIE = 'tie'
-
     TIE_BOTH_BAD = 'tie_both_bad'
-
     UNKNOWN = 'unknown'
-
-
-class ArenaMode:
-    SINGLE = 'single'
-    PAIRWISE = 'pairwise'
-    PAIRWISE_BASELINE = 'pairwise_baseline'
 
 
 class AnswerKeys:
@@ -70,58 +63,13 @@ class AnswerKeys:
     CHOICES = 'choices'
 
 
-class ReviewKeys:
-    REVIEW_ID = 'review_id'
-    REVIEWED = 'reviewed'
-    REVIEWER_SPEC = 'reviewer_spec'
-    REVIEW_TIME = 'review_time'
-    MESSAGE = 'message'
-    CONTENT = 'content'
-    GOLD = 'gold'
-    PRED = 'pred'
-    RESULT = 'result'
-    REVIEW = 'review'
-
-
-class EvalConfigKeys:
-    CLASS_REF = 'ref'
-    CLASS_ARGS = 'args'
-    ENABLE = 'enable'
-    POSITION_BIAS_MITIGATION = 'position_bias_mitigation'
-    RANDOM_SEED = 'random_seed'
-    FN_COMPLETION_PARSER = 'fn_completion_parser'
-    COMPLETION_PARSER_KWARGS = 'completion_parser_kwargs'
-    OUTPUT_FILE = 'output_file'
-    MODEL_ID_OR_PATH = 'model_id_or_path'
-    MODEL_REVISION = 'revision'
-    GENERATION_CONFIG = 'generation_config'
-    PRECISION = 'precision'
-    TEMPLATE_TYPE = 'template_type'
-
-
-class FnCompletionParser:
-    LMSYS_PARSER: str = 'lmsys_parser'
-    RANKING_PARSER: str = 'ranking_parser'
-
-
-class PositionBiasMitigation:
-    NONE = 'none'
-    RANDOMIZE_ORDER = 'randomize_order'
-    SWAP_POSITION = 'swap_position'
-
-
-class EvalStage:
-    # Enums: `all`, `infer`, `review`
-    ALL = 'all'
-    INFER = 'infer'
-    REVIEW = 'review'
-
-
 class EvalType:
 
     CUSTOM = 'custom'
-    CHECKPOINT = 'checkpoint'  # native model checkpoint
-    SERVICE = 'service'  # model service
+    MOCK_LLM = 'mock_llm'
+    CHECKPOINT = 'llm_ckpt'  # native model checkpoint
+    SERVICE = 'openai_api'  # model service
+    TEXT2IMAGE = 'text2image'  # image generation service
 
 
 class OutputType:
@@ -142,6 +90,7 @@ class EvalBackend:
 
 class DataCollection:
     NAME = 'data_collection'
+    INFO = 'collection_info'
 
 
 class JudgeStrategy:
@@ -159,3 +108,22 @@ class JudgeScoreType:
 class ModelTask:
     TEXT_GENERATION = 'text_generation'
     IMAGE_GENERATION = 'image_generation'
+
+
+class Tags:
+    KNOWLEDGE = 'Knowledge'
+    MULTIPLE_CHOICE = 'MCQ'
+    MATH = 'Math'
+    REASONING = 'Reasoning'
+    CODING = 'Coding'
+    CHINESE = 'Chinese'
+    COMMONSENSE = 'Commonsense'
+    QA = 'QA'
+    READING_COMPREHENSION = 'ReadingComprehension'
+    CUSTOM = 'Custom'
+    INSTRUCTION_FOLLOWING = 'InstructionFollowing'
+    ARENA = 'Arena'
+    LONG_CONTEXT = 'LongContext'
+    RETRIEVAL = 'Retrieval'
+    FUNCTION_CALLING = 'FunctionCalling'
+    TEXT_TO_IMAGE = 'TextToImage'

@@ -32,8 +32,8 @@ def transform(item):
         private_test_cases = json.loads(item['private_test_cases'])
     except Exception as e:  # noqa: F841
         private_test_cases = json.loads(
-            pickle.loads(zlib.decompress(base64.b64decode(private_test_cases.encode('utf-8'))  # type: ignore
-                                         )))  # type: ignore
+            pickle.loads(zlib.decompress(base64.b64decode(private_test_cases.encode('utf-8'))))
+        )
 
     # load metadata
     metadata = json.loads(item['metadata'])
@@ -47,25 +47,17 @@ def transform(item):
     return item
 
 
-def filter_date(dataset, start_date=None, end_date=None):
-    new_dataset = []
+def filter_date(contest_date, start_date=None, end_date=None) -> bool:
 
-    for item in dataset:
-        contest_date = datetime.fromisoformat(item['contest_date'])
-        if start_date is not None:
-            p_start_date = datetime.strptime(start_date, '%Y-%m-%d')
-            if p_start_date > contest_date:
-                continue
+    contest_date = datetime.fromisoformat(contest_date)
+    if start_date is not None:
+        p_start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        if p_start_date > contest_date:
+            return False
 
-        if end_date is not None:
-            p_end_date = datetime.strptime(end_date, '%Y-%m-%d')
-            if p_end_date < contest_date:
-                continue
+    if end_date is not None:
+        p_end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        if p_end_date < contest_date:
+            return False
 
-        new_dataset.append(item)
-
-    if start_date or end_date:
-        logger.info(
-            f'Filtered dataset with start_date: {start_date}, end_date: {end_date}, remaining items: {len(new_dataset)}'
-        )
-    return new_dataset
+    return True

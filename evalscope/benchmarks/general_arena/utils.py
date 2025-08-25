@@ -7,44 +7,39 @@ from collections import defaultdict
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 
+from evalscope.api.evaluator import ReviewResult
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def process_review_item(review_item: dict) -> dict:
+def process_review_item(review_result: ReviewResult) -> list:
     """
-    Process a single review item to extract relevant information.
+    Process a ReviewResult object to extract relevant information.
 
     Args:
-        review_item (dict): The review item to process.
+        review_result: ReviewResult object or dict (for backward compatibility)
 
     Returns:
-        dict: Processed review item with necessary information.
+        list: List of processed review items with necessary information.
     """
-    res = []
-    raw_input = review_item['raw_input']
-    sample_index = review_item['index']
-    question_keys = ['question', 'Question', 'prompt', 'Prompt', 'query', 'Query', 'problem', 'Problem']
-    # Find the first non-empty question key in raw_input
-    question = next((raw_input.get(key) for key in question_keys if raw_input.get(key)), None)
-    for choice_index, choice in enumerate(review_item['choices']):
-        raw_pred_answer = choice['message']['content']
-        parsed_gold_answer = choice['review']['gold']
-        parsed_pred_answer = choice['review']['pred']
-        score = choice['review']['result']
-        raw_d = {
-            'Index': f'{sample_index}_{choice_index}',
-            'Input': raw_input,
-            'Question': question if question else '*No Question*',
-            'Generated': raw_pred_answer,
-            'Gold': parsed_gold_answer if parsed_gold_answer != raw_input else '*Same as Input*',
-            'Pred': parsed_pred_answer,
-            'Score': score,
-        }
-        res.append(raw_d)
 
-    return res
+    # New format using ReviewResult
+    sample_score = review_result.sample_score
+    prediction = sample_score.score.prediction
+    target = review_result.target
+    extracted_prediction = sample_score.score.extracted_prediction
+
+    raw_d = {
+        'Index': str(review_result.index),
+        'Input': review_result.input,
+        'Question': review_result.input,  # Use input as question
+        'Generated': prediction if prediction != extracted_prediction else extracted_prediction,
+        'Gold': target,
+        'Pred': extracted_prediction,
+        'Score': sample_score.score.model_dump(exclude_none=True),
+    }
+    return [raw_d]
 
 
 def post_process_result(completion):
@@ -179,7 +174,8 @@ def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gp
         return elo_scores.sort_values(ascending=False)
 
     lr = LogisticRegression(
-        fit_intercept=False, penalty=None, tol=1e-8)  # May need to set a small value when not use GPT4 as judge model
+        fit_intercept=False, penalty=None, tol=1e-8
+    )  # May need to set a small value when not use GPT4 as judge model
     lr.fit(X, Y)
 
     elo_scores = scale * lr.coef_[0] + init_rating

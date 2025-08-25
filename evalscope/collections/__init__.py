@@ -4,20 +4,12 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .evaluator import EvaluatorCollection
-    from .sampler import StratifiedSampler, UniformSampler, WeightedSampler
+    from .sampler import DatasetEntry, StratifiedSampler, UniformSampler, WeightedSampler
     from .schema import CollectionSchema, DatasetInfo
 
 else:
     _import_structure = {
-        'evaluator': [
-            'EvaluatorCollection',
-        ],
-        'sampler': [
-            'StratifiedSampler',
-            'UniformSampler',
-            'WeightedSampler',
-        ],
+        'sampler': ['StratifiedSampler', 'UniformSampler', 'WeightedSampler', 'DatasetEntry'],
         'schema': [
             'CollectionSchema',
             'DatasetInfo',

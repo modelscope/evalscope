@@ -1,28 +1,13 @@
-from collections import defaultdict
 from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
-from evalscope.metrics.completion_parsers import ResponseParser
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 logger = get_logger()
-
-SUBSET_LIST = [
-    'abstract_algebra', 'anatomy', 'astronomy', 'business_ethics', 'clinical_knowledge', 'college_biology',
-    'college_chemistry', 'college_computer_science', 'college_mathematics', 'college_medicine', 'college_physics',
-    'computer_security', 'conceptual_physics', 'econometrics', 'electrical_engineering', 'elementary_mathematics',
-    'formal_logic', 'global_facts', 'high_school_biology', 'high_school_chemistry', 'high_school_computer_science',
-    'high_school_european_history', 'high_school_geography', 'high_school_government_and_politics',
-    'high_school_macroeconomics', 'high_school_mathematics', 'high_school_microeconomics', 'high_school_physics',
-    'high_school_psychology', 'high_school_statistics', 'high_school_us_history', 'high_school_world_history',
-    'human_aging', 'human_sexuality', 'international_law', 'jurisprudence', 'logical_fallacies', 'machine_learning',
-    'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', 'moral_scenarios', 'nutrition',
-    'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine',
-    'professional_psychology', 'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology',
-    'world_religions'
-]
 
 SUBJECT_MAPPING = {
     'abstract_algebra': ['Abstract Algebra', 'math', 'STEM'],
@@ -84,25 +69,31 @@ SUBJECT_MAPPING = {
     'world_religions': ['World Religions', 'philosophy', 'Humanities'],
 }
 
+SUBSET_LIST = list(SUBJECT_MAPPING.keys())
 
-@Benchmark.register(
-    name='mmlu_redux',
-    pretty_name='MMLU-Redux',
-    tags=['MCQ', 'Knowledge'],
-    description=
-    'MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
-    dataset_id='AI-ModelScope/mmlu-redux-2.0',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    prompt_template=
-    'The following are multiple choice questions (with answers) about {subset_name}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n{query}',  # noqa: E501
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='mmlu_redux',
+        pretty_name='MMLU-Redux',
+        tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
+        description=
+        'MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. '  # noqa: E501
+        'The bad answers are corrected.',  # noqa: E501
+        dataset_id='AI-ModelScope/mmlu-redux-2.0',
+        subset_list=SUBSET_LIST,
+        metric_list=[{
+            'acc': {
+                'allow_inclusion': True
+            }
+        }],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
+    )
 )
-class MMLUReduxAdapter(DataAdapter):
+class MMLUReduxAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -111,75 +102,38 @@ class MMLUReduxAdapter(DataAdapter):
             self.few_shot_num = 0
             logger.warning('Few-shot examples are not supported for MMLU-Redux dataset. Setting few_shot_num to 0.')
 
-        self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-        self.category_map = {k: v[-1] for k, v in SUBJECT_MAPPING.items()}
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        error_type = record['error_type']
+        choices = record['choices']
+        target_index_list = [int(record['answer'])]
+        correct_answer = record['correct_answer']
+        if error_type == 'no_correct_answer' and correct_answer:
+            choices[target_index_list[0]] = correct_answer
+        elif error_type == 'wrong_groundtruth' and correct_answer:
+            try:
+                target_index_list = [int(correct_answer)]
+            except ValueError:
+                choice_index = ord(correct_answer) - ord('A')
+                target_index_list = [choice_index]
+        elif error_type == 'multiple_correct_answers' and correct_answer:
+            correct_answer = correct_answer.strip('()')
+            try:
+                correct_answer = correct_answer.replace(' and ', ',').replace(' or ', ',')
+                target_index_list = list(map(int, correct_answer.split(',')))
+            except ValueError:
+                try:
+                    target_index_list = [ord(c) - ord('A') for c in correct_answer.split(',')]
+                except TypeError:
+                    # find the index of the correct answer in choices
+                    target_index_list = [choices.index(c) for c in correct_answer.split(',') if c in choices]
 
-    def gen_prompt(self, input_d: Dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        if self.few_shot_num > 0:
-            prefix = self.format_fewshot_examples(few_shot_list)
-        else:
-            prefix = ''
-        query = prefix + 'Q: ' + input_d['question'] + '\n' + \
-            self.__form_options(input_d['choices']) + '\n'
-
-        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-        return self.gen_prompt_data(full_prompt)
-
-    def format_fewshot_examples(self, few_shot_list):
-        # load few-shot prompts for each category
-        prompts = ''
-        for index, d in enumerate(few_shot_list):
-            prompts += 'Q: ' + d['question'] + '\n' + \
-                self.__form_options(d['choices']) + '\n'
-        return prompts
-
-    def __form_options(self, options: list):
-        option_str = 'Options are:\n'
-        for opt, choice in zip(options, self.choices):
-            option_str += f'({choice}): {opt}' + '\n'
-        return option_str
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-
-        Args:
-            input_d: input raw data. Depending on the dataset.
-
-        Returns:
-            The parsed input. e.g. gold answer ... Depending on the dataset.
-        """
-        answer_index = int(input_d['answer'])
-        return self.choices[answer_index]
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the predicted result and extract proper answer.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d: The raw input. Depending on the dataset.
-            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            return result
-        else:
-            return ResponseParser.parse_first_option(result, options=self.choices)
-
-    def match(self, gold: str, pred: str) -> float:
-        """
-        Match the gold answer and the predicted answer.
-
-        Args:
-            gold (Any): The golden answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'A', extracted from get_gold_answer method.
-            pred (Any): The predicted answer. Usually a string for chat/multiple-choice-questions.
-                        e.g. 'B', extracted from parse_pred_result method.
-
-        Returns:
-            The match result. Usually a score (float) for chat/multiple-choice-questions.
-        """
-        return exact_match(gold=gold, pred=pred)
+        return Sample(
+            input=record['question'],
+            choices=choices,
+            target=['ABCD'[i] for i in target_index_list] if target_index_list else ['A', 'B', 'C', 'D'],
+            metadata={
+                'error_type': error_type,
+                'correct_answer': correct_answer,
+                'potential_reason': record.get('potential_reason', ''),
+            },
+        )

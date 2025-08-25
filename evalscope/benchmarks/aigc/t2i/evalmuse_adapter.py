@@ -1,80 +1,76 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os.path
 from collections import defaultdict
 from typing import List, Optional, Union
 
-from evalscope.benchmarks import Benchmark
-from evalscope.constants import OutputType
+from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
+from evalscope.api.metric.scorer import AggScore, Score
+from evalscope.api.registry import get_metric, register_benchmark
+from evalscope.constants import Tags
 from evalscope.metrics import mean
-from evalscope.utils.io_utils import jsonl_to_list
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.logger import get_logger
-from .base import T2IBaseAdapter
 
 logger = get_logger()
 
 
-@Benchmark.register(
-    name='evalmuse',
-    dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-    model_adapter=OutputType.IMAGE_GENERATION,
-    output_types=[OutputType.IMAGE_GENERATION],
-    subset_list=['EvalMuse'],
-    metric_list=['FGA_BLIP2Score'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
+@register_benchmark(
+    BenchmarkMeta(
+        name='evalmuse',
+        dataset_id='AI-ModelScope/T2V-Eval-Prompts',
+        description='EvalMuse Text-to-Image Benchmark',
+        tags=[Tags.TEXT_TO_IMAGE],
+        subset_list=['EvalMuse'],
+        metric_list=['FGA_BLIP2Score'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+    )
 )
-class EvalMuseAdapter(T2IBaseAdapter):
+class EvalMuseAdapter(Text2ImageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        assert len(self.metric_list
+                   ) == 1 and self.metric_list[0] == 'FGA_BLIP2Score', 'Only FGA_BLIP2Score is supported for EvalMuse'
 
-    def load(self, **kwargs) -> dict:
-        if os.path.isfile(self.dataset_id):
-            data_list = jsonl_to_list(self.dataset_id)
-            data_dict = {self.subset_list[0]: {'test': data_list}}
-            return data_dict
-        else:
-            return super().load(**kwargs)
+    @thread_safe
+    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        # Get prediction and prompt from task state
+        image_path = task_state.metadata.get('image_path', original_prediction)
 
-    def get_gold_answer(self, input_d: dict) -> dict:
-        # return prompt and elements dict
-        return {'prompt': input_d.get('prompt'), 'tags': input_d.get('tags', {})}
+        # Initialize the score object with prediction details
+        score = Score(
+            extracted_prediction=image_path,
+            prediction=image_path,
+        )
 
-    def match(self, gold: dict, pred: str) -> dict:
-        # dummy match for general t2i
-        # pred is the image path, gold is the prompt
-        self._init_metrics()
+        # Calculate scores for each configured metric
+        try:
+            metric_name = self.metric_list[0]
+            metric_cls = get_metric(metric_name)
+            metric_func = metric_cls()  # Initialize with parameters
+            metric_score = metric_func(image_path, task_state.metadata)[0]
 
-        res = {}
-        for metric_name, metric_func in self.metrics.items():
-            if metric_name == 'FGA_BLIP2Score':
-                # For FGA_BLIP2Score, we need to pass the dictionary
-                score = metric_func(images=[pred], texts=[gold])[0][0]
-            else:
-                score = metric_func(images=[pred], texts=[gold['prompt']])[0][0]
-            if isinstance(score, dict):
-                for k, v in score.items():
-                    res[f'{metric_name}:{k}'] = v.cpu().item()
-            else:
-                res[metric_name] = score.cpu().item()
-        return res
+            for k, v in metric_score.items():
+                score.value[f'{metric_name}:{k}'] = v.cpu().item()
+        except Exception as e:
+            logger.error(f'Error calculating metric {metric_name}: {e}')
+            score.value[metric_name] = 0
+            score.metadata[metric_name] = f'error: {str(e)}'
 
-    def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
-        """
-        compute weighted mean of the bleu score of all samples
-        """
-        items = super().compute_dict_metric(review_res_list, **kwargs)
-        # add statistics for each metric
+        return score
+
+    def aggregate_scores(self, sample_scores) -> List[AggScore]:
         new_items = defaultdict(list)
-        for metric_name, value_list in items.items():
-            if 'FGA_BLIP2Score' in metric_name and '(' in metric_name:  # FGA_BLIP2Score element score
+        agg_list = []
+        for sample_score in sample_scores:
+            for metric_name, value in sample_score.score.value.items():
                 metrics_prefix = metric_name.split(':')[0]
                 category = metric_name.rpartition('(')[-1].split(')')[0]
                 category = category.split('-')[0].lower()  # remove the suffix if exists
-                new_items[f'{metrics_prefix}:{category}'].extend(value_list)
-            else:
-                new_items[metric_name].extend(value_list)
+                new_items[f'{metrics_prefix}:{category}'].append(value)
 
-        # calculate mean for each metric
-        return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in new_items.items()]
+        for k, v in new_items.items():
+            agg_list.append(AggScore(metric_name=k, score=mean(v), num=len(v)))
+
+        return agg_list
