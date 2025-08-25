@@ -77,7 +77,6 @@ def add_argument(parser: argparse.ArgumentParser):
     # Debug and runtime mode arguments
     parser.add_argument('--ignore-errors', action='store_true', default=False, help='Ignore errors during evaluation.')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug mode, will print information for debugging.')  # noqa: E501
-    parser.add_argument('--dry-run', action='store_true', default=False, help='Dry run in single processing mode.')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')
     parser.add_argument('--api-key', type=str, default='EMPTY', help='The API key for the remote API model.')
     parser.add_argument('--api-url', type=str, default=None, help='The API url for the remote API model.')

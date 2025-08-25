@@ -26,9 +26,6 @@ class ResponseSchema(BaseModel):
 class GenerateConfig(BaseModel):
     """Model generation options."""
 
-    max_retries: Optional[int] = Field(default=None)
-    """Maximum number of times to retry request (defaults to unlimited)."""
-
     timeout: Optional[int] = Field(default=None)
     """Request timeout (in seconds)."""
 

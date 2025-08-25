@@ -222,61 +222,23 @@ run_task(task_cfg=task_cfg)
 
 ## 离线评测
 
-数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集，流程如下：
+数据集默认托管在[ModelScope](https://modelscope.cn/datasets)上，加载需要联网。如果是无网络环境，可以使用本地数据集和模型，流程如下：
 
-假如当前本地工作路径为 `/path/to/workdir`。
+### 使用本地数据集
 
-### 下载数据集到本地
-
-```{important}
-在下载数据集之前请确认你想使用的数据集是存放在`zip`中，还是在modelscope中。
-```
-
-#### 下载zip数据集
-
-由于历史原因，部分数据集是通过执行python脚本的方式进行加载的，这部分数据集我们将其整理到了一个`zip`文件中，包括如下数据集：
-```text
-.
-├── arc
-├── bbh
-├── ceval
-├── cmmlu
-├── competition_math
-├── general_qa
-├── gsm8k
-├── hellaswag
-├── humaneval
-├── mmlu
-├── race
-├── trivia_qa
-└── truthful_qa
-```
-
-对于这部分数据集，执行以下命令：
-```shell
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
-unzip data.zip
-```
-解压后的数据集在：`/path/to/workdir/data` 目录下，该目录在后续步骤将会作为`local_path`参数的值传入。
-
-#### 下载modelscope数据集
-
-对于不在`zip`中的数据集，例如[mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro)数据集，数据集地址参考[支持的数据集](./supported_dataset/index.md)，执行以下命令：
-
+1. 首先查看想要使用的数据集在modelscope上的地址：数据集地址参考[支持的数据集](./supported_dataset/index.md)中，找到数据集的**数据集ID**，例如[MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary)
+2. 使用modelscope命令下载数据集：点击“数据集文件”tab -> 点击“下载数据集” -> 复制命令行 
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/datasets/modelscope/MMLU-Pro.git
+modelscope download --dataset modelscope/MMLU-Pro --local_dir ./data/mmlu_pro
 ```
+3. 使用目录`./data/mmlu_pro`作为`local_path`参数的值传入即可。
 
-使用目录`/path/to/MMLU-Pro`作为`local_path`参数的值传入即可。
-
-### 下载模型到本地
+### 使用本地模型
 模型文件托管在ModelScope Hub端，需要联网加载，当需要在离线环境创建评测任务时，可提前将模型下载到本地：
 
-例如使用Git下载Qwen2.5-0.5B-Instruct模型到本地：
+例如使用modelscope命令下载[Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct)模型到本地：
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+modelscope download --model modelscope/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
 ```
 
 ```{seealso}
@@ -288,8 +250,16 @@ git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
 
 ```shell
 evalscope eval \
- --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
- --datasets arc \
- --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --model ./model/qwen2.5 \
+ --datasets mmlu_pro \
+ --dataset-args '{"mmlu_pro": {"local_path": "./data/mmlu_pro"}}' \
  --limit 10
 ```
+
+## 切换到v1.0版本
+
+如果你之前使用的是 v0.1x 版本，想切换到使用 v1.0 版本，需要注意以下变化：
+1. 由于评测输出格式的变化，EvalScope 可视化功能不兼容1.0之前版本，需要使用1.0版本输出的report才能正常可视化。
+2. 由于数据集格式的变化，EvalScope的数据集合功能不支持1.0之前版本创建的数据集，需要使用1.0版本重新运行数据集合创建。
+3. 模型推理参数中的`n`参数不再支持，更改为`repeats`
+4. `stage`参数已移除，新增`rerun_review`参数，来控制在指定了`use_cache`的情况下是否重新运行评测。
