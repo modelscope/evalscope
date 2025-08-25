@@ -39,7 +39,7 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
     if not metadata:
-        raise ValueError(f'Benchmark {name} not found, available benchmarks: {list(BENCHMARK_REGISTRY.keys())}')
+        raise ValueError(f'Benchmark {name} not found, available benchmarks: {list(sorted(BENCHMARK_REGISTRY.keys()))}')
 
     # Update metadata with dataset-specific configuration
     if config is not None:

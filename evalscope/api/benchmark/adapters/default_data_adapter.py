@@ -91,7 +91,7 @@ class DefaultDataAdapter(DataAdapter):
         # Load few-shot examples if few-shot prompting is enabled
         if self._should_load_fewshot():
             fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
-            fewshot_dataset = self.load_subsets(fewshot_load_func)
+            fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
         return test_dataset, fewshot_dataset
 
     def load_from_disk(self, use_local_loader: bool = False):
@@ -112,7 +112,7 @@ class DefaultDataAdapter(DataAdapter):
             # Load few-shot examples if few-shot prompting is enabled
             if self._should_load_fewshot():
                 fewshot_load_func = partial(self.load_fewshot_subset, data_loader=LocalDataLoader)
-                fewshot_dataset = self.load_subsets(fewshot_load_func)
+                fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
             return test_dataset, fewshot_dataset
         else:
             # Fallback to remote loading for local ModelScope datasets
@@ -182,7 +182,7 @@ class DefaultDataAdapter(DataAdapter):
             input_text = self.format_prompt_template(sample=sample)
         return input_text
 
-    def load_subsets(self, load_func: Callable[[str], Dataset]) -> DatasetDict:
+    def load_subsets(self, load_func: Callable[[str], Dataset], is_fewshot=False) -> DatasetDict:
         """
         Load multiple subsets of the dataset using the provided loading function.
 
@@ -201,8 +201,10 @@ class DefaultDataAdapter(DataAdapter):
             subset_data = load_func(self.default_subset)
             # Reformat the subset to create multiple subsets based on sample keys
             # NOTE: subset_list and limit is applied here if specified
+            limit = self.few_shot_num if is_fewshot else self.limit
+            repeats = 1 if is_fewshot else self.repeats
             dataset_dict = DatasetDict.from_dataset(
-                dataset=subset_data, subset_list=self.subset_list, limit=self.limit, repeats=self.repeats
+                dataset=subset_data, subset_list=self.subset_list, limit=limit, repeats=repeats
             )
         else:
             # Load all specified subsets into separate entries
