@@ -81,7 +81,7 @@ class FieldSpec:
     """Sandbox type along with optional config file."""
 
     files: str = field(default='files')
-    """Files that go along wtih the sample."""
+    """Files that go along with the sample."""
 
     setup: str = field(default='setup')
     """Setup script to run for sample (run within default SandboxEnvironment)."""

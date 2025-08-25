@@ -101,7 +101,7 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 > [!IMPORTANT]
 > **版本 1.0 重构**
 >
-> 版本 1.0 对评测框架进行了重大重构，在 `evalscope/api` 下建立了全新的、更模块化且易扩展的 API 层。主要改进包括：为基准、样本和结果引入了标准化数据模型；对基准和指标等组件采用注册表式设计；并重写了核心评测器以协同新架构。现有的基准已迁移到这一 API，实现更加简洁、一致且易于维护。 d
+> 版本 1.0 对评测框架进行了重大重构，在 `evalscope/api` 下建立了全新的、更模块化且易扩展的 API 层。主要改进包括：为基准、样本和结果引入了标准化数据模型；对基准和指标等组件采用注册表式设计；并重写了核心评测器以协同新架构。现有的基准已迁移到这一 API，实现更加简洁、一致且易于维护。
 
 - 🔥 **[2025.08.22]** Version 1.0 重构.
 - 🔥 **[2025.07.18]** 模型压测支持随机生成图文数据，用于多模态模型压测，使用方法[参考](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/examples.html#id4)。
@@ -152,8 +152,9 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 </details>
 
 ## 🛠️ 环境准备
+
 ### 方式1. 使用pip安装
-我们推荐使用conda来管理环境，并使用pip安装依赖:
+我们推荐使用conda来管理环境，并使用pip安装依赖，可以使用最新的evalscope pypi包。
 1. 创建conda环境 (可选)
 ```shell
 # 建议使用 python 3.10
@@ -164,18 +165,29 @@ conda activate evalscope
 ```
 2. pip安装依赖
 ```shell
-pip install evalscope                # 安装 Native backend (默认)
-# 额外选项
-pip install 'evalscope[opencompass]'   # 安装 OpenCompass backend
-pip install 'evalscope[vlmeval]'       # 安装 VLMEvalKit backend
-pip install 'evalscope[rag]'           # 安装 RAGEval backend
-pip install 'evalscope[perf]'          # 安装 模型压测模块 依赖
-pip install 'evalscope[app]'           # 安装 可视化 相关依赖
-pip install 'evalscope[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+pip install evalscope
 ```
+3. 安装额外依赖（可选）
+  - 若要使用模型服务推理压测功能，需安装perf依赖：
+    ```shell
+    pip install 'evalscope[perf]'
+    ```
+  - 若要使用可视化功能，需安装app依赖：
+    ```shell
+    pip install 'evalscope[app]'
+    ```
+  - 若使用其他评测后端，可按需安装OpenCompass, VLMEvalKit, RAGEval：
+    ```shell
+    pip install 'evalscope[opencompass]'
+    pip install 'evalscope[vlmeval]'
+    pip install 'evalscope[rag]'
+    ```
+  - 安装所有依赖：
+    ```shell
+    pip install 'evalscope[all]'
+    ```
 
-
-> [!WARNING]
+> [!NOTE]
 > 由于项目更名为`evalscope`，对于`v0.4.3`或更早版本，您可以使用以下命令安装：
 > ```shell
 >  pip install llmuses<=0.4.3
@@ -186,8 +198,9 @@ pip install 'evalscope[all]'           # 安装所有 backends (Native, OpenComp
 > ```
 
 
-
 ### 方式2. 使用源码安装
+使用源码安装的方式，可以使用最新的代码，并方便地进行二次开发和调试。
+
 1. 下载源码
 ```shell
 git clone https://github.com/modelscope/evalscope.git
@@ -196,16 +209,27 @@ git clone https://github.com/modelscope/evalscope.git
 ```shell
 cd evalscope/
 
-pip install -e .                  # 安装 Native backend
-# 额外选项
-pip install -e '.[opencompass]'   # 安装 OpenCompass backend
-pip install -e '.[vlmeval]'       # 安装 VLMEvalKit backend
-pip install -e '.[rag]'           # 安装 RAGEval backend
-pip install -e '.[perf]'          # 安装 模型压测模块 依赖
-pip install -e '.[app]'           # 安装 可视化 相关依赖
-pip install -e '.[all]'           # 安装所有 backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+pip install -e .
 ```
-
+3. 安装额外依赖
+- 若要使用模型服务推理压测功能，需安装perf依赖：
+   ```shell
+   pip install '.[perf]'
+   ```
+ - 若要使用可视化功能，需安装app依赖：
+   ```shell
+   pip install '.[app]'
+   ```
+ - 若使用其他评测后端，可按需安装OpenCompass, VLMEvalKit, RAGEval：
+   ```shell
+   pip install '.[opencompass]'
+   pip install '.[vlmeval]'
+   pip install '.[rag]'
+   ```
+ - 安装所有依赖：
+   ```shell
+   pip install '.[all]'
+   ```
 
 ## 🚀 快速开始
 

@@ -28,9 +28,9 @@
 - [📝 Introduction](#-introduction)
 - [☎ User Groups](#-user-groups)
 - [🎉 News](#-news)
-- [🛠️ Installation](#️-installation)
-  - [Method 1: Install Using pip](#method-1-install-using-pip)
-  - [Method 2: Install from Source](#method-2-install-from-source)
+- [🛠️ Environment Setup](#️-environment-setup)
+  - [Method 1. Install via pip](#method-1-install-via-pip)
+  - [Method 2. Install from source](#method-2-install-from-source)
 - [🚀 Quick Start](#-quick-start)
   - [Method 1. Using Command Line](#method-1-using-command-line)
   - [Method 2. Using Python Code](#method-2-using-python-code)
@@ -166,58 +166,87 @@ Please scan the QR code below to join our community groups:
 
 </details>
 
-## 🛠️ Installation
-### Method 1: Install Using pip
-We recommend using conda to manage your environment and installing dependencies with pip:
+## 🛠️ Environment Setup
+
+### Method 1. Install via pip
+
+We recommend using conda to manage your environment and pip to install dependencies. This allows you to use the latest evalscope PyPI package.
 
 1. Create a conda environment (optional)
+```shell
+# Python 3.10 is recommended
+conda create -n evalscope python=3.10
+
+# Activate the conda environment
+conda activate evalscope
+```
+2. Install dependencies via pip
+```shell
+pip install evalscope
+```
+3. Install additional dependencies (optional)
+  - To use model service inference benchmarking features, install the perf dependency:
     ```shell
-    # It is recommended to use Python 3.10
-    conda create -n evalscope python=3.10
-    # Activate the conda environment
-    conda activate evalscope
+    pip install 'evalscope[perf]'
+    ```
+  - To use visualization features, install the app dependency:
+    ```shell
+    pip install 'evalscope[app]'
+    ```
+  - If you need to use other evaluation backends, you can install OpenCompass, VLMEvalKit, or RAGEval as needed:
+    ```shell
+    pip install 'evalscope[opencompass]'
+    pip install 'evalscope[vlmeval]'
+    pip install 'evalscope[rag]'
+    ```
+  - To install all dependencies:
+    ```shell
+    pip install 'evalscope[all]'
     ```
 
-2. Install dependencies using pip
-    ```shell
-    pip install evalscope                # Install Native backend (default)
-    # Additional options
-    pip install 'evalscope[opencompass]'   # Install OpenCompass backend
-    pip install 'evalscope[vlmeval]'       # Install VLMEvalKit backend
-    pip install 'evalscope[rag]'           # Install RAGEval backend
-    pip install 'evalscope[perf]'          # Install dependencies for the model performance testing module
-    pip install 'evalscope[app]'           # Install dependencies for visualization
-    pip install 'evalscope[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-    ```
-
-> [!WARNING]
-> As the project has been renamed to `evalscope`, for versions `v0.4.3` or earlier, you can install using the following command:
+> [!NOTE]
+> The project has been renamed to `evalscope`. For version `v0.4.3` or earlier, you can install it with:
 > ```shell
-> pip install llmuses<=0.4.3
+>  pip install llmuses<=0.4.3
 > ```
-> To import relevant dependencies using `llmuses`:
-> ``` python
+> Then, import related dependencies using `llmuses`:
+> ```python
 > from llmuses import ...
 > ```
 
-### Method 2: Install from Source
-1. Download the source code
-    ```shell
-    git clone https://github.com/modelscope/evalscope.git
-    ```
+### Method 2. Install from source
 
+Installing from source allows you to use the latest code and makes it easier for further development and debugging.
+
+1. Clone the source code
+```shell
+git clone https://github.com/modelscope/evalscope.git
+```
 2. Install dependencies
-    ```shell
-    cd evalscope/
-    pip install -e .                  # Install Native backend
-    # Additional options
-    pip install -e '.[opencompass]'   # Install OpenCompass backend
-    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-    pip install -e '.[rag]'           # Install RAGEval backend
-    pip install -e '.[perf]'          # Install Perf dependencies
-    pip install -e '.[app]'           # Install visualization dependencies
-    pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-    ```
+```shell
+cd evalscope/
+
+pip install -e .
+```
+3. Install additional dependencies
+ - To use model service inference benchmarking features, install the perf dependency:
+   ```shell
+   pip install '.[perf]'
+   ```
+ - To use visualization features, install the app dependency:
+   ```shell
+   pip install '.[app]'
+   ```
+ - If you need to use other evaluation backends, you can install OpenCompass, VLMEvalKit, or RAGEval as needed:
+   ```shell
+   pip install '.[opencompass]'
+   pip install '.[vlmeval]'
+   pip install '.[rag]'
+   ```
+ - To install all dependencies:
+   ```shell
+   pip install '.[all]'
+   ```
 
 
 ## 🚀 Quick Start

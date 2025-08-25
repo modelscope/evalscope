@@ -2,7 +2,7 @@
 
 import contextlib
 from abc import ABC, abstractmethod
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.api.dataset import DatasetDict, Sample
@@ -51,7 +51,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         # dataset
         self.test_dataset: Optional[DatasetDict] = None
+        """Dataset to be evaluated"""
+
         self.fewshot_dataset: Optional[DatasetDict] = None
+        """Dataset for few-shot evaluation"""
 
         # filters
         self._filter_ensemble: Optional[OrderedDict] = None

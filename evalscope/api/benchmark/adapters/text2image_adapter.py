@@ -1,11 +1,11 @@
 import base64
 import os
 
-from evalscope.api.dataset import DataLoader, Sample
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.messages.content import ContentImage
-from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric import Score
 from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
 from evalscope.api.registry import get_metric
 from evalscope.constants import EvalType
