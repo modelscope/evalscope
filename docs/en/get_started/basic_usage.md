@@ -266,7 +266,8 @@ evalscope eval \
 ## Switching to Version v1.0
 
 If you previously used version v0.1x and wish to switch to v1.0, please note the following changes:
-1. Due to changes in the evaluation output format, the EvalScope visualization feature is not compatible with versions prior to 1.0. You must use reports output by version 1.0 for proper visualization.
-2. Due to changes in dataset formats, EvalScope's dataset collection feature does not support datasets created with versions prior to 1.0. You will need to recreate datasets using version 1.0.
-3. The `n` parameter in model inference is no longer supported; it has been changed to `repeats`.
-4. The `stage` parameter has been removed. A new parameter, `rerun_review`, has been added to control whether evaluations are rerun when `use_cache` is specified.
+1. The evaluation dataset downloaded via zip is no longer supported. For using a local dataset, please refer to [this section](#using-local-datasets).
+2. Due to changes in the evaluation output format, the EvalScope visualization feature is not compatible with versions prior to 1.0. You must use reports output by version 1.0 for proper visualization.
+3. Due to changes in dataset formats, EvalScope's dataset collection feature does not support datasets created with versions prior to 1.0. You will need to recreate datasets using version 1.0.
+4. The `n` parameter in model inference is no longer supported; it has been changed to `repeats`.
+5. The `stage` parameter has been removed. A new parameter, `rerun_review`, has been added to control whether evaluations are rerun when `use_cache` is specified.
