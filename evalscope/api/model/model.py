@@ -318,7 +318,7 @@ def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
 
 @thread_safe
 def get_model(
-    model: str,
+    model: Union[str, Model, ModelAPI],
     eval_type: str,
     base_url: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -345,6 +345,9 @@ def get_model(
     # start with seeing if a model was passed
     if isinstance(model, Model):
         return model
+
+    if isinstance(model, ModelAPI):
+        return Model(model, config, model_args)
 
     # see if we can return a memoized model instance
     # (exclude mockllm since custom_outputs is an infinite generator)
