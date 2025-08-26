@@ -70,6 +70,26 @@ def process_tab_sets(content):
     # 替换所有tab-set
     return pattern.sub(replace_tab_set, content)
 
+def remove_identifier_lines(content):
+    """删除Markdown文件开头的标识行，格式为(.*)=，只删除第一个匹配项"""
+    pattern = re.compile(r'^\(.*\)=\s*$', re.MULTILINE)
+    
+    # 找到第一个匹配项的位置
+    match = pattern.search(content)
+    if match:
+        # 计算要删除的文本范围（包括后面的换行符）
+        start = match.start()
+        end = match.end()
+        
+        # 检查后面是否有换行符，如果有则一起删除
+        if end < len(content) and content[end] == '\n':
+            end += 1
+        
+        # 删除匹配的文本
+        content = content[:start] + content[end:]
+    
+    return content
+
 def process_markdown_file(source_path, target_path):
     """处理单个Markdown文件"""
     try:
@@ -81,6 +101,7 @@ def process_markdown_file(source_path, target_path):
         content = process_code_blocks(content)
         content = process_admonitions(content)
         content = process_tab_sets(content)
+        content = remove_identifier_lines(content)
 
         # 确保目标目录存在，并写入处理后的内容
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -91,23 +112,34 @@ def process_markdown_file(source_path, target_path):
         print(f'处理文件 {source_path} 时出错: {e}')
         return False
 
-def get_markdown_files(source_dir):
+
+def get_markdown_files(source_dir, skip_dirs=None):
     """获取所有需要处理的Markdown文件列表"""
     markdown_files = []
+    skip_dirs = skip_dirs or set()
+
     for root, dirs, files in os.walk(source_dir):
+        # 检查当前目录是否包含需要跳过的目录名
+        if any(skip_dir in root for skip_dir in skip_dirs):
+            continue
+            
+        # 检查当前目录的直接子目录是否需要跳过
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        
         for file in files:
             if file.endswith('.md') and file != 'index.md':
                 source_path = os.path.join(root, file)
                 markdown_files.append(source_path)
+    
     return markdown_files
 
-def main(source_dir, target_dir):
-    
+def main(source_dir, target_dir, skip_dirs=None):
+
     print(f'开始处理目录: {source_dir}')
     print(f'输出目录: {target_dir}')
     
     # 获取所有需要处理的Markdown文件
-    markdown_files = get_markdown_files(source_dir)
+    markdown_files = get_markdown_files(source_dir, skip_dirs=skip_dirs)
     print(f'找到 {len(markdown_files)} 个需要处理的Markdown文件')
     
     # 使用tqdm显示进度条
@@ -124,7 +156,19 @@ def main(source_dir, target_dir):
     print(f'处理完成！成功处理 {success_count}/{len(markdown_files)} 个文件')
     print(f'处理后的文件已保存到: {target_dir}')
 
+
+def process_zh():
+    source_directory = '/Users/yunlin/Code/eval-scope/docs/zh'
+    target_directory = '/Users/yunlin/Code/documentation/tutorial/模型评测'
+    skip_dirs = {'blog', 'experiments'}
+    main(source_directory, target_directory, skip_dirs)
+
+def process_en():
+    source_directory = '/Users/yunlin/Code/eval-scope/docs/en'
+    target_directory = '/Users/yunlin/Code/documentation/tutorial-en/Model Evaluation'
+    skip_dirs = {'blog', 'experiments'}
+    main(source_directory, target_directory, skip_dirs)
+
 if __name__ == '__main__':
-    source_directory = 'docs/zh'
-    target_directory = 'docs/zh-new'
-    main(source_directory, target_directory)
+    process_zh()
+    process_en()
