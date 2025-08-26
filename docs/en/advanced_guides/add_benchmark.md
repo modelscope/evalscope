@@ -245,7 +245,7 @@ You have two ways to prepare the benchmark evaluation dataset:
 
 2. **Local Use**: You can also directly use the local dataset for evaluation, suitable for datasets that are still in development or contain sensitive information.
 
-Regardless of the method chosen, ensure that the data format is correct and can be loaded. If using ModelScope, you can test with the following code:
+Regardless of the method chosen, ensure that the data format is correct and can be loaded. If using a local dataset, you can test with the following code:
 
 ```python
 from modelscope import MsDataset
