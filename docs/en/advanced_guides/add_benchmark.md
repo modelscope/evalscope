@@ -1,40 +1,268 @@
 # 👍 Contribute Benchmark
 
-As the official evaluation tool of [ModelScope](https://modelscope.cn), EvalScope's benchmark evaluation functionality is continuously being optimized! We warmly invite you to reference this tutorial to easily add your own benchmark evaluation and share your contributions with the community. Let's help EvalScope grow together and make our tool even better!
+EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn), is continuously optimizing its benchmark evaluation features! We invite you to refer to this tutorial to easily add your own benchmark and share your contributions with the community. Let's work together to enhance EvalScope and make our tool even better!
 
-Below, we take `MMLU-Pro` as an example to introduce how to add a benchmark evaluation, which mainly includes three steps: uploading a dataset, registering a dataset, and writing an evaluation task.
+Below, we will introduce how to add two types of benchmark evaluations: **General Text Reasoning** and **Multiple Choice**, which mainly include three steps: uploading the dataset, registering the dataset, and writing the evaluation task.
 
-## 1. Prepare Benchmark Evaluation Dataset
+## Basic Concepts
+
+```{tip}
+You can skip this section and start directly from [Preparing Benchmark Evaluation Dataset](#1-preparing-benchmark-evaluation-dataset). Refer back to the specific implementation when encountering code you don't understand.
+```
+
+The evaluation process of EvalScope mainly includes the following steps:
+1. **Data Preparation**: Load and preprocess the dataset through `DataAdapter`.
+2. **Task Definition**: Define the configuration of the evaluation task through `TaskConfig`, including models, datasets, evaluation metrics, etc.
+3. **Evaluation Execution**: Execute the evaluation task through the `run_task` function and output the evaluation results.
+
+Among them, `DataAdapter` is the core component of benchmark evaluation that we need to focus on.
+
+### DataAdapter Architecture and Call Flow
+
+DataAdapter adopts a Pipeline architecture, supporting custom behavior through hook methods. Taking `DefaultDataAdapter` as an example, the complete evaluation process is as follows:
+
+```
+1. Data Loading Phase
+   load_dataset() 
+   ├── load() 
+   │   ├── load_from_remote() / load_from_disk()
+   │   │   ├── load_subsets()
+   │   │   │   └── load_subset() / load_fewshot_subset()
+   │   │   │       └── record_to_sample() [User Implementation]
+   │   │   └── _post_process_samples()
+   │   │       └── process_sample_input()
+   │   │           ├── sample_to_fewshot() [User Implementation]
+   │   │           ├── format_fewshot_template() [Optional User Implementation]
+   │   │           └── format_prompt_template() [Optional User Implementation]
+   │   └── Returns DatasetDict
+
+2. Model Inference Phase (Per Sample)
+   run_inference()
+   ├── _on_inference_start() [Hook Method]
+   ├── _on_inference() [Hook Method]
+   └── _on_inference_end() [Hook Method]
+       └── Returns TaskState
+
+3. Metric Calculation Phase (Per Sample)
+   calculate_metrics()
+   ├── filter_prediction()
+   │   └── extract_answer() [Optional User Implementation]
+   ├── match_score() / llm_match_score()
+   └── Returns SampleScore
+
+4. Result Aggregation Phase
+   aggregate_scores()
+   └── Returns List[AggScore]
+
+5. Report Generation Phase
+   generate_report()
+   ├── _on_generate_report() [Hook Method]
+   └── _on_generate_report_end() [Hook Method]
+       └── Returns Report
+```
+
+### Core Data Structures
+
+#### 1. Sample Object
+Represents a single evaluation sample, including input, target answer, and metadata:
+
+```python
+@dataclass
+class Sample:
+    input: Any                    # Input content (question text or list of chat messages)
+    target: str                   # Target answer (correct answer)
+    choices: Optional[List[str]] = None    # Choices (used for multiple choice questions)
+    subset_key: Optional[str] = None       # Subset division key (used for grouping by category)
+    metadata: Optional[Dict] = None        # Metadata (reasoning process, ID, etc.)
+    tools: Optional[List] = None           # Tool call information
+```
+
+#### 2. TaskState Object
+Represents the complete state of a single inference task:
+
+```python
+@dataclass
+class TaskState:
+    model: str                    # Model name
+    sample: Sample               # Input sample
+    messages: List[ChatMessage]  # Chat message history
+    output: ModelOutput          # Model raw output
+    completed: bool              # Whether the task is completed
+    sample_id: Optional[str] = None      # Sample ID
+    group_id: Optional[str] = None       # Group ID
+    metadata: Optional[Dict] = None      # Task metadata
+```
+
+#### 3. ModelOutput Object
+Represents the raw output of the model:
+
+```python
+@dataclass
+class ModelOutput:
+    completion: str              # Text generated by the model
+    message: ChatMessage         # Formatted chat message
+    # Other model-specific fields...
+```
+
+#### 4. Score Object
+Represents the scoring result of a single sample:
+
+```python
+@dataclass
+class Score:
+    value: Dict[str, float]      # Scores for each metric {"acc": 1.0, "f1": 0.8}
+    extracted_prediction: str    # Extracted prediction answer
+    prediction: str              # Raw prediction text
+    metadata: Dict = None        # Scoring metadata
+```
+
+#### 5. SampleScore Object
+Encapsulates the complete scoring information of a single sample:
+
+```python
+@dataclass
+class SampleScore:
+    score: Score                 # Scoring object
+    sample_id: Optional[str]     # Unique identifier for the sample
+    group_id: Optional[str]      # Group identifier
+    sample_metadata: Optional[Dict] = None  # Sample metadata
+```
+
+#### 6. AggScore Object
+Represents aggregated scoring statistics:
+
+```python
+@dataclass
+class AggScore:
+    metric: str                  # Metric name
+    value: float                 # Aggregated value (e.g., average score)
+    subset: str                  # Subset name
+    num_samples: int             # Number of samples
+    agg_method: str              # Aggregation method (mean, median, etc.)
+    metadata: Dict = None        # Aggregation metadata
+```
+
+#### 7. DatasetDict Object
+Manages multiple dataset subsets:
+
+```python
+class DatasetDict(dict):
+    """Dataset dictionary, keys are subset names, values are Dataset objects"""
+    
+    @classmethod
+    def from_dataset(cls, dataset, subset_list=None, limit=None, repeats=1):
+        """Create a multi-subset dataset dictionary from a single dataset"""
+        pass
+```
+
+### Core Methods of DataAdapter
+
+Based on the above call flow, here are the key methods that need to be implemented by the user or can be optionally overridden:
+
+#### Methods That Must Be Implemented
+
+1. **`record_to_sample(record: Dict[str, Any]) -> Sample`**
+   - **Purpose**: Convert raw data records into standard Sample objects
+   - **Input**: Raw record dictionary from the dataset
+   - **Output**: Standardized Sample object
+   - **Example**:
+   ```python
+   def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+       return Sample(
+           input=record['question'],
+           target=record['answer'],
+           metadata={'reasoning': record.get('explanation', '')}
+       )
+   ```
+
+#### Methods That Can Be Optionally Implemented
+
+2. **`sample_to_fewshot(sample: Sample) -> str`**
+   - **Purpose**: Convert sample into a few-shot example string
+   - **Input**: Sample object
+   - **Output**: Formatted few-shot example text
+   - **Call Timing**: When constructing few-shot prompts
+
+3. **`extract_answer(prediction: str, task_state: TaskState) -> str`**
+   - **Purpose**: Extract the final answer from the model's raw output
+   - **Input**: Model prediction text and task state
+   - **Output**: Extracted answer string
+   - **Call Timing**: Before calculating metrics for answer cleaning
+
+4. **`format_prompt_template(sample: Sample) -> str`**
+   - **Purpose**: Format the basic prompt template
+   - **Input**: Sample object
+   - **Output**: Formatted prompt text
+   - **Default Implementation**: Uses `prompt_template.format(question=sample.input)`
+
+5. **`format_fewshot_template(fewshot: str, sample: Sample) -> str`**
+   - **Purpose**: Format the prompt template containing few-shot examples
+   - **Input**: Few-shot example string and Sample object
+   - **Output**: Complete few-shot prompt
+   - **Default Implementation**: Uses `few_shot_prompt_template.format()`
+
+6. **`sample_filter(sample: Sample) -> bool`**
+   - **Purpose**: Filter dataset samples
+   - **Input**: Sample object
+   - **Output**: Whether to retain the sample
+   - **Default Implementation**: Returns True (retains all samples)
+
+### Hook Method System
+
+DataAdapter provides a hook method system, supporting custom logic insertion at key points:
+
+#### Inference Phase Hooks
+- **`_on_inference_start(model, sample)`**: Before inference starts
+- **`_on_inference(model, sample)`**: Execute inference
+- **`_on_inference_end(model, sample, model_output, output_dir)`**: After inference ends
+
+#### Report Generation Hooks
+- **`_on_generate_report(scores, model_name)`**: Generate report
+- **`_on_generate_report_end(report, output_dir)`**: After report generation
+
+### Adapter Types
+
+EvalScope provides two main adapter base classes:
+
+1. **`DefaultDataAdapter`**: Basic adapter for general text reasoning tasks
+   - Suitable for open-ended question answering, mathematical reasoning, code generation, etc.
+   - Requires custom answer extraction logic
+
+2. **`MultiChoiceAdapter`**: Specialized adapter for multiple choice tasks
+   - Inherits from `DefaultDataAdapter`
+   - Built-in choice formatting and answer extraction logic
+   - Supports single-choice and multiple-choice modes
+
+Principles for choosing adapter types:
+- If the task involves selecting answers from fixed options → Use `MultiChoiceAdapter`
+- If the task requires generating open-ended answers → Use `DefaultDataAdapter`
+
+## 1. Preparing Benchmark Evaluation Dataset
 
 You have two ways to prepare the benchmark evaluation dataset:
 
-1. **Upload to ModelScope (Recommended)**: Upload the dataset to the ModelScope platform, allowing other users to load your dataset with a single click. This is more convenient and allows more users to benefit from your contribution.
+1. **Upload to ModelScope (Recommended)**: Upload the dataset to the ModelScope platform, so other users can easily load your dataset, making it more convenient to use and benefiting more users from your contribution. If you need to upload to ModelScope, refer to the [Dataset Upload Tutorial](https://www.modelscope.cn/docs/datasets/create).
 
-2. **Use Locally**: You can also directly use the local dataset for evaluation, suitable for situations where the dataset is still in development or contains sensitive information.
+2. **Local Use**: You can also directly use the local dataset for evaluation, suitable for datasets that are still in development or contain sensitive information.
 
-```{seealso}
-For uploading to ModelScope, please refer to: [modelscope/MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary) example, and [dataset upload tutorial](https://www.modelscope.cn/docs/datasets/create).
-```
-
-Regardless of which method you choose, please ensure the data format is correct and can be loaded. If using ModelScope, you can test with the following code:
+Regardless of the method chosen, ensure that the data format is correct and can be loaded. If using ModelScope, you can test with the following code:
 
 ```python
 from modelscope import MsDataset
 
-dataset = MsDataset.load("modelscope/MMLU-Pro")  # Replace with your dataset
+dataset = MsDataset.load("/path/to/your/dataset")  # Replace with your dataset
 ```
 
-If using a local dataset, you need to adjust the `dataset_id` parameter and rewrite the `load_from_disk` method when registering the benchmark evaluation.
+## 2. Creating File Structure
 
-## 2. Register Benchmark Evaluation
+First, [Fork EvalScope](https://github.com/modelscope/evalscope/fork) repository, i.e., create your own EvalScope repository copy, and clone it locally.
 
-Add a benchmark evaluation in EvalScope.
+```bash
+git clone https://github.com/your_username/evalscope.git
+cd evalscope
+```
 
-### Create File Structure
-
-First, [Fork EvalScope](https://github.com/modelscope/evalscope/fork) repository, creating a copy of the EvalScope repository for yourself, and then clone it locally.
-
-Then, add the benchmark evaluation in the `evalscope/benchmarks/` directory with the following structure:
+Then, add benchmark evaluation in the `evalscope/benchmarks/` directory, with the structure as follows:
 
 ```text
 evalscope/benchmarks/
@@ -43,359 +271,224 @@ evalscope/benchmarks/
 │   ├── benchmark_name_adapter.py
 │   └── ...
 ```
-Specifically for `MMLU-Pro`, the structure is as follows:
+Specifically for `GSM8K` and `MMLU-Pro`, the structure is as follows:
 
 ```text
 evalscope/benchmarks/
+├── gsm8k
+│   ├── __init__.py
+│   ├── gsm8k_adapter.py
 ├── mmlu_pro
 │   ├── __init__.py
 │   ├── mmlu_pro_adapter.py
 │   └── ...
 ```
 
-### Register `Benchmark`
+## 3. Writing Evaluation Logic
 
-We need to register `Benchmark` in `benchmark_name_adapter.py` so that EvalScope can load our added benchmark test. Taking `MMLU-Pro` as an example, the main contents include:
+Below, we will take **GSM8K** and **MMLU-Pro** as examples to introduce two types of evaluation tasks: **General Text Reasoning** and **Multiple Choice**.
 
-- Import `Benchmark` and `DataAdapter`
-- Register `Benchmark`, specifying:
-    - `name`: Benchmark test name
-    - `pretty_name`: Readable name of the benchmark test
-    - `tags`: Benchmark test tags for classification and search
-    - `description`: Benchmark test description, can use Markdown format, recommended in English
-    - `dataset_id`: Benchmark test dataset ID for loading the benchmark test dataset
-    - `model_adapter`: Default model adapter for the benchmark test. Supports two types:
-        - `OutputType.GENERATION`: General text generation model evaluation, returning the text generated by the model through input prompts
-        - `OutputType.MULTIPLE_CHOICE`: Multiple-choice question evaluation, calculating option probabilities through logits, returning the option with the highest probability
-    - `output_types`: Benchmark test output types, supports multiple choices:
-        - `OutputType.GENERATION`: General text generation model evaluation
-        - `OutputType.MULTIPLE_CHOICE`: Multiple-choice question evaluation output logits
-    - `subset_list`: Subdatasets of the benchmark test dataset
-    - `metric_list`: Evaluation metrics for the benchmark test
-    - `few_shot_num`: Number of In Context Learning examples for evaluation
-    - `train_split`: Training set of the benchmark test for sampling ICL examples
-    - `eval_split`: Evaluation set of the benchmark test
-    - `prompt_template`: Benchmark test prompt template
-- Create `MMLUProAdapter` class, inheriting from `DataAdapter`.
+### General Text Reasoning
 
-```{tip}
-The default `subset_list`, `train_split`, `eval_split` can be obtained from the dataset preview, for example, [MMLU-Pro preview](https://modelscope.cn/datasets/modelscope/MMLU-Pro/dataPeview)
+General text reasoning tasks usually require the model to analyze and reason about the given problem and then generate an answer. Taking GSM8K (mathematical reasoning) as an example:
 
-![MMLU-Pro Preview](./images/mmlu_pro_preview.png)
-```
-
-Example code is as follows:
+We need to register `Benchmark` and implement the `GSM8KAdapter` class in `gsm8k_adapter.py`:
 
 ```python
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
+from typing import Any, Dict
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+
+# Define prompt template
+PROMPT_TEMPLATE = """
+Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+
+{question}
+
+Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
+
+Reasoning:
+""".lstrip()
+
+# Register benchmark evaluation
+@register_benchmark(
+    BenchmarkMeta(
+        name='gsm8k',                          # Benchmark test name
+        pretty_name='GSM8K',                   # Readable name
+        dataset_id='AI-ModelScope/gsm8k',      # Dataset ID or local path
+        tags=[Tags.MATH, Tags.REASONING],      # Tags
+        description='GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',
+        subset_list=['main'],                  # Subset list
+        few_shot_num=4,                       # Few-shot example number
+        train_split='train',                  # Training set split name
+        eval_split='test',                    # Evaluation set split name
+        metric_list=['acc'],                  # Evaluation metrics
+        prompt_template=PROMPT_TEMPLATE,      # Prompt template
+    )
+)
+class GSM8KAdapter(DefaultDataAdapter):
+    
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert raw data records into Sample objects"""
+        DELIM = '####'
+        question = record['question']
+        answer = record['answer'].split(DELIM)
+        target = answer.pop().strip()  # Extract final answer
+        reasoning = DELIM.join(answer)  # Extract reasoning process
+        
+        return Sample(
+            input=question,
+            target=target,
+            metadata={'reasoning': reasoning.strip()}
+        )
+    
+    def sample_to_fewshot(self, sample: Sample) -> str:
+        """Convert sample into few-shot example"""
+        if sample.metadata:
+            return (
+                f'{sample.input}\n\nReasoning:\n' + 
+                f"{sample.metadata['reasoning']}\n\n" + 
+                f'ANSWER: {sample.target}'
+            )
+        else:
+            return ''
+    
+    def extract_answer(self, prediction: str, task_state: TaskState):
+        """Extract answer from model prediction"""
+        from evalscope.filters.extraction import RegexFilter
+        
+        # Use regular expression to extract numeric answer
+        regex = RegexFilter(regex_pattern=r'(-?[0-9.,]{2,})|(-?[0-9]+)', group_select=-1)
+        res = regex(prediction)
+        return res.replace(',', '').replace('+', '').strip().strip('.')
+```
+
+### Multiple Choice
+
+Multiple choice tasks require the model to select the correct answer from given options. Taking MMLU-Pro as an example, we need to inherit `MultiChoiceAdapter`:
+
+```python
+from typing import Any, Dict
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+
+# Define prompt template
+USER_PROMPT_TEMPLATE = """Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+Question:
+{question}
+Options:
+{choices}
+""".lstrip()
 
 SUBSET_LIST = [
-    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
-    'philosophy', 'economics', 'other', 'psychology', 'history'
-]  # Custom subset list
+    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 
+    'health', 'physics', 'business', 'philosophy', 'economics', 'other', 
+    'psychology', 'history'
+]
 
-@Benchmark.register(
-    name='mmlu_pro',
-    pretty_name='MMLU-Pro',
-    tags=['MCQ', 'Knowledge'],
-    description=
-    'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
-    dataset_id='modelscope/MMLU-Pro',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=5,
-    train_split='validation',
-    eval_split='test',
-    prompt_template=
-    'The following are multiple choice questions (with answers) about {subset_name}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n{query}',  # noqa: E501
+@register_benchmark(
+    BenchmarkMeta(
+        name='mmlu_pro',
+        pretty_name='MMLU-Pro',
+        tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
+        description='MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects.',
+        dataset_id='modelscope/MMLU-Pro',
+        subset_list=SUBSET_LIST,
+        metric_list=['acc'],
+        few_shot_num=5,
+        train_split='validation',
+        eval_split='test',
+        prompt_template=USER_PROMPT_TEMPLATE,
+    )
 )
-class MMLUProAdapter(DataAdapter):
-
+class MMLUProAdapter(MultiChoiceAdapter):
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.reformat_subset = True  # Enable subset division
+    
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert raw data records into Sample objects"""
+        return Sample(
+            input=record['question'],
+            choices=record['options'],      # Choice list
+            target=record['answer'],        # Correct answer (e.g., 'A')
+            subset_key=record['category'].lower(),  # Key for subset division
+            metadata={
+                'cot_content': record['cot_content'],
+                'subject': record['category'].lower(),
+                'question_id': record['question_id'],
+            },
+        )
+    
+    def sample_to_fewshot(self, sample: Sample) -> str:
+        """Convert sample into few-shot example"""
+        q_str = f"""Question:\n{str(sample.input)}"""
+        options = sample.choices if sample.choices is not None else []
+        
+        # Format choices
+        opt_str_list = []
+        for i, opt in enumerate(options):
+            opt_str_list.append(f"""{chr(65 + i)} {opt}""")
+        opt_str = f"""Options:\n{'\n'.join(opt_str_list)}"""
+        
+        # Handle answer and reasoning process
+        ans_str = sample.metadata['cot_content'] if sample.metadata is not None else ''
+        ans_str = ans_str.replace('The answer is', 'ANSWER:')
+        ans_opt = ans_str.split('ANSWER:')[-1].split('.')[0].strip().strip('(').strip(')')
+        ans_str = ans_str.replace(f'ANSWER: ({ans_opt})', f'ANSWER: {ans_opt}')
+        
+        final_str = '\n'.join([q_str, opt_str, ans_str])
+        return final_str
 ```
 
-## 3. Write Evaluation Logic
+### Key Differences Explanation
 
-After completing the registration of `Benchmark`, we need to write the core methods in the `DataAdapter` class to implement the evaluation functionality. These methods control the data loading, processing, and scoring process.
+**General Text Reasoning** vs **Multiple Choice**:
 
-### Evaluation Process Overview
+1. **Inherited Base Class**:
+   - General Text Reasoning: Inherits `DefaultDataAdapter`
+   - Multiple Choice: Inherits `MultiChoiceAdapter`
 
-The EvalScope evaluation process mainly includes the following steps:
+2. **Sample Object Structure**:
+   - General Text Reasoning: Mainly includes `input` and `target`
+   - Multiple Choice: Additionally includes `choices` (choice list)
 
-1. **Data Loading**: Load the dataset through the `load` method
-2. **Prompt Generation**: Generate model input through `gen_prompts` by calling `gen_prompt`
-3. **Model Inference**: Perform inference on generated prompts through the `predict` method of the model adapter
-4. **Answer Parsing**: Parse model output through `parse_pred_result`
-5. **Answer Scoring**: Evaluate prediction results through `match` or `llm_match` method
-6. **Metric Calculation**: Calculate evaluation metrics through `compute_metric`
-7. **Report Generation**: Generate evaluation report through `gen_report` and `post_process_report`
+3. **Answer Extraction Method**:
+   - General Text Reasoning: Requires custom `extract_answer()` method
+   - Multiple Choice: `MultiChoiceAdapter` provides standard answer extraction logic
 
-### Core Methods to Implement
+4. **Prompt Template**:
+   - General Text Reasoning: Focuses more on guiding the reasoning process
+   - Multiple Choice: Focuses on displaying choices and answer format
 
-The following are the core methods that must be implemented, each with a clear functionality and purpose:
+## 4. Running Evaluation
 
-1. **`gen_prompt`**: Convert dataset samples into a format acceptable by the model
-   - Process few-shot examples
-   - Format questions and options
-   - Apply prompt template
+Debug the code to see if it can run normally.
 
-2. **`get_gold_answer`**: Extract standard answer from dataset samples
-   - Usually returns the answer field from the dataset
-
-3. **`parse_pred_result`**: Parse model output and extract valid answer
-   - For text generation models, typically need to extract answer options
-   - For direct output by multiple-choice questions, can directly return results
-
-4. **`match`**: Compare predicted answer with standard answer and calculate score
-   - Usually uses exact match methods
-
-### Optional Methods to Implement
-
-In addition to the methods that must be implemented, you can also implement or override the following methods as needed:
-
-1. **`llm_match`**: Use large language models as judges to evaluate answer quality
-   - Suitable for open-ended questions or evaluation tasks requiring complex understanding
-   - Needs to specify judgement model in configuration
-   - Can better evaluate answer quality compared to simple rule matching
-
-   ```python
-   def llm_match(self, gold: Any, pred: Any, judge: Optional[LLMJudge] = None, **kwargs) -> float:
-       """
-       Use LLM as a judge to evaluate predicted answers
-       
-       Args:
-           gold: Standard answer
-           pred: Predicted answer
-           judge: LLM judge instance
-           
-       Returns:
-           Scoring result, usually a floating number between 0 and 1
-       """
-       # Default judge handling
-       if judge is None:
-           return 0
-           
-       # Build judgement prompt and get score
-       prompt = judge.build_prompt(pred, gold, kwargs.get('raw_input', {}).get('question'))
-       score = judge(prompt)
-       return judge.get_score(score)
-   ```
-
-2. **`post_process_report`**: Process evaluation report, add custom analysis or visualization
-
-3. **`load`**: Override data loading process, suitable for scenarios requiring custom data loading logic
-   - Suitable for handling datasets with special formats
-   - Can implement custom subset division logic
-   - Can add data preprocessing or filtering steps
-
-   ```python
-   def load(self, dataset_name_or_path: str = None, subset_list: list = None, work_dir: Optional[str] = DEFAULT_DATASET_CACHE_DIR, **kwargs) -> dict:
-       """
-       Custom dataset loading logic
-       
-       Args:
-           dataset_name_or_path: Dataset path or name
-           subset_list: Subset list
-           work_dir: Working directory
-           
-       Returns:
-           Data dictionary, format: {'subset_name': {'train': train_dataset, 'test': test_dataset}}
-       """
-       # Implement custom data loading and processing logic here
-       # For example: loading data from local files, filtering data, reorganizing data structure, etc.
-       
-       # Call parent method to load base data
-       data_dict = super().load(dataset_name_or_path, subset_list, work_dir, **kwargs)
-       
-       # Perform custom processing, such as subset division based on specific fields
-       return self.reformat_subset(data_dict, subset_key='your_category_field')
-   ```
-
-4. **`load_from_disk`**: Specifically for loading datasets from local disk
-   - Need to override this method when using local datasets instead of ModelScope-hosted datasets
-   - Can handle custom format local data files
-
-   ```python
-   def load_from_disk(self, dataset_path, subset_list, work_dir, **kwargs) -> dict:
-       """
-       Load dataset from local disk
-       
-       Args:
-           dataset_path: Local dataset path
-           subset_list: Subset list
-           work_dir: Working directory
-           
-       Returns:
-           Data dictionary, format: {'subset_name': {'train': train_dataset, 'test': test_dataset}}
-       """
-       # Example: Load data from local JSON files
-       import json
-       import os
-       
-       data_dict = {}
-       for subset in subset_list:
-           data_dict[subset] = {}
-           
-           # Load training set (few-shot examples)
-           if self.train_split:
-               train_path = os.path.join(dataset_path, f"{subset}_{self.train_split}.json")
-               if os.path.exists(train_path):
-                   with open(train_path, 'r', encoding='utf-8') as f:
-                       data_dict[subset][self.train_split] = json.load(f)
-           
-           # Load test set
-           if self.eval_split:
-               test_path = os.path.join(dataset_path, f"{subset}_{self.eval_split}.json")
-               if os.path.exists(test_path):
-                   with open(test_path, 'r', encoding='utf-8') as f:
-                       data_dict[subset][self.eval_split] = json.load(f)
-       
-       return data_dict
-   ```
-
-### Code Example and Explanation
-
-Below is a complete implementation of the MMLU-Pro adapter with detailed comments:
-
-```python
-class MMLUProAdapter(DataAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Define option identifiers for building options
-        self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-    
-    def load(self, **kwargs):
-        """
-        Rewrite the load method to implement custom dataset loading and subset division logic
-        
-        In this example, we divide the dataset into subsets based on the 'category' field
-        """
-        # First load all data using the default method
-        kwargs['subset_list'] = ['default']
-        data_dict = super().load(**kwargs)
-        # Use the 'category' field as the subset key for reformatting
-        return self.reformat_subset(data_dict, subset_key='category')
-    
-    def gen_prompt(self, input_d: Dict, subset_name: str, few_shot_list: list, **kwargs) -> Any:
-        """
-        Generate prompt text for model input
-        
-        Args:
-            input_d: Current sample data
-            subset_name: Subset name for template filling
-            few_shot_list: Few-shot example list
-        
-        Returns:
-            Formatted prompt text
-        """
-        # Process few-shot examples
-        if self.few_shot_num > 0:
-            prefix = self.format_fewshot_examples(few_shot_list)
-        else:
-            prefix = ''
-        
-        # Build current question text
-        query = prefix + 'Q: ' + input_d['question'] + '\n' + \
-            self.__form_options(input_d['options']) + '\n'
-
-        # Apply prompt template
-        full_prompt = self.prompt_template.format(subset_name=subset_name, query=query)
-        return self.gen_prompt_data(full_prompt)
-    
-    def format_fewshot_examples(self, few_shot_list):
-        """
-        Format few-shot examples
-        
-        Format each example into a consistent format, including question, options, and thought process
-        """
-        prompts = ''
-        for index, d in enumerate(few_shot_list):
-            prompts += 'Q: ' + d['question'] + '\n' + \
-                self.__form_options(d['options']) + '\n' + \
-                d['cot_content'] + '\n\n'  # Include thought process
-        return prompts
-    
-    def __form_options(self, options: list):
-        """
-        Format option list
-        
-        Convert option array into formatted text, add identifiers (A), (B), etc. before each option
-        """
-        option_str = 'Options are:\n'
-        for opt, choice in zip(options, self.choices):
-            option_str += f'({choice}): {opt}' + '\n'
-        return option_str
-    
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Extract standard answer
-        
-        Extract the correct answer from the data sample, usually option identifiers like 'A', 'B', 'C', 'D', etc.
-        
-        Args:
-            input_d: Input data sample
-        
-        Returns:
-            Standard answer string
-        """
-        return input_d['answer']  # Directly return the answer field from the dataset
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse model prediction results
-        
-        Use different parsing methods based on model type:
-        - Directly return results for models that output options
-        - Need to extract options from text for text generation models
-        
-        Args:
-            result: Model prediction result
-            raw_input_d: Original input data
-            eval_type: Evaluation type
-        
-        Returns:
-            Parsed answer option
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            # Direct output mode for multiple-choice, directly return the result
-            return result
-        else:
-            # Text generation mode, extract the first option letter from the text
-            return ResponseParser.parse_first_option(result)
-
-    def match(self, gold: str, pred: str) -> float:
-        """
-        Compare predicted answer with standard answer
-        
-        Args:
-            gold: Standard answer, e.g., 'A'
-            pred: Predicted answer, e.g., 'B'
-        
-        Returns:
-            Match score: 1.0 for correct, 0.0 for incorrect
-        """
-        return exact_match(gold=gold, pred=pred)  # Use exact match
-```
-
-### Tips and Best Practices
-
-- Ensure consistency in format when designing few-shot examples and provide enough information
-- Carefully design prompt templates to ensure the model understands task requirements
-- Consider implementing more flexible scoring logic in the `match` method for complex tasks
-- Add enough comments and documentation to facilitate understanding and maintenance of the code by other developers
-- Consider using `llm_match` method for more complex answer evaluation, especially for open-ended questions
-
-## 4. Run Evaluation
-
-Debug the code to check if it can run normally.
-
+**GSM8K Example**:
 ```python
 from evalscope import run_task, TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['gsm8k'],
+    limit=10,
+    debug=True
+)
+run_task(task_cfg=task_cfg)
+```
+
+**MMLU-Pro Example**:
+```python
+from evalscope import run_task, TaskConfig
+
 task_cfg = TaskConfig(
     model='Qwen/Qwen2.5-0.5B-Instruct',
     datasets=['mmlu_pro'],
@@ -406,30 +499,33 @@ task_cfg = TaskConfig(
 run_task(task_cfg=task_cfg)
 ```
 
-Output is as follows:
+Output Example:
 
 ```text
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 | Model                 | Dataset   | Metric          | Subset           |   Num |   Score | Cat.0   |
 +=======================+===========+=================+==================+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | AverageAccuracy | computer science |     10 |       0.1 | default |
+| Qwen2.5-0.5B-Instruct | gsm8k     | mean_acc        | main             |    10 |     0.3 | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | AverageAccuracy | math             |     10 |       0.1 | default |
-+-----------------------+-----------+-----------------+------------------+-------+---------+---------+ 
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | computer science |    10 |     0.1 | default |
++-----------------------+-----------+-----------------+------------------+-------+---------+---------+
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | math             |    10 |     0.1 | default |
++-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 ```
 
-## 5. Benchmark Evaluation Documentation Generation
+## 5. Benchmark Evaluation Document Generation
 
-After completing the benchmark evaluation implementation, you can use the tools provided by EvalScope to generate standard documentation. This ensures your benchmark evaluation has a consistent document format and can be easily understood and used by other users.
+After completing the benchmark evaluation implementation, you can use the tools provided by EvalScope to generate standard documents. This will ensure that your benchmark evaluation has a consistent document format and can be easily understood and used by other users.
 
-To generate both English and Chinese documents, please run the following command, which will generate documents based on registration information:
+To generate Chinese and English documents, run the following command, which will generate documents based on registration information:
 
 ```bash
-# Enter evalscope root directory
-cd /path/to/evalscope
-
-# Generate benchmark evaluation documentation
-python docs/generate_dataset_md.py
+make docs
 ```
 
-After implementing these methods and generating documentation, your benchmark evaluation is ready! You can submit a [PR](https://github.com/modelscope/evalscope/pulls), and we will merge your contribution as soon as possible to allow more users to use the benchmark evaluation you contributed. If you don't know how to submit a PR, you can check out our [guide](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md), give it a try 🚀
+## 6. Submitting PR
+After completing the implementation of these methods and document generation, your benchmark evaluation is ready! You can submit a [PR](https://github.com/modelscope/evalscope/pulls). Before submitting, please run the following command, which will automatically format the code:
+```bash
+make lint
+```
+Ensure there are no formatting issues, and we will merge your contribution as soon as possible, allowing more users to use the benchmark evaluation you contributed. If you don't know how to submit a PR, you can check our [Guide](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md). Give it a try 🚀
