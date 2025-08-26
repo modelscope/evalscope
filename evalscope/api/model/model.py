@@ -362,7 +362,7 @@ def get_model(
 
     logger.info(
         f'Creating model {model} with eval_type={eval_type} '
-        f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}'
+        f'base_url={base_url}, config={config}, model_args={model_args}'
     )
 
     # find a matching model type

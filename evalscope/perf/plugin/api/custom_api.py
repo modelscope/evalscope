@@ -31,7 +31,7 @@ class CustomPlugin(ApiPluginBase):
         super().__init__(param=param)
         if param.tokenizer_path is not None:
             from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path, trust_remote_code=True)
         else:
             self.tokenizer = None
 

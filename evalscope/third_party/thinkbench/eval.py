@@ -24,7 +24,7 @@ class EvalThink:
         self.switch_tokens = ['alternatively', 'but wait', 'let me reconsider', 'another way', 'another approach', 'another method', 'another angle']
         self.subset_dict = defaultdict(lambda: defaultdict(list))
         self.think_end_token = '</think>'
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=True)
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.subsets = subsets

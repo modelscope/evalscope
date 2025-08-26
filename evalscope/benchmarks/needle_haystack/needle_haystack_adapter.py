@@ -118,7 +118,7 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
     def _init_tokenizer(self):
         """ Initialize the tokenizer based on the provided tokenizer path."""
         from modelscope import AutoTokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_path, trust_remote_code=True)
 
     def load(self):
         """Load dataset from local disk or remote."""

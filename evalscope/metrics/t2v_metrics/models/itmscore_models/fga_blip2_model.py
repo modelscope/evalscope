@@ -37,7 +37,9 @@ class FGA_BLIP2ScoreModel(ScoreModel):
         from ..utils import download_file
 
         # load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained('AI-ModelScope/bert-base-uncased', truncation_side='right')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            'AI-ModelScope/bert-base-uncased', truncation_side='right', trust_remote_code=True
+        )
         self.tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         # load model
         self.variant = FGA_BLIP2_MODELS[self.model_name]['variant']

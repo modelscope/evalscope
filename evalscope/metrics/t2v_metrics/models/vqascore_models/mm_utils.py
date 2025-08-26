@@ -81,7 +81,7 @@ def load_pretrained_model(
 
     from ..utils import download_file
 
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, **tokenizer_dict)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=True, **tokenizer_dict)
     # tokenizer.pad_token = tokenizer.unk_token # could be redundant
 
     model_path = download_file(model_path, cache_dir=cache_dir)

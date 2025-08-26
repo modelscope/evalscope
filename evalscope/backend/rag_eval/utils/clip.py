@@ -81,8 +81,8 @@ class CLIPModel(Embeddings):
             model_name = download_model(self.model_name, self.revision)
 
         # Load the model and processor
-        self.model = AutoModel.from_pretrained(model_name).to(self.device)
-        self.processor = AutoProcessor.from_pretrained(model_name)
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).to(self.device)
+        self.processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
         self.transform = self.processor.image_processor
         self.tokenizer = self.processor.tokenizer
 
