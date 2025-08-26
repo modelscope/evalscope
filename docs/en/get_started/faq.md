@@ -343,7 +343,7 @@ A: See this guide: https://evalscope.readthedocs.io/zh-cn/latest/get_started/par
 
 ### Q55: evalscope - ERROR - Error when calling remote API: Connection error
 
-A: alpaca_eval requires you to specify a judge model. The default uses OpenAI's model. If not set up, you'll get this error. See: https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html#llm
+A: alpaca_eval requires you to specify a judge model. The default uses OpenAI's model. If not set up, you'll get this error. See: https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html#llm
 
 ### Q56: simpleQA: Downloaded dataset locally, reviewing is slow after inference, using evalscope master version from source.
 
@@ -470,7 +470,7 @@ Command parameters are incorrect.
 
 ### Q76: For realwordqa evaluation, is the output the accuracy of selecting abcd options?
 
-A: Yes, it is the option accuracy. See: https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html#id3
+A: Yes, it is the option accuracy. See: https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html#id3
 
 MCQ tasks use option accuracy.
 

@@ -185,7 +185,7 @@ dataset_args={ # Built-in support in EvalScope, no need to specify dataset ID
 },
 ```
 
-Other available datasets include `gsm8k`, `aime25`, etc. For details, refer to the [Supported Datasets](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html).
+Other available datasets include `gsm8k`, `aime25`, etc. For details, refer to the [Supported Datasets](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html).
 
 ## Visualizing Evaluation Results
 

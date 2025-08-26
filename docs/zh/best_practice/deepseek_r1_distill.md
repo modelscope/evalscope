@@ -185,7 +185,7 @@ dataset_args={ # EvalScope内置支持，无需指定数据集ID
 },
 ```
 
-其他可用的数据集包括`gsm8k`, `aime25`等，详情参考[支持的数据集](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
+其他可用的数据集包括`gsm8k`, `aime25`等，详情参考[支持的数据集](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html)
 
 ## 评测结果可视化
 
