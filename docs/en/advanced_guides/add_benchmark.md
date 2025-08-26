@@ -520,6 +520,7 @@ After completing the benchmark evaluation implementation, you can use the tools 
 To generate Chinese and English documents, run the following command, which will generate documents based on registration information:
 
 ```bash
+pip install -e '.[docs]'
 make docs
 ```
 
