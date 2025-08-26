@@ -27,7 +27,7 @@ task_cfg = TaskConfig(
     limit=5,
     eval_batch_size=5,
     generation_config={
-        'max_new_tokens': 1000,  # Maximum number of tokens to generate, set to a large value to avoid truncation
+        'max_tokens': 1000,  # Maximum number of tokens to generate, set to a large value to avoid truncation
         'temperature': 0.7,      # Sampling temperature (recommended value by qwen)
         'top_p': 0.8,            # Top-p sampling (recommended value by qwen)
         'top_k': 20,             # Top-k sampling (recommended value by qwen)

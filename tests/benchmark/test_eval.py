@@ -374,7 +374,7 @@ class TestBenchmark(TestCase):
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
                     'temperature': 0.7,
-                    'max_new_tokens': 1024
+                    'max_tokens': 1024
                 }
             }
         }

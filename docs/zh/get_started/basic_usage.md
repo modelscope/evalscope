@@ -133,7 +133,7 @@ run_task(task_cfg="config.json")
 evalscope eval \
  --model Qwen/Qwen3-0.6B \
  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
- --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
@@ -147,7 +147,7 @@ evalscope eval \
 - `--generation-config`: 生成参数，以json字符串格式传入，将解析为字典：
   - `do_sample`: 是否使用采样
   - `temperature`: 生成温度
-  - `max_new_tokens`: 生成最大长度
+  - `max_tokens`: 生成最大长度
   - `chat_template_kwargs`: 模型推理模板参数
 - `--dataset-args`: 评测数据集的设置参数，以json字符串格式传入，key为数据集名称，value为参数，注意需要跟`--datasets`参数中的值一一对应：
   - `few_shot_num`: few-shot的数量

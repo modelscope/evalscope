@@ -135,7 +135,7 @@ If you wish to conduct more customized evaluations, such as customizing model pa
 evalscope eval \
  --model Qwen/Qwen3-0.6B \
  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
- --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
@@ -149,7 +149,7 @@ evalscope eval \
 - `--generation-config`: Generation parameters, passed as a JSON string and parsed as a dictionary:
   - `do_sample`: Whether to use sampling
   - `temperature`: Generation temperature
-  - `max_new_tokens`: Maximum length of generated tokens
+  - `max_tokens`: Maximum length of generated tokens
   - `chat_template_kwargs`: Model inference template parameters
 - `--dataset-args`: Settings for the evaluation dataset, passed as a JSON string where the key is the dataset name and the value is the parameters. Note that these need to correspond one-to-one with the values in the `--datasets` parameter:
   - `few_shot_num`: Number of few-shot examples

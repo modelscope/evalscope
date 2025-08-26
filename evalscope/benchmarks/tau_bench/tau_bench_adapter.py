@@ -36,7 +36,7 @@ logger = get_logger()
             'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'generation_config': {
                 'temperature': 0.7,
-                'max_new_tokens': 1024
+                'max_tokens': 1024
             }
         }
     )
@@ -56,12 +56,7 @@ class TauBenchAdapter(DefaultDataAdapter):
         self.user_model = self.extra_params.get('user_model', 'qwen-plus')
         self.api_key = self.extra_params.get('api_key', 'EMPTY')
         self.api_base = self.extra_params.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
-        self.generation_config = self.extra_params.get(
-            'generation_config', {
-                'temperature': 0.7,
-                'max_new_tokens': 1024
-            }
-        )
+        self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.7, 'max_tokens': 1024})
 
         self._patch_env_completion()
 

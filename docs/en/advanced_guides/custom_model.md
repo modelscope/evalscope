@@ -144,7 +144,7 @@ task_config = TaskConfig(
     datasets=['gsm8k'],
     eval_type='custom',  # Must be custom
     generation_config={
-        'max_new_tokens': 100,
+        'max_tokens': 100,
         'temperature': 0.0,
         'top_p': 1.0,
         'top_k': 50,
