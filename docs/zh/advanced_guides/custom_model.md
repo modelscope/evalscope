@@ -1,174 +1,213 @@
 # 自定义模型评测
 
-
-EvalScope 默认支持兼容 OpenAI API 格式的模型评测。但对于不支持 OpenAI API 格式的模型，您可以通过自定义模型适配器（CustomModel）来实现评测。本文将指导您如何创建自定义模型适配器并集成到评测流程中。
+EvalScope 基于 `ModelAPI` 抽象接口支持各种模型的评测。本文将介绍如何参考 `MockLLM` 实现自定义模型适配器。
 
 ## 什么情况下需要自定义模型适配器？
 
 在以下情况下，您可能需要创建自定义模型适配器：
 
-1. 您的模型不支持标准的 OpenAI API 格式
-2. 您需要对模型输入输出进行特殊处理
-3. 您需要使用特定的推理参数或配置
+- 您的模型不支持标准的 OpenAI API 格式
+- 您需要对模型输入输出进行特殊处理
+- 您需要使用特定的推理参数或配置
 
-## 自定义模型适配器的实现方法
+## ModelAPI 接口定义
 
-您需要创建一个继承自`CustomModel`的类，并实现`predict`方法：
-
-```python
-from evalscope.models import CustomModel
-from typing import List
-
-class MyCustomModel(CustomModel):
-    def __init__(self, config: dict = None, **kwargs):
-        # 初始化您的模型，可以在config中传入模型参数
-        super(MyCustomModel, self).__init__(config=config, **kwargs)
-        
-        # 根据需要初始化模型资源
-        # 例如：加载模型权重、连接到模型服务等
-        
-    def predict(self, prompts: List[dict], **kwargs):
-        """
-        模型推理的核心方法，接收输入提示并返回模型响应
-        
-        Args:
-            prompts: 输入提示列表，每个元素是一个字典
-            **kwargs: 额外的推理参数
-            
-        Returns:
-            与OpenAI API格式兼容的响应列表
-        """
-        # 1. 处理输入提示
-        # 2. 调用您的模型进行推理
-        # 3. 将模型输出转换为OpenAI API格式
-        # 4. 返回格式化后的响应
-```
-
-
-## 示例：DummyCustomModel
-
-以下是一个完整的`DummyCustomModel`示例，展示了如何创建和使用自定义模型适配器：
+所有模型都需要实现 `ModelAPI` 抽象基类：
 
 ```python
-import time
-from typing import List
+from abc import ABC, abstractmethod
+from typing import List, Optional
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import GenerateConfig, ModelOutput
+from evalscope.api.tool import ToolChoice, ToolInfo
 
-from evalscope.utils.logger import get_logger
-from evalscope.models import CustomModel
-
-logger = get_logger()
-
-class DummyCustomModel(CustomModel):
-
-    def __init__(self, config: dict = {}, **kwargs):
-        super(DummyCustomModel, self).__init__(config=config, **kwargs)
-        
-    def make_request_messages(self, input_item: dict) -> list:
-        """
-        Make request messages for OpenAI API.
-        """
-        if input_item.get('messages', None):
-            return input_item['messages']
-
-        data: list = input_item['data']
-        if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
-            query = '\n'.join(''.join(item) for item in data)
-            system_prompt = input_item.get('system_prompt', None)
-        else:
-            query = data[0]
-            system_prompt = input_item.get('system_prompt', None)
-
-        messages = []
-        if system_prompt:
-            messages.append({'role': 'system', 'content': system_prompt})
-
-        messages.append({'role': 'user', 'content': query})
-
-        return messages
+class ModelAPI(ABC):
+    """模型API提供者的基础接口"""
     
-    def predict(self, prompts: List[dict], **kwargs):
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **kwargs
+    ) -> None:
+        self.model_name = model_name
+        self.base_url = base_url
+        self.api_key = api_key
+        self.config = config
 
-        original_inputs = kwargs.get('origin_inputs', None)
-        infer_cfg = kwargs.get('infer_cfg', None)
-        
-        logger.debug(f'** Prompts: {prompts}')
-        if original_inputs is not None:
-            logger.debug(f'** Original inputs: {original_inputs}')
-        if infer_cfg is not None:
-            logger.debug(f'** Inference config: {infer_cfg}')
-
-        # Simulate a response based on the prompts
-        # Must return a list of dicts with the same format as the OpenAI API.
-        responses = []
-        for input_item in original_inputs:
-            message = self.make_request_messages(input_item)
-
-            # You can replace this with actual model inference logic
-            # For demonstration, we will just return a dummy response
-            response = f"Dummy response for prompt: {message}"
-
-            res_d = {
-                'choices': [{
-                    'index': 0,
-                    'message': {
-                        'content': response,
-                        'role': 'assistant'
-                    }
-                }],
-                'created': time.time(),
-                'model': self.config.get('model_id'),
-                'object': 'chat.completion',
-                'usage': {
-                    'completion_tokens': 0,
-                    'prompt_tokens': 0,
-                    'total_tokens': 0
-                }
-            }
-            
-            responses.append(res_d)
-            
-        return responses
+    @abstractmethod
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """生成模型输出（必须实现）"""
+        pass
 ```
 
-**以下是使用`DummyCustomModel`进行评测的完整示例**：
+## MockLLM 参考实现
+
+`MockLLM` 是一个简单的测试模型实现，展示了 `ModelAPI` 的基本结构：
+
+```python
+from typing import Any, Dict, List, Optional
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
+from evalscope.api.tool import ToolChoice, ToolInfo
+
+class MockLLM(ModelAPI):
+    """测试用的模拟模型实现"""
+    
+    default_output = 'Default output from mockllm/model'
+
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        custom_output: Optional[str] = None,
+        **model_args: Dict[str, Any],
+    ) -> None:
+        super().__init__(model_name, base_url, api_key, config)
+        self.model_args = model_args
+        self.custom_output = custom_output
+
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        # 使用自定义输出（如果提供），否则使用默认输出
+        output_text = self.custom_output if self.custom_output is not None else self.default_output
+        
+        return ModelOutput.from_content(
+            model=self.model_name,
+            content=output_text
+        )
+```
+
+## 自定义模型实现
+
+参考 `MockLLM` 的结构创建您的模型：
+
+```python
+from typing import List, Optional, Dict, Any
+from evalscope.api.model import ModelAPI, GenerateConfig, ModelOutput
+from evalscope.api.messages import ChatMessage
+from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.api.registry import register_model_api
+
+# 1. 使用register_model_api注册模型
+@register_model_api(name='my_custom_model')
+class MyCustomModel(ModelAPI):
+    """自定义模型实现"""
+
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **model_args: Dict[str, Any],
+    ) -> None:
+        super().__init__(model_name, base_url, api_key, config)
+        self.model_args = model_args
+        print(self.model_args)
+        
+        # 2. 在这里初始化您的模型
+        # 例如：加载模型文件、建立连接等
+
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        # 3. 实现模型推理逻辑
+
+        # 3.1 处理输入消息
+        input_text = self._process_messages(input)
+        
+        # 3.2 调用您的模型
+        response = self._call_model(input_text, config)
+        
+        # 3.3 返回标准化输出
+        return ModelOutput.from_content(
+            model=self.model_name,
+            content=response
+        )
+
+    def _process_messages(self, messages: List[ChatMessage]) -> str:
+        """将聊天消息转换为文本"""
+        text_parts = []
+        for message in messages:
+            role = getattr(message, 'role', 'user')
+            content = getattr(message, 'content', str(message))
+            text_parts.append(f"{role}: {content}")
+        return '\n'.join(text_parts)
+
+    def _call_model(self, input_text: str, config: GenerateConfig) -> str:
+        """调用您的模型进行推理"""
+        # 在这里实现您的模型调用逻辑
+        # 例如：调用 API、本地模型推理等
+        return f"Response to: {input_text}"
+```
+
+
+
+## 使用自定义模型
+
+### 直接使用
 
 ```python
 from evalscope import run_task, TaskConfig
-from evalscope.models.custom.dummy_model import DummyCustomModel
 
-# 实例化DummyCustomModel
-dummy_model = DummyCustomModel()
+# 创建模型实例
+custom_model = MyCustomModel(
+    model_name='my-model',
+    model_args={'test': 'test'}
+)
 
 # 配置评测任务
 task_config = TaskConfig(
-    model=dummy_model,
-    model_id='dummy-model',  # 自定义模型ID
+    model=custom_model,
     datasets=['gsm8k'],
-    eval_type='custom',  # 必须为custom
-    generation_config={
-        'max_new_tokens': 100,
-        'temperature': 0.0,
-        'top_p': 1.0,
-        'top_k': 50,
-        'repetition_penalty': 1.0
-    },
-    debug=True,
-    limit=5,
+    limit=5
 )
 
-# 运行评测任务
-eval_results = run_task(task_cfg=task_config)
+# 运行评测
+results = run_task(task_cfg=task_config)
 ```
 
-## 自定义模型实现的注意事项
+### 通过注册使用
 
-1. **输入格式**：`predict`方法接收的`prompts`参数是一个列表，包含一个batch的输入提示。您需要确保将这些提示转换为模型可以接受的格式。
+```python
+from evalscope import run_task, TaskConfig
+from xxx import MyCustomModel # 需预先import模型，实现自动注册
 
-2. **输出格式**：`predict`方法必须返回与OpenAI API格式兼容的响应列表。每个响应必须包含`choices`字段，其中包含模型生成的内容。
+# 使用注册的模型
+task_config = TaskConfig(
+    model='my-model',
+    eval_type='my_custom_model', # register_model_api 使用的名称
+    datasets=['gsm8k'],
+    model_args={'test': 'test'},
+    limit=5
+)
 
-3. **错误处理**：确保您的实现包含适当的错误处理逻辑，以防模型推理过程中出现异常。
+results = run_task(task_cfg=task_config)
+```
 
+## 关键要点
 
-## 总结
-
-通过创建自定义模型适配器，您可以将任何LLM模型集成到EvalScope评测框架中，即使它不原生支持OpenAI API格式。自定义模型适配器的核心是实现`predict`方法，将输入提示转换为模型可接受的格式，调用模型进行推理，然后将模型输出转换为OpenAI API格式。
+1. **继承 `ModelAPI`** 并实现 `generate` 方法
+2. **返回 `ModelOutput`** 对象，可以使用 `ModelOutput.from_content()` 创建
+3. **处理异常** 确保模型调用的稳定性
+4. **注册模型** 以便在配置中使用

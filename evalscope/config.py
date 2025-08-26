@@ -6,7 +6,7 @@ from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
-from evalscope.api.model import GenerateConfig
+from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
     DEFAULT_WORK_DIR,
@@ -28,7 +28,7 @@ logger = get_logger()
 @dataclass
 class TaskConfig(BaseArgument):
     # Model-related arguments
-    model: Optional[str] = None
+    model: Optional[Union[str, Model, ModelAPI]] = None
     model_id: Optional[str] = None
     model_args: Dict = field(default_factory=dict)
     model_task: str = ModelTask.TEXT_GENERATION
@@ -93,8 +93,12 @@ class TaskConfig(BaseArgument):
 
         # Set model_id if not provided
         if not self.model_id:
-            if self.model:
+            if isinstance(self.model, str):
                 self.model_id = safe_filename(os.path.basename(self.model))
+            elif isinstance(self.model, Model):
+                self.model_id = safe_filename(self.model.name)
+            elif isinstance(self.model, ModelAPI):
+                self.model_id = safe_filename(self.model.model_name)
             else:
                 self.model_id = 'dummy_model'
 
@@ -183,6 +187,9 @@ class TaskConfig(BaseArgument):
     def to_dict(self):
         result = copy.deepcopy(self.__dict__)
         del result['api_key']  # Do not expose api_key in the config
+
+        if isinstance(self.model, (Model, ModelAPI)):
+            result['model'] = self.model.__class__.__name__
 
         if isinstance(self.generation_config, GenerateConfig):
             result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)

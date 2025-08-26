@@ -1,171 +1,211 @@
 # Custom Model Evaluation
 
-EvalScope supports model evaluation compatible with the OpenAI API format by default. However, for models that do not support the OpenAI API format, you can implement evaluations through custom model adapters (CustomModel). This document will guide you on how to create a custom model adapter and integrate it into the evaluation workflow.
+EvalScope supports the evaluation of various models through the `ModelAPI` abstract interface. This document will guide you on how to implement a custom model adapter by referencing `MockLLM`.
 
 ## When Do You Need a Custom Model Adapter?
 
-You might need to create a custom model adapter in the following situations:
+You might need to create a custom model adapter in the following scenarios:
 
-1. Your model does not support the standard OpenAI API format.
-2. You need to handle special processing for model input and output.
-3. You need to use specific inference parameters or configurations.
+- Your model does not support the standard OpenAI API format.
+- You need to perform special processing on model inputs and outputs.
+- You require specific inference parameters or configurations.
 
-## How to Implement a Custom Model Adapter
+## ModelAPI Interface Definition
 
-You need to create a class that inherits from `CustomModel` and implement the `predict` method:
-
-```python
-from evalscope.models import CustomModel
-from typing import List
-
-class MyCustomModel(CustomModel):
-    def __init__(self, config: dict = None, **kwargs):
-        # Initialize your model, you can pass model parameters in config
-        super(MyCustomModel, self).__init__(config=config, **kwargs)
-        
-        # Initialize model resources as needed
-        # For example: load model weights, connect to model service, etc.
-        
-    def predict(self, prompts: List[dict], **kwargs):
-        """
-        The core method for model inference, which takes input prompts and returns model responses
-        
-        Args:
-            prompts: List of input prompts, each element is a dictionary
-            **kwargs: Additional inference parameters
-            
-        Returns:
-            A list of responses compatible with the OpenAI API format
-        """
-        # 1. Process input prompts
-        # 2. Call your model for inference
-        # 3. Convert model output to OpenAI API format
-        # 4. Return formatted responses
-```
-
-## Example: DummyCustomModel
-
-Below is a complete example of `DummyCustomModel` that demonstrates how to create and use a custom model adapter:
+All models must implement the `ModelAPI` abstract base class:
 
 ```python
-import time
-from typing import List
+from abc import ABC, abstractmethod
+from typing import List, Optional
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import GenerateConfig, ModelOutput
+from evalscope.api.tool import ToolChoice, ToolInfo
 
-from evalscope.utils.logger import get_logger
-from evalscope.models import CustomModel
-
-logger = get_logger()
-
-class DummyCustomModel(CustomModel):
-
-    def __init__(self, config: dict = {}, **kwargs):
-        super(DummyCustomModel, self).__init__(config=config, **kwargs)
-        
-    def make_request_messages(self, input_item: dict) -> list:
-        """
-        Make request messages for OpenAI API.
-        """
-        if input_item.get('messages', None):
-            return input_item['messages']
-
-        data: list = input_item['data']
-        if isinstance(data[0], tuple):  # for truthful_qa and hellaswag
-            query = '\n'.join(''.join(item) for item in data)
-            system_prompt = input_item.get('system_prompt', None)
-        else:
-            query = data[0]
-            system_prompt = input_item.get('system_prompt', None)
-
-        messages = []
-        if system_prompt:
-            messages.append({'role': 'system', 'content': system_prompt})
-
-        messages.append({'role': 'user', 'content': query})
-
-        return messages
+class ModelAPI(ABC):
+    """Base interface for model API providers"""
     
-    def predict(self, prompts: List[dict], **kwargs):
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **kwargs
+    ) -> None:
+        self.model_name = model_name
+        self.base_url = base_url
+        self.api_key = api_key
+        self.config = config
 
-        original_inputs = kwargs.get('origin_inputs', None)
-        infer_cfg = kwargs.get('infer_cfg', None)
-        
-        logger.debug(f'** Prompts: {prompts}')
-        if original_inputs is not None:
-            logger.debug(f'** Original inputs: {original_inputs}')
-        if infer_cfg is not None:
-            logger.debug(f'** Inference config: {infer_cfg}')
-
-        # Simulate a response based on the prompts
-        # Must return a list of dicts with the same format as the OpenAI API.
-        responses = []
-        for input_item in original_inputs:
-            message = self.make_request_messages(input_item)
-
-            # You can replace this with actual model inference logic
-            # For demonstration, we will just return a dummy response
-            response = f"Dummy response for prompt: {message}"
-
-            res_d = {
-                'choices': [{
-                    'index': 0,
-                    'message': {
-                        'content': response,
-                        'role': 'assistant'
-                    }
-                }],
-                'created': time.time(),
-                'model': self.config.get('model_id'),
-                'object': 'chat.completion',
-                'usage': {
-                    'completion_tokens': 0,
-                    'prompt_tokens': 0,
-                    'total_tokens': 0
-                }
-            }
-            
-            responses.append(res_d)
-            
-        return responses
+    @abstractmethod
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        """Generate model output (must be implemented)"""
+        pass
 ```
 
-**Here is a complete example of evaluating using `DummyCustomModel`:**
+## MockLLM Reference Implementation
+
+`MockLLM` is a simple test model implementation that demonstrates the basic structure of `ModelAPI`:
+
+```python
+from typing import Any, Dict, List, Optional
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput
+from evalscope.api.tool import ToolChoice, ToolInfo
+
+class MockLLM(ModelAPI):
+    """Mock model implementation for testing purposes"""
+    
+    default_output = 'Default output from mockllm/model'
+
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        custom_output: Optional[str] = None,
+        **model_args: Dict[str, Any],
+    ) -> None:
+        super().__init__(model_name, base_url, api_key, config)
+        self.model_args = model_args
+        self.custom_output = custom_output
+
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        # Use custom output if provided, otherwise use default output
+        output_text = self.custom_output if self.custom_output is not None else self.default_output
+        
+        return ModelOutput.from_content(
+            model=self.model_name,
+            content=output_text
+        )
+```
+
+## Custom Model Implementation
+
+Create your model by referencing the structure of `MockLLM`:
+
+```python
+from typing import List, Optional, Dict, Any
+from evalscope.api.model import ModelAPI, GenerateConfig, ModelOutput
+from evalscope.api.messages import ChatMessage
+from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.api.registry import register_model_api
+
+# 1. Register the model using register_model_api
+@register_model_api(name='my_custom_model')
+class MyCustomModel(ModelAPI):
+    """Custom model implementation"""
+
+    def __init__(
+        self,
+        model_name: str,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        config: GenerateConfig = GenerateConfig(),
+        **model_args: Dict[str, Any],
+    ) -> None:
+        super().__init__(model_name, base_url, api_key, config)
+        self.model_args = model_args
+        print(self.model_args)
+        
+        # 2. Initialize your model here
+        # For example: load model files, establish connections, etc.
+
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        # 3. Implement model inference logic
+
+        # 3.1 Process input messages
+        input_text = self._process_messages(input)
+        
+        # 3.2 Call your model
+        response = self._call_model(input_text, config)
+        
+        # 3.3 Return standardized output
+        return ModelOutput.from_content(
+            model=self.model_name,
+            content=response
+        )
+
+    def _process_messages(self, messages: List[ChatMessage]) -> str:
+        """Convert chat messages to text"""
+        text_parts = []
+        for message in messages:
+            role = getattr(message, 'role', 'user')
+            content = getattr(message, 'content', str(message))
+            text_parts.append(f"{role}: {content}")
+        return '\n'.join(text_parts)
+
+    def _call_model(self, input_text: str, config: GenerateConfig) -> str:
+        """Invoke your model for inference"""
+        # Implement your model invocation logic here
+        # For example: API calls, local model inference, etc.
+        return f"Response to: {input_text}"
+```
+
+## Using the Custom Model
+
+### Direct Usage
 
 ```python
 from evalscope import run_task, TaskConfig
-from evalscope.models.custom.dummy_model import DummyCustomModel
 
-# Instantiate DummyCustomModel
-dummy_model = DummyCustomModel()
-
-# Configure evaluation task
-task_config = TaskConfig(
-    model=dummy_model,
-    model_id='dummy-model',  # Custom model ID
-    datasets=['gsm8k'],
-    eval_type='custom',  # Must be custom
-    generation_config={
-        'max_tokens': 100,
-        'temperature': 0.0,
-        'top_p': 1.0,
-        'top_k': 50,
-        'repetition_penalty': 1.0
-    },
-    debug=True,
-    limit=5,
+# Create a model instance
+custom_model = MyCustomModel(
+    model_name='my-model',
+    model_args={'test': 'test'}
 )
 
-# Run evaluation task
-eval_results = run_task(task_cfg=task_config)
+# Configure the evaluation task
+task_config = TaskConfig(
+    model=custom_model,
+    datasets=['gsm8k'],
+    limit=5
+)
+
+# Run the evaluation
+results = run_task(task_cfg=task_config)
 ```
 
-## Considerations for Implementing a Custom Model
+### Usage Through Registration
 
-1. **Input Format**: The `predict` method receives the `prompts` parameter as a list that contains a batch of input prompts. You need to ensure these prompts are converted into a format that the model can accept.
+```python
+from evalscope import run_task, TaskConfig
+from xxx import MyCustomModel # Import the model beforehand for automatic registration
 
-2. **Output Format**: The `predict` method must return a response list compatible with the OpenAI API format. Each response must include the `choices` field containing the content generated by the model.
+# Use the registered model
+task_config = TaskConfig(
+    model='my-model',
+    eval_type='my_custom_model', # Name used in register_model_api
+    datasets=['gsm8k'],
+    model_args={'test': 'test'},
+    limit=5
+)
 
-3. **Error Handling**: Ensure your implementation contains appropriate error handling logic to prevent exceptions during the model inference process.
+results = run_task(task_cfg=task_config)
+```
 
-## Summary
+## Key Points
 
-By creating a custom model adapter, you can integrate any LLM model into the EvalScope evaluation framework, even if it does not natively support the OpenAI API format. The core of a custom model adapter is implementing the `predict` method, which converts input prompts into a format acceptable by the model, calls the model for inference, and then converts the model output to OpenAI API format.
+1. **Inherit from `ModelAPI`** and implement the `generate` method.
+2. **Return a `ModelOutput`** object, which can be created using `ModelOutput.from_content()`.
+3. **Handle exceptions** to ensure the stability of model calls.
+4. **Register the model** for use in configurations.
