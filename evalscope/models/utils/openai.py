@@ -239,7 +239,7 @@ def openai_assistant_content(message: ChatMessageAssistant, include_reasoning=Tr
     return content
 
 
-def openai_chat_choices(choices: List[ChatCompletionChoice], include_reasoning: bool=True) -> List[Choice]:
+def openai_chat_choices(choices: List[ChatCompletionChoice], include_reasoning: bool = True) -> List[Choice]:
     oai_choices: List[Choice] = []
 
     for index, choice in enumerate(choices):

@@ -79,10 +79,7 @@ class TauBenchAdapter(DefaultDataAdapter):
 
             res = user_server.generate(input=[dict_to_chat_message(msg) for msg in messages])
 
-            message = {
-                'role': 'assistant',
-                'content': res.completion
-            }
+            message = {'role': 'assistant', 'content': res.completion}
             self.messages.append(message)
             self.total_cost = 0
             return res.completion
