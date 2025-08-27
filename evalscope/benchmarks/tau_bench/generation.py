@@ -45,7 +45,7 @@ def _patch_agent_solve(model: Model):
                 input=[dict_to_chat_message(msg) for msg in messages],
                 tools=[ToolInfo.model_validate(tool['function']) for tool in self.tools_info]
             )
-            oai_res = openai_chat_choices(res.choices)
+            oai_res = openai_chat_choices(res.choices, include_reasoning=False)
 
             next_message = oai_res[0].message.model_dump(exclude_none=True)
 
