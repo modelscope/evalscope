@@ -364,21 +364,22 @@ class TestBenchmark(TestCase):
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args)
+        self._run_dataset_test('bfcl_v3', dataset_args, model='qwq-plus', stream=True)
 
     def test_tau_bench(self):
         dataset_args = {
             'extra_params': {
-                'user_model': 'qwen-plus',
+                'user_model': 'qwq-plus',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
                     'temperature': 0.7,
-                    'max_tokens': 12000
+                    'max_tokens': 12000,
+                    'stream': True
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=1)
+        self._run_dataset_test('tau_bench', dataset_args, limit=1, model='qwq-plus', stream=True)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
