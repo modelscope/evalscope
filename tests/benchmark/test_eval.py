@@ -120,7 +120,7 @@ class TestBenchmark(TestCase):
             'subset_list': ['Level 1', 'Level 2'],
             'few_shot_num': 0,
         }
-        self._run_dataset_test('math_500')
+        self._run_dataset_test('math_500', dataset_args=dataset_args)
 
     def test_aime24(self):
         """Test AIME 2024 dataset."""

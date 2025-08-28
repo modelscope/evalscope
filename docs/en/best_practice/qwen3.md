@@ -231,7 +231,7 @@ task_cfg = TaskConfig(
         'top_p': 0.8,  # top-p sampling (recommended value per Qwen report)
         'top_k': 20,  # top-k sampling (recommended value per Qwen report)
         'n': 1,  # Number of replies generated per request
-        'chat_template_kwargs': {'enable_thinking': False}  # close thinking mode
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # close thinking mode
     },
     timeout=60000,  # Timeout
     stream=True,  # Use streaming output

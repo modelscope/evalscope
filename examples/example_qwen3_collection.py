@@ -80,7 +80,7 @@ def run_test_no_think():
             'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
             'top_k': 20,  # top-k采样 (qwen 报告推荐值)
             'n': 1,  # 每个请求产生的回复数量
-            'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
+            'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
         },
         judge_worker_num=1,
         timeout=60000,  # 超时时间

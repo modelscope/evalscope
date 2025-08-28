@@ -232,7 +232,7 @@ task_cfg = TaskConfig(
         'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
         'top_k': 20,  # top-k采样 (qwen 报告推荐值)
         'n': 1,  # 每个请求产生的回复数量
-        'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
     },
     timeout=60000,  # 超时时间
     stream=True,  # 是否使用流式输出
