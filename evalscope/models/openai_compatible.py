@@ -49,7 +49,7 @@ class OpenAICompatibleAPI(ModelAPI):
         assert self.base_url, f'Base URL for {model_name} not found'
 
         # remove trailing slash from base_url
-        self.base_url = self.base_url.rstrip('/').rstrip('/chat/completions')
+        self.base_url = self.base_url.rstrip('/').removesuffix('/chat/completions')
 
         # create http client
         self.client = OpenAI(
