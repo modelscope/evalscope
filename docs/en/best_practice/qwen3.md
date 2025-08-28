@@ -115,7 +115,7 @@ Note: Subsequent evaluation processes are based on models started using the vLLM
 
 To comprehensively evaluate the model's capabilities, we can mix the benchmarks already supported by EvalScope to create a comprehensive evaluation set. Below is an example of an evaluation set covering mainstream benchmarks, evaluating the model's coding ability (LiveCodeBench), mathematical ability (AIME2024, AIME2025), knowledge ability (MMLU-Pro, CEVAL), instruction following (IFEval), and more.
 
-Run the following code to automatically download and mix datasets based on the defined schema and save the constructed evaluation set in a local jsonl file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/modelscope/EvalScope-Qwen3-Test/summary).
+Run the following code to automatically download and mix datasets based on the defined schema and save the constructed evaluation set in a local jsonl file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/evalscope/Qwen3-Test-Collection/summary).
 
 ```python
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
@@ -138,7 +138,7 @@ schema = CollectionSchema(name='Qwen3', datasets=[
         DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime25', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0})
+        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'few_shot_num': 0})
     ])
 ])
 
@@ -163,7 +163,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
             'filters': {'remove_until': '</think>'}  # Filter out the content of thinking
         }
     },
@@ -221,7 +221,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
         }
     },
     eval_batch_size=128,
@@ -231,7 +231,7 @@ task_cfg = TaskConfig(
         'top_p': 0.8,  # top-p sampling (recommended value per Qwen report)
         'top_k': 20,  # top-k sampling (recommended value per Qwen report)
         'n': 1,  # Number of replies generated per request
-        'chat_template_kwargs': {'enable_thinking': False}  # close thinking mode
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # close thinking mode
     },
     timeout=60000,  # Timeout
     stream=True,  # Use streaming output

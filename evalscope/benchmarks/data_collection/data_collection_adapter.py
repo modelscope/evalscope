@@ -6,9 +6,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, DataAdapter, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
-from evalscope.api.model.model import Model
 from evalscope.api.registry import get_benchmark, register_benchmark
 from evalscope.config import TaskConfig
 from evalscope.constants import DataCollection, Tags
@@ -55,7 +53,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
             data_id_or_path=dataset_path,
             split=self.eval_split,
             sample_fields=self.record_to_sample,
-            subset=self.default_subset,
+            subset='test',  # NOTE: using hardcoded test subset
             limit=self.limit,
             repeats=self.repeats
         ).load()
@@ -95,7 +93,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
         # load dataset args
         dataset_args = copy.deepcopy(self._task_config.dataset_args)
-        common_args = dataset_args.get(DataCollection.NAME, {})
 
         # Iterate through each sample in the dataset
         dataset = self.test_dataset[self.default_subset]
@@ -108,7 +105,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
             # update dataset args
             cur_dataset_args = dataset_args.get(dataset_name, {})
-            cur_dataset_args.update(common_args)
 
             # Initialize dataset adapter
             if dataset_name not in self.dataset_adapters:
