@@ -115,7 +115,7 @@ Note: Subsequent evaluation processes are based on models started using the vLLM
 
 To comprehensively evaluate the model's capabilities, we can mix the benchmarks already supported by EvalScope to create a comprehensive evaluation set. Below is an example of an evaluation set covering mainstream benchmarks, evaluating the model's coding ability (LiveCodeBench), mathematical ability (AIME2024, AIME2025), knowledge ability (MMLU-Pro, CEVAL), instruction following (IFEval), and more.
 
-Run the following code to automatically download and mix datasets based on the defined schema and save the constructed evaluation set in a local jsonl file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/modelscope/EvalScope-Qwen3-Test/summary).
+Run the following code to automatically download and mix datasets based on the defined schema and save the constructed evaluation set in a local jsonl file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/evalscope/Qwen3-Test-Collection/summary).
 
 ```python
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
@@ -163,7 +163,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
             'filters': {'remove_until': '</think>'}  # Filter out the content of thinking
         }
     },
@@ -221,7 +221,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
         }
     },
     eval_batch_size=128,

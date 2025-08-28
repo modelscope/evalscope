@@ -40,7 +40,7 @@ def run_test_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+                'dataset_id': 'evalscope/Qwen3-Test-Collection',
                 'filters': {'remove_until': '</think>'}  # 过滤掉思考的内容
             }
         },
@@ -70,7 +70,7 @@ def run_test_no_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+                'dataset_id': 'evalscope/Qwen3-Test-Collection',
             }
         },
         eval_batch_size=128,

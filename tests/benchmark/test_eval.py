@@ -84,7 +84,7 @@ class TestBenchmark(TestCase):
         """Test MMLU reasoning dataset."""
         dataset_args = {
             'few_shot_num': 0,
-            # 'subset_list': ['abstract_algebra', 'computer_security']
+            'subset_list': ['abstract_algebra', 'computer_security']
         }
         self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
 
@@ -373,7 +373,7 @@ class TestBenchmark(TestCase):
     def test_tau_bench(self):
         dataset_args = {
             'extra_params': {
-                'user_model': 'qwq-plus',
+                'user_model': 'qwen-plus',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
@@ -383,11 +383,17 @@ class TestBenchmark(TestCase):
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=1, model='qwq-plus', stream=True)
+        self._run_dataset_test('tau_bench', dataset_args, limit=5, model='qwq-plus', stream=True)
 
     def test_r1_collection(self):
         dataset_args = {
             'dataset_id': 'evalscope/R1-Distill-Math-Test-v2'
+        }
+        self._run_dataset_test('data_collection', dataset_args)
+
+    def test_qwen3_collection(self):
+        dataset_args = {
+            'dataset_id': 'evalscope/Qwen3-Test-Collection'
         }
         self._run_dataset_test('data_collection', dataset_args)
 
