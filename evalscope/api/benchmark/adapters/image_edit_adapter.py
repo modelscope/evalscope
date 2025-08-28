@@ -1,5 +1,6 @@
 import base64
 import os
+from typing import Optional
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -11,30 +12,81 @@ from evalscope.api.registry import get_metric
 from evalscope.constants import EvalType, FileConstants
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
+from evalscope.utils.io_utils import jsonl_to_list
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
 
 
-class Text2ImageAdapter(DefaultDataAdapter):
-    """Text to Image Adapter for benchmarks."""
+class ImageEditAdapter(DefaultDataAdapter):
+    """
+    Support two methods:
+    1. Inference using modelscope pipeline
+    2. Load local inference jsonl file with key to corresponding prompt
+    """
 
-    def load_from_disk(self, **kwargs):
-        return super().load_from_disk(use_local_loader=True)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def record_to_sample(self, record) -> Sample:
-        """Convert a record dictionary to a Sample object."""
-        return Sample(
-            input=[ChatMessageUser(content=record['prompt'])],
-            metadata={
-                'prompt': record['prompt'],
-                'category': record.get('category', ''),
-                'tags': record.get('tags', []),
-                FileConstants.ID: record[FileConstants.ID],
-                FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH,
-                                                     ''),  # Optional field for existing image path
-            }
-        )
+        self.local_file = self.extra_params.get('local_file', None)
+        self.id_key = self.extra_params.get('id_key', FileConstants.ID)
+        self.image_key = self.extra_params.get('image_key', FileConstants.IMAGE_PATH)
+        self.local_data = self.load_local_file()
+
+    def load_local_file(self) -> Optional[dict]:
+        if not self.local_file:
+            return None
+
+        # Load file and check
+        data_list = jsonl_to_list(self.local_file)
+        data_dict = {}
+        for record in data_list:
+            if self.image_key not in record:
+                raise ValueError(f"Image key '{self.image_key}' not found in record: {record}, file {self.local_file}")
+            if self.id_key not in record:
+                raise ValueError(f"ID key '{self.id_key}' not found in record: {record}, file {self.local_file}")
+
+            image_path = record[self.image_key]
+            if not os.path.isabs(image_path):
+                image_path = os.path.join(os.path.dirname(self.local_file), image_path)
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Image file '{image_path}' not found.")
+
+            data_dict[record[self.id_key]] = record
+        return data_dict
+
+    def get_image_path_from_id(self, image_id) -> Optional[str]:
+        if not self.local_file:
+            return None
+
+        record = self.local_data.get(image_id)
+        if not record:
+            return None
+
+        return record[self.image_key]
+
+    def _post_process_samples(self):
+        super()._post_process_samples()
+
+        # Add local image path if exists
+        for subset in self.test_dataset.keys():
+            for sample in self.test_dataset[subset]:
+                local_image_path = self.get_image_path_from_id(sample.metadata.get(FileConstants.ID))
+                if local_image_path:
+                    sample.metadata[FileConstants.IMAGE_PATH] = local_image_path
+
+    def sample_filter(self, sample) -> bool:
+        """
+        Filter samples based on metadata availability.
+        If local file is not available, all samples are considered valid.
+        Otherwise, only samples with valid metadata and image path are kept.
+        """
+        if not self.local_data:
+            return True
+        else:
+            if (not sample.metadata) or (not sample.metadata.get(FileConstants.IMAGE_PATH)):
+                return False
+            return True
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
         """
@@ -105,52 +157,3 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 output=model_output,
                 completed=True,
             )
-
-    # NOTE: thread safe is needed, since we can't batch inference here.
-    @thread_safe
-    def match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        # Get prediction and prompt from task state
-        image_path = task_state.metadata.get(FileConstants.IMAGE_PATH, original_prediction)
-        prompt = task_state.input[0].content
-        meta = task_state.metadata
-
-        # Initialize the score object with prediction details
-        score = Score(
-            extracted_prediction=image_path,
-            prediction=image_path,
-        )
-
-        # Calculate scores for each configured metric
-        for metric in self.metric_list:
-            try:
-                if isinstance(metric, str):
-                    metric_name = metric
-                    metric_scorer = get_metric(metric)  # Get metric implementation from registry
-                    metric_func = metric_scorer()  # Instantiate the metric scorer
-                elif isinstance(metric, dict):
-                    metric_name = list(metric.keys())[0]
-                    metric_cls = get_metric(metric_name)
-                    metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
-                metric_score = metric_func(image_path, prompt)[0]
-
-                # fine-granular metrics
-                category = meta.get('category')
-                if category:
-                    metric_name = f'{metric_name}_{category}'
-                if isinstance(metric_score, dict):
-                    for k, v in metric_score.items():
-                        score.value[f'{metric_name}_{k}'] = v.cpu().item()
-                else:
-                    score.value[metric_name] = metric_score.cpu().item()
-            except Exception as e:
-                logger.error(f'Error calculating metric {metric}: {e}')
-                score.value[metric_name] = 0
-                score.metadata[metric_name] = f'error: {str(e)}'
-
-        return score
-
-    def _on_generate_report(self, scores, model_name, add_aggregation_name=True):
-        # Don't add aggregation name for needle haystack adapter
-        return super()._on_generate_report(scores, model_name, False)

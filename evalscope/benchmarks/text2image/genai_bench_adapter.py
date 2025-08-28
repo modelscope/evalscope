@@ -4,7 +4,6 @@ import os
 from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser
-from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import get_metric, register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger

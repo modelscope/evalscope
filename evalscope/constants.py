@@ -127,3 +127,9 @@ class Tags:
     RETRIEVAL = 'Retrieval'
     FUNCTION_CALLING = 'FunctionCalling'
     TEXT_TO_IMAGE = 'TextToImage'
+    IMAGE_EDITING = 'ImageEditing'
+
+
+class FileConstants:
+    IMAGE_PATH = 'image_path'
+    ID = 'id'
