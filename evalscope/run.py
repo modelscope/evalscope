@@ -131,8 +131,9 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         )
         evaluators.append(evaluator)
 
-        # Update task_config.dataset_args with benchmark metadata
-        task_config.dataset_args[dataset_name] = benchmark.to_dict()
+        # Update task_config.dataset_args with benchmark metadata, except for DataCollection
+        if dataset_name != DataCollection.NAME:
+            task_config.dataset_args[dataset_name] = benchmark.to_dict()
 
     # dump task_cfg to outputs.configs_dir after creating evaluators
     task_config.dump_yaml(outputs.configs_dir)

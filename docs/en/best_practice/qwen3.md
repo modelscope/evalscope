@@ -138,7 +138,7 @@ schema = CollectionSchema(name='Qwen3', datasets=[
         DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime25', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0})
+        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'few_shot_num': 0})
     ])
 ])
 

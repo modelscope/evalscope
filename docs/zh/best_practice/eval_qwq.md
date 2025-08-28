@@ -83,12 +83,12 @@ run_task(task_config)
 # ...
 datasets=[
     # 'math_500',  # 数据集名称
-    'gpqa',
+    'gpqa_diamond',
     'aime24'
 ],
 dataset_args={
     # 'math_500': {'few_shot_num': 0 } ,
-    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
+    'gpqa_diamond': {'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```
