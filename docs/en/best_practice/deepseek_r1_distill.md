@@ -116,7 +116,7 @@ Percentile results:
 
 ## Evaluating the Model
 
-We will integrate the MATH-500, GPQA-Diamond, and AIME-2024 datasets into a single dataset, located in [evalscope/R1-Distill-Math-Test-v2](https://modelscope.cn/datasets/evalscope/R1-Distill-Math-Test-v2). Readers can directly use the dataset ID for evaluation operations.
+We will integrate the MATH-500, GPQA-Diamond, and AIME-2024 datasets into a single dataset, located in [modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test). Readers can directly use the dataset ID for evaluation operations.
 
 If you want to learn about the dataset generation process or customize a dataset, please refer to the [Usage Tutorial](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html).
 
@@ -138,7 +138,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'evalscope/R1-Distill-Math-Test-v2'  # Dataset ID or local path
+            'dataset_id': 'modelscope/R1-Distill-Math-Test'  # Dataset ID or local path
         }
     },
     eval_batch_size=32,       # Number of concurrent requests
@@ -175,12 +175,12 @@ If you only wish to run specific datasets, you can modify the `datasets` and `da
 ```python
 datasets=[
     # 'math_500',  # Dataset name
-    'gpqa_diamond',
+    'gpqa',
     'aime24'
 ],
 dataset_args={ # Built-in support in EvalScope, no need to specify dataset ID
     'math_500': {'few_shot_num': 0 } ,
-    'gpqa_diamond': {'few_shot_num': 0},
+    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```

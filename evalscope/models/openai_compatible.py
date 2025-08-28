@@ -48,9 +48,6 @@ class OpenAICompatibleAPI(ModelAPI):
         self.base_url = base_url or os.environ.get('EVALSCOPE_BASE_URL', None)
         assert self.base_url, f'Base URL for {model_name} not found'
 
-        # remove trailing slash from base_url
-        self.base_url = self.base_url.rstrip('/').rstrip('/chat/completions')
-
         # create http client
         self.client = OpenAI(
             api_key=self.api_key,

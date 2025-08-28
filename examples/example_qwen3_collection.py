@@ -20,7 +20,7 @@ def generate_collection():
             DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
             DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
             DatasetInfo(name='aime25', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-            DatasetInfo(name='gpqa_diamond', weight=1, task_type='knowledge', tags=['en'], args={'few_shot_num': 0})
+            DatasetInfo(name='gpqa_diamond', weight=1, task_type='knowledge', tags=['en'], args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0})
         ])
     ])
 
@@ -40,7 +40,7 @@ def run_test_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'evalscope/Qwen3-Test-Collection',
+                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
                 'filters': {'remove_until': '</think>'}  # 过滤掉思考的内容
             }
         },
@@ -70,7 +70,7 @@ def run_test_no_think():
         ],
         dataset_args={
             'data_collection': {
-                'dataset_id': 'evalscope/Qwen3-Test-Collection',
+                'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
             }
         },
         eval_batch_size=128,
@@ -80,7 +80,7 @@ def run_test_no_think():
             'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
             'top_k': 20,  # top-k采样 (qwen 报告推荐值)
             'n': 1,  # 每个请求产生的回复数量
-            'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
+            'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
         },
         judge_worker_num=1,
         timeout=60000,  # 超时时间

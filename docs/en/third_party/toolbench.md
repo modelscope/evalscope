@@ -31,7 +31,7 @@ task_cfg = TaskConfig(
         'temperature': 0.7,      # Sampling temperature (recommended value by qwen)
         'top_p': 0.8,            # Top-p sampling (recommended value by qwen)
         'top_k': 20,             # Top-k sampling (recommended value by qwen)
-        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # Disable thinking mode
+        'chat_template_kwargs': {'enable_thinking': False}  # Disable thinking mode
     }
 )
 

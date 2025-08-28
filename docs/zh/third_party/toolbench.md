@@ -30,7 +30,7 @@ task_cfg = TaskConfig(
         'temperature': 0.7,  # 采样温度 (qwen 报告推荐值)
         'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
         'top_k': 20,  # top-k采样 (qwen 报告推荐值)
-        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
+        'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
     }
 )
 

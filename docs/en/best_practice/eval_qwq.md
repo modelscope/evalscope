@@ -82,12 +82,12 @@ If you want to run the model on [other datasets](../get_started/supported_datase
 ```python
 datasets=[
     # 'math_500',  # Dataset name
-    'gpqa_diamond',
+    'gpqa',
     'aime24'
 ],
 dataset_args={
     # 'math_500': {'few_shot_num': 0 } ,
-    'gpqa_diamond': {'few_shot_num': 0},
+    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```

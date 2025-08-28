@@ -14,6 +14,7 @@ else:
             'gen_table',
             'get_data_frame',
             'get_report_list',
+            'gen_report_table',
         ],
         'generator': [
             'ReportGenerator',
