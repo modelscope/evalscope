@@ -20,7 +20,7 @@ class BlipBase(BaseModel):
 
     @classmethod
     def init_tokenizer(cls):
-        tokenizer = AutoTokenizer.from_pretrained('AI-ModelScope/bert-base-uncased')
+        tokenizer = AutoTokenizer.from_pretrained('AI-ModelScope/bert-base-uncased', trust_remote_code=True)
         tokenizer.add_special_tokens({'bos_token': '[DEC]'})
         tokenizer.add_special_tokens({'additional_special_tokens': ['[ENC]']})
         tokenizer.enc_token_id = tokenizer.additional_special_tokens_ids[0]
