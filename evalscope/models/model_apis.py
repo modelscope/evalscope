@@ -45,3 +45,10 @@ def text2image() -> type[ModelAPI]:
     from .text2image_model import Text2ImageAPI
 
     return Text2ImageAPI
+
+
+@register_model_api(name='image_editing')
+def image_editing() -> type[ModelAPI]:
+    from .image_edit_model import ImageEditAPI
+
+    return ImageEditAPI

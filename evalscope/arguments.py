@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from evalscope.constants import EvalBackend, EvalType, JudgeStrategy, ModelTask, OutputType
+from evalscope.constants import EvalBackend, EvalType, JudgeStrategy, ModelTask
 
 
 class ParseStrArgsAction(argparse.Action):

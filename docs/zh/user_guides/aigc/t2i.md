@@ -38,11 +38,12 @@ pip install evalscope[aigc] -U
 下面展示使用modelscope的Stable Diffusion XL模型在`tifa160`上使用默认指标进行评测的示例代码：
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.constants import ModelTask
+from evalscope.constants import ModelTask, EvalType
 
 task_cfg = TaskConfig(
     model='stabilityai/stable-diffusion-xl-base-1.0',  # model id on modelscope
     model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    eval_type=EvalType.TEXT2IMAGE,
     model_args={
         'pipeline_cls': 'DiffusionPipeline',
         'use_safetensors': True,
@@ -157,10 +158,12 @@ run_task(task_cfg=task_cfg)
 
 ```python
 from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType, ModelTask
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
-    model_task='image_generation',  # must be 'image_generation'
+    model_task=ModelTask.IMAGE_GENERATION,
+    eval_type=EvalType.TEXT2IMAGE,
     datasets=[
         'general_t2i'
     ],
@@ -227,10 +230,12 @@ run_task(task_cfg=task_cfg)
 
 ```python
 from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType, ModelTask
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
-    model_task='image_generation',  # must be 'image_generation'
+    model_task=ModelTask.IMAGE_GENERATION,
+    eval_type=EvalType.TEXT2IMAGE,
     datasets=[
         'evalmuse',
     ],

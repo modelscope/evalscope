@@ -1,9 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from dotenv import dotenv_values
 
 env = dotenv_values('.env')
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import unittest
 
 from evalscope.perf.main import run_perf_benchmark

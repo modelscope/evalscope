@@ -25,13 +25,13 @@ from evalscope.api.model import (
     TopLogprob,
 )
 from evalscope.api.tool import ToolChoice, ToolInfo
-from evalscope.utils.io_utils import PIL_to_base64
+from evalscope.utils.io_utils import PIL_to_base64, base64_to_PIL
 from evalscope.utils.model_utils import get_device
 
 logger = getLogger()
 
 
-class Text2ImageAPI(ModelAPI):
+class ImageEditAPI(ModelAPI):
 
     def __init__(
         self,
@@ -70,10 +70,11 @@ class Text2ImageAPI(ModelAPI):
         self.pipeline_cls = collect_model_arg('pipeline_cls')
         # default to DiffusionPipeline if not specified
         if self.pipeline_cls is None:
-            if 'flux' in model_name.lower():
-                self.pipeline_cls = 'FluxPipeline'
+            if 'qwen' in model_name.lower():
+                self.pipeline_cls = 'QwenImageEditPipeline'
             else:
-                self.pipeline_cls = 'DiffusionPipeline'
+                logger.error('Pipeline class not found. Please provide a valid `pipeline_cls` in model args.')
+                raise ValueError('Invalid pipeline class.')
 
         model_name_or_path = model_path or model_name
 
@@ -99,21 +100,21 @@ class Text2ImageAPI(ModelAPI):
 
         # prepare generator
         kwargs: Dict[str, Any] = {}
-        if config.height is not None:
-            kwargs['height'] = config.height
-        if config.width is not None:
-            kwargs['width'] = config.width
         if config.num_inference_steps is not None:
             kwargs['num_inference_steps'] = config.num_inference_steps
-        if config.guidance_scale is not None:
-            kwargs['guidance_scale'] = config.guidance_scale
-        # update with extra model parameters
         kwargs.update(config.model_extra)
 
         # assume the first text as prompt
-        prompt = input[0].text
+        content = input[0].content
+        assert isinstance(content[0], ContentText) and isinstance(content[1], ContentImage), \
+            'Invalid content types, expected (ContentText, ContentImage)'
+
+        prompt = content[0].text
+        input_image_base64 = content[1].image
+        input_image = base64_to_PIL(input_image_base64)
         # get the first image as output
-        image = self.model(prompt=prompt, **kwargs).images[0]
+        output = self.model(image=input_image, prompt=prompt, **kwargs)
+        image = output.images[0]
 
         image_base64 = PIL_to_base64(image)
 

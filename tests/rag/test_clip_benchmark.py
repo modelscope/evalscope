@@ -1,8 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 import os
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import subprocess
 import unittest
 

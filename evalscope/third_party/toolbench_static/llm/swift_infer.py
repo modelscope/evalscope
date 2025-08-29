@@ -1,9 +1,5 @@
-import os
 from dataclasses import dataclass
-from swift.llm import InferEngine, InferRequest, PtEngine, RequestConfig, get_template
 
-# 设置GPU环境变量
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 @dataclass
 class SwiftInferArgs:

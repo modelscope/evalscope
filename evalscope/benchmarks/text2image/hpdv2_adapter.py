@@ -41,7 +41,10 @@ class HPDv2Adapter(Text2ImageAdapter):
         return Sample(
             input=[ChatMessageUser(content=record['prompt'])],
             metadata={
+                'id': record['id'],
+                'prompt': record['prompt'],
                 'category': record.get('tags', {}).get('category', ''),
-                'tags': record.get('tags', {})
+                'tags': record.get('tags', {}),
+                'image_path': record.get('image_path', ''),  # Optional field for existing image path
             }
         )

@@ -2,6 +2,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.constants import JudgeScoreType
 from evalscope.utils.logger import get_logger
 
@@ -109,20 +110,31 @@ class LLMJudge:
             config=GenerateConfig(**self.generation_config),
         )
 
-    def judge(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def judge(
+        self,
+        prompt: str = '',
+        system_prompt: Optional[str] = None,
+        messages: Optional[List[ChatMessage]] = None
+    ) -> str:
         """
+        Generate a response from the LLM based on the provided prompt and context.
+        If messages is provided, it will be used as the input context.
+
         Args:
             prompt (str): The prompt to evaluate
             system_prompt (str, optional): The system prompt to use for the evaluation
+            messages (List[ChatMessage], optional): A list of chat messages to include in the evaluation
         Returns:
             str: The response from the LLM
         """
-        from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
-
-        system_content = system_prompt or self.system_prompt
-        input_messages = [ChatMessageUser(content=prompt)]
-        if system_content:
-            input_messages.insert(0, ChatMessageSystem(content=system_content))
+        # parse messages
+        if messages is not None:
+            input_messages = messages
+        else:
+            system_content = system_prompt or self.system_prompt
+            input_messages = [ChatMessageUser(content=prompt)]
+            if system_content:
+                input_messages.insert(0, ChatMessageSystem(content=system_content))
         try:
             # Send request using ServerModelAdapter
             response = self.model.generate(input_messages)
