@@ -54,3 +54,12 @@ class TestImageEditBenchmark(TestBenchmark):
             }
         }
         self._run_dataset_test('gedit', dataset_args=dataset_args, use_cache='outputs/20250829_150058')
+
+    def test_gedit_local(self):
+        dataset_args = {
+            'extra_params':{
+                'language': 'cn',
+                'local_file': '',
+            }
+        }
+        self._run_dataset_test('gedit', dataset_args=dataset_args, model=None, model_id='offline_model')

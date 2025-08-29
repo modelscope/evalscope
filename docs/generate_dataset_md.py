@@ -191,7 +191,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> st
 
     # Add technical information
     technical_info = [
-        f'- **{text["supported_output_formats"]}**: {wrap_key_words(data_adapter.output_types)}',
+        # f'- **{text["supported_output_formats"]}**: {wrap_key_words(data_adapter.output_types)}',
     ]
     
     # Add extra parameters
@@ -258,6 +258,7 @@ def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -
 def get_adapters():
     from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 
+    print('Getting DataAdapters...')
     # 获取所有DataAdapter实例
     adapters = defaultdict(list)
     for benchmark in tqdm(BENCHMARK_REGISTRY.values()):
@@ -273,7 +274,8 @@ def generate_docs(category: str, adapter_list:List[DataAdapter]):
     
     CATEGORY = category.upper()
     adapter_list.sort(key=lambda x: x.name)  # 按名称排序
-    
+
+    print(f'Generating documentation for {CATEGORY}...')
     markdown_doc = generate_full_documentation(adapter_list, 'zh')
     markdown_doc_en = generate_full_documentation(adapter_list, 'en')
     

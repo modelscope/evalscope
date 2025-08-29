@@ -161,6 +161,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
                 continue
 
         prediction = sample_score.score.prediction
+        # TODO: Parse empty target (image generation)
         target = review_result.target
         extracted_prediction = sample_score.score.extracted_prediction
         score = sample_score.score
