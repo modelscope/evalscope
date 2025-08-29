@@ -15,7 +15,6 @@ from evalscope.constants import (
     HubType,
     JudgeStrategy,
     ModelTask,
-    OutputType,
 )
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
@@ -87,9 +86,6 @@ class TaskConfig(BaseArgument):
         if self.model is None:
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
-        else:
-            if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.eval_type = EvalType.TEXT2IMAGE
 
         # Set model_id if not provided
         if not self.model_id:
@@ -116,6 +112,11 @@ class TaskConfig(BaseArgument):
                     'num_inference_steps': 50,
                     'guidance_scale': 9.0,
                 }
+                if self.eval_batch_size != 1:
+                    logger.warning(
+                        'For image generation task, we only support eval_batch_size=1 for now, changed to 1.'
+                    )
+                    self.eval_batch_size = 1
             elif self.model_task == ModelTask.TEXT_GENERATION:
                 if self.eval_type == EvalType.CHECKPOINT:
                     self.generation_config = {

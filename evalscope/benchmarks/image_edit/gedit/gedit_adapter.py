@@ -10,7 +10,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageUser, Content, Conten
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import FileConstants, Tags
-from evalscope.utils.io_utils import PIL_to_base64
+from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -26,13 +26,16 @@ SUBSET_LIST = [
         name='gedit',
         pretty_name='GEdit-Bench',
         dataset_id='stepfun-ai/GEdit-Bench',
-        description='GEdit-Bench Image Editing Benchmark',
+        description='GEdit-Bench Image Editing Benchmark, grounded in real-world '
+        'usages is developed to support more authentic and '
+        'comprehensive evaluation of image editing models.',
         tags=[Tags.IMAGE_EDITING],
         subset_list=SUBSET_LIST,
+        metric_list=['Semantic Consistency', 'Perceptual Similarity'],
         few_shot_num=0,
         train_split=None,
         eval_split='train',
-        extra_params={'language': '[choose `en` or `zh`, default `en`]'}
+        extra_params={'language': '# language of the instruction, choose `en` or `cn`, default to `en`'}
     )
 )
 class GEditAdapter(ImageEditAdapter):
@@ -60,7 +63,8 @@ class GEditAdapter(ImageEditAdapter):
 
         # Process instruction and image
         instruction = record['instruction']
-        input_image = PIL_to_base64(record['input_image'])
+        image_bytes = record['input_image']['bytes']
+        input_image = bytes_to_base64(image_bytes, format='png', add_header=True)
         record['input_image'] = input_image
         record[FileConstants.ID] = record['key']
         del record['input_image_raw']
@@ -83,29 +87,47 @@ class GEditAdapter(ImageEditAdapter):
 
         from .utils import mllm_output_to_dict
 
+        metadata = task_state.metadata
+        text_prompt = metadata['instruction']
+        input_image = metadata['input_image']  # base64 image
+        edited_image = metadata[FileConstants.IMAGE_PATH]  # local image path
         _SC_prompt = self.SC_prompt.replace('<instruction>', text_prompt)
-        SC_prompt_final = self.model.prepare_prompt(image_prompts, _SC_prompt)
-        PQ_prompt_final = self.model.prepare_prompt(image_prompts[-1], self.PQ_prompt)
 
-        results_dict = {}
+        # Initialize the score object with prediction details
+        score = Score(
+            extracted_prediction=edited_image,
+            prediction=edited_image,
+        )
 
-        SC_dict = False
-        PQ_dict = False
-        tries = 0
-        max_tries = 1
-        while SC_dict is False or PQ_dict is False:
-            tries += 1
-            guess_if_cannot_parse = True if tries > max_tries else False
-            result_SC = self.llm_judge.judge(SC_prompt_final)
-            result_PQ = self.llm_judge.judge(PQ_prompt_final)
-            SC_dict = mllm_output_to_dict(result_SC, give_up_parsing=guess_if_cannot_parse)
-            PQ_dict = mllm_output_to_dict(result_PQ, give_up_parsing=guess_if_cannot_parse)
+        # Build prompts
+        SC_prompt_final = [
+            ChatMessageUser(
+                content=[
+                    ContentImage(image=input_image),
+                    ContentImage(image=edited_image),
+                    ContentText(text=_SC_prompt)
+                ]
+            )
+        ]
+        PQ_prompt_final = [
+            ChatMessageUser(content=[ContentImage(image=edited_image),
+                                     ContentText(text=self.PQ_prompt)])
+        ]
 
-        SC_score = min(results_dict['SC']['score'])
-        PQ_score = min(results_dict['PQ']['score'])
+        guess_if_cannot_parse = True
+        result_SC = self.llm_judge.judge(messages=SC_prompt_final)
+        result_PQ = self.llm_judge.judge(messages=PQ_prompt_final)
+        SC_dict = mllm_output_to_dict(result_SC, give_up_parsing=guess_if_cannot_parse)
+        PQ_dict = mllm_output_to_dict(result_PQ, give_up_parsing=guess_if_cannot_parse)
+
+        SC_score = min(SC_dict['score'])
+        PQ_score = min(PQ_dict['score'])
         O_score = math.sqrt(SC_score * PQ_score)
 
-        results_dict['SC'] = SC_dict
-        results_dict['PQ'] = PQ_dict
-        results_dict['O'] = O_score
-        return results_dict
+        score.value = {'Semantic Consistency': SC_score, 'Perceptual Quality': PQ_score, 'Overall': O_score}
+        score.main_score_name = 'Overall'
+        score.metadata = {
+            'SC_dict': SC_dict,
+            'PQ_dict': PQ_dict,
+        }
+        return score

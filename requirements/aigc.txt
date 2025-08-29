@@ -1,4 +1,4 @@
-diffusers
+git+https://github.com/huggingface/diffusers
 iopath
 omegaconf
 open_clip_torch

@@ -25,6 +25,7 @@ class ResponseSchema(BaseModel):
 
 class GenerateConfig(BaseModel):
     """Model generation options."""
+    model_config = {'extra': 'allow'}
 
     timeout: Optional[int] = Field(default=None)
     """Request timeout (in seconds)."""

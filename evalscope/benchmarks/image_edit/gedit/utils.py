@@ -5,6 +5,10 @@ import random
 import regex as re
 from typing import Union
 
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
 
 def fix_json(input_str):
     # Add double quotes around keys using regex
@@ -41,10 +45,10 @@ def read_file_to_string(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     except FileNotFoundError:
-        print(f'The file {file_path} was not found.')
+        logger.info(f'The file {file_path} was not found.')
         return None
     except Exception as e:
-        print(f'An error occurred: {e}')
+        logger.info(f'An error occurred: {e}')
         return None
 
 
@@ -63,9 +67,9 @@ def read_files_to_string(file_paths):
             with open(file_path, 'r', encoding='utf-8') as file:
                 all_contents.append(file.read())
         except FileNotFoundError:
-            print(f'The file {file_path} was not found.')
+            logger.info(f'The file {file_path} was not found.')
         except Exception as e:
-            print(f'An error occurred while reading {file_path}: {e}')
+            logger.info(f'An error occurred while reading {file_path}: {e}')
 
     # Join all the contents with a newline character
     return '\n'.join(all_contents)
@@ -171,7 +175,7 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
 
     if input_string.count(delimiter) == 2:
         if not verify(input_string, delimiter):
-            print('The required delimiters were not found correctly in the string.')
+            logger.info('The required delimiters were not found correctly in the string.')
             return False
         # Extract the content between the delimiters
         start_index = input_string.find(delimiter) + len(delimiter)
@@ -190,7 +194,7 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
             end_index = input_string.rfind(']') + 1
             if give_up_parsing:  # if we want to give up parsing
                 guessed_value = random.randint(0, 10)
-                print(f'Failed to find the json content in the string. Guess a value : {guessed_value}.')
+                logger.info(f'Failed to find the json content in the string. Guess a value : {guessed_value}.')
                 json_content = {'score': [guessed_value], 'reasoning': f'guess_if_cannot_parse | {input_string}'}
                 json_str = json.dumps(json_content)
                 input_string = json_str
@@ -213,7 +217,7 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
                 start_index = 0
                 end_index = len(json_str)
             else:
-                print('Failed to find the json content in the string.')
+                logger.info('Failed to find the json content in the string.')
                 return False
 
     # Check if we found two delimiters
@@ -227,16 +231,16 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
             if not isinstance(new_data['score'], list):
                 new_data['score'] = [new_data['score']]
         except Exception:
-            print('Now fixing: ', json_str)
+            logger.info('Now fixing: ', json_str)
             try:
                 new_data = json.loads(fix_json(json_str))
                 return new_data
             except Exception:
-                print('Error: Cannot fix', json_str)
+                logger.info('Error: Cannot fix', json_str)
                 return False
         return new_data
     else:
-        print('The required delimiters were not found correctly in the string.')
+        logger.info('The required delimiters were not found correctly in the string.')
         return False
 
 
@@ -258,7 +262,7 @@ def write_entry_to_json_file(input_string, uid, prompt_input, vision_input, outp
 
     if input_string.count(delimiter) == 2:
         if not verify(input_string, delimiter):
-            print('The required delimiters were not found correctly in the string.')
+            logger.info('The required delimiters were not found correctly in the string.')
             return False
         # Extract the content between the delimiters
         start_index = input_string.find(delimiter) + len(delimiter)
@@ -277,7 +281,7 @@ def write_entry_to_json_file(input_string, uid, prompt_input, vision_input, outp
             end_index = input_string.rfind(']') + 1
             if give_up_parsing:  # if we want to give up parsing
                 guessed_value = random.randint(0, 10)
-                print(f'Failed to find the json content in the string. Guess a value : {guessed_value}.')
+                logger.info(f'Failed to find the json content in the string. Guess a value : {guessed_value}.')
                 json_content = {'score': [guessed_value], 'reasoning': f'guess_if_cannot_parse | {input_string}'}
                 json_str = json.dumps(json_content)
                 input_string = json_str
@@ -298,7 +302,7 @@ def write_entry_to_json_file(input_string, uid, prompt_input, vision_input, outp
                 start_index = 0
                 end_index = len(json_str)
             else:
-                print('Failed to find the json content in the string.')
+                logger.info('Failed to find the json content in the string.')
                 return False
 
     # Check if we found two delimiters
@@ -339,13 +343,13 @@ def write_entry_to_json_file(input_string, uid, prompt_input, vision_input, outp
             with open(output_file_name, 'w') as json_file:
                 json.dump(data, json_file, indent=4)
 
-            print(f'Data was successfully updated in {output_file_name}')
+            logger.info(f'Data was successfully updated in {output_file_name}')
             return True
         except json.JSONDecodeError as e:
-            print(f'An error occurred while parsing the JSON content: {e}')
+            logger.info(f'An error occurred while parsing the JSON content: {e}')
             return False
     else:
-        print('The required delimiters were not found correctly in the string.')
+        logger.info('The required delimiters were not found correctly in the string.')
         return False
 
 
@@ -360,9 +364,9 @@ def check_key_in_json(file_path, key):
         else:
             return False
     except FileNotFoundError:
-        print(f'The file {file_path} was not found.')
+        logger.info(f'The file {file_path} was not found.')
     except json.JSONDecodeError as e:
-        print(f'Error reading {file_path}: {e}')
+        logger.info(f'Error reading {file_path}: {e}')
     except Exception as e:
-        print(f'An error occurred with {file_path}: {e}')
+        logger.info(f'An error occurred with {file_path}: {e}')
     return False

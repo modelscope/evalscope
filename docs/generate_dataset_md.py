@@ -1,9 +1,16 @@
 import json
 import os
+from collections import defaultdict
 from tqdm import tqdm
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import DataAdapter
+from evalscope.api.benchmark import (
+    DataAdapter,
+    DefaultDataAdapter,
+    ImageEditAdapter,
+    MultiChoiceAdapter,
+    Text2ImageAdapter,
+)
 
 # Language dictionaries for dataset markdown generation
 DATASET_DETAIL_LOCALE = {
@@ -77,14 +84,16 @@ DATASET_DETAIL_LOCALE = {
     }
 }
 
+CATEGORY = 'LLM'
+
 DOCUMENT_LOCALE = {
     'title': {
-        'zh': 'LLM评测集',
-        'en': 'LLM Benchmarks'
+        'zh': f'{CATEGORY}评测集',
+        'en': f'{CATEGORY} Benchmarks'
     },
     'intro': {
-        'zh': '以下是支持的LLM评测集列表，点击数据集标准名称可跳转详细信息。',
-        'en': 'Below is the list of supported LLM benchmarks. Click on a benchmark name to jump to details.'
+        'zh': f'以下是支持的{CATEGORY}评测集列表，点击数据集标准名称可跳转详细信息。',
+        'en': f'Below is the list of supported {CATEGORY} benchmarks. Click on a benchmark name to jump to details.'
     },
     'dataset_name': {
         'zh': '数据集名称',
@@ -246,28 +255,39 @@ def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -
     
     return '\n'.join(index + details)
 
-if __name__ == '__main__':
-    # 示例用法
+def get_adapters():
     from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
-    
-    aigc_benchmarks = ['evalmuse', 'genai_bench', 'general_t2i', 'general_i2i', 'hpdv2', 'tifa160', 'data_collection']
-    # 获取所有DataAdapter实例
-    adapters: List[DataAdapter] = []
-    for benchmark in tqdm(BENCHMARK_REGISTRY.values()):
-        if benchmark.name not in aigc_benchmarks:
-            adapters.append(get_benchmark(benchmark.name))
 
-    adapters.sort(key=lambda x: x.name)  # 按名称排序
+    # 获取所有DataAdapter实例
+    adapters = defaultdict(list)
+    for benchmark in tqdm(BENCHMARK_REGISTRY.values()):
+        adapter = get_benchmark(benchmark.name)
+        if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
+            adapters['aigc'].append(adapter)
+        else:
+            adapters['llm'].append(adapter)
+
+    return adapters
+
+def generate_docs(category: str, adapter_list:List[DataAdapter]):
     
-    # 生成完整文档
-    markdown_doc = generate_full_documentation(adapters, 'zh')
-    markdown_doc_en = generate_full_documentation(adapters, 'en')
+    CATEGORY = category.upper()
+    adapter_list.sort(key=lambda x: x.name)  # 按名称排序
+    
+    markdown_doc = generate_full_documentation(adapter_list, 'zh')
+    markdown_doc_en = generate_full_documentation(adapter_list, 'en')
     
     # 输出到文件
-    with open('docs/zh/get_started/supported_dataset/llm.md', 'w', encoding='utf-8') as f:
+    with open(f'docs/zh/get_started/supported_dataset/{category}.md', 'w', encoding='utf-8') as f:
         f.write(markdown_doc)
 
-    with open('docs/en/get_started/supported_dataset/llm.md', 'w', encoding='utf-8') as f:
+    with open(f'docs/en/get_started/supported_dataset/{category}.md', 'w', encoding='utf-8') as f:
         f.write(markdown_doc_en)
-        
-    print('Done')
+
+    print(f'{CATEGORY} Done')
+
+if __name__ == '__main__':
+
+    adapter_dict = get_adapters()
+    for category, adapters in adapter_dict.items():
+        generate_docs(category, adapters)
