@@ -76,6 +76,7 @@ class ImageEditAdapter(Text2ImageAdapter):
         if not self.local_data:
             return True
         else:
-            if (not sample.metadata) or (not sample.metadata.get(FileConstants.IMAGE_PATH)):
+            sample_id = sample.metadata.get(FileConstants.ID)
+            if (not sample_id) or (not self.get_image_path_from_id(sample_id)):
                 return False
             return True

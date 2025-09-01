@@ -12,106 +12,109 @@ from evalscope.api.benchmark import (
     Text2ImageAdapter,
 )
 
+
 # Language dictionaries for dataset markdown generation
-DATASET_DETAIL_LOCALE = {
-    'back_to_top': {
-        'zh': '返回目录',
-        'en': 'Back to Top'
-    },
-    'toc_title': {
-        'zh': 'LLM评测集',
-        'en': 'LLM Benchmarks'
-    },
-    'dataset_name': {
-        'zh': '数据集名称',
-        'en': 'Dataset Name'
-    },
-    'dataset_id': {
-        'zh': '数据集ID',
-        'en': 'Dataset ID'
-    },
-    'description': {
-        'zh': '数据集描述',
-        'en': 'Description'
-    },
-    'task_categories': {
-        'zh': '任务类别',
-        'en': 'Task Categories'
-    },
-    'evaluation_metrics': {
-        'zh': '评估指标',
-        'en': 'Evaluation Metrics'
-    },
-    'requires_llm_judge': {
-        'zh': '需要LLM Judge',
-        'en': 'Requires LLM Judge'
-    },
-    'default_shots': {
-        'zh': '默认提示方式',
-        'en': 'Default Shots'
-    },
-    'subsets': {
-        'zh': '数据集子集',
-        'en': 'Subsets'
-    },
-    'supported_output_formats': {
-        'zh': '支持输出格式',
-        'en': 'Supported Output Formats'
-    },
-    'extra_parameters': {
-        'zh': '额外参数',
-        'en': 'Extra Parameters'
-    },
-    'system_prompt': {
-        'zh': '系统提示词',
-        'en': 'System Prompt'
-    },
-    'prompt_template': {
-        'zh': '提示模板',
-        'en': 'Prompt Template'
-    },
-    'yes': {
-        'zh': '是',
-        'en': 'Yes'
-    },
-    'no': {
-        'zh': '否',
-        'en': 'No'
-    },
-    'no_description': {
-        'zh': '暂无详细描述',
-        'en': 'No detailed description available'
+def get_dataset_detail_locale_dict(category: str):
+    """Get dataset detail locale dictionary with category"""
+    return {
+        'back_to_top': {
+            'zh': '返回目录',
+            'en': 'Back to Top'
+        },
+        'toc_title': {
+            'zh': f'{category}评测集',
+            'en': f'{category} Benchmarks'
+        },
+        'dataset_name': {
+            'zh': '数据集名称',
+            'en': 'Dataset Name'
+        },
+        'dataset_id': {
+            'zh': '数据集ID',
+            'en': 'Dataset ID'
+        },
+        'description': {
+            'zh': '数据集描述',
+            'en': 'Description'
+        },
+        'task_categories': {
+            'zh': '任务类别',
+            'en': 'Task Categories'
+        },
+        'evaluation_metrics': {
+            'zh': '评估指标',
+            'en': 'Evaluation Metrics'
+        },
+        'requires_llm_judge': {
+            'zh': '需要LLM Judge',
+            'en': 'Requires LLM Judge'
+        },
+        'default_shots': {
+            'zh': '默认提示方式',
+            'en': 'Default Shots'
+        },
+        'subsets': {
+            'zh': '数据集子集',
+            'en': 'Subsets'
+        },
+        'supported_output_formats': {
+            'zh': '支持输出格式',
+            'en': 'Supported Output Formats'
+        },
+        'extra_parameters': {
+            'zh': '额外参数',
+            'en': 'Extra Parameters'
+        },
+        'system_prompt': {
+            'zh': '系统提示词',
+            'en': 'System Prompt'
+        },
+        'prompt_template': {
+            'zh': '提示模板',
+            'en': 'Prompt Template'
+        },
+        'yes': {
+            'zh': '是',
+            'en': 'Yes'
+        },
+        'no': {
+            'zh': '否',
+            'en': 'No'
+        },
+        'no_description': {
+            'zh': '暂无详细描述',
+            'en': 'No detailed description available'
+        }
     }
-}
 
-CATEGORY = 'LLM'
-
-DOCUMENT_LOCALE = {
-    'title': {
-        'zh': f'{CATEGORY}评测集',
-        'en': f'{CATEGORY} Benchmarks'
-    },
-    'intro': {
-        'zh': f'以下是支持的{CATEGORY}评测集列表，点击数据集标准名称可跳转详细信息。',
-        'en': f'Below is the list of supported {CATEGORY} benchmarks. Click on a benchmark name to jump to details.'
-    },
-    'dataset_name': {
-        'zh': '数据集名称',
-        'en': 'Benchmark Name'
-    },
-    'pretty_name': {
-        'zh': '标准名称',
-        'en': 'Pretty Name'
-    },
-    'task_categories': {
-        'zh': '任务类别',
-        'en': 'Task Categories'
-    },
-    'details_title': {
-        'zh': '数据集详情',
-        'en': 'Benchmark Details'
+def get_document_locale_dict(category: str):
+    """Get document locale dictionary with category"""
+    return {
+        'title': {
+            'zh': f'{category}评测集',
+            'en': f'{category} Benchmarks'
+        },
+        'intro': {
+            'zh': f'以下是支持的{category}评测集列表，点击数据集标准名称可跳转详细信息。',
+            'en': f'Below is the list of supported {category} benchmarks. Click on a benchmark name to jump to details.'
+        },
+        'dataset_name': {
+            'zh': '数据集名称',
+            'en': 'Benchmark Name'
+        },
+        'pretty_name': {
+            'zh': '标准名称',
+            'en': 'Pretty Name'
+        },
+        'task_categories': {
+            'zh': '任务类别',
+            'en': 'Task Categories'
+        },
+        'details_title': {
+            'zh': '数据集详情',
+            'en': 'Benchmark Details'
+        }
     }
-}
 
 def wrap_key_words(keywords: list[str]) -> str:
     """
@@ -135,27 +138,30 @@ def process_dictionary(data: dict) -> str:
     """
     return json.dumps(data, ensure_ascii=False, indent=4)
     
-def get_dataset_detail_locale(lang: str) -> Dict[str, str]:
+def get_dataset_detail_locale(category: str, lang: str) -> Dict[str, str]:
     """Get localized strings for dataset details"""
-    return {k: v[lang] for k, v in DATASET_DETAIL_LOCALE.items()}
+    locale_dict = get_dataset_detail_locale_dict(category)
+    return {k: v[lang] for k, v in locale_dict.items()}
 
-def get_document_locale(lang: str) -> Dict[str, str]:
+def get_document_locale(category: str, lang: str) -> Dict[str, str]:
     """Get localized strings for document structure"""
-    return {k: v[lang] for k, v in DOCUMENT_LOCALE.items()}
+    locale_dict = get_document_locale_dict(category)
+    return {k: v[lang] for k, v in locale_dict.items()}
 
-def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> str:
+def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: str = 'zh') -> str:
     """
     Generate a well-formatted Markdown benchmark introduction based on a DataAdapter instance
     
     Args:
         data_adapter (DataAdapter): Dataset adapter instance
+        category (str): Category name (e.g., 'LLM', 'AIGC')
         lang (str): Language code ('zh' for Chinese, 'en' for English)
         
     Returns:
         str: Formatted Markdown string
     """
     # Get localized text
-    text = get_dataset_detail_locale(lang)
+    text = get_dataset_detail_locale(category, lang)
     
     # Get basic information
     name = data_adapter.name
@@ -207,19 +213,20 @@ def generate_dataset_markdown(data_adapter: DataAdapter, lang: str = 'zh') -> st
 
     return '\n'.join(details + [''] + technical_info + [''])
 
-def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -> str:
+def generate_full_documentation(adapters: list[DataAdapter], category: str, lang: str = 'zh') -> str:
     """
     Generate complete Markdown documentation with index and all benchmark details
     
     Args:
         adapters (list[DataAdapter]): List of DataAdapter instances
+        category (str): Category name (e.g., 'LLM', 'AIGC')
         lang (str): Language code ('zh' for Chinese, 'en' for English)
         
     Returns:
         str: Complete Markdown document
     """
     # Get localized text
-    text = get_document_locale(lang)
+    text = get_document_locale(category, lang)
     
     # Generate index
     index = [
@@ -248,7 +255,7 @@ def generate_full_documentation(adapters: list[DataAdapter], lang: str = 'zh') -
     ]
 
     for i, adapter in enumerate(adapters):
-        details.append(generate_dataset_markdown(adapter, lang))
+        details.append(generate_dataset_markdown(adapter, category, lang))
         if i < len(adapters) - 1:
             details.append('---')
             details.append('')
@@ -271,13 +278,19 @@ def get_adapters():
     return adapters
 
 def generate_docs(category: str, adapter_list:List[DataAdapter]):
+    """
+    Generate documentation for a specific category
     
-    CATEGORY = category.upper()
+    Args:
+        category (str): Category name (e.g., 'llm', 'aigc')
+        adapter_list (List[DataAdapter]): List of adapters for this category
+    """
+    category_upper = category.upper()
     adapter_list.sort(key=lambda x: x.name)  # 按名称排序
 
-    print(f'Generating documentation for {CATEGORY}...')
-    markdown_doc = generate_full_documentation(adapter_list, 'zh')
-    markdown_doc_en = generate_full_documentation(adapter_list, 'en')
+    print(f'Generating documentation for {category_upper}...')
+    markdown_doc = generate_full_documentation(adapter_list, category_upper, 'zh')
+    markdown_doc_en = generate_full_documentation(adapter_list, category_upper, 'en')
     
     # 输出到文件
     with open(f'docs/zh/get_started/supported_dataset/{category}.md', 'w', encoding='utf-8') as f:
@@ -286,7 +299,7 @@ def generate_docs(category: str, adapter_list:List[DataAdapter]):
     with open(f'docs/en/get_started/supported_dataset/{category}.md', 'w', encoding='utf-8') as f:
         f.write(markdown_doc_en)
 
-    print(f'{CATEGORY} Done')
+    print(f'{category_upper} Done')
 
 if __name__ == '__main__':
 

@@ -14,8 +14,9 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='genai_bench',
+        pretty_name='GenAI-Bench',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='GenAI-Bench Text-to-Image Benchmark',
+        description='GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.',
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['GenAI-Bench-1600'],
         metric_list=['VQAScore'],

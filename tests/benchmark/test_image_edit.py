@@ -59,7 +59,7 @@ class TestImageEditBenchmark(TestBenchmark):
         dataset_args = {
             'extra_params':{
                 'language': 'cn',
-                'local_file': '',
+                'local_file': 'outputs/example_edit.jsonl',
             }
         }
         self._run_dataset_test('gedit', dataset_args=dataset_args, model=None, model_id='offline_model')

@@ -15,7 +15,7 @@
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
-| `data_collection` | [data_collection](#data_collection) |  |
+| `data_collection` | [data_collection](#data_collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
@@ -305,7 +305,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集ID**: 
 - **数据集描述**:  
   > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
-- **任务类别**: 
+- **任务类别**: `Custom`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
