@@ -164,6 +164,13 @@ class CrossEncoderModel(BaseModel):
             max_length=self.max_seq_length,
             automodel_args=self.model_kwargs,
         )
+        self.tokenizer = self.model.tokenizer
+        # set pad token
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        if ('pad_token_id' not in self.model.config) or (self.model.config.pad_token_id is None):
+            self.model.config.update({'pad_token_id': self.tokenizer.eos_token_id})
+
         self.supported_encode_params = get_supported_params(self.model.predict)
 
     def predict(self, sentences: List[List[str]], **kwargs) -> Tensor:
@@ -189,6 +196,7 @@ class APIEmbeddingModel(BaseModel):
         self.openai_api_base = kwargs.get('api_base')
         self.openai_api_key = kwargs.get('api_key')
         self.dimensions = kwargs.get('dimensions')
+        self.check_embedding_ctx_length = kwargs.get('check_embedding_ctx_length', False)
         self.framework = ['API']
 
         self.model = OpenAIEmbeddings(
@@ -196,7 +204,7 @@ class APIEmbeddingModel(BaseModel):
             openai_api_base=self.openai_api_base,
             openai_api_key=self.openai_api_key,
             dimensions=self.dimensions,
-            check_embedding_ctx_length=False
+            check_embedding_ctx_length=self.check_embedding_ctx_length,
         )
 
         super().__init__(model_name_or_path=self.model_name, **kwargs)
