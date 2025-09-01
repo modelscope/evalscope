@@ -42,6 +42,8 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         try:
             for messages in message_generator.build_messages():
                 dataset_messages.append(messages)
+                if len(dataset_messages) >= args.number:
+                    break
         except StopIteration:
             pass
 
