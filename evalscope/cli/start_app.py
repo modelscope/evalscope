@@ -28,6 +28,12 @@ class StartAppCMD(CLICommand):
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
-        from evalscope.app import create_app
+        try:
+            from evalscope.app import create_app
+        except ImportError as e:
+            raise ImportError(
+                f'Failed to import create_app from evalscope.app, due to {e}. '
+                "Please run `pip install 'evalscope[app]'`."
+            )
 
         create_app(self.args)

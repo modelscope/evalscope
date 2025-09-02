@@ -2,11 +2,9 @@
 Text processing utilities for the Evalscope dashboard.
 """
 import json
-import numpy as np
 import os
-import pandas as pd
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.utils.logger import get_logger
 from ..constants import LATEX_DELIMITERS
@@ -14,15 +12,19 @@ from ..constants import LATEX_DELIMITERS
 logger = get_logger()
 
 
-def convert_markdown_image(text):
-    if not os.path.isfile(text):
-        return text
-    # Convert the image path to a markdown image tag
-    if text.endswith('.png') or text.endswith('.jpg') or text.endswith('.jpeg'):
-        text = os.path.abspath(text)
-        image_tag = f'![image](gradio_api/file={text})'
-        logger.debug(f'Converting image path to markdown: {text} -> {image_tag}')
+def convert_markdown_image(text: str):
+    if text.startswith('data:image'):
+        # Convert base64 image data to a markdown image tag
+        image_tag = f'![image]({text})'
+        logger.debug(f'Converting base64 image data to markdown: {text[:30]}... -> {image_tag[:40]}...')
         return image_tag
+    elif os.path.isfile(text):
+        # Convert the image path to a markdown image tag
+        if text.endswith('.png') or text.endswith('.jpg') or text.endswith('.jpeg'):
+            text = os.path.abspath(text)
+            image_tag = f'![image](gradio_api/file={text})'
+            logger.debug(f'Converting image path to markdown: {text} -> {image_tag}')
+            return image_tag
     return text
 
 
@@ -85,7 +87,7 @@ def process_model_prediction_old(item: Any, max_length: int = 2048) -> str:
     return result
 
 
-def process_model_prediction(item: Any, max_length: int = 32000) -> str:
+def process_model_prediction(item: Any, max_length: Optional[int] = None) -> str:
     if isinstance(item, (dict, list)):
         result = json.dumps(item, ensure_ascii=False, indent=2)
         result = f'```json\n{result}\n```'

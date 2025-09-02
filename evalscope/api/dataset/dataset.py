@@ -31,9 +31,6 @@ class Sample(BaseModel):
     tools: Optional[List[ToolInfo]] = None
     """List of tools available to the model during inference (optional)."""
 
-    category: Optional[str] = None
-    """Category of the sample (optional)."""
-
     subset_key: Optional[str] = None
     """Key for the subset this sample belongs to, used for generating subsets (optional)."""
 

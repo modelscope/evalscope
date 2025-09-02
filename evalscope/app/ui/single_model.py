@@ -199,7 +199,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         # Process the data for display
         input_md = row['Input'] + '\n\n' + process_model_prediction(row['Metadata'])
         generated_md = process_model_prediction(row['Generated'])
-        gold_md = process_model_prediction(row['Gold'])
+        gold_md = convert_markdown_image(process_model_prediction(row['Gold']))
         pred_md = convert_markdown_image(process_model_prediction(row['Pred']))
         score_md = process_json_content(row['Score'])
         nscore_val = float(row['NScore']) if not pd.isna(row['NScore']) else 0.0

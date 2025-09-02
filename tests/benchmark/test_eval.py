@@ -4,17 +4,15 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 import unittest
-from unittest import TestCase
 
-from evalscope.config import TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
-from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
+from tests.common import TestBenchmark
 
 logger = get_logger()
 
 
-class TestBenchmark(TestCase):
+class TestNativeBenchmark(TestBenchmark):
     """Benchmark evaluation test cases."""
 
     def setUp(self):
@@ -46,27 +44,6 @@ class TestBenchmark(TestCase):
             'debug': True,
         }
 
-    def _run_dataset_test(self, dataset_name, dataset_args=None, use_mock=False, **config_overrides):
-        """Helper method to run test for a specific dataset."""
-        config = self.base_config.copy()
-        config['datasets'] = [dataset_name]
-
-        if use_mock:
-            config['eval_type'] = EvalType.MOCK_LLM
-
-        # 应用配置覆盖
-        config.update(config_overrides)
-
-        if dataset_args:
-            config['dataset_args'] = {dataset_name: dataset_args}
-
-        task_cfg = TaskConfig(**config)
-        run_task(task_cfg=task_cfg)
-
-    def _run_dataset_load_test(self, dataset_name, dataset_args=None):
-        """Helper method to test dataset loading."""
-
-        self._run_dataset_test(dataset_name, dataset_args, use_mock=True, limit=None)
 
     # Math & Reasoning datasets
     def test_gsm8k(self):

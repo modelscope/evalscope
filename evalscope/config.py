@@ -15,7 +15,6 @@ from evalscope.constants import (
     HubType,
     JudgeStrategy,
     ModelTask,
-    OutputType,
 )
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
@@ -29,49 +28,101 @@ logger = get_logger()
 class TaskConfig(BaseArgument):
     # Model-related arguments
     model: Optional[Union[str, Model, ModelAPI]] = None
+    """The model to be evaluated. Can be a string path, Model object, or ModelAPI object."""
+
     model_id: Optional[str] = None
+    """Unique identifier for the model. Auto-generated from model name if not provided."""
+
     model_args: Dict = field(default_factory=dict)
+    """Additional arguments to pass to the model during initialization."""
+
     model_task: str = ModelTask.TEXT_GENERATION
+    """The type of task the model performs (e.g., text generation, image generation)."""
 
     # Template-related arguments
     chat_template: Optional[str] = None
+    """Chat template to use for formatting conversations with the model."""
 
     # Dataset-related arguments
     datasets: List[str] = field(default_factory=list)
+    """List of dataset names to evaluate the model on."""
+
     dataset_args: Dict = field(default_factory=dict)
+    """Additional arguments to pass to datasets during loading."""
+
     dataset_dir: str = DEFAULT_DATASET_CACHE_DIR
+    """Directory where datasets are cached locally."""
+
     dataset_hub: str = HubType.MODELSCOPE
-    repeats: int = 1  # Number of times to repeat the dataset items for k-metrics
+    """Hub platform to download datasets from (e.g., ModelScope, HuggingFace)."""
+
+    repeats: int = 1
+    """Number of times to repeat the dataset items for k-metrics evaluation."""
 
     # Generation configuration arguments
     generation_config: Union[Dict, GenerateConfig] = field(default_factory=dict)
+    """Configuration parameters for text/image generation."""
 
     # Evaluation-related arguments
     eval_type: str = EvalType.CHECKPOINT
+    """Type of evaluation: checkpoint, service, or mock."""
+
     eval_backend: str = EvalBackend.NATIVE
+    """Backend framework to use for evaluation."""
+
     eval_config: Union[str, Dict, None] = None
+    """Additional evaluation configuration parameters."""
+
     limit: Optional[Union[int, float]] = None
+    """Maximum number of samples to evaluate. Can be int (count) or float (fraction)."""
+
     eval_batch_size: int = 1
+    """Batch size for evaluation processing."""
 
     # Cache and working directory arguments
     use_cache: Optional[str] = None
+    """Whether to use cached results and which cache strategy to apply."""
+
     rerun_review: bool = False
+    """Whether to rerun the review process even if results exist."""
+
     work_dir: str = DEFAULT_WORK_DIR
+    """Working directory for storing evaluation results and temporary files."""
 
     # Debug and runtime mode arguments
     ignore_errors: bool = False
+    """Whether to continue evaluation when encountering errors."""
+
     debug: bool = False
+    """Enable debug mode for detailed logging and error reporting."""
+
     seed: Optional[int] = 42
-    api_url: Optional[str] = None  # Only used for server model
-    api_key: Optional[str] = 'EMPTY'  # Only used for server model
-    timeout: Optional[float] = None  # Only used for server model
-    stream: Optional[bool] = None  # Only used for server model
+    """Random seed for reproducible results."""
+
+    api_url: Optional[str] = None
+    """API endpoint URL for server-based model evaluation."""
+
+    api_key: Optional[str] = 'EMPTY'
+    """API key for authenticating with server-based models."""
+
+    timeout: Optional[float] = None
+    """Request timeout in seconds for server-based models."""
+
+    stream: Optional[bool] = None
+    """Whether to use streaming responses for server-based models."""
 
     # LLMJudge arguments
     judge_strategy: str = JudgeStrategy.AUTO
+    """Strategy for LLM-based judgment (auto, single, pairwise)."""
+
     judge_worker_num: int = 1
+    """Number of worker processes for parallel LLM judging."""
+
     judge_model_args: Optional[Dict] = field(default_factory=dict)
+    """Additional arguments for the judge model configuration."""
+
     analysis_report: bool = False
+    """Whether to generate detailed analysis reports after evaluation."""
 
     def __post_init__(self):
         self.__init_model_and_id()
@@ -87,9 +138,6 @@ class TaskConfig(BaseArgument):
         if self.model is None:
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
-        else:
-            if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.eval_type = EvalType.TEXT2IMAGE
 
         # Set model_id if not provided
         if not self.model_id:
@@ -116,6 +164,11 @@ class TaskConfig(BaseArgument):
                     'num_inference_steps': 50,
                     'guidance_scale': 9.0,
                 }
+                if self.eval_batch_size != 1:
+                    logger.warning(
+                        'For image generation task, we only support eval_batch_size=1 for now, changed to 1.'
+                    )
+                    self.eval_batch_size = 1
             elif self.model_task == ModelTask.TEXT_GENERATION:
                 if self.eval_type == EvalType.CHECKPOINT:
                     self.generation_config = {

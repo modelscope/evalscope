@@ -8,7 +8,7 @@ from evalscope.api.messages.content import ContentImage
 from evalscope.api.metric import Score
 from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
 from evalscope.api.registry import get_metric
-from evalscope.constants import EvalType
+from evalscope.constants import EvalType, FileConstants
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
 from .default_data_adapter import DefaultDataAdapter
@@ -27,11 +27,12 @@ class Text2ImageAdapter(DefaultDataAdapter):
         return Sample(
             input=[ChatMessageUser(content=record['prompt'])],
             metadata={
-                'id': record['id'],
                 'prompt': record['prompt'],
                 'category': record.get('category', ''),
                 'tags': record.get('tags', []),
-                'image_path': record.get('image_path', ''),  # Optional field for existing image path
+                FileConstants.ID: record[FileConstants.ID],
+                FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH,
+                                                     ''),  # Optional field for existing image path
             }
         )
 
@@ -83,7 +84,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
         else:
-            image_id = f"{sample.metadata.get('id',sample.id)}_{sample.group_id}"
+            image_id = f'{sample.metadata.get(FileConstants.ID, sample.id)}_{sample.group_id}'
             output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
             if not os.path.exists(os.path.dirname(output_path)):
                 os.makedirs(os.path.dirname(output_path))
@@ -96,7 +97,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
             with open(output_path, 'wb') as f:
                 f.write(base64.b64decode(image_base64))
 
-            sample.metadata['image_path'] = output_path
+            sample.metadata[FileConstants.IMAGE_PATH] = output_path
             return TaskState(
                 model=model.name,
                 sample=sample,
@@ -111,7 +112,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         # Get prediction and prompt from task state
-        image_path = task_state.metadata.get('image_path', original_prediction)
+        image_path = task_state.metadata.get(FileConstants.IMAGE_PATH, original_prediction)
         prompt = task_state.input[0].content
         meta = task_state.metadata
 
