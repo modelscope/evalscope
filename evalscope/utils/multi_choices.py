@@ -1,11 +1,8 @@
 # flake8: noqa: E501
-from __future__ import annotations
-
 import re
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, Union
 
-if TYPE_CHECKING:
-    from evalscope.api.evaluator import Choices, Target, TaskState
+from evalscope.api.evaluator import Choices, Target, TaskState
 
 FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar questions:
 
@@ -84,7 +81,9 @@ def answer_options(choices: Choices) -> str:
     return '\n'.join([f'{answer_character(i)}) {choices[j].value}' for i, j in enumerate(indexes)])
 
 
-def prompt(question: str, choices: Choices, template: str, fewshot: Optional[str] = None) -> str:
+def prompt(question: str, choices: Union[Choices, List[str]], template: str, fewshot: Optional[str] = None) -> str:
+    if isinstance(choices, list):
+        choices = Choices(choices)
 
     choices_text = answer_options(choices)
     letters = ','.join(answer_character(i) for i in range(len(choices)))

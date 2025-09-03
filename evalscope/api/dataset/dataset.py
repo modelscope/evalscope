@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 
 from evalscope.api.messages import ChatMessage, messages_pretty_str
 from evalscope.api.tool import ToolInfo
-from evalscope.utils.multi_choices import answer_character, answer_index
 
 
 class Sample(BaseModel):
@@ -227,6 +226,8 @@ class MemoryDataset(Dataset):
         self._shuffled = True
 
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
+        from evalscope.utils.multi_choices import answer_character
+
         rand = random.Random(seed)
         for sample in self.samples:
             if not sample.choices:
@@ -246,6 +247,8 @@ class MemoryDataset(Dataset):
             sample.target = self._remap_target(sample.target, position_map=position_map)
 
     def _remap_target(self, target: Union[str, List[str]], position_map: Dict[int, str]) -> Union[str, List[str]]:
+        from evalscope.utils.multi_choices import answer_index
+
         if isinstance(target, list):
             return [position_map[answer_index(t)] for t in target]
         else:

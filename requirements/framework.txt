@@ -15,7 +15,6 @@ openai
 overrides
 pandas
 pillow
-pyarrow
 pydantic
 pyyaml>=5.1
 requests
