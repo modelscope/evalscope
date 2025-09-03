@@ -5,10 +5,10 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import PIL_to_base64, bytes_to_base64
+from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
 

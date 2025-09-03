@@ -35,6 +35,7 @@
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -836,6 +837,26 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### MMMU
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mmmu`
+- **数据集ID**: [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary)
+- **数据集描述**:  
+  > MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
+
+- **提示模板**: 
+```text
+{question}
 ```
 
 ---

@@ -35,6 +35,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -836,6 +837,26 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### MMMU
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mmmu`
+- **Dataset ID**: [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary)
+- **Description**:  
+  > MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
+
+- **Prompt Template**: 
+```text
+{question}
 ```
 
 ---
