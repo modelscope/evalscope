@@ -127,7 +127,7 @@ class MMMUAdapter(DefaultDataAdapter):
             raise ValueError(f'Unsupported question type: {question_type}')
 
     @staticmethod
-    def create_content_and_answers_list(record: dict[str, Any], ) -> tuple[list[Content], list[str]]:
+    def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
         Create a list of content elements and a list of answers from a record.
 
