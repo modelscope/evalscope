@@ -35,8 +35,8 @@ logger = get_logger()
             'api_key': 'EMPTY',
             'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'generation_config': {
-                'temperature': 0.7,
-                'max_tokens': 1024
+                'temperature': 0.0,
+                'max_tokens': 4096,
             }
         }
     )
@@ -56,7 +56,7 @@ class TauBenchAdapter(DefaultDataAdapter):
         self.user_model = self.extra_params.get('user_model', 'qwen-plus')
         self.api_key = self.extra_params.get('api_key', 'EMPTY')
         self.api_base = self.extra_params.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
-        self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.7, 'max_tokens': 1024})
+        self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.0, 'max_tokens': 4096})
 
         self._patch_env_completion()
 
@@ -140,15 +140,15 @@ class TauBenchAdapter(DefaultDataAdapter):
 
         try:
             # Parse the prediction to get the reward
-            res = task_state.metadata
-            reward = res.get('reward', 0.0)
+            task_result = task_state.metadata['task_result']
+            reward = task_result.get('reward', 0.0)
 
             score.value = {
                 'Pass^1': float(reward),
             }
             score.explanation = f'Task completed with reward: {reward}'
             score.metadata = {
-                'task_result': res,
+                'task_result': task_result,
                 'env_name': task_state.metadata.get('env_name', 'unknown'),
                 'task_index': task_state.metadata.get('task_index', -1)
             }

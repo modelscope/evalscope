@@ -192,7 +192,6 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 'general_mcq',
-                'general_qa',
                 'iquiz',
             ],
             dataset_args={

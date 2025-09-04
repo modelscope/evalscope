@@ -349,12 +349,16 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_tau_bench(self):
         dataset_args = {
+            'subset_list': [
+                'airline',
+                'retail'
+            ],
             'extra_params': {
                 'user_model': 'qwen-plus',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
-                    'temperature': 0.7,
+                    'temperature': 0.0,
                     'max_tokens': 12000,
                     'stream': True
                 }
