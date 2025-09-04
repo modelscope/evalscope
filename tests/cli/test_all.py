@@ -185,11 +185,13 @@ class TestRun(unittest.TestCase):
     def test_ci_lite(self):
         from evalscope.config import TaskConfig
 
+        api_key = env.get('DASHSCOPE_API_KEY')
+
         task_cfg = TaskConfig(
             model='qwen-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-            api_key= env.get('DASHSCOPE_API_KEY'),
-            eval_type=EvalType.SERVICE,
+            api_key=api_key,
+            eval_type=EvalType.SERVICE if api_key else EvalType.MOCK_LLM,
             datasets=[
                 'general_mcq',
                 'general_qa',
