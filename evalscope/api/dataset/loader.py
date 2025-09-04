@@ -121,12 +121,13 @@ class RemoteDataLoader(DataLoader):
             dataset = dataset.shuffle(seed=self.seed)
 
         # limit if requested
-        if self.limit and len(dataset) < self.limit:
+        if self.limit:
             if isinstance(self.limit, float):
                 self.limit = int(len(dataset) * self.limit)
             elif isinstance(self.limit, int) and self.limit < 0:
                 raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            dataset = dataset.select(range(self.limit))
+            if len(dataset) > self.limit:
+                dataset = dataset.select(range(self.limit))
 
         # convert to list
         dataset = dataset.to_list()
