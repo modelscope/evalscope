@@ -52,7 +52,7 @@ SUBSET_LIST = [
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
 OPEN_PROMPT = """
-Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
 {question}
 
@@ -82,41 +82,36 @@ class MMMUAdapter(DefaultDataAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def record_to_sample(self, record) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question_type = record['question_type']
         content_list, answers_list = MMMUAdapter.create_content_and_answers_list(record)
+
+        metadata = {
+            'id': record['id'],
+            'question_type': record['question_type'],
+            'subfield': record['subfield'],
+            'explanation': record['explanation'],
+            'img_type': record['img_type'],
+            'topic_difficulty': record['topic_difficulty'],
+        }
 
         if question_type == MULTI_CHOICE_TYPE:
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 choices=answers_list,
                 target=record['answer'],
-                metadata={
-                    'id': record['id'],
-                    'question_type': record['question_type'],
-                    'subfield': record['subfield'],
-                    'explanation': record['explanation'],
-                    'img_type': record['img_type'],
-                    'topic_difficulty': record['topic_difficulty'],
-                },
+                metadata=metadata,
             )
         elif question_type == OPEN_TYPE:
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=record['answer'],
-                metadata={
-                    'id': record['id'],
-                    'question_type': record['question_type'],
-                    'subfield': record['subfield'],
-                    'explanation': record['explanation'],
-                    'img_type': record['img_type'],
-                    'topic_difficulty': record['topic_difficulty'],
-                },
+                metadata=metadata,
             )
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 
-    def extract_answer(self, prediction: str, task_state: TaskState):
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         question_type = task_state.metadata['question_type']
         if question_type == MULTI_CHOICE_TYPE:
             answers = parse_answers(task_state)
@@ -126,7 +121,7 @@ class MMMUAdapter(DefaultDataAdapter):
             match = re.search(pattern, prediction)
             if match:
                 return match.group(1).strip()
-            return prediction.strip()
+            return ''
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 
@@ -154,8 +149,9 @@ class MMMUAdapter(DefaultDataAdapter):
             answers_list: list[str] = []
             content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
 
-        for i in range(1, 8):
-            image = record[f'image_{i}']
+        MAX_IMAGES = 7
+        for i in range(MAX_IMAGES):
+            image = record[f'image_{i+1}']
             if image:
                 image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
                 content_list.append(ContentImage(image=image_base64))
