@@ -109,7 +109,11 @@ class TauBenchAdapter(DefaultDataAdapter):
                 })
             # load dataset
             dataset = DictDataLoader(
-                dict_list=tasks, sample_fields=self.record_to_sample, limit=self.limit, repeats=self.repeats
+                dict_list=tasks,
+                sample_fields=self.record_to_sample,
+                limit=self.limit,
+                repeats=self.repeats,
+                shuffle=self.shuffle,
             ).load()
 
             data_dict[env_name] = dataset

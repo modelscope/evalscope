@@ -61,7 +61,8 @@ class FramesAdapter(DefaultDataAdapter):
             sample_fields=self.record_to_sample,
             subset='test',
             limit=self.limit,
-            repeats=self.repeats
+            repeats=self.repeats,
+            shuffle=self.shuffle,
         ).load()
 
         test_dataset = DatasetDict({'test': dataset})

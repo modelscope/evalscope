@@ -65,12 +65,13 @@ Example usage:
 - `--dataset-args`: Evaluation dataset settings, passed as a JSON string and parsed into a dictionary. Must correspond to values in `--datasets`:
   - `dataset_id` (or `local_path`): Specify local path for the dataset; if set, data will be loaded locally.
   - `prompt_template`: Prompt template for the evaluation dataset; will be used to generate prompts. For example, `gsm8k`’s template is `Question: {query}\nLet's think step by step\nAnswer:` and the dataset question will be filled in the `query` field.
-  - `query_template`: Query template for the evaluation dataset; used to generate queries. For example, `general_mcq`’s template is `问题：{question}\n{choices}\n答案: {answer}\n\n`, dataset question fills the `question` field, choices fill `choices`, and answer fills `answer` (answer is only filled for few-shot).
   - `system_prompt`: System prompt for the evaluation dataset.
   - `model_adapter`: Model adapter for the dataset; will use the specified adapter for evaluation. Currently supports `generation`, `multiple_choice_logits`, `continuous_logits`. For service evaluation, only `generation` is supported; some multiple choice datasets support `logits` output.
   - `subset_list`: List of dataset subsets; only data from specified subsets will be used.
   - `few_shot_num`: Number of few-shot samples.
   - `few_shot_random`: Whether to sample few-shot data randomly (default `False`).
+  - `shuffle`: Indicates whether to randomize the data before evaluation, with the default setting being `False`.
+  - `shuffle_choices`: Specifies whether to rearrange the order of choices before evaluation, defaulting to `False`. This option is only applicable to multiple-choice datasets.
   - `metric_list`: List of metrics for the dataset; will use specified metrics for evaluation. Currently supports `acc`, `Pass@k`, etc. For example, `humaneval` dataset can specify `["Pass@1", "Pass@5"]`. Note: you must set `repeats=5` to let the model infer 5 times for each sample.
   - `filters`: Filters for the dataset; will use specified filters to process results. Used to handle model output. Currently supported:
     - `remove_until {string}`: Remove everything in the model output before the specified string.
