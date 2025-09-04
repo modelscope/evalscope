@@ -190,10 +190,9 @@ class TaskState:
 
     @property
     def input_markdown(self) -> str:
-        """Get the input text as markdown, truncated to a maximum length.
+        """Get the input text as markdown.
 
-        Args:
-            max_length (int): The maximum length of the output string.
+        For multi-modal content, images will be represented in markdown format.
         """
         if isinstance(self._input, str):
             return self._input

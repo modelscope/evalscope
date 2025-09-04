@@ -199,7 +199,12 @@ def messages_pretty_str(messages: List[ChatMessage]) -> str:
 
 
 def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] = None) -> str:
-    """Convert a list of chat messages to markdown format."""
+    """Convert a list of chat messages to markdown format.
+
+    Args:
+        messages (List[ChatMessage]): The list of chat messages to convert.
+        max_length (Optional[int]): If provided, truncates the base64 string of images to this length.
+    """
     output = []
     for message in messages:
         role = message.role.capitalize()

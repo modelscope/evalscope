@@ -121,6 +121,14 @@ def format_example(
     return f'{question}\n{choices_text}\nANSWER: {answer.text}'
 
 
+def _fallback_parse_answer(completion: str) -> Optional[set[str]]:
+    # Fallback to find the last upper case letter
+    for letter in reversed(completion):
+        if letter.isupper():
+            return {letter}
+    return None
+
+
 def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     """
     Convenience function for extracting answers from the state output.
@@ -150,11 +158,9 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
         )
 
     if match is None:
-        # Fallback to find the last upper case letter
-        for letter in reversed(state.output.completion):
-            if letter.isupper():
-                answers = {letter}
-                return answers
+        fallback_answer = _fallback_parse_answer(state.output.completion)
+        if fallback_answer:
+            return fallback_answer
 
     if match is None:
         return set()
@@ -207,11 +213,9 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[st
     match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
 
     if match is None:
-        # Fallback to find the last upper case letter
-        for letter in reversed(state.output.completion):
-            if letter.isupper():
-                answers = {letter}
-                return answers
+        fallback_answer = _fallback_parse_answer(state.output.completion)
+        if fallback_answer:
+            return fallback_answer
 
     if match is None:
         return set()

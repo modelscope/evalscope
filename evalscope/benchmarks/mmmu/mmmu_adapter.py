@@ -78,6 +78,7 @@ OPEN_TYPE = 'open'
     )
 )
 class MMMUAdapter(DefaultDataAdapter):
+    MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -149,8 +150,7 @@ class MMMUAdapter(DefaultDataAdapter):
             answers_list: list[str] = []
             content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
 
-        MAX_IMAGES = 7
-        for i in range(MAX_IMAGES):
+        for i in range(MMMUAdapter.MAX_IMAGES):
             image = record[f'image_{i+1}']
             if image:
                 image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
