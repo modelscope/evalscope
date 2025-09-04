@@ -51,6 +51,10 @@ class TestBenchmark(TestCase):
         config = self.base_config.copy()
         config['datasets'] = [dataset_name]
 
+        if not env.get('DASHSCOPE_API_KEY'):
+            use_mock = True
+            logger.warning('DASHSCOPE_API_KEY is not set. Using mock evaluation.')
+
         if use_mock:
             config['eval_type'] = EvalType.MOCK_LLM
 
