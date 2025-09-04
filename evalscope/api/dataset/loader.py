@@ -121,7 +121,7 @@ class RemoteDataLoader(DataLoader):
             dataset = dataset.shuffle(seed=self.seed)
 
         # limit if requested
-        if self.limit:
+        if self.limit and len(dataset) < self.limit:
             if isinstance(self.limit, float):
                 self.limit = int(len(dataset) * self.limit)
             elif isinstance(self.limit, int) and self.limit < 0:
