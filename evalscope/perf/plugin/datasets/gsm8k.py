@@ -9,15 +9,18 @@ from evalscope.perf.plugin.registry import register_dataset
 
 @register_dataset('gsm8k')
 class Gsm8kDatasetPlugin(DatasetPluginBase):
-    """Read dataset and return prompt.
+    """
+    Read dataset and return prompt.
     """
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
+
     def build_messages(self) -> Iterator[List[Dict]]:
         from modelscope.msdatasets import MsDataset
-        dataset =  MsDataset.load('modelscope/gsm8k', subset_name='main', split='train')
+        dataset =  MsDataset.load('modelscope/gsm8k', 
+                                  subset_name='main', split='test')
 
         for item in dataset:
             prompt = item['question'].strip()
@@ -27,4 +30,4 @@ class Gsm8kDatasetPlugin(DatasetPluginBase):
                     message = self.create_message(prompt)
                     yield [message]
                 else:
-                    yield prompt
+                    yield [prompt]

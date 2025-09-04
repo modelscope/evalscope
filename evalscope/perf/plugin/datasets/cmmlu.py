@@ -16,11 +16,12 @@ class CmmluDatasetPlugin(DatasetPluginBase):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
+
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path:
             from modelscope import dataset_snapshot_download
 
-            file_name = 'cmmlu-test.jsonl'   # 实际文件名请按下载后的为准
+            file_name = 'cmmlu-test.jsonl' 
             local_path = dataset_snapshot_download(
                 'haonan-li/cmmlu',
                 allow_patterns=[file_name]
@@ -41,4 +42,4 @@ class CmmluDatasetPlugin(DatasetPluginBase):
                 message = self.create_message(prompt)
                 yield [message]
             else:
-                yield prompt
+                yield [prompt]
