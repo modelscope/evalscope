@@ -47,8 +47,9 @@ class TestVLMBenchmark(TestBenchmark):
     def test_mmmu(self):
         dataset_args = {
             'subset_list':[
-                'Accounting',
-                'Agriculture',
+                # 'Accounting',
+                # 'Agriculture',
+                'Architecture_and_Engineering'
             ]
         }
-        self._run_dataset_test('mmmu', dataset_args=dataset_args)
+        self._run_dataset_test('mmmu', dataset_args=dataset_args, limit=None)

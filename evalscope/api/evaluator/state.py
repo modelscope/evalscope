@@ -3,7 +3,7 @@ from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str
+from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str, messages_to_markdown
 from evalscope.api.model import ModelOutput
 
 
@@ -187,6 +187,18 @@ class TaskState:
             return self._input
         else:
             return messages_pretty_str(self._input)
+
+    @property
+    def input_markdown(self) -> str:
+        """Get the input text as markdown, truncated to a maximum length.
+
+        Args:
+            max_length (int): The maximum length of the output string.
+        """
+        if isinstance(self._input, str):
+            return self._input
+        else:
+            return messages_to_markdown(self._input)
 
     @property
     def choices(self) -> Choices:

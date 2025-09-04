@@ -150,6 +150,13 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
         )
 
     if match is None:
+        # Fallback to find the last upper case letter
+        for letter in reversed(state.output.completion):
+            if letter.isupper():
+                answers = {letter}
+                return answers
+
+    if match is None:
         return set()
 
     matched = match.group(1)
@@ -198,6 +205,13 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[st
     # Simple pattern to capture answers with optional bold markdown
     pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
     match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
+
+    if match is None:
+        # Fallback to find the last upper case letter
+        for letter in reversed(state.output.completion):
+            if letter.isupper():
+                answers = {letter}
+                return answers
 
     if match is None:
         return set()

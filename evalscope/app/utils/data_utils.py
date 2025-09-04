@@ -163,18 +163,14 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
         metadata = sample_score.sample_metadata
         prediction = score.prediction
         target = review_result.target
-        # TODO: Need a more robust way to determine target
-        if not target:
-            # Put input_image as target if not available for image generation
-            target = metadata.get('input_image', '')
         extracted_prediction = score.extracted_prediction
         raw_d = {
             'Index': str(review_result.index),
             'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
             'Metadata': metadata,
-            'Generated': prediction if prediction != extracted_prediction else '*Same as Pred*',
+            'Generated': prediction,
             'Gold': target,
-            'Pred': extracted_prediction,
+            'Pred': extracted_prediction if extracted_prediction != prediction else '*Same as Generated*',
             'Score': score.model_dump(exclude_none=True),
             'NScore': normalize_score(score.main_value)
         }

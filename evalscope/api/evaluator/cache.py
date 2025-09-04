@@ -299,6 +299,15 @@ class ModelResult(BaseModel):
             completed=True,  # Mark as completed since it was cached
         )
 
+    def pretty_print(self) -> str:
+        """
+        Generate a pretty-printed string representation of the model result.
+
+        Returns:
+            A string representation of the model result
+        """
+        return self.model_dump_json(indent=2)
+
 
 class ReviewResult(BaseModel):
     """
@@ -340,7 +349,7 @@ class ReviewResult(BaseModel):
 
         return cls(
             index=state.sample_id,
-            input=state.input_text,
+            input=state.input_markdown,
             target=state.target,
             sample_score=sample_score,
         )
@@ -353,3 +362,17 @@ class ReviewResult(BaseModel):
             The sample score object
         """
         return self.sample_score
+
+    def pretty_print(self) -> str:
+        """
+        Generate a pretty-printed string representation of the review result.
+
+        Returns:
+            A string representation of the review result
+        """
+        output = [
+            f'Review Result for Sample {self.index}:',
+            f'Target: {self.target}',
+            f'Score: {self.sample_score.model_dump_json(indent=2)}',
+        ]
+        return '\n'.join(output)
