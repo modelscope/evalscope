@@ -240,4 +240,4 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
 
         output.append('\n'.join(content_parts))
 
-    return '\n\n---\n\n'.join(output)
+    return '\n\n'.join(output)
