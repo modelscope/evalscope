@@ -53,3 +53,9 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('mmmu', dataset_args=dataset_args)
+
+    def test_math_vista(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('math_vista', dataset_args=dataset_args)

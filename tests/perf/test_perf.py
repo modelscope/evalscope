@@ -121,6 +121,10 @@ class TestPerf(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_perf_multi_parallel(self):
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
