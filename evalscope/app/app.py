@@ -6,6 +6,7 @@ import argparse
 from evalscope.utils.logger import configure_logging
 from .arguments import add_argument
 from .ui import create_app_ui
+from .utils.env_utils import setup_env
 
 
 def create_app(args: argparse.Namespace):
@@ -16,6 +17,8 @@ def create_app(args: argparse.Namespace):
         args: Command line arguments.
     """
     configure_logging(debug=args.debug)
+
+    setup_env(args)
 
     demo = create_app_ui(args)
 

@@ -129,6 +129,7 @@ class Tags:
     FUNCTION_CALLING = 'FunctionCalling'
     TEXT_TO_IMAGE = 'TextToImage'
     IMAGE_EDITING = 'ImageEditing'
+    MULTI_MODAL = 'MultiModal'
 
 
 class FileConstants:

@@ -5,9 +5,8 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
 
-from evalscope.api.messages import ChatMessage, messages_pretty_str
+from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
-from evalscope.utils.multi_choices import answer_character, answer_index
 
 
 class Sample(BaseModel):
@@ -51,7 +50,7 @@ class Sample(BaseModel):
         if isinstance(self.input, str):
             input_text = self.input
         else:
-            input_text = messages_pretty_str(self.input)
+            input_text = messages_to_markdown(self.input, max_length=50)
         return f'Sample ID: {self.id}\nInput: {input_text}\nTarget: {self.target}'
 
 
@@ -227,6 +226,8 @@ class MemoryDataset(Dataset):
         self._shuffled = True
 
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
+        from evalscope.utils.multi_choices import answer_character
+
         rand = random.Random(seed)
         for sample in self.samples:
             if not sample.choices:
@@ -246,6 +247,8 @@ class MemoryDataset(Dataset):
             sample.target = self._remap_target(sample.target, position_map=position_map)
 
     def _remap_target(self, target: Union[str, List[str]], position_map: Dict[int, str]) -> Union[str, List[str]]:
+        from evalscope.utils.multi_choices import answer_index
+
         if isinstance(target, list):
             return [position_map[answer_index(t)] for t in target]
         else:

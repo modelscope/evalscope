@@ -1,11 +1,8 @@
 # flake8: noqa: E501
-from __future__ import annotations
-
 import re
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional, Union
 
-if TYPE_CHECKING:
-    from evalscope.api.evaluator import Choices, Target, TaskState
+from evalscope.api.evaluator import Choices, Target, TaskState
 
 FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar questions:
 
@@ -84,7 +81,9 @@ def answer_options(choices: Choices) -> str:
     return '\n'.join([f'{answer_character(i)}) {choices[j].value}' for i, j in enumerate(indexes)])
 
 
-def prompt(question: str, choices: Choices, template: str, fewshot: Optional[str] = None) -> str:
+def prompt(question: str, choices: Union[Choices, List[str]], template: str, fewshot: Optional[str] = None) -> str:
+    if isinstance(choices, list):
+        choices = Choices(choices)
 
     choices_text = answer_options(choices)
     letters = ','.join(answer_character(i) for i in range(len(choices)))
@@ -122,6 +121,14 @@ def format_example(
     return f'{question}\n{choices_text}\nANSWER: {answer.text}'
 
 
+def _fallback_parse_answer(completion: str) -> Optional[set[str]]:
+    # Fallback to find the last upper case letter
+    for letter in reversed(completion):
+        if letter.isupper():
+            return {letter}
+    return None
+
+
 def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     """
     Convenience function for extracting answers from the state output.
@@ -149,6 +156,11 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
             r'(?i)ANSWER\s*:\s*([A-Za-z\d ,]+)(?:[^\w]|\n|$|\.)',
             state.output.completion,
         )
+
+    if match is None:
+        fallback_answer = _fallback_parse_answer(state.output.completion)
+        if fallback_answer:
+            return fallback_answer
 
     if match is None:
         return set()
@@ -199,6 +211,11 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[st
     # Simple pattern to capture answers with optional bold markdown
     pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
     match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
+
+    if match is None:
+        fallback_answer = _fallback_parse_answer(state.output.completion)
+        if fallback_answer:
+            return fallback_answer
 
     if match is None:
         return set()

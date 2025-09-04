@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from evalscope.api.tool import ToolCall, ToolCallError
-from .content import Content, ContentReasoning, ContentText
+from .content import Content, ContentImage, ContentReasoning, ContentText
 from .utils import parse_content_with_reasoning
 
 
@@ -184,7 +184,7 @@ def dict_to_chat_message(data: Dict[str, Any]) -> ChatMessage:
 
 
 def messages_pretty_str(messages: List[ChatMessage]) -> str:
-    """Pretty print a list of chat messages."""
+    """Pretty print a list of chat messages. Without images or other multi-modal contents."""
     output = []
     for message in messages:
         role = message.role.capitalize()
@@ -195,4 +195,49 @@ def messages_pretty_str(messages: List[ChatMessage]) -> str:
             if message.function:
                 content += f'\nFunction: {message.function}'
         output.append(f'**{role}**: {content}')
+    return '\n\n'.join(output)
+
+
+def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] = None) -> str:
+    """Convert a list of chat messages to markdown format.
+
+    Args:
+        messages (List[ChatMessage]): The list of chat messages to convert.
+        max_length (Optional[int]): If provided, truncates the base64 string of images to this length.
+    """
+    output = []
+    for message in messages:
+        role = message.role.capitalize()
+
+        # Start with role header
+        content_parts = [f'**{role}**: ']
+
+        # Handle content based on type
+        if isinstance(message.content, str):
+            content_parts.append(message.content)
+        else:
+            for content_item in message.content:
+                if isinstance(content_item, ContentText):
+                    content_parts.append(content_item.text)
+                elif isinstance(content_item, ContentImage):
+                    # Use markdown image syntax
+                    image_base64 = content_item.image
+                    if max_length and len(image_base64) > max_length:
+                        image_base64 = image_base64[:max_length]
+                    content_parts.append(f'![image]({image_base64})')
+                elif isinstance(content_item, ContentReasoning):
+                    content_parts.append(f'**Reasoning:** {content_item.reasoning}')
+
+        # Add tool-specific information
+        if isinstance(message, ChatMessageTool):
+            if message.error:
+                content_parts.append(f'**Error:** {message.error.message}')
+            if message.function:
+                content_parts.append(f'**Function:** {message.function}')
+        elif isinstance(message, ChatMessageAssistant) and message.tool_calls:
+            for tool_call in message.tool_calls:
+                content_parts.append(f'**Tool Call:** {tool_call.function}')
+
+        output.append('\n'.join(content_parts))
+
     return '\n\n'.join(output)

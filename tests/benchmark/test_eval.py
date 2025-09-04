@@ -374,6 +374,7 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('data_collection', dataset_args)
 
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

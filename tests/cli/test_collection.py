@@ -53,7 +53,7 @@ class TestCollection(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=['data_collection'],
             dataset_args={'data_collection': {
-                'local_path': 'outputs/mixed_data_test.jsonl'
+                'local_path': 'outputs/test_mix.jsonl'
                 # 'local_path': 'outputs/weighted_mixed_data.jsonl'
             }},
             eval_batch_size=5,
