@@ -299,6 +299,34 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         return self._task_config.seed
 
+    @property
+    def shuffle(self) -> bool:
+        """
+        Return whether to shuffle the dataset before evaluation.
+        """
+        return self._benchmark_meta.shuffle
+
+    @shuffle.setter
+    def shuffle(self, value: bool):
+        """
+        Set whether to shuffle the dataset before evaluation.
+        """
+        self._benchmark_meta.shuffle = value
+
+    @property
+    def shuffle_choices(self) -> bool:
+        """
+        Return whether to shuffle the choices in multiple-choice datasets.
+        """
+        return self._benchmark_meta.shuffle_choices
+
+    @shuffle_choices.setter
+    def shuffle_choices(self, value: bool):
+        """
+        Set whether to shuffle the choices in multiple-choice datasets.
+        """
+        self._benchmark_meta.shuffle_choices = value
+
     @contextlib.contextmanager
     def _temporary_attribute(self, attr_name: str, new_value):
         """
