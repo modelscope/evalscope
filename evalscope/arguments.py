@@ -60,8 +60,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--generation-config', type=str, action=ParseStrArgsAction, help='The generation config, should be a string.')  # noqa: E501
 
     # Evaluation-related arguments
-    parser.add_argument('--eval-type', type=str, help='The type for evaluating.',
-                        choices=[EvalType.CHECKPOINT, EvalType.CUSTOM, EvalType.SERVICE])
+    parser.add_argument('--eval-type', type=str, help='The type for evaluating.')
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
