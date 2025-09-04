@@ -143,12 +143,12 @@ class MMMUAdapter(DefaultDataAdapter):
         question_type = record['question_type']
 
         if question_type == MULTI_CHOICE_TYPE:
-            answers_list: list[str] = ast.literal_eval(record['options'])
+            answers_list: List[str] = ast.literal_eval(record['options'])
             input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-            content_list: list[Content] = [ContentText(text=input_text)]
+            content_list: List[Content] = [ContentText(text=input_text)]
         else:
-            answers_list: list[str] = []
-            content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
+            answers_list: List[str] = []
+            content_list: List[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
 
         for i in range(MMMUAdapter.MAX_IMAGES):
             image = record[f'image_{i+1}']
