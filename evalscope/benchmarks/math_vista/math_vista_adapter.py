@@ -1,26 +1,21 @@
-import ast
-import io
+# flake8: noqa: E501
 import re
-from PIL import Image
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import Choices, TaskState
-from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
 
-# flake8: noqa
-
 logger = get_logger()
 
 SUBSET_LIST = ['default']
 
-# 定义提示模板
 PROMPT_TEMPLATE = """
 Answer the following question. The entire content of your response should be of the following format: 'ANSWER: $ANSWER' (without quotes) where $ANSWER is your answer.
 
@@ -43,10 +38,10 @@ OPEN_TYPE = 'free_form'
 
 @register_benchmark(
     BenchmarkMeta(
-        name='MathVista',
+        name='math_vista',
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',
-        tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE],
+        tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description=
         'MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.',
         subset_list=SUBSET_LIST,
@@ -59,7 +54,6 @@ class MathVistaAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         content_list, answers_list = MathVistaAdapter.create_content_and_answers_list(record)
@@ -70,7 +64,6 @@ class MathVistaAdapter(DefaultDataAdapter):
                 input=[ChatMessageUser(content=content_list)],
                 choices=answers_list,
                 target=label_answer,
-                id=record['pid'],
                 metadata={
                     'question_type': record['question_type'],
                     'answer_type': record['answer_type'],
@@ -81,7 +74,6 @@ class MathVistaAdapter(DefaultDataAdapter):
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=record['answer'],
-                id=record['pid'],
                 metadata={
                     'precision': record['precision'],
                     'question_type': record['question_type'],
@@ -97,6 +89,7 @@ class MathVistaAdapter(DefaultDataAdapter):
             index = options.index(value)
             return chr(ord('A') + index)
         except ValueError:
+            logger.warning(f"Answer '{value}' not found in options: {options}. This may cause evaluation issues.")
             return value
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
@@ -134,9 +127,9 @@ class MathVistaAdapter(DefaultDataAdapter):
             content_list: list[Content] = [ContentText(text=input_text)]
         else:
             answers_list: list[str] = []
-            content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['query']))]
-        image = record[f'decoded_image']
+            content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
+        image = record['decoded_image']
         if image:
-            image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
+            image_base64 = bytes_to_base64(image['bytes'], format='jpg', add_header=True)
             content_list.append(ContentImage(image=image_base64))
         return content_list, answers_list
