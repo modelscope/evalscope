@@ -13,6 +13,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import run_once
+from evalscope.utils.import_utils import check_import
 
 logger = get_logger()
 
@@ -46,11 +47,7 @@ class TauBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        spec = importlib.util.find_spec('tau_bench')
-        if spec is None:
-            raise ImportError(
-                '`tau_bench` not found, please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating.'  # noqa: E501
-            )
+        check_import('tau_bench', package='git+https://github.com/sierra-research/tau-bench', raise_error=True)
 
         # setup user model args
         self.user_model = self.extra_params.get('user_model', 'qwen-plus')

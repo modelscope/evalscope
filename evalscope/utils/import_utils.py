@@ -5,11 +5,30 @@ import importlib
 import os
 from itertools import chain
 from types import ModuleType
-from typing import Any
+from typing import Any, Optional, Union
 
 from .logger import get_logger
 
 logger = get_logger()  # pylint: disable=invalid-name
+
+
+def check_import(module_name: str, package: Optional[str] = None, raise_error: bool = False) -> bool:
+    """Check if a module can be imported.
+
+    Args:
+        module_name (str): The name of the module to check.
+        package (str, optional): The package to install if the module is not found. Defaults to None.
+        raise_error (bool, optional): Whether to raise an error if the module is not found. Defaults to False.
+    """
+    try:
+        importlib.import_module(module_name)
+        return True
+    except ImportError:
+        if package is not None:
+            logger.warning(f'`{module_name}` not found. Please run `pip install {package}` to use this feature.')
+        if raise_error:
+            raise ImportError(f'`{module_name}` not found. Please run `pip install {package}` to use this feature.')
+        return False
 
 
 class _LazyModule(ModuleType):
