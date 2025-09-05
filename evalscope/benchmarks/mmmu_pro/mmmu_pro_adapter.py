@@ -53,6 +53,8 @@ Answer the following multiple choice question in image. The last line of your re
 
 """.strip()  # noqa: E501
 
+DATASET_FORMATS = ['standard (4 options)', 'standard (10 options)', 'vision']
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -67,8 +69,7 @@ Answer the following multiple choice question in image. The last line of your re
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
         extra_params={
-            'dataset_format':
-            "# choose from ['standard (4 options)', 'standard (10 options)', 'vision'], default 'standard (4 options)'",
+            'dataset_format': f"# choose from {DATASET_FORMATS}, default 'standard (4 options)'",
         }
     )
 )
@@ -80,6 +81,9 @@ class MMMUPROAdapter(VisionLanguageAdapter):
 
         self.reformat_subset = True
         self.dataset_format = self.extra_params.get('dataset_format', 'standard (4 options)')
+        if self.dataset_format not in DATASET_FORMATS:
+            logger.warning(f"Invalid dataset_format '{self.dataset_format}', fallback to 'standard (4 options)'")
+            self.dataset_format = 'standard (4 options)'
         self.default_subset = self.dataset_format
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
