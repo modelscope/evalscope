@@ -24,10 +24,13 @@ def check_import(module_name: str, package: Optional[str] = None, raise_error: b
         importlib.import_module(module_name)
         return True
     except ImportError:
-        if package is not None:
-            logger.warning(f'`{module_name}` not found. Please run `pip install {package}` to use this feature.')
+        error_msg = f'`{module_name}` not found.'
+        if package:
+            error_msg += f' Please run `pip install {package}` to use this feature.'
+            logger.warning(error_msg)
+
         if raise_error:
-            raise ImportError(f'`{module_name}` not found. Please run `pip install {package}` to use this feature.')
+            raise ImportError(error_msg)
         return False
 
 
