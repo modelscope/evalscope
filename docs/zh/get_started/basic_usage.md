@@ -264,3 +264,4 @@ evalscope eval \
 3. 由于数据集格式的变化，EvalScope的数据集合功能不支持1.0之前版本创建的数据集，需要使用1.0版本重新运行数据集合创建。
 4. 模型推理参数中的`n`参数不再支持，更改为`repeats`
 5. `stage`参数已移除，新增`rerun_review`参数，来控制在指定了`use_cache`的情况下是否重新运行评测。
+6. 数据集`gpqa`更改为`gpqa_diamond`，无需指定`subset_list`参数。
