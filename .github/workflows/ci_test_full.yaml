@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
@@ -38,7 +38,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python -m pytest tests/cli/test_all.py::TestRun::test_benchmarks -v -p no:warnings
+          python -m pytest tests/cli/test_all.py::TestRun::test_{benchmarks,vlm_benchmark} -v -s -p no:warnings
 
 
   perf-tests:
@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
@@ -65,4 +65,4 @@ jobs:
 
       - name: Run perf test
         run: |
-          python -m pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -p no:warnings
+          python -m pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -s -p no:warnings

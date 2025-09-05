@@ -13,6 +13,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import run_once
+from evalscope.utils.import_utils import check_import
 
 logger = get_logger()
 
@@ -35,8 +36,8 @@ logger = get_logger()
             'api_key': 'EMPTY',
             'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'generation_config': {
-                'temperature': 0.7,
-                'max_tokens': 1024
+                'temperature': 0.0,
+                'max_tokens': 4096,
             }
         }
     )
@@ -46,17 +47,13 @@ class TauBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        spec = importlib.util.find_spec('tau_bench')
-        if spec is None:
-            raise ImportError(
-                '`tau_bench` not found, please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating.'  # noqa: E501
-            )
+        check_import('tau_bench', package='git+https://github.com/sierra-research/tau-bench', raise_error=True)
 
         # setup user model args
         self.user_model = self.extra_params.get('user_model', 'qwen-plus')
         self.api_key = self.extra_params.get('api_key', 'EMPTY')
         self.api_base = self.extra_params.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
-        self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.7, 'max_tokens': 1024})
+        self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.0, 'max_tokens': 4096})
 
         self._patch_env_completion()
 
@@ -109,7 +106,11 @@ class TauBenchAdapter(DefaultDataAdapter):
                 })
             # load dataset
             dataset = DictDataLoader(
-                dict_list=tasks, sample_fields=self.record_to_sample, limit=self.limit, repeats=self.repeats
+                dict_list=tasks,
+                sample_fields=self.record_to_sample,
+                limit=self.limit,
+                repeats=self.repeats,
+                shuffle=self.shuffle,
             ).load()
 
             data_dict[env_name] = dataset
@@ -140,15 +141,15 @@ class TauBenchAdapter(DefaultDataAdapter):
 
         try:
             # Parse the prediction to get the reward
-            res = task_state.metadata
-            reward = res.get('reward', 0.0)
+            task_result = task_state.metadata['task_result']
+            reward = task_result.get('reward', 0.0)
 
             score.value = {
                 'Pass^1': float(reward),
             }
             score.explanation = f'Task completed with reward: {reward}'
             score.metadata = {
-                'task_result': res,
+                'task_result': task_result,
                 'env_name': task_state.metadata.get('env_name', 'unknown'),
                 'task_index': task_state.metadata.get('task_index', -1)
             }

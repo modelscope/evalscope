@@ -59,7 +59,8 @@ class DataCollectionAdapter(DefaultDataAdapter):
             sample_fields=self.record_to_sample,
             subset='test',  # NOTE: using hardcoded test subset
             limit=self.limit,
-            repeats=self.repeats
+            repeats=self.repeats,
+            shuffle=self.shuffle,
         ).load()
 
         test_dataset = DatasetDict({self.default_subset: dataset})
@@ -141,19 +142,22 @@ class DataCollectionAdapter(DefaultDataAdapter):
         data = []
         for sample_score in sample_scores:
             collection_info = sample_score.sample_metadata[DataCollection.INFO]
-            for metric_name, value in sample_score.score.value.items():
-                data.append(
-                    dict(
-                        task_type=collection_info['task_type'],
-                        categories=tuple(collection_info['categories']),
-                        dataset_name=collection_info['dataset_name'],
-                        subset_name=collection_info['subset_name'],
-                        tags=collection_info['tags'],
-                        sample_id=sample_score.sample_id,
-                        metric=metric_name,
-                        score=value
-                    )
+            main_score = sample_score.score.main_value
+            main_metric = sample_score.score.main_score_name
+
+            # use main score
+            data.append(
+                dict(
+                    task_type=collection_info['task_type'],
+                    categories=tuple(collection_info['categories']),
+                    dataset_name=collection_info['dataset_name'],
+                    subset_name=collection_info['subset_name'],
+                    tags=collection_info['tags'],
+                    sample_id=sample_score.sample_id,
+                    metric=main_metric,
+                    score=main_score
                 )
+            )
 
         df = pd.DataFrame(data)
 

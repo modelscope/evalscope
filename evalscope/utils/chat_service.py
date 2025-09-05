@@ -1,6 +1,5 @@
 import os
 import time
-import torch
 from contextlib import contextmanager
 from functools import partial
 from pydantic import BaseModel, Field
@@ -95,6 +94,7 @@ class TextCompletionResponse(BaseModel):
 class ChatService:
 
     def __init__(self, model_path, attn_implementation):
+        import torch
         from modelscope import AutoModelForCausalLM, AutoTokenizer
         from transformers import TextIteratorStreamer
 

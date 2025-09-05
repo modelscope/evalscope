@@ -10,6 +10,7 @@ from evalscope.api.benchmark import (
     ImageEditAdapter,
     MultiChoiceAdapter,
     Text2ImageAdapter,
+    VisionLanguageAdapter,
 )
 
 
@@ -272,6 +273,8 @@ def get_adapters():
         adapter = get_benchmark(benchmark.name)
         if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
             adapters['aigc'].append(adapter)
+        elif isinstance(adapter, (VisionLanguageAdapter,)):
+            adapters['vlm'].append(adapter)
         else:
             adapters['llm'].append(adapter)
 

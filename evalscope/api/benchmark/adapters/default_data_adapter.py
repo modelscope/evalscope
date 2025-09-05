@@ -241,6 +241,7 @@ class DefaultDataAdapter(DataAdapter):
             filter_func=self.sample_filter,
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self.repeats,  # Number of repetitions for each sample
+            shuffle=self.shuffle,  # Shuffle dataset if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
         )

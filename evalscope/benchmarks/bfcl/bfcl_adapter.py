@@ -1,4 +1,3 @@
-import importlib
 import json
 import re
 import traceback
@@ -12,6 +11,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -67,11 +67,7 @@ class BFCLAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        spec = importlib.util.find_spec('bfcl_eval')
-        if spec is None:
-            raise ImportError(
-                '`bfcl_eval` not found, please install it with `pip install bfcl-eval==2025.6.16` before evaluating.'
-            )
+        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True)
 
         self.category_map = SUBJECT_MAPPING
         self.reformat_subset = True

@@ -17,44 +17,44 @@ os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 logger = get_logger()
 
 datasets=[
-        'iquiz',
-        'ifeval',
-        'mmlu',
-        'mmlu_pro',
-        'musr',
-        'process_bench',
-        'race',
-        'trivia_qa',
-        'cmmlu',
-        'humaneval',
-        'gsm8k',
-        'bbh',
-        'competition_math',
-        'math_500',
-        'aime24',
-        'gpqa_diamond',
-        'arc',
-        'ceval',
-        'hellaswag',
-        'general_mcq',
-        'general_qa',
-        'super_gpqa',
-        # 'live_code_bench',
-        'mmlu_redux',
-        'simple_qa',
-        'chinese_simpleqa',
-        'alpaca_eval',
-        'arena_hard',
-        'maritime_bench',
-        'drop',
-        'winogrande',
-        'tool_bench',
-        'frames',
-        'docmath',
-        'needle_haystack',
-        'bfcl_v3',
-        'hle',
-        'tau_bench',
+    'iquiz',
+    'ifeval',
+    'mmlu',
+    'mmlu_pro',
+    'musr',
+    'process_bench',
+    'race',
+    'trivia_qa',
+    'cmmlu',
+    'humaneval',
+    'gsm8k',
+    'bbh',
+    'competition_math',
+    'math_500',
+    'aime24',
+    'gpqa_diamond',
+    'arc',
+    'ceval',
+    'hellaswag',
+    'general_mcq',
+    'general_qa',
+    'super_gpqa',
+    # 'live_code_bench',
+    'mmlu_redux',
+    'simple_qa',
+    'chinese_simpleqa',
+    'alpaca_eval',
+    'arena_hard',
+    'maritime_bench',
+    'drop',
+    'winogrande',
+    'tool_bench',
+    'frames',
+    'docmath',
+    'needle_haystack',
+    'bfcl_v3',
+    'hle',
+    'tau_bench',
 ]
 
 # Reverse the datasets list to ensure the order is from most recent to oldest
@@ -150,7 +150,6 @@ dataset_args={
 }
 
 class TestRun(unittest.TestCase):
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_benchmarks(self):
         from evalscope.config import TaskConfig
 
@@ -180,19 +179,60 @@ class TestRun(unittest.TestCase):
 
         run_task(task_cfg=task_cfg)
 
-
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
-    def test_ci_lite(self):
+    def test_vlm_benchmark(self):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-plus',
+            model='qwen-vl-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=[
+                'mmmu',
+                'math_vista',
+            ],
+            dataset_args={
+                'mmmu': {
+                    'subset_list': ['Accounting']
+                },
+                'math_vista': {
+                    'subset_list': ['default']
+                }
+            },
+            eval_batch_size=1,
+            limit=1,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+                'image_height': 512,
+                'image_width': 512,
+                'image_num': 2,
+            },
+            judge_worker_num=5,
+            judge_strategy=JudgeStrategy.AUTO,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+            }
+        )
+
+        run_task(task_cfg=task_cfg)
+
+    def test_ci_lite(self):
+        from evalscope.config import TaskConfig
+
+        api_key = env.get('DASHSCOPE_API_KEY')
+
+        task_cfg = TaskConfig(
+            model='qwen-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key=api_key,
+            eval_type=EvalType.SERVICE if api_key else EvalType.MOCK_LLM,
+            datasets=[
                 'general_mcq',
-                'general_qa',
                 'iquiz',
             ],
             dataset_args={
