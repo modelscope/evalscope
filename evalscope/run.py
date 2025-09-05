@@ -150,6 +150,19 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')
+    # Clean up
+    if model is not None:
+        import gc
+
+        del model
+        del evaluators
+        gc.collect()
+
+        from evalscope.utils.import_utils import check_import
+        if check_import('torch'):
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     return eval_results
 
