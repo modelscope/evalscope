@@ -16,16 +16,12 @@ class CmmluDatasetPlugin(DatasetPluginBase):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
-
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path:
             from modelscope import dataset_snapshot_download
 
-            file_name = 'cmmlu-test.jsonl' 
-            local_path = dataset_snapshot_download(
-                'haonan-li/cmmlu',
-                allow_patterns=[file_name]
-            )
+            file_name = 'cmmlu-test.jsonl'
+            local_path = dataset_snapshot_download('haonan-li/cmmlu', allow_patterns=[file_name])
             self.query_parameters.dataset_path = os.path.join(local_path, file_name)
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
@@ -33,9 +29,7 @@ class CmmluDatasetPlugin(DatasetPluginBase):
             prompt = item['question'].strip()
 
             # 根据长度过滤
-            if not (self.query_parameters.min_prompt_length
-                    < len(prompt)
-                    < self.query_parameters.max_prompt_length):
+            if not (self.query_parameters.min_prompt_length < len(prompt) < self.query_parameters.max_prompt_length):
                 continue
 
             if self.query_parameters.apply_chat_template:

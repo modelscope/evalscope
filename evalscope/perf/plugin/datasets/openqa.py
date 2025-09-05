@@ -21,8 +21,7 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
             from modelscope import dataset_snapshot_download
 
             file_name = 'open_qa.jsonl'
-            local_path = dataset_snapshot_download('AI-ModelScope/HC3-Chinese', 
-                                                   allow_patterns=[file_name])
+            local_path = dataset_snapshot_download('AI-ModelScope/HC3-Chinese', allow_patterns=[file_name])
             self.query_parameters.dataset_path = os.path.join(local_path, file_name)
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):

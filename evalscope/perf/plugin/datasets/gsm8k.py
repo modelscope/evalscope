@@ -16,16 +16,16 @@ class Gsm8kDatasetPlugin(DatasetPluginBase):
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
-
     def build_messages(self) -> Iterator[List[Dict]]:
         from modelscope.msdatasets import MsDataset
-        dataset =  MsDataset.load('modelscope/gsm8k', 
-                                  subset_name='main', split='test')
+        dataset = MsDataset.load('modelscope/gsm8k', subset_name='main', split='test')
 
         for item in dataset:
             prompt = item['question'].strip()
-            if (len(prompt) > self.query_parameters.min_prompt_length
-                    and len(prompt) < self.query_parameters.max_prompt_length):
+            if (
+                len(prompt) > self.query_parameters.min_prompt_length
+                and len(prompt) < self.query_parameters.max_prompt_length
+            ):
                 if self.query_parameters.apply_chat_template:
                     message = self.create_message(prompt)
                     yield [message]

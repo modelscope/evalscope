@@ -1,6 +1,6 @@
 from .base import DatasetPluginBase
-from .custom import CustomDatasetPlugin
 from .cmmlu import CmmluDatasetPlugin
+from .custom import CustomDatasetPlugin
 from .flickr8k import FlickrDatasetPlugin
 from .gsm8k import Gsm8kDatasetPlugin
 from .kontext_bench import KontextDatasetPlugin
