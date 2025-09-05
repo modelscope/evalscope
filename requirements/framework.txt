@@ -1,9 +1,7 @@
-accelerate
 colorlog
 datasets==3.6.0
 docstring_parser
 dotenv
-immutabledict
 jieba
 jsonlines
 langdetect
