@@ -4,7 +4,6 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
-| `MathVista` | [MathVista](#mathvista) | `MCQ`, `Math`, `Reasoning` |
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
@@ -36,8 +35,6 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
-| `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
-| `mmmu_pro` | [MMMU_PRO](#mmmu_pro) | `Knowledge`, `MultiModal`, `QA` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -53,29 +50,6 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 ---
 
 ## Benchmark Details
-
-### MathVista
-
-[Back to Top](#llm-benchmarks)
-- **Dataset Name**: `MathVista`
-- **Dataset ID**: [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary)
-- **Description**:  
-  > MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.
-- **Task Categories**: `MCQ`, `Math`, `Reasoning`
-- **Evaluation Metrics**: `acc`
-- **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
-- **Subsets**: `default`
-
-- **Prompt Template**: 
-```text
-Answer the following question. The entire content of your response should be of the following format: 'ANSWER: $ANSWER' (without quotes) where $ANSWER is your answer.
-
-{question}
-
-```
-
----
 
 ### AIME-2024
 
@@ -854,50 +828,6 @@ Options:
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
-
-- **Prompt Template**: 
-```text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
-
-{question}
-
-{choices}
-```
-
----
-
-### MMMU
-
-[Back to Top](#llm-benchmarks)
-- **Dataset Name**: `mmmu`
-- **Dataset ID**: [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary)
-- **Description**:  
-  > MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
-- **Evaluation Metrics**: `acc`
-- **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
-- **Subsets**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
-
-- **Prompt Template**: 
-```text
-{question}
-```
-
----
-
-### MMMU_PRO
-
-[Back to Top](#llm-benchmarks)
-- **Dataset Name**: `mmmu_pro`
-- **Dataset ID**: [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary)
-- **Description**:  
-  > MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
-- **Evaluation Metrics**: `acc`
-- **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
-- **Subsets**: `standard (10 options)`, `standard (4 options)`
 
 - **Prompt Template**: 
 ```text

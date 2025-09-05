@@ -64,8 +64,10 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list':[
                 'Accounting',
-                'Agriculture',
-                # 'Architecture_and_Engineering'
-            ]
+                # 'Agriculture',
+            ],
+            'extra_params': {
+                'dataset_format': 'standard (10 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'
+            },
         }
         self._run_dataset_test('mmmu_pro', dataset_args=dataset_args)
