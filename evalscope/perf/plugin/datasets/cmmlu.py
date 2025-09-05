@@ -32,8 +32,5 @@ class CmmluDatasetPlugin(DatasetPluginBase):
             if not (self.query_parameters.min_prompt_length < len(prompt) < self.query_parameters.max_prompt_length):
                 continue
 
-            if self.query_parameters.apply_chat_template:
-                message = self.create_message(prompt)
-                yield [message]
-            else:
-                yield [prompt]
+            message = self.create_message(prompt)
+            yield [message]
