@@ -67,7 +67,14 @@ class TestVLMBenchmark(TestBenchmark):
                 # 'Agriculture',
             ],
             'extra_params': {
-                'dataset_format': 'standard (10 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'
+                'dataset_format': 'standard (4 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'
             },
         }
-        self._run_dataset_test('mmmu_pro', dataset_args=dataset_args)
+        self._run_dataset_test('mmmu_pro', dataset_args=dataset_args, limit=10)
+
+    def test_qwen3_collection(self):
+        dataset_args = {
+            'dataset_id': 'outputs/qwen3_vl_test.jsonl',
+            'shuffle': True,
+        }
+        self._run_dataset_test('data_collection', dataset_args)
