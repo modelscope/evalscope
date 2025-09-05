@@ -150,7 +150,6 @@ dataset_args={
 }
 
 class TestRun(unittest.TestCase):
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_benchmarks(self):
         from evalscope.config import TaskConfig
 
@@ -180,8 +179,48 @@ class TestRun(unittest.TestCase):
 
         run_task(task_cfg=task_cfg)
 
+    def test_vlm_benchmark(self):
+        from evalscope.config import TaskConfig
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+        task_cfg = TaskConfig(
+            model='qwen-vl-plus',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key= env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=[
+                'mmmu',
+                'math_vista',
+            ],
+            dataset_args={
+                'mmmu': {
+                    'subset_list': ['Accounting']
+                },
+                'math_vista': {
+                    'subset_list': ['default']
+                }
+            },
+            eval_batch_size=1,
+            limit=1,
+            stream=True,
+            generation_config={
+                'temperature': 0,
+                'n': 1,
+                'max_tokens': 4096,
+                'image_height': 512,
+                'image_width': 512,
+                'image_num': 2,
+            },
+            judge_worker_num=5,
+            judge_strategy=JudgeStrategy.AUTO,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+            }
+        )
+
+        run_task(task_cfg=task_cfg)
+
     def test_ci_lite(self):
         from evalscope.config import TaskConfig
 

@@ -38,7 +38,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python -m pytest tests/cli/test_all.py::TestRun::test_benchmarks -v -s -p no:warnings
+          python -m pytest tests/cli/test_all.py::TestRun::test_{benchmarks,vlm_benchmark} -v -s -p no:warnings
 
 
   perf-tests:
