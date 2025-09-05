@@ -170,6 +170,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         return self._benchmark_meta.default_subset
 
+    @default_subset.setter
+    def default_subset(self, value: str):
+        """
+        Set the default subset of the benchmark.
+        """
+        self._benchmark_meta.default_subset = value
+
     @property
     def few_shot_num(self) -> int:
         """
