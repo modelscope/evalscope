@@ -2,7 +2,7 @@
 import re
 from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -15,12 +15,6 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers,
 logger = get_logger()
 
 SUBSET_LIST = ['default']
-
-PROMPT_TEMPLATE = """
-Answer the following question. The entire content of your response should be of the following format: 'ANSWER: $ANSWER' (without quotes) where $ANSWER is your answer.
-
-{question}
-""".lstrip()
 
 OPEN_PROMPT = """
 Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
@@ -47,10 +41,10 @@ OPEN_TYPE = 'free_form'
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='testmini',
-        prompt_template=PROMPT_TEMPLATE,
+        prompt_template=OPEN_PROMPT,
     )
 )
-class MathVistaAdapter(DefaultDataAdapter):
+class MathVistaAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
