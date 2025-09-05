@@ -100,8 +100,8 @@ class MMMUPROAdapter(VisionLanguageAdapter):
             content_list: List[Content] = [ContentText(text=input_text)]
 
             image = record.get('image')
-            image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-            content_list.append(ContentImage(image=image_base64))
+            if image:
+                content_list.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
         else:
             input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
             content_list: List[Content] = [ContentText(text=input_text)]
