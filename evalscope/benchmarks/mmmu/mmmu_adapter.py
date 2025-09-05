@@ -2,7 +2,7 @@ import ast
 import re
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -74,10 +74,10 @@ OPEN_TYPE = 'open'
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='validation',
-        prompt_template='{question}',
+        prompt_template=OPEN_PROMPT,
     )
 )
-class MMMUAdapter(DefaultDataAdapter):
+class MMMUAdapter(VisionLanguageAdapter):
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):

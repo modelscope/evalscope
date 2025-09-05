@@ -13,6 +13,7 @@ You can also use other tools supported by this framework for evaluation, such as
 :maxdepth: 2
 
 llm.md
+vlm.md
 aigc.md
 other/index.md
 :::

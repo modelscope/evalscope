@@ -38,7 +38,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python -m pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -p no:warnings
+          python -m pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings
 
 
   perf-tests:
@@ -65,4 +65,4 @@ jobs:
 
       - name: Run perf test
         run: |
-          python -m pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -p no:warnings
+          python -m pytest tests/perf/test_perf.py::TestPerf::test_run_perf_multi_parallel -v -s -p no:warnings
