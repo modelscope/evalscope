@@ -53,3 +53,13 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('mmmu', dataset_args=dataset_args)
+
+    def test_mmmu_pro(self):
+        dataset_args = {
+            'subset_list':[
+                'Accounting',
+                'Agriculture',
+                # 'Architecture_and_Engineering'
+            ]
+        }
+        self._run_dataset_test('mmmu_pro', dataset_args=dataset_args)

@@ -4,6 +4,7 @@
 
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
+| `MathVista` | [MathVista](#mathvista) | `MCQ`, `Math`, `Reasoning` |
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
@@ -36,6 +37,7 @@
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
+| `mmmu_pro` | [MMMU_PRO](#mmmu_pro) | `Knowledge`, `MultiModal`, `QA` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -51,6 +53,29 @@
 ---
 
 ## 数据集详情
+
+### MathVista
+
+[返回目录](#llm评测集)
+- **数据集名称**: `MathVista`
+- **数据集ID**: [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary)
+- **数据集描述**:  
+  > MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.
+- **任务类别**: `MCQ`, `Math`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following question. The entire content of your response should be of the following format: 'ANSWER: $ANSWER' (without quotes) where $ANSWER is your answer.
+
+{question}
+
+```
+
+---
 
 ### AIME-2024
 
@@ -857,6 +882,30 @@ Answer the following multiple choice question. The last line of your response sh
 - **提示模板**: 
 ```text
 {question}
+```
+
+---
+
+### MMMU_PRO
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mmmu_pro`
+- **数据集ID**: [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary)
+- **数据集描述**:  
+  > MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `standard (10 options)`, `standard (4 options)`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
 
 ---
