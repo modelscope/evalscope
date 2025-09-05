@@ -96,7 +96,9 @@ class DefaultEvaluator(Evaluator):
 
         # Process each subset (e.g., test, validation) independently
         for subset, dataset in dataset_dict.items():
-            assert len(dataset) > 0, f'No samples found in subset: {subset}'
+            if len(dataset) == 0:
+                logger.info(f'No samples found in subset: {subset}, skipping.')
+                continue
             subset_score = self.evaluate_subset(subset, dataset)
             agg_score_dict[subset] = subset_score
 
@@ -181,7 +183,7 @@ class DefaultEvaluator(Evaluator):
                         model_result = self.cache_manager.save_prediction_cache(
                             subset, task_state, self.benchmark.save_metadata
                         )
-                        logger.debug(f'Model result: \n{model_result.model_dump_json(indent=2)}')
+                        logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
                     except Exception as exc:
                         logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}')
@@ -261,10 +263,10 @@ class DefaultEvaluator(Evaluator):
                             sample_score=sample_score,
                             save_metadata=self.benchmark.save_metadata
                         )
-                        logger.debug(f'Review result: \n{review_result.model_dump_json(indent=2)}')
+                        logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
                     except Exception as exc:
-                        logger.error(f'Error when review sample {task_state.sample_id}: {exc}')
+                        logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}')
                         if self.task_config.ignore_errors:
                             logger.warning('Error ignored, continuing with next sample.')
                         else:

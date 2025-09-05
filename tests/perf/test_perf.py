@@ -1,9 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 from dotenv import dotenv_values
 
 env = dotenv_values('.env')
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import unittest
 
 from evalscope.perf.main import run_perf_benchmark
@@ -123,6 +121,10 @@ class TestPerf(unittest.TestCase):
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_perf_multi_parallel(self):
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is not set.')
+            return
+
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],

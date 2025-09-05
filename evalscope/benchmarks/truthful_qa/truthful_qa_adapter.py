@@ -37,6 +37,7 @@ TRUTHFUL_QA_PROMPT = (
         dataset_id='evalscope/truthful_qa',
         metric_list=['multi_choice_acc'],
         subset_list=['multiple_choice'],
+        shuffle_choices=True,
         few_shot_num=0,
         train_split=None,
         eval_split='validation',
@@ -54,8 +55,6 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
-
-        self.shuffle_choices = True
 
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
         if self.multiple_correct:

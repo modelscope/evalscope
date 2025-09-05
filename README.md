@@ -117,7 +117,8 @@ Please scan the QR code below to join our community groups:
 >
 > Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
 
-- 🔥 **[2025.08.22]** Version 1.0 Refactoring.
+- 🔥 **[2025.09.04]** Added support for image editing task evaluation, including the [GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench) benchmark. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/image_edit.html).
+- 🔥 **[2025.08.22]** Version 1.0 Refactoring. Break changes, please [refer to](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html#switching-to-version-v1-0).
 - 🔥 **[2025.07.18]** The model stress testing now supports randomly generating image-text data for multimodal model evaluation. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#id4).
 - 🔥 **[2025.07.16]** Support for [τ-bench](https://github.com/sierra-research/tau-bench) has been added, enabling the evaluation of AI Agent performance and reliability in real-world scenarios involving dynamic user and tool interactions. For usage instructions, please refer to the [documentation](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/llm.html#bench).
 - 🔥 **[2025.07.14]** Support for "Humanity's Last Exam" ([Humanity's-Last-Exam](https://modelscope.cn/datasets/cais/hle)), a highly challenging evaluation benchmark. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html#humanity-s-last-exam).
@@ -125,7 +126,7 @@ Please scan the QR code below to join our community groups:
 - 🔥 **[2025.06.28]** Optimized custom dataset evaluation: now supports evaluation without reference answers. Enhanced LLM judge usage, with built-in modes for "scoring directly without reference answers" and "checking answer consistency with reference answers". See [reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for details.
 - 🔥 **[2025.06.19]** Added support for the [BFCL-v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3) benchmark, designed to evaluate model function-calling capabilities across various scenarios. For more information, refer to the [documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html).
 - 🔥 **[2025.06.02]** Added support for the Needle-in-a-Haystack test. Simply specify `needle_haystack` to conduct the test, and a corresponding heatmap will be generated in the `outputs/reports` folder, providing a visual representation of the model's performance. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html) for more details.
-- 🔥 **[2025.05.29]** Added support for two long document evaluation benchmarks: [DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) and [FRAMES](https://modelscope.cn/datasets/iic/frames/summary). For usage guidelines, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html).
+- 🔥 **[2025.05.29]** Added support for two long document evaluation benchmarks: [DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) and [FRAMES](https://modelscope.cn/datasets/iic/frames/summary). For usage guidelines, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/index.html).
 - 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
 - 🔥 **[2025.05.13]** Added support for the [ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static) dataset to evaluate model's tool-calling capabilities. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) for usage instructions. Also added support for the [DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/dataPeview) and [Winogrande](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val) benchmarks to assess the reasoning capabilities of models.
 <details><summary>More</summary>
@@ -134,7 +135,7 @@ Please scan the QR code below to join our community groups:
 - 🔥 **[2025.04.27]** Support for text-to-image evaluation: Supports 8 metrics including MPS, HPSv2.1Score, etc., and evaluation benchmarks such as EvalMuse, GenAI-Bench. Refer to the [user documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html) for more details.
 - 🔥 **[2025.04.10]** Model service stress testing tool now supports the `/v1/completions` endpoint (the default endpoint for vLLM benchmarking)
 - 🔥 **[2025.04.08]** Support for evaluating embedding model services compatible with the OpenAI API has been added. For more details, check the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html#configure-evaluation-parameters).
-- 🔥 **[2025.03.27]** Added support for [AlpacaEval](https://www.modelscope.cn/datasets/AI-ModelScope/alpaca_eval/dataPeview) and [ArenaHard](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) evaluation benchmarks. For usage notes, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
+- 🔥 **[2025.03.27]** Added support for [AlpacaEval](https://www.modelscope.cn/datasets/AI-ModelScope/alpaca_eval/dataPeview) and [ArenaHard](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) evaluation benchmarks. For usage notes, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/index.html)
 - 🔥 **[2025.03.20]** The model inference service stress testing now supports generating prompts of specified length using random values. Refer to the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#using-the-random-dataset) for more details.
 - 🔥 **[2025.03.13]** Added support for the [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) code evaluation benchmark, which can be used by specifying `live_code_bench`. Supports evaluating QwQ-32B on LiveCodeBench, refer to the [best practices](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html).
 - 🔥 **[2025.03.11]** Added support for the [SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary) and [Chinese SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) evaluation benchmarks. These are used to assess the factual accuracy of models, and you can specify `simple_qa` and `chinese_simpleqa` for use. Support for specifying a judge model is also available. For more details, refer to the [relevant parameter documentation](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html).
@@ -333,7 +334,7 @@ run_task(task_cfg="config.json")
 
 ### Basic Parameter
 - `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, e.g., [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); or use the local path of the model, e.g., `/path/to/model`
-- `--datasets`: Dataset names, supports inputting multiple datasets separated by spaces. Datasets will be automatically downloaded from modelscope. For supported datasets, refer to the [Dataset List](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
+- `--datasets`: Dataset names, supports inputting multiple datasets separated by spaces. Datasets will be automatically downloaded from modelscope. For supported datasets, refer to the [Dataset List](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/index.html)
 - `--limit`: Maximum amount of evaluation data for each dataset. If not specified, it defaults to evaluating all data. Can be used for quick validation
 
 ### Output Results
@@ -422,7 +423,7 @@ For more customized evaluations, such as customizing model parameters or dataset
 evalscope eval \
  --model Qwen/Qwen3-0.6B \
  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
- --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
@@ -436,7 +437,7 @@ evalscope eval \
 - `--generation-config`: Generation parameters, passed as a JSON string and parsed as a dictionary:
   - `do_sample`: Whether to use sampling
   - `temperature`: Generation temperature
-  - `max_new_tokens`: Maximum length of generated tokens
+  - `max_tokens`: Maximum length of generated tokens
   - `chat_template_kwargs`: Model inference template parameters
 - `--dataset-args`: Settings for the evaluation dataset, passed as a JSON string where the key is the dataset name and the value is the parameters. Note that these need to correspond one-to-one with the values in the `--datasets` parameter:
   - `few_shot_num`: Number of few-shot examples

@@ -6,9 +6,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, DataAdapter, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
-from evalscope.api.model.model import Model
 from evalscope.api.registry import get_benchmark, register_benchmark
 from evalscope.config import TaskConfig
 from evalscope.constants import DataCollection, Tags
@@ -23,7 +21,11 @@ logger = get_logger()
     BenchmarkMeta(
         name=DataCollection.NAME,
         dataset_id='',  # dataset_id need to be set
-        description='Data collection',
+        description='Custom Data collection, mixing multiple evaluation datasets for '
+        'a unified evaluation, aiming to use less data to achieve a more comprehensive '
+        'assessment of the model\'s capabilities. '
+        '[Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)',
+        tags=[Tags.CUSTOM],
         metric_list=['acc'],
         eval_split='test',
         prompt_template='',
@@ -55,9 +57,10 @@ class DataCollectionAdapter(DefaultDataAdapter):
             data_id_or_path=dataset_path,
             split=self.eval_split,
             sample_fields=self.record_to_sample,
-            subset=self.default_subset,
+            subset='test',  # NOTE: using hardcoded test subset
             limit=self.limit,
-            repeats=self.repeats
+            repeats=self.repeats,
+            shuffle=self.shuffle,
         ).load()
 
         test_dataset = DatasetDict({self.default_subset: dataset})
@@ -95,7 +98,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
         # load dataset args
         dataset_args = copy.deepcopy(self._task_config.dataset_args)
-        common_args = dataset_args.get(DataCollection.NAME, {})
 
         # Iterate through each sample in the dataset
         dataset = self.test_dataset[self.default_subset]
@@ -108,7 +110,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
             # update dataset args
             cur_dataset_args = dataset_args.get(dataset_name, {})
-            cur_dataset_args.update(common_args)
 
             # Initialize dataset adapter
             if dataset_name not in self.dataset_adapters:
@@ -141,19 +142,22 @@ class DataCollectionAdapter(DefaultDataAdapter):
         data = []
         for sample_score in sample_scores:
             collection_info = sample_score.sample_metadata[DataCollection.INFO]
-            for metric_name, value in sample_score.score.value.items():
-                data.append(
-                    dict(
-                        task_type=collection_info['task_type'],
-                        categories=tuple(collection_info['categories']),
-                        dataset_name=collection_info['dataset_name'],
-                        subset_name=collection_info['subset_name'],
-                        tags=collection_info['tags'],
-                        sample_id=sample_score.sample_id,
-                        metric=metric_name,
-                        score=value
-                    )
+            main_score = sample_score.score.main_value
+            main_metric = sample_score.score.main_score_name
+
+            # use main score
+            data.append(
+                dict(
+                    task_type=collection_info['task_type'],
+                    categories=tuple(collection_info['categories']),
+                    dataset_name=collection_info['dataset_name'],
+                    subset_name=collection_info['subset_name'],
+                    tags=collection_info['tags'],
+                    sample_id=sample_score.sample_id,
+                    metric=main_metric,
+                    score=main_score
                 )
+            )
 
         df = pd.DataFrame(data)
 

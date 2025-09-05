@@ -47,7 +47,6 @@ class OpenCompassBackendManager(BackendManager):
                     datasets: list, the datasets.
                     models: list, the models.
                     work_dir (Optional): str, the working directory. Default to None, which means the current directory.
-                    dry_run (Optional): bool, the dry-run flag. Default to False.
                     debug (Optional): bool, the debug flag. Default to False.
                     reuse (Optional): str, reuse previous outputs & results. Default to None.
                     generation_kwargs (Optional): dict, the generation config. Default to {}.
@@ -140,7 +139,6 @@ class OpenCompassBackendManager(BackendManager):
             cmd_str = f'python -m run_oc ' \
                       f'--models {" ".join(self.args.models)} ' \
                       f'--datasets {" ".join(self.args.datasets)} ' \
-                      f'{self.get_restore_arg("dry-run", self.args.dry_run)} ' \
                       f'{self.get_arg_with_default("work-dir", self.args.work_dir)}'
 
         elif cmd_mode == CmdMode.SCRIPT:

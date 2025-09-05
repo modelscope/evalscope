@@ -107,8 +107,8 @@ class Text2ImageAPI(ModelAPI):
             kwargs['num_inference_steps'] = config.num_inference_steps
         if config.guidance_scale is not None:
             kwargs['guidance_scale'] = config.guidance_scale
-        if config.extra_body is not None:
-            kwargs.update(config.extra_body)
+        # update with extra model parameters
+        kwargs.update(config.model_extra)
 
         # assume the first text as prompt
         prompt = input[0].text

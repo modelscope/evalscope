@@ -47,9 +47,6 @@ repos:
         exclude: thirdparty/
       - id: check-merge-conflict
         exclude: thirdparty/
-      - id: fix-encoding-pragma
-        exclude: thirdparty/
-        args: ["--remove"]
       - id: mixed-line-ending
         exclude: thirdparty/
         args: ["--fix=lf"]

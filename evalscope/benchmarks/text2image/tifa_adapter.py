@@ -10,6 +10,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='tifa160',
+        pretty_name='TIFA-160',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
         description='TIFA-160 Text-to-Image Benchmark',
         tags=[Tags.TEXT_TO_IMAGE],

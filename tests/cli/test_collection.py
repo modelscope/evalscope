@@ -52,16 +52,19 @@ class TestCollection(unittest.TestCase):
             api_key=env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
             datasets=['data_collection'],
-            dataset_args={'data_collection': {
-                'local_path': 'outputs/mixed_data_test.jsonl'
-                # 'local_path': 'outputs/weighted_mixed_data.jsonl'
-            }},
+            dataset_args={
+                'data_collection': {
+                    # 'local_path': 'outputs/test_mix.jsonl'
+                    'local_path': 'outputs/mixed_data_test.jsonl',
+                    'shuffle': True,
+                }
+            },
             eval_batch_size=5,
             generation_config = {
                 'max_tokens': 10000,
                 'temperature': 0.0,
             },
-            limit=50,
+            limit=10,
             # use_cache='outputs/20250822_161804'
         )
         run_task(task_cfg=task_cfg)

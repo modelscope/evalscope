@@ -35,20 +35,28 @@ class Score(BaseModel):
         """Main score value."""
         if self.main_score_name and self.main_score_name in self.value:
             return self.value[self.main_score_name]
-        return next(iter(self.value.values()), None)
+        elif self.value:
+            # If main_score_name is not set or not found, use the first value and update main_score_name
+            first_key = next(iter(self.value))
+            self.main_score_name = first_key
+            return self.value[first_key]
+        return None
 
     @main_value.setter
     def main_value(self, value: Union[int, float, bool]):
         """Set the main score value."""
         if self.main_score_name:
+            # If main_score_name is already set, use it
             self.value[self.main_score_name] = value
+        elif self.value:
+            # If no main_score_name but value dict exists, use the first key
+            first_key = next(iter(self.value))
+            self.main_score_name = first_key
+            self.value[first_key] = value
         else:
-            # If no main score name is set, just update the first value
-            if self.value:
-                first_key = next(iter(self.value))
-                self.value[first_key] = value
-            else:
-                self.value['default'] = value
+            # If neither main_score_name nor value dict exists, initialize both
+            self.main_score_name = 'default'
+            self.value[self.main_score_name] = value
 
 
 class SampleScore(BaseModel):

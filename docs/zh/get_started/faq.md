@@ -345,7 +345,7 @@ A:  请参考这个文档设置：https://evalscope.readthedocs.io/zh-cn/latest/
 
 ### Q55: evalscope - ERROR - Error when calling remote API: Connection error
 
-A: alpaca_eval 需要指定Judge Model进行评测，默认模型调用的是openai的模型，没有配置的话就会报错。这个文档里有说明：https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html#llm
+A: alpaca_eval 需要指定Judge Model进行评测，默认模型调用的是openai的模型，没有配置的话就会报错。这个文档里有说明：https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html#llm
 
 ### Q56: simpleQA, 将数据集下载到本地，推理结束后的reviewing很慢，使用的evalscope版本是目前的master源码安装
 
@@ -484,7 +484,7 @@ A: 请查看教程：https://evalscope.readthedocs.io/zh-cn/latest/get_started/b
 
 ### Q76: realwordqa 评测模型最后输出来的是选abcd的准确率吗？
 
-A: 是选项的准确率，参考：https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html#id3
+A: 是选项的准确率，参考：https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html#id3
 
 MCQ基本都是选项的准确率
 

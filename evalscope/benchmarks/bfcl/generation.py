@@ -78,7 +78,7 @@ def generate_turn(model: Model, row: dict[str, Any]):
             if isinstance(message, str):
                 result = message
             else:
-                result = message.content
+                result = message.text
 
             logger.debug(f'Turn:{turn_idx} Step:{n_steps} Result: {result}')
             current_responses.append(result)
@@ -186,7 +186,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
                     logger.error(f'Error converting tool calls to function call strings: {e}')
                     tool_call_strs = None
             else:
-                model_responses = [message.content]
+                model_responses = [message.text]
                 tool_call_strs = None
 
             current_responses.extend(model_responses)

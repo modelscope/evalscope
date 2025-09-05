@@ -15,7 +15,6 @@ openai
 overrides
 pandas
 pillow
-pyarrow
 pydantic
 pyyaml>=5.1
 requests
@@ -27,7 +26,6 @@ scikit-learn
 seaborn
 sympy
 tabulate
-torch
 tqdm
 transformers>=4.33
 word2number

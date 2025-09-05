@@ -70,6 +70,7 @@ class EvalType:
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     SERVICE = 'openai_api'  # model service
     TEXT2IMAGE = 'text2image'  # image generation service
+    IMAGE_EDITING = 'image_editing'  # image editing service
 
 
 class OutputType:
@@ -127,3 +128,10 @@ class Tags:
     RETRIEVAL = 'Retrieval'
     FUNCTION_CALLING = 'FunctionCalling'
     TEXT_TO_IMAGE = 'TextToImage'
+    IMAGE_EDITING = 'ImageEditing'
+    MULTI_MODAL = 'MultiModal'
+
+
+class FileConstants:
+    IMAGE_PATH = 'image_path'
+    ID = 'id'

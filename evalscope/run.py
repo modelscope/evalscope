@@ -131,8 +131,9 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         )
         evaluators.append(evaluator)
 
-        # Update task_config.dataset_args with benchmark metadata
-        task_config.dataset_args[dataset_name] = benchmark.to_dict()
+        # Update task_config.dataset_args with benchmark metadata, except for DataCollection
+        if dataset_name != DataCollection.NAME:
+            task_config.dataset_args[dataset_name] = benchmark.to_dict()
 
     # dump task_cfg to outputs.configs_dir after creating evaluators
     task_config.dump_yaml(outputs.configs_dir)
@@ -149,16 +150,19 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         logger.info(f'Overall report table: \n{report_table} \n')
     except Exception:
         logger.error('Failed to generate report table.')
-
     # Clean up
     if model is not None:
         import gc
-        import torch
 
         del model
         del evaluators
-        torch.cuda.empty_cache()
         gc.collect()
+
+        from evalscope.utils.import_utils import check_import
+        if check_import('torch'):
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     return eval_results
 

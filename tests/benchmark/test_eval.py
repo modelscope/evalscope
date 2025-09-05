@@ -4,17 +4,15 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 import unittest
-from unittest import TestCase
 
-from evalscope.config import TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
-from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
+from tests.common import TestBenchmark
 
 logger = get_logger()
 
 
-class TestBenchmark(TestCase):
+class TestNativeBenchmark(TestBenchmark):
     """Benchmark evaluation test cases."""
 
     def setUp(self):
@@ -46,27 +44,6 @@ class TestBenchmark(TestCase):
             'debug': True,
         }
 
-    def _run_dataset_test(self, dataset_name, dataset_args=None, use_mock=False, **config_overrides):
-        """Helper method to run test for a specific dataset."""
-        config = self.base_config.copy()
-        config['datasets'] = [dataset_name]
-
-        if use_mock:
-            config['eval_type'] = EvalType.MOCK_LLM
-
-        # 应用配置覆盖
-        config.update(config_overrides)
-
-        if dataset_args:
-            config['dataset_args'] = {dataset_name: dataset_args}
-
-        task_cfg = TaskConfig(**config)
-        run_task(task_cfg=task_cfg)
-
-    def _run_dataset_load_test(self, dataset_name, dataset_args=None):
-        """Helper method to test dataset loading."""
-
-        self._run_dataset_test(dataset_name, dataset_args, use_mock=True, limit=None)
 
     # Math & Reasoning datasets
     def test_gsm8k(self):
@@ -84,7 +61,7 @@ class TestBenchmark(TestCase):
         """Test MMLU reasoning dataset."""
         dataset_args = {
             'few_shot_num': 0,
-            # 'subset_list': ['abstract_algebra', 'computer_security']
+            'subset_list': ['abstract_algebra', 'computer_security']
         }
         self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
 
@@ -116,7 +93,11 @@ class TestBenchmark(TestCase):
     def test_math_500(self):
         """Test MATH 500 dataset."""
         # self._run_dataset_load_test('math_500')
-        self._run_dataset_test('math_500')
+        dataset_args = {
+            'subset_list': ['Level 1', 'Level 2'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('math_500', dataset_args=dataset_args)
 
     def test_aime24(self):
         """Test AIME 2024 dataset."""
@@ -364,21 +345,39 @@ class TestBenchmark(TestCase):
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args)
+        self._run_dataset_test('bfcl_v3', dataset_args, model='qwq-plus', stream=True)
 
     def test_tau_bench(self):
         dataset_args = {
+            'subset_list': [
+                'airline',
+                'retail'
+            ],
             'extra_params': {
                 'user_model': 'qwen-plus',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
-                    'temperature': 0.7,
-                    'max_new_tokens': 1024
+                    'temperature': 0.0,
+                    'max_tokens': 12000,
+                    'stream': True
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=1)
+        self._run_dataset_test('tau_bench', dataset_args, limit=5, model='qwq-plus', stream=True)
+
+    def test_r1_collection(self):
+        dataset_args = {
+            'dataset_id': 'evalscope/R1-Distill-Math-Test-v2'
+        }
+        self._run_dataset_test('data_collection', dataset_args)
+
+    def test_qwen3_collection(self):
+        dataset_args = {
+            'dataset_id': 'evalscope/Qwen3-Test-Collection'
+        }
+        self._run_dataset_test('data_collection', dataset_args)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

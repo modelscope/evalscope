@@ -75,7 +75,11 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         dataset_dict = {}
         for subset_name, samples in datasets.items():
             dataset = DictDataLoader(
-                dict_list=samples, limit=self.limit, repeats=self.repeats, sample_fields=self.record_to_sample
+                dict_list=samples,
+                limit=self.limit,
+                shuffle=self.shuffle,
+                repeats=self.repeats,
+                sample_fields=self.record_to_sample
             ).load()
             dataset_dict[subset_name] = dataset
 
