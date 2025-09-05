@@ -14,7 +14,6 @@
 """Utility library of instructions."""
 
 import functools
-import immutabledict
 import nltk
 import os
 import random
@@ -1551,7 +1550,7 @@ WORD_LIST = [
 ]  # pylint: disable=line-too-long
 
 # ISO 639-1 codes to language names.
-LANGUAGE_CODES = immutabledict.immutabledict({
+LANGUAGE_CODES = {
     'en': 'English',
     'es': 'Spanish',
     'pt': 'Portuguese',
@@ -1582,7 +1581,7 @@ LANGUAGE_CODES = immutabledict.immutabledict({
     'pa': 'Punjabi',
     'ml': 'Malayalam',
     'fi': 'Finnish',
-})
+}
 
 _ALPHABETS = '([A-Za-z])'
 _PREFIXES = '(Mr|St|Mrs|Ms|Dr)[.]'

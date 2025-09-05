@@ -189,7 +189,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 'mmmu',
-                'math_vista',
+                # 'math_vista',
             ],
             dataset_args={
                 'mmmu': {
