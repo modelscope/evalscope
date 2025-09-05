@@ -7,25 +7,20 @@ from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
 
 
-@register_dataset('openqa')
-class OpenqaDatasetPlugin(DatasetPluginBase):
-    """Read dataset and return prompt.
-    Datasets: https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/resolve/master/open_qa.jsonl
+@register_dataset('gsm8k')
+class Gsm8kDatasetPlugin(DatasetPluginBase):
+    """
+    Read dataset and return prompt.
     """
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        if not self.query_parameters.dataset_path:
-            from modelscope import dataset_snapshot_download
+        from modelscope.msdatasets import MsDataset
+        dataset = MsDataset.load('modelscope/gsm8k', subset_name='main', split='test')
 
-            file_name = 'open_qa.jsonl'
-            local_path = dataset_snapshot_download('AI-ModelScope/HC3-Chinese', allow_patterns=[file_name])
-            self.query_parameters.dataset_path = os.path.join(local_path, file_name)
-
-        for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
-            item = json.loads(item)
+        for item in dataset:
             prompt = item['question'].strip()
             if (
                 len(prompt) > self.query_parameters.min_prompt_length
