@@ -271,3 +271,4 @@ If you previously used version v0.1x and wish to switch to v1.0, please note the
 3. Due to changes in dataset formats, EvalScope's dataset collection feature does not support datasets created with versions prior to 1.0. You will need to recreate datasets using version 1.0.
 4. The `n` parameter in model inference is no longer supported; it has been changed to `repeats`.
 5. The `stage` parameter has been removed. A new parameter, `rerun_review`, has been added to control whether evaluations are rerun when `use_cache` is specified.
+6. The dataset `gpqa` has been renamed to `gpqa_diamond`, and there is no need to specify the `subset_list` parameter.

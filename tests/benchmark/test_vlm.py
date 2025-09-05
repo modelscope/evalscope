@@ -59,3 +59,15 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': ['default']
         }
         self._run_dataset_test('math_vista', dataset_args=dataset_args)
+
+    def test_mmmu_pro(self):
+        dataset_args = {
+            'subset_list':[
+                'Accounting',
+                # 'Agriculture',
+            ],
+            'extra_params': {
+                'dataset_format': 'standard (10 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'
+            },
+        }
+        self._run_dataset_test('mmmu_pro', dataset_args=dataset_args)
