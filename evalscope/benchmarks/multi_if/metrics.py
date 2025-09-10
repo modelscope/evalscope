@@ -99,7 +99,8 @@ def parse_result(outputs: List[Dict[str, Any]]) -> Tuple[float, float]:
         instruction_total += len(instruction_id_list)
         instruction_correct += sum(follow_instruction_list)
 
-    return prompt_correct / prompt_total, instruction_correct / instruction_total
+    return prompt_correct / prompt_total if prompt_total > 0 else 0, \
+        instruction_correct / instruction_total if instruction_total > 0 else 0
 
 
 def parse_result_no_reduce(outputs: List[Dict[str, Any]]) -> Tuple[List, List]:
