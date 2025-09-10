@@ -19,7 +19,7 @@ from . import ifeval
 logger = get_logger()
 
 
-def gen_acc_strict(x: Dict[str, Any]) -> Dict[str, float]:
+def gen_acc_strict(x: Dict[str, Any]) -> Dict[str, List]:
     # reference: fbcode/gen_ai/github/fair_evals/evals/tasks/finetune/ifeval.py
     response = str(x['response'])
     instruction_list = x['instruction_id_list']
