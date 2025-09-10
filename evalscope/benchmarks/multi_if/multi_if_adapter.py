@@ -90,8 +90,6 @@ class MultiIFAdapter(DefaultDataAdapter):
             history.append(ChatMessageUser(content=current_prompt['content']))
             # Generate model output
             model_output = model.generate(input=history, tools=sample.tools)
-            # Append model output to history for next turn
-            history.append(model_output.message)
 
             response = model_output.completion
             instruction_id_list = json.loads(record[f'turn_{step}_instruction_id_list'])
@@ -104,6 +102,9 @@ class MultiIFAdapter(DefaultDataAdapter):
                 'instruction_id_list': instruction_id_list,
                 'kwargs': _kwargs
             }
+
+            # Append model output to history for next turn
+            history.append(model_output.message)
 
         sample.metadata['step_record'] = step_record
         return TaskState(
