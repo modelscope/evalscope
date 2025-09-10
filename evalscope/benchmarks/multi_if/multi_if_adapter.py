@@ -145,7 +145,8 @@ class MultiIFAdapter(DefaultDataAdapter):
             score.value.update(results)
 
             # Set main score name
-            score.main_score_name = f'turn_{step}_prompt_level_strict'
+            if results:
+                score.main_score_name = f'turn_{step}_prompt_level_strict'
 
         except Exception as e:
             logger.error(f'Error calculating ifeval metrics: {e}')
