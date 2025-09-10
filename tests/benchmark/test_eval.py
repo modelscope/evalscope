@@ -65,6 +65,14 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
 
+    def test_mmlu_reasoning(self):
+        """Test MMLU reasoning dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['abstract_algebra', 'computer_security']
+        }
+        self._run_dataset_test('mmlu', dataset_args=dataset_args, model='qwen3-0.6b', stream=True)
+
     def test_mmlu_pro(self):
         """Test MMLU-Pro reasoning dataset."""
         dataset_args = {
@@ -378,6 +386,12 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('data_collection', dataset_args)
 
+    def test_multi_if(self):
+        dataset_args = {
+            'subset_list': ['English', 'Chinese'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('multi_if', dataset_args, limit=5)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

@@ -1,5 +1,7 @@
 import json
 import os
+
+os.environ['BUILD_DOC'] = '1'  # To avoid some heavy dependencies
 from collections import defaultdict
 from tqdm import tqdm
 from typing import Any, Dict, List
@@ -269,7 +271,7 @@ def get_adapters():
     print('Getting DataAdapters...')
     # 获取所有DataAdapter实例
     adapters = defaultdict(list)
-    for benchmark in tqdm(BENCHMARK_REGISTRY.values()):
+    for benchmark in tqdm(BENCHMARK_REGISTRY.values(), desc='Loading Benchmarks'):
         adapter = get_benchmark(benchmark.name)
         if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
             adapters['aigc'].append(adapter)
