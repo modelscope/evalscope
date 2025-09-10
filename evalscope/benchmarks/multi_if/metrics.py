@@ -40,7 +40,7 @@ def gen_acc_strict(x: Dict[str, Any]) -> Dict[str, float]:
     }
 
 
-def gen_acc_loose(x: Dict[str, Any]) -> Dict[str, float]:
+def gen_acc_loose(x: Dict[str, Any]) -> Dict[str, List]:
     response = str(x['response'])
     r = response.split('\n')
     response_remove_first = '\n'.join(r[1:]).strip()
