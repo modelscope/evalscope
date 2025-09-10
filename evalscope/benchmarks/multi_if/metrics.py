@@ -114,6 +114,6 @@ def parse_result_no_reduce(outputs: List[Dict[str, Any]]) -> Tuple[List, List]:
             prompt_res.append(1)
         else:
             prompt_res.append(0)
-        inst_res.append(sum(follow_instruction_list) / len(instruction_id_list))
+        inst_res.append(sum(follow_instruction_list) / len(instruction_id_list) if instruction_id_list else 0.0)
 
     return prompt_res, inst_res
