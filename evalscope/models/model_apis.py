@@ -47,9 +47,7 @@ def checkpoint() -> type[ModelAPI]:
 
 @register_model_api(name='text2image')
 def text2image() -> type[ModelAPI]:
-    check_import('torch', package='evalscope[aigc]', raise_error=True)
-    check_import('torchvision', package='evalscope[aigc]', raise_error=True)
-    check_import('diffusers', package='evalscope[aigc]', raise_error=True)
+    check_import(['torch', 'torchvision', 'diffusers'], package='evalscope[aigc]', raise_error=True)
 
     from .text2image_model import Text2ImageAPI
 
@@ -58,9 +56,7 @@ def text2image() -> type[ModelAPI]:
 
 @register_model_api(name='image_editing')
 def image_editing() -> type[ModelAPI]:
-    check_import('torch', package='evalscope[aigc]', raise_error=True)
-    check_import('torchvision', package='evalscope[aigc]', raise_error=True)
-    check_import('diffusers', package='evalscope[aigc]', raise_error=True)
+    check_import(['torch', 'torchvision', 'diffusers'], package='evalscope[aigc]', raise_error=True)
 
     from .image_edit_model import ImageEditAPI
 
