@@ -8,9 +8,9 @@ from .pass_k_utils import compute_metrics_from_results
 
 logger = get_logger()
 
+
 def _temp_run(sample, generation, debug, result, metadata_list, timeout):
     """Runs a test in a separate process to enforce a timeout.
-
     This function is defined at the module's top level to ensure it can be
     pickled by `multiprocessing.Process`. This is a requirement on platforms
     like macOS (on Apple Silicon) which use the 'spawn' start method, as
@@ -21,13 +21,13 @@ def _temp_run(sample, generation, debug, result, metadata_list, timeout):
     result.append(res)
     metadata_list.append(metadata)
 
+
 def codegen_check_correctness(sample, generation, timeout, debug=True):
     """Check correctness of code generation with a global timeout.
 
     The global timeout is to catch some extreme/rare cases not handled by the
     timeouts inside `run_test`
     """
-
 
     manager = multiprocessing.Manager()
     result = manager.list()
