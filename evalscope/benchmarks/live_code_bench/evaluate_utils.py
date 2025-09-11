@@ -9,6 +9,13 @@ from .pass_k_utils import compute_metrics_from_results
 logger = get_logger()
 
 def _temp_run(sample, generation, debug, result, metadata_list, timeout):
+    """Runs a test in a separate process to enforce a timeout.
+
+    This function is defined at the module's top level to ensure it can be
+    pickled by `multiprocessing.Process`. This is a requirement on platforms
+    like macOS (on Apple Silicon) which use the 'spawn' start method, as
+    nested functions are not picklable.
+    """
     from .testing_util import run_test
     res, metadata = run_test(sample, test=generation, debug=debug, timeout=timeout)
     result.append(res)
