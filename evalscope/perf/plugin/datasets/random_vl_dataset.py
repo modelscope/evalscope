@@ -31,7 +31,7 @@ class RandomVLDatasetPlugin(RandomDatasetPlugin):
             # Generate random images based on image_num
             images_b64 = []
             for _ in range(self.image_num):
-                images_b64.append(f'data:image/png;base64,{self._generate_random_image_b64()}')
+                images_b64.append(self._generate_random_image_b64())
 
             message = self.create_message(text=prompt, image_urls=images_b64)
             yield [message]
@@ -77,4 +77,4 @@ class RandomVLDatasetPlugin(RandomDatasetPlugin):
                 draw.line(coords, fill=shape_color, width=random.randint(1, 5))
 
         # Convert to base64
-        return PIL_to_base64(image, format='PNG')
+        return PIL_to_base64(image, format='PNG', add_header=True)

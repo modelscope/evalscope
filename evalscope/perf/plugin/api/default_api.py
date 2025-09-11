@@ -94,7 +94,7 @@ class DefaultApiPlugin(ApiPluginBase):
             # Handle successful response with 'application/json' content type
             elif content_type_json in response_content_type:
                 content = await response.json()
-                yield (False, response_status, json.dumps(content, ensure_ascii=False))
+                yield (False, response_status, content)
             # Handle other successful responses
             else:
                 content = await response.read()
@@ -102,4 +102,4 @@ class DefaultApiPlugin(ApiPluginBase):
         else:
             # error is always in JSON format
             error = await response.json()
-            yield (True, response_status, json.dumps(error, ensure_ascii=False))
+            yield (True, response_status, error)

@@ -157,7 +157,7 @@ class TestPerf(unittest.TestCase):
             url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
             api_key=env.get('DASHSCOPE_API_KEY'),
             api='openai',
-            dataset='kontext_bench',
+            dataset='random_vl',
             min_tokens=100,
             max_tokens=100,
             prefix_length=0,
@@ -166,7 +166,7 @@ class TestPerf(unittest.TestCase):
             image_height=512,
             image_width=512,
             image_num=2,
-            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            tokenizer_path='Qwen/Qwen2.5-VL-7B-Instruct',
             seed=None,
             extra_args={'ignore_eos': True}
         )
