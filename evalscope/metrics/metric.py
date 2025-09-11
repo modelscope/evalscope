@@ -210,6 +210,9 @@ class Mean(Aggregator):
 
     name = 'mean'
 
+    def agg_func(self, values: List[float]) -> float:
+        return mean(values)
+
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate scores by computing the mean for each metric.
 
@@ -238,7 +241,7 @@ class Mean(Aggregator):
             if values:  # Only process non-empty value lists
                 aggregated_scores.append(
                     AggScore(
-                        score=mean(values),
+                        score=self.agg_func(values),
                         metric_name=metric_name,
                         aggregation_name=self.name,
                         num=len(values),
@@ -247,6 +250,20 @@ class Mean(Aggregator):
                 )
 
         return aggregated_scores
+
+
+@register_aggregation(name='clipped_mean')
+class ClippedMean(Mean):
+
+    name = 'clipped_mean'
+
+    def __init__(self, clip_min: float = 0.0, clip_max: float = 1.0):
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+    def agg_func(self, values: List[float]) -> float:
+        clipped_values = min(max(mean(values), self.clip_min), self.clip_max)
+        return clipped_values
 
 
 @register_aggregation(name='pass_at_k')

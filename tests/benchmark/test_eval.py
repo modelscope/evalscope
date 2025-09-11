@@ -393,6 +393,15 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('multi_if', dataset_args, limit=5)
 
+    def test_healthbench(self):
+        dataset_args = {
+            'subset_list': ['health_data_tasks'],
+            'extra_params': {
+                'version': 'Hard'
+            }
+        }
+        self._run_dataset_test('health_bench', dataset_args, limit=5)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark
