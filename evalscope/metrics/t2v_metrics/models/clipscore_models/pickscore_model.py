@@ -24,8 +24,9 @@ class PickScoreModel(ScoreModel):
         # model_pretrained_name_or_path = "yuvalkirstain/PickScore_v1"
         model_pretrained_name_or_path = 'AI-ModelScope/PickScore_v1'  # modelscope model
 
-        self.processor = AutoProcessor.from_pretrained(processor_name_or_path)
-        self.model = AutoModel.from_pretrained(model_pretrained_name_or_path).eval().to(self.device)
+        self.processor = AutoProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(model_pretrained_name_or_path,
+                                               trust_remote_code=True).eval().to(self.device)
 
     def load_images(self, image: List[str]) -> torch.Tensor:
         """Load the image(s), and return a tensor (no preprocessing!!) put on self.device
