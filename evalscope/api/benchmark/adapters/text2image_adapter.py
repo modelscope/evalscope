@@ -18,6 +18,11 @@ logger = get_logger()
 
 class Text2ImageAdapter(DefaultDataAdapter):
     """Text to Image Adapter for benchmarks."""
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        self.add_aggregation_name = False  # Do not add aggregation name in the report by default
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
@@ -150,7 +155,3 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 score.metadata[metric_name] = f'error: {str(e)}'
 
         return score
-
-    def _on_generate_report(self, scores, model_name, add_aggregation_name=True):
-        # Don't add aggregation name for needle haystack adapter
-        return super()._on_generate_report(scores, model_name, False)

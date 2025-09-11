@@ -43,6 +43,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self.save_metadata = True
         """Whether to save metadata in the review result"""
 
+        self.add_aggregation_name = True
+        """Whether to add aggregation name in the report"""
+
         self.category_map = {}
         """Category map for the benchmark"""
 

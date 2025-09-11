@@ -273,3 +273,8 @@ class TaskState:
     def target(self) -> str:
         """The scoring target for this `Sample`."""
         return self._target.text
+
+    @target.setter
+    def target(self, text: str) -> None:
+        """Set the target for review purposes."""
+        self._target = Target(text)
