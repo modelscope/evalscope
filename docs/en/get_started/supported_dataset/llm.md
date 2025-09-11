@@ -578,7 +578,7 @@ Reasoning:
 - **Extra Parameters**: 
 ```json
 {
-    "version": "# File version, choose from ['Consensus', 'HardAll'], default to Consensus"
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
 }
 ```
 - **Prompt Template**: 
