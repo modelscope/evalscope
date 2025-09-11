@@ -2,6 +2,10 @@ import json
 import re
 from collections import defaultdict
 
+from evalscope.utils import get_logger
+
+logger = get_logger()
+
 
 def parse_json_to_dict(json_string: str) -> dict:
     # Remove markdown-style ```json``` markers if present
@@ -10,7 +14,7 @@ def parse_json_to_dict(json_string: str) -> dict:
     try:
         return json.loads(json_cleaned)
     except json.JSONDecodeError as e:
-        print(f'JSON decoding failed: {e}')
+        logger.warning(f'JSON decoding failed: {e}')
         return {}
 
 
