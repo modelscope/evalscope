@@ -24,6 +24,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -557,6 +558,34 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 Reasoning:
 
+```
+
+---
+
+### HealthBench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `health_bench`
+- **Dataset ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
+- **Description**:  
+  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+- **Task Categories**: `Knowledge`, `QA`
+- **Evaluation Metrics**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
+
+- **Extra Parameters**: 
+```json
+{
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
+}
+```
+- **Prompt Template**: 
+```text
+Answer the question:
+
+{question}
 ```
 
 ---
