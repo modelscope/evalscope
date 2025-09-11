@@ -248,17 +248,15 @@ class HealthBenchAdapter(DefaultDataAdapter):
                                                     convo_str).replace('<<rubric_item>>', str(rubric_item))
             messages = [ChatMessageUser(content=grader_prompt)]
             # Retry logic for robust evaluation
-            while retry_context(retries=3, sleep_interval=1):
+            with retry_context(retries=3, sleep_interval=1):
                 grading_response = self.llm_judge.judge(messages=messages)
                 grading_response_dict = parse_json_to_dict(grading_response)
                 # Validate response format and extract boolean criteria_met field
-                if 'criteria_met' in grading_response_dict:
-                    label = grading_response_dict['criteria_met']
-                    if label is True or label is False:
-                        grading_response_list.append(grading_response_dict)
-                        break
-                logger.warning('Grading failed due to bad JSON output, retrying...')
-                raise ValueError('Grading failed due to bad JSON output')
+                if 'criteria_met' in grading_response_dict and isinstance(grading_response_dict['criteria_met'], bool):
+                    grading_response_list.append(grading_response_dict)
+                else:
+                    logger.warning('Grading failed due to bad JSON output, retrying...')
+                    raise ValueError('Grading failed due to bad JSON output')
 
         # Calculate final scores and explanations
         overall_score = calculate_score(rubric_items, grading_response_list)  # Overall weighted score
