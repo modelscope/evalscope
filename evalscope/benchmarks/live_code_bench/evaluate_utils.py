@@ -8,6 +8,11 @@ from .pass_k_utils import compute_metrics_from_results
 
 logger = get_logger()
 
+def _temp_run(sample, generation, debug, result, metadata_list, timeout):
+    from .testing_util import run_test
+    res, metadata = run_test(sample, test=generation, debug=debug, timeout=timeout)
+    result.append(res)
+    metadata_list.append(metadata)
 
 def codegen_check_correctness(sample, generation, timeout, debug=True):
     """Check correctness of code generation with a global timeout.
@@ -16,11 +21,6 @@ def codegen_check_correctness(sample, generation, timeout, debug=True):
     timeouts inside `run_test`
     """
 
-    def _temp_run(sample, generation, debug, result, metadata_list, timeout):
-        from .testing_util import run_test
-        res, metadata = run_test(sample, test=generation, debug=debug, timeout=timeout)
-        result.append(res)
-        metadata_list.append(metadata)
 
     manager = multiprocessing.Manager()
     result = manager.list()
