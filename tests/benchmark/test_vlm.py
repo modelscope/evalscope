@@ -83,7 +83,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': ['default']
         }
-        self._run_dataset_test('real_world_qa', dataset_args=dataset_args)
+        self._run_dataset_test('real_world_qa', dataset_args=dataset_args, limit=10)
 
     def test_ai2d(self):
         dataset_args = {

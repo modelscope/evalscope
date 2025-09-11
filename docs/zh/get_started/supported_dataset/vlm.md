@@ -8,7 +8,7 @@
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
-| `real_world_qa` | [REAL-WORLD-QA](#real-world-qa) | `Knowledge`, `MultiModal`, `QA` |
+| `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
@@ -120,13 +120,13 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
-### REAL-WORLD-QA
+### RealWorldQA
 
 [返回目录](#vlm评测集)
 - **数据集名称**: `real_world_qa`
 - **数据集ID**: [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary)
 - **数据集描述**:  
-  > REAL-WORLD-QA
+  > RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models' understanding of our physical world.
 - **任务类别**: `Knowledge`, `MultiModal`, `QA`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -135,11 +135,9 @@ Answer the following multiple choice question. The last line of your response sh
 
 - **提示模板**: 
 ```text
-
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
 ```

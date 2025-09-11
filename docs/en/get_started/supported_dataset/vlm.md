@@ -8,7 +8,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
-| `real_world_qa` | [REAL-WORLD-QA](#real-world-qa) | `Knowledge`, `MultiModal`, `QA` |
+| `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
@@ -120,13 +120,13 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
-### REAL-WORLD-QA
+### RealWorldQA
 
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `real_world_qa`
 - **Dataset ID**: [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary)
 - **Description**:  
-  > REAL-WORLD-QA
+  > RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models' understanding of our physical world.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -135,11 +135,9 @@ Answer the following multiple choice question. The last line of your response sh
 
 - **Prompt Template**: 
 ```text
-
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
 ```

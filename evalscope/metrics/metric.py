@@ -6,11 +6,19 @@ from evalscope.api.registry import register_aggregation, register_metric
 from .metrics import mean
 
 
+def normalize_text(text: str) -> str:
+    """Normalize text by lowering case and stripping whitespace."""
+    return text.strip().lower()
+
+
 @register_metric(name='exact_match')
 class ExactMatch(Metric):
 
     def apply(self, predictions, references):
-        return [float(prediction == reference) for prediction, reference in zip(predictions, references)]
+        return [
+            float(normalize_text(prediction) == normalize_text(reference))
+            for prediction, reference in zip(predictions, references)
+        ]
 
 
 @register_metric(name='acc')

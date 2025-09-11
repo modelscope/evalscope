@@ -1,4 +1,3 @@
-import ast
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -37,10 +36,9 @@ class Ai2dAdapter(VisionLanguageAdapter):
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        # answers_list: List[str] = ast.literal_eval(record['options'])
-        answers_list: List[str] = record['options']
+        answers_list: list[str] = record['options']
         input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-        content_list: List[Content] = [ContentText(text=input_text)]
+        content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
