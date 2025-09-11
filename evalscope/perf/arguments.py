@@ -55,6 +55,7 @@ class Arguments(BaseArgument):
     image_height: int = 224  # Height of the image for random VL dataset
     image_format: str = 'RGB'  # Image format for random VL dataset
     image_num: int = 1  # Number of images for random VL dataset
+    image_patch_size: int = 28  # Patch size for image tokenizer, only for local image token calculation
 
     # Dataset settings
     dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
