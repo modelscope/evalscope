@@ -578,7 +578,7 @@ Reasoning:
 - **额外参数**: 
 ```json
 {
-    "version": "# File version, choose from ['Consensus', 'HardAll'], default to Consensus"
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
 }
 ```
 - **提示模板**: 
