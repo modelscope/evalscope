@@ -4,13 +4,39 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
+| `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
+| `real_world_qa` | [REAL-WORLD-QA](#real-world-qa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
 ## Benchmark Details
+
+### AI2D
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `ai2d`
+- **Dataset ID**: [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary)
+- **Description**:  
+  > A Diagram Is Worth A Dozen Images
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
 
 ### MathVista
 
@@ -90,4 +116,30 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### REAL-WORLD-QA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `real_world_qa`
+- **Dataset ID**: [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary)
+- **Description**:  
+  > REAL-WORLD-QA
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+
+Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+
+{question}
+
+Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+
 ```
