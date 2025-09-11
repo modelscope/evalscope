@@ -6,8 +6,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import LocalDataLoader
-from evalscope.api.evaluator import TaskState
-from evalscope.api.messages.chat_message import dict_to_chat_message, ChatMessageUser
+from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -70,28 +69,29 @@ Return just the json object in markdown format. Do not include any other text in
 # Available subsets in the HealthBench dataset
 # Each subset focuses on different aspects of health-related conversations
 SUBSET_LIST = [
-    'emergency_referrals',    # Situations requiring immediate medical attention
-    'communication',          # Communication skills and patient interaction
-    'complex_responses',      # Complex medical scenarios requiring detailed responses
-    'hedging',               # Appropriate uncertainty and hedging in medical advice
-    'health_data_tasks',     # Tasks involving health data analysis
-    'global_health',         # Global health perspectives and cultural considerations
-    'context_seeking',       # Ability to seek additional context when needed
+    'emergency_referrals',  # Situations requiring immediate medical attention
+    'communication',  # Communication skills and patient interaction
+    'complex_responses',  # Complex medical scenarios requiring detailed responses
+    'hedging',  # Appropriate uncertainty and hedging in medical advice
+    'health_data_tasks',  # Tasks involving health data analysis
+    'global_health',  # Global health perspectives and cultural considerations
+    'context_seeking',  # Ability to seek additional context when needed
 ]
 
 # Available versions of the dataset
 VERSION = [
-    'Consensus', 
+    'Consensus',
     'Hard'
     'All',
 ]
 
 # Mapping of version names to their corresponding data files
 VERSION_FILE = {
-    'All': '2025-05-07-06-14-12_oss_eval.jsonl',           # Complete dataset
-    'Consensus': 'consensus_2025-05-09-20-00-46.jsonl',    # Consensus subset
-    'Hard': 'hard_2025-05-08-21-00-10.jsonl',             # Hard examples subset
+    'All': '2025-05-07-06-14-12_oss_eval.jsonl',  # Complete dataset
+    'Consensus': 'consensus_2025-05-09-20-00-46.jsonl',  # Consensus subset
+    'Hard': 'hard_2025-05-08-21-00-10.jsonl',  # Hard examples subset
 }
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -115,7 +115,7 @@ VERSION_FILE = {
         eval_split='test',
         prompt_template='Answer the question:\n\n{question}',
         extra_params={
-            'version': f"# File version, choose from {VERSION}, default to {VERSION[0]}",
+            'version': f'# File version, choose from {VERSION}, default to {VERSION[0]}',
         }
     )
 )
@@ -123,7 +123,7 @@ class HealthBenchAdapter(DefaultDataAdapter):
     """
     Adapter for the HealthBench dataset that handles loading health conversation data
     and evaluating AI responses using physician-created rubrics.
-    
+
     This adapter supports multiple dataset versions and uses LLM judges to evaluate
     responses against detailed medical criteria.
     """
@@ -131,7 +131,7 @@ class HealthBenchAdapter(DefaultDataAdapter):
     def __init__(self, *args, **kwargs):
         """
         Initialize the HealthBench adapter.
-        
+
         Sets up default configuration including:
         - LLM judge evaluation
         - Dataset version selection
@@ -146,15 +146,15 @@ class HealthBenchAdapter(DefaultDataAdapter):
         self.version = self.extra_params.get('version', VERSION[0])
         # Validate version parameter
         if self.version not in VERSION:
-            logger.warning(f"Invalid version {self.version}, choose from {VERSION}, default to {VERSION[0]}")
+            logger.warning(f'Invalid version {self.version}, choose from {VERSION}, default to {VERSION[0]}')
             self.version = VERSION[0]
         # Map version to corresponding data file
         self.version_file = VERSION_FILE[self.version]
-        
+
     def load(self):
         """
         Load the HealthBench dataset from local or remote source.
-        
+
         Returns:
             tuple: (test_dataset, None) where test_dataset is a DatasetDict
                    containing the loaded data split by subsets
@@ -183,21 +183,18 @@ class HealthBenchAdapter(DefaultDataAdapter):
 
         # Convert to DatasetDict and apply subset filtering and limiting
         test_dataset = DatasetDict.from_dataset(
-            dataset=dataset, 
-            subset_list=self.subset_list,
-            limit=self.limit,
-            repeats=self.repeats
+            dataset=dataset, subset_list=self.subset_list, limit=self.limit, repeats=self.repeats
         )
 
         return test_dataset, None
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
         Convert a raw data record to a Sample object.
-        
+
         Args:
             record: Raw data record containing prompt, tags, and metadata
-            
+
         Returns:
             Sample: Formatted sample with input messages, theme, and metadata
         """
@@ -206,76 +203,82 @@ class HealthBenchAdapter(DefaultDataAdapter):
         # Extract theme from example tags, default to 'Unknown' if no tags
         tags = record['example_tags']
         theme = tags[0].split(':')[1].strip() if len(tags) > 0 else 'Unknown'
-        return Sample(
-            input=input_messages, 
-            target='',
-            subset_key=theme,
-            metadata=record
-        )
-        
+        return Sample(input=input_messages, target='', subset_key=theme, metadata=record)
+
     def llm_match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         """
         Evaluate AI response using LLM judge against physician-created rubrics.
-        
+
         Args:
             original_prediction: The AI model's original response
-            filtered_prediction: Filtered/processed version of the response  
+            filtered_prediction: Filtered/processed version of the response
             reference: Reference answer (not used in this evaluation)
             task_state: Contains metadata including rubric items
-            
+
         Returns:
             Score: Contains overall score, rubric tag scores, and explanations
         """
-        from .utils import RubricItem, parse_json_to_dict, calculate_score, calculate_rubric_tag_scores, construct_readable_explanation
+        from .utils import (
+            RubricItem,
+            calculate_rubric_tag_scores,
+            calculate_score,
+            construct_readable_explanation,
+            parse_json_to_dict,
+        )
 
         # Initialize the score object with prediction details
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        
+
         # Extract rubric items and conversation from task metadata
         example = copy.deepcopy(task_state.metadata)
-        rubric_items = [RubricItem.from_dict(d) for d in example["rubrics"]]
+        rubric_items = [RubricItem.from_dict(d) for d in example['rubrics']]
         # Construct full conversation including the AI response
-        convo_with_response = example["prompt"] + [dict(content=original_prediction, role="assistant")]
+        convo_with_response = example['prompt'] + [dict(content=original_prediction, role='assistant')]
         # Format conversation as readable string
-        convo_str = "\n\n".join([f"{m['role']}: {m['content']}" for m in convo_with_response])
-        
+        convo_str = '\n\n'.join([f"{m['role']}: {m['content']}" for m in convo_with_response])
+
         # Evaluate response against each rubric item using LLM judge
         grading_response_list = []
         for rubric_item in rubric_items:
             # Create judge prompt by substituting conversation and rubric item
-            grader_prompt = GRADER_TEMPLATE.replace("<<conversation>>", convo_str).replace("<<rubric_item>>", str(rubric_item))
+            grader_prompt = GRADER_TEMPLATE.replace('<<conversation>>',
+                                                    convo_str).replace('<<rubric_item>>', str(rubric_item))
             messages = [ChatMessageUser(content=grader_prompt)]
             # Retry logic for robust evaluation
             while retry_context(retries=3, sleep_interval=1):
                 grading_response = self.llm_judge.judge(messages=messages)
                 grading_response_dict = parse_json_to_dict(grading_response)
                 # Validate response format and extract boolean criteria_met field
-                if "criteria_met" in grading_response_dict:
-                    label = grading_response_dict["criteria_met"]
+                if 'criteria_met' in grading_response_dict:
+                    label = grading_response_dict['criteria_met']
                     if label is True or label is False:
                         grading_response_list.append(grading_response_dict)
                         break
-                logger.warning("Grading failed due to bad JSON output, retrying...")
-                raise ValueError("Grading failed due to bad JSON output")
-                
+                logger.warning('Grading failed due to bad JSON output, retrying...')
+                raise ValueError('Grading failed due to bad JSON output')
+
         # Calculate final scores and explanations
         overall_score = calculate_score(rubric_items, grading_response_list)  # Overall weighted score
-        rubric_tag_scores, axis_grades = calculate_rubric_tag_scores(rubric_items, grading_response_list)  # Scores by category
-        readable_explanation = construct_readable_explanation(rubric_items, grading_response_list)  # Human-readable results
+        rubric_tag_scores, axis_grades = calculate_rubric_tag_scores(
+            rubric_items, grading_response_list
+        )  # Scores by category
+        readable_explanation = construct_readable_explanation(
+            rubric_items, grading_response_list
+        )  # Human-readable results
 
         # Set score values and metadata
         score.value = {
-            "overall_score": overall_score,
+            'overall_score': overall_score,
             **axis_grades,  # Include axis scores at top level
         }
-        score.main_score_name = "overall_score"
+        score.main_score_name = 'overall_score'
         score.metadata = {
-            "readable_explanation": readable_explanation,
-            "rubric_tag_scores": rubric_tag_scores,
+            'readable_explanation': readable_explanation,
+            'rubric_tag_scores': rubric_tag_scores,
         }
-        task_state.target = '**Score Explanation**\n\n' + readable_explanation  # Store explanation in sample target for reference
+        # Store explanation in sample target for reference
+        task_state.target = '**Score Explanation**\n\n' + readable_explanation
         return score
-    

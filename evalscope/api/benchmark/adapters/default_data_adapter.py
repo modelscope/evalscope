@@ -642,9 +642,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def _on_generate_report(
-        self, scores: Dict[str, List[AggScore]], model_name: str
-    ) -> Report:
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         """
         Hook method called during report generation.
 

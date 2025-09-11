@@ -1,6 +1,6 @@
+import threading
 import time
 from contextlib import contextmanager
-import threading
 from functools import wraps
 
 
@@ -30,9 +30,12 @@ def thread_safe(func):
 
     return wrapper
 
+
 def retry_func(retries=3, sleep_interval=0):
     """A decorator that retries a function call up to `retries` times if an exception occurs."""
+
     def decorator(func):
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_exception = None
@@ -44,8 +47,11 @@ def retry_func(retries=3, sleep_interval=0):
                     if sleep_interval > 0:
                         time.sleep(sleep_interval)
             raise last_exception
+
         return wrapper
+
     return decorator
+
 
 @contextmanager
 def retry_context(retries=3, sleep_interval=0):

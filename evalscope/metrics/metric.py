@@ -251,6 +251,7 @@ class Mean(Aggregator):
 
         return aggregated_scores
 
+
 @register_aggregation(name='clipped_mean')
 class ClippedMean(Mean):
 
@@ -259,7 +260,7 @@ class ClippedMean(Mean):
     def __init__(self, clip_min: float = 0.0, clip_max: float = 1.0):
         self.clip_min = clip_min
         self.clip_max = clip_max
-    
+
     def agg_func(self, values: List[float]) -> float:
         clipped_values = min(max(mean(values), self.clip_min), self.clip_max)
         return clipped_values

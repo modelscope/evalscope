@@ -24,6 +24,7 @@
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -557,6 +558,34 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 Reasoning:
 
+```
+
+---
+
+### HealthBench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `health_bench`
+- **数据集ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
+- **数据集描述**:  
+  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+- **任务类别**: `Knowledge`, `QA`
+- **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
+
+- **额外参数**: 
+```json
+{
+    "version": "# File version, choose from ['Consensus', 'HardAll'], default to Consensus"
+}
+```
+- **提示模板**: 
+```text
+Answer the question:
+
+{question}
 ```
 
 ---

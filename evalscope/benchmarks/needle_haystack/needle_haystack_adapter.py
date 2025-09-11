@@ -360,7 +360,6 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
 
         return score
 
-
     def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         try:
             import os
