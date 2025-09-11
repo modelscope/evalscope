@@ -81,7 +81,7 @@ SUBSET_LIST = [
 # Available versions of the dataset
 VERSION = [
     'Consensus',
-    'Hard'
+    'Hard',
     'All',
 ]
 
