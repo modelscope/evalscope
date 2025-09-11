@@ -78,3 +78,15 @@ class TestVLMBenchmark(TestBenchmark):
             'shuffle': True,
         }
         self._run_dataset_test('data_collection', dataset_args)
+
+    def test_real_world_qa(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('real_world_qa', dataset_args=dataset_args, limit=10)
+
+    def test_ai2d(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('ai2d', dataset_args=dataset_args)
