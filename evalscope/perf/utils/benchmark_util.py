@@ -45,7 +45,6 @@ class BenchmarkData:
 
     def update_gpu_usage(self):
         if check_import('torch'):
-
             import torch
             total_memory = 0
             for i in range(torch.cuda.device_count()):

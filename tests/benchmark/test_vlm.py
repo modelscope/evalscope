@@ -72,12 +72,12 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('mmmu_pro', dataset_args=dataset_args, limit=10)
 
-    def test_qwen3_collection(self):
+    def test_qwen3_vl_collection(self):
         dataset_args = {
             'dataset_id': 'outputs/qwen3_vl_test.jsonl',
             'shuffle': True,
         }
-        self._run_dataset_test('data_collection', dataset_args)
+        self._run_dataset_test('data_collection', dataset_args, limit=100)
 
     def test_real_world_qa(self):
         dataset_args = {
