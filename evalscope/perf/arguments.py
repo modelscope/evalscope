@@ -172,6 +172,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--image-height', type=int, default=224, help='Height of the image for random VL dataset')
     parser.add_argument('--image-format', type=str, default='RGB', help='Image format for random VL dataset')
     parser.add_argument('--image-num', type=int, default=1, help='Number of images for random VL dataset')
+    parser.add_argument('--image-patch-size', type=int, default=28, help='Patch size for image tokenizer, only for local image token calculation')  # noqa: E501
 
     # Output settings
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')

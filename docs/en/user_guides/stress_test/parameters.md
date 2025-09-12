@@ -47,6 +47,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--image-height`  The image height for the random VL dataset. Default is 224.
 - `--image-format`  The image format for the random VL dataset. Default is 'RGB'.
 - `--image-num`  The number of images for the random VL dataset. Default is 1.
+- `--image-patch-size` Patch size for the image, only used for local image token calculation, default is 28.
 
 ## Dataset Configuration
 - `--dataset` supports the following dataset modes:
