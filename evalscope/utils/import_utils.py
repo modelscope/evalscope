@@ -16,7 +16,7 @@ logger = get_logger()  # pylint: disable=invalid-name
 def check_import(
     module_name: Union[str, list[str]],
     package: Optional[Union[str, list[str]]] = None,
-    raise_warning: bool = False,
+    raise_warning: bool = True,
     raise_error: bool = False
 ) -> bool:
     """Check if a module or list of modules can be imported.
