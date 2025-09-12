@@ -16,6 +16,7 @@ logger = get_logger()  # pylint: disable=invalid-name
 def check_import(
     module_name: Union[str, list[str]],
     package: Optional[Union[str, list[str]]] = None,
+    raise_warning: bool = True,
     raise_error: bool = False
 ) -> bool:
     """Check if a module or list of modules can be imported.
@@ -69,7 +70,8 @@ def check_import(
                 unique_packages = list(dict.fromkeys(missing_packages))  # Remove duplicates while preserving order
                 error_msg += f' Please run `pip install {" ".join(unique_packages)}` to use this feature.'
 
-        logger.warning(error_msg)
+        if raise_warning:
+            logger.warning(error_msg)
 
         if not IS_BUILD_DOC and raise_error:
             raise ImportError(error_msg)
