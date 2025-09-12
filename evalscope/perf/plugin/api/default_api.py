@@ -18,7 +18,7 @@ class DefaultApiPlugin(ApiPluginBase):
         super().__init__(param)
 
     async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
-                              body: Dict) -> AsyncGenerator[Tuple[bool, int, str], None]:
+                              body: Dict) -> AsyncGenerator[Tuple[bool, int, Any], None]:
         """Process the HTTP request and handle the response.
 
         Args:
@@ -28,7 +28,7 @@ class DefaultApiPlugin(ApiPluginBase):
             body: The request body
 
         Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
+            Tuple[bool, int, Any]: (is_error, status_code, response_data)
         """
         try:
             headers = {'Content-Type': 'application/json', **headers}
@@ -40,7 +40,7 @@ class DefaultApiPlugin(ApiPluginBase):
             logger.error(f'Error in process_request: {e}')
             yield (True, None, str(e))
 
-    async def _handle_stream(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, str], None]:
+    async def _handle_stream(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, Any], None]:
         """Handle streaming response from server-sent events.
 
         Args:
@@ -71,14 +71,14 @@ class DefaultApiPlugin(ApiPluginBase):
             logger.error(f'Error in _handle_stream: {e}')
             yield True, response.status, str(e)
 
-    async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, str], None]:
+    async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, Any], None]:
         """Handle the HTTP response based on content type and status.
 
         Args:
             response: The aiohttp response object
 
         Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
+            Tuple[bool, int, Any]: (is_error, status_code, response_data)
         """
         response_status = response.status
         response_content_type = response.content_type
