@@ -48,6 +48,7 @@
 - `--image-height` 随机VL数据集图像高度，默认为224。
 - `--image-format` 随机VL数据集图像格式，默认为'RGB'。
 - `--image-num` 随机VL数据集图像数量，默认为1。
+- `--image-patch-size` 图像的patch大小，仅用于本地图像token计算，默认为28。
 
 ## 数据集配置
 - `--dataset` 可以指定如下数据集模式：

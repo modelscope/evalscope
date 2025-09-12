@@ -43,7 +43,7 @@ class ApiPluginBase:
 
     @abstractmethod
     async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
-                              body: Dict) -> AsyncGenerator[Tuple[bool, int, str], None]:
+                              body: Dict) -> AsyncGenerator[Tuple[bool, int, Any], None]:
         """Process the HTTP request and handle the response.
 
         Args:
@@ -53,7 +53,7 @@ class ApiPluginBase:
             body: The request body
 
         Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
+            Tuple[bool, int, Any]: (is_error, status_code, response_data)
         """
         raise NotImplementedError
 
