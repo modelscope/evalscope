@@ -46,6 +46,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self.add_aggregation_name = True
         """Whether to add aggregation name in the report"""
 
+        self.add_overall_metric = True
+        """Whether to add overall metric in the report"""
+
         self.category_map = {}
         """Category map for the benchmark"""
 

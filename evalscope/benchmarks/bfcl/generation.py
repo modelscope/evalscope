@@ -115,7 +115,7 @@ def generate_turn(model: Model, row: dict[str, Any]):
 
             n_steps += 1
             if n_steps > MAXIMUM_STEP_LIMIT:
-                logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
+                logger.warning(f'INFERENCE_WARNING: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                 break
 
         all_model_responses.append(current_responses)
@@ -214,7 +214,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
 
             n_steps += 1
             if n_steps > MAXIMUM_STEP_LIMIT:
-                logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
+                logger.warning(f'INFERENCE_WARNING: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                 break
 
         all_model_responses.append(current_responses)
