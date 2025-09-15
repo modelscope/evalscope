@@ -22,7 +22,7 @@ ANALYSIS_PROMPT = """根据给出的json格式的模型评测结果，输出分�
 """
 
 
-def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float, dict]:
+def normalize_score(score: Union[float, dict, int], keep_num: int = 4) -> Union[float, dict]:
     """
     Normalize score.
 
@@ -37,9 +37,10 @@ def normalize_score(score: Union[float, dict], keep_num: int = 4) -> Union[float
         score = round(score, keep_num)
     elif isinstance(score, dict):
         score = {k: round(v, keep_num) for k, v in score.items()}
+    elif isinstance(score, int):
+        score = float(score)
     else:
         logger.warning(f'Unknown score type: {type(score)}')
-
     return score
 
 
@@ -103,6 +104,7 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     score = 'Score'
+    overall_score = 'OVERALL'
 
 
 @dataclass
@@ -181,12 +183,14 @@ class Report:
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
-            if metric_count > 1 and add_overall_metric:
+            if metric_count > 1 and add_overall_metric and (
+                ReportKey.overall_score not in table[ReportKey.subset_name]
+            ):
                 table[ReportKey.model_name].append(self.model_name)
                 table[ReportKey.dataset_name].append(self.dataset_name)
                 table[ReportKey.metric_name].append(metric.name)
                 table[ReportKey.category_name].append(('-', ))
-                table[ReportKey.subset_name].append('OVERALL')
+                table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
                 table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default

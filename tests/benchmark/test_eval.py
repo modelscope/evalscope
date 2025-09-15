@@ -353,7 +353,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args, model='qwq-plus', stream=True)
+        self._run_dataset_test('bfcl_v3', dataset_args, model='qwen-plus', use_cache='outputs/20250915_145328')
 
     def test_tau_bench(self):
         dataset_args = {
