@@ -365,8 +365,8 @@ class BFCLAdapter(DefaultDataAdapter):
             subset_dict['non_live'] = non_live
 
             # Step 3.2: Calculate live (ast_live, hallucination_live weighted average)
-            live_subsets = ['ast_live', 'hallucination_live']
-            live = self._weighted_average_from_subsets(live_subsets, subset_dict)
+            live_agg_subsets = ['ast_live', 'hallucination_live']
+            live = self._weighted_average_from_subsets(live_agg_subsets, subset_dict)
             subset_dict['live'] = live
 
             # Step 3.3: Calculate multi_turn (multi_turn_base, multi_turn_augmented unweighted average)
