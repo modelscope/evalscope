@@ -104,6 +104,9 @@ class DefaultEvaluator(Evaluator):
 
         # Generate the report based on aggregated scores
         report = self.get_report(agg_score_dict)
+
+        # Finalize the evaluation process
+        self.finalize()
         return report
 
     def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
@@ -337,3 +340,6 @@ class DefaultEvaluator(Evaluator):
         report.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
         return report
+
+    def finalize(self, *args, **kwargs):
+        self.benchmark.finalize(*args, **kwargs)

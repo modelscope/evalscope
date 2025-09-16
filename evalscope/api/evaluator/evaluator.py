@@ -54,3 +54,8 @@ class Evaluator(abc.ABC):
     def get_report(self, *args, **kwargs) -> Report:
         """Get the evaluation report."""
         pass
+
+    @abc.abstractmethod
+    def finalize(self, *args, **kwargs) -> None:
+        """Finalize the evaluation process."""
+        pass

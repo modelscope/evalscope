@@ -7,7 +7,7 @@ from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import convert_numpy_types
+from evalscope.utils.io_utils import convert_normal_types
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -106,8 +106,8 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
             score.explanation = f"Pass@1: {metrics['pass@1']}%"
 
             # Convert numpy types to native Python types for JSON serialization
-            serializable_eval_results = convert_numpy_types(eval_results)
-            serializable_final_metadata = convert_numpy_types(final_metadata)
+            serializable_eval_results = convert_normal_types(eval_results)
+            serializable_final_metadata = convert_normal_types(final_metadata)
 
             score.metadata = {
                 'pass_rate': float(pass_rate),

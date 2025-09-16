@@ -9,6 +9,7 @@ import re
 import string
 import unicodedata
 import yaml
+from datetime import datetime
 from io import BytesIO
 from PIL import Image
 
@@ -122,6 +123,9 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
 
     if not isinstance(data_list, list):
         data_list = [data_list]
+
+    # Convert non-serializable types to serializable ones
+    data_list = convert_normal_types(data_list)
 
     if dump_mode == DumpMode.OVERWRITE:
         dump_mode = 'w'
@@ -392,11 +396,13 @@ def safe_filename(s: str, max_length: int = 255) -> str:
     return s
 
 
-def convert_numpy_types(obj):
-    """Recursively convert numpy types to native Python types for JSON serialization."""
+def convert_normal_types(obj):
+    """Recursively convert numpy types and datetime objects to native Python types for JSON serialization."""
     import numpy as np
 
-    if isinstance(obj, np.bool_):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, np.bool_):
         return bool(obj)
     elif isinstance(obj, np.integer):
         return int(obj)
@@ -405,10 +411,10 @@ def convert_numpy_types(obj):
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, dict):
-        return {key: convert_numpy_types(value) for key, value in obj.items()}
+        return {key: convert_normal_types(value) for key, value in obj.items()}
     elif isinstance(obj, list):
-        return [convert_numpy_types(item) for item in obj]
+        return [convert_normal_types(item) for item in obj]
     elif isinstance(obj, tuple):
-        return tuple(convert_numpy_types(item) for item in obj)
+        return tuple(convert_normal_types(item) for item in obj)
     else:
         return obj
