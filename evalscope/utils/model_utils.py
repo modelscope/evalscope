@@ -70,7 +70,7 @@ def seed_everything(seed: int):
     random.seed(seed)
     np.random.seed(seed)
 
-    if check_import('torch'):
+    if check_import('torch', raise_warning=False):
         import torch
 
         torch.manual_seed(seed)

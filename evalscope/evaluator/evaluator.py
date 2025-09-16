@@ -319,7 +319,7 @@ class DefaultEvaluator(Evaluator):
 
         # Generate and display a summary table of results
         try:
-            report_table = gen_table(report_list=[report], add_overall_metric=True)
+            report_table = gen_table(report_list=[report], add_overall_metric=self.benchmark.add_overall_metric)
             logger.info(f'\n{self.benchmark_name} report table:'
                         f'\n{report_table} \n')
         except Exception:
