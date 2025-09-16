@@ -5,7 +5,10 @@
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
+| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
+| `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
@@ -26,6 +29,30 @@
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### CCBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `cc_bench`
+- **数据集ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
+- **数据集描述**:  
+  > CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `cc`
 
 - **提示模板**: 
 ```text
@@ -60,6 +87,55 @@ Solve the following problem step by step. The last line of your response should 
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
 
+```
+
+---
+
+### MMBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `mm_bench`
+- **数据集ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
+- **数据集描述**:  
+  > MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `cn`, `en`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### MMStar
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `mm_star`
+- **数据集ID**: [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary)
+- **数据集描述**:  
+  > MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `coarse perception`, `fine-grained perception`, `instance reasoning`, `logical reasoning`, `math`, `science & technology`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question.
+The last line of your response should be of the following format:
+'ANSWER: $LETTER' (without quotes)
+where LETTER is one of A,B,C,D. Think step by step before answering.
+
+{question}
 ```
 
 ---
