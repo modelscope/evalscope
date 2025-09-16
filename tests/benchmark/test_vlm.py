@@ -90,3 +90,21 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': ['default']
         }
         self._run_dataset_test('ai2d', dataset_args=dataset_args)
+
+    def test_mm_bench_cc(self):
+        dataset_args = {
+            'subset_list': ['cc']
+        }
+        self._run_dataset_test('mm_bench_cc', dataset_args=dataset_args)
+
+    def test_mm_bench(self):
+        dataset_args = {
+            'subset_list': ['cn','en']
+        }
+        self._run_dataset_test('mm_bench', dataset_args=dataset_args)
+
+    def test_mm_star(self):
+        dataset_args = {
+            'subset_list': ['val']
+        }
+        self._run_dataset_test('mm_star', dataset_args=dataset_args)

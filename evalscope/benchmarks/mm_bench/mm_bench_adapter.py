@@ -13,7 +13,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers,
 logger = get_logger()
 
 SUBSET_LIST_CC = ['cc']
-SUBSET_LIST = ['cn','en']
+SUBSET_LIST = ['cn', 'en']
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
@@ -23,6 +23,7 @@ DESCRIPTION_TEXT = (
     'and currently, contains 2974 multiple-choice questions,'
     'covering 20 ability dimensions.'
 )
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -41,14 +42,9 @@ class MMBenchCCAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        answers_list: list[str] = [
-            record.get('A',''),
-            record.get('B',''),
-            record.get('C',''),
-            record.get('D','')
-        ] 
+        answers_list: list[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
         input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
@@ -60,12 +56,13 @@ class MMBenchCCAdapter(VisionLanguageAdapter):
             input=[ChatMessageUser(content=content_list)],
             choices=answers_list,
             target=label_answer,
-            metadata = {
+            metadata={
                 'index': record.get('index'),
                 'category': record.get('category'),
                 'source': record.get('source')
             }
         )
+
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answers = parse_answers(task_state)
         return ''.join(sorted(list(answers)))
@@ -88,15 +85,10 @@ class MMBenchAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        answers_list: list[str] = [
-            record.get('A',''),
-            record.get('B',''),
-            record.get('C',''),
-            record.get('D','')
-        ]
-        question_hint = record['hint']+record['question']
+        answers_list: list[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
+        question_hint = record['hint'] + record['question']
         input_text = prompt(question=question_hint, choices=answers_list, template=MULT_CHOICE_PROMPT)
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
@@ -117,10 +109,7 @@ class MMBenchAdapter(VisionLanguageAdapter):
                 'split': record.get('record')
             }
         )
-    
+
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answers = parse_answers(task_state)
         return ''.join(sorted(list(answers)))
-
-
-

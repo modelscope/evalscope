@@ -15,21 +15,23 @@ logger = get_logger()
 
 SUBSET_LIST = ['val']
 
-MULT_CHOICE_PROMPT =r"""
-Answer the following multiple choice question. 
-The last line of your response should be of the following format: 
-'ANSWER: $LETTER' (without quotes) 
+MULT_CHOICE_PROMPT = r"""
+Answer the following multiple choice question.
+The last line of your response should be of the following format:
+'ANSWER: $LETTER' (without quotes)
 where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 """.strip()
 
 DESCRIPTION_TEXT = (
-    "As shown in the figure below, existing benchmarks lack"
-    "consideration of the vision dependency of evaluation"
-    "samples and potential data leakage from"
+    'As shown in the figure below, existing benchmarks lack'
+    'consideration of the vision dependency of evaluation'
+    'samples and potential data leakage from'
     "LLMs' and LVLMs' training data."
 )
+
+
 @register_benchmark(
     BenchmarkMeta(
         name='mm_star',
@@ -47,7 +49,7 @@ class MMStarAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
     def extract_options(self, text):
         match = re.search(r'Options:\s*(.*)', text, re.DOTALL)
         if not match:
@@ -57,13 +59,10 @@ class MMStarAdapter(VisionLanguageAdapter):
         pattern = r'(?:^|(?<=,))\s*([A-Z]):'
         letters = re.findall(pattern, options_content)
         return ','.join(letters)
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         letters = self.extract_options(record['question'])
-        input_text = MULT_CHOICE_PROMPT.format(
-            letters=letters,
-            question=record['question']
-        )
+        input_text = MULT_CHOICE_PROMPT.format(letters=letters, question=record['question'])
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
@@ -73,16 +72,16 @@ class MMStarAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=label_answer,
-            metadata = {
+            metadata={
                 'index': record.get('index'),
                 'category': record.get('category'),
                 'l2_category': record.get('l2_category'),
-                'source': record.get('meta_info',{}).get('source'),
-                'split': record.get('meta_info',{}).get('split'),
-                'image_path': record.get('meta_info',{}).get('image_path')
+                'source': record.get('meta_info', {}).get('source'),
+                'split': record.get('meta_info', {}).get('split'),
+                'image_path': record.get('meta_info', {}).get('image_path')
             }
         )
-    
+
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answers = parse_answers(task_state)
         return ''.join(sorted(list(answers)))
