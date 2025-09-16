@@ -1,19 +1,15 @@
 from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
 
 logger = get_logger()
-
-SUBSET_LIST_CC = ['cc']
-SUBSET_LIST = ['cn', 'en']
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
@@ -27,18 +23,19 @@ DESCRIPTION_TEXT = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='mm_bench_cc',
-        pretty_name='MMBench_CC',
+        name='cc_bench',
+        pretty_name='CCBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=DESCRIPTION_TEXT,
+        description=
+        'CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.',  # noqa: E501
         dataset_id='lmms-lab/MMBench',
-        subset_list=SUBSET_LIST_CC,
+        subset_list=['cc'],
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class MMBenchCCAdapter(VisionLanguageAdapter):
+class CCBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -63,31 +60,29 @@ class MMBenchCCAdapter(VisionLanguageAdapter):
             }
         )
 
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))
-
 
 @register_benchmark(
     BenchmarkMeta(
         name='mm_bench',
         pretty_name='MMBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=DESCRIPTION_TEXT,
+        description=
+        'MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.',  # noqa: E501
         dataset_id='lmms-lab/MMBench',
-        subset_list=SUBSET_LIST,
+        subset_list=['cn', 'en'],
         metric_list=['acc'],
         eval_split='dev',
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class MMBenchAdapter(VisionLanguageAdapter):
+class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answers_list: list[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
+        answers_list: list[str] = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
         question_hint = record['hint'] + record['question']
         input_text = prompt(question=question_hint, choices=answers_list, template=MULT_CHOICE_PROMPT)
         content_list: list[Content] = [ContentText(text=input_text)]
@@ -106,10 +101,6 @@ class MMBenchAdapter(VisionLanguageAdapter):
                 'source': record.get('source'),
                 'L2-category': record.get('L2-category'),
                 'comment': record.get('comment'),
-                'split': record.get('record')
+                'split': record.get('split')
             }
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))

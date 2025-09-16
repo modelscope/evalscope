@@ -5,9 +5,9 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
+| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
-| `mm_bench_cc` | [MMBench_CC](#mmbench_cc) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
@@ -29,6 +29,30 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### CCBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `cc_bench`
+- **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
+- **Description**:  
+  > CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `cc`
 
 - **Prompt Template**: 
 ```text
@@ -73,36 +97,12 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Dataset Name**: `mm_bench`
 - **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
 - **Description**:  
-  > MMBench is collected from multiple sources,including public datasets and Internet, and currently, contains 2974 multiple-choice questions,covering 20 ability dimensions.
+  > MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `cn`, `en`
-
-- **Prompt Template**: 
-```text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
-
-{question}
-
-{choices}
-```
-
----
-
-### MMBench_CC
-
-[Back to Top](#vlm-benchmarks)
-- **Dataset Name**: `mm_bench_cc`
-- **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
-- **Description**:  
-  > MMBench is collected from multiple sources,including public datasets and Internet, and currently, contains 2974 multiple-choice questions,covering 20 ability dimensions.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
-- **Evaluation Metrics**: `acc`
-- **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
-- **Subsets**: `cc`
 
 - **Prompt Template**: 
 ```text
@@ -121,19 +121,19 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `mm_star`
 - **Dataset ID**: [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary)
 - **Description**:  
-  > As shown in the figure below, existing benchmarks lackconsideration of the vision dependency of evaluationsamples and potential data leakage fromLLMs' and LVLMs' training data.
+  > MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
-- **Subsets**: `val`
+- **Subsets**: `coarse perception`, `fine-grained perception`, `instance reasoning`, `logical reasoning`, `math`, `science & technology`
 
 - **Prompt Template**: 
 ```text
-Answer the following multiple choice question. 
-The last line of your response should be of the following format: 
-'ANSWER: $LETTER' (without quotes) 
-where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question.
+The last line of your response should be of the following format:
+'ANSWER: $LETTER' (without quotes)
+where LETTER is one of A,B,C,D. Think step by step before answering.
 
 {question}
 ```
