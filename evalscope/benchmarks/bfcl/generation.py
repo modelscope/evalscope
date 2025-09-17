@@ -146,6 +146,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
             new_tools = row['missing_functions'][str(turn_idx)]
             for new_tool in new_tools:
                 cur_tool = new_tool[0]
+                cur_tool['parameters']['type'] = 'object'
                 tools.append({
                     'type': 'function',
                     'function': cur_tool,
