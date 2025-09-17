@@ -75,7 +75,7 @@ class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
-        answers_list: List[str] = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
+        answers_list = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
         question_hint = record['hint'] + record['question']
         input_text = prompt(question=question_hint, choices=answers_list, template=MULT_CHOICE_PROMPT)
         content_list: List[Content] = [ContentText(text=input_text)]
