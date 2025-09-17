@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -31,7 +31,7 @@ SUBSET_LIST = [
     BenchmarkMeta(
         name='mm_star',
         pretty_name='MMStar',
-        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
+        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=
         'MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.',  # noqa: E501
         dataset_id='evalscope/MMStar',
@@ -51,7 +51,7 @@ class MMStarAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         input_text = MULT_CHOICE_PROMPT.format(question=record['question'])
-        content_list: list[Content] = [ContentText(text=input_text)]
+        content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)
