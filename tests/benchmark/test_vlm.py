@@ -25,7 +25,7 @@ class TestVLMBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 4096,
+                'max_tokens': 2048,
                 'temperature': 0.0,
                 'seed': 42,
                 'parallel_tool_calls': True
@@ -108,3 +108,12 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['val']
         }
         self._run_dataset_test('mm_star', dataset_args=dataset_args)
+
+    def test_omni_bench(self):
+        dataset_args = {
+            'extra_params': {
+                'use_image': True, # Whether to use image input, if False, use text alternative image content.
+                'use_audio': True, # Whether to use audio input, if False, use text alternative audio content.
+            }
+        }
+        self._run_dataset_test('omni_bench', dataset_args=dataset_args, model='qwen-omni-turbo')

@@ -1,15 +1,14 @@
 import ast
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
 
 logger = get_logger()
 
@@ -60,7 +59,7 @@ DATASET_FORMATS = ['standard (4 options)', 'standard (10 options)', 'vision']
     BenchmarkMeta(
         name='mmmu_pro',
         pretty_name='MMMU-PRO',
-        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
+        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=
         'MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.',  # noqa: E501
         dataset_id='AI-ModelScope/MMMU_Pro',
@@ -73,7 +72,7 @@ DATASET_FORMATS = ['standard (4 options)', 'standard (10 options)', 'vision']
         }
     )
 )
-class MMMUPROAdapter(VisionLanguageAdapter):
+class MMMUPROAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):
@@ -123,7 +122,3 @@ class MMMUPROAdapter(VisionLanguageAdapter):
             subset_key=record['subject'],
             metadata=metadata,
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))

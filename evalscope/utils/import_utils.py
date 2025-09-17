@@ -17,7 +17,8 @@ def check_import(
     module_name: Union[str, list[str]],
     package: Optional[Union[str, list[str]]] = None,
     raise_warning: bool = True,
-    raise_error: bool = False
+    raise_error: bool = False,
+    feature_name: Optional[str] = 'this feature',
 ) -> bool:
     """Check if a module or list of modules can be imported.
 
@@ -26,6 +27,9 @@ def check_import(
         package (Union[str, list[str]], optional): The package(s) to install if the module(s) are not found.
             Defaults to None.
         raise_error (bool, optional): Whether to raise an error if any module is not found. Defaults to False.
+        raise_warning (bool, optional): Whether to log a warning if any module is not found. Defaults to True.
+        feature_name (str, optional): The feature name that requires the module(s). Used in the warning/error message.
+            Defaults to 'this feature'.
 
     Returns:
         bool: True if all modules can be imported, False otherwise.
@@ -65,10 +69,10 @@ def check_import(
 
         if missing_packages:
             if len(missing_packages) == 1:
-                error_msg += f' Please run `pip install {missing_packages[0]}` to use this feature.'
+                error_msg += f' Please run `pip install {missing_packages[0]}` to use {feature_name}.'
             else:
                 unique_packages = list(dict.fromkeys(missing_packages))  # Remove duplicates while preserving order
-                error_msg += f' Please run `pip install {" ".join(unique_packages)}` to use this feature.'
+                error_msg += f' Please run `pip install {" ".join(unique_packages)}` to use {feature_name}.'
 
         if raise_warning:
             logger.warning(error_msg)

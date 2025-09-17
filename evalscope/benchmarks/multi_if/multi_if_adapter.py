@@ -58,11 +58,16 @@ class MultiIFAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
         # Ensure required packages are installed
-        check_import(module_name=['nltk', 'langdetect'], package=['nltk', 'langdetect'], raise_error=True)
+        check_import(
+            module_name=['nltk', 'langdetect'],
+            package=['nltk', 'langdetect'],
+            raise_error=True,
+            feature_name=self.pretty_name
+        )
         if 'Chinese' in self.subset_list:
-            check_import(module_name='emoji', package='emoji', raise_error=True)
+            check_import(module_name='emoji', package='emoji', raise_error=True, feature_name='Chinese subset')
         if 'Thai' in self.subset_list:
-            check_import(module_name='pythainlp', package='pythainlp', raise_error=True)
+            check_import(module_name='pythainlp', package='pythainlp', raise_error=True, feature_name='Thai subset')
 
         self.reformat_subset = True
         self.max_turns = self.extra_params.get('max_turns', 3)

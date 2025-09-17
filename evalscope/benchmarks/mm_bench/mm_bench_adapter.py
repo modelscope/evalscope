@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -13,19 +13,12 @@ logger = get_logger()
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
-DESCRIPTION_TEXT = (
-    'MMBench is collected from multiple sources,'
-    'including public datasets and Internet, '
-    'and currently, contains 2974 multiple-choice questions,'
-    'covering 20 ability dimensions.'
-)
-
 
 @register_benchmark(
     BenchmarkMeta(
         name='cc_bench',
         pretty_name='CCBench',
-        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
+        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=
         'CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.',  # noqa: E501
         dataset_id='lmms-lab/MMBench',
@@ -41,9 +34,9 @@ class CCBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        answers_list: list[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
+        answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
         input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-        content_list: list[Content] = [ContentText(text=input_text)]
+        content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)
@@ -81,11 +74,11 @@ class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        answers_list: list[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
-        answers_list: list[str] = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
+        answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
+        answers_list = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
         question_hint = record['hint'] + record['question']
         input_text = prompt(question=question_hint, choices=answers_list, template=MULT_CHOICE_PROMPT)
-        content_list: list[Content] = [ContentText(text=input_text)]
+        content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)

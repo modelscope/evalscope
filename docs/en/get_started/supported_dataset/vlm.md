@@ -5,12 +5,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
-| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MultiModal`, `QA` |
+| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
-| `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MultiModal`, `QA` |
+| `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
-| `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
+| `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MCQ`, `MultiModal` |
+| `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
@@ -48,7 +49,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
 - **Description**:  
   > CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -122,7 +123,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset ID**: [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary)
 - **Description**:  
   > MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -173,7 +174,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Dataset ID**: [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary)
 - **Description**:  
   > MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.
-- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -188,6 +189,37 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### OmniBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `omni_bench`
+- **Dataset ID**: [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary)
+- **Description**:  
+  > OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "use_image": true,
+    "use_audio": true
+}
+```
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 

@@ -5,12 +5,13 @@
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
-| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MultiModal`, `QA` |
+| `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
-| `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MultiModal`, `QA` |
+| `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
-| `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MultiModal`, `QA` |
+| `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MCQ`, `MultiModal` |
+| `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
@@ -48,7 +49,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
 - **数据集描述**:  
   > CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.
-- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -122,7 +123,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集ID**: [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary)
 - **数据集描述**:  
   > MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.
-- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -173,7 +174,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **数据集ID**: [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary)
 - **数据集描述**:  
   > MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.
-- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -188,6 +189,37 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **提示模板**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### OmniBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `omni_bench`
+- **数据集ID**: [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary)
+- **数据集描述**:  
+  > OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "use_image": true,
+    "use_audio": true
+}
+```
+- **提示模板**: 
+```text
+Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
