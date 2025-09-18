@@ -49,3 +49,21 @@ class TestCodeBenchmark(TestBenchmark):
     def test_humaneval(self):
         """Test Humaneval dataset."""
         self._run_dataset_test('humaneval', limit=5)
+
+    def test_humaneval_remote_sandbox(self):
+        """Test Humaneval dataset with remote sandbox manager."""
+        sandbox_manager_config = {'base_url': 'http://localhost:8000'}
+        self._run_dataset_test('humaneval', limit=1, sandbox_manager_config=sandbox_manager_config)
+
+    def test_live_code_bench(self):
+        """Test Live Code Bench dataset."""
+        dataset_args = {
+            'subset_list': ['v6'],
+            'review_timeout': 6,
+            'extra_params': {
+                'start_date': '2024-08-01',
+                'end_date': '2025-02-28'
+            },
+        }
+        sandbox_manager_config = {'base_url': 'http://localhost:8000'}
+        self._run_dataset_test('live_code_bench', limit=1, dataset_args=dataset_args, sandbox_manager_config=sandbox_manager_config)

@@ -33,12 +33,13 @@ class TestNativeBenchmark(TestBenchmark):
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
             'judge_model_args': {
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen3-235b-a22b',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
                     'max_tokens': 4096,
+                    'extra_body': {'enable_thinking': False}
                 }
             },
             'debug': True,
@@ -211,6 +212,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_bbh(self):
         dataset_args = {
             'subset_list': ['temporal_sequences', 'navigate'],
+            'few_shot_num': 0,
         }
         self._run_dataset_test('bbh', dataset_args=dataset_args)
 
