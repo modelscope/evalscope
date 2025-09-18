@@ -117,3 +117,15 @@ class TestVLMBenchmark(TestBenchmark):
             }
         }
         self._run_dataset_test('omni_bench', dataset_args=dataset_args, model='qwen-omni-turbo')
+
+    def test_olympiad_bench(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('olympiad_bench', dataset_args=dataset_args)
+
+    def test_amc_23(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('amc_23', dataset_args=dataset_args)
