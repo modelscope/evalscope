@@ -21,7 +21,6 @@
 - `--generation-config`: 生成参数，以逗号分隔的`key=value`形式；或以json字符串格式传入，将解析为字典:
   - `timeout`: 可选整数，表示请求超时时间（单位：秒）。
   - `stream`: 可选布尔值，是否以流式方式返回响应（取决于模型）。
-  - `system_message`: 可选字符串，用于覆盖默认的系统消息。
   - `max_tokens`: 可选整数，最大生成的token数量（取决于模型）。
   - `top_p`: 可选浮点数，采用nucleus采样，模型只考虑概率质量为top_p的token。
   - `temperature`: 可选浮点数，采样温度，范围0~2，越高输出越随机，越低越确定。
@@ -158,6 +157,16 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
   - `score_pattern`：解析模型输出的正则表达式，`pattern`模式默认为`(A|B)`；`numeric`模式默认为`\[\[(\d+(?:\.\d+)?)\]\]`，用于提取模型打分结果。
   - `score_mapping`：`pattern`模式下的分数映射字典，默认为`{'A': 1.0, 'B': 0.0}`
 - `--analysis-report`: 是否生成分析报告，默认为`false`；如果设置该参数，将使用judge model生成分析报告，报告中包含模型评测结果的分析解读和建议。报告输出语言将根据`locale.getlocale()`自动判断。
+
+## Sandbox参数
+- `--use-sandbox`: 是否使用Sandbox进行模型评测，默认为`false`；如果设置该参数，将启用[ms-enclave](https://github.com/modelscope/ms-enclave)来隔离代码运行环境，提升安全性。目前仅对代码评测任务（如`humaneval`）有效。
+- `--sandbox-manager-config`: Sandbox管理器配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
+  - `base_url`: Sandbox管理器的基础URL，默认为`None`，表示使用本地管理器，配置该参数将使用远程管理器。
+- `--sandbox-type`: Sandbox类型，默认为`docker`。
+- `--sandbox-config`: Sandbox配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
+  - `image`: Docker镜像名称，默认为`python:3.11-slim`。
+  - `network_enabled`: 是否启用网络，默认为`true`。
+  - `tools_config`: 工具配置字典，默认为空字典`{'shell_executor': {},'python_executor': {}}`，表示启用shell和python执行器。
 
 ## 其他参数
 

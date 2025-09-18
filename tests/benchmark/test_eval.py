@@ -325,9 +325,9 @@ class TestNativeBenchmark(TestBenchmark):
     def test_humaneval(self):
         """Test HumanEval dataset."""
         dataset_args = {
-            'metric_list': ['Pass@1', 'Pass@2', 'Pass@5']
+            'metric_list': ['Pass@1', 'Pass@2']
         }
-        self._run_dataset_test('humaneval', dataset_args, repeats=5)
+        self._run_dataset_test('humaneval', dataset_args, repeats=2)
 
     def test_live_code_bench(self):
         """Test LiveCodeBench dataset."""

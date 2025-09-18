@@ -680,3 +680,7 @@ class DefaultDataAdapter(DataAdapter):
         report = self._on_generate_report(scores, model_name=model_name)
         self._on_generate_report_end(report, output_dir, **kwargs)
         return report
+
+    def finalize(self, *args, **kwargs):
+        # Finalize the evaluation process
+        self.sandbox_finalize(*args, **kwargs)
