@@ -8,6 +8,7 @@ and report generation.
 """
 
 import os
+import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -17,14 +18,13 @@ from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.report import Report, gen_table
+from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
     from evalscope.api.model import Model
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
-
-from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -104,6 +104,9 @@ class DefaultEvaluator(Evaluator):
 
         # Generate the report based on aggregated scores
         report = self.get_report(agg_score_dict)
+
+        # Finalize the evaluation process
+        self.finalize()
         return report
 
     def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
@@ -186,7 +189,10 @@ class DefaultEvaluator(Evaluator):
                         logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
                     except Exception as exc:
-                        logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}')
+                        tb_str = traceback.format_exc()
+                        logger.error(
+                            f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}'
+                        )
                         if self.task_config.ignore_errors:
                             logger.warning('Error ignored, continuing with next sample.')
                         else:
@@ -266,7 +272,10 @@ class DefaultEvaluator(Evaluator):
                         logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
                     except Exception as exc:
-                        logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}')
+                        tb_str = traceback.format_exc()
+                        logger.error(
+                            f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}'
+                        )
                         if self.task_config.ignore_errors:
                             logger.warning('Error ignored, continuing with next sample.')
                         else:
@@ -337,3 +346,6 @@ class DefaultEvaluator(Evaluator):
         report.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
         return report
+
+    def finalize(self, *args, **kwargs):
+        self.benchmark.finalize(*args, **kwargs)

@@ -9,7 +9,7 @@ from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
-from evalscope.api.mixin import LLMJudgeMixin
+from evalscope.api.mixin import LLMJudgeMixin, SandboxMixin
 from evalscope.api.model import Model
 from evalscope.report import Report
 from evalscope.utils.logger import get_logger
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
-class DataAdapter(LLMJudgeMixin, ABC):
+class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
     """
     Data Adapter for the benchmark.
     """
@@ -90,6 +90,11 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         Generate a report based on the evaluation results.
         """
+        pass
+
+    @abstractmethod
+    def finalize(self, *args, **kwargs) -> None:
+        """Finalize the evaluation process."""
         pass
 
     @property

@@ -104,10 +104,9 @@ def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartPa
         )
     elif content.type == 'audio':
         audio_data_uri = file_as_data_uri(content.audio)
-        audio_data = audio_data_uri.split('base64,')[1]
 
         return ChatCompletionContentPartInputAudioParam(
-            type='input_audio', input_audio=dict(data=audio_data, format=content.format)
+            type='input_audio', input_audio=dict(data=audio_data_uri, format=content.format)
         )
 
     else:

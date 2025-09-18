@@ -69,7 +69,7 @@ class BFCLAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True)
+        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True, feature_name=self.pretty_name)
 
         self.category_map = SUBJECT_MAPPING
         self.reformat_subset = True

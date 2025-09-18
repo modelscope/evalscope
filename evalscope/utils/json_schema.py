@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import is_dataclass
 from datetime import date, datetime, time
 from enum import EnumMeta
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import (
     Any,
     Dict,
@@ -58,6 +58,26 @@ class JSONSchema(BaseModel):
 
     required: Optional[List[str]] = Field(default=None)
     """Required fields for object parameters."""
+
+    @field_validator('type')
+    def validate_type(cls, v: Optional[str]) -> Optional[JSONType]:
+        return python_type_to_json_type(v)
+
+    @model_validator(mode='before')
+    def convert_type_before_validation(cls, values):
+        values = deepcopy(values)
+
+        def recursive_convert_type(obj):
+            if isinstance(obj, dict):
+                if 'type' in obj:
+                    obj['type'] = python_type_to_json_type(obj['type'])
+                for k, v in obj.items():
+                    obj[k] = recursive_convert_type(v)
+            elif isinstance(obj, list):
+                return [recursive_convert_type(item) for item in obj]
+            return obj
+
+        return recursive_convert_type(values)
 
 
 def json_schema(t: Type[Any]) -> JSONSchema:
@@ -152,6 +172,8 @@ def cls_json_schema(cls: Type[Any]) -> JSONSchema:
 
 
 def python_type_to_json_type(python_type: Optional[str]) -> JSONType:
+    if python_type is not None and python_type in get_args(JSONType):
+        return python_type
     if python_type == 'str':
         return 'string'
     elif python_type == 'int':
@@ -204,5 +226,4 @@ def resolve_schema_references(schema: Dict[str, Any]) -> Dict[str, Any]:
         else:
             return obj
 
-    return cast(Dict[str, Any], _resolve_refs(schema))
     return cast(Dict[str, Any], _resolve_refs(schema))
