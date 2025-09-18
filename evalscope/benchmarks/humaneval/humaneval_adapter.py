@@ -28,22 +28,13 @@ logger = get_logger()
         eval_split='test',
         prompt_template=
         'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',
-        extra_params={
-            'num_workers': 4,
-            'timeout': 4
-        },
+        review_timeout=4,
     )
 )
 class HumanevalAdapter(DefaultDataAdapter):
     """
     HumanEval adapter using the new data processing framework.
     """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        extra_params = kwargs.get('extra_params', {})
-        self.timeout = extra_params.get('timeout', 4)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""
@@ -88,17 +79,17 @@ class HumanevalAdapter(DefaultDataAdapter):
             from .utils import check_correctness
 
             # Execute the code and check correctness
-            res = check_correctness(problem=problem, completion=completion, timeout=self.timeout)
+            res = check_correctness(problem=problem, completion=completion, timeout=self.review_timeout)
             passed = res['passed']
         else:
             check_program = (
                 problem['prompt'] + completion + '\n' + problem['test'] + '\n' + f"check({problem['entry_point']})"
             )
-            res = self.execute_code_in_sandbox(code=check_program, timeout=self.timeout, language='python')
+            res = self.execute_code_in_sandbox(code=check_program, timeout=self.review_timeout, language='python')
             passed = res.get('status') == 'success'
         # Set score values
         score.value = {'pass': passed}
-        score.metadata = {'task_id': problem['task_id'], 'timeout': self.timeout, 'execution_result': res}
+        score.metadata = {'task_id': problem['task_id'], 'timeout': self.review_timeout, 'execution_result': res}
         score.main_score_name = 'pass'
 
         return score

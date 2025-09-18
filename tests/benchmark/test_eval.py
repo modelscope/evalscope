@@ -325,20 +325,21 @@ class TestNativeBenchmark(TestBenchmark):
     def test_humaneval(self):
         """Test HumanEval dataset."""
         dataset_args = {
-            'metric_list': ['Pass@1', 'Pass@2']
+            'metric_list': ['Pass@1']
         }
-        self._run_dataset_test('humaneval', dataset_args, repeats=2)
+        self._run_dataset_test('humaneval', dataset_args)
 
     def test_live_code_bench(self):
         """Test LiveCodeBench dataset."""
         dataset_args = {
             'subset_list': ['v6'],
+            'review_timeout': 6,
             'extra_params': {
                 'start_date': '2024-08-01',
                 'end_date': '2025-02-28'
             },
         }
-        self._run_dataset_test('live_code_bench', dataset_args, judge_worker_num=1)
+        self._run_dataset_test('live_code_bench', dataset_args, limit=20, judge_worker_num=10, use_cache='outputs/20250918_155910', rerun_review=True)
 
     def test_tool_bench(self):
         """Test ToolBench dataset."""

@@ -54,7 +54,7 @@ class DROPAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        if self.few_shot_num != 0:
+        if self.few_shot_num != 0 and self.few_shot_num != 3:
             self.few_shot_num = 3
             logger.info(f'Few shot num is set to {self.few_shot_num} for DROP dataset by system.')
         else:

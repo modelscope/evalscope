@@ -653,13 +653,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 0-shot
 - **Subsets**: `openai_humaneval`
 
-- **Extra Parameters**: 
-```json
-{
-    "num_workers": 4,
-    "timeout": 4
-}
-```
+- **Review Timeout (seconds)**: 4
 - **Prompt Template**: 
 ```text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
@@ -722,12 +716,12 @@ Read the following function signature and docstring, and fully implement the fun
 - **Default Shots**: 0-shot
 - **Subsets**: `release_latest`
 
+- **Review Timeout (seconds)**: 6
 - **Extra Parameters**: 
 ```json
 {
     "start_date": null,
     "end_date": null,
-    "timeout": 6,
     "debug": false
 }
 ```

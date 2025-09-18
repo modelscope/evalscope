@@ -64,6 +64,10 @@ def get_dataset_detail_locale_dict(category: str):
             'zh': '支持输出格式',
             'en': 'Supported Output Formats'
         },
+        'review_timeout': {
+            'zh': '评测超时时间（秒）',
+            'en': 'Review Timeout (seconds)'
+        },
         'extra_parameters': {
             'zh': '额外参数',
             'en': 'Extra Parameters'
@@ -199,9 +203,9 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
         details.append(f'- **{text["subsets"]}**: {wrap_key_words(data_adapter.subset_list)}')
 
     # Add technical information
-    technical_info = [
-        # f'- **{text["supported_output_formats"]}**: {wrap_key_words(data_adapter.output_types)}',
-    ]
+    technical_info = []
+    if data_adapter.review_timeout is not None:
+        technical_info.append(f'- **{text["review_timeout"]}**: {data_adapter.review_timeout}')
     
     # Add extra parameters
     extra_params = data_adapter.extra_params

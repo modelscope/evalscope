@@ -65,7 +65,6 @@ Example usage:
   - `dataset_id` (or `local_path`): Specify local path for the dataset; if set, data will be loaded locally.
   - `prompt_template`: Prompt template for the evaluation dataset; will be used to generate prompts. For example, `gsm8k`’s template is `Question: {query}\nLet's think step by step\nAnswer:` and the dataset question will be filled in the `query` field.
   - `system_prompt`: System prompt for the evaluation dataset.
-  - `model_adapter`: Model adapter for the dataset; will use the specified adapter for evaluation. Currently supports `generation`, `multiple_choice_logits`, `continuous_logits`. For service evaluation, only `generation` is supported; some multiple choice datasets support `logits` output.
   - `subset_list`: List of dataset subsets; only data from specified subsets will be used.
   - `few_shot_num`: Number of few-shot samples.
   - `few_shot_random`: Whether to sample few-shot data randomly (default `False`).

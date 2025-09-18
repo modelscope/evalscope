@@ -26,10 +26,10 @@ logger = get_logger()
         eval_split='test',
         prompt_template=
         '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
+        review_timeout=6,
         extra_params={
             'start_date': None,
             'end_date': None,
-            'timeout': 6,
             'debug': False
         },
     )
@@ -42,7 +42,6 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.timeout = self.extra_params.get('timeout', 6)
         self.debug = self.extra_params.get('debug', False)
         self.start_date = self.extra_params.get('start_date')
         self.end_date = self.extra_params.get('end_date')
@@ -97,7 +96,7 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                 predictions,
                 k_list=[1],
                 num_process_evaluate=1,
-                timeout=self.timeout,
+                timeout=self.review_timeout,
                 debug=self.debug,
             )
             pass_rate = metrics['pass@1'] / 100  # convert to point scale
@@ -111,7 +110,7 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
 
             score.metadata = {
                 'pass_rate': float(pass_rate),
-                'timeout': self.timeout,
+                'timeout': self.review_timeout,
                 'debug': self.debug,
                 'eval_results': serializable_eval_results,
                 'final_metadata': serializable_final_metadata
