@@ -65,6 +65,7 @@ class JSONSchema(BaseModel):
 
     @model_validator(mode='before')
     def convert_type_before_validation(cls, values):
+        values = deepcopy(values)
 
         def recursive_convert_type(obj):
             if isinstance(obj, dict):
