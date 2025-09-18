@@ -260,7 +260,7 @@ class DefaultEvaluator(Evaluator):
                     task_state = future_to_task_state[future]
                     try:
                         try:
-                            sample_score = future.result(self.benchmark.review_timeout)
+                            sample_score = future.result()
                         except TimeoutError:
                             logger.warning(
                                 f'Timeout when reviewing sample {task_state.sample_id}, setting score to zero.'

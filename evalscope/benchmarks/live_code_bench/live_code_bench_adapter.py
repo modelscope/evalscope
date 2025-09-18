@@ -127,13 +127,18 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                 from .sandbox_evaluate_utils import evaluate_in_sandbox
 
                 evaluation_sample = task_state.metadata['evaluation_sample']
-                passed = evaluate_in_sandbox(
+                passed, detailed_results = evaluate_in_sandbox(
                     self, filtered_prediction, evaluation_sample, timeout=self.review_timeout, debug=self.debug
                 )
 
                 score.value = {'pass': passed}
                 score.explanation = f"Sandbox execution: {'Passed' if passed else 'Failed'}"
-                score.metadata = {'timeout': self.review_timeout, 'debug': self.debug, 'execution_method': 'sandbox'}
+                score.metadata = {
+                    'timeout': self.review_timeout,
+                    'debug': self.debug,
+                    'execution_method': 'sandbox',
+                    'detailed_results': detailed_results
+                }
             except Exception as e:
                 score.value = {'pass': False}
                 score.explanation = f'Sandbox evaluation failed: {str(e)}'

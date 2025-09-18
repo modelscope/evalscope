@@ -58,7 +58,19 @@ class TestCodeBenchmark(TestBenchmark):
     def test_live_code_bench(self):
         """Test Live Code Bench dataset."""
         dataset_args = {
-            'subset_list': ['v6'],
+            'subset_list': ['v5'],
+            'review_timeout': 6,
+            'extra_params': {
+                'start_date': '2024-08-01',
+                'end_date': '2025-02-28'
+            },
+        }
+        self._run_dataset_test('live_code_bench', limit=5, dataset_args=dataset_args, use_cache='outputs/20250918_200232', rerun_review=True)
+
+    def test_live_code_bench_remote_sandbox(self):
+        """Test Live Code Bench dataset."""
+        dataset_args = {
+            'subset_list': ['v5'],
             'review_timeout': 6,
             'extra_params': {
                 'start_date': '2024-08-01',
@@ -66,4 +78,4 @@ class TestCodeBenchmark(TestBenchmark):
             },
         }
         sandbox_manager_config = {'base_url': 'http://localhost:8000'}
-        self._run_dataset_test('live_code_bench', limit=5, dataset_args=dataset_args, sandbox_manager_config=sandbox_manager_config)
+        self._run_dataset_test('live_code_bench', limit=20, dataset_args=dataset_args, sandbox_manager_config=sandbox_manager_config, use_cache='outputs/20250918_200232_2', rerun_review=True)
