@@ -165,6 +165,8 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
 - `--sandbox-type`: Sandbox类型，默认为`docker`。
 - `--sandbox-config`: Sandbox配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
   - `image`: Docker镜像名称，默认为`python:3.11-slim`。
+  - `network_enabled`: 是否启用网络，默认为`true`。
+  - `tools_config`: 工具配置字典，默认为空字典`{'shell_executor': {},'python_executor': {}}`，表示启用shell和python执行器。
 
 ## 其他参数
 

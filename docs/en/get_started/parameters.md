@@ -176,6 +176,8 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
 - `--sandbox-type`: Specifies the type of Sandbox, with a default value of `docker`.
 - `--sandbox-config`: Configuration parameters for the Sandbox, passed as a `json` string and parsed into a dictionary. It supports the following fields:
   - `image`: The name of the Docker image, defaulting to `python:3.11-slim`.
+  - `network_enabled`: Whether to enable networking, default is `true`.
+  - `tools_config`: Tool configuration dictionary, defaulting to an empty dictionary `{'shell_executor': {},'python_executor': {}}`, which indicates that both shell and python executors are enabled.
 
 ## Other Parameters
 
