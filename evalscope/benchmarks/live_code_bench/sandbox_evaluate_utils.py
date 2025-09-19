@@ -148,11 +148,11 @@ except Exception as e:
                     all_passed = False
                     break
                 else:
-                    failed_cases.append(f'Test {i}: Unknown error in output')
+                    failed_cases.append(f'Test {i}: Unknown error in output. Result: {result}')
                     all_passed = False
                     break
             else:
-                failed_cases.append(f"Test {i}: Sandbox execution failed - {result.get('error', 'Unknown error')}")
+                failed_cases.append(f'Test {i}: Sandbox execution failed - Result: {result}')
                 all_passed = False
                 break
 
@@ -193,8 +193,7 @@ sys.stdin = StringIO('''{test_input}''')
             if result.get('status') != 'success':
                 if debug:
                     logger.error(f'Test case {i} execution failed: {result}')
-                # FIXME: exec /usr/local/bin/python: argument list too long
-                failed_cases.append(f"Test {i}: Execution error - {result.get('error', 'Unknown error')}")
+                failed_cases.append(f'Test {i}: Execution error - Result: {result}')
                 all_passed = False
                 break
 

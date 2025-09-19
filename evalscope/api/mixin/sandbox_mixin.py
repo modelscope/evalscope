@@ -30,15 +30,15 @@ class SandboxMixin:
         # Initialize sandbox synchronously by running async methods
         if self.use_sandbox:
             self._loop = asyncio.new_event_loop()
-            
+
             # Start the loop in a separate thread
             def run_loop():
                 asyncio.set_event_loop(self._loop)
                 self._loop.run_forever()
-            
+
             self._loop_thread = threading.Thread(target=run_loop, daemon=True)
             self._loop_thread.start()
-            
+
             # Wait for initialization
             future = asyncio.run_coroutine_threadsafe(self._async_init(), self._loop)
             future.result()
@@ -193,12 +193,12 @@ class SandboxMixin:
                     # Stop the manager using the dedicated loop
                     future = asyncio.run_coroutine_threadsafe(self._manager.stop(), self._loop)
                     future.result(timeout=30)
-                    
+
                     # Stop the event loop
                     self._loop.call_soon_threadsafe(self._loop.stop)
                     if hasattr(self, '_loop_thread'):
                         self._loop_thread.join(timeout=5)
-                    
+
                 logger.info('Sandbox manager finalized.')
             except Exception as e:
                 logger.warning(f'Error finalizing sandbox manager: {e}')
