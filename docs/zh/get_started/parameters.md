@@ -54,9 +54,9 @@
 - `--datasets`: 数据集名称，支持输入多个数据集，使用空格分开，数据集将自动从modelscope下载，支持的数据集参考[数据集列表](./supported_dataset/llm.md)
 - `--dataset-args`: 评测数据集的设置参数，以`json`字符串格式传入，将解析为字典，注意需要跟`--datasets`参数中的值对应：
   - `dataset_id` (或`local_path`): 可指定数据集本地路径，指定后将尝试从本地加载数据。
+  - `review_timeout`: 可选浮点数，表示评测样本的超时时间（单位：秒），默认为None，表示一直等待，对于代码类任务，建议设置较短的超时时间。
   - `prompt_template`: 评测数据集的prompt模板，指定后将使用模板生成prompt。例如`gsm8k`的模版为`Question: {query}\nLet's think step by step\nAnswer:`，数据集的问题将填充到模板`query`字段中。
   - `system_prompt`: 评测数据集的系统prompt。
-  - `model_adapter`: 评测数据集的模型适配器，指定后将使用给定的模型适配器评测，目前支持`generation`, `multiple_choice_logits`, `continuous_logits`；对于service评测，目前仅支持`generation`；部分多选题数据集支持`logits`输出。
   - `subset_list`: 评测数据子集列表，指定后将只使用子集数据。
   - `few_shot_num`: few-shot的数量。
   - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`。

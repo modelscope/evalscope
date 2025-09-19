@@ -345,6 +345,20 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         self._benchmark_meta.shuffle_choices = value
 
+    @property
+    def review_timeout(self) -> Optional[float]:
+        """
+        Return the timeout for the review process.
+        """
+        return self._benchmark_meta.review_timeout
+
+    @review_timeout.setter
+    def review_timeout(self, value: float):
+        """
+        Set the timeout for the review process.
+        """
+        self._benchmark_meta.review_timeout = value
+
     @contextlib.contextmanager
     def _temporary_attribute(self, attr_name: str, new_value):
         """

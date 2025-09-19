@@ -79,6 +79,9 @@ class BenchmarkMeta:
     shuffle_choices: bool = False
     """Whether to shuffle the choices in multiple-choice datasets."""
 
+    review_timeout: Optional[float] = None
+    """ Timeout for review in seconds."""
+
     extra_params: Dict = field(default_factory=dict)
     """ Additional parameters for the benchmark."""
 

@@ -141,35 +141,61 @@ class BBHAdapter(DefaultDataAdapter):
     @classmethod
     def _extract_mc_answer(cls, ans: str) -> str:
         """
-        Extract the answer from the model output for Multiple choice task.
+        Extract normalized answer for BBH multiple-choice tasks.
+        Handles formats like:
+        - "answer is (A)"
+        - "The answer is A."
+        - Extra text after answer.
+        Always uses the *last* occurrence of "answer is".
         """
-        ans_line = ans.split('answer is ')
-        if len(ans_line) != 1:
-            ans = ans_line[1].strip()
-        match = re.search(r'\(([A-Z])\)*', ans)
+        ans = ans.strip()
+
+        parts = ans.split('So the answer is ')
+        if len(parts) > 1:
+            ans = parts[-1].strip()
+        ans = ans.split('\n')[0].strip()
+
+        # Remove trailing period
+        if ans.endswith('.'):
+            ans = ans[:-1].strip()
+
+        # Capture uppercase letter inside parentheses (A) (B) ...
+        match = re.search(r'\(([A-Z])\)', ans)
         if match:
             return match.group(1)
-        match = re.search(r'([A-Z])', ans)
+
+        # Capture single uppercase letter
+        match = re.search(r'\b([A-Z])\b', ans)
         if match:
             return match.group(1)
+
         return ans
 
     @classmethod
     def _extract_ff_answer(cls, ans: str):
         """
-        Extract the answer from the model output for Free-form task.
+        Extract the normalized answer for BBH free-form tasks.
+        Handles patterns like:
+        - "answer is XXX."
+        - "The answer is **valid**."
+        - Extra trailing dots / line breaks.
+        - Bold-marked answers (**xxx**).
+        Always uses the *last* occurrence of "answer is".
         """
-        pattern = r'answer is\s+(.*?)\.'
+        ans = ans.strip()
 
-        match = re.search(pattern, ans)
-        if match:
-            res = match.group(1)
-            return res
+        parts = ans.split('So the answer is ')
+        if len(parts) > 1:
+            ans = parts[-1].strip()
+        ans = ans.split('\n')[0].strip()
 
-        ans_line = ans.split('answer is ')
-        if len(ans_line) != 1:
-            ans = ans_line[1].strip()
-        ans = ans.split('\n')[0]
+        # Remove trailing period
         if ans.endswith('.'):
-            ans = ans[:-1]
+            ans = ans[:-1].strip()
+
+        # If answer is in bold (**xxx**), prefer the content inside
+        match = re.search(r'\*\*(.*?)\*\*', ans)
+        if match:
+            ans = match.group(1).strip()
+
         return ans

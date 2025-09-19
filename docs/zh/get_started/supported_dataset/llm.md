@@ -653,13 +653,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `openai_humaneval`
 
-- **额外参数**: 
-```json
-{
-    "num_workers": 4,
-    "timeout": 4
-}
-```
+- **评测超时时间（秒）**: 4
 - **提示模板**: 
 ```text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
@@ -722,12 +716,12 @@ Read the following function signature and docstring, and fully implement the fun
 - **默认提示方式**: 0-shot
 - **数据集子集**: `release_latest`
 
+- **评测超时时间（秒）**: 6
 - **额外参数**: 
 ```json
 {
     "start_date": null,
     "end_date": null,
-    "timeout": 6,
     "debug": false
 }
 ```

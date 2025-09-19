@@ -10,7 +10,7 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from tqdm import tqdm
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
@@ -259,7 +259,13 @@ class DefaultEvaluator(Evaluator):
                 for future in as_completed(future_to_task_state):
                     task_state = future_to_task_state[future]
                     try:
-                        sample_score = future.result()
+                        try:
+                            sample_score = future.result()
+                        except TimeoutError:
+                            logger.warning(
+                                f'Timeout when reviewing sample {task_state.sample_id}, setting score to zero.'
+                            )
+                            sample_score = SampleScore(sample_id=task_state.sample_id, scores={})
                         sample_score_list.append(sample_score)
 
                         # Save the review result to cache for future use

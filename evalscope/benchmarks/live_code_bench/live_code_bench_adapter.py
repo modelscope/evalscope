@@ -26,10 +26,10 @@ logger = get_logger()
         eval_split='test',
         prompt_template=
         '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
+        review_timeout=6,
         extra_params={
             'start_date': None,
             'end_date': None,
-            'timeout': 6,
             'debug': False
         },
     )
@@ -42,7 +42,6 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.timeout = self.extra_params.get('timeout', 6)
         self.debug = self.extra_params.get('debug', False)
         self.start_date = self.extra_params.get('start_date')
         self.end_date = self.extra_params.get('end_date')
@@ -81,45 +80,69 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        from .evaluate_utils import codegen_metrics
-
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
 
-        references = [{'input_output': task_state.metadata['evaluation_sample']}]
-        predictions = [[filtered_prediction]]
+        if not self.use_sandbox:
+            # Use original evaluation method
+            from .evaluate_utils import codegen_metrics
 
-        try:
-            metrics, eval_results, final_metadata = codegen_metrics(
-                references,
-                predictions,
-                k_list=[1],
-                num_process_evaluate=1,
-                timeout=self.timeout,
-                debug=self.debug,
-            )
-            pass_rate = metrics['pass@1'] / 100  # convert to point scale
+            references = [{'input_output': task_state.metadata['evaluation_sample']}]
+            predictions = [[filtered_prediction]]
 
-            score.value = {'pass': float(pass_rate > 0)}
-            score.explanation = f"Pass@1: {metrics['pass@1']}%"
+            try:
+                metrics, eval_results, final_metadata = codegen_metrics(
+                    references,
+                    predictions,
+                    k_list=[1],
+                    num_process_evaluate=1,
+                    timeout=self.review_timeout,
+                    debug=self.debug,
+                )
+                pass_rate = metrics['pass@1'] / 100  # convert to point scale
 
-            # Convert numpy types to native Python types for JSON serialization
-            serializable_eval_results = convert_normal_types(eval_results)
-            serializable_final_metadata = convert_normal_types(final_metadata)
+                score.value = {'pass': float(pass_rate > 0)}
+                score.explanation = f"Pass@1: {metrics['pass@1']}%"
 
-            score.metadata = {
-                'pass_rate': float(pass_rate),
-                'timeout': self.timeout,
-                'debug': self.debug,
-                'eval_results': serializable_eval_results,
-                'final_metadata': serializable_final_metadata
-            }
-        except Exception as e:
-            score.value = {'pass': False}
-            score.explanation = f'Evaluation failed: {str(e)}'
-            score.metadata = {'error': str(e)}
+                # Convert numpy types to native Python types for JSON serialization
+                serializable_eval_results = convert_normal_types(eval_results)
+                serializable_final_metadata = convert_normal_types(final_metadata)
+
+                score.metadata = {
+                    'pass_rate': float(pass_rate),
+                    'timeout': self.review_timeout,
+                    'debug': self.debug,
+                    'eval_results': serializable_eval_results,
+                    'final_metadata': serializable_final_metadata
+                }
+            except Exception as e:
+                score.value = {'pass': False}
+                score.explanation = f'Evaluation failed: {str(e)}'
+                score.metadata = {'error': str(e)}
+        else:
+            # Use sandbox execution
+            try:
+                from .sandbox_evaluate_utils import evaluate_in_sandbox
+
+                evaluation_sample = task_state.metadata['evaluation_sample']
+                passed, detailed_results = evaluate_in_sandbox(
+                    self, filtered_prediction, evaluation_sample, timeout=self.review_timeout, debug=self.debug
+                )
+
+                score.value = {'pass': passed}
+                score.explanation = f"Sandbox execution: {'Passed' if passed else 'Failed'}"
+                score.metadata = {
+                    'timeout': self.review_timeout,
+                    'debug': self.debug,
+                    'execution_method': 'sandbox',
+                    'detailed_results': detailed_results
+                }
+            except Exception as e:
+                score.value = {'pass': False}
+                score.explanation = f'Sandbox evaluation failed: {str(e)}'
+                score.metadata = {'error': str(e), 'execution_method': 'sandbox'}
 
         score.main_score_name = 'pass'
         return score
