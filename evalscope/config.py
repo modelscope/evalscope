@@ -261,7 +261,7 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = copy.deepcopy(self.__dict__)
+        result = copy.copy(self.__dict__)
         del result['api_key']  # Do not expose api_key in the config
 
         if isinstance(self.model, (Model, ModelAPI)):
