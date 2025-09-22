@@ -34,6 +34,7 @@
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
@@ -376,7 +377,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **任务类别**: `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 3-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **提示模板**: 
@@ -803,6 +804,27 @@ D. 扭应力
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### Minerva-Math
+
+[返回目录](#llm评测集)
+- **数据集名称**: `minerva_math`
+- **数据集ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
+- **数据集描述**:  
+  > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
+- **任务类别**: `Math`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
 
 - **提示模板**: 
 ```text
