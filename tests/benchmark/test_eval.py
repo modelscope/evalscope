@@ -417,6 +417,12 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('amc', dataset_args)
 
+    def test_minerva_math(self):
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('minerva_math', dataset_args)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

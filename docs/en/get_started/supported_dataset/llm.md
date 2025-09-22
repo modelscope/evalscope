@@ -34,6 +34,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
@@ -376,7 +377,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Task Categories**: `Reasoning`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
-- **Default Shots**: 3-shot
+- **Default Shots**: 0-shot
 - **Subsets**: `default`
 
 - **Prompt Template**: 
@@ -803,6 +804,27 @@ D. 扭应力
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### Minerva-Math
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `minerva_math`
+- **Dataset ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
+- **Description**:  
+  > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
 
 - **Prompt Template**: 
 ```text
