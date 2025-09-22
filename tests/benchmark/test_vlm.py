@@ -121,7 +121,7 @@ class TestVLMBenchmark(TestBenchmark):
     def test_olympiad_bench(self):
         dataset_args = {
             'subset_list': [
-                'OE_MM_maths_en_COMP',
+                # 'OE_MM_maths_en_COMP',
                 # 'OE_MM_maths_zh_CEE',
                 # 'OE_MM_maths_zh_COMP',
                 # 'OE_MM_physics_en_COMP',
@@ -131,6 +131,7 @@ class TestVLMBenchmark(TestBenchmark):
                 # 'OE_TO_maths_zh_COMP',
                 # 'OE_TO_physics_en_COMP',
                 # 'OE_TO_physics_zh_CEE',
+                'TP_TO_maths_zh_CEE',
             ]
         }
         self._run_dataset_test('olympiad_bench', dataset_args=dataset_args)
