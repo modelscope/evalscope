@@ -11,6 +11,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MCQ`, `MultiModal` |
+| `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
@@ -193,6 +194,27 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### OlympiadBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `olympiad_bench`
+- **Dataset ID**: [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary)
+- **Description**:  
+  > OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark, featuring 8,476 problems from Olympiad-level mathematics and physics competitions, including the Chinese college entrance exam. In the subsets: `OE` stands for `Open-Ended`, `TP` stands for `Theorem Proving`, `MM` stands for `Multimodal`, `TO` stands for `Text-Only`, `CEE` stands for `Chinese Entrance Exam`, `COMP` stands for `Comprehensive`. **Note: The `TP` subsets can't be evaluated with auto-judge for now**.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `OE_MM_maths_en_COMP`, `OE_MM_maths_zh_CEE`, `OE_MM_maths_zh_COMP`, `OE_MM_physics_en_COMP`, `OE_MM_physics_zh_CEE`, `OE_TO_maths_en_COMP`, `OE_TO_maths_zh_CEE`, `OE_TO_maths_zh_COMP`, `OE_TO_physics_en_COMP`, `OE_TO_physics_zh_CEE`, `TP_MM_maths_en_COMP`, `TP_MM_maths_zh_CEE`, `TP_MM_maths_zh_COMP`, `TP_MM_physics_en_COMP`, `TP_TO_maths_en_COMP`, `TP_TO_maths_zh_CEE`, `TP_TO_maths_zh_COMP`, `TP_TO_physics_en_COMP`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---

@@ -7,6 +7,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -111,6 +112,27 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**: 
 ```text
 {question}
+```
+
+---
+
+### AMC
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `amc`
+- **Dataset ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
+- **Description**:  
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `amc22`, `amc23`, `amc24`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---

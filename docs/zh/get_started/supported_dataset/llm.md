@@ -7,6 +7,7 @@
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -111,6 +112,27 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **提示模板**: 
 ```text
 {question}
+```
+
+---
+
+### AMC
+
+[返回目录](#llm评测集)
+- **数据集名称**: `amc`
+- **数据集ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
+- **数据集描述**:  
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
+- **任务类别**: `Math`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `amc22`, `amc23`, `amc24`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
