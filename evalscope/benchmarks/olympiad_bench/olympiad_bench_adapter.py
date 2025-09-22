@@ -105,7 +105,7 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
                 'subfield': record.get('subfield', ''),
                 'context': record.get('context', ''),
                 'solution': record.get('solution', []),
-                'final_answer': record.get('final_answer', ''),
+                'final_answer': record.get('final_answer', []),
                 'is_multiple_answer': is_multiple_answer,
                 'unit': unit,
                 'answer_type': answer_type,
