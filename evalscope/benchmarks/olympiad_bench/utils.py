@@ -5,7 +5,11 @@ import sympy as sp
 from latex2sympy2_extended import latex2sympy as parse_latex
 from sympy import Eq, Pow, simplify, sympify
 
+from evalscope.utils import get_logger
+
 # from sympy.parsing.latex import parse_latex
+
+logger = get_logger()
 
 
 def get_single_answer_type_text(answer_type, is_chinese):
@@ -356,7 +360,7 @@ class MathJudger:
             elif not expr1_sym.has(sp.Symbol) and not expr2_sym.has(sp.Symbol):
                 try:
                     if not (self.can_compute_power(expr1_sym) and self.can_compute_power(expr2_sym)):
-                        print(
+                        logger.warning(
                             f'These two number can not be calculated by '
                             f'current computer for: '
                             f'"{str(expr1_sym)}" and "{str(expr2_sym)}"'
