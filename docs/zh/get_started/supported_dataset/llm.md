@@ -7,7 +7,7 @@
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
-| `amc_23` | [AMC_23](#amc_23) | `Math`, `Reasoning` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -40,7 +40,6 @@
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
-| `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -117,18 +116,18 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
-### AMC_23
+### AMC
 
 [返回目录](#llm评测集)
-- **数据集名称**: `amc_23`
-- **数据集ID**: [knoveleng/AMC-23](https://modelscope.cn/datasets/knoveleng/AMC-23/summary)
+- **数据集名称**: `amc`
+- **数据集ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
 - **数据集描述**:  
-  > The AMC23 dataset is a public dataset containing mathematical problems and their solutions, primarily intended for research and development of AI models related to mathematics.
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
 - **任务类别**: `Math`, `Reasoning`
-- **评估指标**: `acc`
+- **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
-- **数据集子集**: `default`
+- **数据集子集**: `amc22`, `amc23`, `amc24`
 
 - **提示模板**: 
 ```text
@@ -986,27 +985,6 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
-```
-
----
-
-### OlympiadBench
-
-[返回目录](#llm评测集)
-- **数据集名称**: `olympiad_bench`
-- **数据集ID**: [knoveleng/OlympiadBench](https://modelscope.cn/datasets/knoveleng/OlympiadBench/summary)
-- **数据集描述**:  
-  > A Challenging Benchmark for Promoting AGI with Olympiad-Level Bilingual Multimodal Scientific Problems.
-- **任务类别**: `Math`, `Reasoning`
-- **评估指标**: `acc`
-- **需要LLM Judge**: 否
-- **默认提示方式**: 0-shot
-- **数据集子集**: `default`
-
-- **提示模板**: 
-```text
-{question}
-Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---

@@ -11,33 +11,36 @@ logger = get_logger()
 
 @register_benchmark(
     BenchmarkMeta(
-        name='amc_23',
-        pretty_name='AMC_23',
+        name='amc',
+        pretty_name='AMC',
         tags=[Tags.MATH, Tags.REASONING],
-        description=(
-            'The AMC23 dataset is a public dataset containing mathematical problems and their solutions,'
-            'primarily intended for research and development of AI models related to mathematics.'
-        ),
-        dataset_id='knoveleng/AMC-23',
-        subset_list=['default'],
-        metric_list=['acc'],
-        eval_split='train',
+        description=
+        'AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.',
+        dataset_id='evalscope/amc_22-24',
+        subset_list=['amc22', 'amc23', 'amc24'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
     )
 )
-class AMC_23Adapter(DefaultDataAdapter):
+class AMCAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.reformat_subset = True
+
+        # Use split as subset
+        self.split_as_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(
-            input=record['question'],
+            input=record['problem'],
             target=record['answer'],
             metadata={
-                'question_id': record['id'],
+                'year': record['year'],
                 'url': record['url'],
-                'problem': record['problem'],
+                'solution': record.get('solution', '')
             },
         )

@@ -7,7 +7,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
-| `amc_23` | [AMC_23](#amc_23) | `Math`, `Reasoning` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -40,7 +40,6 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
-| `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -117,18 +116,18 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
-### AMC_23
+### AMC
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `amc_23`
-- **Dataset ID**: [knoveleng/AMC-23](https://modelscope.cn/datasets/knoveleng/AMC-23/summary)
+- **Dataset Name**: `amc`
+- **Dataset ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
 - **Description**:  
-  > The AMC23 dataset is a public dataset containing mathematical problems and their solutions, primarily intended for research and development of AI models related to mathematics.
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
 - **Task Categories**: `Math`, `Reasoning`
-- **Evaluation Metrics**: `acc`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
-- **Subsets**: `default`
+- **Subsets**: `amc22`, `amc23`, `amc24`
 
 - **Prompt Template**: 
 ```text
@@ -986,27 +985,6 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
-```
-
----
-
-### OlympiadBench
-
-[Back to Top](#llm-benchmarks)
-- **Dataset Name**: `olympiad_bench`
-- **Dataset ID**: [knoveleng/OlympiadBench](https://modelscope.cn/datasets/knoveleng/OlympiadBench/summary)
-- **Description**:  
-  > A Challenging Benchmark for Promoting AGI with Olympiad-Level Bilingual Multimodal Scientific Problems.
-- **Task Categories**: `Math`, `Reasoning`
-- **Evaluation Metrics**: `acc`
-- **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
-- **Subsets**: `default`
-
-- **Prompt Template**: 
-```text
-{question}
-Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
