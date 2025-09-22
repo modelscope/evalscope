@@ -1,6 +1,7 @@
 # http requests
 aiohttp
 fastapi
+jinja2
 # for calc result.
 numpy
 rich
