@@ -1,4 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-__version__ = '2.0.0'
-__release_datetime__ = '2099-01-01 00:00:00'
+__version__ = '1.0.2'
+__release_datetime__ = '2025-09-23 18:00:00'
