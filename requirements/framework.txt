@@ -5,7 +5,7 @@ dotenv
 jieba
 jsonlines
 langdetect
-latex2sympy2_extended
+latex2sympy2_extended[antlr4_9_3]
 matplotlib
 modelscope[framework]>=1.27
 nltk>=3.9

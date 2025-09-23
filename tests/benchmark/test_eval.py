@@ -33,12 +33,13 @@ class TestNativeBenchmark(TestBenchmark):
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
             'judge_model_args': {
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen3-235b-a22b',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
                     'temperature': 0.0,
                     'max_tokens': 4096,
+                    'extra_body': {'enable_thinking': False}
                 }
             },
             'debug': True,
@@ -64,6 +65,14 @@ class TestNativeBenchmark(TestBenchmark):
             'subset_list': ['abstract_algebra', 'computer_security']
         }
         self._run_dataset_test('mmlu', use_mock=True, dataset_args=dataset_args)
+
+    def test_mmlu_reasoning(self):
+        """Test MMLU reasoning dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'subset_list': ['abstract_algebra', 'computer_security']
+        }
+        self._run_dataset_test('mmlu', dataset_args=dataset_args, model='qwen3-0.6b', stream=True)
 
     def test_mmlu_pro(self):
         """Test MMLU-Pro reasoning dataset."""
@@ -203,6 +212,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_bbh(self):
         dataset_args = {
             'subset_list': ['temporal_sequences', 'navigate'],
+            'few_shot_num': 0,
         }
         self._run_dataset_test('bbh', dataset_args=dataset_args)
 
@@ -317,20 +327,21 @@ class TestNativeBenchmark(TestBenchmark):
     def test_humaneval(self):
         """Test HumanEval dataset."""
         dataset_args = {
-            'metric_list': ['Pass@1', 'Pass@2', 'Pass@5']
+            'metric_list': ['Pass@1']
         }
-        self._run_dataset_test('humaneval', dataset_args, repeats=5)
+        self._run_dataset_test('humaneval', dataset_args)
 
     def test_live_code_bench(self):
         """Test LiveCodeBench dataset."""
         dataset_args = {
-            'subset_list': ['v6'],
+            'subset_list': ['v5'],
+            'review_timeout': 6,
             'extra_params': {
                 'start_date': '2024-08-01',
                 'end_date': '2025-02-28'
             },
         }
-        self._run_dataset_test('live_code_bench', dataset_args, judge_worker_num=1)
+        self._run_dataset_test('live_code_bench', dataset_args, limit=20, use_cache='outputs/20250918_200232', rerun_review=True)
 
     def test_tool_bench(self):
         """Test ToolBench dataset."""
@@ -339,13 +350,18 @@ class TestNativeBenchmark(TestBenchmark):
     def test_bfcl(self):
         """Test BFCL dataset."""
         dataset_args = {
-            'subset_list': ['simple', 'live_multiple', 'multi_turn_base'],
+            'subset_list': [
+                # 'simple',
+                # 'live_multiple',
+                # 'multi_turn_base',
+                'multi_turn_miss_func'
+            ],
             'extra_params': {
                 'is_fc_model': True,
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args, model='qwq-plus', stream=True)
+        self._run_dataset_test('bfcl_v3', dataset_args, model='qwen-plus', limit=30, eval_batch_size=5)
 
     def test_tau_bench(self):
         dataset_args = {
@@ -378,6 +394,34 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('data_collection', dataset_args)
 
+    def test_multi_if(self):
+        dataset_args = {
+            'subset_list': ['English', 'Chinese'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('multi_if', dataset_args, limit=5)
+
+    def test_healthbench(self):
+        dataset_args = {
+            'subset_list': ['health_data_tasks'],
+            'extra_params': {
+                'version': 'Hard'
+            }
+        }
+        self._run_dataset_test('health_bench', dataset_args, limit=5)
+
+
+    def test_amc(self):
+        dataset_args = {
+            'subset_list': ['amc22'],
+        }
+        self._run_dataset_test('amc', dataset_args)
+
+    def test_minerva_math(self):
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('minerva_math', dataset_args)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

@@ -86,28 +86,3 @@ def gen_table(
         add_overall_metric=add_overall_metric
     )
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
-
-
-class ReportsRecorder:
-    COMMON_DATASET_PATH = []
-    CUSTOM_DATASET_PATH = []
-
-    def __init__(self, oss_url: str = '', endpoint: str = ''):
-        pass
-
-
-if __name__ == '__main__':
-    report_dir_1 = './outputs/20250117_151926'
-    # report_dir_2 = './outputs/20250107_204445/reports'
-
-    report_table = gen_table(reports_path_list=[report_dir_1])
-    print(report_table)
-
-    # ALL VALUES ONLY FOR EXAMPLE
-    # +--------------------------+-------------------+-------------+
-    # | Model                    | CompetitionMath   | GSM8K       |
-    # +==========================+===================+=============+
-    # | ZhipuAI_chatglm2-6b-base | 25.0 (acc)        | 30.50 (acc) |
-    # +--------------------------+-------------------+-------------+
-    # | ZhipuAI_chatglm2-6b      | 30.5 (acc)        | 40.50 (acc) |
-    # +--------------------------+-------------------+-------------+

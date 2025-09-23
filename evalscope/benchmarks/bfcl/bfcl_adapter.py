@@ -1,16 +1,18 @@
 import json
 import re
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.metric.scorer import AggScore
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.report import Category, Report, Subset
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -67,13 +69,49 @@ class BFCLAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True)
+        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True, feature_name=self.pretty_name)
 
         self.category_map = SUBJECT_MAPPING
         self.reformat_subset = True
+        self.add_overall_metric = False
+        self.add_aggregation_name = False
 
         self.underscore_to_dot = self.extra_params.get('underscore_to_dot', True)
         self.is_fc_model = self.extra_params.get('is_fc_model', True)
+
+    def _weighted_average_from_subsets(self, subset_names: List[str], subset_dict: Dict[str, Subset]) -> Subset:
+        """Calculate weighted average for given subsets.
+
+        Returns:
+            Subset: A new Subset object with weighted average score
+        """
+        total_score = 0
+        total_count = 0
+        for name in subset_names:
+            if name in subset_dict:
+                subset = subset_dict[name]
+                total_score += subset.score * subset.num
+                total_count += subset.num
+
+        weighted_avg = total_score / total_count if total_count > 0 else 0
+        return Subset(name='', score=weighted_avg, num=total_count)
+
+    def _unweighted_average_from_subsets(self, subset_names: List[str], subset_dict: Dict[str, Subset]) -> Subset:
+        """Calculate unweighted average for given subsets.
+
+        Returns:
+            Subset: A new Subset object with unweighted average score
+        """
+        scores = []
+        total_count = 0
+        for name in subset_names:
+            if name in subset_dict:
+                subset = subset_dict[name]
+                scores.append(subset.score)
+                total_count += subset.num
+
+        unweighted_avg = sum(scores) / len(scores) if scores else 0
+        return Subset(name='', score=unweighted_avg, num=total_count)
 
     def preprocess_row(self, row: dict):
         """
@@ -252,3 +290,104 @@ class BFCLAdapter(DefaultDataAdapter):
             score.metadata = {'error': traceback.format_exc()}
             score.main_score_name = 'acc'
         return score
+
+    def _on_generate_report_end(self, report: Report, output_dir, **kwargs):
+        """
+        Finalize the report generation process. Calculate the overall score.
+
+        Track the number of each category.
+        - step1: simple, java, javascript unweighted average as simple_ast
+        - step2.1: simple_ast, multiple, parallel, parallel_multiple unweighted average as ast_non_live
+        - step2.2: live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average as ast_live
+        - step2.3: irrelevance as hallucination_non_live
+        - step2.4: live_irrelevance, live_relevance weighted average as hallucination_live
+        - step2.5: multi_turn_base as multi_turn_base
+        - step2.6: multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average as multi_turn_augmented
+        - step3.1: ast_non_live, hallucination_non_live unweighted average as non_live
+        - step3.2: ast_live, hallucination_live weighted average as live
+        - step3.3: multi_turn_base, multi_turn_augmented unweighted average as multi_turn
+        - step4: non_live, live, multi_turn unweighted average as overall
+        Args:
+            report (Report): The generated evaluation report.
+            output_dir (str): The directory to save the report.
+
+        Returns:
+            None
+        """  # noqa: E501
+        for metric in report.metrics:
+            # Collect all subsets in a dictionary for easy access
+            subset_dict: Dict[str, Subset] = {}
+            for category in metric.categories:
+                for subset in category.subsets:
+                    subset_dict[subset.name] = subset
+
+            # Step 1: Calculate simple_ast (simple, java, javascript unweighted average)
+            simple_subsets = ['simple', 'java', 'javascript']
+            simple_ast = self._unweighted_average_from_subsets(simple_subsets, subset_dict)
+            subset_dict['simple_ast'] = simple_ast
+
+            # Step 2.1: Calculate ast_non_live
+            # (simple_ast, multiple, parallel, parallel_multiple unweighted average)
+            ast_non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
+            ast_non_live = self._unweighted_average_from_subsets(ast_non_live_subsets, subset_dict)
+            subset_dict['ast_non_live'] = ast_non_live
+
+            # Step 2.2: Calculate ast_live
+            # (live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average)
+            live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
+            ast_live = self._weighted_average_from_subsets(live_subsets, subset_dict)
+            subset_dict['ast_live'] = ast_live
+
+            # Step 2.3: hallucination_non_live (irrelevance)
+            if 'irrelevance' in subset_dict:
+                subset_dict['hallucination_non_live'] = subset_dict['irrelevance']
+            else:
+                subset_dict['hallucination_non_live'] = Subset(name='hallucination_non_live', score=0, num=0)
+
+            # Step 2.4: Calculate hallucination_live (live_irrelevance, live_relevance weighted average)
+            hallucination_live_subsets = ['live_irrelevance', 'live_relevance']
+            hallucination_live = self._weighted_average_from_subsets(hallucination_live_subsets, subset_dict)
+            subset_dict['hallucination_live'] = hallucination_live
+
+            # Step 2.5: multi_turn_base
+            if 'multi_turn_base' not in subset_dict:
+                subset_dict['multi_turn_base'] = Subset(name='multi_turn_base', score=0, num=0)
+
+            # Step 2.6: Calculate multi_turn_augmented
+            # (multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average)
+            multi_turn_augmented_subsets = ['multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context']
+            multi_turn_augmented = self._weighted_average_from_subsets(multi_turn_augmented_subsets, subset_dict)
+            subset_dict['multi_turn_augmented'] = multi_turn_augmented
+
+            # Step 3.1: Calculate non_live (ast_non_live, hallucination_non_live unweighted average)
+            non_live_subsets = ['ast_non_live', 'hallucination_non_live']
+            non_live = self._unweighted_average_from_subsets(non_live_subsets, subset_dict)
+            subset_dict['non_live'] = non_live
+
+            # Step 3.2: Calculate live (ast_live, hallucination_live weighted average)
+            live_agg_subsets = ['ast_live', 'hallucination_live']
+            live = self._weighted_average_from_subsets(live_agg_subsets, subset_dict)
+            subset_dict['live'] = live
+
+            # Step 3.3: Calculate multi_turn (multi_turn_base, multi_turn_augmented unweighted average)
+            multi_turn_subsets = ['multi_turn_base', 'multi_turn_augmented']
+            multi_turn = self._unweighted_average_from_subsets(multi_turn_subsets, subset_dict)
+            subset_dict['multi_turn'] = multi_turn
+
+            # Step 4: Calculate overall (non_live, live, multi_turn unweighted average)
+            overall_subsets = ['non_live', 'live', 'multi_turn']
+            overall = self._unweighted_average_from_subsets(overall_subsets, subset_dict)
+            subset_dict['overall'] = overall
+
+            # Add computed scores to the category
+            computed_subset_names = ['non_live', 'live', 'multi_turn', 'overall']
+
+            # Add the computed scores as new subsets in the metric
+            dummy_subsets = []
+            for subset_name in computed_subset_names:
+                if subset_name in subset_dict:
+                    subset = subset_dict[subset_name]
+                    subset.name = subset_name.upper()
+                    dummy_subsets.append(subset)
+            dummy_category = Category(name='-', subsets=dummy_subsets)
+            metric.categories.append(dummy_category)

@@ -7,31 +7,81 @@ from itertools import chain
 from types import ModuleType
 from typing import Any, Optional, Union
 
+from evalscope.constants import IS_BUILD_DOC
 from .logger import get_logger
 
 logger = get_logger()  # pylint: disable=invalid-name
 
 
-def check_import(module_name: str, package: Optional[str] = None, raise_error: bool = False) -> bool:
-    """Check if a module can be imported.
+def check_import(
+    module_name: Union[str, list[str]],
+    package: Optional[Union[str, list[str]]] = None,
+    raise_warning: bool = True,
+    raise_error: bool = False,
+    feature_name: Optional[str] = 'this feature',
+) -> bool:
+    """Check if a module or list of modules can be imported.
 
     Args:
-        module_name (str): The name of the module to check.
-        package (str, optional): The package to install if the module is not found. Defaults to None.
-        raise_error (bool, optional): Whether to raise an error if the module is not found. Defaults to False.
+        module_name (Union[str, list[str]]): The name(s) of the module(s) to check.
+        package (Union[str, list[str]], optional): The package(s) to install if the module(s) are not found.
+            Defaults to None.
+        raise_error (bool, optional): Whether to raise an error if any module is not found. Defaults to False.
+        raise_warning (bool, optional): Whether to log a warning if any module is not found. Defaults to True.
+        feature_name (str, optional): The feature name that requires the module(s). Used in the warning/error message.
+            Defaults to 'this feature'.
+
+    Returns:
+        bool: True if all modules can be imported, False otherwise.
     """
-    try:
-        importlib.import_module(module_name)
-        return True
-    except ImportError:
-        error_msg = f'`{module_name}` not found.'
-        if package:
-            error_msg += f' Please run `pip install {package}` to use this feature.'
+    # Convert single strings to lists for uniform processing
+    if isinstance(module_name, str):
+        module_names = [module_name]
+    else:
+        module_names = module_name
+
+    if package is None:
+        packages = [None] * len(module_names)
+    elif isinstance(package, str):
+        packages = [package] * len(module_names)
+    else:
+        packages = package
+        # Ensure packages list has same length as module_names
+        if len(packages) < len(module_names):
+            packages.extend([None] * (len(module_names) - len(packages)))
+
+    missing_modules = []
+    missing_packages = []
+
+    for i, mod_name in enumerate(module_names):
+        try:
+            importlib.import_module(mod_name)
+        except ImportError:
+            missing_modules.append(mod_name)
+            if i < len(packages) and packages[i]:
+                missing_packages.append(packages[i])
+
+    if missing_modules:
+        if len(missing_modules) == 1:
+            error_msg = f'`{missing_modules[0]}` not found.'
+        else:
+            error_msg = f'The following modules are not found: {", ".join(f"`{mod}`" for mod in missing_modules)}.'
+
+        if missing_packages:
+            if len(missing_packages) == 1:
+                error_msg += f' Please run `pip install {missing_packages[0]}` to use {feature_name}.'
+            else:
+                unique_packages = list(dict.fromkeys(missing_packages))  # Remove duplicates while preserving order
+                error_msg += f' Please run `pip install {" ".join(unique_packages)}` to use {feature_name}.'
+
+        if raise_warning:
             logger.warning(error_msg)
 
-        if raise_error:
+        if not IS_BUILD_DOC and raise_error:
             raise ImportError(error_msg)
         return False
+
+    return True
 
 
 class _LazyModule(ModuleType):

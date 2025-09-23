@@ -28,6 +28,25 @@ logging.getLogger('datasets').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('modelscope').setLevel(logging.ERROR)
 
+info_set = set()
+warning_set = set()
+
+
+def info_once(self, msg, *args, **kwargs):
+    hash_id = kwargs.get('hash_id') or msg
+    if hash_id in info_set:
+        return
+    info_set.add(hash_id)
+    self.info(msg)
+
+
+def warning_once(self, msg, *args, **kwargs):
+    hash_id = kwargs.get('hash_id') or msg
+    if hash_id in warning_set:
+        return
+    warning_set.add(hash_id)
+    self.warning(msg)
+
 
 def get_logger(
     log_file: Optional[str] = None,

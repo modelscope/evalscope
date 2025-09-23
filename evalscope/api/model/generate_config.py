@@ -36,9 +36,6 @@ class GenerateConfig(BaseModel):
     stream: Optional[bool] = Field(default=None)
     """Whether to stream the response (default is model specific)."""
 
-    system_message: Optional[str] = Field(default=None)
-    """Override the default system message."""
-
     max_tokens: Optional[int] = Field(default=None)
     """The maximum number of tokens that can be generated in the completion (default is model specific)."""
 

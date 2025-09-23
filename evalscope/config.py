@@ -18,6 +18,7 @@ from evalscope.constants import (
 )
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
 from evalscope.utils.logger import get_logger
 
@@ -124,6 +125,19 @@ class TaskConfig(BaseArgument):
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""
 
+    # Sandbox configuration arguments
+    use_sandbox: bool = False
+    """Whether to execute code in a sandboxed environment."""
+
+    sandbox_type: Optional[str] = 'docker'
+    """Type of sandbox environment for code execution (e.g., docker). Default is 'docker'."""
+
+    sandbox_manager_config: Optional[Dict] = field(default_factory=dict)
+    """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
+
+    sandbox_config: Optional[Dict] = field(default_factory=dict)
+    """Configuration for sandboxed code execution environments."""
+
     def __post_init__(self):
         self.__init_model_and_id()
 
@@ -132,6 +146,7 @@ class TaskConfig(BaseArgument):
         # Set default generation_config and model_args
         self.__init_default_generation_config()
         self.__init_default_model_args()
+        self.__init_default_sandbox_config()
 
     def __init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
@@ -223,6 +238,14 @@ class TaskConfig(BaseArgument):
                     'precision': 'torch.float16',
                 }
 
+    def __init_default_sandbox_config(self):
+        if not self.use_sandbox:
+            return
+        check_import('ms_enclave', 'ms_enclave[docker]', raise_error=True)
+
+        if not self.sandbox_type:
+            self.sandbox_type = 'docker'
+
     def update(self, other: Union['TaskConfig', dict]):
         if isinstance(other, TaskConfig):
             other = other.to_dict()
@@ -238,7 +261,7 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self):
-        result = copy.deepcopy(self.__dict__)
+        result = copy.copy(self.__dict__)
         del result['api_key']  # Do not expose api_key in the config
 
         if isinstance(self.model, (Model, ModelAPI)):

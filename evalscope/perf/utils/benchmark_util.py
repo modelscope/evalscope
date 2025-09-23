@@ -44,8 +44,7 @@ class BenchmarkData:
             api_plugin.parse_responses(self.response_messages, request=self.request)
 
     def update_gpu_usage(self):
-        if check_import('torch'):
-
+        if check_import('torch', raise_warning=False):
             import torch
             total_memory = 0
             for i in range(torch.cuda.device_count()):

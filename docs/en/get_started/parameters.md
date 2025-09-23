@@ -23,7 +23,6 @@ Run `evalscope eval --help` to get the full list of parameters.
 - `--generation-config`: Generation parameters, either as comma-separated `key=value` pairs, or as a JSON string (parsed as a dictionary):
   - `timeout`: Optional integer, request timeout (seconds).
   - `stream`: Optional boolean, whether to return responses in streaming mode (depends on the model).
-  - `system_message`: Optional string to override the default system message.
   - `max_tokens`: Optional integer, the maximum number of tokens generated (depends on the model).
   - `top_p`: Optional float, nucleus sampling; the model only considers tokens accounting for top_p probability mass.
   - `temperature`: Optional float, sampling temperature (0~2); higher means more randomness, lower means more deterministic output.
@@ -66,7 +65,6 @@ Example usage:
   - `dataset_id` (or `local_path`): Specify local path for the dataset; if set, data will be loaded locally.
   - `prompt_template`: Prompt template for the evaluation dataset; will be used to generate prompts. For example, `gsm8k`’s template is `Question: {query}\nLet's think step by step\nAnswer:` and the dataset question will be filled in the `query` field.
   - `system_prompt`: System prompt for the evaluation dataset.
-  - `model_adapter`: Model adapter for the dataset; will use the specified adapter for evaluation. Currently supports `generation`, `multiple_choice_logits`, `continuous_logits`. For service evaluation, only `generation` is supported; some multiple choice datasets support `logits` output.
   - `subset_list`: List of dataset subsets; only data from specified subsets will be used.
   - `few_shot_num`: Number of few-shot samples.
   - `few_shot_random`: Whether to sample few-shot data randomly (default `False`).
@@ -169,6 +167,16 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
   - `score_pattern`: Regular expression for parsing model output, default for `pattern` mode is `(A|B)`; default for `numeric` mode is `\[\[(\d+(?:\.\d+)?)\]\]`, used to extract model scoring results.
   - `score_mapping`: Score mapping dictionary for `pattern` mode, default is `{'A': 1.0, 'B': 0.0}`
 - `--analysis-report`: Whether to generate an analysis report, default is `false`; if this parameter is set, an analysis report will be generated using the judge model, including analysis interpretation and suggestions for the model evaluation results. The report output language will be automatically determined based on `locale.getlocale()`.
+
+## Sandbox Parameters
+- `--use-sandbox`: Determines whether to utilize a Sandbox for model evaluation, defaulting to `false`. If this parameter is set, [ms-enclave](https://github.com/modelscope/ms-enclave) will be activated to isolate the code execution environment, enhancing security. This is currently effective only for code evaluation tasks such as `humaneval`.
+- `--sandbox-manager-config`: Configuration parameters for the Sandbox manager, passed as a `json` string and parsed into a dictionary. It supports the following fields:
+  - `base_url`: The base URL for the Sandbox manager, defaulting to `None`, which indicates the use of a local manager. Configuring this parameter will enable the use of a remote manager.
+- `--sandbox-type`: Specifies the type of Sandbox, with a default value of `docker`.
+- `--sandbox-config`: Configuration parameters for the Sandbox, passed as a `json` string and parsed into a dictionary. It supports the following fields:
+  - `image`: The name of the Docker image, defaulting to `python:3.11-slim`.
+  - `network_enabled`: Whether to enable networking, default is `true`.
+  - `tools_config`: Tool configuration dictionary, defaulting to an empty dictionary `{'shell_executor': {},'python_executor': {}}`, which indicates that both shell and python executors are enabled.
 
 ## Other Parameters
 

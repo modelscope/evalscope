@@ -159,7 +159,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         gc.collect()
 
         from evalscope.utils.import_utils import check_import
-        if check_import('torch'):
+        if check_import('torch', raise_warning=False):
             import torch
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()

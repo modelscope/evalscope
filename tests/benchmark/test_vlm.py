@@ -25,7 +25,7 @@ class TestVLMBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 4096,
+                'max_tokens': 2048,
                 'temperature': 0.0,
                 'seed': 42,
                 'parallel_tool_calls': True
@@ -72,9 +72,66 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('mmmu_pro', dataset_args=dataset_args, limit=10)
 
-    def test_qwen3_collection(self):
+    def test_qwen3_vl_collection(self):
         dataset_args = {
             'dataset_id': 'outputs/qwen3_vl_test.jsonl',
             'shuffle': True,
         }
-        self._run_dataset_test('data_collection', dataset_args)
+        self._run_dataset_test('data_collection', dataset_args, limit=100)
+
+    def test_real_world_qa(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('real_world_qa', dataset_args=dataset_args, limit=10)
+
+    def test_ai2d(self):
+        dataset_args = {
+            'subset_list': ['default']
+        }
+        self._run_dataset_test('ai2d', dataset_args=dataset_args)
+
+    def test_cc_bench(self):
+        dataset_args = {
+            'subset_list': ['cc']
+        }
+        self._run_dataset_test('cc_bench', dataset_args=dataset_args)
+
+    def test_mm_bench(self):
+        dataset_args = {
+            'subset_list': ['cn', 'en']
+        }
+        self._run_dataset_test('mm_bench', dataset_args=dataset_args)
+
+    def test_mm_star(self):
+        dataset_args = {
+            # 'subset_list': ['val']
+        }
+        self._run_dataset_test('mm_star', dataset_args=dataset_args)
+
+    def test_omni_bench(self):
+        dataset_args = {
+            'extra_params': {
+                'use_image': True, # Whether to use image input, if False, use text alternative image content.
+                'use_audio': True, # Whether to use audio input, if False, use text alternative audio content.
+            }
+        }
+        self._run_dataset_test('omni_bench', dataset_args=dataset_args, model='qwen-omni-turbo')
+
+    def test_olympiad_bench(self):
+        dataset_args = {
+            'subset_list': [
+                # 'OE_MM_maths_en_COMP',
+                # 'OE_MM_maths_zh_CEE',
+                # 'OE_MM_maths_zh_COMP',
+                # 'OE_MM_physics_en_COMP',
+                # 'OE_MM_physics_zh_CEE',
+                # 'OE_TO_maths_en_COMP',
+                # 'OE_TO_maths_zh_CEE',
+                # 'OE_TO_maths_zh_COMP',
+                # 'OE_TO_physics_en_COMP',
+                # 'OE_TO_physics_zh_CEE',
+                'TP_TO_maths_zh_CEE',
+            ]
+        }
+        self._run_dataset_test('olympiad_bench', dataset_args=dataset_args)

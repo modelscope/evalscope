@@ -47,7 +47,12 @@ class TauBenchAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('tau_bench', package='git+https://github.com/sierra-research/tau-bench', raise_error=True)
+        check_import(
+            'tau_bench',
+            package='git+https://github.com/sierra-research/tau-bench',
+            raise_error=True,
+            feature_name=self.pretty_name
+        )
 
         # setup user model args
         self.user_model = self.extra_params.get('user_model', 'qwen-plus')

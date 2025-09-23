@@ -9,7 +9,7 @@ from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
-from evalscope.api.mixin import LLMJudgeMixin
+from evalscope.api.mixin import LLMJudgeMixin, SandboxMixin
 from evalscope.api.model import Model
 from evalscope.report import Report
 from evalscope.utils.logger import get_logger
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
-class DataAdapter(LLMJudgeMixin, ABC):
+class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
     """
     Data Adapter for the benchmark.
     """
@@ -42,6 +42,12 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.save_metadata = True
         """Whether to save metadata in the review result"""
+
+        self.add_aggregation_name = True
+        """Whether to add aggregation name in the report"""
+
+        self.add_overall_metric = True
+        """Whether to add overall metric in the report"""
 
         self.category_map = {}
         """Category map for the benchmark"""
@@ -84,6 +90,11 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         Generate a report based on the evaluation results.
         """
+        pass
+
+    @abstractmethod
+    def finalize(self, *args, **kwargs) -> None:
+        """Finalize the evaluation process."""
         pass
 
     @property
@@ -333,6 +344,20 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Set whether to shuffle the choices in multiple-choice datasets.
         """
         self._benchmark_meta.shuffle_choices = value
+
+    @property
+    def review_timeout(self) -> Optional[float]:
+        """
+        Return the timeout for the review process.
+        """
+        return self._benchmark_meta.review_timeout
+
+    @review_timeout.setter
+    def review_timeout(self, value: float):
+        """
+        Set the timeout for the review process.
+        """
+        self._benchmark_meta.review_timeout = value
 
     @contextlib.contextmanager
     def _temporary_attribute(self, attr_name: str, new_value):

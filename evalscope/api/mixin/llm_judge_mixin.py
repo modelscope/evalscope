@@ -24,6 +24,8 @@ class LLMJudgeMixin:
 
         self._llm_judge: Optional[LLMJudge] = None
 
+        super().__init__(task_config=task_config)
+
     @property
     def llm_judge(self) -> Optional[LLMJudge]:
         """Get LLM judge instance with lazy initialization."""

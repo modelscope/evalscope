@@ -47,7 +47,7 @@
 - **额外参数**: 
 ```json
 {
-    "language": "# language of the instruction, choose `en` or `cn`, default to `en`"
+    "language": "# language of the instruction, choose from ['en', 'cn'], default to `en`"
 }
 ```
 

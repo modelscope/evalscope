@@ -642,9 +642,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def _on_generate_report(
-        self, scores: Dict[str, List[AggScore]], model_name: str, add_aggregation_name: bool = True
-    ) -> Report:
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         """
         Hook method called during report generation.
 
@@ -660,7 +658,7 @@ class DefaultDataAdapter(DataAdapter):
             Report: The generated evaluation report
         """
         return ReportGenerator.generate_report(
-            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=add_aggregation_name
+            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=self.add_aggregation_name
         )
 
     @override
@@ -682,3 +680,7 @@ class DefaultDataAdapter(DataAdapter):
         report = self._on_generate_report(scores, model_name=model_name)
         self._on_generate_report_end(report, output_dir, **kwargs)
         return report
+
+    def finalize(self, *args, **kwargs):
+        # Finalize the evaluation process
+        self.sandbox_finalize(*args, **kwargs)

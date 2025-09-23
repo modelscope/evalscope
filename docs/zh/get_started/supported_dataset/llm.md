@@ -7,6 +7,7 @@
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -24,6 +25,7 @@
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -32,9 +34,11 @@
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -109,6 +113,27 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **提示模板**: 
 ```text
 {question}
+```
+
+---
+
+### AMC
+
+[返回目录](#llm评测集)
+- **数据集名称**: `amc`
+- **数据集ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
+- **数据集描述**:  
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
+- **任务类别**: `Math`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `amc22`, `amc23`, `amc24`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
@@ -352,7 +377,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **任务类别**: `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
-- **默认提示方式**: 3-shot
+- **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **提示模板**: 
@@ -560,6 +585,34 @@ Reasoning:
 
 ---
 
+### HealthBench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `health_bench`
+- **数据集ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
+- **数据集描述**:  
+  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+- **任务类别**: `Knowledge`, `QA`
+- **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
+
+- **额外参数**: 
+```json
+{
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
+}
+```
+- **提示模板**: 
+```text
+Answer the question:
+
+{question}
+```
+
+---
+
 ### HellaSwag
 
 [返回目录](#llm评测集)
@@ -623,13 +676,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `openai_humaneval`
 
-- **额外参数**: 
-```json
-{
-    "num_workers": 4,
-    "timeout": 4
-}
-```
+- **评测超时时间（秒）**: 4
 - **提示模板**: 
 ```text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
@@ -692,12 +739,12 @@ Read the following function signature and docstring, and fully implement the fun
 - **默认提示方式**: 0-shot
 - **数据集子集**: `release_latest`
 
+- **评测超时时间（秒）**: 6
 - **额外参数**: 
 ```json
 {
     "start_date": null,
     "end_date": null,
-    "timeout": 6,
     "debug": false
 }
 ```
@@ -757,6 +804,27 @@ D. 扭应力
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### Minerva-Math
+
+[返回目录](#llm评测集)
+- **数据集名称**: `minerva_math`
+- **数据集ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
+- **数据集描述**:  
+  > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
+- **任务类别**: `Math`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
 
 - **提示模板**: 
 ```text
@@ -836,6 +904,28 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### Multi-IF
+
+[返回目录](#llm评测集)
+- **数据集名称**: `multi_if`
+- **数据集ID**: [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary)
+- **数据集描述**:  
+  > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
+- **任务类别**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
+- **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Chinese`, `English`, `French`, `German`, `Hindi`, `Italian`, `Portuguese`, `Russian`, `Spanish`, `Thai`, `Vietnamese`
+
+- **额外参数**: 
+```json
+{
+    "max_turns": 3
+}
 ```
 
 ---
