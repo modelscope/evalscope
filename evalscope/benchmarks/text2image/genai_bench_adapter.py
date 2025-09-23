@@ -4,7 +4,6 @@ import os
 from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser
-from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import get_metric, register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -15,8 +14,9 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='genai_bench',
+        pretty_name='GenAI-Bench',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='GenAI-Bench Text-to-Image Benchmark',
+        description='GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.',
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['GenAI-Bench-1600'],
         metric_list=['VQAScore'],

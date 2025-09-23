@@ -12,6 +12,7 @@
 :maxdepth: 2
 
 llm.md
+vlm.md
 aigc.md
 other/index.md
 :::

@@ -1,6 +1,7 @@
 import base64
 import csv
 import hashlib
+import io
 import json
 import jsonlines as jsonl
 import os
@@ -8,6 +9,7 @@ import re
 import string
 import unicodedata
 import yaml
+from datetime import datetime
 from io import BytesIO
 from PIL import Image
 
@@ -121,6 +123,9 @@ def dump_jsonl_data(data_list, jsonl_file, dump_mode=DumpMode.OVERWRITE):
 
     if not isinstance(data_list, list):
         data_list = [data_list]
+
+    # Convert non-serializable types to serializable ones
+    data_list = convert_normal_types(data_list)
 
     if dump_mode == DumpMode.OVERWRITE:
         dump_mode = 'w'
@@ -283,20 +288,62 @@ def get_valid_list(input_list, candidate_list):
            [i for i in input_list if i not in candidate_list]
 
 
-def PIL_to_base64(image: Image.Image, format: str = 'JPEG') -> str:
+def PIL_to_base64(image: Image.Image, format: str = 'JPEG', add_header: bool = False) -> str:
     """
     Convert a PIL Image to a base64 encoded string.
 
     Args:
         image (Image.Image): The PIL Image to convert.
         format (str): The format to save the image in. Default is 'JPEG'.
+        add_header (bool): Whether to add the base64 header. Default is False.
+
     Returns:
         str: Base64 encoded string of the image.
     """
     buffered = BytesIO()
     image.save(buffered, format=format)
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    if add_header:
+        img_str = f'data:image/{format.lower()};base64,{img_str}'
     return img_str
+
+
+def bytes_to_base64(bytes_data: bytes, *, format: str = 'png', add_header: bool = False, content_type='image') -> str:
+    """Convert bytes to a base64 encoded string.
+
+    Args:
+        bytes_data (bytes): The bytes to convert.
+        format (str): The format of the image. Default is 'png'.
+        add_header (bool): Whether to add the base64 header. Default is False.
+        content_type (str): The type of the data, 'image' or 'audio'. Default is 'image'.
+
+    Returns:
+        str: Base64 encoded string of the bytes.
+    """
+    base64_str = base64.b64encode(bytes_data).decode('utf-8')
+    if add_header:
+        base64_str = f'data:{content_type}/{format};base64,{base64_str}'
+    return base64_str
+
+
+def base64_to_PIL(base64_str):
+    """Convert a base64 encoded string to a PIL Image.
+
+    Args:
+        base64_str (str): The base64 encoded string.
+
+    Returns:
+        Image.Image: The decoded PIL Image.
+    """
+    # remove header
+    if ',' in base64_str:
+        base64_str = base64_str.split(',', 1)[1]
+
+    # decode
+    img_data = base64.b64decode(base64_str)
+    img_file = io.BytesIO(img_data)
+    img = Image.open(img_file)
+    return img
 
 
 def safe_filename(s: str, max_length: int = 255) -> str:
@@ -351,11 +398,13 @@ def safe_filename(s: str, max_length: int = 255) -> str:
     return s
 
 
-def convert_numpy_types(obj):
-    """Recursively convert numpy types to native Python types for JSON serialization."""
+def convert_normal_types(obj):
+    """Recursively convert numpy types and datetime objects to native Python types for JSON serialization."""
     import numpy as np
 
-    if isinstance(obj, np.bool_):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, np.bool_):
         return bool(obj)
     elif isinstance(obj, np.integer):
         return int(obj)
@@ -364,10 +413,10 @@ def convert_numpy_types(obj):
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, dict):
-        return {key: convert_numpy_types(value) for key, value in obj.items()}
+        return {key: convert_normal_types(value) for key, value in obj.items()}
     elif isinstance(obj, list):
-        return [convert_numpy_types(item) for item in obj]
+        return [convert_normal_types(item) for item in obj]
     elif isinstance(obj, tuple):
-        return tuple(convert_numpy_types(item) for item in obj)
+        return tuple(convert_normal_types(item) for item in obj)
     else:
         return obj

@@ -7,6 +7,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
+| `amc` | [AMC](#amc) | `Math`, `Reasoning` |
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
@@ -15,6 +16,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `data_collection` | [data_collection](#data_collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
@@ -23,6 +25,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -31,9 +34,11 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -63,7 +68,6 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 {question}
@@ -85,7 +89,6 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 0-shot
 - **Subsets**: `AIME2025-II`, `AIME2025-I`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 {question}
@@ -107,10 +110,30 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 0-shot
 - **Subsets**: `alpaca_eval_gpt4_baseline`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 {question}
+```
+
+---
+
+### AMC
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `amc`
+- **Dataset ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
+- **Description**:  
+  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `amc22`, `amc23`, `amc24`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 ---
@@ -128,7 +151,6 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 0-shot
 - **Subsets**: `ARC-Challenge`, `ARC-Easy`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
@@ -153,7 +175,6 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 {question}
@@ -174,7 +195,6 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 3-shot
 - **Subsets**: `boolean_expressions`, `causal_judgement`, `date_understanding`, `disambiguation_qa`, `dyck_languages`, `formal_fallacies`, `geometric_shapes`, `hyperbaton`, `logical_deduction_five_objects`, `logical_deduction_seven_objects`, `logical_deduction_three_objects`, `movie_recommendation`, `multistep_arithmetic_two`, `navigate`, `object_counting`, `penguins_in_a_table`, `reasoning_about_colored_objects`, `ruin_names`, `salient_translation_error_detection`, `snarks`, `sports_understanding`, `temporal_sequences`, `tracking_shuffled_objects_five_objects`, `tracking_shuffled_objects_seven_objects`, `tracking_shuffled_objects_three_objects`, `web_of_lies`, `word_sorting`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Q: {question}
@@ -197,7 +217,6 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Default Shots**: 0-shot
 - **Subsets**: `irrelevance`, `java`, `javascript`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -221,7 +240,6 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Default Shots**: 5-shot
 - **Subsets**: `accountant`, `advanced_mathematics`, `art_studies`, `basic_medicine`, `business_administration`, `chinese_language_and_literature`, `civil_servant`, `clinical_medicine`, `college_chemistry`, `college_economics`, `college_physics`, `college_programming`, `computer_architecture`, `computer_network`, `discrete_mathematics`, `education_science`, `electrical_engineer`, `environmental_impact_assessment_engineer`, `fire_engineer`, `high_school_biology`, `high_school_chemistry`, `high_school_chinese`, `high_school_geography`, `high_school_history`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `ideological_and_moral_cultivation`, `law`, `legal_professional`, `logic`, `mao_zedong_thought`, `marxism`, `metrology_engineer`, `middle_school_biology`, `middle_school_chemistry`, `middle_school_geography`, `middle_school_history`, `middle_school_mathematics`, `middle_school_physics`, `middle_school_politics`, `modern_chinese_history`, `operating_system`, `physician`, `plant_protection`, `probability_and_statistics`, `professional_tour_guide`, `sports_science`, `tax_accountant`, `teacher_qualification`, `urban_and_rural_planner`, `veterinary_medicine`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
@@ -247,7 +265,6 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Default Shots**: 0-shot
 - **Subsets**: `中华文化`, `人文与社会科学`, `工程、技术与应用科学`, `生活、艺术与文化`, `社会`, `自然与自然科学`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 请回答问题：
@@ -270,7 +287,6 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Default Shots**: 0-shot
 - **Subsets**: `agronomy`, `anatomy`, `ancient_chinese`, `arts`, `astronomy`, `business_ethics`, `chinese_civil_service_exam`, `chinese_driving_rule`, `chinese_food_culture`, `chinese_foreign_policy`, `chinese_history`, `chinese_literature`, `chinese_teacher_qualification`, `clinical_knowledge`, `college_actuarial_science`, `college_education`, `college_engineering_hydrology`, `college_law`, `college_mathematics`, `college_medical_statistics`, `college_medicine`, `computer_science`, `computer_security`, `conceptual_physics`, `construction_project_management`, `economics`, `education`, `electrical_engineering`, `elementary_chinese`, `elementary_commonsense`, `elementary_information_and_technology`, `elementary_mathematics`, `ethnology`, `food_science`, `genetics`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_geography`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `human_sexuality`, `international_law`, `journalism`, `jurisprudence`, `legal_and_moral_basis`, `logical`, `machine_learning`, `management`, `marketing`, `marxist_theory`, `modern_chinese`, `nutrition`, `philosophy`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_study`, `sociology`, `sports_science`, `traditional_chinese_medicine`, `virology`, `world_history`, `world_religions`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
@@ -296,7 +312,6 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Default Shots**: 4-shot
 - **Subsets**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Problem:
@@ -305,6 +320,22 @@ Problem:
 Please reason step by step, and put your final answer within \boxed{{}}.
 
 ```
+
+---
+
+### data_collection
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `data_collection`
+- **Dataset ID**: 
+- **Description**:  
+  > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
+- **Task Categories**: `Custom`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
 
 ---
 
@@ -321,7 +352,6 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 0-shot
 - **Subsets**: `complong_testmini`, `compshort_testmini`, `simplong_testmini`, `simpshort_testmini`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Please read the following text and answer the question below.
@@ -350,7 +380,6 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Default Shots**: 3-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 You will be asked to read a passage and answer a question. {drop_examples}
@@ -377,7 +406,6 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Please read the following text and answer the question below.
@@ -406,7 +434,6 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -474,7 +501,6 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
@@ -500,7 +526,6 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 请回答问题
@@ -522,7 +547,6 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -547,7 +571,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 4-shot
 - **Subsets**: `main`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
@@ -558,6 +581,34 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 Reasoning:
 
+```
+
+---
+
+### HealthBench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `health_bench`
+- **Dataset ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
+- **Description**:  
+  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+- **Task Categories**: `Knowledge`, `QA`
+- **Evaluation Metrics**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
+
+- **Extra Parameters**: 
+```json
+{
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
+}
+```
+- **Prompt Template**: 
+```text
+Answer the question:
+
+{question}
 ```
 
 ---
@@ -575,7 +626,6 @@ Reasoning:
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
@@ -600,7 +650,6 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 0-shot
 - **Subsets**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -627,14 +676,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 0-shot
 - **Subsets**: `openai_humaneval`
 
-- **Supported Output Formats**: `generation`
-- **Extra Parameters**: 
-```json
-{
-    "num_workers": 4,
-    "timeout": 4
-}
-```
+- **Review Timeout (seconds)**: 4
 - **Prompt Template**: 
 ```text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
@@ -656,7 +698,6 @@ Read the following function signature and docstring, and fully implement the fun
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 
 ---
 
@@ -673,7 +714,6 @@ Read the following function signature and docstring, and fully implement the fun
 - **Default Shots**: 0-shot
 - **Subsets**: `EQ`, `IQ`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
@@ -699,13 +739,12 @@ Read the following function signature and docstring, and fully implement the fun
 - **Default Shots**: 0-shot
 - **Subsets**: `release_latest`
 
-- **Supported Output Formats**: `generation`
+- **Review Timeout (seconds)**: 6
 - **Extra Parameters**: 
 ```json
 {
     "start_date": null,
     "end_date": null,
-    "timeout": 6,
     "debug": false
 }
 ```
@@ -734,7 +773,6 @@ Read the following function signature and docstring, and fully implement the fun
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：
@@ -767,7 +805,27 @@ D. 扭应力
 - **Default Shots**: 0-shot
 - **Subsets**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
-- **Supported Output Formats**: `generation`
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### Minerva-Math
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `minerva_math`
+- **Dataset ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
+- **Description**:  
+  > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
 - **Prompt Template**: 
 ```text
 {question}
@@ -789,7 +847,6 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 5-shot
 - **Subsets**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -814,7 +871,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 5-shot
 - **Subsets**: `biology`, `business`, `chemistry`, `computer science`, `economics`, `engineering`, `health`, `history`, `law`, `math`, `other`, `philosophy`, `physics`, `psychology`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -841,7 +897,6 @@ Options:
 - **Default Shots**: 0-shot
 - **Subsets**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -849,6 +904,28 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### Multi-IF
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `multi_if`
+- **Dataset ID**: [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary)
+- **Description**:  
+  > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
+- **Task Categories**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
+- **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `Chinese`, `English`, `French`, `German`, `Hindi`, `Italian`, `Portuguese`, `Russian`, `Spanish`, `Thai`, `Vietnamese`
+
+- **Extra Parameters**: 
+```json
+{
+    "max_turns": 3
+}
 ```
 
 ---
@@ -866,7 +943,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `murder_mysteries`, `object_placements`, `team_allocation`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -891,7 +967,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `chinese`, `english`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -943,7 +1018,6 @@ Don't give information outside the document or repeat your findings.
 - **Default Shots**: 0-shot
 - **Subsets**: `gsm8k`, `math`, `olympiadbench`, `omnimath`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
@@ -977,7 +1051,6 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 - **Default Shots**: 3-shot
 - **Subsets**: `high`, `middle`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -1002,7 +1075,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the question:
@@ -1025,7 +1097,6 @@ Answer the question:
 - **Default Shots**: 0-shot
 - **Subsets**: `Aeronautical and Astronautical Science and Technology`, `Agricultural Engineering`, `Animal Husbandry`, `Applied Economics`, `Aquaculture`, `Architecture`, `Art Studies`, `Astronomy`, `Atmospheric Science`, `Basic Medicine`, `Biology`, `Business Administration`, `Chemical Engineering and Technology`, `Chemistry`, `Civil Engineering`, `Clinical Medicine`, `Computer Science and Technology`, `Control Science and Engineering`, `Crop Science`, `Education`, `Electrical Engineering`, `Electronic Science and Technology`, `Environmental Science and Engineering`, `Food Science and Engineering`, `Forestry Engineering`, `Forestry`, `Geography`, `Geological Resources and Geological Engineering`, `Geology`, `Geophysics`, `History`, `Hydraulic Engineering`, `Information and Communication Engineering`, `Instrument Science and Technology`, `Journalism and Communication`, `Language and Literature`, `Law`, `Library, Information and Archival Management`, `Management Science and Engineering`, `Materials Science and Engineering`, `Mathematics`, `Mechanical Engineering`, `Mechanics`, `Metallurgical Engineering`, `Military Science`, `Mining Engineering`, `Musicology`, `Naval Architecture and Ocean Engineering`, `Nuclear Science and Technology`, `Oceanography`, `Optical Engineering`, `Petroleum and Natural Gas Engineering`, `Pharmacy`, `Philosophy`, `Physical Education`, `Physical Oceanography`, `Physics`, `Political Science`, `Power Engineering and Engineering Thermophysics`, `Psychology`, `Public Administration`, `Public Health and Preventive Medicine`, `Sociology`, `Stomatology`, `Surveying and Mapping Science and Technology`, `Systems Science`, `Textile Science and Engineering`, `Theoretical Economics`, `Traditional Chinese Medicine`, `Transportation Engineering`, `Veterinary Medicine`, `Weapon Science and Technology`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
@@ -1050,7 +1121,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `airline`, `retail`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -1058,8 +1128,8 @@ Answer the following multiple choice question. The last line of your response sh
     "api_key": "EMPTY",
     "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "generation_config": {
-        "temperature": 0.7,
-        "max_new_tokens": 1024
+        "temperature": 0.0,
+        "max_tokens": 4096
     }
 }
 ```
@@ -1079,7 +1149,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `in_domain`, `out_of_domain`
 
-- **Supported Output Formats**: `generation`
 
 ---
 
@@ -1096,7 +1165,6 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `rc.wikipedia`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Read the content and answer the following question.
@@ -1124,7 +1192,6 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 - **Default Shots**: 0-shot
 - **Subsets**: `multiple_choice`
 
-- **Supported Output Formats**: `generation`
 - **Extra Parameters**: 
 ```json
 {
@@ -1155,7 +1222,6 @@ Answer the following multiple choice question. The entire content of your respon
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Supported Output Formats**: `generation`
 - **Prompt Template**: 
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.

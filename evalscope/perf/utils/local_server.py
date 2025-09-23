@@ -9,6 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from evalscope.perf.arguments import Arguments
 from evalscope.utils.chat_service import ChatCompletionRequest, ChatService, ModelList, TextCompletionRequest
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -101,6 +102,8 @@ def create_app(model, attn_implementation=None) -> FastAPI:
 def start_app(args: Arguments):
     logger.info('Starting local server, please wait...')
     if args.api == 'local':
+        check_import('torch', 'torch', raise_error=True)
+
         app = create_app(args.model, args.attn_implementation)
         uvicorn.run(app, host='0.0.0.0', port=args.port, workers=1)
 

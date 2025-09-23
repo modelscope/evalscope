@@ -241,6 +241,7 @@ class DefaultDataAdapter(DataAdapter):
             filter_func=self.sample_filter,
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
             repeats=self.repeats,  # Number of repetitions for each sample
+            shuffle=self.shuffle,  # Shuffle dataset if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
         )
@@ -641,9 +642,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         pass
 
-    def _on_generate_report(
-        self, scores: Dict[str, List[AggScore]], model_name: str, add_aggregation_name: bool = True
-    ) -> Report:
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         """
         Hook method called during report generation.
 
@@ -659,7 +658,7 @@ class DefaultDataAdapter(DataAdapter):
             Report: The generated evaluation report
         """
         return ReportGenerator.generate_report(
-            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=add_aggregation_name
+            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=self.add_aggregation_name
         )
 
     @override
@@ -681,3 +680,7 @@ class DefaultDataAdapter(DataAdapter):
         report = self._on_generate_report(scores, model_name=model_name)
         self._on_generate_report_end(report, output_dir, **kwargs)
         return report
+
+    def finalize(self, *args, **kwargs):
+        # Finalize the evaluation process
+        self.sandbox_finalize(*args, **kwargs)

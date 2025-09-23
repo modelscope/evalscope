@@ -72,13 +72,14 @@ def generate_turn(model: Model, row: dict[str, Any]):
 
             # Handle the response based on the model output structure
             message = model_output.message
-            model_usage += model_output.usage
+            if model_output.usage is not None:
+                model_usage += model_output.usage
 
             current_messages.append(message)
             if isinstance(message, str):
                 result = message
             else:
-                result = message.content
+                result = message.text
 
             logger.debug(f'Turn:{turn_idx} Step:{n_steps} Result: {result}')
             current_responses.append(result)
@@ -115,7 +116,7 @@ def generate_turn(model: Model, row: dict[str, Any]):
 
             n_steps += 1
             if n_steps > MAXIMUM_STEP_LIMIT:
-                logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
+                logger.warning(f'INFERENCE_WARNING: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                 break
 
         all_model_responses.append(current_responses)
@@ -145,9 +146,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
             new_tools = row['missing_functions'][str(turn_idx)]
             for new_tool in new_tools:
                 cur_tool = new_tool[0]
-                # change type to object
-                if cur_tool['parameters']['type'] != 'object':
-                    cur_tool['parameters']['type'] = 'object'
+                cur_tool['parameters']['type'] = 'object'
                 tools.append({
                     'type': 'function',
                     'function': cur_tool,
@@ -172,7 +171,8 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
 
             # Handle the response based on the model output structure
             message = model_output.message
-            model_usage += model_output.usage
+            if model_output.usage is not None:
+                model_usage += model_output.usage
 
             current_messages.append(message)
             if isinstance(message, str):
@@ -186,7 +186,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
                     logger.error(f'Error converting tool calls to function call strings: {e}')
                     tool_call_strs = None
             else:
-                model_responses = [message.content]
+                model_responses = [message.text]
                 tool_call_strs = None
 
             current_responses.extend(model_responses)
@@ -214,7 +214,7 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
 
             n_steps += 1
             if n_steps > MAXIMUM_STEP_LIMIT:
-                logger.error(f'INFERENCE_ERROR: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
+                logger.warning(f'INFERENCE_WARNING: Exceeded max inference steps ({MAXIMUM_STEP_LIMIT})')
                 break
 
         all_model_responses.append(current_responses)

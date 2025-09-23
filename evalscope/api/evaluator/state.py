@@ -3,7 +3,7 @@ from random import Random
 from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str
+from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str, messages_to_markdown
 from evalscope.api.model import ModelOutput
 
 
@@ -189,6 +189,17 @@ class TaskState:
             return messages_pretty_str(self._input)
 
     @property
+    def input_markdown(self) -> str:
+        """Get the input text as markdown.
+
+        For multi-modal content, images will be represented in markdown format.
+        """
+        if isinstance(self._input, str):
+            return self._input
+        else:
+            return messages_to_markdown(self._input)
+
+    @property
     def choices(self) -> Choices:
         """Choices for the sample, if applicable."""
         return self._choices
@@ -262,3 +273,8 @@ class TaskState:
     def target(self) -> str:
         """The scoring target for this `Sample`."""
         return self._target.text
+
+    @target.setter
+    def target(self, text: str) -> None:
+        """Set the target for review purposes."""
+        self._target = Target(text)

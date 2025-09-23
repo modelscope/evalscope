@@ -1,13 +1,11 @@
-accelerate
 colorlog
 datasets==3.6.0
 docstring_parser
 dotenv
-immutabledict
 jieba
 jsonlines
 langdetect
-latex2sympy2_extended
+latex2sympy2_extended[antlr4_9_3]
 matplotlib
 modelscope[framework]>=1.27
 nltk>=3.9
@@ -15,7 +13,6 @@ openai
 overrides
 pandas
 pillow
-pyarrow
 pydantic
 pyyaml>=5.1
 requests
@@ -27,7 +24,6 @@ scikit-learn
 seaborn
 sympy
 tabulate
-torch
 tqdm
 transformers>=4.33
 word2number

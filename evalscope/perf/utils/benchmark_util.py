@@ -1,8 +1,8 @@
 import time
-import torch
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -44,10 +44,12 @@ class BenchmarkData:
             api_plugin.parse_responses(self.response_messages, request=self.request)
 
     def update_gpu_usage(self):
-        total_memory = 0
-        for i in range(torch.cuda.device_count()):
-            total_memory += (torch.cuda.max_memory_allocated(i) / 2**30)  # GB
-        self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
+        if check_import('torch', raise_warning=False):
+            import torch
+            total_memory = 0
+            for i in range(torch.cuda.device_count()):
+                total_memory += (torch.cuda.max_memory_allocated(i) / 2**30)  # GB
+            self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
 
 
 class Metrics:

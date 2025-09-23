@@ -14,8 +14,10 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='hpdv2',
+        pretty_name='HPD-v2',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='HPDv2 Text-to-Image Benchmark',
+        description='HPDv2 Text-to-Image Benchmark. Evaluation metrics based on human preferences, '
+        'trained on the Human Preference Dataset (HPD v2)',
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['HPDv2'],
         metric_list=['HPSv2.1Score'],
@@ -41,7 +43,10 @@ class HPDv2Adapter(Text2ImageAdapter):
         return Sample(
             input=[ChatMessageUser(content=record['prompt'])],
             metadata={
+                'id': record['id'],
+                'prompt': record['prompt'],
                 'category': record.get('tags', {}).get('category', ''),
-                'tags': record.get('tags', {})
+                'tags': record.get('tags', {}),
+                'image_path': record.get('image_path', ''),  # Optional field for existing image path
             }
         )

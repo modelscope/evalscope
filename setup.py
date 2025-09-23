@@ -155,7 +155,6 @@ if __name__ == '__main__':
     all_requires.extend(extra_requires['perf'])
     all_requires.extend(extra_requires['app'])
     all_requires.extend(extra_requires['aigc'])
-    all_requires.extend(extra_requires['dev'])
     extra_requires['all'] = all_requires
 
     setup(

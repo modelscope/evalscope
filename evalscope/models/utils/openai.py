@@ -104,10 +104,9 @@ def openai_chat_completion_part(content: Content) -> ChatCompletionContentPartPa
         )
     elif content.type == 'audio':
         audio_data_uri = file_as_data_uri(content.audio)
-        audio_data = audio_data_uri.split('base64,')[1]
 
         return ChatCompletionContentPartInputAudioParam(
-            type='input_audio', input_audio=dict(data=audio_data, format=content.format)
+            type='input_audio', input_audio=dict(data=audio_data_uri, format=content.format)
         )
 
     else:
@@ -209,7 +208,7 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     return params
 
 
-def openai_assistant_content(message: ChatMessageAssistant) -> str:
+def openai_assistant_content(message: ChatMessageAssistant, include_reasoning=True) -> str:
     # In agent bridge scenarios, we could encounter concepts such as reasoning and
     # .internal use in the ChatMessageAssistant that are not supported by the OpenAI
     # choices API. This code smuggles that data into the plain text so that it
@@ -220,7 +219,7 @@ def openai_assistant_content(message: ChatMessageAssistant) -> str:
     else:
         content = ''
         for c in message.content:
-            if c.type == 'reasoning':
+            if c.type == 'reasoning' and include_reasoning:
                 attribs = ''
                 if c.signature is not None:
                     attribs = f'{attribs} signature="{c.signature}"'
@@ -239,11 +238,14 @@ def openai_assistant_content(message: ChatMessageAssistant) -> str:
     return content
 
 
-def openai_chat_choices(choices: List[ChatCompletionChoice]) -> List[Choice]:
+def openai_chat_choices(choices: List[ChatCompletionChoice], include_reasoning: bool = True) -> List[Choice]:
     oai_choices: List[Choice] = []
 
     for index, choice in enumerate(choices):
-        content = openai_assistant_content(choice.message)
+        # Handle content
+        content = openai_assistant_content(choice.message, include_reasoning=include_reasoning)
+
+        # Handle tool calls
         if choice.message.tool_calls:
             tool_calls = [openai_chat_tool_call(tc) for tc in choice.message.tool_calls]
         else:

@@ -73,6 +73,7 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
         self._use_llm_judge = True
+        self.add_aggregation_name = False  # Don't add aggregation name for needle haystack adapter
         # set extra params
         self.retrieval_question = self.extra_params.get(
             'retrieval_question', 'What is the best thing to do in San Francisco?'
@@ -164,7 +165,11 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
                     records.append(record)
 
                 dataset = DictDataLoader(
-                    dict_list=records, limit=self.limit, repeats=self.repeats, sample_fields=self.record_to_sample
+                    dict_list=records,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    sample_fields=self.record_to_sample,
+                    shuffle=self.shuffle,
                 ).load()
 
                 datasets[subset_name] = dataset
@@ -354,10 +359,6 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
         score.main_score_name = metric_name
 
         return score
-
-    def _on_generate_report(self, scores, model_name, add_aggregation_name=True):
-        # Don't add aggregation name for needle haystack adapter
-        return super()._on_generate_report(scores, model_name, False)
 
     def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         try:

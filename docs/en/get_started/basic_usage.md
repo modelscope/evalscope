@@ -135,7 +135,7 @@ If you wish to conduct more customized evaluations, such as customizing model pa
 evalscope eval \
  --model Qwen/Qwen3-0.6B \
  --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
- --generation-config '{"do_sample":true,"temperature":0.6,"max_new_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512,"chat_template_kwargs":{"enable_thinking": false}}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
@@ -149,7 +149,7 @@ evalscope eval \
 - `--generation-config`: Generation parameters, passed as a JSON string and parsed as a dictionary:
   - `do_sample`: Whether to use sampling
   - `temperature`: Generation temperature
-  - `max_new_tokens`: Maximum length of generated tokens
+  - `max_tokens`: Maximum length of generated tokens
   - `chat_template_kwargs`: Model inference template parameters
 - `--dataset-args`: Settings for the evaluation dataset, passed as a JSON string where the key is the dataset name and the value is the parameters. Note that these need to correspond one-to-one with the values in the `--datasets` parameter:
   - `few_shot_num`: Number of few-shot examples
@@ -225,77 +225,50 @@ See also: [Judge Model Parameters](./parameters.md#judge-parameters)
 ```
 
 
-## Using Local Datasets and Models
+## Offline Evaluation
 
-By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:
+By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access to load. In offline environments, you can use local datasets and models by following the steps below:
 
-Assume the current local working path is `/path/to/workdir`.
+### Using Local Datasets
 
-### Download Dataset to Local
-
-```{important}
-Before downloading the dataset, please confirm whether the dataset you want to use is stored in a `zip` file or available on modelscope.
-```
-
-#### Download Zip Dataset
-
-Due to historical reasons, some datasets are loaded by executing Python scripts. We have organized these datasets into a `zip` file, which includes the following datasets:
-```text
-.
-├── arc
-├── bbh
-├── ceval
-├── cmmlu
-├── competition_math
-├── general_qa
-├── gsm8k
-├── hellaswag
-├── humaneval
-├── mmlu
-├── race
-├── trivia_qa
-└── truthful_qa
-```
-
-For these datasets, execute the following commands:
-```shell
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
-unzip data.zip
-```
-The unzipped datasets will be located in the `/path/to/workdir/data` directory, which will be used as the value for the `local_path` parameter in subsequent steps.
-
-#### Download Modelscope Dataset
-
-For datasets that are not in a `zip` file, such as the [mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro) dataset, refer to the dataset address in the [Supported Datasets](./supported_dataset/llm.md) document and execute the following commands:
-
+1. First, check the dataset's address on ModelScope: Refer to [Supported Datasets](./supported_dataset/index.md) to find the **Dataset ID** of the dataset you want to use, for example, [MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary).
+2. Download the dataset using the modelscope command: Click on the “Dataset Files” tab -> Click “Download Dataset” -> Copy the command line.
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/datasets/modelscope/MMLU-Pro.git
+modelscope download --dataset modelscope/MMLU-Pro --local_dir ./data/mmlu_pro
 ```
+3. Use the directory `./data/mmlu_pro` as the value of the `local_path` parameter when passing it in.
 
-Use the directory `/path/to/MMLU-Pro` as the value for the `local_path` parameter.
+### Using Local Models
 
+Model files are hosted on ModelScope Hub and require internet access to load. If you need to create evaluation tasks in an offline environment, you can download the models in advance:
 
-### Download the Model Locally
-Model files are hosted on the ModelScope Hub and require internet access for loading. If you need to create evaluation tasks in an offline environment, you can download the model to your local machine in advance:
-
-For example, use Git to download the Qwen2.5-0.5B-Instruct model locally:
+For example, to download the [Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct) model locally using the modelscope command:
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+modelscope download --model modelscope/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
 ```
 
 ```{seealso}
 [ModelScope Model Download Guide](https://modelscope.cn/docs/models/download)
 ```
 
-### Execute Evaluation Task
-Run the following command to perform the evaluation, passing in the local dataset path and model path. Note that `local_path` must correspond one-to-one with the values in the `--datasets` parameter:
+### Running Evaluation Tasks
+
+Run the following command to perform the evaluation, passing in the local dataset and model paths. Note that the values for `local_path` must correspond one-to-one with those in the `--datasets` parameter:
 
 ```shell
 evalscope eval \
- --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
- --datasets arc \
- --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --model ./model/qwen2.5 \
+ --datasets mmlu_pro \
+ --dataset-args '{"mmlu_pro": {"local_path": "./data/mmlu_pro"}}' \
  --limit 10
 ```
+
+## Switching to Version v1.0
+
+If you previously used version v0.1x and wish to switch to v1.0, please note the following changes:
+1. The evaluation dataset downloaded via zip is no longer supported. For using a local dataset, please refer to [this section](#using-local-datasets).
+2. Due to changes in the evaluation output format, the EvalScope visualization feature is not compatible with versions prior to 1.0. You must use reports output by version 1.0 for proper visualization.
+3. Due to changes in dataset formats, EvalScope's dataset collection feature does not support datasets created with versions prior to 1.0. You will need to recreate datasets using version 1.0.
+4. The `n` parameter in model inference is no longer supported; it has been changed to `repeats`.
+5. The `stage` parameter has been removed. A new parameter, `rerun_review`, has been added to control whether evaluations are rerun when `use_cache` is specified.
+6. The dataset `gpqa` has been renamed to `gpqa_diamond`, and there is no need to specify the `subset_list` parameter.

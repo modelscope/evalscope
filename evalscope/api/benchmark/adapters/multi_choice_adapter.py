@@ -18,8 +18,11 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     This adapter formats the input for multi-choice questions and handles few-shot examples.
     """
 
-    multiple_correct: bool = False
-    """Whether the benchmark allows multiple correct answers."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.multiple_correct: bool = False
+        """Whether the benchmark allows multiple correct answers."""
 
     def format_prompt_template(self, sample: Sample) -> str:
         """

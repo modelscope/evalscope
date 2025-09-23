@@ -15,6 +15,7 @@ DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old versio
 DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
     os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
 )  # ~/.cache/evalscope
+IS_BUILD_DOC = os.getenv('BUILD_DOC', '0') == '1'  # To avoid some heavy dependencies when building doc
 
 
 class HubType:
@@ -70,6 +71,7 @@ class EvalType:
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     SERVICE = 'openai_api'  # model service
     TEXT2IMAGE = 'text2image'  # image generation service
+    IMAGE_EDITING = 'image_editing'  # image editing service
 
 
 class OutputType:
@@ -127,3 +129,12 @@ class Tags:
     RETRIEVAL = 'Retrieval'
     FUNCTION_CALLING = 'FunctionCalling'
     TEXT_TO_IMAGE = 'TextToImage'
+    IMAGE_EDITING = 'ImageEditing'
+    MULTI_MODAL = 'MultiModal'
+    MULTI_LINGUAL = 'MultiLingual'
+    MULTI_TURN = 'MultiTurn'
+
+
+class FileConstants:
+    IMAGE_PATH = 'image_path'
+    ID = 'id'

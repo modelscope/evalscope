@@ -8,8 +8,9 @@ and report generation.
 """
 
 import os
+import traceback
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from tqdm import tqdm
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
@@ -17,14 +18,13 @@ from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.report import Report, gen_table
+from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
     from evalscope.api.model import Model
     from evalscope.config import TaskConfig
     from evalscope.utils.io_utils import OutputsStructure
-
-from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
@@ -96,12 +96,17 @@ class DefaultEvaluator(Evaluator):
 
         # Process each subset (e.g., test, validation) independently
         for subset, dataset in dataset_dict.items():
-            assert len(dataset) > 0, f'No samples found in subset: {subset}'
+            if len(dataset) == 0:
+                logger.info(f'No samples found in subset: {subset}, skipping.')
+                continue
             subset_score = self.evaluate_subset(subset, dataset)
             agg_score_dict[subset] = subset_score
 
         # Generate the report based on aggregated scores
         report = self.get_report(agg_score_dict)
+
+        # Finalize the evaluation process
+        self.finalize()
         return report
 
     def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
@@ -181,10 +186,13 @@ class DefaultEvaluator(Evaluator):
                         model_result = self.cache_manager.save_prediction_cache(
                             subset, task_state, self.benchmark.save_metadata
                         )
-                        logger.debug(f'Model result: \n{model_result.model_dump_json(indent=2)}')
+                        logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
                     except Exception as exc:
-                        logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}')
+                        tb_str = traceback.format_exc()
+                        logger.error(
+                            f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}'
+                        )
                         if self.task_config.ignore_errors:
                             logger.warning('Error ignored, continuing with next sample.')
                         else:
@@ -251,7 +259,13 @@ class DefaultEvaluator(Evaluator):
                 for future in as_completed(future_to_task_state):
                     task_state = future_to_task_state[future]
                     try:
-                        sample_score = future.result()
+                        try:
+                            sample_score = future.result()
+                        except TimeoutError:
+                            logger.warning(
+                                f'Timeout when reviewing sample {task_state.sample_id}, setting score to zero.'
+                            )
+                            sample_score = SampleScore(sample_id=task_state.sample_id, scores={})
                         sample_score_list.append(sample_score)
 
                         # Save the review result to cache for future use
@@ -261,10 +275,13 @@ class DefaultEvaluator(Evaluator):
                             sample_score=sample_score,
                             save_metadata=self.benchmark.save_metadata
                         )
-                        logger.debug(f'Review result: \n{review_result.model_dump_json(indent=2)}')
+                        logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
                     except Exception as exc:
-                        logger.error(f'Error when review sample {task_state.sample_id}: {exc}')
+                        tb_str = traceback.format_exc()
+                        logger.error(
+                            f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}'
+                        )
                         if self.task_config.ignore_errors:
                             logger.warning('Error ignored, continuing with next sample.')
                         else:
@@ -317,7 +334,7 @@ class DefaultEvaluator(Evaluator):
 
         # Generate and display a summary table of results
         try:
-            report_table = gen_table(report_list=[report], add_overall_metric=True)
+            report_table = gen_table(report_list=[report], add_overall_metric=self.benchmark.add_overall_metric)
             logger.info(f'\n{self.benchmark_name} report table:'
                         f'\n{report_table} \n')
         except Exception:
@@ -335,3 +352,6 @@ class DefaultEvaluator(Evaluator):
         report.to_json(report_file)
         logger.info(f'Dump report to: {report_file} \n')
         return report
+
+    def finalize(self, *args, **kwargs):
+        self.benchmark.finalize(*args, **kwargs)

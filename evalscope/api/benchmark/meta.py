@@ -73,6 +73,15 @@ class BenchmarkMeta:
     aggregation: str = 'mean'
     """ Aggregation function for the metrics. Default is 'mean'. Can be 'mean', 'pass@<k>' or a custom function name."""
 
+    shuffle: bool = False
+    """Whether to shuffle the dataset before evaluation."""
+
+    shuffle_choices: bool = False
+    """Whether to shuffle the choices in multiple-choice datasets."""
+
+    review_timeout: Optional[float] = None
+    """ Timeout for review in seconds."""
+
     extra_params: Dict = field(default_factory=dict)
     """ Additional parameters for the benchmark."""
 

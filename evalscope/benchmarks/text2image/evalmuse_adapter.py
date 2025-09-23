@@ -16,8 +16,10 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='evalmuse',
+        pretty_name='EvalMuse',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='EvalMuse Text-to-Image Benchmark',
+        description='EvalMuse Text-to-Image Benchmark. Used for evaluating the quality '
+        'and semantic alignment of finely generated images',
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['EvalMuse'],
         metric_list=['FGA_BLIP2Score'],

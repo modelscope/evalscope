@@ -318,7 +318,7 @@ def get_model_with_task_config(task_config: 'TaskConfig') -> Model:
 
 @thread_safe
 def get_model(
-    model: str,
+    model: Union[str, Model, ModelAPI],
     eval_type: str,
     base_url: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -346,6 +346,9 @@ def get_model(
     if isinstance(model, Model):
         return model
 
+    if isinstance(model, ModelAPI):
+        return Model(model, config, model_args)
+
     # see if we can return a memoized model instance
     # (exclude mockllm since custom_outputs is an infinite generator)
     model_cache_key: str = ''
@@ -362,7 +365,7 @@ def get_model(
 
     logger.info(
         f'Creating model {model} with eval_type={eval_type} '
-        f'base_url={base_url}, api_key={api_key}, config={config}, model_args={model_args}'
+        f'base_url={base_url}, config={config.model_dump(exclude_none=True)}, model_args={model_args}'
     )
 
     # find a matching model type

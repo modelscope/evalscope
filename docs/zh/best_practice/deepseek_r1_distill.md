@@ -116,7 +116,7 @@ Percentile results:
 
 ## 评测模型
 
-我们将MATH-500、GPQA-Diamond和AIME-2024三个数据集整合为一个数据集合，放置于[modelscope/R1-Distill-Math-Test](https://modelscope.cn/datasets/modelscope/R1-Distill-Math-Test)数据集中。读者可以直接使用该数据集的ID进行评测操作。
+我们将MATH-500、GPQA-Diamond和AIME-2024三个数据集整合为一个数据集合，放置于[evalscope/R1-Distill-Math-Test-v2](https://modelscope.cn/datasets/evalscope/R1-Distill-Math-Test-v2)数据集中。读者可以直接使用该数据集的ID进行评测操作。
 
 如果希望了解数据集的生成过程或者自行定制数据集合，可以参考[使用教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)。
 
@@ -138,7 +138,7 @@ task_cfg = TaskConfig(
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/R1-Distill-Math-Test'  # 数据集ID 或 数据集本地路径
+            'dataset_id': 'evalscope/R1-Distill-Math-Test-v2'  # 数据集ID 或 数据集本地路径
         }
     },
     eval_batch_size=32,       # 发送请求的并发数
@@ -175,17 +175,17 @@ run_task(task_cfg=task_cfg)
 ```python
 datasets=[
     # 'math_500',  # 数据集名称
-    'gpqa',
+    'gpqa_diamond',
     'aime24'
 ],
 dataset_args={ # EvalScope内置支持，无需指定数据集ID
     'math_500': {'few_shot_num': 0 } ,
-    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
+    'gpqa_diamond': {'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```
 
-其他可用的数据集包括`gsm8k`, `aime25`等，详情参考[支持的数据集](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset.html)
+其他可用的数据集包括`gsm8k`, `aime25`等，详情参考[支持的数据集](https://evalscope.readthedocs.io/zh-cn/latest/get_started/supported_dataset/index.html)
 
 ## 评测结果可视化
 

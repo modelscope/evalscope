@@ -26,11 +26,11 @@ task_cfg = TaskConfig(
     limit=5,
     eval_batch_size=5,
     generation_config={
-        'max_new_tokens': 1000,  # 最大生成token数，建议设置为较大值避免输出截断
+        'max_tokens': 1000,  # 最大生成token数，建议设置为较大值避免输出截断
         'temperature': 0.7,  # 采样温度 (qwen 报告推荐值)
         'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
         'top_k': 20,  # top-k采样 (qwen 报告推荐值)
-        'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
     }
 )
 

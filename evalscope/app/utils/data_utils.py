@@ -2,7 +2,6 @@
 Data loading and processing utilities for the Evalscope dashboard.
 """
 import glob
-import numpy as np
 import os
 import pandas as pd
 from typing import Any, Dict, List, Union
@@ -160,17 +159,18 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             if f'{sample_dataset_name}/{sample_subset_name}' != subset_name:
                 continue
 
-        prediction = sample_score.score.prediction
-        target = review_result.target
-        extracted_prediction = sample_score.score.extracted_prediction
         score = sample_score.score
+        metadata = sample_score.sample_metadata
+        prediction = score.prediction
+        target = review_result.target
+        extracted_prediction = score.extracted_prediction
         raw_d = {
             'Index': str(review_result.index),
             'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
-            'Metadata': sample_score.sample_metadata,
-            'Generated': prediction if prediction != extracted_prediction else '*Same as Pred*',
+            'Metadata': metadata,
+            'Generated': prediction,
             'Gold': target,
-            'Pred': extracted_prediction,
+            'Pred': extracted_prediction if extracted_prediction != prediction else '*Same as Generated*',
             'Score': score.model_dump(exclude_none=True),
             'NScore': normalize_score(score.main_value)
         }
