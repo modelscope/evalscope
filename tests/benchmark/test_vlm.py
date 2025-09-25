@@ -74,7 +74,7 @@ class TestVLMBenchmark(TestBenchmark):
 
     def test_qwen3_vl_collection(self):
         dataset_args = {
-            'dataset_id': 'outputs/qwen3_vl_test.jsonl',
+            'dataset_id': 'evalscope/Qwen3-VL-Test-Collection',
             'shuffle': True,
         }
         self._run_dataset_test('data_collection', dataset_args, limit=100)
