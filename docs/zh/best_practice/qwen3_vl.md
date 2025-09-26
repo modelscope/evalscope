@@ -62,7 +62,7 @@ evalscope perf \
 
 为了全面评测模型的各方面能力，我们可以混合EvalScope已支持的benchmark，构建一个全面的评测集合。下面是一个评测集合的例子，覆盖了主流的benchmark，评测了模型的数学能力(GSM8K)、知识能力(MMLU-Pro)、指令遵循(IFEval)、多模态知识能力(MMMU-Pro)、多模态数学能力(MathVista)等。
 
-运行如下代码即可根据定义的Schema自动下载并混合数据集，并将构建的评测集合保存在本地的jsonl文件中。当然你也可以跳过这个步骤，直接使用我们放在了[ModelScope仓库](https://modelscope.cn/datasets/modelscope/EvalScope-Qwen3-Test/summary)中处理好的数据集合。
+运行如下代码即可根据定义的Schema自动下载并混合数据集，并将构建的评测集合保存在本地的jsonl文件中。当然你也可以跳过这个步骤，直接使用我们放在了[ModelScope仓库](https://modelscope.cn/datasets/evalscope/Qwen3-VL-Test-Collection/summary)中处理好的数据集合。
 
 ```python
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
