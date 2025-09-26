@@ -64,7 +64,7 @@ Note: Subsequent evaluation processes are based on API model services. You can l
 
 To comprehensively assess the model's capabilities, we can mix benchmarks already supported by EvalScope to construct a comprehensive evaluation set. Below is an example of an evaluation set that covers mainstream benchmarks, evaluating the model's mathematical ability (GSM8K), knowledge ability (MMLU-Pro), instruction following (IFEval), multimodal knowledge ability (MMMU-Pro), and multimodal mathematical ability (MathVista), among others.
 
-Run the following code to automatically download and mix datasets based on the defined schema, and save the constructed evaluation set in a local JSONL file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/modelscope/EvalScope-Qwen3-Test/summary).
+Run the following code to automatically download and mix datasets based on the defined schema, and save the constructed evaluation set in a local JSONL file. Of course, you can skip this step and directly use the processed data set we placed in the [ModelScope repository](https://modelscope.cn/datasets/evalscope/Qwen3-VL-Test-Collection/summary).
 
 ```python
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
