@@ -1,10 +1,13 @@
 [project]
 name = "evalscope"
-dynamic = ["version", "dependencies"]
+dynamic = ["version", "dependencies", "optional-dependencies"]
 description = "EvalScope: Lightweight LLMs Evaluation Framework"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "Apache License 2.0"}
-authors = [{name = "ModelScope team", email = "contact@modelscope.cn"}]
+authors = [
+  {name = "ModelScope team"},
+  {email = "contact@modelscope.cn"}
+]
 keywords = ["python", "llm", "evaluation"]
 requires-python = ">=3.9"
 classifiers = [
@@ -25,7 +28,7 @@ Homepage = "https://github.com/modelscope/evalscope"
 evalscope = "evalscope.cli.cli:run_cmd"
 
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -33,7 +36,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["evalscope"]
+include = ["evalscope*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evalscope.version.__version__"}
@@ -48,7 +51,6 @@ app         = {file = ["requirements/app.txt"]}
 aigc        = {file = ["requirements/aigc.txt"]}
 dev         = {file = ["requirements/dev.txt"]}
 docs        = {file = ["requirements/docs.txt"]}
-# Aggregate "all" (excluding dev/docs by design; add if desired)
 all = {file = [
   "requirements/framework.txt",
   "requirements/opencompass.txt",
