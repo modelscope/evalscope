@@ -52,7 +52,6 @@ aigc        = {file = ["requirements/aigc.txt"]}
 dev         = {file = ["requirements/dev.txt"]}
 docs        = {file = ["requirements/docs.txt"]}
 all = {file = [
-  "requirements/framework.txt",
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",
   "requirements/rag.txt",
