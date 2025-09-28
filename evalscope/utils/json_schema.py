@@ -59,18 +59,20 @@ class JSONSchema(BaseModel):
     required: Optional[List[str]] = Field(default=None)
     """Required fields for object parameters."""
 
-    @field_validator('type')
-    def validate_type(cls, v: Optional[str]) -> Optional[JSONType]:
-        return python_type_to_json_type(v)
-
     @model_validator(mode='before')
     def convert_type_before_validation(cls, values):
         values = deepcopy(values)
 
         def recursive_convert_type(obj):
             if isinstance(obj, dict):
-                if 'type' in obj:
-                    obj['type'] = python_type_to_json_type(obj['type'])
+                # Convert 'type' field if it's a string
+                if 'type' in obj and isinstance(obj['type'], str):
+                    try:
+                        obj['type'] = python_type_to_json_type(obj['type'])
+                    except ValueError:
+                        # If conversion fails, leave it as is
+                        pass
+                # Recursively process nested structures
                 for k, v in obj.items():
                     obj[k] = recursive_convert_type(v)
             elif isinstance(obj, list):
