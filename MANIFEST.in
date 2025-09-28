@@ -1,0 +1,10 @@
+include README.md
+
+# Include all resources (code + other files) inside the package
+recursive-include evalscope *
+
+# Exclude cache/compiled artifacts
+global-exclude *.py[cod] __pycache__ *.so *.dylib
+
+# If there are models/large files, you can add prune/exclude as needed
+# Example: prune evalscope/models
