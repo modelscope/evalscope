@@ -1,0 +1,61 @@
+[project]
+name = "evalscope"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+description = "EvalScope: Lightweight LLMs Evaluation Framework"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "Apache License 2.0"}
+authors = [
+  {name = "ModelScope team"},
+  {email = "contact@modelscope.cn"}
+]
+keywords = ["python", "llm", "evaluation"]
+requires-python = ">=3.9"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: Apache Software License"
+]
+
+[project.urls]
+Homepage = "https://github.com/modelscope/evalscope"
+
+[project.scripts]
+evalscope = "evalscope.cli.cli:run_cmd"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["evalscope*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "evalscope.version.__version__"}
+dependencies = {file = ["requirements/framework.txt"]}
+
+[tool.setuptools.dynamic.optional-dependencies]
+opencompass = {file = ["requirements/opencompass.txt"]}
+vlmeval     = {file = ["requirements/vlmeval.txt"]}
+rag         = {file = ["requirements/rag.txt"]}
+perf        = {file = ["requirements/perf.txt"]}
+app         = {file = ["requirements/app.txt"]}
+aigc        = {file = ["requirements/aigc.txt"]}
+dev         = {file = ["requirements/dev.txt"]}
+docs        = {file = ["requirements/docs.txt"]}
+all = {file = [
+  "requirements/opencompass.txt",
+  "requirements/vlmeval.txt",
+  "requirements/rag.txt",
+  "requirements/perf.txt",
+  "requirements/app.txt",
+  "requirements/aigc.txt"
+]}
