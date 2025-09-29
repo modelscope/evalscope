@@ -22,7 +22,8 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         name='ai2d',
         pretty_name='AI2D',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description='A Diagram Is Worth A Dozen Images',
+        description=
+        'AI2D is a benchmark dataset for researching the understanding of diagrams by AI. It contains over 5,000 diverse diagrams from science textbooks (e.g., the water cycle, food webs). Each diagram is accompanied by multiple-choice questions that test an AI\'s ability to interpret visual elements, text labels, and their relationships. The benchmark is challenging because it requires jointly understanding the layout, symbols, and text to answer questions correctly.',  # noqa: E501
         dataset_id='lmms-lab/ai2d',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

@@ -26,7 +26,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 - **Dataset Name**: `ai2d`
 - **Dataset ID**: [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary)
 - **Description**:
-  > A Diagram Is Worth A Dozen Images
+  > AI2D is a benchmark dataset for researching the understanding of diagrams by AI. It contains over 5,000 diverse diagrams from science textbooks (e.g., the water cycle, food webs). Each diagram is accompanied by multiple-choice questions that test an AI's ability to interpret visual elements, text labels, and their relationships. The benchmark is challenging because it requires jointly understanding the layout, symbols, and text to answer questions correctly.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -74,7 +74,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `chartqa`
 - **Dataset ID**: [lmms-lab/ChartQA](https://modelscope.cn/datasets/lmms-lab/ChartQA/summary)
 - **Description**:
-  > ChartQA is a benchmark designed to evaluate question-answering capabilities about charts, focusing on both visual and logical reasoning
+  > ChartQA is a benchmark designed to evaluate question-answering capabilities about charts (e.g., bar charts, line graphs, pie charts), focusing on both visual and logical reasoning.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `relaxed_acc`
 - **Requires LLM Judge**: No

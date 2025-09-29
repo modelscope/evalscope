@@ -14,6 +14,7 @@ from evalscope.api.benchmark import (
     Text2ImageAdapter,
     VisionLanguageAdapter,
 )
+from . import DESCRIPTION_JSON_PATH, load_description_json
 
 
 # Language dictionaries for dataset markdown generation
@@ -165,6 +166,13 @@ def get_document_locale(category: str, lang: str) -> Dict[str, str]:
     locale_dict = get_document_locale_dict(category)
     return {k: v[lang] for k, v in locale_dict.items()}
 
+# Load translations once (if available)
+_description_translations: dict = {}
+try:
+    _description_translations = load_description_json(DESCRIPTION_JSON_PATH)
+except Exception:
+    _description_translations = {}
+
 def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: str = 'zh') -> str:
     """
     Generate a well-formatted Markdown benchmark introduction based on a DataAdapter instance
@@ -179,12 +187,24 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
     """
     # Get localized text
     text = get_dataset_detail_locale(category, lang)
-    
-    # Get basic information
     name = data_adapter.name
     pretty_name = data_adapter.pretty_name or name
     dataset_id = data_adapter.dataset_id
-    description = data_adapter.description or text['no_description']
+    # Original English description as baseline
+    base_description = data_adapter.description or text['no_description']
+    # Use translated Chinese if available and lang == zh
+    if lang == 'zh':
+        zh_record = _description_translations.get(name)
+        if isinstance(zh_record, dict):
+            translated = zh_record.get('zh') or ''
+            if translated.strip():
+                description = translated.strip()
+            else:
+                description = base_description
+        else:
+            description = base_description
+    else:
+        description = base_description
     
     # Format dataset ID links
     if dataset_id.startswith(('http://', 'https://')):

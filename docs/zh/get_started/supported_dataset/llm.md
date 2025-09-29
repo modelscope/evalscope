@@ -61,7 +61,7 @@
 - **数据集名称**: `aime24`
 - **数据集ID**: [HuggingFaceH4/aime_2024](https://modelscope.cn/datasets/HuggingFaceH4/aime_2024/summary)
 - **数据集描述**:
-  > The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
+  > AIME 2024 基准基于美国数学邀请赛（一项著名的高中数学竞赛）的题目，用于测试模型通过生成逐步解答并给出正确最终答案来解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
@@ -82,7 +82,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `aime25`
 - **数据集ID**: [opencompass/AIME2025](https://modelscope.cn/datasets/opencompass/AIME2025/summary)
 - **数据集描述**:
-  > The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
+  > AIME 2025 基准基于美国数学邀请赛（一项著名的高中数学竞赛）的题目，用于测试模型通过生成逐步解答并给出正确最终答案来解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
@@ -103,7 +103,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `alpaca_eval`
 - **数据集ID**: [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary)
 - **数据集描述**:
-  > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
+  > Alpaca Eval 2.0 是一个改进的指令跟随语言模型评估框架，具备更优的自动标注器、更新的基线模型和持续偏好计算，可提供更准确且成本更低的模型评估。目前不支持“长度控制胜率”；官方评判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-turbo`。
 - **任务类别**: `Arena`, `InstructionFollowing`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
@@ -123,7 +123,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `amc`
 - **数据集ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
 - **数据集描述**:
-  > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
+  > AMC（美国数学竞赛）是一系列面向高中生的数学竞赛。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
@@ -144,7 +144,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `arc`
 - **数据集ID**: [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary)
 - **数据集描述**:
-  > The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.
+  > ARC（AI2推理挑战）基准通过源自科学考试的多项选择题来评估AI模型的推理能力，包含难度不同的两个子集：ARC-Easy和ARC-Challenge。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -168,7 +168,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `arena_hard`
 - **数据集ID**: [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary)
 - **数据集描述**:
-  > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
+  > ArenaHard 是一个用于评估大语言模型在竞争环境中性能的基准，通过将模型相互对抗并完成一系列任务来衡量其相对优劣。它包含一系列需要推理、理解和生成能力的高难度任务。目前不支持“风格控制胜率”；官方评判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-0314`。
 - **任务类别**: `Arena`, `InstructionFollowing`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
@@ -188,7 +188,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `bbh`
 - **数据集ID**: [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary)
 - **数据集描述**:
-  > The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.
+  > BBH（Big Bench Hard）基准是一组具有挑战性的任务，旨在评估AI模型的推理能力。它包含开放式和选择题任务，涵盖多种推理技能。
 - **任务类别**: `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -210,7 +210,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `bfcl_v3`
 - **数据集ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **数据集描述**:
-  > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
+  > Berkeley Function Calling Leaderboard (BFCL) 是首个专注于评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需运行 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
 - **任务类别**: `FunctionCalling`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -233,7 +233,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `ceval`
 - **数据集ID**: [evalscope/ceval](https://modelscope.cn/datasets/evalscope/ceval/summary)
 - **数据集描述**:
-  > C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.
+  > C-Eval 是一个评估AI模型在STEM、社会科学和人文学科等中文考试中表现的基准，包含测试知识和推理能力的多项选择题。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -258,7 +258,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `chinese_simpleqa`
 - **数据集ID**: [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)
 - **数据集描述**:
-  > Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.
+  > Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简单事实性问题上的表现。该数据集涵盖多种主题，用于测试模型对中文问题的理解与准确回答能力。
 - **任务类别**: `Chinese`, `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
 - **需要LLM Judge**: 是
@@ -280,7 +280,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `cmmlu`
 - **数据集ID**: [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary)
 - **数据集描述**:
-  > C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.
+  > C-MMLU 是一个用于评估 AI 模型在中文语言任务上性能的基准，包括阅读理解、文本分类等。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -305,7 +305,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `competition_math`
 - **数据集ID**: [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary)
 - **数据集描述**:
-  > The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.
+  > MATH（数学）基准通过多种题型（包括算术、代数、几何等）来评估AI模型的数学推理能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
@@ -329,7 +329,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `data_collection`
 - **数据集ID**: 
 - **数据集描述**:
-  > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
+  > 自定义数据收集，融合多个评测数据集进行统一评估，旨在用更少的数据全面评估模型能力。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 - **任务类别**: `Custom`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -345,7 +345,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `docmath`
 - **数据集ID**: [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary)
 - **数据集描述**:
-  > DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.
+  > DocMath-Eval 是一个专注于特定领域内数值推理的综合基准，要求模型理解长篇且专业化的文档，并进行数值推理以回答问题。
 - **任务类别**: `LongContext`, `Math`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 是
@@ -373,7 +373,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **数据集名称**: `drop`
 - **数据集ID**: [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary)
 - **数据集描述**:
-  > The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.
+  > DROP（段落离散推理）基准旨在评估AI模型的阅读理解与推理能力，包含多种需模型阅读段落后根据内容回答问题的任务。
 - **任务类别**: `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -399,7 +399,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 - **数据集名称**: `frames`
 - **数据集ID**: [iic/frames](https://modelscope.cn/datasets/iic/frames/summary)
 - **数据集描述**:
-  > FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.
+  > FRAMES 是一个综合评估数据集，旨在测试检索增强生成（RAG）系统在事实性、检索准确性和推理能力方面的表现。
 - **任务类别**: `LongContext`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 是
@@ -427,7 +427,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **数据集名称**: `general_arena`
 - **数据集ID**: general_arena
 - **数据集描述**:
-  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).
+  > GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，评估其性能并分析各自的优势与不足。您需以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。
 - **任务类别**: `Arena`, `Custom`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
@@ -494,7 +494,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **数据集名称**: `general_mcq`
 - **数据集ID**: general_mcq
 - **数据集描述**:
-  > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).
+  > 一个用于自定义评估的通用多项选择题问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq)。
 - **任务类别**: `Custom`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -519,7 +519,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **数据集名称**: `general_qa`
 - **数据集ID**: general_qa
 - **数据集描述**:
-  > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).
+  > 一个用于自定义评估的通用问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。
 - **任务类别**: `Custom`, `QA`
 - **评估指标**: `BLEU`, `Rouge`
 - **需要LLM Judge**: 否
@@ -540,7 +540,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **数据集名称**: `gpqa_diamond`
 - **数据集ID**: [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary)
 - **数据集描述**:
-  > GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.
+  > GPQA 是一个用于评估大语言模型（LLM）在复杂数学问题上推理能力的数据集，包含需要逐步推理才能得出正确答案的问题。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -564,7 +564,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `gsm8k`
 - **数据集ID**: [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary)
 - **数据集描述**:
-  > GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.
+  > GSM8K（小学数学8K）是一个包含小学数学题的数据集，旨在评估AI模型的数学推理能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -591,7 +591,7 @@ Reasoning:
 - **数据集名称**: `health_bench`
 - **数据集ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
 - **数据集描述**:
-  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+  > HealthBench：一个全新基准，旨在更准确地衡量AI系统在医疗健康领域的能力。该基准与来自60个国家的262名医生合作构建，包含5,000个真实医疗对话，每个对话均配有医生定制的评分标准，用于评估模型回复质量。
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
 - **需要LLM Judge**: 是
@@ -619,7 +619,7 @@ Answer the question:
 - **数据集名称**: `hellaswag`
 - **数据集ID**: [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary)
 - **数据集描述**:
-  > HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.
+  > HellaSwag 是一个用于自然语言理解中常识推理的基准测试，包含多项选择题，要求模型从给定上下文中选出最合理的后续内容。
 - **任务类别**: `Commonsense`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -643,8 +643,8 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `hle`
 - **数据集ID**: [cais/hle](https://modelscope.cn/datasets/cais/hle/summary)
 - **数据集描述**:
-  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. 
-  > **To evaluate the performance of model without multi-modality capabilities, please set the `extra_params["include_multi_modal"]` to `False`.**
+  > 人类最后的考试（HLE）是一个语言模型基准，包含2500个涵盖广泛学科的问题，由人工智能安全中心和Scale AI联合创建。该基准将问题分为以下主要类别：数学（41%）、物理（9%）、生物/医学（11%）、人文/社会科学（9%）、计算机科学/人工智能（10%）、工程（4%）、化学（7%）和其他（9%）。约14%的问题需要理解文本和图像的能力，即多模态能力。24%的问题为选择题，其余为短答案、精确匹配题。  
+  > **若需评估不具备多模态能力的模型性能，请将 `extra_params["include_multi_modal"]` 设为 `False`。**
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 是
@@ -670,7 +670,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `humaneval`
 - **数据集ID**: [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary)
 - **数据集描述**:
-  > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.
+  > HumanEval 是一个基准，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
@@ -692,7 +692,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `ifeval`
 - **数据集ID**: [opencompass/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)
 - **数据集描述**:
-  > IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.
+  > IFEval 是一个评估指令遵循型语言模型的基准，专注于模型理解和响应各类提示的能力。它包含多样化的任务和指标，以全面评估模型性能。
 - **任务类别**: `InstructionFollowing`
 - **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
 - **需要LLM Judge**: 否
@@ -708,7 +708,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `iquiz`
 - **数据集ID**: [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)
 - **数据集描述**:
-  > IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.
+  > IQuiz 是一个用于评估 AI 模型智商和情商的基准测试，包含多项选择题，要求模型选出正确答案并提供解释。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -733,7 +733,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `live_code_bench`
 - **数据集ID**: [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)
 - **数据集描述**:
-  > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions.
+  > Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程问题和测试用例，用以衡量模型生成正确且高效代码的能力。
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
@@ -767,7 +767,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `maritime_bench`
 - **数据集ID**: [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary)
 - **数据集描述**:
-  > MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.
+  > MaritimeBench 是一个用于评估AI模型在 maritime 相关选择题上表现的基准，包含与 maritime 知识相关的问题，模型需从给定选项中选出正确答案。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -799,7 +799,7 @@ D. 扭应力
 - **数据集名称**: `math_500`
 - **数据集ID**: [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary)
 - **数据集描述**:
-  > MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.
+  > MATH-500 是一个用于评估AI模型数学推理能力的基准，包含500道涵盖五个难度级别的多样化数学题，旨在通过生成逐步解答并给出正确最终答案，测试模型解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
@@ -820,7 +820,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `minerva_math`
 - **数据集ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
 - **数据集描述**:
-  > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
+  > Minerva-math 是一个用于评估大语言模型数学与定量推理能力的基准，包含 **272 道题目**，主要来自 **MIT OpenCourseWare** 的课程，涵盖固态化学、天文学、微分方程和狭义相对论等 **大学及研究生水平** 的高级 STEM 科目。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 是
@@ -841,7 +841,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集名称**: `mmlu`
 - **数据集ID**: [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary)
 - **数据集描述**:
-  > The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.
+  > MMLU（大规模多任务语言理解）基准是一个综合评估套件，旨在评测语言模型在多个学科和任务中的表现。它涵盖历史、科学、数学等领域的多项选择题，能够有效衡量模型的理解与推理能力。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -865,7 +865,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `mmlu_pro`
 - **数据集ID**: [modelscope/MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary)
 - **数据集描述**:
-  > MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.
+  > MMLU-Pro 是一个跨多个学科评估语言模型的基准，涵盖不同领域的多项选择题，要求模型从给定选项中选出正确答案。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -891,7 +891,7 @@ Options:
 - **数据集名称**: `mmlu_redux`
 - **数据集ID**: [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary)
 - **数据集描述**:
-  > MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.
+  > MMLU-Redux 是一个用于评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，模型需从给定选项中选出正确答案，且错误选项已修正。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `{'acc': {'allow_inclusion': True}}`
 - **需要LLM Judge**: 否
@@ -915,7 +915,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `multi_if`
 - **数据集ID**: [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary)
 - **数据集描述**:
-  > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
+  > Multi-IF 是一个用于评估大语言模型在多语言环境下多轮指令遵循能力的基准。
 - **任务类别**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
 - **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
 - **需要LLM Judge**: 否
@@ -937,7 +937,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `musr`
 - **数据集ID**: [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary)
 - **数据集描述**:
-  > MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.
+  > MuSR 是一个用于评估 AI 模型在谋杀谜案、物体摆放和团队分配等选择题上表现的基准。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -961,7 +961,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `needle_haystack`
 - **数据集ID**: [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary)
 - **数据集描述**:
-  > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
+  > “大海捞针”是一项专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 - **任务类别**: `LongContext`, `Retrieval`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 是
@@ -1012,7 +1012,7 @@ Don't give information outside the document or repeat your findings.
 - **数据集名称**: `process_bench`
 - **数据集ID**: [Qwen/ProcessBench](https://modelscope.cn/datasets/Qwen/ProcessBench/summary)
 - **数据集描述**:
-  > ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.
+  > ProcessBench 是一个用于评估AI模型数学推理能力的基准测试，包含 GSM8K、Math、OlympiadBench 和 OmniMath 等多个子集，每个子集都有一系列需要逐步推理才能得出正确答案的问题。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `correct_acc`, `error_acc`, `simple_f1_score`
 - **需要LLM Judge**: 否
@@ -1045,7 +1045,7 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 - **数据集名称**: `race`
 - **数据集ID**: [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary)
 - **数据集描述**:
-  > RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.
+  > RACE 是一个用于测试神经网络模型阅读理解与推理能力的基准，基于中国初高中考试构建。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -1069,7 +1069,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `simple_qa`
 - **数据集ID**: [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)
 - **数据集描述**:
-  > SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.
+  > SimpleQA 是一个用于评估语言模型在简单问答任务上性能的基准，包含一系列需要基本推理和理解能力的直接问题。
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
 - **需要LLM Judge**: 是
@@ -1091,7 +1091,7 @@ Answer the question:
 - **数据集名称**: `super_gpqa`
 - **数据集ID**: [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary)
 - **数据集描述**:
-  > SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.
+  > SuperGPQA 是一个大规模的多项选择题问答数据集，旨在评估模型在不同领域间的泛化能力。它包含来自 50 多个领域的 10 万多个问题，每个问题有 10 个选项。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -1115,7 +1115,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `tau_bench`
 - **数据集ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
 - **数据集描述**:
-  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
+  > 一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请先通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型后再进行评估。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
 - **任务类别**: `FunctionCalling`, `Reasoning`
 - **评估指标**: `Pass^1`
 - **需要LLM Judge**: 否
@@ -1143,7 +1143,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `tool_bench`
 - **数据集ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **数据集描述**:
-  > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
+  > ToolBench 是一个用于评估 AI 模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
 - **任务类别**: `FunctionCalling`, `Reasoning`
 - **评估指标**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **需要LLM Judge**: 否
@@ -1159,7 +1159,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `trivia_qa`
 - **数据集ID**: [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary)
 - **数据集描述**:
-  > TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.
+  > TriviaQA 是一个大规模阅读理解数据集，包含从 trivia 网站收集的问答对。该数据集的问题可能有多个正确答案，适合用于评估模型基于上下文理解和生成答案的能力。
 - **任务类别**: `QA`, `ReadingComprehension`
 - **评估指标**: `{'acc': {'allow_inclusion': True}}`
 - **需要LLM Judge**: 否
@@ -1186,7 +1186,7 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 - **数据集名称**: `truthful_qa`
 - **数据集ID**: [evalscope/truthful_qa](https://modelscope.cn/datasets/evalscope/truthful_qa/summary)
 - **数据集描述**:
-  > TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model's understanding of factual information.
+  > TruthfulQA 是一个用于评估 AI 模型准确、真实回答问题能力的基准，包含多项选择任务，重点考察模型对事实信息的理解。
 - **任务类别**: `Knowledge`
 - **评估指标**: `multi_choice_acc`
 - **需要LLM Judge**: 否
@@ -1216,7 +1216,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `winogrande`
 - **数据集ID**: [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary)
 - **数据集描述**:
-  > Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.
+  > Winogrande 是一个用于评估 AI 模型常识推理能力的基准，专门设计用于测试模型在句子中消解歧义代词的能力。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否

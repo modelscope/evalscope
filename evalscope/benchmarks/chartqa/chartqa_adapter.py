@@ -28,7 +28,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
         pretty_name='ChartQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description=
-        'ChartQA is a benchmark designed to evaluate question-answering capabilities about charts, focusing on both visual and logical reasoning',  # noqa: E501
+        'ChartQA is a benchmark designed to evaluate question-answering capabilities about charts (e.g., bar charts, line graphs, pie charts), focusing on both visual and logical reasoning.',  # noqa: E501
         dataset_id='lmms-lab/ChartQA',
         subset_list=['human_test', 'augmented_test'],
         metric_list=['relaxed_acc'],
