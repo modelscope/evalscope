@@ -135,3 +135,9 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('olympiad_bench', dataset_args=dataset_args)
+
+    def test_chartqa(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('chartqa', dataset_args=dataset_args, limit=10)
