@@ -20,7 +20,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `evalmuse`
 - **Dataset ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
-- **Description**:  
+- **Description**:
   > EvalMuse Text-to-Image Benchmark. Used for evaluating the quality and semantic alignment of finely generated images
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `FGA_BLIP2Score`
@@ -36,7 +36,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `gedit`
 - **Dataset ID**: [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary)
-- **Description**:  
+- **Description**:
   > GEdit-Bench Image Editing Benchmark, grounded in real-world usages is developed to support more authentic and comprehensive evaluation of image editing models.
 - **Task Categories**: `ImageEditing`
 - **Evaluation Metrics**: `Perceptual Similarity`, `Semantic Consistency`
@@ -58,7 +58,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `genai_bench`
 - **Dataset ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
-- **Description**:  
+- **Description**:
   > GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `VQAScore`
@@ -74,7 +74,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `general_t2i`
 - **Dataset ID**: general_t2i
-- **Description**:  
+- **Description**:
   > General Text-to-Image Benchmark
 - **Task Categories**: `Custom`, `TextToImage`
 - **Evaluation Metrics**: `PickScore`
@@ -90,7 +90,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `hpdv2`
 - **Dataset ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
-- **Description**:  
+- **Description**:
   > HPDv2 Text-to-Image Benchmark. Evaluation metrics based on human preferences, trained on the Human Preference Dataset (HPD v2)
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `HPSv2.1Score`
@@ -106,7 +106,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 [Back to Top](#aigc-benchmarks)
 - **Dataset Name**: `tifa160`
 - **Dataset ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
-- **Description**:  
+- **Description**:
   > TIFA-160 Text-to-Image Benchmark
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `PickScore`

@@ -75,14 +75,33 @@ Example usage:
     - `remove_until {string}`: Remove everything in the model output before the specified string.
     - `extract {regex}`: Extract part of the model output matching the specified regex.
     For example, in `ifeval`, specify `{"remove_until": "</think>"}` to remove everything before `</think>` in model output, to avoid affecting scoring.
+  - `extra_params`: Extra parameters related to the dataset. Refer to the documentation of [each dataset](./supported_dataset/index.md) for specific parameters, e.g., the `include_multi_modal` parameter for the `hle` dataset.
 - `--dataset-dir`: Dataset download path, default is `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset source, default is `modelscope`, optional value is `huggingface`.
 - `--limit`: Max number of samples to evaluate per dataset. If not set, evaluates all data. Supports int and float. Int means the first `N` samples, float means the first `N%` samples in the dataset. For example, `0.1` means the first 10% of samples, `100` means the first 100 samples.
 
 Example usage:
 ```bash
---datasets gsm8k arc
---dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}, "ifeval": {"filters": {"remove_until": "</think>"}}'
+--datasets gsm8k arc ifeval hle \
+--dataset-args '{
+  "gsm8k": {
+    "few_shot_num": 4,
+    "few_shot_random": false
+  },
+  "arc": {
+    "dataset_id": "/path/to/arc"
+  },
+  "ifeval": {
+    "filters": {
+      "remove_until": "</think>"
+    }
+  },
+  "hle": {
+    "extra_params": {
+      "include_multi_modal": false
+    }
+  }
+}'
 ```
 
 ## Evaluation Parameters

@@ -67,14 +67,33 @@
     - `remove_until {string}`: 过滤掉模型输出结果中指定字符串之前的部分。
     - `extract {regex}`: 提取模型输出结果中指定正则表达式匹配的部分。
     例如`ifeval`数据集可指定`{"remove_until": "</think>"}`，将过滤掉模型输出结果中`</think>`之前的部分，避免影响打分。
+  - `extra_params`: 数据集相关的额外参数，具体参数参考[各个数据集](./supported_dataset/index.md)的说明，例如`hle`数据集的`include_multi_modal`参数。
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证。支持int和float类型，int表示评测数据集的前`N`条数据，float表示评测数据集的前`N%`条数据。例如`0.1`表示评测数据集的前10%的数据，`100`表示评测数据集的前100条数据。
 
 传参示例：
 ```bash
---datasets gsm8k arc
---dataset-args '{"gsm8k": {"few_shot_num": 4, "few_shot_random": false}, "arc": {"dataset_id": "/path/to/arc"}}, "ifeval": {"filters": {"remove_until": "</think>"}}'
+--datasets gsm8k arc ifeval hle \
+--dataset-args '{
+  "gsm8k": {
+    "few_shot_num": 4,
+    "few_shot_random": false
+  },
+  "arc": {
+    "dataset_id": "/path/to/arc"
+  },
+  "ifeval": {
+    "filters": {
+      "remove_until": "</think>"
+    }
+  },
+  "hle": {
+    "extra_params": {
+      "include_multi_modal": false
+    }
+  }
+}'
 ```
 
 ## 评测参数

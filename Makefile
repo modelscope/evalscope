@@ -3,7 +3,8 @@ default: install
 
 .PHONY: docs
 docs:
-	python docs/generate_dataset_md.py
+	python -m docs.scripts.translate_description
+	python -m docs.scripts.generate_dataset_md
 	$(MAKE) docs-en
 	$(MAKE) docs-zh
 
