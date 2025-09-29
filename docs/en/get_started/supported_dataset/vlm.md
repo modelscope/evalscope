@@ -6,6 +6,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -24,7 +25,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `ai2d`
 - **Dataset ID**: [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary)
-- **Description**:  
+- **Description**:
   > A Diagram Is Worth A Dozen Images
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
@@ -48,7 +49,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `cc_bench`
 - **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
-- **Description**:  
+- **Description**:
   > CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.
 - **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
@@ -67,12 +68,36 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
+### ChartQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `chartqa`
+- **Dataset ID**: [lmms-lab/ChartQA](https://modelscope.cn/datasets/lmms-lab/ChartQA/summary)
+- **Description**:
+  > ChartQA is a benchmark designed to evaluate question-answering capabilities about charts, focusing on both visual and logical reasoning
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `relaxed_acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `augmented_test`, `human_test`
+
+- **Prompt Template**: 
+```text
+
+{question}
+
+The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
+
+```
+
+---
+
 ### MathVista
 
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `math_vista`
 - **Dataset ID**: [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary)
-- **Description**:  
+- **Description**:
   > MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.
 - **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -98,7 +123,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `mm_bench`
 - **Dataset ID**: [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary)
-- **Description**:  
+- **Description**:
   > MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
@@ -122,7 +147,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `mm_star`
 - **Dataset ID**: [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary)
-- **Description**:  
+- **Description**:
   > MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.
 - **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
@@ -147,7 +172,7 @@ where LETTER is one of A,B,C,D. Think step by step before answering.
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `mmmu`
 - **Dataset ID**: [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary)
-- **Description**:  
+- **Description**:
   > MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`
@@ -173,7 +198,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `mmmu_pro`
 - **Dataset ID**: [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary)
-- **Description**:  
+- **Description**:
   > MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.
 - **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
@@ -203,7 +228,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `olympiad_bench`
 - **Dataset ID**: [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary)
-- **Description**:  
+- **Description**:
   > OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark, featuring 8,476 problems from Olympiad-level mathematics and physics competitions, including the Chinese college entrance exam. In the subsets: `OE` stands for `Open-Ended`, `TP` stands for `Theorem Proving`, `MM` stands for `Multimodal`, `TO` stands for `Text-Only`, `CEE` stands for `Chinese Entrance Exam`, `COMP` stands for `Comprehensive`. **Note: The `TP` subsets can't be evaluated with auto-judge for now**.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -224,7 +249,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `omni_bench`
 - **Dataset ID**: [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary)
-- **Description**:  
+- **Description**:
   > OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.
 - **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
 - **Evaluation Metrics**: `acc`
@@ -255,7 +280,7 @@ Answer the following multiple choice question based on the image and audio conte
 [Back to Top](#vlm-benchmarks)
 - **Dataset Name**: `real_world_qa`
 - **Dataset ID**: [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary)
-- **Description**:  
+- **Description**:
   > RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models' understanding of our physical world.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `acc`

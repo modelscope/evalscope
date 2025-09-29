@@ -57,8 +57,9 @@ Your judgment must focus only on if there are meaningful differences between [co
         'humanities/social science (9%), computer science/artificial intelligence (10%), '
         'engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions '
         'require the ability to understand both text and images, i.e., multi-modality. '
-        '24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. '
-        'To evaluate the performance of model without multi-modality capabilities, please set the extra_params["include_multi_modal"] to False.',  # noqa: E501
+        '24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. \n'
+        '**To evaluate the performance of model without multi-modality capabilities, '
+        'please set the `extra_params["include_multi_modal"]` to `False`.**',  # noqa: E501
         dataset_id='cais/hle',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

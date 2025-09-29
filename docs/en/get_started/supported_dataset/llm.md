@@ -60,7 +60,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `aime24`
 - **Dataset ID**: [HuggingFaceH4/aime_2024](https://modelscope.cn/datasets/HuggingFaceH4/aime_2024/summary)
-- **Description**:  
+- **Description**:
   > The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -81,7 +81,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `aime25`
 - **Dataset ID**: [opencompass/AIME2025](https://modelscope.cn/datasets/opencompass/AIME2025/summary)
-- **Description**:  
+- **Description**:
   > The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -102,7 +102,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `alpaca_eval`
 - **Dataset ID**: [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary)
-- **Description**:  
+- **Description**:
   > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
 - **Task Categories**: `Arena`, `InstructionFollowing`
 - **Evaluation Metrics**: `winrate`
@@ -122,7 +122,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `amc`
 - **Dataset ID**: [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary)
-- **Description**:  
+- **Description**:
   > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -143,7 +143,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `arc`
 - **Dataset ID**: [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary)
-- **Description**:  
+- **Description**:
   > The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -167,7 +167,7 @@ Answer the following multiple choice question. The entire content of your respon
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `arena_hard`
 - **Dataset ID**: [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary)
-- **Description**:  
+- **Description**:
   > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
 - **Task Categories**: `Arena`, `InstructionFollowing`
 - **Evaluation Metrics**: `winrate`
@@ -187,7 +187,7 @@ Answer the following multiple choice question. The entire content of your respon
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `bbh`
 - **Dataset ID**: [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary)
-- **Description**:  
+- **Description**:
   > The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.
 - **Task Categories**: `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -209,7 +209,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `bfcl_v3`
 - **Dataset ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
-- **Description**:  
+- **Description**:
   > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
 - **Task Categories**: `FunctionCalling`
 - **Evaluation Metrics**: `acc`
@@ -232,7 +232,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `ceval`
 - **Dataset ID**: [evalscope/ceval](https://modelscope.cn/datasets/evalscope/ceval/summary)
-- **Description**:  
+- **Description**:
   > C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -257,7 +257,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `chinese_simpleqa`
 - **Dataset ID**: [AI-ModelScope/Chinese-SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary)
-- **Description**:  
+- **Description**:
   > Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.
 - **Task Categories**: `Chinese`, `Knowledge`, `QA`
 - **Evaluation Metrics**: `is_correct`, `is_incorrect`, `is_not_attempted`
@@ -279,7 +279,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `cmmlu`
 - **Dataset ID**: [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary)
-- **Description**:  
+- **Description**:
   > C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -304,7 +304,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `competition_math`
 - **Dataset ID**: [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary)
-- **Description**:  
+- **Description**:
   > The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -328,7 +328,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `data_collection`
 - **Dataset ID**: 
-- **Description**:  
+- **Description**:
   > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 - **Task Categories**: `Custom`
 - **Evaluation Metrics**: `acc`
@@ -344,7 +344,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `docmath`
 - **Dataset ID**: [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary)
-- **Description**:  
+- **Description**:
   > DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.
 - **Task Categories**: `LongContext`, `Math`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -372,7 +372,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `drop`
 - **Dataset ID**: [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary)
-- **Description**:  
+- **Description**:
   > The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.
 - **Task Categories**: `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -398,7 +398,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `frames`
 - **Dataset ID**: [iic/frames](https://modelscope.cn/datasets/iic/frames/summary)
-- **Description**:  
+- **Description**:
   > FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.
 - **Task Categories**: `LongContext`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -426,7 +426,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `general_arena`
 - **Dataset ID**: general_arena
-- **Description**:  
+- **Description**:
   > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).
 - **Task Categories**: `Arena`, `Custom`
 - **Evaluation Metrics**: `winrate`
@@ -493,7 +493,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `general_mcq`
 - **Dataset ID**: general_mcq
-- **Description**:  
+- **Description**:
   > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).
 - **Task Categories**: `Custom`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -518,7 +518,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `general_qa`
 - **Dataset ID**: general_qa
-- **Description**:  
+- **Description**:
   > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).
 - **Task Categories**: `Custom`, `QA`
 - **Evaluation Metrics**: `BLEU`, `Rouge`
@@ -539,7 +539,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `gpqa_diamond`
 - **Dataset ID**: [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary)
-- **Description**:  
+- **Description**:
   > GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -563,7 +563,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `gsm8k`
 - **Dataset ID**: [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary)
-- **Description**:  
+- **Description**:
   > GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -590,7 +590,7 @@ Reasoning:
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `health_bench`
 - **Dataset ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
-- **Description**:  
+- **Description**:
   > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
 - **Task Categories**: `Knowledge`, `QA`
 - **Evaluation Metrics**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
@@ -618,7 +618,7 @@ Answer the question:
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `hellaswag`
 - **Dataset ID**: [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary)
-- **Description**:  
+- **Description**:
   > HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.
 - **Task Categories**: `Commonsense`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -642,8 +642,9 @@ Answer the following multiple choice question. The entire content of your respon
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `hle`
 - **Dataset ID**: [cais/hle](https://modelscope.cn/datasets/cais/hle/summary)
-- **Description**:  
-  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. To evaluate the performance of model without multi-modality capabilities, please set the extra_params["include_multi_modal"] to False.
+- **Description**:
+  > Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. 
+  > **To evaluate the performance of model without multi-modality capabilities, please set the `extra_params["include_multi_modal"]` to `False`.**
 - **Task Categories**: `Knowledge`, `QA`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: Yes
@@ -668,7 +669,7 @@ Answer the following multiple choice question. The entire content of your respon
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `humaneval`
 - **Dataset ID**: [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary)
-- **Description**:  
+- **Description**:
   > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `Pass@1`
@@ -690,7 +691,7 @@ Read the following function signature and docstring, and fully implement the fun
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `ifeval`
 - **Dataset ID**: [opencompass/ifeval](https://modelscope.cn/datasets/opencompass/ifeval/summary)
-- **Description**:  
+- **Description**:
   > IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.
 - **Task Categories**: `InstructionFollowing`
 - **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
@@ -706,7 +707,7 @@ Read the following function signature and docstring, and fully implement the fun
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `iquiz`
 - **Dataset ID**: [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary)
-- **Description**:  
+- **Description**:
   > IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -731,7 +732,7 @@ Read the following function signature and docstring, and fully implement the fun
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `live_code_bench`
 - **Dataset ID**: [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)
-- **Description**:  
+- **Description**:
   > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions.
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `Pass@1`
@@ -765,7 +766,7 @@ Read the following function signature and docstring, and fully implement the fun
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `maritime_bench`
 - **Dataset ID**: [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary)
-- **Description**:  
+- **Description**:
   > MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -797,7 +798,7 @@ D. 扭应力
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `math_500`
 - **Dataset ID**: [AI-ModelScope/MATH-500](https://modelscope.cn/datasets/AI-ModelScope/MATH-500/summary)
-- **Description**:  
+- **Description**:
   > MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -818,7 +819,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `minerva_math`
 - **Dataset ID**: [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary)
-- **Description**:  
+- **Description**:
   > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
@@ -839,7 +840,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `mmlu`
 - **Dataset ID**: [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary)
-- **Description**:  
+- **Description**:
   > The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -863,7 +864,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `mmlu_pro`
 - **Dataset ID**: [modelscope/MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary)
-- **Description**:  
+- **Description**:
   > MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -889,7 +890,7 @@ Options:
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `mmlu_redux`
 - **Dataset ID**: [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary)
-- **Description**:  
+- **Description**:
   > MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `{'acc': {'allow_inclusion': True}}`
@@ -913,7 +914,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `multi_if`
 - **Dataset ID**: [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary)
-- **Description**:  
+- **Description**:
   > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
 - **Task Categories**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
 - **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
@@ -935,7 +936,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `musr`
 - **Dataset ID**: [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary)
-- **Description**:  
+- **Description**:
   > MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -959,7 +960,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `needle_haystack`
 - **Dataset ID**: [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary)
-- **Description**:  
+- **Description**:
   > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 - **Task Categories**: `LongContext`, `Retrieval`
 - **Evaluation Metrics**: `acc`
@@ -1010,7 +1011,7 @@ Don't give information outside the document or repeat your findings.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `process_bench`
 - **Dataset ID**: [Qwen/ProcessBench](https://modelscope.cn/datasets/Qwen/ProcessBench/summary)
-- **Description**:  
+- **Description**:
   > ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `correct_acc`, `error_acc`, `simple_f1_score`
@@ -1043,7 +1044,7 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `race`
 - **Dataset ID**: [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary)
-- **Description**:  
+- **Description**:
   > RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
@@ -1067,7 +1068,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `simple_qa`
 - **Dataset ID**: [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)
-- **Description**:  
+- **Description**:
   > SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.
 - **Task Categories**: `Knowledge`, `QA`
 - **Evaluation Metrics**: `is_correct`, `is_incorrect`, `is_not_attempted`
@@ -1089,7 +1090,7 @@ Answer the question:
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `super_gpqa`
 - **Dataset ID**: [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary)
-- **Description**:  
+- **Description**:
   > SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
@@ -1113,7 +1114,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `tau_bench`
 - **Dataset ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
-- **Description**:  
+- **Description**:
   > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
 - **Task Categories**: `FunctionCalling`, `Reasoning`
 - **Evaluation Metrics**: `Pass^1`
@@ -1141,7 +1142,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `tool_bench`
 - **Dataset ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
-- **Description**:  
+- **Description**:
   > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
 - **Task Categories**: `FunctionCalling`, `Reasoning`
 - **Evaluation Metrics**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
@@ -1157,7 +1158,7 @@ Answer the following multiple choice question. The last line of your response sh
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `trivia_qa`
 - **Dataset ID**: [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary)
-- **Description**:  
+- **Description**:
   > TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.
 - **Task Categories**: `QA`, `ReadingComprehension`
 - **Evaluation Metrics**: `{'acc': {'allow_inclusion': True}}`
@@ -1184,7 +1185,7 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `truthful_qa`
 - **Dataset ID**: [evalscope/truthful_qa](https://modelscope.cn/datasets/evalscope/truthful_qa/summary)
-- **Description**:  
+- **Description**:
   > TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model's understanding of factual information.
 - **Task Categories**: `Knowledge`
 - **Evaluation Metrics**: `multi_choice_acc`
@@ -1214,7 +1215,7 @@ Answer the following multiple choice question. The entire content of your respon
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `winogrande`
 - **Dataset ID**: [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary)
-- **Description**:  
+- **Description**:
   > Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`

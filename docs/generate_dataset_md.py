@@ -144,7 +144,17 @@ def process_dictionary(data: dict) -> str:
         data (dict): 要格式化的字典
     """
     return json.dumps(data, ensure_ascii=False, indent=4)
-    
+
+def format_description(description: str) -> str:
+    """
+    将可能包含换行的描述格式化为正确的 Markdown 引用块。
+    每一行都会加上 '  > ' 前缀，保证在同一个列表项下展示为多行引用。
+    """
+    if not description:
+        return ''
+    lines = description.strip('\n').splitlines()
+    return '  > ' + '\n  > '.join(line if line.strip() else '' for line in lines)
+
 def get_dataset_detail_locale(category: str, lang: str) -> Dict[str, str]:
     """Get localized strings for dataset details"""
     locale_dict = get_dataset_detail_locale_dict(category)
@@ -191,7 +201,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
         f'[{text["back_to_top"]}](#{text["toc_title"].lower().replace(" ", "-")})',
         f'- **{text["dataset_name"]}**: `{name}`',
         f'- **{text["dataset_id"]}**: {dataset_id_md}',
-        f'- **{text["description"]}**:  \n  > {description}',
+        f'- **{text["description"]}**:\n{format_description(description)}',
         f'- **{text["task_categories"]}**: {wrap_key_words(data_adapter.tags)}',
         f'- **{text["evaluation_metrics"]}**: {wrap_key_words(data_adapter.metric_list)}',
         f'- **{text["requires_llm_judge"]}**: {text["yes"] if data_adapter._use_llm_judge else text["no"]}',
