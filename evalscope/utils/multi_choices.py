@@ -81,12 +81,27 @@ def answer_options(choices: Choices) -> str:
     return '\n'.join([f'{answer_character(i)}) {choices[j].value}' for i, j in enumerate(indexes)])
 
 
+def format_letter_choices(choices: Union[Choices, List[str]]) -> str:
+    """
+    Returns the `choices` formatted as a letter list, e.g.:
+
+    ["choice 1", "choice 2", "choice 3"] ->
+        "A,B,C"
+    """
+    if isinstance(choices, list):
+        choices = Choices(choices)
+
+    indexes = list(range(len(choices)))
+
+    return ','.join([f'{answer_character(i)}' for i in indexes])
+
+
 def prompt(question: str, choices: Union[Choices, List[str]], template: str, fewshot: Optional[str] = None) -> str:
     if isinstance(choices, list):
         choices = Choices(choices)
 
     choices_text = answer_options(choices)
-    letters = ','.join(answer_character(i) for i in range(len(choices)))
+    letters = format_letter_choices(choices)
     if not fewshot:
         return template.format(
             choices=choices_text,

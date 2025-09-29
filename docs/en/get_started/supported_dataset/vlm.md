@@ -5,6 +5,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
+| `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -40,6 +41,29 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### BLINK
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `blink`
+- **Dataset ID**: [evalscope/BLINK](https://modelscope.cn/datasets/evalscope/BLINK/summary)
+- **Description**:
+  > BLINK is a benchmark designed to evaluate the core visual perception abilities of multimodal large language models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions, accompanied by single or multiple images and visual prompts.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `Art_Style`, `Counting`, `Forensic_Detection`, `Functional_Correspondence`, `IQ_Test`, `Jigsaw`, `Multi-view_Reasoning`, `Object_Localization`, `Relative_Depth`, `Relative_Reflectance`, `Semantic_Correspondence`, `Spatial_Relation`, `Visual_Correspondence`, `Visual_Similarity`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format:
+'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
 ```
 
 ---

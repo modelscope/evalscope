@@ -313,5 +313,10 @@
     "en": "MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.",
     "zh": "MMBench 是一个综合评估流程，包含精心策划的多模态数据集和利用 ChatGPT 的新型 circularEval 策略。它由 MMBench 定义的 20 个能力维度构成，并包含翻译成中文的问题版本。",
     "updated_at": "2025-09-29T15:08:12Z"
+  },
+  "blink": {
+    "en": "BLINK is a benchmark designed to evaluate the core visual perception abilities of multimodal large language models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions, accompanied by single or multiple images and visual prompts.",
+    "zh": "BLINK 是一个用于评估多模态大语言模型（MLLM）核心视觉感知能力的基准，它将14个经典计算机视觉任务转化为3,807道选择题，每道题配有单张或多张图像及视觉提示。",
+    "updated_at": "2025-09-29T15:57:32Z"
   }
 }

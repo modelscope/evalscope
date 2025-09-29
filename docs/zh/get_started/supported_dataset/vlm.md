@@ -5,6 +5,7 @@
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
+| `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -40,6 +41,29 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### BLINK
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `blink`
+- **数据集ID**: [evalscope/BLINK](https://modelscope.cn/datasets/evalscope/BLINK/summary)
+- **数据集描述**:
+  > BLINK 是一个用于评估多模态大语言模型（MLLM）核心视觉感知能力的基准，它将14个经典计算机视觉任务转化为3,807道选择题，每道题配有单张或多张图像及视觉提示。
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Art_Style`, `Counting`, `Forensic_Detection`, `Functional_Correspondence`, `IQ_Test`, `Jigsaw`, `Multi-view_Reasoning`, `Object_Localization`, `Relative_Depth`, `Relative_Reflectance`, `Semantic_Correspondence`, `Spatial_Relation`, `Visual_Correspondence`, `Visual_Similarity`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format:
+'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
 ```
 
 ---
