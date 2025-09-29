@@ -17,13 +17,13 @@ def relaxed_correctness(prediction: str, target: str, max_relative_change: float
 
     Returns:
       Whether the prediction was correct given the specified tolerance.
-    """
+    """  # noqa: E501
 
     def _to_float(text: str):
         try:
-            if text.endswith("%"):
+            if text.endswith('%'):
                 # Convert percentages to floats.
-                return float(text.rstrip("%")) / 100.0
+                return float(text.rstrip('%')) / 100.0
             else:
                 return float(text)
         except ValueError:

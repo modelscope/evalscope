@@ -15,7 +15,6 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-
 OPEN_PROMPT = """
 {question}
 
@@ -41,7 +40,7 @@ class ChartQAAdapter(VisionLanguageAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.add_aggregation_name = False
         self.reformat_subset = True
 
@@ -61,7 +60,6 @@ class ChartQAAdapter(VisionLanguageAdapter):
             subset_key=record['type'],  # 'human_test' or 'augmented_split'
         )
 
-
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         pattern = r'ANSWER:\s*(.*)'
         match = re.search(pattern, prediction)
@@ -71,12 +69,12 @@ class ChartQAAdapter(VisionLanguageAdapter):
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         from .utils import relaxed_correctness
-        
+
         score = relaxed_correctness(filtered_prediction, reference)
         score = 1.0 if score else 0.0
-            
+
         return Score(
-            value={"relaxed_acc": score},
+            value={'relaxed_acc': score},
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
         )
