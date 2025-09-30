@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from typing import List
 
@@ -97,6 +98,56 @@ class MultiChoiceAcc(Metric):
                 continue
             common = prediction.intersection(reference)
             res.append(len(common) / len(reference) if reference else 0.0)
+        return res
+
+
+@register_metric(name='anls')
+class ANLS(Metric):
+
+    def __init__(self, thresh_hold=0.5):
+        self.thresh_hold = thresh_hold
+
+    def apply(self, predictions, references):
+        """
+        Calculate ANLS (Average Normalized Levenshtein Similarity) for a list of predictions and references.
+        This implementation is adapted from
+        https://github.com/QwenLM/Qwen-VL/blob/master/eval_mm/infographicsvqa_eval.py
+
+        Args:
+            references (List[str]): List of correct answers. Each answer can be a string of json.
+            predictions (List[str]): List of predicted answers.
+        """
+        from .metrics import levenshtein_distance
+
+        res = []
+        # Unwrap predictions if it's a nested list
+        for prediction, reference in zip(predictions, references):
+            # Parse the reference which is a json string
+            try:
+                answer = json.loads(reference)
+            except json.JSONDecodeError:
+                answer = reference
+            if isinstance(answer, str):
+                answer = [answer]
+            assert isinstance(answer, list), 'The reference answer should be a list of answers.'
+
+            # Calculate ANLS for each reference answer
+            values = []
+            question_result = 0.0
+            for ans in answer:
+                # preprocess both the answers - gt and prediction
+                gt_answer = ' '.join(ans.strip().lower().split())
+                det_answer = ' '.join(prediction.strip().lower().split())
+
+                dist = levenshtein_distance(gt_answer, det_answer)
+                length = max(len(ans.upper()), len(prediction.upper()))
+                values.append(0.0 if length == 0 else float(dist) / float(length))
+
+                question_result = 1 - min(values)
+
+                if question_result < self.thresh_hold:
+                    question_result = 0.0
+            res.append(question_result)
         return res
 
 

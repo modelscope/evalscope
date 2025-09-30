@@ -8,6 +8,8 @@
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -112,6 +114,50 @@ Answer the following multiple choice question. The last line of your response sh
 
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
 
+```
+
+---
+
+### DocVQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `docvqa`
+- **数据集ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
+- **数据集描述**:
+  > DocVQA（文档视觉问答）是一个基准，用于评估AI系统根据文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `anls`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `DocVQA`
+
+- **提示模板**: 
+```text
+Answer the question according to the image using a single word or phrase.
+{question}
+The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+```
+
+---
+
+### InfoVQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `infovqa`
+- **数据集ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
+- **数据集描述**:
+  > InfoVQA（信息视觉问答）是一个基准，用于评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `anls`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `InfographicVQA`
+
+- **提示模板**: 
+```text
+Answer the question according to the image using a single word or phrase.
+{question}
+The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
 ```
 
 ---

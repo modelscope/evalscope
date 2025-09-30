@@ -122,7 +122,7 @@ class MMMUAdapter(VisionLanguageAdapter):
             match = re.search(pattern, prediction)
             if match:
                 return match.group(1).strip()
-            return ''
+            return prediction.strip()
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 
