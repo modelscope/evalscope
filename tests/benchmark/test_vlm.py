@@ -162,3 +162,15 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('blink', dataset_args=dataset_args, limit=10)
+
+    def test_docvqa(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('docvqa', dataset_args=dataset_args, limit=5)
+
+    def test_infovqa(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('infovqa', dataset_args=dataset_args, limit=5)

@@ -8,6 +8,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -112,6 +114,50 @@ Answer the following multiple choice question. The last line of your response sh
 
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
 
+```
+
+---
+
+### DocVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `docvqa`
+- **Dataset ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
+- **Description**:
+  > DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `anls`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `DocVQA`
+
+- **Prompt Template**: 
+```text
+Answer the question according to the image using a single word or phrase.
+{question}
+The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+```
+
+---
+
+### InfoVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `infovqa`
+- **Dataset ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
+- **Description**:
+  > InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `anls`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `InfographicVQA`
+
+- **Prompt Template**: 
+```text
+Answer the question according to the image using a single word or phrase.
+{question}
+The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
 ```
 
 ---
