@@ -124,7 +124,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **数据集名称**: `docvqa`
 - **数据集ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
 - **数据集描述**:
-  > DocVQA（文档视觉问答）是一个基准，用于评估AI系统根据文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。
+  > DocVQA（文档视觉问答）是一个基准测试，用于评估AI系统基于文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。
 - **任务类别**: `Knowledge`, `MultiModal`, `QA`
 - **评估指标**: `anls`
 - **需要LLM Judge**: 否
@@ -146,7 +146,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **数据集名称**: `infovqa`
 - **数据集ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
 - **数据集描述**:
-  > InfoVQA（信息视觉问答）是一个基准，用于评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。
+  > InfoVQA（信息视觉问答）是一个基准测试，旨在评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。
 - **任务类别**: `Knowledge`, `MultiModal`, `QA`
 - **评估指标**: `anls`
 - **需要LLM Judge**: 否

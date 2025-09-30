@@ -124,7 +124,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Dataset Name**: `docvqa`
 - **Dataset ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
 - **Description**:
-  > DocVQA (Document Visual Question Answering), is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.
+  > DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `anls`
 - **Requires LLM Judge**: No
@@ -146,7 +146,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Dataset Name**: `infovqa`
 - **Dataset ID**: [lmms-lab/DocVQA](https://modelscope.cn/datasets/lmms-lab/DocVQA/summary)
 - **Description**:
-  > InfoVQA (Information Visual Question Answering), is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.
+  > InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `anls`
 - **Requires LLM Judge**: No

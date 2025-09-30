@@ -23,7 +23,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
         pretty_name='InfoVQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description=
-        'InfoVQA (Information Visual Question Answering), is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.',  # noqa: E501
+        'InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.',  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
         subset_list=['InfographicVQA'],
         metric_list=['anls'],

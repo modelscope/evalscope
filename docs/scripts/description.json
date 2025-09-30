@@ -320,13 +320,13 @@
     "updated_at": "2025-09-29T15:57:32Z"
   },
   "infovqa": {
-    "en": "InfoVQA (Information Visual Question Answering), is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.",
-    "zh": "InfoVQA（信息视觉问答）是一个基准，用于评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。",
-    "updated_at": "2025-09-30T14:45:44Z"
+    "en": "InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.",
+    "zh": "InfoVQA（信息视觉问答）是一个基准测试，旨在评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。",
+    "updated_at": "2025-09-30T15:23:22Z"
   },
   "docvqa": {
-    "en": "DocVQA (Document Visual Question Answering), is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.",
-    "zh": "DocVQA（文档视觉问答）是一个基准，用于评估AI系统根据文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。",
-    "updated_at": "2025-09-30T14:45:44Z"
+    "en": "DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.",
+    "zh": "DocVQA（文档视觉问答）是一个基准测试，用于评估AI系统基于文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。",
+    "updated_at": "2025-09-30T15:23:22Z"
   }
 }

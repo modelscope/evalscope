@@ -23,7 +23,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
         pretty_name='DocVQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description=
-        'DocVQA (Document Visual Question Answering), is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.',  # noqa: E501
+        'DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.',  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
         subset_list=['DocVQA'],
         metric_list=['anls'],
