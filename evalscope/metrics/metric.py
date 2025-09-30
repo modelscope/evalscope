@@ -133,7 +133,6 @@ class ANLS(Metric):
 
             # Calculate ANLS for each reference answer
             values = []
-            question_result = 0.0
             for ans in answer:
                 # preprocess both the answers - gt and prediction
                 gt_answer = ' '.join(ans.strip().lower().split())
@@ -143,8 +142,9 @@ class ANLS(Metric):
                 length = max(len(ans.upper()), len(prediction.upper()))
                 values.append(0.0 if length == 0 else float(dist) / float(length))
 
+            question_result = 0.0
+            if values:
                 question_result = 1 - min(values)
-
                 if question_result < self.thresh_hold:
                     question_result = 0.0
             res.append(question_result)
