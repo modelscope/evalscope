@@ -4,9 +4,9 @@ import glob
 import os
 import pandas as pd
 from tabulate import tabulate
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
 
-from evalscope.report.report import Report
+from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -86,3 +86,53 @@ def gen_table(
         add_overall_metric=add_overall_metric
     )
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
+
+
+def weighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], new_name: str = ''
+) -> Subset:
+    """Calculate weighted average for given subsets.
+
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        name (str): Name for the resulting Subset object.
+
+    Returns:
+        Subset: A new Subset object with weighted average score
+    """
+    total_score = 0
+    total_count = 0
+    for name in subset_names:
+        if name in subset_dict:
+            subset = subset_dict[name]
+            total_score += subset.score * subset.num
+            total_count += subset.num
+
+    weighted_avg = total_score / total_count if total_count > 0 else 0
+    return Subset(name=new_name, score=weighted_avg, num=total_count)
+
+
+def unweighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], new_name: str = ''
+) -> Subset:
+    """Calculate unweighted average for given subsets.
+
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        name (str): Name for the resulting Subset object.
+
+    Returns:
+        Subset: A new Subset object with unweighted average score
+    """
+    scores = []
+    total_count = 0
+    for name in subset_names:
+        if name in subset_dict:
+            subset = subset_dict[name]
+            scores.append(subset.score)
+            total_count += subset.num
+
+    unweighted_avg = sum(scores) / len(scores) if scores else 0
+    return Subset(name=new_name, score=unweighted_avg, num=total_count)
