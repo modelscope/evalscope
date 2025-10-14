@@ -31,6 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev]'
           pip install git+https://github.com/sierra-research/tau-bench
+          pip install bfcl-eval==2025.6.16
 
       - name: Create .env file
         run: |
