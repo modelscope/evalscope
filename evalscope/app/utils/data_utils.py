@@ -168,9 +168,9 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             'Index': str(review_result.index),
             'Input': review_result.input.replace('\n', '\n\n'),  # for markdown
             'Metadata': metadata,
-            'Generated': prediction,
+            'Generated': prediction or '',
             'Gold': target,
-            'Pred': extracted_prediction if extracted_prediction != prediction else '*Same as Generated*',
+            'Pred': extracted_prediction if extracted_prediction != prediction else '*Same as Generated*' or '',
             'Score': score.model_dump(exclude_none=True),
             'NScore': normalize_score(score.main_value)
         }
