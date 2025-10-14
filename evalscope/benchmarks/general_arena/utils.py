@@ -34,7 +34,7 @@ def process_review_item(review_result: ReviewResult) -> list:
         'Index': str(review_result.index),
         'Input': review_result.input,
         'Question': review_result.input,  # Use input as question
-        'Generated': prediction if prediction != extracted_prediction else extracted_prediction or '',
+        'Generated': prediction if prediction != extracted_prediction else extracted_prediction or '',  # Ensure no None value
         'Gold': target,
         'Pred': extracted_prediction,
         'Score': sample_score.score.model_dump(exclude_none=True),
