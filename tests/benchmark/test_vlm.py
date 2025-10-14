@@ -174,3 +174,44 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('infovqa', dataset_args=dataset_args, limit=5)
+
+    def test_ocr_bench(self):
+        dataset_args = {
+            # 'subset_list': ['Handwritten Mathematical Expression Recognition']
+        }
+        self._run_dataset_test('ocr_bench', dataset_args=dataset_args, limit=10)
+
+    def test_ocr_bench_v2(self):
+        dataset_args = {
+            'subset_list': [
+                # 'key information extraction cn',
+                # 'key information extraction en',
+                # 'key information mapping en',
+                # 'VQA with position en',
+                # 'chart parsing en',
+                # 'cognition VQA cn',
+                # 'cognition VQA en',
+                # 'diagram QA en',
+                # 'document classification en',
+                # 'document parsing cn',
+                # 'document parsing en',
+                # 'formula recognition cn',
+                # 'formula recognition en',
+                # 'handwritten answer extraction cn',
+                # 'math QA en',
+                # 'full-page OCR cn',
+                # 'full-page OCR en',
+                # 'reasoning VQA en',
+                # 'reasoning VQA cn',
+                # 'fine-grained text recognition en',
+                # 'science QA en',
+                # 'table parsing cn',
+                # 'table parsing en',
+                # 'text counting en',
+                # 'text grounding en',
+                # 'text recognition en',
+                'text spotting en',
+                'text translation cn'
+            ]
+        }
+        self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=1)

@@ -128,6 +128,9 @@ class DefaultDataAdapter(DataAdapter):
             for sample in self.test_dataset[subset]:
                 if isinstance(sample.input, str):
                     sample.input = self.process_sample_str_input(sample, subset)
+                elif isinstance(sample.input, list):
+                    # Handle list[ChatMessage] and add system prompt if needed
+                    sample.input = self.process_sample_messages_input(sample, subset)
 
     def process_sample_str_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
         """
@@ -141,6 +144,15 @@ class DefaultDataAdapter(DataAdapter):
         if self.system_prompt:
             input_messages.insert(0, ChatMessageSystem(content=self.system_prompt))
         return input_messages
+
+    def process_sample_messages_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        """
+        Normalize a sample's existing List[ChatMessage] input and ensure system prompt is set once.
+        """
+        messages = list(sample.input)  # shallow copy to avoid in-place mutations
+        if self.system_prompt and not any(isinstance(m, ChatMessageSystem) for m in messages):
+            messages = [ChatMessageSystem(content=self.system_prompt)] + messages
+        return messages
 
     def process_sample_input(self, sample: Sample, subset: str) -> str:
         """

@@ -4,7 +4,13 @@ from typing import TYPE_CHECKING
 from evalscope.utils.import_utils import _LazyModule
 
 if TYPE_CHECKING:
-    from .combinator import gen_table, get_data_frame, get_report_list
+    from .combinator import (
+        gen_table,
+        get_data_frame,
+        get_report_list,
+        unweighted_average_from_subsets,
+        weighted_average_from_subsets,
+    )
     from .generator import ReportGenerator
     from .report import Category, Report, ReportKey, Subset
 
@@ -14,6 +20,8 @@ else:
             'gen_table',
             'get_data_frame',
             'get_report_list',
+            'weighted_average_from_subsets',
+            'unweighted_average_from_subsets',
         ],
         'generator': [
             'ReportGenerator',

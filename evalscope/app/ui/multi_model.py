@@ -204,7 +204,12 @@ def create_multi_model_tab(sidebar: 'SidebarComponents', lang: str):
         data_score_df_b, _ = get_single_dataset_df(report_df_b, dataset_name)
 
         # Get subset choices - should be same for both models
-        subsets = data_score_df_a[ReportKey.subset_name].unique().tolist()
+        # Only select the subsets that Cat.0 is not '-'
+        df_for_subsets = data_score_df_a.copy()
+        subsets = sorted(
+            df_for_subsets.loc[df_for_subsets[f'{ReportKey.category_prefix}0'].ne('-'),
+                               ReportKey.subset_name].dropna().unique().tolist()
+        )
 
         return gr.update(choices=subsets, value=None), None
 

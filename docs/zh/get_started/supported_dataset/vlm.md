@@ -15,6 +15,8 @@
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
 | `mmmu_pro` | [MMMU-PRO](#mmmu-pro) | `Knowledge`, `MCQ`, `MultiModal` |
+| `ocr_bench` | [OCRBench](#ocrbench) | `Knowledge`, `MultiModal`, `QA` |
+| `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
@@ -289,6 +291,46 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### OCRBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `ocr_bench`
+- **数据集ID**: [evalscope/OCRBench](https://modelscope.cn/datasets/evalscope/OCRBench/summary)
+- **数据集描述**:
+  > OCRBench 是一个综合评测基准，旨在评估大一多模态模型的 OCR 能力。包含五个部分：文本识别、以场景文本为中心的视觉问答、面向文档的视觉问答、关键信息提取和手写数学表达式识别。该基准包含 1000 个问答对，所有答案均经过人工校验与修正，以确保更精确的评估。
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Artistic Text Recognition`, `Digit String Recognition`, `Doc-oriented VQA`, `Handwriting Recognition`, `Handwritten Mathematical Expression Recognition`, `Irregular Text Recognition`, `Key Information Extraction`, `Non-Semantic Text Recognition`, `Regular Text Recognition`, `Scene Text-centric VQA`
+
+- **提示模板**: 
+```text
+{question}
+```
+
+---
+
+### OCRBench-v2
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `ocr_bench_v2`
+- **数据集ID**: [evalscope/OCRBench_v2](https://modelscope.cn/datasets/evalscope/OCRBench_v2/summary)
+- **数据集描述**:
+  > OCRBench v2 是一个大规模双语文本基准，包含目前最全面的任务集（任务数量是此前多场景基准 OCRBench 的 4 倍）、覆盖最广泛的场景（共 31 种多样化场景，如街景、收据、公式、图表等），并提供完善的评估指标，总计包含 10,000 个人工验证的问答对，且难题样本占比较高。
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `APP agent en`, `ASCII art classification en`, `VQA with position en`, `chart parsing en`, `cognition VQA cn`, `cognition VQA en`, `diagram QA en`, `document classification en`, `document parsing cn`, `document parsing en`, `fine-grained text recognition en`, `formula recognition cn`, `formula recognition en`, `full-page OCR cn`, `full-page OCR en`, `handwritten answer extraction cn`, `key information extraction cn`, `key information extraction en`, `key information mapping en`, `math QA en`, `reasoning VQA cn`, `reasoning VQA en`, `science QA en`, `table parsing cn`, `table parsing en`, `text counting en`, `text grounding en`, `text recognition en`, `text spotting en`, `text translation cn`
+
+- **提示模板**: 
+```text
+{question}
 ```
 
 ---
