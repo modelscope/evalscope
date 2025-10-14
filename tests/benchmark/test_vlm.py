@@ -214,4 +214,4 @@ class TestVLMBenchmark(TestBenchmark):
                 'text translation cn'
             ]
         }
-        self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=5)
+        self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=1)

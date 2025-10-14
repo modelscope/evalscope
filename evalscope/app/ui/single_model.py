@@ -134,11 +134,17 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
     )
     def update_single_report_dataset(dataset_name, report_list):
         logger.debug(f'Updating single report dataset: {dataset_name}')
-        report_df = get_data_frame(report_list=report_list)
+        report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
         analysis = get_report_analysis(report_list, dataset_name)
         data_score_df, styler = get_single_dataset_df(report_df, dataset_name)
         data_score_plot = plot_single_dataset_scores(data_score_df)
-        subsets = data_score_df[ReportKey.subset_name].unique().tolist()
+        # Only select the subsets that Cat.0 is not '-'
+        df_for_subsets = data_score_df.copy()
+        subsets = sorted(
+            df_for_subsets.loc[df_for_subsets[f'{ReportKey.category_prefix}0'].ne('-'),
+                               ReportKey.subset_name].dropna().unique().tolist()
+        )
+
         logger.debug(f'subsets: {subsets}')
         return data_score_plot, styler, gr.update(choices=subsets, value=None), None, analysis
 

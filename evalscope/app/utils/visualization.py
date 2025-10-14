@@ -18,7 +18,7 @@ logger = get_logger()
 def plot_single_report_scores(df: pd.DataFrame):
     if df is None:
         return None
-    logger.debug(f'df: {df}')
+    logger.debug(f'df: \n{df}')
     plot = px.bar(df, x=df[ReportKey.dataset_name], y=df[ReportKey.score], text=df[ReportKey.score])
 
     width = DEFAULT_BAR_WIDTH if len(df[ReportKey.dataset_name]) <= 5 else None
@@ -36,7 +36,7 @@ def plot_single_report_sunburst(report_list: List[Report]):
         df = get_data_frame(report_list=report_list, flatten_metrics=False)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
-    logger.debug(f'df: {df}')
+    logger.debug(f'df: \n{df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
 
     plot = px.sunburst(

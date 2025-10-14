@@ -65,7 +65,7 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],
-            target=json.dumps(record.get('answers')),  # answers is a list
+            target=json.dumps(record.get('answers'), ensure_ascii=False),  # answers is a list
             subset_key=record.get('type'),
             metadata={
                 'question': record.get('question'),

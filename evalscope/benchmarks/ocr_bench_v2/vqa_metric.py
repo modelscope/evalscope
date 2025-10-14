@@ -21,21 +21,16 @@ def levenshtein_distance(s1, s2):
 
 def vqa_evaluation(predict, answers):
     score = 0
-    if type(answers) == list:
-        for j in range(len(answers)):
-            if isinstance(answers[j], (int, float)):
-                answers[j] = str(answers[j])
-                answer = answers[j].lower().strip().replace('\n', ' ')
-
-            if isinstance(predict, (int, float)):
-                predict = str(predict)
-            predict = predict.lower().strip().replace('\n', ' ')
+    if isinstance(answers, list):
+        predict_str = str(predict).lower().strip().replace('\n', ' ')
+        for ans in answers:
+            answer = str(ans).lower().strip().replace('\n', ' ')
             if len(answer.split()) < 5:
-                if answer in predict:
+                if answer in predict_str:
                     score = 1
             else:
-                dist = levenshtein_distance(predict, answer)
-                length = max(len(predict), len(answer))
+                dist = levenshtein_distance(predict_str, answer)
+                length = max(len(predict_str), len(answer))
                 ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
                 ANLS_value = 1 - ANLS_value
 
@@ -43,40 +38,35 @@ def vqa_evaluation(predict, answers):
                     score = ANLS_value
 
     else:
-        answers = answers.lower().strip().replace('\n', ' ')
-        predict = predict.lower().strip().replace('\n', ' ')
-        if len(answers.split()) < 5:
-            if answers in predict:
+        answer = str(answers).lower().strip().replace('\n', ' ')
+        predict_str = str(predict).lower().strip().replace('\n', ' ')
+        if len(answer.split()) < 5:
+            if answer in predict_str:
                 score = 1
-            else:
-                dist = levenshtein_distance(predict, answers)
-                length = max(len(predict), len(answers))
-                ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
-                ANLS_value = 1 - ANLS_value
+        else:
+            dist = levenshtein_distance(predict_str, answer)
+            length = max(len(predict_str), len(answer))
+            ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
+            ANLS_value = 1 - ANLS_value
 
-                if ANLS_value >= 0.5 and ANLS_value > score:
-                    score = ANLS_value
+            if ANLS_value >= 0.5 and ANLS_value > score:
+                score = ANLS_value
 
     return score
 
 
 def cn_vqa_evaluation(predict, answers):
     score = 0
-    if type(answers) == list:
-        for j in range(len(answers)):
-            if isinstance(answers[j], (int, float)):
-                answers[j] = str(answers[j])
-                answer = answers[j].lower().strip().replace('\n', ' ').replace(' ', '')
-
-            if isinstance(predict, (int, float)):
-                predict = str(predict)
-            predict = predict.lower().strip().replace('\n', ' ').replace(' ', '')
+    if isinstance(answers, list):
+        predict_str = str(predict).lower().strip().replace('\n', ' ').replace(' ', '')
+        for ans in answers:
+            answer = str(ans).lower().strip().replace('\n', ' ').replace(' ', '')
             if len(answer.split(',')) < 4:
-                if answer in predict:
+                if answer in predict_str:
                     score = 1
             else:
-                dist = levenshtein_distance(predict, answer)
-                length = max(len(predict), len(answer))
+                dist = levenshtein_distance(predict_str, answer)
+                length = max(len(predict_str), len(answer))
                 ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
                 ANLS_value = 1 - ANLS_value
 
@@ -84,38 +74,35 @@ def cn_vqa_evaluation(predict, answers):
                     score = ANLS_value
 
     else:
-        answers = answers.lower().strip().replace('\n', ' ').replace(' ', '')
-        predict = predict.lower().strip().replace('\n', ' ').replace(' ', '')
+        answer = str(answers).lower().strip().replace('\n', ' ').replace(' ', '')
+        predict_str = str(predict).lower().strip().replace('\n', ' ').replace(' ', '')
         if len(answer.split(',')) < 4:
-            if answers in predict:
+            if answer in predict_str:
                 score = 1
-            else:
-                dist = levenshtein_distance(predict, answers)
-                length = max(len(predict), len(answers))
-                ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
-                ANLS_value = 1 - ANLS_value
+        else:
+            dist = levenshtein_distance(predict_str, answer)
+            length = max(len(predict_str), len(answer))
+            ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
+            ANLS_value = 1 - ANLS_value
 
-                if ANLS_value >= 0.5 and ANLS_value > score:
-                    score = ANLS_value
+            if ANLS_value >= 0.5 and ANLS_value > score:
+                score = ANLS_value
 
     return score
 
 
 def vqa_evaluation_case_sensitive(predict, answers):
     score = 0
-    if type(answers) == list:
-        for j in range(len(answers)):
-            if isinstance(answers[j], (int, float)):
-                answers[j] = str(answers[j])
-                answer = answers[j].strip().replace('\n', ' ')
-
-            predict = predict.strip().replace('\n', ' ')
+    if isinstance(answers, list):
+        predict_str = str(predict).strip().replace('\n', ' ')
+        for ans in answers:
+            answer = str(ans).strip().replace('\n', ' ')
             if len(answer.split()) < 5:
-                if answer in predict:
+                if answer in predict_str:
                     score = 1
             else:
-                dist = levenshtein_distance(predict, answer)
-                length = max(len(predict), len(answer))
+                dist = levenshtein_distance(predict_str, answer)
+                length = max(len(predict_str), len(answer))
                 ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
                 ANLS_value = 1 - ANLS_value
 
@@ -123,19 +110,19 @@ def vqa_evaluation_case_sensitive(predict, answers):
                     score = ANLS_value
 
     else:
-        answers = answers.strip().replace('\n', ' ')
-        predict = predict.strip().replace('\n', ' ')
-        if len(answers.split()) < 5:
-            if answers in predict:
+        answer = str(answers).strip().replace('\n', ' ')
+        predict_str = str(predict).strip().replace('\n', ' ')
+        if len(answer.split()) < 5:
+            if answer in predict_str:
                 score = 1
-            else:
-                dist = levenshtein_distance(predict, answers)
-                length = max(len(predict), len(answers))
-                ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
-                ANLS_value = 1 - ANLS_value
+        else:
+            dist = levenshtein_distance(predict_str, answer)
+            length = max(len(predict_str), len(answer))
+            ANLS_value = 0.0 if length == 0 else float(dist) / float(length)
+            ANLS_value = 1 - ANLS_value
 
-                if ANLS_value >= 0.5 and ANLS_value > score:
-                    score = ANLS_value
+            if ANLS_value >= 0.5 and ANLS_value > score:
+                score = ANLS_value
 
     return score
 
@@ -150,36 +137,35 @@ def extract_first_number(string):
 def counting_evaluation(predict, answers, eval_method):
     score = 0
 
+    # normalize predict to string for both matching and number extraction
     if isinstance(predict, str):
-        predict_processed = predict.lower().strip().replace('\n', ' ')
-    elif math.isnan(predict):
-        return 0
+        predict_str = predict.lower().strip().replace('\n', ' ')
+    elif isinstance(predict, (int, float)):
+        if isinstance(predict, float) and math.isnan(predict):
+            return 0
+        predict_str = str(predict).lower().strip().replace('\n', ' ')
     else:
-        predict_processed = int(predict)
-    if type(answers) == list:
-        temp_score = 0
-        for j in range(len(answers)):
-            if isinstance(answers[j], (int, float)):
-                answers[j] = str(answers[j])
-            answer = answers[j].lower().strip().replace('\n', ' ')
-            if eval_method == 'exact match':
-                if answer in predict:
-                    score = 1
-                else:
-                    score = 0
-            elif eval_method == 'regression':
-                predict_number = extract_first_number(predict_processed)
-                if predict_number:
-                    answer = int(answer)
+        predict_str = str(predict).lower().strip().replace('\n', ' ')
 
-                    if predict_number <= 0 or predict_number >= 2 * answer:
+    if isinstance(answers, list):
+        temp_score = 0
+        for ans in answers:
+            answer = str(ans).lower().strip().replace('\n', ' ')
+            if eval_method == 'exact match':
+                score = 1 if answer in predict_str else 0
+            elif eval_method == 'regression':
+                predict_number = extract_first_number(predict_str)
+                if predict_number is not None:
+                    try:
+                        answer_int = int(answer)
+                    except ValueError:
                         score = 0
                     else:
-                        iou = 1 - abs(predict_number - answer) / answer
-                        if iou > 0.5:
-                            score = iou
-                        else:
+                        if predict_number <= 0 or predict_number >= 2 * answer_int:
                             score = 0
+                        else:
+                            iou = 1 - abs(predict_number - answer_int) / answer_int
+                            score = iou if iou > 0.5 else 0
                 else:
                     score = 0
             if score > temp_score:
@@ -187,26 +173,22 @@ def counting_evaluation(predict, answers, eval_method):
         score = temp_score
 
     else:
-        answers = answers.lower().strip().replace('\n', ' ')
-        predict = predict.lower().strip().replace('\n', ' ')
+        answer = str(answers).lower().strip().replace('\n', ' ')
         if eval_method == 'exact match':
-            if answer in predict:
-                score = 1
-            else:
-                score = 0
+            score = 1 if answer in predict_str else 0
         elif eval_method == 'regression':
-            predict = extract_first_number(predict)
-            if predict:
-                answer = int(answer)
-                if predict <= 0 or predict >= 2 * answer:
+            predict_number = extract_first_number(predict_str)
+            if predict_number is not None:
+                try:
+                    answer_int = int(answer)
+                except ValueError:
                     score = 0
                 else:
-                    iou = 1 - abs(predict - answer) / answer
-
-                    if iou > 0.5:
-                        score = iou
-                    else:
+                    if predict_number <= 0 or predict_number >= 2 * answer_int:
                         score = 0
+                    else:
+                        iou = 1 - abs(predict_number - answer_int) / answer_int
+                        score = iou if iou > 0.5 else 0
             else:
                 score = 0
     return score
