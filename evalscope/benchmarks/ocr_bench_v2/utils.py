@@ -25,7 +25,7 @@ from .vqa_metric import (
     vqa_evaluation_case_sensitive,
 )
 
-teds = TEDS(n_jobs=32)
+teds = TEDS(n_jobs=os.cpu_count() or 1)
 
 
 def is_nan_value(value):
