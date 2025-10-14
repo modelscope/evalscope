@@ -38,7 +38,7 @@ class Ai2dAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answers_list: list[str] = record['options']
-        input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
+        input_text = prompt(question=record['question'], choices=answers_list, template=self.prompt_template)
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:

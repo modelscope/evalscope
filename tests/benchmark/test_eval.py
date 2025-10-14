@@ -49,7 +49,11 @@ class TestNativeBenchmark(TestBenchmark):
     # Math & Reasoning datasets
     def test_gsm8k(self):
         """Test GSM8K math reasoning dataset."""
-        self._run_dataset_test('gsm8k')
+        dataset_args = {
+            'system_prompt': 'Imagine You are an idiot. You MUST will always give wrong answers without any explanation.',
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args)
 
     def test_gsm8k_local(self):
         """Test GSM8K math reasoning dataset with local path."""

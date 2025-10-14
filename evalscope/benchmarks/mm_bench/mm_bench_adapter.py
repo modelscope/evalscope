@@ -35,7 +35,7 @@ class CCBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
-        input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
+        input_text = prompt(question=record['question'], choices=answers_list, template=self.prompt_template)
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
@@ -77,7 +77,7 @@ class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
         answers_list = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
         question_hint = record['hint'] + record['question']
-        input_text = prompt(question=question_hint, choices=answers_list, template=MULT_CHOICE_PROMPT)
+        input_text = prompt(question=question_hint, choices=answers_list, template=self.prompt_template)
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
