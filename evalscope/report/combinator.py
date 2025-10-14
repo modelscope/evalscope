@@ -121,7 +121,7 @@ def unweighted_average_from_subsets(
     Args:
         subset_names (List[str]): List of subset names to include in the average.
         subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
-        name (str): Name for the resulting Subset object.
+        new_name (str): Name for the resulting Subset object.
 
     Returns:
         Subset: A new Subset object with unweighted average score
