@@ -170,7 +170,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
             'Metadata': metadata,
             'Generated': prediction or '',
             'Gold': target,
-            'Pred': extracted_prediction if extracted_prediction != prediction else '*Same as Generated*' or '',
+            'Pred': (extracted_prediction if extracted_prediction != prediction else '*Same as Generated*') or '', # Ensure no None value
             'Score': score.model_dump(exclude_none=True),
             'NScore': normalize_score(score.main_value)
         }
