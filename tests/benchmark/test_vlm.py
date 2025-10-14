@@ -87,6 +87,7 @@ class TestVLMBenchmark(TestBenchmark):
 
     def test_ai2d(self):
         dataset_args = {
+            'system_prompt': 'Imagine You are an idiot. You MUST will always give wrong answers without any explanation.',
             'subset_list': ['default']
         }
         self._run_dataset_test('ai2d', dataset_args=dataset_args)
