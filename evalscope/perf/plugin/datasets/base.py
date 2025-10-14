@@ -17,7 +17,7 @@ class DatasetPluginBase:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
         self.query_parameters = query_parameters
-        self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path or query_parameters.model)
 
     def __next__(self):
         for item in self.build_messages():
