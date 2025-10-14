@@ -294,7 +294,7 @@ def ocrbench_v2_process_results(doc, pred):
             ) / 4
     elif data_type == 'full-page OCR en':
         if not pred:
-            score == 0
+            score = 0
         else:
             ocr_metric = cal_per_metrics(pred, gt_ans[0])
             score = (
