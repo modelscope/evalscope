@@ -1,6 +1,7 @@
 from .base import DatasetPluginBase
 from .custom import CustomDatasetPlugin
 from .flickr8k import FlickrDatasetPlugin
+from .gsm8k import Gsm8kDatasetPlugin
 from .kontext_bench import KontextDatasetPlugin
 from .line_by_line import LineByLineDatasetPlugin
 from .longalpaca import LongAlpacaDatasetPlugin
