@@ -3,6 +3,8 @@ import sys
 from abc import abstractmethod
 from typing import Any, Dict, Iterator, List, Tuple, Union
 
+from transformers import AutoTokenizer
+
 from evalscope.perf.arguments import Arguments
 
 
@@ -15,6 +17,7 @@ class DatasetPluginBase:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
         self.query_parameters = query_parameters
+        self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path)
 
     def __next__(self):
         for item in self.build_messages():

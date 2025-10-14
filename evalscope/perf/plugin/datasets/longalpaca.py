@@ -22,9 +22,12 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
             ds = self.dataset_json_list(self.query_parameters.dataset_path)
         for item in ds:
             prompt = item['instruction'].strip()
-            if len(prompt) > self.query_parameters.min_prompt_length and len(
-                prompt
-            ) < self.query_parameters.max_prompt_length:
+            len_prompt = len(self.tokenizer.encode(prompt))
+            if (
+                len_prompt > self.query_parameters.min_prompt_length
+            ) and (
+                len_prompt < self.query_parameters.max_prompt_length
+            ):
                 if self.query_parameters.apply_chat_template:
                     message = self.create_message(prompt)
                     yield [message]
