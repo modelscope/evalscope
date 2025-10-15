@@ -42,7 +42,7 @@ class PopeAdapter(VisionLanguageAdapter):
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
             content_list.append(ContentImage(image=image_base64))
-        answer = record.get('answer').upper()  # 'YES' or 'NO'
+        answer = record['answer'].upper()  # 'YES' or 'NO'
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=answer,
