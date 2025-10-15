@@ -223,3 +223,13 @@ class TestVLMBenchmark(TestBenchmark):
             'shuffle': True,
         }
         self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=20)
+
+    def test_pope(self):
+        dataset_args = {
+            'subset_list': [
+                'popular',
+                'adversarial',
+                'random'
+            ]
+        }
+        self._run_dataset_test('pope', dataset_args=dataset_args, limit=5)

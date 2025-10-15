@@ -340,8 +340,13 @@
     "updated_at": "2025-10-14T11:18:40Z"
   },
   "hallusion_bench": {
-    "en": "HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning in large vision-language models (LVLMs).",
-    "zh": "HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）中的图像-上下文推理能力。",
-    "updated_at": "2025-10-15T16:33:05Z"
+    "en": "HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).",
+    "zh": "HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）中的图像-上下文推理能力，并分析模型在语言幻觉和视觉错觉方面的倾向。",
+    "updated_at": "2025-10-15T17:24:43Z"
+  },
+  "pope": {
+    "en": "POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.",
+    "zh": "POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，并重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的问题集用于评估。",
+    "updated_at": "2025-10-15T17:24:43Z"
   }
 }

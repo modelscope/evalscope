@@ -18,7 +18,7 @@ logger = get_logger()
     BenchmarkMeta(
         name='hallusion_bench',
         pretty_name='HallusionBench',
-        tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.YES_NO],
+        tags=[Tags.MULTI_MODAL, Tags.HALLUCINATION, Tags.YES_NO],
         description=
         'HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models\' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).',  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',

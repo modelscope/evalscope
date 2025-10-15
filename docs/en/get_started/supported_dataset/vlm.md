@@ -9,7 +9,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
-| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Knowledge`, `MultiModal`, `Yes/No` |
+| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
@@ -20,6 +20,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
@@ -149,8 +150,8 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Dataset Name**: `hallusion_bench`
 - **Dataset ID**: [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary)
 - **Description**:
-  > HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning in large vision-language models (LVLMs).
-- **Task Categories**: `Knowledge`, `MultiModal`, `Yes/No`
+  > HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).
+- **Task Categories**: `Hallucination`, `MultiModal`, `Yes/No`
 - **Evaluation Metrics**: `aAcc`, `fAcc`, `qAcc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -405,6 +406,27 @@ Answer the following multiple choice question based on the image and audio conte
 {question}
 
 {choices}
+```
+
+---
+
+### POPE
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `pope`
+- **Dataset ID**: [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary)
+- **Description**:
+  > POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.
+- **Task Categories**: `Hallucination`, `MultiModal`, `Yes/No`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `adversarial`, `popular`, `random`
+
+- **Prompt Template**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
 ```
 
 ---
