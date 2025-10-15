@@ -12,7 +12,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
     """
 
     def __init__(self, query_parameters: Arguments):
-        assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer_path`.'  # noqa: E501
+        assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'  # noqa: E501
         super().__init__(query_parameters)
 
         self.prefix_length = self.query_parameters.prefix_length
