@@ -9,6 +9,7 @@
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
@@ -19,6 +20,7 @@
 | `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
@@ -138,6 +140,27 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+```
+
+---
+
+### HallusionBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `hallusion_bench`
+- **数据集ID**: [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary)
+- **数据集描述**:
+  > HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）中的图像-上下文推理能力，并分析模型在语言幻觉和视觉错觉方面的倾向。
+- **任务类别**: `Hallucination`, `MultiModal`, `Yes/No`
+- **评估指标**: `aAcc`, `fAcc`, `qAcc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
 ```
 
 ---
@@ -383,6 +406,27 @@ Answer the following multiple choice question based on the image and audio conte
 {question}
 
 {choices}
+```
+
+---
+
+### POPE
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `pope`
+- **数据集ID**: [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary)
+- **数据集描述**:
+  > POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，并重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的问题集用于评估。
+- **任务类别**: `Hallucination`, `MultiModal`, `Yes/No`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `adversarial`, `popular`, `random`
+
+- **提示模板**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
 ```
 
 ---
