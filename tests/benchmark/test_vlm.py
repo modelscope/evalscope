@@ -216,3 +216,10 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=1)
+
+    def test_hallusion_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+            'shuffle': True,
+        }
+        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=20)

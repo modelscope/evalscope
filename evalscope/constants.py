@@ -133,6 +133,7 @@ class Tags:
     MULTI_MODAL = 'MultiModal'
     MULTI_LINGUAL = 'MultiLingual'
     MULTI_TURN = 'MultiTurn'
+    YES_NO = 'Yes/No'
 
 
 class FileConstants:

@@ -9,6 +9,7 @@
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Knowledge`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
@@ -138,6 +139,27 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+```
+
+---
+
+### HallusionBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `hallusion_bench`
+- **数据集ID**: [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary)
+- **数据集描述**:
+  > HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）中的图像-上下文推理能力。
+- **任务类别**: `Knowledge`, `MultiModal`, `Yes/No`
+- **评估指标**: `aAcc`, `fAcc`, `qAcc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
 ```
 
 ---

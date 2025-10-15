@@ -9,6 +9,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Knowledge`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
@@ -138,6 +139,27 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+```
+
+---
+
+### HallusionBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `hallusion_bench`
+- **Dataset ID**: [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary)
+- **Description**:
+  > HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning in large vision-language models (LVLMs).
+- **Task Categories**: `Knowledge`, `MultiModal`, `Yes/No`
+- **Evaluation Metrics**: `aAcc`, `fAcc`, `qAcc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
 ```
 
 ---
