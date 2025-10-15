@@ -17,7 +17,7 @@ class DatasetPluginBase:
         self.query_parameters = query_parameters
         if query_parameters.tokenizer_path:
             from modelscope import AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path, trust_remote_code=True)
         else:
             self.tokenizer = None
 

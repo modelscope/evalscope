@@ -17,12 +17,8 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
     def build_messages(self) -> Iterator[List[Dict]]:
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             prompt = item.strip()
-            len_prompt = len(self.tokenizer.encode(prompt))
-            if (
-                len_prompt > self.query_parameters.min_prompt_length
-            ) and (
-                len_prompt < self.query_parameters.max_prompt_length
-            ):
+            is_valid, _ = self.check_prompt_length(prompt)
+            if is_valid:
                 if self.query_parameters.apply_chat_template:
                     message = self.create_message(prompt)
                     yield [message]
