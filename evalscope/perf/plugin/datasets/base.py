@@ -104,5 +104,5 @@ class DatasetPluginBase:
             prompt_length = len(prompt)
         else:
             prompt_length = len(self.tokenizer.encode(prompt))
-        is_valid = self.query_parameters.min_prompt_length < prompt_length <= self.query_parameters.max_prompt_length
+        is_valid = self.query_parameters.min_prompt_length <= prompt_length <= self.query_parameters.max_prompt_length
         return is_valid, prompt_length
