@@ -40,7 +40,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
             content_list.append(ContentImage(image=image_base64))
-        answer = ['YES', 'NO'][int(record.get('answer', 0))]
+        answer = 'NO' if str(record.get('answer', '0')) == '1' else 'YES'
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=answer,
