@@ -142,10 +142,10 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
             message = metrics.create_message()
 
             # Log the message to wandb\swanlab if the api key is provided
-            if args.wandb_api_key:
+            if args.visualizer == 'wandb':
                 import wandb
                 wandb.log(message)
-            if args.swanlab_api_key:
+            if args.visualizer == 'swanlab':
                 import swanlab
                 swanlab.log(message)
 
