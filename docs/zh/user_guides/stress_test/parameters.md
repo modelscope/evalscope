@@ -78,6 +78,7 @@
 - `--extra-args` 额外传入请求体的参数，格式为json字符串，例如`'{"ignore_eos": true}'`。
 
 ## 数据存储
-- `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
-- `--swanlab-api-key` swanlab API密钥，如果设置，则度量将保存到swanlab。
+- `--visualizer` 可视化工具，可选`wandb`或`swanlab`，如果设置，则指标将保存到指定的可视化工具。
+- `--wandb-api-key` wandb API密钥，用于登录wandb服务器。
+- `--swanlab-api-key` swanlab API密钥，用于登录swanlab服务器。
 - `--outputs-dir` 输出文件路径，默认为`./outputs`。
