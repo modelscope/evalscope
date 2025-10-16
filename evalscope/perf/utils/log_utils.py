@@ -25,7 +25,7 @@ def init_wandb(args: Arguments) -> None:
 
     if args.wandb_api_key is not None:
         wandb.login(key=args.wandb_api_key)
-    wandb.init(project='perf_benchmark', name=name, config=args.to_dict())
+    wandb.init(project='perf_benchmark', name=name, config=logging_config)
 
 
 def init_swanlab(args: Arguments) -> None:

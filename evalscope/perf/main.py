@@ -81,21 +81,20 @@ def run_perf_benchmark(args):
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
 
     # Initialize wandb and swanlab
-    if args.visualizer == 'wandb' or args.wandb_api_key is not None:
-        if args.visualizer is None:
-            args.visualizer = 'wandb'
+    visualizer = args.visualizer
+    if visualizer is None:
+        if args.wandb_api_key is not None:
+            visualizer = 'wandb'
+            warnings.warn('--wandb-api-key is deprecated. Please use `--visualizer wandb` instead.', DeprecationWarning)
+        elif args.swanlab_api_key is not None:
+            visualizer = 'swanlab'
             warnings.warn(
-                'wandb_api_key will be deprecated in the future. Please use `--visualizer wandb` instead.',
-                category=DeprecationWarning
+                '--swanlab-api-key is deprecated. Please use `--visualizer swanlab` instead.', DeprecationWarning
             )
+    args.visualizer = visualizer
+    if visualizer == 'wandb':
         init_wandb(args)
-    if args.visualizer == 'swanlab' or args.swanlab_api_key is not None:
-        if args.visualizer is None:
-            args.visualizer = 'swanlab'
-            warnings.warn(
-                'swanlab_api_key will be deprecated in the future. Please use `--visualizer swanlab` instead.',
-                category=DeprecationWarning
-            )
+    elif visualizer == 'swanlab':
         init_swanlab(args)
 
     # Initialize local server if needed
