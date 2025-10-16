@@ -427,6 +427,12 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('minerva_math', dataset_args)
 
+    def test_poly_math(self):
+        dataset_args = {
+            'subset_list': ['zh', 'en', 'es'],
+        }
+        self._run_dataset_test('poly_math', dataset_args, use_cache='outputs/20251016_154028')
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

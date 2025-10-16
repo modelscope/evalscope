@@ -347,3 +347,24 @@ class DatasetDict:
             cur_dataset.reindex(group_size=repeats)
             dataset_dict[key] = cur_dataset
         return cls(dataset_dict)
+
+    @classmethod
+    def from_dataset_dicts(cls, dataset_dicts: List['DatasetDict']) -> 'DatasetDict':
+        """
+        Create a DatasetDict by merging multiple DatasetDicts.
+
+        Args:
+            dataset_dicts (List[DatasetDict]): List of DatasetDicts to merge.
+
+        Returns:
+            DatasetDict: A new DatasetDict containing the merged datasets.
+        """
+        merged_dict = defaultdict(list)
+        for dataset_dict in dataset_dicts:
+            for key, dataset in dataset_dict.items():
+                merged_dict[key].extend(dataset.samples)
+        # Create a MemoryDataset for each subset key
+        final_dict = {}
+        for key, samples in merged_dict.items():
+            final_dict[key] = MemoryDataset(samples, name=key)
+        return cls(final_dict)

@@ -211,6 +211,11 @@ def strip_answer_string(string):
     # Remove grade level (e.g., 12th grade) and just maintain the integer
     string = re.sub(r'thgrade$', '', string)
 
+    # Normalize thousands-formatted numbers (e.g., 70,000 or -1,234,567.89) by removing commas
+    # This must run before the "list of integers" sorting to avoid misclassifying numbers with thousand separators.
+    if re.fullmatch(r'\s*-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s*', string):
+        string = string.replace(',', '')
+
     # If the answer is a list of integers (without parenthesis), sort them
     if re.fullmatch(r'(\s*-?\d+\s*,)*\s*-?\d+\s*', string):
         # Split the string into a list of integers
@@ -282,7 +287,7 @@ def extract_answer(pred_str, use_last_number=True):
         pred = pred[:-1]
     if pred != '' and pred[-1] == '/':
         pred = pred[:-1]
-    pred = strip_answer_string(pred)
+
     return pred
 
 
@@ -529,3 +534,40 @@ def symbolic_equal(a, b):
         pass
 
     return False
+
+
+if __name__ == '__main__':
+    # print(math_equal("3.0", "3"))
+    # print(math_equal("0.333333", "1/3"))
+    # print(math_equal("0.333333", "2/6"))
+    # print(math_equal("0.333333", "33.3333%"))
+    # print(math_equal("0.333333", "33.3333\\%"))
+    # print(math_equal("0.333333", "33.3333\\%"))
+    # print(math_equal("0.333333", "33.3333\\%"))
+    # print(math_equal("0.333333", "33.3333\\%"))
+    # print(math_equal("2x+1=0", "x=-1/2"))
+    # print(math_equal("2x+1=0", "x=-0.5"))
+    # print(math_equal("2x+1=0", "x=-50%"))
+    # print(math_equal("2x+1=0", "x=-50\\%"))
+    # print(math_equal("2x+1=0", "x=-0.5000001"))
+    # print(math_equal("2x+1=0", "x=-0.5001"))
+    # print(math_equal("2x+1=0", "x=-0.51"))
+    # print(math_equal("2x+1=0", "x=-1/3"))
+    # print(math_equal("2x+1=0", "x=-1/4"))
+
+    # print(math_equal("\\frac{1}{3}", "0.333333"))
+    # print(math_equal("\\frac{1}{3}", "33.3333%"))
+    # print(math_equal("\\frac{1}{3}", "33.3333\\%"))
+
+    # print(math_equal("\\frac{2}{3}", "0.666666"))
+    # print(math_equal("\\frac{2}{3}", "66.6666%"))
+    # print(math_equal("\\frac{2}{3}", "66.6666\\%"))
+
+    # print(math_equal("\\frac{1}{4}", "0.25"))
+    # print(math_equal("\\frac{1}{4}", "25%"))
+    # print(math_equal("\\frac{1}{4}", "25\\%"))
+
+    print(math_equal('\n\\boxed{70,\\!000}\n', '70000'))
+    print(extract_answer('The answer is \\boxed{70,\\!000}'))
+    print(strip_answer_string(extract_answer('The answer is \\boxed{70,\\!000}')))
+    print(math_equal(extract_answer('The answer is \\boxed{70,\\!000}'), '70000'))
