@@ -122,7 +122,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
     result_db_path = get_result_db_path(args)
 
     # Stream inserts to DB to avoid accumulating all results in memory
-    commit_every = 1000
+    commit_every = args.db_commit_interval
     processed_since_commit = 0
 
     with sqlite3.connect(result_db_path) as con:
@@ -182,7 +182,9 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     api_plugin = api_plugin_class(args)
 
     # Use a bounded queue to apply backpressure and reduce memory footprint
-    benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * 5))
+    benchmark_data_queue: asyncio.Queue = asyncio.Queue(
+        maxsize=max(1, args.parallel * args.queue_size_multiplier)
+    )
     data_process_completed_event.clear()
 
     # test connection
@@ -196,10 +198,11 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     # start sending requests with bounded in-flight tasks
     semaphore = asyncio.Semaphore(args.parallel)
     in_flight: set[asyncio.Task] = set()
+    max_in_flight = args.parallel * args.in_flight_task_multiplier
 
     async for request in get_requests(args, api_plugin):
         # Keep the number of scheduled tasks bounded to avoid OOM
-        if len(in_flight) >= args.parallel * 2:
+        if len(in_flight) >= max_in_flight:
             done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
             in_flight = pending
 
