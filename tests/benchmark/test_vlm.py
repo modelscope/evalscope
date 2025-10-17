@@ -233,3 +233,21 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('pope', dataset_args=dataset_args, limit=5)
+
+    def test_math_vision(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('math_vision', dataset_args=dataset_args, limit=10)
+
+    def test_math_verse(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=10)
+
+    def test_simple_vqa(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=10)
