@@ -168,7 +168,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Tuning knobs
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
     parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
-    parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')
+    parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')

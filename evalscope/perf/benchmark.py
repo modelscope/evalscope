@@ -182,9 +182,7 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     api_plugin = api_plugin_class(args)
 
     # Use a bounded queue to apply backpressure and reduce memory footprint
-    benchmark_data_queue: asyncio.Queue = asyncio.Queue(
-        maxsize=max(1, args.parallel * args.queue_size_multiplier)
-    )
+    benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
     data_process_completed_event.clear()
 
     # test connection
