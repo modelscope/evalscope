@@ -90,6 +90,8 @@ async def send_request(
             benchmark_data = BenchmarkData(request=request)
             benchmark_data.start_time = time.perf_counter()
             collected_messages = []
+            # Initialize to avoid referencing before assignment on exceptions
+            response_data = None
             try:
                 async for is_error, state_code, response_data in client.post(request):
                     if is_error or state_code != HTTPStatus.OK:
@@ -117,51 +119,47 @@ async def send_request(
 @exception_handler
 async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments, api_plugin: 'ApiPluginBase'):
     metrics = BenchmarkMetrics(concurrency=args.parallel)
-
     result_db_path = get_result_db_path(args)
 
-    collected_benchmark_data = []
+    # Stream inserts to DB to avoid accumulating all results in memory
+    commit_every = args.db_commit_interval
+    processed_since_commit = 0
 
-    with tqdm(desc='Processing', total=args.number) as pbar:
-        while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
-            try:
-                # Attempt to get benchmark data from the queue with a timeout
-                benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.01)
-                benchmark_data_queue.task_done()
-            except asyncio.TimeoutError:
-                # If timeout, continue to the next iteration
-                continue
-
-            # Update metrics based on the benchmark data
-            metrics.update_metrics(benchmark_data, api_plugin)
-
-            # Collect benchmark data for later database insertion
-            collected_benchmark_data.append(benchmark_data)
-
-            # Create a message with the updated metrics
-            message = metrics.create_message()
-
-            # Log the message to wandb\swanlab if the api key is provided
-            if args.visualizer == 'wandb':
-                import wandb
-                wandb.log(message)
-            if args.visualizer == 'swanlab':
-                import swanlab
-                swanlab.log(message)
-
-            # Log the message to the logger every n queries
-            if int(metrics.n_total_queries) % args.log_every_n_query == 0:
-                msg = json.dumps(message, ensure_ascii=False, indent=2)
-                logger.info(msg)
-
-            pbar.update(1)  # Update the progress bar
-
-    # Now perform database operations after all benchmark data has been processed
     with sqlite3.connect(result_db_path) as con:
         cursor = con.cursor()
         create_result_table(cursor)
-        for benchmark_data in collected_benchmark_data:
-            insert_benchmark_data(cursor, benchmark_data)
+
+        with tqdm(desc='Processing', total=args.number) as pbar:
+            while not (data_process_completed_event.is_set() and benchmark_data_queue.empty()):
+                try:
+                    benchmark_data = await asyncio.wait_for(benchmark_data_queue.get(), timeout=0.1)
+                except asyncio.TimeoutError:
+                    continue
+
+                # Update metrics and write to DB immediately
+                metrics.update_metrics(benchmark_data, api_plugin)
+                insert_benchmark_data(cursor, benchmark_data)
+                processed_since_commit += 1
+                if processed_since_commit >= commit_every:
+                    con.commit()
+                    processed_since_commit = 0
+
+                message = metrics.create_message()
+
+                if args.wandb_api_key:
+                    import wandb
+                    wandb.log(message)
+                if args.swanlab_api_key:
+                    import swanlab
+                    swanlab.log(message)
+
+                if int(metrics.n_total_queries) % args.log_every_n_query == 0:
+                    msg = json.dumps(message, ensure_ascii=False, indent=2)
+                    logger.info(msg)
+
+                benchmark_data_queue.task_done()
+                pbar.update(1)
+
         con.commit()
 
     return metrics, result_db_path
@@ -183,24 +181,37 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     api_plugin_class = ApiRegistry.get_class(args.api)
     api_plugin = api_plugin_class(args)
 
-    # init queue
-    benchmark_data_queue = asyncio.Queue()
-    # reset event
+    # Use a bounded queue to apply backpressure and reduce memory footprint
+    benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
     data_process_completed_event.clear()
+
     # test connection
     await connect_test(args, api_plugin)
-    # start statistic benchmark metric
+
+    # start statistic benchmark metric (consumer)
     statistic_benchmark_metric_task = asyncio.create_task(
         statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
     )
-    # start send request
-    semaphore = asyncio.Semaphore(args.parallel)
-    send_request_tasks: List[asyncio.Task] = []
-    async for request in get_requests(args, api_plugin):
-        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, api_plugin))
-        send_request_tasks.append(task)
 
-    await asyncio.gather(*send_request_tasks, return_exceptions=True)
+    # start sending requests with bounded in-flight tasks
+    semaphore = asyncio.Semaphore(args.parallel)
+    in_flight: set[asyncio.Task] = set()
+    max_in_flight = args.parallel * args.in_flight_task_multiplier
+
+    async for request in get_requests(args, api_plugin):
+        # Keep the number of scheduled tasks bounded to avoid OOM
+        if len(in_flight) >= max_in_flight:
+            done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+            in_flight = pending
+
+        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, api_plugin))
+        in_flight.add(task)
+
+    # Wait for remaining in-flight tasks
+    if in_flight:
+        await asyncio.gather(*in_flight, return_exceptions=True)
+
+    # Drain queue and finish
     await benchmark_data_queue.join()
     data_process_completed_event.set()
 

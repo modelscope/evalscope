@@ -82,3 +82,8 @@
 - `--wandb-api-key` wandb API密钥，用于登录wandb服务器。
 - `--swanlab-api-key` swanlab API密钥，用于登录swanlab服务器。
 - `--outputs-dir` 输出文件路径，默认为`./outputs`。
+
+## 其他参数
+- `--db-commit-interval` 在将结果写入SQLite数据库之前缓冲的行数，默认为1000。
+- `--queue-size-multiplier` 请求队列的最大大小，计算方式为`parallel * multiplier`，默认为5。
+- `--in-flight-task-multiplier` 最大调度任务数，计算方式为`parallel * multiplier`，默认为2。
