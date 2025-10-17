@@ -58,9 +58,9 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
                 'image_description': record['image_description'],
                 'language':record['language'],
                 'original_category': record['original_category'],
-                'source': ['source'],
-                'atomic_question': ['atomic_question'],
-                'atomic_fact': ['atomic_fact'],
+                'source': record['source'],
+                'atomic_question': record['atomic_question'],
+                'atomic_fact': record['atomic_fact'],
                 # **record['vqa_category']
              }
         )
