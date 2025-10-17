@@ -197,7 +197,7 @@ pip install swanlab
 
 启动测试前添加如下参数:
 ```bash
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```  
 

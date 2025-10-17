@@ -192,7 +192,7 @@ pip install wandb
 To upload the test results to the wandb server and visualize them, add the following parameters when launching the evaluation:
 ```bash
 # ...
---wandb-api-key 'wandb_api_key'
+--visualizer wandb
 --name 'name_of_wandb_log'
 ```
 
@@ -211,7 +211,7 @@ pip install swanlab
 To upload the test results to the swanlab server and visualize them, add the following parameters when launching the evaluation:
 ```bash
 # ...
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```
 

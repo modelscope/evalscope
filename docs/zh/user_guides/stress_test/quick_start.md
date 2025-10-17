@@ -191,7 +191,7 @@ pip install wandb
 在评测启动时，额外添加以下参数，即可将测试结果上传wandb server并进行可视化：
 ```bash
 # ...
---wandb-api-key 'wandb_api_key'
+--visualizer wandb
 --name 'name_of_wandb_log'
 ```  
 
@@ -210,7 +210,7 @@ pip install swanlab
 在评测启动时，额外添加以下参数，即可将测试结果上传swanlab server并进行可视化：
 ```bash
 # ...
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```
 

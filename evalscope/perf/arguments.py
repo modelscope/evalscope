@@ -41,8 +41,9 @@ class Arguments(BaseArgument):
     # Logging and debugging
     log_every_n_query: int = 10  # Log every N queries
     debug: bool = False  # Debug mode
-    wandb_api_key: Optional[str] = None  # WandB API key for logging
-    swanlab_api_key: Optional[str] = None  # SwanLab API key for logging
+    visualizer: Optional[str] = None  # Visualizer for logging, supports 'swanlab' or 'wandb'
+    wandb_api_key: Optional[str] = None  # Will be deprecated in the future
+    swanlab_api_key: Optional[str] = None  # Will be deprecated in the future
     name: Optional[str] = None  # Name for the run
 
     # Output settings
@@ -173,6 +174,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
+    parser.add_argument('--visualizer', type=str, default=None, help='The visualizer to use, default None')
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
     parser.add_argument('--name', type=str, help='The wandb/swanlab db result name and result db name')
