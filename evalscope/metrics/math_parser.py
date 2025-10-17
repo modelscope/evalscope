@@ -262,6 +262,8 @@ def extract_answer(pred_str, use_last_number=True):
     elif '答案是' in pred_str:
         # Handle Chinese few-shot multiple choice problem answer extraction
         pred = pred_str.split('答案是')[1].strip().split('\n\n')[0].strip()
+    elif 'ANSWER:' in pred_str:
+        pred = pred_str.split('ANSWER:')[-1].strip()
     else:  # use the last number
         if use_last_number:
             pattern = '-?\d*\.?\d+'

@@ -1,6 +1,6 @@
 # flake8: noqa: E501
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -14,33 +14,11 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers,
 
 logger = get_logger()
 
-OPEN_PROMPT = """
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-
-{question}
-
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
-"""
+OPEN_PROMPT = '{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.'
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
-SUBSET_LIST = [
-    'arithmetic', 
-    'metric geometry - length', 
-    'counting', 
-    'logic', 
-    'graph theory', 
-    'solid geometry', 
-    'transformation geometry', 
-    'combinatorial geometry', 
-    'topology', 
-    'metric geometry - area', 
-    'analytic geometry', 
-    'descriptive geometry', 
-    'combinatorics', 
-    'algebra', 
-    'metric geometry - angle', 
-    'statistics']
+SUBSET_LIST = ['level 1', 'level 2', 'level 3', 'level 4', 'level 5']
 
 
 @register_benchmark(
@@ -52,7 +30,11 @@ SUBSET_LIST = [
         description=
         'The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.',
         subset_list=SUBSET_LIST,
-        metric_list=['acc'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
         eval_split='test',
         prompt_template=OPEN_PROMPT,
     )
@@ -62,60 +44,42 @@ class MathVisionAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         if len(record['options']) > 0:
             question_type = 'multi_choice'
         else:
             question_type = 'free_form'
         content_list, answers_list = MathVisionAdapter.create_content_and_answers_list(record, question_type)
+        metadata = {
+            'id': record['id'],
+            'image': record['image'],
+            'solution': record['solution'],
+            'level': record['level'],
+            'question_type': question_type,
+            'subject': record['subject']
+        }
         if question_type == 'multi_choice':
             label_answer = record['answer']
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 choices=answers_list,
                 target=label_answer,
-                subset_key = record['subject'],
-                metadata = {
-                    'id': record['id'],
-                    'image': record['image'],
-                    'solution': record['solution'],
-                    'level': record['level'],
-                    'question_type': question_type
-                }
+                subset_key=f'level {record["level"]}',
+                metadata=metadata
             )
         elif question_type == 'free_form':
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=record['answer'],
-                metadata={
-                    'id': record['id'],
-                    'image': record['image'],
-                    'solution': record['solution'],
-                    'level': record['level'],
-                    'question_type': question_type
-                }
+                subset_key=f'level {record["level"]}',
+                metadata=metadata
             )
         else:
-            raise ValueError(f"Unexpected question_type: {question_type}")
-    
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        question_type = task_state.metadata['question_type']
-        if question_type == 'multi_choice':
-            answers = parse_answers(task_state)
-            return ''.join(sorted(list(answers)))
-        elif question_type == 'free_form':
-            pattern = r'ANSWER:\s*(.*)'
-            match = re.search(pattern, prediction)
-            if match:
-                return match.group(1).strip()
-            return ''
-        else:
-            raise ValueError(f'Unsupported question type: {question_type}')
+            raise ValueError(f'Unexpected question_type: {question_type}')
 
-    
     @staticmethod
-    def create_content_and_answers_list(record: dict[str, Any], question_type) -> tuple[list[Content], list[str]]:
+    def create_content_and_answers_list(record: Dict[str, Any], question_type) -> tuple[List[Content], List[str]]:
         """
             Create a list of content elements and a list of answers from a record.
 
@@ -129,14 +93,17 @@ class MathVisionAdapter(VisionLanguageAdapter):
                     - content_list (list): A list of content elements (text and images).
                     - answers_list (list): A list of possible answers (for multiple-choice questions).
         """
-        
+
+        # Replace <image1>, <image2> ... to [image1], [image2], ... from question text
+        question = re.sub(r'<image(\d+)>', r'[image\1]', record['question']).strip()
+
         if question_type == 'multi_choice':
             answers_list = record['options']
-            input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-            content_list: list[Content] = [ContentText(text=input_text)]
+            input_text = prompt(question=question, choices=answers_list, template=MULT_CHOICE_PROMPT)
+            content_list: List[Content] = [ContentText(text=input_text)]
         else:
-            answers_list: list[str] = []
-            content_list: list[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
+            answers_list: List[str] = []
+            content_list: List[Content] = [ContentText(text=OPEN_PROMPT.format(question=question))]
         image = record['decoded_image']
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='jpg', add_header=True)

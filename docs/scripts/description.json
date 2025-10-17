@@ -348,5 +348,20 @@
     "en": "POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.",
     "zh": "POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，并重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的问题集用于评估。",
     "updated_at": "2025-10-15T17:24:43Z"
+  },
+  "math_vision": {
+    "en": "The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.",
+    "zh": "MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。",
+    "updated_at": "2025-10-17T16:40:33Z"
+  },
+  "math_verse": {
+    "en": "MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.",
+    "zh": "MathVerse 是一个全面的视觉数学基准，旨在公平且深入地评估多模态大语言模型（MLLMs）。它包含来自公开资源的 2,612 道高质量、多学科带图数学题，每道题由人工标注员转化为六种不同版本，提供不同程度的多模态信息，共生成约 1.5 万项测试样本。该方法可全面评估 MLLMs 是否以及在多大程度上真正理解视觉图表以进行数学推理。",
+    "updated_at": "2025-10-17T16:40:33Z"
+  },
+  "simple_vqa": {
+    "en": "SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.",
+    "zh": "SimpleVQA 是首个全面评估多模态大语言模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。SimpleVQA 具有六大特点：涵盖多种任务和场景，确保查询的高质量与挑战性，提供静态且不受时间影响的参考答案，并易于评估。",
+    "updated_at": "2025-10-17T16:40:33Z"
   }
 }
