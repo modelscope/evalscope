@@ -79,6 +79,7 @@ class BenchmarkMetrics:
     n_total_prompt_tokens: int = 0
     n_total_completion_tokens: int = 0
     start_time: Optional[float] = None
+    last_completed_time: Optional[float] = None
     total_time: float = 1.0
     n_total_queries: int = 0
     n_time_per_output_token: float = 0.0
@@ -97,9 +98,6 @@ class BenchmarkMetrics:
 
     def update_metrics(self, benchmark_data: BenchmarkData, api_plugin):
         self.n_total_queries += 1
-        if self.start_time is None:
-            self.start_time = benchmark_data.start_time
-        self.total_time = time.perf_counter() - self.start_time
 
         if benchmark_data.success:
             self.n_succeed_queries += 1
@@ -117,6 +115,22 @@ class BenchmarkMetrics:
             self.n_failed_queries += 1
 
         self.calculate_averages()
+        self.update_total_time(benchmark_data)
+
+    def update_total_time(self, benchmark_data: BenchmarkData):
+        # Use the earliest start_time seen so far
+        if self.start_time is None:
+            self.start_time = benchmark_data.start_time
+        else:
+            self.start_time = min(self.start_time, benchmark_data.start_time)
+        # Track the latest completion time
+        if self.last_completed_time is None:
+            self.last_completed_time = benchmark_data.completed_time
+        else:
+            self.last_completed_time = max(self.last_completed_time, benchmark_data.completed_time)
+        # Compute total_time from request lifecycle timestamps to avoid consumer overhead
+        if self.start_time is not None and self.last_completed_time is not None:
+            self.total_time = max(self.last_completed_time - self.start_time, 0.0)
 
     def calculate_averages(self):
         if self.n_succeed_queries == 0:
