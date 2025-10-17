@@ -15,7 +15,7 @@ logger = get_logger()
 
 SUBSET_LIST = ['default']
 
-# 定义提示模板
+# Define prompt template
 PROMPT_TEMPLATE = """
 Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
