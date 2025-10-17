@@ -349,6 +349,11 @@
     "zh": "POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，并重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的问题集用于评估。",
     "updated_at": "2025-10-15T17:24:43Z"
   },
+  "poly_math": {
+    "en": "PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.",
+    "zh": "PolyMath 是一个涵盖 18 种语言和 4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度的全面性、语言的多样性以及高质量的翻译，使其成为推理型大语言模型时代高度区分性的多语言数学评测基准。",
+    "updated_at": "2025-10-16T16:08:18Z"
+  },
   "math_vision": {
     "en": "The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.",
     "zh": "MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。",

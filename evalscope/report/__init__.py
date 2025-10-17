@@ -12,7 +12,7 @@ if TYPE_CHECKING:
         weighted_average_from_subsets,
     )
     from .generator import ReportGenerator
-    from .report import Category, Report, ReportKey, Subset
+    from .report import Category, Metric, Report, ReportKey, Subset
 
 else:
     _import_structure = {
@@ -31,6 +31,7 @@ else:
             'Report',
             'ReportKey',
             'Subset',
+            'Metric',
         ],
     }
 
