@@ -250,4 +250,4 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('simple_vqa', dataset_args=dataset_args, limit=10)
