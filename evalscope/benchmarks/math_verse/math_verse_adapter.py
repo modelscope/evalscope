@@ -135,7 +135,7 @@ class MathVerseAdapter(VisionLanguageAdapter):
         if len(parts) < 2:
             return []
         content = parts[1]
-        # 匹配所有选项行
+        # Match all option lines
         pattern = re.compile(r'^([A-Z])\s*:\s*(.+?)\s*$', re.MULTILINE)
         matches = pattern.findall(content)
 
