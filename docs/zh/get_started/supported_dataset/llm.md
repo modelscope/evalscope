@@ -41,6 +41,7 @@
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
+| `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -1002,6 +1003,26 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
+```
+
+---
+
+### PolyMath
+
+[返回目录](#llm评测集)
+- **数据集名称**: `poly_math`
+- **数据集ID**: [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary)
+- **数据集描述**:
+  > PolyMath 是一个涵盖 18 种语言和 4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度的全面性、语言的多样性以及高质量的翻译，使其成为推理型大语言模型时代高度区分性的多语言数学评测基准。
+- **任务类别**: `Math`, `MultiLingual`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `ar`, `bn`, `de`, `en`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `pt`, `ru`, `sw`, `te`, `th`, `vi`, `zh`
+
+- **提示模板**: 
+```text
+{question}
 ```
 
 ---

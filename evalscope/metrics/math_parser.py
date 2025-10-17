@@ -211,6 +211,11 @@ def strip_answer_string(string):
     # Remove grade level (e.g., 12th grade) and just maintain the integer
     string = re.sub(r'thgrade$', '', string)
 
+    # Normalize thousands-formatted numbers (e.g., 70,000 or -1,234,567.89) by removing commas
+    # This must run before the "list of integers" sorting to avoid misclassifying numbers with thousand separators.
+    if re.fullmatch(r'\s*-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s*', string):
+        string = string.replace(',', '')
+
     # If the answer is a list of integers (without parenthesis), sort them
     if re.fullmatch(r'(\s*-?\d+\s*,)*\s*-?\d+\s*', string):
         # Split the string into a list of integers
@@ -529,3 +534,10 @@ def symbolic_equal(a, b):
         pass
 
     return False
+
+
+if __name__ == '__main__':
+    print(math_equal('\n\\boxed{70,\\!000}\n', '70000'))
+    print(extract_answer('The answer is \\boxed{70,\\!000}'))
+    print(strip_answer_string(extract_answer('The answer is \\boxed{70,\\!000}')))
+    print(math_equal(extract_answer('The answer is \\boxed{70,\\!000}'), '70000'))
