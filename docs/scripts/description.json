@@ -353,5 +353,20 @@
     "en": "PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.",
     "zh": "PolyMath 是一个涵盖 18 种语言和 4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度的全面性、语言的多样性以及高质量的翻译，使其成为推理型大语言模型时代高度区分性的多语言数学评测基准。",
     "updated_at": "2025-10-16T16:08:18Z"
+  },
+  "math_vision": {
+    "en": "The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.",
+    "zh": "MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。",
+    "updated_at": "2025-10-17T16:40:33Z"
+  },
+  "math_verse": {
+    "en": "MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.",
+    "zh": "MathVerse 是一个全面的视觉数学基准，旨在公平且深入地评估多模态大语言模型（MLLMs）。它包含来自公开资源的 2,612 道高质量、多学科带图数学题，每道题由人工标注员转化为六种不同版本，提供不同程度的多模态信息，共生成约 1.5 万项测试样本。该方法可全面评估 MLLMs 是否以及在多大程度上真正理解视觉图表以进行数学推理。",
+    "updated_at": "2025-10-17T16:40:33Z"
+  },
+  "simple_vqa": {
+    "en": "SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.",
+    "zh": "SimpleVQA 是首个全面评估多模态大语言模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。SimpleVQA 具有六大特点：涵盖多种任务和场景，确保查询的高质量与挑战性，提供静态且不受时间影响的参考答案，并易于评估。",
+    "updated_at": "2025-10-17T16:40:33Z"
   }
 }

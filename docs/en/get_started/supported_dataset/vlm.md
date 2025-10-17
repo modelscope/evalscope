@@ -11,6 +11,8 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
+| `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -22,6 +24,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
 
 ---
 
@@ -187,6 +190,48 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### MathVerse
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `math_verse`
+- **Dataset ID**: [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary)
+- **Description**:
+  > MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `Text Dominant`, `Text Lite`, `Vision Dominant`, `Vision Intensive`, `Vision Only`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MathVision
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `math_vision`
+- **Dataset ID**: [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary)
+- **Description**:
+  > The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `level 1`, `level 2`, `level 3`, `level 4`, `level 5`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+---
+
 ### MathVista
 
 [Back to Top](#vlm-benchmarks)
@@ -195,20 +240,15 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Description**:
   > MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.
 - **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
-- **Evaluation Metrics**: `acc`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
 - **Prompt Template**: 
 ```text
-
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-
 {question}
-
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
+Please reason step by step, and put your final answer within \boxed{{}} without units.
 ```
 
 ---
@@ -451,4 +491,26 @@ Read the picture and solve the following problem step by step.The last line of y
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+```
+
+---
+
+### SimpleVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `simple_vqa`
+- **Dataset ID**: [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary)
+- **Description**:
+  > SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.
+- **Task Categories**: `MultiModal`, `QA`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the question:
+
+{question}
 ```

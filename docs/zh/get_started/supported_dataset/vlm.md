@@ -11,6 +11,8 @@
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
+| `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -22,6 +24,7 @@
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
 
 ---
 
@@ -187,6 +190,48 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### MathVerse
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `math_verse`
+- **数据集ID**: [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary)
+- **数据集描述**:
+  > MathVerse 是一个全面的视觉数学基准，旨在公平且深入地评估多模态大语言模型（MLLMs）。它包含来自公开资源的 2,612 道高质量、多学科带图数学题，每道题由人工标注员转化为六种不同版本，提供不同程度的多模态信息，共生成约 1.5 万项测试样本。该方法可全面评估 MLLMs 是否以及在多大程度上真正理解视觉图表以进行数学推理。
+- **任务类别**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Text Dominant`, `Text Lite`, `Vision Dominant`, `Vision Intensive`, `Vision Only`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MathVision
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `math_vision`
+- **数据集ID**: [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary)
+- **数据集描述**:
+  > MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。
+- **任务类别**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `level 1`, `level 2`, `level 3`, `level 4`, `level 5`
+
+- **提示模板**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+---
+
 ### MathVista
 
 [返回目录](#vlm评测集)
@@ -195,20 +240,15 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **数据集描述**:
   > MathVista 是一个整合的视觉情境下数学推理基准，包含三个新构建的数据集：IQTest、FunctionQA 和 PaperQA，分别针对谜题图形的逻辑推理、函数图像的代数推理以及学术论文图表的科学推理，填补了现有视觉领域的空白。此外，该基准还整合了文献中的 9 个 MathQA 数据集和 19 个 VQA 数据集，显著提升了视觉感知与数学推理任务的多样性与复杂性。总计，MathVista 汇集了来自 31 个不同数据集的 6,141 个样本。
 - **任务类别**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
-- **评估指标**: `acc`
+- **评估指标**: `{'acc': {'numeric': True}}`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
 - **提示模板**: 
 ```text
-
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-
 {question}
-
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
+Please reason step by step, and put your final answer within \boxed{{}} without units.
 ```
 
 ---
@@ -451,4 +491,26 @@ Read the picture and solve the following problem step by step.The last line of y
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+```
+
+---
+
+### SimpleVQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `simple_vqa`
+- **数据集ID**: [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary)
+- **数据集描述**:
+  > SimpleVQA 是首个全面评估多模态大语言模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。SimpleVQA 具有六大特点：涵盖多种任务和场景，确保查询的高质量与挑战性，提供静态且不受时间影响的参考答案，并易于评估。
+- **任务类别**: `MultiModal`, `QA`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the question:
+
+{question}
 ```
