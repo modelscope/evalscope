@@ -69,7 +69,7 @@
 - `--max-tokens` 可以生成的最大token数量。
 - `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。对于`vLLM>=0.8.1`版本，需要额外设置`--extra-args '{"ignore_eos": true}'`。
 - `--n-choices` 生成的补全选择数量。
-- `--seed` 随机种子，默认为0。
+- `--seed` 随机种子，默认为None。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
 - `--temperature` 采样温度，默认为0。
