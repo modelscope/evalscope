@@ -287,7 +287,7 @@ def extract_answer(pred_str, use_last_number=True):
         pred = pred[:-1]
     if pred != '' and pred[-1] == '/':
         pred = pred[:-1]
-
+    pred = strip_answer_string(pred)
     return pred
 
 
