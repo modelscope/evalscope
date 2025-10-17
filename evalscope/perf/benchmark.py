@@ -82,38 +82,35 @@ async def send_request(
     request: dict,
     benchmark_data_queue: asyncio.Queue,
     args: Arguments,
-    api_plugin: 'ApiPluginBase',
+    client: AioHttpClient,  # reuse shared client
 ):
     async with semaphore:
-        client = AioHttpClient(args, api_plugin)
-        async with client:
-            benchmark_data = BenchmarkData(request=request)
-            benchmark_data.start_time = time.perf_counter()
-            collected_messages = []
-            # Initialize to avoid referencing before assignment on exceptions
-            response_data = None
-            try:
-                async for is_error, state_code, response_data in client.post(request):
-                    if is_error or state_code != HTTPStatus.OK:
-                        error_msg = str(response_data) if response_data else 'Unknown error'
-                        logger.error(f'Request: {request} failed, state_code: {state_code}, data: {error_msg}')
-                        benchmark_data.success = False
-                        break
-                    if response_data:
-                        collected_messages.append(response_data)
-                        benchmark_data.chunk_times.append(time.perf_counter())
-                        benchmark_data.success = True
-                        benchmark_data.update_gpu_usage()
-            except Exception as e:
+        benchmark_data = BenchmarkData(request=request)
+        benchmark_data.start_time = time.perf_counter()
+        collected_messages = []
+        response_data = None
+        try:
+            async for is_error, state_code, response_data in client.post(request):
+                if is_error or state_code != HTTPStatus.OK:
+                    error_msg = str(response_data) if response_data else 'Unknown error'
+                    logger.error(f'Request: {request} failed, state_code: {state_code}, data: {error_msg}')
+                    benchmark_data.success = False
+                    break
                 if response_data:
                     collected_messages.append(response_data)
-                benchmark_data.success = False
-                logger.exception(e)
-                logger.error(f'Request query: {request} exception')
-            finally:
-                benchmark_data.completed_time = time.perf_counter()
-                benchmark_data.response_messages = collected_messages
-                await benchmark_data_queue.put(benchmark_data)
+                    benchmark_data.chunk_times.append(time.perf_counter())
+                    benchmark_data.success = True
+                    benchmark_data.update_gpu_usage()
+        except Exception as e:
+            if response_data:
+                collected_messages.append(response_data)
+            benchmark_data.success = False
+            logger.exception(e)
+            logger.error(f'Request query: {request} exception')
+        finally:
+            benchmark_data.completed_time = time.perf_counter()
+            benchmark_data.response_messages = collected_messages
+            await benchmark_data_queue.put(benchmark_data)
 
 
 @exception_handler
@@ -177,44 +174,46 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
         loop = asyncio.get_running_loop()
         add_signal_handlers(loop)
 
-    # Create API plugin instance for request/response processing
     api_plugin_class = ApiRegistry.get_class(args.api)
     api_plugin = api_plugin_class(args)
 
-    # Use a bounded queue to apply backpressure and reduce memory footprint
     benchmark_data_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, args.parallel * args.queue_size_multiplier))
     data_process_completed_event.clear()
 
     # test connection
     await connect_test(args, api_plugin)
 
-    # start statistic benchmark metric (consumer)
-    statistic_benchmark_metric_task = asyncio.create_task(
-        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
-    )
+    # Create a single shared client session for all requests
+    client = AioHttpClient(args, api_plugin)
+    async with client:
+        # start statistic benchmark metric (consumer)
+        statistic_benchmark_metric_task = asyncio.create_task(
+            statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
+        )
 
-    # start sending requests with bounded in-flight tasks
-    semaphore = asyncio.Semaphore(args.parallel)
-    in_flight: set[asyncio.Task] = set()
-    max_in_flight = args.parallel * args.in_flight_task_multiplier
+        # start sending requests with bounded in-flight tasks
+        semaphore = asyncio.Semaphore(args.parallel)
+        in_flight: set[asyncio.Task] = set()
+        max_in_flight = args.parallel * args.in_flight_task_multiplier
 
-    async for request in get_requests(args, api_plugin):
-        # Keep the number of scheduled tasks bounded to avoid OOM
-        if len(in_flight) >= max_in_flight:
-            done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-            in_flight = pending
+        async for request in get_requests(args, api_plugin):
+            # Keep the number of scheduled tasks bounded to avoid OOM
+            if len(in_flight) >= max_in_flight:
+                done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+                in_flight = pending
 
-        task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, api_plugin))
-        in_flight.add(task)
+            task = asyncio.create_task(send_request(semaphore, request, benchmark_data_queue, args, client))
+            in_flight.add(task)
 
-    # Wait for remaining in-flight tasks
-    if in_flight:
-        await asyncio.gather(*in_flight, return_exceptions=True)
+        # Wait for remaining in-flight tasks
+        if in_flight:
+            await asyncio.gather(*in_flight, return_exceptions=True)
 
-    # Drain queue and finish
-    await benchmark_data_queue.join()
-    data_process_completed_event.set()
+        # Drain queue and finish
+        await benchmark_data_queue.join()
+        data_process_completed_event.set()
 
-    metrics, result_db_path = await statistic_benchmark_metric_task
+        metrics, result_db_path = await statistic_benchmark_metric_task
+
     metrics_result, percentile_result = summary_result(args, metrics, result_db_path)
     return metrics_result, percentile_result
