@@ -51,8 +51,6 @@ Use these repo-specific rules to ship changes confidently. Prefer concrete patte
 - Evaluator: `evalscope/evaluator/evaluator.py` (caching, parallelism, reporting).
 - Extensions: `evalscope/benchmarks/**`, `evalscope/metrics/metric.py`, `evalscope/filters/**`, `evalscope/models/**`.
 
-If you need a targeted example (e.g., new benchmark/metric/filter), say which component—you’ll get a minimal pattern aligned to this repo.
-
 ## Code Quality
 
 - Always use English comments

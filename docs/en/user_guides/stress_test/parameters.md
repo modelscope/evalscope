@@ -79,3 +79,8 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
 - `--swanlab-api-key`: swanlab API key, if set, metrics will be saved to swanlab.
 - `--outputs-dir` specifies the output file path, with a default value of `./outputs`.
+
+## Other Parameters
+- `--db-commit-interval` specifies the number of rows buffered before writing results to the SQLite database, default is 1000.
+- `--queue-size-multiplier` sets the maximum size of the request queue, calculated as `parallel * multiplier`, default is 5.
+- `--in-flight-task-multiplier` sets the maximum number of in-flight tasks, calculated as `parallel * multiplier`, default is 2.

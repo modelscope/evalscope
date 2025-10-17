@@ -33,6 +33,11 @@ class Arguments(BaseArgument):
     rate: int = -1  # Rate limit for requests (default: -1, no limit)
     sleep_interval: int = 5  # Sleep interval between performance runs, in seconds
 
+    # Tuning knobs
+    db_commit_interval: int = 1000  # Number of rows buffered before committing to the DB
+    queue_size_multiplier: int = 5  # Maxsize for queue = parallel * this multiplier
+    in_flight_task_multiplier: int = 2  # Max scheduled tasks = parallel * this multiplier
+
     # Logging and debugging
     log_every_n_query: int = 10  # Log every N queries
     debug: bool = False  # Debug mode
@@ -107,6 +112,14 @@ class Arguments(BaseArgument):
             self.parallel
         ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
 
+        # Validate tuning knobs
+        if self.db_commit_interval <= 0:
+            self.db_commit_interval = 1
+        if self.queue_size_multiplier <= 0:
+            self.queue_size_multiplier = 1
+        if self.in_flight_task_multiplier <= 0:
+            self.in_flight_task_multiplier = 1
+
 
 class ParseKVAction(argparse.Action):
 
@@ -151,6 +164,11 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
+
+    # Tuning knobs
+    parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
+    parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
+    parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
