@@ -123,4 +123,5 @@ class PolyMathAdapter(DefaultDataAdapter):
                 dw_subsets.append(Subset(name='OVERALL', score=overall_score, num=overall_num))
 
         # Append DW-ACC metric
-        report.metrics.append(Metric(name='DW-ACC', categories=[Category(name='-', subsets=dw_subsets)]))
+        if dw_subsets:
+            report.metrics.append(Metric(name='DW-ACC', categories=[Category(name='-', subsets=dw_subsets)]))
