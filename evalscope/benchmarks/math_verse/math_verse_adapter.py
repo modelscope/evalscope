@@ -129,7 +129,7 @@ class MathVerseAdapter(VisionLanguageAdapter):
         return content_list, answers_list
 
     @staticmethod
-    def get_answers_list(record: dict[str, Any], ) -> tuple[list[Content], list[str]]:
+    def get_answers_list(record: dict[str, Any], ) -> list[str]:
         text = record['question']
         parts = re.split(r'Choices:\s*', text, flags=re.IGNORECASE)
         if len(parts) < 2:
