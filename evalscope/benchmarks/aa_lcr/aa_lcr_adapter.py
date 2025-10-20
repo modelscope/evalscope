@@ -3,8 +3,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections import defaultdict
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -82,25 +81,23 @@ class AALCRAdapter(DefaultDataAdapter):
         
         # Check if the document folder exists
         if not doc_folder.exists() or not doc_folder.is_dir():
-            logger.warning(f"Document folder not found: {doc_folder}")
-            return f"ERROR: Documents not found for {record['document_category']}/{record['document_set_id']}"
-        
+            logger.warning(f"Document folder not found: {doc_folder}. Returning empty context.")
+            return ""
+
         doc_blocks = []
         try:
-            files = [f for f in os.listdir(doc_folder) if (doc_folder / f).is_file()]
-            for file in files:
-                try:
-                    with open(doc_folder / file, 'r', encoding='utf-8') as f:
-                        content = f.read().strip()
+            for file_path in doc_folder.iterdir():
+                if file_path.is_file():
+                    try:
+                        content = file_path.read_text(encoding='utf-8').strip()
                         if content:
                             doc_blocks.append(content)
-                except Exception:
-                    continue  # Skip unreadable files
-                    
-        except Exception as e:
-            logger.warning(f"Could not read documents from {doc_folder}: {e}")
+                    except (IOError, UnicodeDecodeError) as e:
+                        logger.warning(f"Could not read file {file_path}, skipping: {e}")
+        except OSError as e:
+            logger.warning(f"Could not access document folder {doc_folder}: {e}")
             return f"ERROR: Could not read documents for {record['document_category']}/{record['document_set_id']}"
-        
+            
         documents_text = "\n\n".join(f"BEGIN DOCUMENT {i + 1}:\n{doc}\nEND DOCUMENT {i + 1}" for i, doc in enumerate(doc_blocks))
         return documents_text
 
@@ -134,7 +131,7 @@ class AALCRAdapter(DefaultDataAdapter):
         )
 
         judge_prompt = JUDGE_PROMPT.format(
-            question=task_state.input_text, correct_answer=reference, response=filtered_prediction
+            question=task_state.metadata['question'], correct_answer=reference, response=filtered_prediction
         )
 
         # Request judge and obtain score
