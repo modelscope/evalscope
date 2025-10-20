@@ -53,16 +53,16 @@ def get_logger(
     name: Optional[str] = None,
     log_level: int = DEFAULT_LEVEL,
     file_mode: str = 'w',
-    force=False
+    force: bool = False,
 ):
     """Get logging logger
 
     Args:
-        log_file: Log filename, if specified, file handler will be added to
-            logger
-        log_level: Logging level.
-        file_mode: Specifies the mode to open the file, if filename is
-            specified (if filemode is unspecified, it defaults to 'w').
+        log_file: Log filename. If specified, a file handler will be added to the logger.
+        name: Logical component name. Used to derive the logger name.
+        log_level: Logging level to set.
+        file_mode: Mode to open the file when log_file is provided (default 'w').
+        force: If True, reconfigure the existing logger (levels, formatters, handlers).
     """
 
     if name:
@@ -77,7 +77,7 @@ def get_logger(
             logger.setLevel(log_level)
             for handler in logger.handlers:
                 handler.setLevel(log_level)
-                # 区分不同类型的 handler，使用相应的格式化器
+                # Select formatter by handler type
                 if isinstance(handler, logging.FileHandler):
                     handler.setFormatter(
                         plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter
@@ -86,6 +86,7 @@ def get_logger(
                     handler.setFormatter(
                         color_detailed_formatter if log_level == logging.DEBUG else color_simple_formatter
                     )
+            # Ensure file handler points to current log_file (replace if needed)
             add_file_handler_if_needed(logger, log_file, file_mode, log_level)
         return logger
 
@@ -137,23 +138,54 @@ def configure_logging(debug: bool, log_file: Optional[str] = None):
         get_logger(log_level=logging.DEBUG, force=True)
 
 
-def add_file_handler_if_needed(logger, log_file, file_mode, log_level):
-    for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler):
-            return
+def add_file_handler_if_needed(
+    logger: logging.Logger,
+    log_file: Optional[str],
+    file_mode: str,
+    log_level: int,
+) -> None:
+    """Ensure logger has a FileHandler targeting log_file.
+    - If no FileHandler exists, add one.
+    - If a FileHandler exists but points to a different file, replace it.
+    """
+    if log_file is None:
+        return
 
+    # Only worker-0 writes files
     if iutil.find_spec('torch') is not None:
         from modelscope.utils.torch_utils import is_master
-
         is_worker0 = is_master()
     else:
         is_worker0 = True
 
-    if is_worker0 and log_file is not None:
-        file_handler = logging.FileHandler(log_file, file_mode)
-        file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
-        file_handler.setLevel(log_level)
-        logger.addHandler(file_handler)
+    if not is_worker0:
+        return
+
+    target_path = os.path.abspath(log_file)
+    existing_file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+
+    # If there is a FileHandler already pointing to the target file, nothing to do.
+    for fh in existing_file_handlers:
+        try:
+            if os.path.abspath(getattr(fh, 'baseFilename', '')) == target_path:
+                return
+        except Exception:
+            # If any issue retrieving baseFilename, fall through to replacement
+            pass
+
+    # Replace all existing FileHandlers with the new one
+    for fh in existing_file_handlers:
+        try:
+            logger.removeHandler(fh)
+            fh.flush()
+            fh.close()
+        except Exception:
+            pass
+
+    file_handler = logging.FileHandler(target_path, file_mode)
+    file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
+    file_handler.setLevel(log_level)
+    logger.addHandler(file_handler)
 
 
 def warn_once(logger: Logger, message: str) -> None:

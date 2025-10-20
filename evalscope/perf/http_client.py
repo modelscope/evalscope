@@ -3,6 +3,7 @@ import asyncio
 import time
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
+from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
 from .arguments import Arguments
 
@@ -24,7 +25,22 @@ class AioHttpClient:
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
         self.api_plugin = api_plugin
+
+        # Configure connector similar to vLLM bench for better TTFT under load.
+        connector = aiohttp.TCPConnector(
+            limit=args.parallel or 0,  # 0 means no limit in aiohttp; use parallel as limit if set
+            limit_per_host=args.parallel or 0,
+            ttl_dns_cache=300,
+            use_dns_cache=True,
+            keepalive_timeout=60,
+            enable_cleanup_closed=True,
+            force_close=False,
+            ssl=('https://' in self.url),
+        )
+
         self.client = aiohttp.ClientSession(
+            connector=connector,
+            trust_env=True,
             timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
             trace_configs=[self._create_trace_config()] if args.debug else []
         )
@@ -43,23 +59,25 @@ class AioHttpClient:
         trace_config.on_response_chunk_received.append(self.on_response_chunk_received)
         return trace_config
 
-    async def post(self, body):
-        """Send POST request and delegate response handling to API plugin.
-        Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
+    async def post(self, body) -> BenchmarkData:
+        """
+        Send POST request and delegate response handling to API plugin.
+
+        Returns:
+            BenchmarkData: The benchmark data object containing request and response information.
         """
         try:
             # Delegate the request processing to the API plugin
-            async for result in self.api_plugin.process_request(self.client, self.url, self.headers, body):
-                yield result
+            output = await self.api_plugin.process_request(self.client, self.url, self.headers, body)
+            return output
         except asyncio.TimeoutError as e:
             logger.error(
                 f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
-            yield (True, None, str(e))
+            return BenchmarkData(success=False, error=str(e))
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
-            yield (True, None, str(e))
+            return BenchmarkData(success=False, error=str(e))
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):
@@ -91,7 +109,6 @@ class AioHttpClient:
 
 
 async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
-    is_error = True
     start_time = time.perf_counter()
 
     async def attempt_connection():
@@ -100,18 +117,16 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
             messages = [{'role': 'user', 'content': 'hello'}] if args.apply_chat_template else 'hello'
             request = api_plugin.build_request(messages)
 
-            async for is_error, state_code, response_data in client.post(request):
-                return is_error, state_code, response_data
+            output = await client.post(request)
+            return output
 
     while True:
         try:
-            is_error, state_code, response_data = await asyncio.wait_for(
-                attempt_connection(), timeout=args.connect_timeout
-            )
-            if not is_error:
+            output = await asyncio.wait_for(attempt_connection(), timeout=args.connect_timeout)
+            if output.success:
                 logger.info('Test connection successful.')
                 return True
-            logger.warning(f'Retrying...  <{state_code}> {response_data}')
+            logger.warning(f'Retrying... <{output.error}>')
         except Exception as e:
             logger.warning(f'Retrying... <{e}>')
 

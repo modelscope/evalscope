@@ -202,5 +202,30 @@ class TestPerf(unittest.TestCase):
         print(metrics_result)
         print(percentile_result)
 
+    def test_run_two_perfs(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg1 = Arguments(
+            parallel=1,
+            number=1,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            debug=True,
+        )
+        task_cfg2 = Arguments(
+            parallel=1,
+            number=1,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            debug=True,
+        )
+        run_perf_benchmark(task_cfg1)
+        run_perf_benchmark(task_cfg2)
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

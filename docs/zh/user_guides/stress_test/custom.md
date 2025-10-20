@@ -36,26 +36,26 @@ for row in rows:
 ```
 
 ## 自定义请求 API
-目前支持的 API 请求格式有 `openai` 和 `dashscope`。要扩展 API，您可以继承 `ApiPluginBase` 类，并使用 `@register_api("api名称")` 进行注解，需实现如下方法：
+目前内置支持 `openai` 和 `dashscope`。要扩展 API，请继承 `ApiPluginBase` 或 `DefaultApiPlugin`，并使用 `@register_api("api名称")` 注册插件。必须实现以下方法：
 
-- **`build_request()`**  
-  通过 `messages` 和 `param` 中的 `model` 和 `query_template` 来构建请求，该请求将发送到目标 API。
+- build_request(messages, param) -> Dict  
+  根据输入构造请求体，使用 `param.model`、`param.max_tokens`、`param.temperature` 等参数。
 
-- **`process_request()`**  
-  将请求发送到目标 API，并处理返回的响应（是否成功、响应码、响应内容）。
+- parse_responses(responses: List[Dict], request: str | None = None) -> Tuple[int, int]  
+  解析响应，返回 `(prompt_tokens, completion_tokens)`。若 API 不提供 usage，可用分词器估算。
 
-- **`parse_responses()`**  
-  解析响应，返回 `prompt_tokens` 和 `completion_tokens` 的数量，用于计算推理速度。
+- process_request(...) -> BenchmarkData  
+  发送请求并收集响应与时延数据。若自定义 API 与 OpenAI 兼容（JSON + SSE），推荐继承 `DefaultApiPlugin` 直接复用其 HTTP 与流式处理逻辑，仅需实现 `build_request`、`parse_responses`。
 
-以下是一个完整的 `custom` 示例代码：
+示例：继承 `DefaultApiPlugin` 最小实现（推荐）
 
 ```python
+# 仅示例，用于文档；真正文件见 evalscope/perf/plugin/api/custom_api.py
 import json
-import aiohttp
-from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.api.base import ApiPluginBase
+from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.logger import get_logger
 
@@ -63,19 +63,12 @@ logger = get_logger()
 
 
 @register_api('custom')
-class CustomPlugin(ApiPluginBase):
-    """支持自定义 API 实现的插件模板。"""
+class CustomPlugin(DefaultApiPlugin):
+    """自定义 API 插件（OpenAI 兼容推荐继承 DefaultApiPlugin）。"""
 
     def __init__(self, param: Arguments):
-        """初始化插件，加载必要的参数和 tokenizer。
-
-        Args:
-            param (Arguments): 配置参数，包括：
-                - tokenizer_path: 用于计数的分词器路径
-                - model: 要使用的模型名称
-                - 其他请求参数，如 max_tokens、temperature 等
-        """
-        super().__init__(param=param)
+        super().__init__(param)
+        # 可选：用于在 API 未返回 usage 时做 token 估算
         if param.tokenizer_path is not None:
             from modelscope import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(param.tokenizer_path)
@@ -83,209 +76,101 @@ class CustomPlugin(ApiPluginBase):
             self.tokenizer = None
 
     def build_request(self, messages: Union[List[Dict], str], param: Arguments = None) -> Dict:
-        """构建自定义 API 请求体。
-
-        Args:
-            messages (Union[List[Dict], str]): 输入消息，可以是消息字典的列表（用于聊天模型）或字符串（用于完成模型）。
-            param (Arguments, optional): 请求参数。默认为 self.param。
-
-        Returns:
-            Dict: 格式正确的自定义 API 请求体。
-        """
+        """将输入消息/字符串构造成自定义 API 的请求体。"""
         param = param or self.param
         try:
-            # 如果没有提供模板，则创建默认查询格式
             if isinstance(messages, str):
-                query = {'input_text': messages}
+                payload = {'input_text': messages}
             else:
-                query = {'messages': messages}
-            
-            # 将模型参数添加到请求中
-            return self._add_parameters_to_request(query, param)
+                payload = {'messages': messages}
+
+            # 添加常见的推理参数
+            payload['model'] = param.model
+            if param.max_tokens is not None:
+                payload['max_tokens'] = param.max_tokens
+            if param.temperature is not None:
+                payload['temperature'] = param.temperature
+            if param.top_p is not None:
+                payload['top_p'] = param.top_p
+            if param.top_k is not None:
+                payload['top_k'] = param.top_k
+            if param.stream is not None:
+                payload['stream'] = param.stream
+                payload['stream_options'] = {'include_usage': True}
+            if param.extra_args:
+                payload.update(param.extra_args)
+
+            return payload
         except Exception as e:
             logger.exception(e)
-            return None
+            return {}
 
-    def _add_parameters_to_request(self, payload: Dict, param: Arguments) -> Dict:
-        """向请求体中添加模型参数。
-
-        此辅助方法根据自定义 API 支持的内容，将温度、最大令牌等各种参数添加到请求中。
-
-        Args:
-            payload (Dict): 基础请求负载。
-            param (Arguments): 要添加的参数。
-
-        Returns:
-            Dict: 添加了参数的请求负载。
-        """
-        # 添加模型名称
-        payload['model'] = param.model
-            
-        # 如果提供了，则添加各种参数
-        if param.max_tokens is not None:
-            payload['max_tokens'] = param.max_tokens
-        if param.temperature is not None:
-            payload['temperature'] = param.temperature
-        if param.top_p is not None:
-            payload['top_p'] = param.top_p
-        if param.top_k is not None:
-            payload['top_k'] = param.top_k
-        if param.stream is not None:
-            payload['stream'] = param.stream
-            payload['stream_options'] = {'include_usage': True}
-
-        # 添加通过命令行传递的任何额外参数
-        if param.extra_args is not None:
-            payload.update(param.extra_args)
-            
-        return payload
-
-    def parse_responses(self, responses: List[str], request: Any = None, **kwargs) -> Tuple[int, int]:
-        """解析响应并返回 token 数量。
-
-        此方法从 API 响应中提取输入和输出 token 的数量。
-        不同的 API 可能以不同的格式返回此信息，或者您可能需要使用分词器计算它。
-
-        Args:
-            responses (List[str]): API 响应字符串的列表。
-            request (Any, optional): 原始请求，可能在 token 计算中需要。
-            **kwargs: 其他参数。
-
-        Returns:
-            Tuple[int, int]: (input_tokens, output_tokens) - 提示和完成中的 token 数量。
-        """
+    def parse_responses(self, responses: List[Dict], request: str = None, **kwargs: Any) -> Tuple[int, int]:
+        """从响应列表中提取 token 计数；若无 usage，则用分词器估算。"""
         try:
-            # 示例 1：尝试从 API 响应中获取 token 计数
-            last_response = json.loads(responses[-1])
-            
-            # 如果 API 提供了 token 使用信息
-            if 'usage' in last_response and last_response['usage']:
-                input_tokens = last_response['usage'].get('prompt_tokens', 0)
-                output_tokens = last_response['usage'].get('completion_tokens', 0)
-                return input_tokens, output_tokens
-                
-            # 示例 2：如果没有使用信息，则使用分词器计算 token
+            last = responses[-1] if responses else {}
+            if isinstance(last, dict) and last.get('usage'):
+                usage = last['usage'] or {}
+                return usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0)
+
+            # 回退：使用分词器估算
             if self.tokenizer is not None:
-                input_text = ""
-                output_text = ""
-                
-                # 从请求中提取输入文本
-                if request and 'messages' in request:
-                    # 对于聊天 API
-                    input_text = " ".join([msg['content'] for msg in request['messages']])
-                elif request and 'input_text' in request:
-                    # 对于完成 API
-                    input_text = request['input_text']
-                
-                # 从响应中提取输出文本
-                for response in responses:
-                    js = json.loads(response)
-                    if 'choices' in js:
-                        for choice in js['choices']:
-                            if 'message' in choice and 'content' in choice['message']:
-                                output_text += choice['message']['content']
-                            elif 'text' in choice:
-                                output_text += choice['text']
-                
-                # 计数 token
-                input_tokens = len(self.tokenizer.encode(input_text))
-                output_tokens = len(self.tokenizer.encode(output_text))
-                return input_tokens, output_tokens
-                
-            # 如果没有使用信息且没有分词器，则引发错误
-            raise ValueError("无法确定 token 计数：响应中没有使用信息且未提供分词器。")
-            
-        except Exception as e:
-            logger.error(f"解析响应时出错：{e}")
+                prompt_text = ''
+                if request:
+                    try:
+                        req_js = json.loads(request)
+                        if isinstance(req_js, dict):
+                            if 'messages' in req_js:
+                                prompt_text = ' '.join(m.get('content', '') for m in req_js.get('messages', []))
+                            elif 'input_text' in req_js:
+                                prompt_text = req_js.get('input_text') or ''
+                    except Exception:
+                        pass
+
+                completion_text = ''
+                for resp in responses:
+                    if not isinstance(resp, dict):
+                        continue
+                    for choice in resp.get('choices', []) or []:
+                        msg = choice.get('message') or {}
+                        if isinstance(msg, dict) and msg.get('content'):
+                            completion_text += msg.get('content') or ''
+                        else:
+                            completion_text += choice.get('text') or ''
+
+                return len(self.tokenizer.encode(prompt_text)), len(self.tokenizer.encode(completion_text))
+
             return 0, 0
-
-    async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
-                              body: Dict) -> AsyncGenerator[Tuple[bool, int, str], None]:
-        """处理 HTTP 请求并处理响应。
-
-        此方法处理将请求发送到您的 API 和处理响应，包括处理流响应（如果支持）。
-
-        Args:
-            client_session (aiohttp.ClientSession): aiohttp 客户端会话。
-            url (str): API 端点 URL。
-            headers (Dict): 请求头。
-            body (Dict): 请求体。
-
-        Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
-                - is_error: 响应是否表示错误
-                - status_code: HTTP 状态码
-                - response_data: 响应内容
-        """
-        try:
-            # 设置内容类型头
-            headers = {'Content-Type': 'application/json', **headers}
-            
-            # 将主体转换为 JSON
-            data = json.dumps(body, ensure_ascii=False)
-            
-            # 发送请求
-            async with client_session.request('POST', url=url, data=data, headers=headers) as response:
-                status_code = response.status
-                
-                # 检查是否为流响应
-                if 'text/event-stream' in response.content_type:
-                    # 处理流响应
-                    async for line in response.content:
-                        line_str = line.decode('utf-8').strip()
-                        if not line_str:
-                            continue
-                        
-                        # 检查服务器发送事件中的数据前缀
-                        if line_str.startswith('data: '):
-                            data = line_str[6:]  # 移除 'data: ' 前缀
-                            
-                            # 检查是否为流的结束
-                            if data == '[DONE]':
-                                break
-                                
-                            try:
-                                # 解析 JSON 数据
-                                parsed_data = json.loads(data)
-                                yield (False, status_code, json.dumps(parsed_data))
-                            except json.JSONDecodeError:
-                                yield (True, status_code, f"解析 JSON 失败：{data}")
-                else:
-                    # 处理常规响应
-                    if 'application/json' in response.content_type:
-                        # JSON 响应
-                        content = await response.json()
-                        yield (status_code >= 400, status_code, json.dumps(content))
-                    else:
-                        # 文本响应
-                        content = await response.text()
-                        yield (status_code >= 400, status_code, content)
-                        
         except Exception as e:
-            logger.error(f"process_request 中出错：{e}")
-            yield (True, 500, str(e))
-
-if __name__ == "__main__":
-    # 自定义 API 插件的示例用法
-    from dotenv import dotenv_values
-    env = dotenv_values('.env')
-    
-    from evalscope.perf.arguments import Arguments
-    from evalscope.perf.main import run_perf_benchmark
-
-    args = Arguments(
-        model='your-model-name',
-        url='https://your-api-endpoint',
-        api_key='your-api-key',
-        api='custom',  # 使用自定义 API 插件
-        dataset='openqa',
-        number=1,
-        max_tokens=10,
-        debug=True,
-    )
-
-    run_perf_benchmark(args)
+            logger.error(f'解析响应出错: {e}')
+            return 0, 0
 ```
+
+使用方式示例：
+
+```python
+from dotenv import dotenv_values
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.main import run_perf_benchmark
+
+env = dotenv_values('.env')
+
+args = Arguments(
+    model='your-model',
+    url='https://your-endpoint',
+    api_key=env.get('YOUR_API_KEY'),
+    api='custom',     # 使用上面注册的插件
+    dataset='openqa',
+    number=1,
+    max_tokens=16,
+    stream=True,      # 若支持流式
+    debug=True,
+)
+
+run_perf_benchmark(args)
+```
+
+若你的 API 与 OpenAI 流式协议不兼容，请在自定义插件中自行实现 `process_request(...) -> BenchmarkData`（可参考 `evalscope/perf/plugin/api/default_api.py` 的实现方式）。
 
 ## 自定义数据集
 
@@ -337,16 +222,14 @@ if __name__ == '__main__':
 
 ## 注意事项
 
-1. **API 插件开发**  
-   - 确保实现 `build_request`、`process_request` 和 `parse_responses` 方法。
+1. API 插件开发  
+   - 必须实现 `build_request`、`parse_responses`，并提供 `process_request(...) -> BenchmarkData`（或继承 `DefaultApiPlugin` 复用默认实现）。
    - 使用 `@register_api("api名称")` 注册插件。
+   - 优先使用 `DefaultApiPlugin` 以复用 HTTP、SSE、usage 收集等通用逻辑。
 
-2. **数据集插件开发**  
-   - 确保实现 `build_messages` 方法。
-   - 使用 `@register_dataset("数据集名称")` 注册插件。
+2. 数据集插件开发  
+   - 实现 `build_messages` 并使用 `@register_dataset("数据集名称")` 注册。
 
-3. **调试建议**  
-   - 使用日志记录 (`logger`) 来调试插件行为。
-   - 确保 API 响应格式与解析逻辑一致。
-
-通过以上示例，您可以轻松扩展支持新的 API 和数据集格式。
+3. 调试建议  
+   - 使用 `logger` 输出关键信息。
+   - 确保响应结构与解析逻辑一致，必要时打印原始响应便于定位问题。
