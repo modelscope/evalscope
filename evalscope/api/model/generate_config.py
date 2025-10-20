@@ -108,6 +108,12 @@ class GenerateConfig(BaseModel):
     extra_body: Optional[Dict[str, Any]] = Field(default=None)
     """Extra body to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
 
+    extra_query: Optional[Dict[str, Any]] = Field(default=None)
+    """Extra query parameters to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
+
+    extra_headers: Optional[Dict[str, str]] = Field(default=None)
+    """Extra headers to be sent with requests to OpenAI compatible servers. OpenAI, vLLM, and SGLang only."""
+
     height: Optional[int] = Field(default=None)
     """Image height for image generation model only"""
 
