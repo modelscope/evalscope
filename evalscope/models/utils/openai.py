@@ -204,6 +204,10 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         )
     if config.extra_body:
         params['extra_body'] = config.extra_body
+    if config.extra_query:
+        params['extra_query'] = config.extra_query
+    if config.extra_headers:
+        params['extra_headers'] = config.extra_headers
 
     return params
 
