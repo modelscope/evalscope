@@ -178,7 +178,10 @@ class CustomPlugin(ApiPluginBase):
         Returns:
             BenchmarkData: The benchmark data including response and timing info.
         """
-        pass
+        raise NotImplementedError(
+            'The `process_request` method must be implemented in a subclass. ' 
+            'For OpenAI-compatible APIs, consider inheriting from `DefaultApiPlugin` to reuse the default implementation.'
+        )
 
 
 if __name__ == '__main__':
