@@ -3,8 +3,7 @@ import json
 import sys
 import time
 import traceback
-from http import HTTPStatus
-from typing import Any, AsyncGenerator, Dict, List, Tuple
+from typing import Any, Dict
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
@@ -72,8 +71,8 @@ class DefaultApiPlugin(ApiPluginBase):
             headers: The request headers
             body: The request body
 
-        Yields:
-            Tuple[bool, int, Any]: (is_error, status_code, response_data)
+        Returns:
+            BenchmarkData: Aggregated benchmarking data for the request/response.
         """
         headers = {'Content-Type': 'application/json', **headers}
         data = json.dumps(body, ensure_ascii=False)  # serialize to JSON
@@ -87,52 +86,115 @@ class DefaultApiPlugin(ApiPluginBase):
         most_recent_timestamp = st
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
+                content_type = response.headers.get('Content-Type', '')
                 if response.status == 200:
-                    handler = StreamedResponseHandler()
-                    async for chunk_bytes in response.content.iter_any():
-                        chunk_bytes = chunk_bytes.strip()
-                        if not chunk_bytes:
-                            continue
-
-                        messages = handler.add_chunk(chunk_bytes)
-                        for message in messages:
-                            # NOTE: SSE comments (often used as pings) start with
-                            # a colon. These are not JSON data payload and should
-                            # be skipped.
-                            if message.startswith(':'):
+                    # Handle streaming responses (SSE)
+                    if 'text/event-stream' in content_type:
+                        handler = StreamedResponseHandler()
+                        async for chunk_bytes in response.content.iter_any():
+                            chunk_bytes = chunk_bytes.strip()
+                            if not chunk_bytes:
                                 continue
 
-                            chunk = message.removeprefix('data: ')
+                            messages = handler.add_chunk(chunk_bytes)
+                            for message in messages:
+                                # NOTE: SSE comments (often used as pings) start with
+                                # a colon. These are not JSON data payload and should
+                                # be skipped.
+                                if message.startswith(':'):
+                                    continue
 
-                            if chunk != '[DONE]':
-                                timestamp = time.perf_counter()
-                                data = json.loads(chunk)
+                                chunk = message.removeprefix('data: ')
 
-                                if choices := data.get('choices'):
-                                    content = choices[0]['delta'].get('content')
-                                    # First token
-                                    if ttft == 0.0:
-                                        ttft = timestamp - st
-                                        output.first_chunk_latency = ttft
+                                if chunk != '[DONE]':
+                                    timestamp = time.perf_counter()
+                                    data = json.loads(chunk)
 
-                                    # Decoding phase
-                                    else:
-                                        output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
+                                    if choices := data.get('choices'):
+                                        content = choices[0]['delta'].get('content')
+                                        # First token
+                                        if ttft == 0.0:
+                                            ttft = timestamp - st
+                                            output.first_chunk_latency = ttft
 
-                                    generated_text += content or ''
-                                    output.response_messages.append(data)
-                                elif usage := data.get('usage'):
-                                    output.prompt_tokens = usage.get('prompt_tokens')
-                                    output.completion_tokens = usage.get('completion_tokens')
+                                        # Decoding phase
+                                        else:
+                                            output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
 
-                                most_recent_timestamp = timestamp
+                                        generated_text += content or ''
+                                        output.response_messages.append(data)
+                                    elif usage := data.get('usage'):
+                                        output.prompt_tokens = usage.get('prompt_tokens')
+                                        output.completion_tokens = usage.get('completion_tokens')
 
-                    output.generated_text = generated_text
-                    output.success = True
-                    output.completed_time = most_recent_timestamp
-                    output.query_latency = most_recent_timestamp - st
+                                    most_recent_timestamp = timestamp
+
+                        output.generated_text = generated_text
+                        output.success = True
+                        output.completed_time = most_recent_timestamp
+                        output.query_latency = most_recent_timestamp - st
+
+                    # Handle non-stream JSON responses
+                    elif 'application/json' in content_type or 'application/' in content_type:
+                        payload: Any
+                        try:
+                            payload = await response.json()
+                        except Exception:
+                            # Fallback to text if JSON parsing fails
+                            payload = await response.text()
+
+                        timestamp = time.perf_counter()
+                        output.completed_time = timestamp
+                        output.query_latency = timestamp - st
+                        # For non-stream, first chunk equals full latency
+                        output.first_chunk_latency = output.query_latency
+
+                        if isinstance(payload, dict):
+                            # Extract generated text from choices
+                            text = ''
+                            if choices := payload.get('choices'):
+                                first = choices[0] if choices else {}
+                                # Chat Completions format
+                                msg = first.get('message') or {}
+                                if isinstance(msg, dict) and msg.get('content') is not None:
+                                    text = msg.get('content') or ''
+                                else:
+                                    # Legacy Completions format
+                                    text = first.get('text') or ''
+                            generated_text = text
+
+                            # Extract usage if provided
+                            if usage := payload.get('usage'):
+                                output.prompt_tokens = usage.get('prompt_tokens')
+                                output.completion_tokens = usage.get('completion_tokens')
+
+                            output.response_messages.append(payload)
+                        else:
+                            generated_text = str(payload)
+
+                        output.generated_text = generated_text
+                        output.success = True
+
+                    else:
+                        # Unknown successful content-type: read as text
+                        raw = await response.text()
+                        timestamp = time.perf_counter()
+                        output.completed_time = timestamp
+                        output.query_latency = timestamp - st
+                        output.first_chunk_latency = output.query_latency
+                        output.generated_text = raw
+                        output.response_messages.append(raw)
+                        output.success = True
                 else:
-                    output.error = response.reason or ''
+                    # Try to parse structured error, fallback to reason/text
+                    try:
+                        err_payload = await response.json()
+                        output.error = json.dumps(err_payload, ensure_ascii=False)
+                    except Exception:
+                        try:
+                            output.error = await response.text()
+                        except Exception:
+                            output.error = response.reason or ''
                     output.success = False
         except Exception:
             output.success = False
@@ -141,36 +203,3 @@ class DefaultApiPlugin(ApiPluginBase):
             logger.error(output.error)
 
         return output
-
-    async def _handle_response(self, response: aiohttp.ClientResponse) -> AsyncGenerator[Tuple[bool, int, Any], None]:
-        """Handle the HTTP response based on content type and status.
-
-        Args:
-            response: The aiohttp response object
-
-        Yields:
-            Tuple[bool, int, Any]: (is_error, status_code, response_data)
-        """
-        response_status = response.status
-        response_content_type = response.content_type
-        content_type_json = 'application/json'
-        content_type_stream = 'text/event-stream'
-        is_success = (response_status == HTTPStatus.OK)
-
-        if is_success:
-            # Handle successful response with 'text/event-stream' content type
-            if content_type_stream in response_content_type:
-                async for is_error, response_status, content in self._handle_stream(response):
-                    yield (is_error, response_status, content)
-            # Handle successful response with 'application/json' content type
-            elif content_type_json in response_content_type:
-                content = await response.json()
-                yield (False, response_status, content)
-            # Handle other successful responses
-            else:
-                content = await response.read()
-                yield (False, response_status, content.decode('utf-8'))
-        else:
-            # error is always in JSON format
-            error = await response.json()
-            yield (True, response_status, error)
