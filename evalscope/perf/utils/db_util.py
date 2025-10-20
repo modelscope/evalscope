@@ -19,7 +19,7 @@ logger = get_logger()
 class DatabaseColumns:
     REQUEST = 'request'
     START_TIME = 'start_time'
-    CHUNK_TIMES = 'chunk_times'
+    INTER_TOKEN_LATENCIES = 'inter_token_latencies'
     SUCCESS = 'success'
     RESPONSE_MESSAGES = 'response_messages'
     COMPLETED_TIME = 'completed_time'
@@ -60,7 +60,7 @@ def create_result_table(cursor):
         f'''CREATE TABLE IF NOT EXISTS result(
                       {DatabaseColumns.REQUEST} TEXT,
                       {DatabaseColumns.START_TIME} REAL,
-                      {DatabaseColumns.CHUNK_TIMES} TEXT,
+                      {DatabaseColumns.INTER_TOKEN_LATENCIES} TEXT,
                       {DatabaseColumns.SUCCESS} INTEGER,
                       {DatabaseColumns.RESPONSE_MESSAGES} TEXT,
                       {DatabaseColumns.COMPLETED_TIME} REAL,
@@ -75,15 +75,15 @@ def create_result_table(cursor):
 
 
 def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData):
-    request = encode_data(benchmark_data.request)
-    chunk_times = json.dumps(benchmark_data.chunk_times)
+    request = benchmark_data.request
+    inter_token_latencies = json.dumps(benchmark_data.inter_chunk_latency)
     response_messages = encode_data(benchmark_data.response_messages)
 
     # Columns common to both success and failure cases
     common_columns = (
         request,
         benchmark_data.start_time,
-        chunk_times,
+        inter_token_latencies,
         benchmark_data.success,
         response_messages,
         benchmark_data.completed_time,
@@ -96,7 +96,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
             benchmark_data.completion_tokens, benchmark_data.max_gpu_memory_cost, benchmark_data.time_per_output_token
         )
         query = f"""INSERT INTO result(
-                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES},
+                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
                       {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY}, {DatabaseColumns.PROMPT_TOKENS},
                       {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.MAX_GPU_MEMORY_COST},
@@ -105,7 +105,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
         cursor.execute(query, common_columns + additional_columns)
     else:
         query = f"""INSERT INTO result(
-                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES},
+                      {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME}
                    ) VALUES (?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns)
@@ -173,20 +173,11 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     :param result_db_path: Path to the SQLite database file.
     :return: Dictionary of percentiles for various metrics.
     """
-
-    def inter_token_latencies(chunk_times_json: str) -> List[float]:
-        try:
-            chunk_times = json.loads(chunk_times_json)
-            return [t2 - t1 for t1, t2 in zip(chunk_times[:-1], chunk_times[1:])]
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.error(f'Error parsing chunk times: {e}')
-            return []
-
-    query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.CHUNK_TIMES}, {DatabaseColumns.SUCCESS},
+    query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES}, {DatabaseColumns.SUCCESS},
                     {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
                     {DatabaseColumns.PROMPT_TOKENS},
                     {DatabaseColumns.COMPLETION_TOKENS}, {DatabaseColumns.TIME_PER_OUTPUT_TOKEN}
-                    FROM result WHERE {DatabaseColumns.SUCCESS}=1'''
+                    FROM result WHERE {DatabaseColumns.SUCCESS}=1'''  # noqa: E501
 
     percentiles = [10, 25, 50, 66, 75, 80, 90, 95, 98, 99]
 
@@ -202,7 +193,11 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     # Prepare data for each metric
     inter_token_latencies_all = []
     for row in rows:
-        inter_token_latencies_all.extend(inter_token_latencies(row[col_indices[DatabaseColumns.CHUNK_TIMES]]))
+        try:
+            itl = json.loads(row[col_indices[DatabaseColumns.INTER_TOKEN_LATENCIES]]) or []
+            inter_token_latencies_all.extend(itl)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(f'Error parsing inter token latencies: {e}')
 
     metrics = {
         PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],

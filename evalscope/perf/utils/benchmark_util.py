@@ -1,4 +1,3 @@
-import time
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
@@ -10,7 +9,7 @@ logger = get_logger()
 
 @dataclass
 class BenchmarkData:
-    request: Any = None
+    request: str = None  # json serialized request body
     start_time: float = 0.0
     completed_time: float = 0.0
     chunk_times: List[float] = field(default_factory=list)
@@ -24,24 +23,26 @@ class BenchmarkData:
     time_per_output_token: float = 0.0
     inter_chunk_latency: List[float] = field(default_factory=list)
 
-    prompt_tokens = None
-    completion_tokens = None
-
-    def _calculate_query_stream_metric(self) -> None:
-        self.query_latency = self.completed_time - self.start_time
-        # only for stream responses
-        if len(self.chunk_times) > 1:
-            self.first_chunk_latency = self.chunk_times[0] - self.start_time
-            # remove the first chunk time from the total latency
-            self.time_per_output_token = (self.query_latency - self.first_chunk_latency
-                                          ) / (self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
-            self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
-        else:
-            self.first_chunk_latency = self.query_latency
+    # response content
+    generated_text: str = ''
+    error: Optional[str] = None
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
 
     def _calculate_tokens(self, api_plugin):
-        self.prompt_tokens, self.completion_tokens = \
-            api_plugin.parse_responses(self.response_messages, request=self.request)
+        if self.prompt_tokens is None or self.completion_tokens is None:
+            self.prompt_tokens, self.completion_tokens = api_plugin.parse_responses(
+                self.response_messages, request=self.request
+            )
+
+        # Calculate time per output token
+        if self.completion_tokens and self.completion_tokens > 1:
+            # tpot = (latency - ttft) / (output_len - 1)
+            self.time_per_output_token = (self.query_latency - self.first_chunk_latency) / (self.completion_tokens - 1)
+
+        # Ensure inter-chunk latency is available (compute from chunk_times if needed)
+        if not self.inter_chunk_latency and self.chunk_times:
+            self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
 
     def update_gpu_usage(self):
         if check_import('torch', raise_warning=False):
@@ -106,7 +107,6 @@ class BenchmarkMetrics:
             self.n_total_prompt_tokens += benchmark_data.prompt_tokens
             self.n_total_completion_tokens += benchmark_data.completion_tokens
 
-            benchmark_data._calculate_query_stream_metric()
             self.total_latency += benchmark_data.query_latency
             self.total_first_chunk_latency += benchmark_data.first_chunk_latency
             self.n_time_per_output_token += benchmark_data.time_per_output_token

@@ -102,7 +102,7 @@ class OpenaiPlugin(DefaultApiPlugin):
             payload.update(param.extra_args)
         return payload
 
-    def parse_responses(self, responses, request: Any = None, **kwargs) -> tuple[int, int]:
+    def parse_responses(self, responses: List[Dict], request: str = None, **kwargs) -> tuple[int, int]:
         """Parser responses and return number of request and response tokens.
         Only one response for non-stream, multiple responses for stream.
         """
@@ -180,7 +180,7 @@ class OpenaiPlugin(DefaultApiPlugin):
             )
         return input_tokens, output_tokens
 
-    def _count_input_tokens(self, request: Dict) -> int:
+    def _count_input_tokens(self, request_str: str) -> int:
         """Count the number of input tokens in the request.
 
         This method handles different types of requests and calculates tokens for:
@@ -188,13 +188,14 @@ class OpenaiPlugin(DefaultApiPlugin):
         - Images in multimodal messages (converted to patch tokens)
 
         Args:
-            request (Dict): The request dictionary containing either 'messages' for chat
+            request_str (str): The request json str containing either 'messages' for chat
                           completion or 'prompt' for text completion.
 
         Returns:
             int: The total number of input tokens including text and image tokens.
         """
         input_tokens = 0
+        request = json.loads(request_str)
         if 'messages' in request:
             input_content = self.tokenizer.apply_chat_template(
                 request['messages'], tokenize=True, add_generation_prompt=True

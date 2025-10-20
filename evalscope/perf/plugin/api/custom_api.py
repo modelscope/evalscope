@@ -5,6 +5,7 @@ from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
+from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -98,7 +99,7 @@ class CustomPlugin(ApiPluginBase):
 
         return payload
 
-    def parse_responses(self, responses: List[str], request: Any = None, **kwargs) -> Tuple[int, int]:
+    def parse_responses(self, responses: List[Dict], request: str = None, **kwargs) -> Tuple[int, int]:
         """Parse API responses and return token counts.
 
         This method extracts the number of input and output tokens from the API responses.
@@ -106,8 +107,8 @@ class CustomPlugin(ApiPluginBase):
         to calculate it using a tokenizer.
 
         Args:
-            responses (List[str]): List of API response strings.
-            request (Any, optional): The original request, which might be needed for token calculation.
+            responses (List[Dict]): List of API response strings.
+            request (str, optional): The original request, which might be needed for token calculation.
             **kwargs: Additional arguments.
 
         Returns:
@@ -160,8 +161,9 @@ class CustomPlugin(ApiPluginBase):
             logger.error(f'Error parsing responses: {e}')
             return 0, 0
 
-    async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
-                              body: Dict) -> AsyncGenerator[Tuple[bool, int, str], None]:
+    async def process_request(
+        self, client_session: aiohttp.ClientSession, url: str, headers: Dict, body: Dict
+    ) -> BenchmarkData:
         """Process the HTTP request and handle the response.
 
         This method handles sending the request to your API and processing the response,
@@ -173,60 +175,10 @@ class CustomPlugin(ApiPluginBase):
             headers (Dict): The request headers.
             body (Dict): The request body.
 
-        Yields:
-            Tuple[bool, int, str]: (is_error, status_code, response_data)
-                - is_error: Whether the response indicates an error
-                - status_code: HTTP status code
-                - response_data: Response content
+        Returns:
+            BenchmarkData: The benchmark data including response and timing info.
         """
-        try:
-            # Set content type header
-            headers = {'Content-Type': 'application/json', **headers}
-
-            # Convert body to JSON
-            data = json.dumps(body, ensure_ascii=False)
-
-            # Send the request
-            async with client_session.request('POST', url=url, data=data, headers=headers) as response:  # noqa: E125
-                # Get the status code
-                status_code = response.status
-
-                # Check if it's a streaming response
-                if 'text/event-stream' in response.content_type:
-                    # Handle streaming response
-                    async for line in response.content:
-                        line_str = line.decode('utf-8').strip()
-                        if not line_str:
-                            continue
-
-                        # Check for data prefix in server-sent events
-                        if line_str.startswith('data: '):
-                            data = line_str[6:]  # Remove 'data: ' prefix
-
-                            # Check if it's the end of the stream
-                            if data == '[DONE]':
-                                break
-
-                            try:
-                                # Parse the JSON data
-                                parsed_data = json.loads(data)
-                                yield (False, status_code, json.dumps(parsed_data))
-                            except json.JSONDecodeError:
-                                yield (True, status_code, f'Failed to parse JSON: {data}')
-                else:
-                    # Handle regular response
-                    if 'application/json' in response.content_type:
-                        # JSON response
-                        content = await response.json()
-                        yield (status_code >= 400, status_code, json.dumps(content))
-                    else:
-                        # Text response
-                        content = await response.text()
-                        yield (status_code >= 400, status_code, content)
-
-        except Exception as e:
-            logger.error(f'Error in process_request: {e}')
-            yield (True, 500, str(e))
+        pass
 
 
 if __name__ == '__main__':

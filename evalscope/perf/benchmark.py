@@ -85,32 +85,9 @@ async def send_request(
     client: AioHttpClient,  # reuse shared client
 ):
     async with semaphore:
-        benchmark_data = BenchmarkData(request=request)
-        benchmark_data.start_time = time.perf_counter()
-        collected_messages = []
-        response_data = None
-        try:
-            async for is_error, state_code, response_data in client.post(request):
-                if is_error or state_code != HTTPStatus.OK:
-                    error_msg = str(response_data) if response_data else 'Unknown error'
-                    logger.error(f'Request: {request} failed, state_code: {state_code}, data: {error_msg}')
-                    benchmark_data.success = False
-                    break
-                if response_data:
-                    collected_messages.append(response_data)
-                    benchmark_data.chunk_times.append(time.perf_counter())
-                    benchmark_data.success = True
-                    benchmark_data.update_gpu_usage()
-        except Exception as e:
-            if response_data:
-                collected_messages.append(response_data)
-            benchmark_data.success = False
-            logger.exception(e)
-            logger.error(f'Request query: {request} exception')
-        finally:
-            benchmark_data.completed_time = time.perf_counter()
-            benchmark_data.response_messages = collected_messages
-            await benchmark_data_queue.put(benchmark_data)
+        benchmark_data = await client.post(request)
+        benchmark_data.update_gpu_usage()
+        await benchmark_data_queue.put(benchmark_data)
 
 
 @exception_handler
