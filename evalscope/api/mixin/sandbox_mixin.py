@@ -1,8 +1,6 @@
-import asyncio
-import threading
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from evalscope.utils.function_utils import thread_safe
+from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -25,16 +23,10 @@ class SandboxMixin:
         self._sandbox_id: Optional[str] = None
         """Sandbox ID."""
 
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        """Event loop for async operations."""
-
-        # Thread running the event loop (if started lazily)
-        self._loop_thread: Optional[threading.Thread] = None
-
         # Lazy init state
         self._initialized: bool = False
 
-        # NOTE: Initialization is now deferred. Nothing is created here.
+        # NOTE: Initialization is deferred.
         super().__init__()
 
     async def _async_init(self):
@@ -62,19 +54,6 @@ class SandboxMixin:
         """Get the sandbox ID."""
         return self._sandbox_id
 
-    def _start_event_loop_if_needed(self) -> None:
-        """Create and run the event loop in a dedicated thread if it is not running."""
-        if self._loop and not self._loop.is_closed():
-            return
-        self._loop = asyncio.new_event_loop()
-
-        def run_loop() -> None:
-            asyncio.set_event_loop(self._loop)
-            self._loop.run_forever()
-
-        self._loop_thread = threading.Thread(target=run_loop, daemon=True, name='SandboxMixinLoop')
-        self._loop_thread.start()
-
     @thread_safe
     def ensure_sandbox_ready(self) -> bool:
         """
@@ -87,16 +66,9 @@ class SandboxMixin:
         if self._initialized and self._manager and self._sandbox_id:
             return True
 
-        # Start loop and initialize manager/sandbox
-        self._start_event_loop_if_needed()
-
-        # Initialize manager
-        future_mgr = asyncio.run_coroutine_threadsafe(self.init_sandbox_manager_async(), self._loop)
-        future_mgr.result()
-
-        # Initialize sandbox
-        future_sb = asyncio.run_coroutine_threadsafe(self.init_sandbox_async(), self._loop)
-        future_sb.result()
+        # Initialize manager and sandbox using the class-level runner
+        AsyncioLoopRunner.run(self.init_sandbox_manager_async())
+        AsyncioLoopRunner.run(self.init_sandbox_async())
 
         self._initialized = True
         return True
@@ -131,10 +103,7 @@ class SandboxMixin:
         if not self.use_sandbox:
             return None
 
-        # Use the dedicated loop if available
-        self._start_event_loop_if_needed()
-        future = asyncio.run_coroutine_threadsafe(self.init_sandbox_manager_async(), self._loop)
-        return future.result()
+        return AsyncioLoopRunner.run(self.init_sandbox_manager_async())
 
     async def init_sandbox_async(self) -> Optional[str]:
         """Initialize the sandbox instance asynchronously."""
@@ -169,10 +138,7 @@ class SandboxMixin:
         if not self.use_sandbox:
             return None
 
-        # Use the dedicated loop if available
-        self._start_event_loop_if_needed()
-        future = asyncio.run_coroutine_threadsafe(self.init_sandbox_async(), self._loop)
-        return future.result()
+        return AsyncioLoopRunner.run(self.init_sandbox_async())
 
     def execute_code_in_sandbox(self, code: str, timeout: int = 60, language: str = 'python') -> Dict[str, Any]:
         """Execute code in the sandbox."""
@@ -201,30 +167,16 @@ class SandboxMixin:
                 )
             return result
 
-        # Use the dedicated loop if available
-        if self._loop and not self._loop.is_closed():
-            future = asyncio.run_coroutine_threadsafe(_execute_async(), self._loop)
-            result = future.result(timeout + 10)  # Add some buffer to the timeout
-        else:
-            # Fallback for cases where no loop is available
-            result = asyncio.run(_execute_async())
-
+        # Execute in background loop via class-level runner
+        result = AsyncioLoopRunner.run(_execute_async(), timeout=timeout + 10)
         return result.model_dump(exclude_none=True)
 
     def sandbox_finalize(self, *args, **kwargs):
         """Finalize the sandbox manager."""
         if self._manager:
             try:
-                if self._loop and not self._loop.is_closed():
-                    # Stop the manager using the dedicated loop
-                    future = asyncio.run_coroutine_threadsafe(self._manager.stop(), self._loop)
-                    future.result(timeout=30)
-
-                    # Stop the event loop
-                    self._loop.call_soon_threadsafe(self._loop.stop)
-                    if hasattr(self, '_loop_thread') and self._loop_thread:
-                        self._loop_thread.join(timeout=5)
-
+                # Stop the manager but keep the shared loop alive
+                AsyncioLoopRunner.run(self._manager.stop(), timeout=30)
                 logger.info('Sandbox manager finalized.')
             except Exception as e:
                 logger.warning(f'Error finalizing sandbox manager: {e}')
