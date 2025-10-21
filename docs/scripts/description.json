@@ -10,9 +10,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "needle_haystack": {
-    "en": "Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)",
-    "zh": "“大海捞针”是一项专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)",
+    "zh": "“大海捞针”是一个专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "simple_qa": {
     "en": "SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.",
@@ -40,9 +40,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "humaneval": {
-    "en": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.",
-    "zh": "HumanEval 是一个基准，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "HumanEval 是一个用于评估代码生成模型根据给定规范编写 Python 函数能力的基准测试，包含具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "mmlu_redux": {
     "en": "MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.",
@@ -65,9 +65,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "general_qa": {
-    "en": "A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).",
+    "en": "A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).",
     "zh": "一个用于自定义评估的通用问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "mmlu_pro": {
     "en": "MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.",
@@ -85,9 +85,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "data_collection": {
-    "en": "Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)",
-    "zh": "自定义数据收集，融合多个评测数据集进行统一评估，旨在用更少的数据全面评估模型能力。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)",
+    "zh": "自定义数据收集，融合多个评测数据集进行统一评估，旨在使用更少的数据实现对模型能力的更全面评估。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "aime25": {
     "en": "The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.",
@@ -105,19 +105,19 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "general_mcq": {
-    "en": "A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).",
+    "en": "A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).",
     "zh": "一个用于自定义评估的通用多项选择题问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq)。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "tau_bench": {
-    "en": "A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)",
-    "zh": "一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请先通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型后再进行评估。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)",
+    "zh": "一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请在评估前通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "tool_bench": {
-    "en": "ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)",
-    "zh": "ToolBench 是一个用于评估 AI 模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html)",
+    "zh": "ToolBench 是一个用于评估AI模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有一系列需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "cmmlu": {
     "en": "C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.",
@@ -150,9 +150,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "bfcl_v3": {
-    "en": "Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)",
-    "zh": "Berkeley Function Calling Leaderboard (BFCL) 是首个专注于评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需运行 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)",
+    "zh": "Berkeley Function Calling Leaderboard (BFCL) 是首个专门评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需安装 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "alpaca_eval": {
     "en": "Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.",
@@ -280,9 +280,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "live_code_bench": {
-    "en": "Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions.",
-    "zh": "Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程问题和测试用例，用以衡量模型生成正确且高效代码的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以检验模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "arc": {
     "en": "The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.",
@@ -300,9 +300,9 @@
     "updated_at": "2025-09-29T15:08:12Z"
   },
   "general_arena": {
-    "en": "GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).",
-    "zh": "GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，评估其性能并分析各自的优势与不足。您需以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "en": "GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).",
+    "zh": "GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，以评估其性能并识别各自的优势与不足。您应以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。",
+    "updated_at": "2025-10-21T17:14:24Z"
   },
   "cc_bench": {
     "en": "CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.",

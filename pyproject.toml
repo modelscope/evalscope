@@ -48,6 +48,7 @@ rag         = {file = ["requirements/rag.txt"]}
 perf        = {file = ["requirements/perf.txt"]}
 app         = {file = ["requirements/app.txt"]}
 aigc        = {file = ["requirements/aigc.txt"]}
+sandbox     = {file = ["requirements/sandbox.txt"]}
 dev         = {file = ["requirements/dev.txt"]}
 docs        = {file = ["requirements/docs.txt"]}
 all = {file = [

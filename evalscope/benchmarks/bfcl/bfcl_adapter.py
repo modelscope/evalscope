@@ -49,7 +49,7 @@ SUBJECT_MAPPING = {
         'functions. Unlike previous evaluations, '
         'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
         'Need to run `pip install bfcl-eval==2025.6.16` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)',
+        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)',
         dataset_id='AI-ModelScope/bfcl_v3',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],

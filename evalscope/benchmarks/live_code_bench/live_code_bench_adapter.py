@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -19,7 +20,8 @@ logger = get_logger()
         pretty_name='Live-Code-Bench',
         tags=[Tags.CODING],
         description=
-        'Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model\'s ability to generate correct and efficient code solutions.',  # noqa: E501
+        'Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model\'s ability to generate correct and efficient code solutions. '
+        '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',
         dataset_id='AI-ModelScope/code_generation_lite',
         subset_list=['release_latest'],
         metric_list=['Pass@1'],

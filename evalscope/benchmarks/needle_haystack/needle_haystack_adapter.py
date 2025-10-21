@@ -36,7 +36,7 @@ Don't give information outside the document or repeat your findings."""
         tags=[Tags.RETRIEVAL, Tags.LONG_CONTEXT],
         description='Needle in a Haystack is a benchmark focused on information retrieval tasks. '
         'It requires the model to find specific information within a large corpus of text. '
-        '[Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)',  # noqa: E501
+        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)',  # noqa: E501
         dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
         metric_list=['acc'],
         subset_list=['english', 'chinese'],

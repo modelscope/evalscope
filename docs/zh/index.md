@@ -37,6 +37,7 @@ user_guides/backend/index.md
 user_guides/stress_test/index.md
 user_guides/aigc/index.md
 user_guides/arena.md
+user_guides/sandbox.md
 :::
 
 :::{toctree}

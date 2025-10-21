@@ -57,6 +57,12 @@ def translate_description(description: str, client: OpenAI | None = None) -> str
     )
     return completion.choices[0].message.content.strip()
 
+def convert_link(text: str) -> str:
+    """Convert markdown links from English to Chinese."""
+    return text.replace(
+        'https://evalscope.readthedocs.io/en/',
+        'https://evalscope.readthedocs.io/zh-cn/'
+    )
 
 def update_all_descriptions(force: bool = False,
                             dry_run: bool = False,
@@ -108,6 +114,8 @@ def update_all_descriptions(force: bool = False,
                 except Exception as e:
                     zh_txt = ''  # On failure leave empty so can retry later
                     print(f'Error translating {name}: {e}')
+                
+                zh_txt = convert_link(zh_txt)
                 data[name] = {
                     'en': en_txt,
                     'zh': zh_txt,
