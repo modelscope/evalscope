@@ -45,6 +45,7 @@ task_config = TaskConfig(
     },
     use_sandbox=True, # enable sandbox
     sandbox_type='docker', # specify sandbox type
+    judge_worker_num=5, # specify number of sandbox workers during evaluation
 )
 
 run_task(task_config)
@@ -117,7 +118,8 @@ task_config = TaskConfig(
     sandbox_type='docker', # specify sandbox type
     sandbox_manager_config={
         'base_url': 'http://<remote_host>:1234'  # remote sandbox manager URL
-    }
+    },
+    judge_worker_num=5, # specify number of sandbox workers during evaluation
 )
 
 run_task(task_config)
