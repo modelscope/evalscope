@@ -125,6 +125,6 @@ run_task(task_config)
 
 在模型评测过程中，EvalScope会通过API与远端沙箱服务器进行通信，确保代码在隔离的环境中运行。控制台有如下输出：
 ```text
-[INFO:ms_enclave] HTTP sandbox manager started, connected to http://127.0.0.1:1234
+[INFO:ms_enclave] HTTP sandbox manager started, connected to http://<remote_host>:1234
 ...
 ```
