@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+# flake8: noqa: E501
 import os
 import re
 from pathlib import Path
@@ -8,10 +8,11 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags, HubType
-from evalscope.utils.logger import get_logger
 from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import HubType, Tags
+from evalscope.utils.logger import get_logger
+
 logger = get_logger()
 
 # Default judge prompt template
@@ -39,23 +40,21 @@ START QUESTION
 END QUESTION
 """
 
+
 @register_benchmark(
     BenchmarkMeta(
         name='aa_lcr',
         pretty_name='AA-LCR',
         tags=[Tags.KNOWLEDGE, Tags.REASONING],
-        description=
-        'AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context '
+        description='AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context '
         'retrieval and reasoning capabilities of language models across multiple documents.',  # noqa: E501
-        dataset_id='ArtificialAnalysis/AA-LCR',
+        dataset_id='evalscope/AA-LCR',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
         prompt_template='{question}',
-        extra_params={
-            'text_dir': None
-        }
+        extra_params={'text_dir': None}
     )
 )
 class AALCRAdapter(DefaultDataAdapter):
@@ -64,25 +63,24 @@ class AALCRAdapter(DefaultDataAdapter):
         super().__init__(*args, **kwargs)
 
         self._use_llm_judge = True
-        
+
         # Get extra parameters
         self.text_dir = self.extra_params.get('text_dir')
         if not self.text_dir or not Path(self.text_dir).exists():
             raise ValueError(
-                "Please download and extract the AA-LCR documents from "
-                "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR/tree/main/extracted_text, "
+                'Please download and extract the AA-LCR documents from '
+                'https://modelscope.cn/datasets/evalscope/AA-LCR/resolve/master/extracted_text/AA-LCR_extracted-text.zip, '
                 "and set 'text_dir' in extra_params accordingly."
             )
         self.text_dir = Path(self.text_dir)
-        self.dataset_hub = HubType.HUGGINGFACE
 
     def _get_context(self, record: Dict[str, Any]) -> str:
         doc_folder = self.text_dir / record['document_category'] / record['document_set_id']
-        
+
         # Check if the document folder exists
         if not doc_folder.exists() or not doc_folder.is_dir():
-            logger.warning(f"Document folder not found: {doc_folder}. Returning empty context.")
-            return ""
+            logger.warning(f'Document folder not found: {doc_folder}. Returning empty context.')
+            return ''
 
         doc_blocks = []
         try:
@@ -93,21 +91,21 @@ class AALCRAdapter(DefaultDataAdapter):
                         if content:
                             doc_blocks.append(content)
                     except (IOError, UnicodeDecodeError) as e:
-                        logger.warning(f"Could not read file {file_path}, skipping: {e}")
+                        logger.warning(f'Could not read file {file_path}, skipping: {e}')
         except OSError as e:
-            logger.warning(f"Could not access document folder {doc_folder}: {e}")
+            logger.warning(f'Could not access document folder {doc_folder}: {e}')
             return f"ERROR: Could not read documents for {record['document_category']}/{record['document_set_id']}"
-            
-        documents_text = "\n\n".join(f"BEGIN DOCUMENT {i + 1}:\n{doc}\nEND DOCUMENT {i + 1}" for i, doc in enumerate(doc_blocks))
+
+        documents_text = '\n\n'.join(
+            f'BEGIN DOCUMENT {i + 1}:\n{doc}\nEND DOCUMENT {i + 1}' for i, doc in enumerate(doc_blocks)
+        )
         return documents_text
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a record to a Sample with long-context prompt."""
         context = self._get_context(record)
-        prompt = PROMPT_TEMPLATE.format(
-            documents_text=context,
-            question=record['question'])
-        
+        prompt = PROMPT_TEMPLATE.format(documents_text=context, question=record['question'])
+
         return Sample(
             input=prompt,
             target=record['answer'],
