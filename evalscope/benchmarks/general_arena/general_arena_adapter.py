@@ -31,7 +31,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
         'GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, '
         'where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should '
         'provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. '
-        'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).',
+        'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).',
         dataset_id='general_arena',
         metric_list=['winrate'],
         few_shot_num=0,

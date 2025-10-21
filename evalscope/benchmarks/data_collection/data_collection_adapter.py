@@ -20,11 +20,12 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name=DataCollection.NAME,
+        pretty_name='Data-Collection',
         dataset_id='',  # dataset_id need to be set
         description='Custom Data collection, mixing multiple evaluation datasets for '
         'a unified evaluation, aiming to use less data to achieve a more comprehensive '
         'assessment of the model\'s capabilities. '
-        '[Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)',
+        '[Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)',
         tags=[Tags.CUSTOM],
         metric_list=['acc'],
         eval_split='test',

@@ -20,7 +20,7 @@ logger = get_logger()
         name='general_mcq',
         pretty_name='General-MCQ',
         description='A general multiple-choice question answering dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).',
+        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).',
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
         dataset_id='general_mcq',
         subset_list=['default'],

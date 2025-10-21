@@ -20,7 +20,7 @@ PROMPT_TEMPLATE = '请回答问题\n{question}'
         name='general_qa',
         pretty_name='General-QA',
         description='A general question answering dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).',  # noqa: E501
+        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).',  # noqa: E501
         tags=[Tags.QA, Tags.CUSTOM],
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],

@@ -17,7 +17,7 @@
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
-| `data_collection` | [data_collection](#data_collection) | `Custom` |
+| `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
@@ -252,7 +252,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集名称**: `bfcl_v3`
 - **数据集ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **数据集描述**:
-  > Berkeley Function Calling Leaderboard (BFCL) 是首个专注于评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需运行 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
+  > Berkeley Function Calling Leaderboard (BFCL) 是首个专门评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需安装 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
 - **任务类别**: `FunctionCalling`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -365,13 +365,13 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
-### data_collection
+### Data-Collection
 
 [返回目录](#llm评测集)
 - **数据集名称**: `data_collection`
 - **数据集ID**: 
 - **数据集描述**:
-  > 自定义数据收集，融合多个评测数据集进行统一评估，旨在用更少的数据全面评估模型能力。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
+  > 自定义数据收集，融合多个评测数据集进行统一评估，旨在使用更少的数据实现对模型能力的更全面评估。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 - **任务类别**: `Custom`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -469,7 +469,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **数据集名称**: `general_arena`
 - **数据集ID**: general_arena
 - **数据集描述**:
-  > GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，评估其性能并分析各自的优势与不足。您需以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。
+  > GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，以评估其性能并识别各自的优势与不足。您应以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。
 - **任务类别**: `Arena`, `Custom`
 - **评估指标**: `winrate`
 - **需要LLM Judge**: 是
@@ -712,7 +712,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `humaneval`
 - **数据集ID**: [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary)
 - **数据集描述**:
-  > HumanEval 是一个基准，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。
+  > HumanEval 是一个用于评估代码生成模型根据给定规范编写 Python 函数能力的基准测试，包含具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
@@ -775,7 +775,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `live_code_bench`
 - **数据集ID**: [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)
 - **数据集描述**:
-  > Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程问题和测试用例，用以衡量模型生成正确且高效代码的能力。
+  > Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以检验模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
 - **评估指标**: `Pass@1`
 - **需要LLM Judge**: 否
@@ -1003,7 +1003,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `needle_haystack`
 - **数据集ID**: [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary)
 - **数据集描述**:
-  > “大海捞针”是一项专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
+  > “大海捞针”是一个专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 - **任务类别**: `LongContext`, `Retrieval`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 是
@@ -1177,7 +1177,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `tau_bench`
 - **数据集ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
 - **数据集描述**:
-  > 一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请先通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型后再进行评估。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
+  > 一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请在评估前通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
 - **任务类别**: `FunctionCalling`, `Reasoning`
 - **评估指标**: `Pass^1`
 - **需要LLM Judge**: 否
@@ -1205,7 +1205,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `tool_bench`
 - **数据集ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **数据集描述**:
-  > ToolBench 是一个用于评估 AI 模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
+  > ToolBench 是一个用于评估AI模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有一系列需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
 - **任务类别**: `FunctionCalling`, `Reasoning`
 - **评估指标**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **需要LLM Judge**: 否

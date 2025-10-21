@@ -21,7 +21,8 @@ logger = get_logger()
         pretty_name='HumanEval',
         tags=[Tags.CODING],
         description=
-        'HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.',
+        'HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. '
+        '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='opencompass/humaneval',
         subset_list=['openai_humaneval'],
         metric_list=['Pass@1'],
