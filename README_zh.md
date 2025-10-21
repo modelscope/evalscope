@@ -102,6 +102,7 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 > **版本 1.0 重构**
 >
 > 版本 1.0 对评测框架进行了重大重构，在 `evalscope/api` 下建立了全新的、更模块化且易扩展的 API 层。主要改进包括：为基准、样本和结果引入了标准化数据模型；对基准和指标等组件采用注册表式设计；并重写了核心评测器以协同新架构。现有的基准已迁移到这一 API，实现更加简洁、一致且易于维护。
+
 - 🔥 **[2025.10.14]** 新增支持OCRBench, OCRBench-v2, DocVQA, InfoVQA, ChartQA, BLINK 等图文多模态评测基准。
 - 🔥 **[2025.09.22]** 代码评测基准(HumanEval, LiveCodeBench)支持在沙箱环境中运行，要使用该功能需先安装[ms-enclave](https://github.com/modelscope/ms-enclave)。
 - 🔥 **[2025.09.19]** 新增支持RealWorldQA、AI2D、MMStar、MMBench、OmniBench等图文多模态评测基准，和Multi-IF、HealthBench、AMC等纯文本评测基准。
