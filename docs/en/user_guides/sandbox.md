@@ -125,6 +125,6 @@ run_task(task_config)
 
 During model evaluation, EvalScope will communicate with the remote sandbox server through API, ensuring code runs in an isolated environment. The console will display output like:
 ```text
-[INFO:ms_enclave] HTTP sandbox manager started, connected to http://127.0.0.1:1234
+[INFO:ms_enclave] HTTP sandbox manager started, connected to http://<remote_host>:1234
 ...
 ```
