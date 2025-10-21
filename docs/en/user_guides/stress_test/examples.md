@@ -195,7 +195,7 @@ pip install wandb
 
 When starting, add the following parameters:
 ```bash
---wandb-api-key 'wandb_api_key'
+--visualizer wandb
 --name 'name_of_wandb_log'
 ```  
 
@@ -210,7 +210,7 @@ pip install swanlab
 
 When starting, add the following parameters:
 ```bash
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```
 

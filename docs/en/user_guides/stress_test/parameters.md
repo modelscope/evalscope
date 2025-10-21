@@ -76,8 +76,9 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
 
 ## Data Storage
-- `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
-- `--swanlab-api-key`: swanlab API key, if set, metrics will be saved to swanlab.
+- `--visualizer`: The visualizer to use, if set, metrics will be saved to the specified visualizer, can be `wandb` or `swanlab`, default None.
+- `--wandb-api-key`: wandb API key to use for logging metrics to wandb.
+- `--swanlab-api-key`: swanlab API key to use for logging metrics to swanlab.
 - `--outputs-dir` specifies the output file path, with a default value of `./outputs`.
 
 ## Other Parameters
