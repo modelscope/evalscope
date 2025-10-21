@@ -4,6 +4,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
+| `aa_lcr` | [AA-LCR](#aa-lcr) | `Knowledge`, `LongContext`, `Reasoning` |
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
@@ -55,6 +56,46 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 ---
 
 ## Benchmark Details
+
+### AA-LCR
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `aa_lcr`
+- **Dataset ID**: [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary)
+- **Description**:
+  > AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.
+- **Task Categories**: `Knowledge`, `LongContext`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "text_dir": null
+}
+```
+- **Prompt Template**: 
+```text
+
+BEGIN INPUT DOCUMENTS
+
+{documents_text}
+
+END INPUT DOCUMENTS
+
+Answer the following question using the input documents provided above.
+
+START QUESTION
+
+{question}
+
+END QUESTION
+
+```
+
+---
 
 ### AIME-2024
 

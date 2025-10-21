@@ -433,6 +433,11 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('poly_math', dataset_args, use_cache='outputs/20251016_154028')
 
+    def test_aa_lcr(self):
+        dataset_args = {
+            'text_dir': 'data/aa_lcr',
+        }
+        self._run_dataset_test('aa_lcr', dataset_args)
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark
