@@ -368,5 +368,10 @@
     "en": "SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.",
     "zh": "SimpleVQA 是首个全面评估多模态大语言模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。SimpleVQA 具有六大特点：涵盖多种任务和场景，确保查询的高质量与挑战性，提供静态且不受时间影响的参考答案，并易于评估。",
     "updated_at": "2025-10-17T16:40:33Z"
+  },
+  "aa_lcr": {
+    "en": "AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.",
+    "zh": "AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。",
+    "updated_at": "2025-10-21T11:14:20Z"
   }
 }

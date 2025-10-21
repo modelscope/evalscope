@@ -1,16 +1,18 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
-import os
 import re
+import urllib.request
+import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -40,12 +42,20 @@ START QUESTION
 END QUESTION
 """
 
+# New constants for auto-download
+DOWNLOAD_URL: str = (
+    'https://modelscope.cn/datasets/evalscope/AA-LCR/resolve/master/extracted_text/AA-LCR_extracted-text.zip'
+)
+DEFAULT_CACHE_SUBDIR: str = 'aa_lcr'
+DEFAULT_ZIP_NAME: str = 'AA-LCR_extracted-text.zip'
+DEFAULT_EXTRACTED_DIR_NAME: str = 'lcr'
+
 
 @register_benchmark(
     BenchmarkMeta(
         name='aa_lcr',
         pretty_name='AA-LCR',
-        tags=[Tags.KNOWLEDGE, Tags.REASONING],
+        tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.LONG_CONTEXT],
         description='AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context '
         'retrieval and reasoning capabilities of language models across multiple documents.',  # noqa: E501
         dataset_id='evalscope/AA-LCR',
@@ -53,7 +63,7 @@ END QUESTION
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        prompt_template='{question}',
+        prompt_template=PROMPT_TEMPLATE,
         extra_params={'text_dir': None}
     )
 )
@@ -66,13 +76,57 @@ class AALCRAdapter(DefaultDataAdapter):
 
         # Get extra parameters
         self.text_dir = self.extra_params.get('text_dir')
-        if not self.text_dir or not Path(self.text_dir).exists():
+
+    def load(self):
+        # Auto download and extract when text_dir is not provided
+        if not self.text_dir:
+            self.text_dir = self._ensure_text_dir_downloaded()
+        elif not Path(self.text_dir).exists():
             raise ValueError(
-                'Please download and extract the AA-LCR documents from '
-                'https://modelscope.cn/datasets/evalscope/AA-LCR/resolve/master/extracted_text/AA-LCR_extracted-text.zip, '
-                "and set 'text_dir' in extra_params accordingly."
+                'AA-LCR text_dir does not exist: '
+                f'{self.text_dir}. Please provide a valid directory or omit text_dir to auto-download.'
             )
+
         self.text_dir = Path(self.text_dir)
+        return super().load()
+
+    def _ensure_text_dir_downloaded(self) -> Path:
+        """Ensure AA-LCR extracted texts are available locally; download and extract if missing."""
+        cache_root = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / DEFAULT_CACHE_SUBDIR
+        extracted_dir = cache_root / DEFAULT_EXTRACTED_DIR_NAME
+
+        if extracted_dir.exists():
+            logger.info(f'AA-LCR documents found: {extracted_dir}')
+            return extracted_dir
+
+        cache_root.mkdir(parents=True, exist_ok=True)
+        zip_path = cache_root / DEFAULT_ZIP_NAME
+
+        try:
+            logger.info(f'Downloading AA-LCR documents from {DOWNLOAD_URL} to {zip_path}...')
+            urllib.request.urlretrieve(DOWNLOAD_URL, zip_path)
+
+            logger.info(f'Extracting {zip_path} to {cache_root}...')
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                zf.extractall(cache_root)
+
+            if not extracted_dir.exists():
+                raise ValueError(f'Extraction succeeded but target directory not found: {extracted_dir}')
+
+            logger.info(f'AA-LCR documents ready at {extracted_dir}')
+            return extracted_dir
+        except Exception as e:
+            raise ValueError(
+                f'Failed to download or extract AA-LCR documents: {e}. '
+                'You can also manually download and set extra_params["text_dir"].'
+            ) from e
+        finally:
+            # Best-effort cleanup of the zip file
+            try:
+                if zip_path.exists():
+                    zip_path.unlink()
+            except Exception:
+                pass
 
     def _get_context(self, record: Dict[str, Any]) -> str:
         doc_folder = self.text_dir / record['document_category'] / record['document_set_id']
@@ -104,10 +158,10 @@ class AALCRAdapter(DefaultDataAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a record to a Sample with long-context prompt."""
         context = self._get_context(record)
-        prompt = PROMPT_TEMPLATE.format(documents_text=context, question=record['question'])
+        prompt = self.prompt_template.format(documents_text=context, question=record['question'])
 
         return Sample(
-            input=prompt,
+            input=[ChatMessageUser(content=prompt)],
             target=record['answer'],
             metadata={
                 'question': record['question'],

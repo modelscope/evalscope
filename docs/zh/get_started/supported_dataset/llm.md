@@ -4,6 +4,7 @@
 
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
+| `aa_lcr` | [AA-LCR](#aa-lcr) | `Knowledge`, `LongContext`, `Reasoning` |
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
@@ -55,6 +56,46 @@
 ---
 
 ## 数据集详情
+
+### AA-LCR
+
+[返回目录](#llm评测集)
+- **数据集名称**: `aa_lcr`
+- **数据集ID**: [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary)
+- **数据集描述**:
+  > AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。
+- **任务类别**: `Knowledge`, `LongContext`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "text_dir": null
+}
+```
+- **提示模板**: 
+```text
+
+BEGIN INPUT DOCUMENTS
+
+{documents_text}
+
+END INPUT DOCUMENTS
+
+Answer the following question using the input documents provided above.
+
+START QUESTION
+
+{question}
+
+END QUESTION
+
+```
+
+---
 
 ### AIME-2024
 
