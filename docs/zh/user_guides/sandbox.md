@@ -70,7 +70,7 @@ run_task(task_config)
 
 1. **安装Docker**：请确保您的机器上已安装Docker。您可以从[Docker官网](https://www.docker.com/get-started)下载并安装Docker。
 
-2. **安装沙箱环境相关依赖**：在本地使用的Python环境中安装`ms-enclave`等包：
+2. **安装沙箱环境相关依赖**：在远端机器的Python环境中安装`ms-enclave`等包：
 
 ```bash
 pip install evalscope[sandbox]
