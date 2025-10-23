@@ -221,9 +221,8 @@ class End2EndEvaluator():
             except FunctionTimedOut as e1:
                 print(f'Time out for plain text match of {img_name}, match_gt2pred_simple will be used.')
                 plain_text_match_s = match_gt2pred_simple(gt_text_list, pred_dataset['text_all'], 'text', img_name)
-            except Exception as e:
-                print(str(e))
-                sys.exit()
+                logger.error(str(e))
+                raise e
 
             if not plain_text_match_s:
                 print(f'No text match of {img_name}. The plain text match will be empty.')
