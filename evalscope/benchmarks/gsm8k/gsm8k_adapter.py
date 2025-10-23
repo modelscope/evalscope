@@ -52,7 +52,7 @@ Here are some examples of how to solve similar problems:
         description=
         'GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.',  # noqa: E501
         subset_list=['main'],
-        few_shot_num=4,
+        few_shot_num=0,
         train_split='train',
         eval_split='test',
         metric_list=['acc'],
