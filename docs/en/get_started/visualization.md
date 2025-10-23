@@ -3,7 +3,7 @@
 The visualization feature supports in-depth analysis and comparison of evaluation results for single or multiple models, and is compatible with displaying mixed dataset evaluations.
 
 ```{important}
-This visualization tool is specifically designed for displaying model **evaluation** results and is not suitable for model **stress test** results. For visualizing stress test reports, please refer to the [Stress Test Result Visualization Guide](../user_guides/stress_test/quick_start.md#可视化测试结果).
+This visualization tool is specifically designed for displaying model **evaluation** results and is not suitable for model **stress test** results. For visualizing stress test reports, please refer to the [Stress Test Result Visualization Guide](../user_guides/stress_test/quick_start.md#visualizing-test-results).
 ```
 
 ## Installation and Startup

@@ -108,7 +108,7 @@ task_config = TaskConfig(
 
 **A:**
 1.  **Check model type**: Use Instruct or Chat models. Base models may have issues like repetition due to not following instructions.
-2.  **Remove thinking process**: Some models generate thinking process before code. Please refer to [this method](#q-how-to-remove-thinking-process-from-model-outputs-like-think-think) for filtering.
+2.  **Remove thinking process**: Some models generate thinking process before code. Please refer to [this method](#evaluation-configuration--parameters) for filtering.
 3.  **Adjust generation length**: Default maximum generation length may be insufficient. Please appropriately increase `max_tokens` in `generation_config`.
 
 **Q: Inaccurate answer extraction or misjudgments when evaluating `MATH-500` dataset?**

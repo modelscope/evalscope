@@ -193,7 +193,7 @@ run_task(task_cfg=task_cfg)
 ```
 
 ```{seealso}
-For detailed configuration of judge models, please refer to: [Judge Model Parameters](./parameters.md#judge参数)
+For detailed configuration of judge models, please refer to: [Judge Model Parameters](./parameters.md#judge-parameters)
 ```
 
 ### Offline Evaluation
