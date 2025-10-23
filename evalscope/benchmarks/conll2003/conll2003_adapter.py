@@ -9,7 +9,7 @@ from evalscope.constants import Tags
         name='conll2003',
         pretty_name='CoNLL2003',
         dataset_id='extraordinarylab/conll2003',
-        tags=[Tags.REASONING],
+        tags=[Tags.KNOWLEDGE],
         description='The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part '
         'of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as '
         'people, organizations, places, and various names.',
