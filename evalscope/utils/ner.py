@@ -58,8 +58,6 @@ Text to process:
 
 # Common error patterns to handle in XML predictions
 DEFAULT_TAG_FIX_PATTERNS = [
-    # Fix missing closing tags by looking for tag name
-    (r'<(\w+)>([^<]*)', r'<\1>\2</\1>'),
     # Fix mismatched tags
     (r'<(\w+)>(.*?)</\w+>', r'<\1>\2</\1>'),
 ]
@@ -95,7 +93,7 @@ def create_target_text(tokens: List[str], ner_tags: List[str], entity_type_map: 
 
             current_entity = tag[2:]  # Remove B- prefix
             entity_tokens.append(token)
-        elif tag.startswith('I-') and current_entity:  # Inside entity
+        elif tag.startswith('I-') and current_entity and tag[2:] == current_entity:  # Inside entity
             entity_tokens.append(token)
         else:  # Outside any entity (O tag)
             if current_entity:  # Close previous entity
@@ -248,16 +246,52 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
     # Map entities to tokens based on character positions
     for entity_type, entity_text, start_pos, end_pos in entities:
-        # Find entity position in original text
-        entity_start = original_text.find(entity_text)
+        # Extract the context from the XML text to help locate the correct entity occurrence
+        # Get some context before and after the entity in the XML text
+        context_start = max(0, start_pos - 20)
+        context_end = min(len(xml_text), end_pos + 20)
+
+        # Extract context without XML tags
+        context_before = re.sub(r'<[^>]+>', '', xml_text[context_start:start_pos])
+        context_after = re.sub(r'<[^>]+>', '', xml_text[end_pos:context_end])
+
+        # Use context to find the correct entity position in original text
+        search_pos = 0
+        entity_start = -1
+
+        while search_pos < len(original_text):
+            # Find the next occurrence of the entity
+            potential_start = original_text.find(entity_text, search_pos)
+            if potential_start == -1:
+                break
+
+            # Check if the context matches
+            potential_context_start = max(0, potential_start - len(context_before))
+            potential_context_end = min(len(original_text), potential_start + len(entity_text) + len(context_after))
+
+            before_match = context_before.strip() in original_text[potential_context_start:potential_start].strip()
+            after_match = context_after.strip() in original_text[potential_start
+                                                                 + len(entity_text):potential_context_end].strip()
+
+            # If context matches or we can't find a better match, use this position
+            if before_match or after_match or search_pos > len(original_text) // 2:
+                entity_start = potential_start
+                break
+
+            # Move search position forward
+            search_pos = potential_start + 1
+
+        # If we couldn't find the entity with context, fall back to the first occurrence
         if entity_start == -1:
-            continue
+            entity_start = original_text.find(entity_text)
+            if entity_start == -1:
+                continue
 
         entity_end = entity_start + len(entity_text)
 
         # Find tokens that overlap with this entity
         for i, (token_start, token_end) in enumerate(zip(token_positions, token_ends)):
-            if token_start <= entity_end and token_end >= entity_start:  # Fixed missing whitespace around operators
+            if token_start <= entity_end and token_end >= entity_start:
                 # This token overlaps with the entity
                 if bio_tags[i] == 'O':
                     # Start of entity
