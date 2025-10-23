@@ -343,7 +343,7 @@ For details, please refer to [📖 Performance Testing Usage Guide](https://eval
 
 Example output is shown below:
 <p align="center">
-    <img src="docs/zh/user_guides/stress_test/images/multi_perf.png" style="width: 80%;">
+    <img src="docs/en/user_guides/stress_test/images/multi_perf.png" style="width: 80%;">
 </p>
 
 
