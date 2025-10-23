@@ -13,15 +13,16 @@ from nltk.translate.meteor_score import meteor_score
 from tabulate import tabulate
 from tqdm import tqdm
 
+from evalscope.utils import get_logger
 from .utils import normalized_table
+
+logger = get_logger()
 
 
 def show_result(results):
     for metric_name in results.keys():
-        print(f'{metric_name}:')
         score_table = [[k, v] for k, v in results[metric_name].items()]
-        print(tabulate(score_table))
-        print('=' * 100)
+        logger.info(f'\n{metric_name}:' + tabulate(score_table) + '\n' + '=' * 100)
 
 
 def sort_nested_dict(d):

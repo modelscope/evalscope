@@ -1,16 +1,13 @@
 import ast
-import copy
-import os
+import numpy as np
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.report.report import Report, Subset
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -60,7 +57,7 @@ PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF ima
                 'metric': ['Edit_dist', 'BLEU', 'METEOR']
             },
             'display_formula': {
-                'metric': ['Edit_dist', 'CDM']
+                'metric': ['Edit_dist']
             },
             'table': {
                 'metric': ['TEDS', 'Edit_dist']
@@ -127,14 +124,12 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
 
         agg_scores = []
         for metric_name, agg_result in agg_results.items():
-            agg_score = AggScore(
-                score=agg_result['score'],
-                metric_name=metric_name,
-                aggregation_name=agg_result['aggregation_name'],
-                num=agg_result['num'],
-                ids=agg_result.get('ids', None),
-                metadata=agg_result.get('metadata', None),
-            )
-            agg_scores.append(agg_score)
+            if agg_result is not np.nan:
+                agg_score = AggScore(
+                    score=agg_result,
+                    metric_name=metric_name,
+                    num=len(sample_scores),
+                )
+                agg_scores.append(agg_score)
 
         return agg_scores

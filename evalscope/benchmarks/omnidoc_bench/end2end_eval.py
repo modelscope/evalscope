@@ -5,6 +5,10 @@ import sys
 from collections import defaultdict
 from typing import Dict, List
 
+from evalscope.utils import get_logger
+
+logger = get_logger()
+
 
 class End2EndEvaluator():
 
@@ -35,7 +39,7 @@ class End2EndEvaluator():
             filtered_gt_samples = self.references  #[{},{},{}]
         self.references = filtered_gt_samples
 
-    def score(self) -> List[dict]:
+    def score(self) -> dict:
         samples = self.get_matched_elements(self.references, self.predictions)
         metrics = self.process_generated_metric_results(samples)
         return metrics
@@ -291,7 +295,7 @@ class End2EndEvaluator():
                     result.update(result_s)
 
             if result:
-                print(f'{element}')
+                logger.info(f'{element}')
                 show_result(result)
             result_all[element] = {}
 
@@ -300,33 +304,48 @@ class End2EndEvaluator():
 
             result_all[element] = {'all': result, 'group': group_result, 'page': page_result}
 
-        dict_list = []
         save_dict = {}
         en_overall = []
         ch_overall = []
         for category_type, metric in [('text_block', 'Edit_dist'), ('display_formula', 'Edit_dist'),
                                       ('display_formula', 'CDM'), ('table', 'TEDS'), ('table', 'Edit_dist'),
                                       ('reading_order', 'Edit_dist')]:
-            if metric == 'CDM':
-                save_dict[category_type + '_' + metric + '_EN'] = '-'
-                save_dict[category_type + '_' + metric + '_CH'] = '-'
-            elif metric == 'TEDS':
-                save_dict[category_type + '_' + metric
-                          + '_EN'] = result_all[category_type]['page'][metric]['language: english'] * 100
-                save_dict[category_type + '_' + metric
-                          + '_CH'] = result_all[category_type]['page'][metric]['language: simplified_chinese'] * 100
+            if metric == 'TEDS':
+                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
+                    category_type]['page']:
+                    save_dict[category_type + '_' + metric
+                              + '_EN'] = result_all[category_type]['page'][metric]['language: english']
+                    save_dict[category_type + '_' + metric
+                              + '_CH'] = result_all[category_type]['page'][metric]['language: simplified_chinese']
+                else:
+                    save_dict[category_type + '_' + metric + '_EN'] = np.nan
+                    save_dict[category_type + '_' + metric + '_CH'] = np.nan
             else:
-                save_dict[category_type + '_' + metric
-                          + '_EN'] = result_all[category_type]['page'][metric].get('language: english', np.nan)
-                save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric].get(
-                    'language: simplified_chinese', np.nan
-                )
+                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
+                    category_type]['page']:
+                    save_dict[category_type + '_' + metric
+                              + '_EN'] = result_all[category_type]['page'][metric].get('language: english', np.nan)
+                    save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric].get(
+                        'language: simplified_chinese', np.nan
+                    )
+                else:
+                    save_dict[category_type + '_' + metric + '_EN'] = np.nan
+                    save_dict[category_type + '_' + metric + '_CH'] = np.nan
+
             if metric == 'Edit_dist':
-                en_overall.append(result_all[category_type]['page'][metric].get('language: english', np.nan))
-                ch_overall.append(result_all[category_type]['page'][metric].get('language: simplified_chinese', np.nan))
+                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
+                    category_type]['page']:
+                    en_overall.append(result_all[category_type]['page'][metric].get('language: english', np.nan))
+                    ch_overall.append(
+                        result_all[category_type]['page'][metric].get('language: simplified_chinese', np.nan)
+                    )
+                else:
+                    en_overall.append(np.nan)
+                    ch_overall.append(np.nan)
 
-        save_dict['overall_EN'] = sum(en_overall) / len(en_overall)
-        save_dict['overall_CH'] = sum(ch_overall) / len(ch_overall)
-        dict_list.append(save_dict)
+        en_overall_filtered = [x for x in en_overall if not np.isnan(x)]
+        ch_overall_filtered = [x for x in ch_overall if not np.isnan(x)]
+        save_dict['overall_EN'] = sum(en_overall_filtered) / len(en_overall_filtered) if en_overall_filtered else np.nan
+        save_dict['overall_CH'] = sum(ch_overall_filtered) / len(ch_overall_filtered) if ch_overall_filtered else np.nan
 
-        return dict_list
+        return save_dict
