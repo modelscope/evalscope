@@ -365,21 +365,21 @@ EvalScope provides a Gradio-based WebUI for interactive analysis and comparison 
 <table>
   <tr>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/setting.png" alt="Setting" style="width: 90%;" />
+      <img src="docs/en/get_started/images/setting.png" alt="Setting" style="width: 85%;" />
       <p>Settings Interface</p>
     </td>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/model_compare.png" alt="Model Compare" style="width: 100%;" />
+      <img src="docs/en/get_started/images/model_compare.png" alt="Model Compare" style="width: 100%;" />
       <p>Model Comparison</p>
     </td>
   </tr>
   <tr>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/report_overview.png" alt="Report Overview" style="width: 100%;" />
+      <img src="docs/en/get_started/images/report_overview.png" alt="Report Overview" style="width: 100%;" />
       <p>Report Overview</p>
     </td>
     <td style="text-align: center;">
-      <img src="docs/zh/get_started/images/report_details.png" alt="Report Details" style="width: 91%;" />
+      <img src="docs/en/get_started/images/report_details.png" alt="Report Details" style="width: 85%;" />
       <p>Report Details</p>
     </td>
   </tr>
