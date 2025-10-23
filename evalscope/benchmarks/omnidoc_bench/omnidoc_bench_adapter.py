@@ -27,7 +27,9 @@ SUBSET_LIST = []
         """OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:
 - Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.
 - Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.
-- High Annotation Quality: Through manual screening, intelligent annotation, manual annotation, full expert quality inspection and large model quality inspection, the data quality is relatively high.""",  # noqa: E501
+- High Annotation Quality: Through manual screening, intelligent annotation, manual annotation, full expert quality inspection and large model quality inspection, the data quality is relatively high.
+**The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**
+""",  # noqa: E501
         dataset_id='evalscope/OmniDocBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
