@@ -1824,7 +1824,7 @@ def markdown_to_html(markdown_table):
     return html_table
 
 
-def convert_markdown_to_html(self, markdown_content, md_type):
+def convert_markdown_to_html(markdown_content, md_type):
     # Define a regex pattern to find Markdown tables with newlines
     markdown_content = markdown_content.replace('\r', '')
     pattern = re.compile(r'\|\s*.*?\s*\|\n', re.DOTALL)
