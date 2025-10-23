@@ -91,22 +91,27 @@ class DefaultEvaluator(Evaluator):
             Report: The complete evaluation report containing all metrics and results.
         """
         # Load the dataset and evaluate each subset
+        logger.info(f'Start evaluating benchmark: {self.benchmark_name}')
         dataset_dict = self.benchmark.load_dataset()
         agg_score_dict = defaultdict(list)
 
         # Process each subset (e.g., test, validation) independently
+        logger.info('Evaluating all subsets of the dataset...')
         for subset, dataset in dataset_dict.items():
             if len(dataset) == 0:
                 logger.info(f'No samples found in subset: {subset}, skipping.')
                 continue
+            logger.info(f'Evaluating subset: {subset}')
             subset_score = self.evaluate_subset(subset, dataset)
             agg_score_dict[subset] = subset_score
 
         # Generate the report based on aggregated scores
+        logger.info('Generating report...')
         report = self.get_report(agg_score_dict)
 
         # Finalize the evaluation process
         self.finalize()
+        logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
         return report
 
     def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
@@ -126,12 +131,15 @@ class DefaultEvaluator(Evaluator):
             List[AggScore]: Aggregated scores for this subset.
         """
         # Get model predictions for all samples in the subset
+        logger.info(f'Getting predictions for subset: {subset}')
         task_states = self.get_answers(subset, dataset)
 
         # Calculate evaluation metrics for each prediction
+        logger.info(f'Getting reviews for subset: {subset}')
         sample_scores = self.get_reviews(subset, task_states)
 
         # Aggregate individual sample scores into subset-level metrics
+        logger.info(f'Aggregating scores for subset: {subset}')
         agg_scores = self.benchmark.aggregate_scores(sample_scores=sample_scores)
         return agg_scores
 
@@ -166,6 +174,7 @@ class DefaultEvaluator(Evaluator):
         if not dataset_list:
             return task_state_list
 
+        logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
         # Process samples in parallel using ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=min(len(dataset_list), self.task_config.eval_batch_size)) as executor:
             # Submit all prediction tasks
@@ -199,7 +208,7 @@ class DefaultEvaluator(Evaluator):
                             raise exc
                     finally:
                         pbar.update(1)
-
+        logger.info(f'Finished getting predictions for subset: {subset}.')
         return task_state_list
 
     def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
@@ -246,6 +255,7 @@ class DefaultEvaluator(Evaluator):
         if not task_states:
             return sample_score_list
 
+        logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
         # Process task states in parallel using ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=min(len(task_states), self.task_config.judge_worker_num)) as executor:
             # Submit all review tasks
@@ -288,6 +298,7 @@ class DefaultEvaluator(Evaluator):
                             raise exc
                     finally:
                         pbar.update(1)
+        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(sample_score_list)}')
 
         return sample_score_list
 
