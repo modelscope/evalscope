@@ -47,8 +47,8 @@ class NERAdapter(DefaultDataAdapter):
         # Define common error patterns to handle
         self.tag_fix_patterns = DEFAULT_TAG_FIX_PATTERNS
 
-        # Setup entity mappings based on the defined entity types
-        self.setup_entity_mappings()
+        # Note: setup_entity_mappings() should be called by subclasses
+        # after they define their entity_type_map and entity_descriptions
 
     def setup_entity_mappings(self):
         """
