@@ -173,6 +173,24 @@ def csv_to_list(csv_file) -> list:
     return res_list
 
 
+def tsv_to_list(tsv_file) -> list:
+    """
+    Read tsv file to list.
+
+    Args:
+        tsv_file: tsv file path.
+
+    Returns:
+        list: list of lines. Each line is a dict.
+    """
+    res_list = []
+    with open(tsv_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        for row in reader:
+            res_list.append(row)
+    return res_list
+
+
 def csv_to_jsonl(csv_file, jsonl_file):
     """
     Convert csv file to jsonl file.
