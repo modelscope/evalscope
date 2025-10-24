@@ -235,41 +235,41 @@ def strip_answer_string(string):
 
 def extract_answer_with_code_block(prediction: str) -> str:
     """
-    提取答案，支持代码块和数学公式的提取。
-    优先级：代码块 > boxed公式 > 其他格式
+    Extract answer from prediction, supporting code blocks and math formulas.
+    Priority: code block > boxed formula > other formats
 
-    支持的代码块格式：
+    Supported code block formats:
     - ```python ... ```
     - ```math ... ```
     - ```latex ... ```
-    - ``` ... ``` (无语言标记)
+    - ``` ... ``` (without language tag)
 
     Args:
-        prediction: 模型预测的原始字符串
+        prediction: Raw prediction string from the model
 
     Returns:
-        提取的答案字符串
+        Extracted answer string
     """
-    # 1. 尝试提取代码块中的内容（支持多种语言标记，包括无标记的情况）
+    # 1. Try to extract content from code blocks (supporting various language tags, including no tag)
     code_blocks = re.findall(r'```(?:\w+)?\s*\n(.*?)```', prediction, re.DOTALL)
     if code_blocks:
-        # 如果有多个代码块，取最后一个（通常是最终答案）
+        # If there are multiple code blocks, take the last one (usually the final answer)
         code_content = code_blocks[-1].strip()
-        # 从代码块中提取答案
+        # Extract answer from code block
         extracted = extract_answer(code_content)
         if extracted:
             return extracted
 
-    # 2. 尝试提取单行代码格式（如：`answer`）
+    # 2. Try to extract inline code format (e.g., `answer`)
     inline_code = re.findall(r'`([^`]+)`', prediction)
     if inline_code:
-        # 取最后一个内联代码
+        # Take the last inline code
         inline_content = inline_code[-1].strip()
         extracted = extract_answer(inline_content)
         if extracted:
             return extracted
 
-    # 3. 如果没有代码块，使用原有的提取逻辑（支持 \boxed{}, "答案是" 等格式）
+    # 3. If no code block, use original extraction logic (supporting \boxed{}, "the answer is", etc.)
     return extract_answer(prediction)
 
 

@@ -70,18 +70,18 @@ class CompetitionMathAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         """
-        提取答案，支持代码块和数学公式的提取。
-        优先级：代码块 > boxed公式 > 其他格式
+        Extract answer from prediction, supporting code blocks and math formulas.
+        Priority: code block > boxed formula > other formats
 
-        支持的代码块格式：
+        Supported code block formats:
         - ```python ... ```
         - ```math ... ```
         - ```latex ... ```
-        - ``` ... ``` (无语言标记)
+        - ``` ... ``` (without language tag)
         """
-        logger.debug(f'[CompetitionMathAdapter.extract_answer] 预测长度: {len(prediction)}')
+        logger.debug(f'[CompetitionMathAdapter.extract_answer] Prediction length: {len(prediction)}')
         result = extract_answer_with_code_block(prediction)
-        logger.debug(f'[CompetitionMathAdapter.extract_answer] 返回结果长度: {len(result)}')
+        logger.debug(f'[CompetitionMathAdapter.extract_answer] Result length: {len(result)}')
         return result
 
     def sample_to_fewshot(self, sample: Sample) -> str:

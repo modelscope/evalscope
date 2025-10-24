@@ -25,7 +25,7 @@ logger = get_logger()
         subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
         metric_list=[{
             'acc': {}
-        }],  # 不使用 numeric，因为我们已经在 extract_answer 中提取了
+        }],  # Not using numeric since we extract the answer in extract_answer method
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -52,32 +52,32 @@ class Math500Adapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         """
-        提取答案，支持代码块和数学公式的提取。
-        优先级：代码块 > boxed公式 > 其他格式
+        Extract answer from prediction, supporting code blocks and math formulas.
+        Priority: code block > boxed formula > other formats
 
-        支持的代码块格式：
+        Supported code block formats:
         - ```python ... ```
         - ```math ... ```
         - ```latex ... ```
-        - ``` ... ``` (无语言标记)
+        - ``` ... ``` (without language tag)
         """
-        logger.debug(f'[Math500Adapter.extract_answer] 预测长度: {len(prediction)}')
+        logger.debug(f'[Math500Adapter.extract_answer] Prediction length: {len(prediction)}')
         result = extract_answer_with_code_block(prediction)
-        logger.debug(f'[Math500Adapter.extract_answer] 返回结果长度: {len(result)}')
+        logger.debug(f'[Math500Adapter.extract_answer] Result length: {len(result)}')
         return result
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         """
-        使用 math_equal 比较已提取的答案。
-        不再次调用 extract_answer，因为 filtered_prediction 已经是提取后的答案。
+        Compare extracted answers using math_equal.
+        No need to call extract_answer again since filtered_prediction is already extracted.
         """
-        # filtered_prediction 已经是提取后的答案，直接使用
+        # filtered_prediction is already extracted, use it directly
         pred_answer = strip_answer_string(filtered_prediction)
         ref_answer = strip_answer_string(reference)
 
-        # 使用 math_equal 进行数学表达式的符号比较
+        # Use math_equal for symbolic math comparison
         is_correct = math_equal(pred_answer, ref_answer)
 
         score = Score(
