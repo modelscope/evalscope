@@ -373,5 +373,10 @@
     "en": "AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.",
     "zh": "AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。",
     "updated_at": "2025-10-21T11:14:20Z"
+  },
+  "omni_doc_bench": {
+    "en": "OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:\n- Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.\n- Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.\n**The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**",
+    "zh": "OmniDocBench 是一个面向真实场景下多样化文档解析的评估数据集，具有以下特点：  \n- **多样化的文档类型**：评测集包含 1355 个 PDF 页面，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，广泛覆盖学术论文、财务报告、报纸、教科书、手写笔记等。  \n- **丰富的标注信息**：包含 15 类块级元素（如文本段落、标题、表格等，总计超过 2 万个）和 4 类跨度级元素（如文本行、行内公式、上下标等，总计超过 8 万个）的位置信息，以及各元素区域的识别结果（文本标注、LaTeX 公式标注、同时包含 LaTeX 和 HTML 标注的表格）。OmniDocBench 还提供了文档组件的阅读顺序标注，并包含页面级和块级的多种属性标签，分别为 5 种页面属性、3 种文本属性和 6 种表格属性。  \n**EvalScope 中的评测实现了官方 [OmniDocBench-v1.5 仓库](https://github.com/opendatalab/OmniDocBench) 提供的 `end2end` 和 `quick_match` 方法。**",
+    "updated_at": "2025-10-23T20:48:07Z"
   }
 }

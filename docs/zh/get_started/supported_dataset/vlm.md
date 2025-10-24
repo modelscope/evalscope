@@ -22,6 +22,7 @@
 | `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
@@ -446,6 +447,59 @@ Answer the following multiple choice question based on the image and audio conte
 {question}
 
 {choices}
+```
+
+---
+
+### OmniDocBench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `omni_doc_bench`
+- **数据集ID**: [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary)
+- **数据集描述**:
+  > OmniDocBench 是一个面向真实场景下多样化文档解析的评估数据集，具有以下特点：  
+  > - **多样化的文档类型**：评测集包含 1355 个 PDF 页面，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，广泛覆盖学术论文、财务报告、报纸、教科书、手写笔记等。  
+  > - **丰富的标注信息**：包含 15 类块级元素（如文本段落、标题、表格等，总计超过 2 万个）和 4 类跨度级元素（如文本行、行内公式、上下标等，总计超过 8 万个）的位置信息，以及各元素区域的识别结果（文本标注、LaTeX 公式标注、同时包含 LaTeX 和 HTML 标注的表格）。OmniDocBench 还提供了文档组件的阅读顺序标注，并包含页面级和块级的多种属性标签，分别为 5 种页面属性、3 种文本属性和 6 种表格属性。  
+  > **EvalScope 中的评测实现了官方 [OmniDocBench-v1.5 仓库](https://github.com/opendatalab/OmniDocBench) 提供的 `end2end` 和 `quick_match` 方法。**
+- **任务类别**: `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `display_formula`, `reading_order`, `table`, `text_block`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "match_method": "quick_match"
+}
+```
+- **提示模板**: 
+```text
+ You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+    1. Text Processing:
+    - Accurately recognize all text content in the PDF image without guessing or inferring.
+    - Convert the recognized text into Markdown format.
+    - Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+    2. Mathematical Formula Processing:
+    - Convert all mathematical formulas to LaTeX format.
+    - Enclose inline formulas with \( \). For example: This is an inline formula \( E = mc^2 \)
+    - Enclose block formulas with \\[ \\]. For example: \[ \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} \]
+
+    3. Table Processing:
+    - Convert tables to HTML format.
+    - Wrap the entire table with <table> and </table>.
+
+    4. Figure Handling:
+    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+    5. Output Format:
+    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+    - For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.
+
 ```
 
 ---

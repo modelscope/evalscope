@@ -22,6 +22,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
@@ -446,6 +447,59 @@ Answer the following multiple choice question based on the image and audio conte
 {question}
 
 {choices}
+```
+
+---
+
+### OmniDocBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `omni_doc_bench`
+- **Dataset ID**: [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary)
+- **Description**:
+  > OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:
+  > - Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.
+  > - Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.
+  > **The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `display_formula`, `reading_order`, `table`, `text_block`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "match_method": "quick_match"
+}
+```
+- **Prompt Template**: 
+```text
+ You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+    1. Text Processing:
+    - Accurately recognize all text content in the PDF image without guessing or inferring.
+    - Convert the recognized text into Markdown format.
+    - Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+    2. Mathematical Formula Processing:
+    - Convert all mathematical formulas to LaTeX format.
+    - Enclose inline formulas with \( \). For example: This is an inline formula \( E = mc^2 \)
+    - Enclose block formulas with \\[ \\]. For example: \[ \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} \]
+
+    3. Table Processing:
+    - Convert tables to HTML format.
+    - Wrap the entire table with <table> and </table>.
+
+    4. Figure Handling:
+    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+    5. Output Format:
+    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+    - For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.
+
 ```
 
 ---
