@@ -1,5 +1,6 @@
 # flake8: noqa
 import ast
+import os
 import re
 
 from .IoUscore_metric import calculate_iou, extract_coordinates, vqa_with_position_evaluation

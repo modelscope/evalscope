@@ -3,8 +3,6 @@ import json
 import numpy as np
 import platform
 import sqlite3
-import time
-from http import HTTPStatus
 from tqdm import tqdm
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
 
