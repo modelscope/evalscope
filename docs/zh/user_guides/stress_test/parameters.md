@@ -7,9 +7,8 @@
 - `--model` 测试模型名称。
 - `--url` 指定API地址，支持`/chat/completion`和`/completion`两种endpoint。
 - `--name` wandb/swanlab数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
-- `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
+- `--api` 指定服务API，目前支持[openai|local|local_vllm]。
   - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
-  - 指定为`dashscope`，则使用支持DashScope的API，需要提供`--url`参数。
   - 指定为`local`，则使用本地文件作为模型，并使用transformers进行推理。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 指定为`local_vllm`，则使用本地文件作为模型，并启动vllm推理服务。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 您也可以自定义API，请参考[自定义API指南](./custom.md/#自定义请求-api)。

@@ -2,13 +2,13 @@
 
 目的：给出一套“可比、可复现、可扩展”的压测方案，让 `evalscope perf` 与 `vllm bench serve` 在同一 vLLM 模型服务上输出一致的请求与统计指标。
 
-结论（TL;DR）：
+结论：
 - 在相同请求参数与并发配置下，`evalscope perf` 能与 `vllm bench serve` 达到一致的负载和指标（TTFT、TPOT、ITL、吞吐等）表现。
 - 本文提供参数一一映射与校验步骤，帮助你快速复现并扩展测试。
 
 ---
 
-## TL;DR：一键对比配方
+## TL;DR
 
 1) 启动 vLLM OpenAI Chat 服务
 ```bash
@@ -18,7 +18,8 @@ python -m vllm.entrypoints.openai.api_server \
   --gpu-memory-utilization 0.5 \
   --served-model-name Qwen2.5-0.5B-Instruct \
   --trust-remote-code \
-  --port 8801
+  --port 8801 \
+  --no-enable-prefix-caching
 ```
 
 2) 用 vLLM Bench 压测（随机数据）
@@ -74,7 +75,7 @@ evalscope perf \
 
 ---
 
-## 启动服务（统一配置）
+## 启动服务
 
 使用 OpenAI Chat 端点（推荐）：
 ```bash
@@ -84,16 +85,18 @@ python -m vllm.entrypoints.openai.api_server \
   --gpu-memory-utilization 0.5 \
   --served-model-name Qwen2.5-0.5B-Instruct \
   --trust-remote-code \
-  --port 8801
+  --port 8801 \
+  --no-enable-prefix-caching
 ```
 
 提示：
 - `--gpu-memory-utilization` 适度保守，避免 OOM。
 - 若自定义 `--served-model-name`，请确保压测端的 `--model` 一致。
+- `--no-enable-prefix-caching` 避免缓存影响压测结果。
 
 ---
 
-## 参数对齐指南（关键映射）
+## 参数对齐指南
 
 为确保 apples-to-apples，请对齐以下参数：
 

@@ -6,9 +6,8 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--model`: Name of the test model.
 - `--url` specifies the API address, supporting two types of endpoints: `/chat/completion` and `/completion`.
 - `--name`: Name for the wandb/swanlab database result and result database, default is `{model_name}_{current_time}`, optional.
-- `--api`: Specify the service API, currently supports [openai|dashscope|local|local_vllm].
+- `--api`: Specify the service API, currently supports [openai|local|local_vllm].
   - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
-  - Select `dashscope` to use the API supporting DashScope, requiring the `--url` parameter.
   - Select `local` to use local files as models and perform inference using transformers. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
   - Select `local_vllm` to use local files as models and start the vllm inference service. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
   - You can also use a custom API, refer to [Custom API Guide](./custom.md).

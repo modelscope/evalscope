@@ -2,7 +2,7 @@
 
 Goal: To present a reproducible, comparable, and extensible load testing methodology, enabling `evalscope perf` and `vllm bench serve` to output consistent request metrics and statistics for the same vLLM model service.
 
-Conclusion (TL;DR):
+Conclusion:
 - With identical request parameters and concurrency configurations, `evalscope perf` achieves consistent metrics (TTFT, TPOT, ITL, throughput, etc.) with `vllm bench serve`.
 - This guide provides parameter mappings and validation steps to help you quickly reproduce and extend tests.
 
@@ -18,7 +18,8 @@ python -m vllm.entrypoints.openai.api_server \
   --gpu-memory-utilization 0.5 \
   --served-model-name Qwen2.5-0.5B-Instruct \
   --trust-remote-code \
-  --port 8801
+  --port 8801 \
+  --no-enable-prefix-caching
 ```
 
 2) Load Test with vLLM Bench (Random Input)
@@ -84,12 +85,14 @@ python -m vllm.entrypoints.openai.api_server \
   --gpu-memory-utilization 0.5 \
   --served-model-name Qwen2.5-0.5B-Instruct \
   --trust-remote-code \
-  --port 8801
+  --port 8801 \
+  --no-enable-prefix-caching
 ```
 
 Tips:
 - Set `--gpu-memory-utilization` conservatively to prevent OOM issues.
 - If customizing `--served-model-name`, ensure the corresponding `--model` value matches on the benchmarking tools.
+- Use `--no-enable-prefix-caching` to avoid caching effects on load test results.
 
 ---
 
