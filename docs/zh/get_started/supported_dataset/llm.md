@@ -17,6 +17,7 @@
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
@@ -360,6 +361,47 @@ Problem:
 {question}
 
 Please reason step by step, and put your final answer within \boxed{{}}.
+
+```
+
+---
+
+### CoNLL2003
+
+[返回目录](#llm评测集)
+- **数据集名称**: `conll2003`
+- **数据集ID**: [evalscope/conll2003](https://modelscope.cn/datasets/evalscope/conll2003/summary)
+- **数据集描述**:
+  > ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人物、组织、地点及各类名称的文本。
+- **任务类别**: `Knowledge`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
 
 ```
 

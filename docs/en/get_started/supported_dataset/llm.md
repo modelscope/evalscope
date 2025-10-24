@@ -17,6 +17,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
@@ -360,6 +361,47 @@ Problem:
 {question}
 
 Please reason step by step, and put your final answer within \boxed{{}}.
+
+```
+
+---
+
+### CoNLL2003
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `conll2003`
+- **Dataset ID**: [evalscope/conll2003](https://modelscope.cn/datasets/evalscope/conll2003/summary)
+- **Description**:
+  > The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as people, organizations, places, and various names.
+- **Task Categories**: `Knowledge`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
 
 ```
 
