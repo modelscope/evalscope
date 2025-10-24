@@ -233,6 +233,46 @@ def strip_answer_string(string):
     return string
 
 
+def extract_answer_with_code_block(prediction: str) -> str:
+    """
+    提取答案，支持代码块和数学公式的提取。
+    优先级：代码块 > boxed公式 > 其他格式
+
+    支持的代码块格式：
+    - ```python ... ```
+    - ```math ... ```
+    - ```latex ... ```
+    - ``` ... ``` (无语言标记)
+
+    Args:
+        prediction: 模型预测的原始字符串
+
+    Returns:
+        提取的答案字符串
+    """
+    # 1. 尝试提取代码块中的内容（支持多种语言标记，包括无标记的情况）
+    code_blocks = re.findall(r'```(?:\w+)?\s*\n(.*?)```', prediction, re.DOTALL)
+    if code_blocks:
+        # 如果有多个代码块，取最后一个（通常是最终答案）
+        code_content = code_blocks[-1].strip()
+        # 从代码块中提取答案
+        extracted = extract_answer(code_content)
+        if extracted:
+            return extracted
+
+    # 2. 尝试提取单行代码格式（如：`answer`）
+    inline_code = re.findall(r'`([^`]+)`', prediction)
+    if inline_code:
+        # 取最后一个内联代码
+        inline_content = inline_code[-1].strip()
+        extracted = extract_answer(inline_content)
+        if extracted:
+            return extracted
+
+    # 3. 如果没有代码块，使用原有的提取逻辑（支持 \boxed{}, "答案是" 等格式）
+    return extract_answer(prediction)
+
+
 def extract_answer(pred_str, use_last_number=True):
     pred_str = pred_str.replace('\u043a\u0438', '')
     if 'final answer is $' in pred_str and '$. I hope' in pred_str:
