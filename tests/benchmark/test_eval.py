@@ -438,6 +438,14 @@ class TestNativeBenchmark(TestBenchmark):
             'text_dir': 'data/aa_lcr',
         }
         self._run_dataset_test('aa_lcr', dataset_args)
+
+    def test_conll2003_ner(self):
+        """Test CoNLL2003 NER dataset."""
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('conll2003', dataset_args, limit=10)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

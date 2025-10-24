@@ -1,8 +1,9 @@
-import logging
 import re
 from typing import Any, Dict, List, Set, Tuple
 
-logger = logging.getLogger(__name__)
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 PROMPT_TEMPLATE = """
 You are a named entity recognition system that identifies the following entity types:

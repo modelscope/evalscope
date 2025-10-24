@@ -1,16 +1,11 @@
-import re
-from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
 from typing import Any, Dict, List, Set, Tuple
 
-from evalscope.api.benchmark import DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
-from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 from evalscope.utils.ner import (
     DEFAULT_TAG_FIX_PATTERNS,
-    FEWSHOT_TEMPLATE,
-    PROMPT_TEMPLATE,
     calculate_bio_metrics,
     clean_prediction,
     create_target_text,
@@ -18,6 +13,7 @@ from evalscope.utils.ner import (
     extract_spans_from_bio,
     xml_to_bio_tags,
 )
+from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
 
@@ -47,6 +43,7 @@ class NERAdapter(DefaultDataAdapter):
         # Define common error patterns to handle
         self.tag_fix_patterns = DEFAULT_TAG_FIX_PATTERNS
 
+        check_import('seqeval', 'seqeval', raise_error=True, feature_name='NER metrics')
         # Note: setup_entity_mappings() should be called by subclasses
         # after they define their entity_type_map and entity_descriptions
 
@@ -118,6 +115,8 @@ class NERAdapter(DefaultDataAdapter):
         """
         Evaluate named entity recognition performance using seqeval.
         """
+        from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
@@ -165,6 +164,8 @@ class NERAdapter(DefaultDataAdapter):
         """
         Aggregate metrics across all samples using seqeval.
         """
+        from seqeval.metrics import accuracy_score, f1_score, precision_score, recall_score
+
         # Collect all predictions and references
         y_true_all = []
         y_pred_all = []
@@ -172,9 +173,9 @@ class NERAdapter(DefaultDataAdapter):
         for ss in sample_scores:
             # Extract the BIO tags from metadata if available
             # You may need to store these during match_score
-            if hasattr(ss, 'metadata') and 'y_true' in ss.metadata and 'y_pred' in ss.metadata:
-                y_true_all.append(ss.metadata['y_true'])
-                y_pred_all.append(ss.metadata['y_pred'])
+            if hasattr(ss.score, 'metadata') and 'y_true' in ss.score.metadata and 'y_pred' in ss.score.metadata:
+                y_true_all.append(ss.score.metadata['y_true'])
+                y_pred_all.append(ss.score.metadata['y_pred'])
 
         if not y_true_all:
             # Fallback: calculate averages from individual scores

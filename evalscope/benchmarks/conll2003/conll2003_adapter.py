@@ -1,14 +1,14 @@
-from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.benchmark.adapters.ner_adapter import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE, NERAdapter
+from evalscope.api.benchmark import BenchmarkMeta, NERAdapter
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
 
 @register_benchmark(
     BenchmarkMeta(
         name='conll2003',
         pretty_name='CoNLL2003',
-        dataset_id='extraordinarylab/conll2003',
+        dataset_id='evalscope/conll2003',
         tags=[Tags.KNOWLEDGE],
         description='The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part '
         'of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as '

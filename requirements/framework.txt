@@ -22,7 +22,6 @@ rouge-score>=0.1.0
 sacrebleu
 scikit-learn
 seaborn
-seqeval
 sympy
 tabulate
 tqdm

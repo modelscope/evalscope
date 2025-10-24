@@ -373,5 +373,10 @@
     "en": "AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.",
     "zh": "AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。",
     "updated_at": "2025-10-21T11:14:20Z"
+  },
+  "conll2003": {
+    "en": "The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as people, organizations, places, and various names.",
+    "zh": "ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人物、组织、地点及各类名称的文本。",
+    "updated_at": "2025-10-24T14:50:16Z"
   }
 }

@@ -17,6 +17,7 @@
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
@@ -365,6 +366,47 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
+### CoNLL2003
+
+[返回目录](#llm评测集)
+- **数据集名称**: `conll2003`
+- **数据集ID**: [evalscope/conll2003](https://modelscope.cn/datasets/evalscope/conll2003/summary)
+- **数据集描述**:
+  > ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人物、组织、地点及各类名称的文本。
+- **任务类别**: `Knowledge`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
 ### Data-Collection
 
 [返回目录](#llm评测集)
@@ -615,13 +657,26 @@ Answer the following multiple choice question. The last line of your response sh
 
 - **提示模板**: 
 ```text
-Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following math problem step by step. The last line of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
 
+Example:
+
+Let's solve the problem step by step.
+
+Problem: Eliza's rate per hour for the first 40 hours she works each week is $10. She also receives an overtime pay of 1.2 times her regular hourly rate. If Eliza worked for 45 hours this week, how much are her earnings for this week?
+
+Step 1: Calculate Eliza's earnings for the first 40 hours. Eliza's hourly rate is $10, so her earnings for the first 40 hours are $10/hour x 40 hours = $400.
+Step 2: Calculate Eliza's overtime pay rate. Eliza's overtime pay rate is 1.2 times her regular hourly rate, so her overtime pay rate is $10/hour x 1.2 = $12/hour.
+Step 3: Calculate Eliza's earnings for the overtime hours. Eliza worked for 45 hours, so her overtime hours are 45 hours - 40 hours = 5 hours. Her earnings for the overtime hours are $12/hour x 5 hours = $60.
+Step 4: Calculate Eliza's total earnings for the week. Eliza's total earnings for the week are her earnings for the first 40 hours plus her earnings for the overtime hours, which is $400 + $60 = $460.
+
+Answer:
+\boxed{{\text{{460}}}}
+
+question:
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
-Reasoning:
+Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}" (without quotes), where $ANSWER is replaced by the actual answer to the problem.
 
 ```
 

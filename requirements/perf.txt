@@ -5,8 +5,6 @@ jinja2
 # for calc result.
 numpy
 rich
-# for ner metrics
-seqeval
 sse_starlette
 # for tokenizer
 transformers
