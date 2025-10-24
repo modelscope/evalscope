@@ -646,7 +646,6 @@ def md_tex_filter(content):
     pred_all = sorted(pred_all, key=lambda x: x['position'][0])
     for item in pred_all:
         pred_dataset[item['category_type']].append(item)
-    # pdb.set_trace()
     return pred_dataset
 
 
@@ -1723,13 +1722,9 @@ def save_paired_result(preds, gts, save_path):
         json.dump(save_result, f, indent=4, ensure_ascii=False)
 
 
-import matplotlib.font_manager as fm
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import re
-
-font = fm.FontProperties(fname=r'font/SimHei.ttf')
 
 
 def print_aligned_dict(data):
@@ -1757,48 +1752,6 @@ def create_dict_from_folders(directory):
         if os.path.isdir(folder_path):
             body[folder_name] = {}
     return body
-
-
-def create_radar_chart(df, title, filename):
-    labels = df.columns
-
-    # Calculate angles
-    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
-    angles += angles[:1]
-
-    # Initialize radar chart
-    fig, ax = plt.subplots(figsize=(10, 6), subplot_kw=dict(polar=True), dpi=200)
-    # ax.spines['polar'].set_visible(False)
-
-    # Draw radar chart for each dataset
-    for index, row in df.iterrows():
-        values = row.tolist()
-        values += values[:1]
-        ax.fill(angles, values, alpha=0.1)
-        ax.plot(angles, values, label=index)
-
-        # Add percentage labels next to each data point
-        for angle, value in zip(angles, values):
-            ax.text(angle, value, '{:.1%}'.format(value), ha='center', va='center', fontsize=7, alpha=0.7)
-
-    # Set labels
-    ax.set_yticklabels([])
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontproperties=font)
-    ax.spines['polar'].set_visible(False)  # Hide the outermost circle
-    ax.grid(False)
-    for j in np.arange(0, 1.2, 0.2):
-        ax.plot(angles, len(values) * [j], '-.', lw=0.5, color='black', alpha=0.5)
-    for j in range(len(values)):
-        ax.plot([angles[j], angles[j]], [0, 1], '-.', lw=0.5, color='black', alpha=0.5)
-
-    # Add title and legend
-    plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-
-    ax.tick_params(pad=30)
-    ax.set_theta_zero_location('N')
-    # Save chart to file
-    plt.savefig(filename)
 
 
 # The function is from https://github.com/intsig-textin/markdown_tester

@@ -259,4 +259,4 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=5)
+        self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)

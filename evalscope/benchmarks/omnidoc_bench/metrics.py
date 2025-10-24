@@ -22,7 +22,7 @@ logger = get_logger()
 def show_result(results):
     for metric_name in results.keys():
         score_table = [[k, v] for k, v in results[metric_name].items()]
-        logger.info(f'\n{metric_name}:' + tabulate(score_table) + '\n' + '=' * 100)
+        logger.info(f'\n{metric_name}:\n' + tabulate(score_table) + '\n' + '=' * 100)
 
 
 def sort_nested_dict(d):
@@ -52,7 +52,7 @@ def get_full_labels_results(samples: dict):
             for metric, score in sample['metric'].items():
                 label_group_dict[label_name][metric].append(score)
 
-    print('----Anno Attribute---------------')
+    logger.info('----Anno Attribute---------------')
     result = {}
     result['sample_count'] = {}
     for attribute in label_group_dict.keys():
@@ -223,7 +223,7 @@ class call_TEDS():
                 result[group_name] = sum(scores) / len(scores)  # average of normalized scores at sample level
             else:
                 result[group_name] = 'NaN'
-                print(f'Warning: Empyty matched samples for {group_name}.')
+                logger.warning(f'Empty matched samples for {group_name}.')
 
         structure_only_result = {}
         for group_name, scores in group_scores_structure_only.items():
@@ -233,7 +233,7 @@ class call_TEDS():
                 )  # average of normalized scores at sample level
             else:
                 structure_only_result[group_name] = 'NaN'
-                print(f'Warning: Empyty matched samples for {group_name}.')
+                logger.warning(f'Empty matched samples for {group_name}.')
 
         return samples, {'TEDS': result, 'TEDS_structure_only': structure_only_result}
 
@@ -310,7 +310,7 @@ class call_METEOR():
                         total_score += score
                     meteor_results = total_score / len(references)
                 except Exception as e:
-                    print(f'METEOR calculation error: {e}')
+                    logger.error(f'METEOR calculation error: {e}')
                     meteor_results = 0
             result[group_name] = meteor_results
 

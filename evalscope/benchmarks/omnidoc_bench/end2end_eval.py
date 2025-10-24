@@ -193,7 +193,6 @@ class End2EndEvaluator():
         elif self.match_method == 'no_split':
             match_gt2pred = match_gt2pred_no_split
         else:
-            # print('Invalid match method name. The quick_match will be used.')
             match_gt2pred = match_gt2pred_quick
 
         pred_dataset = md_tex_filter(pred_content)
@@ -218,14 +217,14 @@ class End2EndEvaluator():
                 plain_text_match_s = func_timeout(
                     30, match_gt2pred, args=(gt_text_list, pred_dataset['text_all'], 'text', img_name)
                 )
-            except FunctionTimedOut as e1:
-                print(f'Time out for plain text match of {img_name}, match_gt2pred_simple will be used.')
+            except FunctionTimedOut as e:
+                logger.warning(f'Time out for plain text match of {img_name}, match_gt2pred_simple will be used.')
                 plain_text_match_s = match_gt2pred_simple(gt_text_list, pred_dataset['text_all'], 'text', img_name)
                 logger.error(str(e))
                 raise e
 
             if not plain_text_match_s:
-                print(f'No text match of {img_name}. The plain text match will be empty.')
+                logger.warning(f'No text match of {img_name}. The plain text match will be empty.')
             else:
                 plain_text_match_clean = self.filtered_out_ignore(
                     plain_text_match_s, [
@@ -241,7 +240,7 @@ class End2EndEvaluator():
             )
             display_formula_match_s = [x for x in display_formula_match_s if x['gt_idx'] != ['']]
             if not display_formula_match_s:
-                print(f'No display_formula_match of {img_name}. The display_formula_match will be empty.')
+                logger.warning(f'No display_formula_match of {img_name}. The display_formula_match will be empty.')
 
         if gt_page_elements.get('table'):
             gt_table_list = self.get_sorted_text_list(gt_page_elements['table'])
