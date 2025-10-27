@@ -10,14 +10,14 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
-from tqdm import tqdm
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.report import Report, gen_table
+from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -170,44 +170,37 @@ class DefaultEvaluator(Evaluator):
 
         # Convert dataset to list for parallel processing
         dataset_list = list(dataset)
-
         if not dataset_list:
             return task_state_list
 
         logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
-        # Process samples in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=min(len(dataset_list), self.task_config.eval_batch_size)) as executor:
-            # Submit all prediction tasks
-            future_to_sample = {
-                executor.submit(self._predict_sample, sample, model_prediction_dir): sample
-                for sample in dataset_list
-            }
 
-            # Process completed tasks with progress bar
-            with tqdm(total=len(dataset_list), desc=f'Predicting[{self.benchmark_name}@{subset}]: ') as pbar:
-                for future in as_completed(future_to_sample):
-                    sample = future_to_sample[future]
-                    try:
-                        task_state = future.result()
-                        task_state_list.append(task_state)
+        def worker(sample: Sample) -> TaskState:
+            return self._predict_sample(sample, model_prediction_dir)
 
-                        # Save the prediction result to cache for future use
-                        model_result = self.cache_manager.save_prediction_cache(
-                            subset, task_state, self.benchmark.save_metadata
-                        )
-                        logger.debug(f'Model result: \n{model_result.pretty_print()}')
+        def on_result(sample: Sample, task_state: TaskState) -> None:
+            model_result = self.cache_manager.save_prediction_cache(subset, task_state, self.benchmark.save_metadata)
+            logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
-                    except Exception as exc:
-                        tb_str = traceback.format_exc()
-                        logger.error(
-                            f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}'
-                        )
-                        if self.task_config.ignore_errors:
-                            logger.warning('Error ignored, continuing with next sample.')
-                        else:
-                            raise exc
-                    finally:
-                        pbar.update(1)
+        def on_error(sample: Sample, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
+
+        new_task_states = run_in_threads_with_progress(
+            dataset_list,
+            worker,
+            desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.eval_batch_size,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_result=on_result,
+            on_error=on_error,
+        )
+        task_state_list.extend(new_task_states)
+
         logger.info(f'Finished getting predictions for subset: {subset}.')
         return task_state_list
 
@@ -256,50 +249,39 @@ class DefaultEvaluator(Evaluator):
             return sample_score_list
 
         logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
-        # Process task states in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=min(len(task_states), self.task_config.judge_worker_num)) as executor:
-            # Submit all review tasks
-            future_to_task_state = {
-                executor.submit(self._review_task_state, task_state): task_state
-                for task_state in task_states
-            }
 
-            # Process completed tasks with progress bar
-            with tqdm(total=len(task_states), desc=f'Reviewing[{self.benchmark_name}@{subset}]: ') as pbar:
-                for future in as_completed(future_to_task_state):
-                    task_state = future_to_task_state[future]
-                    try:
-                        try:
-                            sample_score = future.result()
-                        except TimeoutError:
-                            logger.warning(
-                                f'Timeout when reviewing sample {task_state.sample_id}, setting score to zero.'
-                            )
-                            sample_score = SampleScore(sample_id=task_state.sample_id, scores={})
-                        sample_score_list.append(sample_score)
+        def worker(task_state: TaskState) -> SampleScore:
+            return self._review_task_state(task_state)
 
-                        # Save the review result to cache for future use
-                        review_result = self.cache_manager.save_review_cache(
-                            subset=subset,
-                            task_state=task_state,
-                            sample_score=sample_score,
-                            save_metadata=self.benchmark.save_metadata
-                        )
-                        logger.debug(f'Review result: \n{review_result.pretty_print()}')
+        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
+            review_result = self.cache_manager.save_review_cache(
+                subset=subset,
+                task_state=task_state,
+                sample_score=sample_score,
+                save_metadata=self.benchmark.save_metadata
+            )
+            logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
-                    except Exception as exc:
-                        tb_str = traceback.format_exc()
-                        logger.error(
-                            f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}'
-                        )
-                        if self.task_config.ignore_errors:
-                            logger.warning('Error ignored, continuing with next sample.')
-                        else:
-                            raise exc
-                    finally:
-                        pbar.update(1)
+        def on_error(task_state: TaskState, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
+
+        new_scores = run_in_threads_with_progress(
+            task_states,
+            worker,
+            desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.judge_worker_num,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_result=on_result,
+            on_error=on_error,
+        )
+        sample_score_list.extend(new_scores)
+
         logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(sample_score_list)}')
-
         return sample_score_list
 
     def _review_task_state(self, task_state: TaskState) -> SampleScore:

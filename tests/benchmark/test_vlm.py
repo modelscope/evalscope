@@ -277,4 +277,4 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('zerobench', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('zerobench', dataset_args=dataset_args, limit=5, eval_batch_size=1)
