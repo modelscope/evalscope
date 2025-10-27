@@ -10,13 +10,14 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed, wait
 from tqdm import tqdm
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.report import Report, gen_table
 from evalscope.utils.logger import get_logger
 
@@ -183,47 +184,46 @@ class DefaultEvaluator(Evaluator):
                 for sample in dataset_list
             }
 
-            # Add periodic log prompts, reminding users to wait for streaming returns every 2 minute
-            def log_waiting_message(stop_event):
-                while not stop_event.is_set():
-                    if stop_event.wait(120):
-                        break
-                    logger.info('Still waiting for streaming responses from LLM, please be patient...')
+            # Heartbeat-enabled wait loop
+            with tqdm(
+                total=len(dataset_list),
+                desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+                mininterval=1,
+                dynamic_ncols=True
+            ) as pbar:
+                pending = set(future_to_sample.keys())
+                while pending:
+                    done, not_done = wait(pending, timeout=HEARTBEAT_INTERVAL_SEC)
+                    if not_done:
+                        logger.info(f'Predicting heartbeat: still processing... pending={len(not_done)}')
+                        continue
 
-            import threading
-            stop_event = threading.Event()
-            log_thread = threading.Thread(target=log_waiting_message, args=(stop_event,))
-            log_thread.daemon = True
-            log_thread.start()
+                    for future in done:
+                        sample = future_to_sample[future]
+                        try:
+                            task_state = future.result()
+                            task_state_list.append(task_state)
 
-            # Process completed tasks with progress bar
-            with tqdm(total=len(dataset_list), desc=f'Predicting[{self.benchmark_name}@{subset}]: ') as pbar:
-                for future in as_completed(future_to_sample):
-                    sample = future_to_sample[future]
-                    try:
-                        task_state = future.result()
-                        task_state_list.append(task_state)
+                            # Save the prediction result to cache for future use
+                            model_result = self.cache_manager.save_prediction_cache(
+                                subset, task_state, self.benchmark.save_metadata
+                            )
+                            logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
-                        # Save the prediction result to cache for future use
-                        model_result = self.cache_manager.save_prediction_cache(
-                            subset, task_state, self.benchmark.save_metadata
-                        )
-                        logger.debug(f'Model result: \n{model_result.pretty_print()}')
+                        except Exception as exc:
+                            tb_str = traceback.format_exc()
+                            logger.error(
+                                f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}'
+                                f'\nTraceback:\n{tb_str}'
+                            )
+                            if self.task_config.ignore_errors:
+                                logger.warning('Error ignored, continuing with next sample.')
+                            else:
+                                raise exc
+                        finally:
+                            pbar.update(1)
 
-                    except Exception as exc:
-                        tb_str = traceback.format_exc()
-                        logger.error(
-                            f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}'
-                        )
-                        if self.task_config.ignore_errors:
-                            logger.warning('Error ignored, continuing with next sample.')
-                        else:
-                            raise exc
-                    finally:
-                        pbar.update(1)
-
-            stop_event.set()
-            log_thread.join(timeout=1)
+                    pending = not_done
 
         logger.info(f'Finished getting predictions for subset: {subset}.')
         return task_state_list
