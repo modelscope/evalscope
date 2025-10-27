@@ -23,9 +23,6 @@ DESCRIPTION = 'CommonsenseQA requires different types of commonsense knowledge t
 )
 class CommonsenseQAAdapter(MultiChoiceAdapter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

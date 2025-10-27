@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -54,7 +55,7 @@ class PubMedQAAdapter(DefaultDataAdapter):
             prediction=original_prediction,
         )
         # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
+        result = 1 if re.search(r'\b' + re.escape(reference) + r'\b', filtered_prediction.strip().upper()) else 0
         score.value = {'acc': result}
         return score
 
@@ -91,27 +92,30 @@ class PubMedQAAdapter(DefaultDataAdapter):
 
             for ss in scores:
                 gt = ss.sample_metadata['answer'].strip().upper()
-                # Determine prediction based on score
-                # If score is 1, the prediction matched ground truth
+
                 if ss.score.main_value == 1:
-                    pred = gt
                     correct_count += 1
+                    pred = gt
                 else:
-                    # For incorrect predictions, we need a reasonable way to determine what was predicted
-                    # This is a simplified approach - in reality you might need to extract the actual prediction
-                    possible_answers = ['YES', 'NO', 'MAYBE']
-                    possible_answers.remove(gt)
-                    # Assuming a simple distribution of errors
-                    pred = possible_answers[0]  # Default to first wrong answer
+                    pred_text = ss.score.extracted_prediction.strip().upper()
+                    # Heuristic to determine the predicted class from text
+                    if 'YES' in pred_text:
+                        pred = 'YES'
+                    elif 'NO' in pred_text:
+                        pred = 'NO'
+                    elif 'MAYBE' in pred_text:
+                        pred = 'MAYBE'
+                    else:
+                        pred = None
 
-                # Count predictions by type
-                if pred == 'YES':
-                    yes_count += 1
-                elif pred == 'MAYBE':
-                    maybe_count += 1
+                if pred:
+                    if pred == 'YES':
+                        yes_count += 1
+                    elif pred == 'MAYBE':
+                        maybe_count += 1
 
-                # Update confusion matrix
-                confusion_matrix[gt][pred] += 1
+                    if gt in confusion_matrix and pred in confusion_matrix[gt]:
+                        confusion_matrix[gt][pred] += 1
 
             # Calculate accuracy
             accuracy = correct_count / total_count if total_count > 0 else 0.0

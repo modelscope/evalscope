@@ -30,9 +30,6 @@ Answer the following multiple choice question. The entire content of your respon
 )
 class LogiQAAdapter(MultiChoiceAdapter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['context'] + '\n' + record['question'],

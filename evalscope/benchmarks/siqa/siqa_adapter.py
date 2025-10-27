@@ -4,7 +4,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTOIN = (
+DESCRIPTION = (
     'Social Interaction QA (SIQA) is a question-answering benchmark for testing social commonsense intelligence. '
     'Contrary to many prior benchmarks that focus on physical or taxonomic knowledge, Social IQa focuses on '
     "reasoning about people's actions and their social implications."
@@ -13,19 +13,19 @@ DESCRIPTOIN = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='sciq',
-        pretty_name='SciQ',
-        tags=[Tags.READING_COMPREHENSION, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=DESCRIPTOIN.strip(),
-        dataset_id='extraordinarylab/sciq',
+        name='siqa',
+        pretty_name='SIQA',
+        tags=[Tags.COMMONSENSE, Tags.REASONING, Tags.MULTIPLE_CHOICE],
+        description=DESCRIPTION.strip(),
+        dataset_id='extraordinarylab/siqa',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
-        eval_split='test',
+        eval_split='validation',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class SciQAdapter(MultiChoiceAdapter):
+class SIQAAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
