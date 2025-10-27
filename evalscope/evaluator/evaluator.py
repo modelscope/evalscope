@@ -183,6 +183,19 @@ class DefaultEvaluator(Evaluator):
                 for sample in dataset_list
             }
 
+            # Add periodic log prompts, reminding users to wait for streaming returns every 2 minute
+            def log_waiting_message(stop_event):
+                while not stop_event.is_set():
+                    if stop_event.wait(120):
+                        break
+                    logger.info('Still waiting for streaming responses from LLM, please be patient...')
+
+            import threading
+            stop_event = threading.Event()
+            log_thread = threading.Thread(target=log_waiting_message, args=(stop_event,))
+            log_thread.daemon = True
+            log_thread.start()
+
             # Process completed tasks with progress bar
             with tqdm(total=len(dataset_list), desc=f'Predicting[{self.benchmark_name}@{subset}]: ') as pbar:
                 for future in as_completed(future_to_sample):
@@ -208,6 +221,10 @@ class DefaultEvaluator(Evaluator):
                             raise exc
                     finally:
                         pbar.update(1)
+
+            stop_event.set()
+            log_thread.join(timeout=1)
+
         logger.info(f'Finished getting predictions for subset: {subset}.')
         return task_state_list
 
