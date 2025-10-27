@@ -13,7 +13,7 @@ logger = get_logger()
 
 # 定义提示模板
 PROMPT_TEMPLATE = """{question}
-\n\n\n\Let's think step by step and give the final answer in curly braces,
+\n\n\nLet's think step by step and give the final answer in curly braces,
 like this: {{final answer}}"
 """
 
