@@ -1,386 +1,407 @@
 {
-  "docmath": {
-    "en": "DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.",
-    "zh": "DocMath-Eval 是一个专注于特定领域内数值推理的综合基准，要求模型理解长篇且专业化的文档，并进行数值推理以回答问题。",
-    "updated_at": "2025-09-29T15:08:12Z"
+  "omni_bench": {
+    "en": "OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.",
+    "zh": "OmniBench 是一个开创性的通用多模态基准，旨在严格评估多模态大模型同时识别、理解和推理视觉、听觉和文本输入的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
-  "mmmu_pro": {
-    "en": "MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.",
-    "zh": "MMMU-Pro 是一个增强型多模态基准，旨在严格评估先进AI模型在多种模态下的真实理解能力。它在原始 MMMU 基准基础上进行了多项关键改进，提升了挑战性和现实性，确保对模型真正融合与理解视觉和文本信息的能力进行全面评测。",
-    "updated_at": "2025-09-29T15:08:12Z"
+  "simple_vqa": {
+    "en": "SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.",
+    "zh": "SimpleVQA 是首个全面评估多模态大模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。其具有六大特点：覆盖多种任务与场景，确保问题高质量且具挑战性，参考答案静态且不受时间影响，评估过程简单直接。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "tool_bench": {
+    "en": "ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html)",
+    "zh": "ToolBench 是一个用于评估 AI 模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集均提供需逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "alpaca_eval": {
+    "en": "Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.",
+    "zh": "Alpaca Eval 2.0 是一个改进的指令遵循语言模型评估框架，具备升级的自动标注器、更新的基线模型和持续偏好计算，可提供更准确且成本更低的模型评估。目前不支持“长度控制胜率”；官方裁判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-turbo`。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "visu_logic": {
+    "en": "VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.",
+    "zh": "VisuLogic 是一个旨在评估多模态大语言模型（MLLM）视觉推理能力的基准，独立于文本推理过程。它包含精心设计的跨类别视觉推理任务，根据所需推理技能分为六类（例如定量推理，涉及理解并推断图像中元素数量的变化）。与现有基准不同，VisuLogic 的任务本质上难以用语言描述，因而更具挑战性，可更严格地评估 MLLM 的视觉推理能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "needle_haystack": {
     "en": "Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)",
-    "zh": "“大海捞针”是一个专注于信息检索任务的基准测试，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "simple_qa": {
-    "en": "SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.",
-    "zh": "SimpleQA 是一个用于评估语言模型在简单问答任务上性能的基准，包含一系列需要基本推理和理解能力的直接问题。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "ifeval": {
-    "en": "IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.",
-    "zh": "IFEval 是一个评估指令遵循型语言模型的基准，专注于模型理解和响应各类提示的能力。它包含多样化的任务和指标，以全面评估模型性能。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "chartqa": {
-    "en": "ChartQA is a benchmark designed to evaluate question-answering capabilities about charts (e.g., bar charts, line graphs, pie charts), focusing on both visual and logical reasoning.",
-    "zh": "ChartQA 是一个用于评估图表问答能力的基准，涵盖柱状图、折线图、饼图等，侧重于视觉和逻辑推理。",
-    "updated_at": "2025-09-29T15:14:40Z"
-  },
-  "process_bench": {
-    "en": "ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.",
-    "zh": "ProcessBench 是一个用于评估AI模型数学推理能力的基准测试，包含 GSM8K、Math、OlympiadBench 和 OmniMath 等多个子集，每个子集都有一系列需要逐步推理才能得出正确答案的问题。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "iquiz": {
-    "en": "IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.",
-    "zh": "IQuiz 是一个用于评估 AI 模型智商和情商的基准测试，包含多项选择题，要求模型选出正确答案并提供解释。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "humaneval": {
-    "en": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
-    "zh": "HumanEval 是一个用于评估代码生成模型根据给定规范编写 Python 函数能力的基准测试，包含具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "mmlu_redux": {
-    "en": "MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.",
-    "zh": "MMLU-Redux 是一个用于评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，模型需从给定选项中选出正确答案，且错误选项已修正。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "omni_bench": {
-    "en": "OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.",
-    "zh": "OmniBench 是一个开创性的通用多模态基准，旨在严格评估多模态大模型在视觉、听觉和文本输入上的同步识别、理解和推理能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "zh": "“大海捞针”是一个专注于信息检索任务的基准，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "real_world_qa": {
     "en": "RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models' understanding of our physical world.",
-    "zh": "RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的感知水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对现实世界的理解。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "zh": "RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的 comprehension 水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对物理世界的理解。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
-  "hle": {
-    "en": "Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. \n**To evaluate the performance of model without multi-modality capabilities, please set the `extra_params[\"include_multi_modal\"]` to `False`.**",
-    "zh": "人类最后的考试（HLE）是一个语言模型基准，包含2500个涵盖广泛学科的问题，由人工智能安全中心和Scale AI联合创建。该基准将问题分为以下主要类别：数学（41%）、物理（9%）、生物/医学（11%）、人文/社会科学（9%）、计算机科学/人工智能（10%）、工程（4%）、化学（7%）和其他（9%）。约14%的问题需要理解文本和图像的能力，即多模态能力。24%的问题为选择题，其余为短答案、精确匹配题。  \n**若需评估不具备多模态能力的模型性能，请将 `extra_params[\"include_multi_modal\"]` 设为 `False`。**",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "general_qa": {
-    "en": "A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).",
-    "zh": "一个用于自定义评估的通用问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "mmlu_pro": {
-    "en": "MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.",
-    "zh": "MMLU-Pro 是一个跨多个学科评估语言模型的基准，涵盖不同领域的多项选择题，要求模型从给定选项中选出正确答案。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "mmmu": {
-    "en": "MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.",
-    "zh": "MMMU（面向专家级通用人工智能的大规模多学科多模态理解与推理基准）旨在评估多模态模型在需要大学水平知识和深度推理的跨学科任务上的表现。该基准包含11.5K道精心收集的多模态题目，源自大学考试、测验和教科书，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，涉及30个学科领域和183个子领域，包含图表、示意图、地图、表格、乐谱、化学结构等30种高度异构的图像类型。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "mm_star": {
-    "en": "MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.",
-    "zh": "MMStar：一个精英级不可或缺视觉的多模态基准，旨在确保每个精选样本均具备视觉依赖性、最小数据泄露，并需要先进的多模态能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "data_collection": {
-    "en": "Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)",
-    "zh": "自定义数据收集，融合多个评测数据集进行统一评估，旨在使用更少的数据实现对模型能力的更全面评估。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "aime25": {
-    "en": "The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.",
-    "zh": "AIME 2025 基准基于美国数学邀请赛（一项著名的高中数学竞赛）的题目，用于测试模型通过生成逐步解答并给出正确最终答案来解决复杂数学问题的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "aime24": {
-    "en": "The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.",
-    "zh": "AIME 2024 基准基于美国数学邀请赛（一项著名的高中数学竞赛）的题目，用于测试模型通过生成逐步解答并给出正确最终答案来解决复杂数学问题的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "competition_math": {
-    "en": "The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.",
-    "zh": "MATH（数学）基准通过多种题型（包括算术、代数、几何等）来评估AI模型的数学推理能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
+  "hallusion_bench": {
+    "en": "HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).",
+    "zh": "HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）在图像-上下文推理方面的能力，并分析其语言幻觉和视觉错觉的倾向。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "general_mcq": {
     "en": "A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).",
     "zh": "一个用于自定义评估的通用多项选择题问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq)。",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "tau_bench": {
-    "en": "A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)",
-    "zh": "一个模拟用户（由语言模型模拟）与具备领域特定API工具和策略指南的语言代理之间动态对话的基准测试。请在评估前通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "tool_bench": {
-    "en": "ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html)",
-    "zh": "ToolBench 是一个用于评估AI模型工具使用能力的基准，包含多个子集（如领域内和领域外），每个子集都有一系列需要逐步推理才能得出正确答案的问题。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "cmmlu": {
-    "en": "C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.",
-    "zh": "C-MMLU 是一个用于评估 AI 模型在中文语言任务上性能的基准，包括阅读理解、文本分类等。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "olympiad_bench": {
-    "en": "OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark, featuring 8,476 problems from Olympiad-level mathematics and physics competitions, including the Chinese college entrance exam. In the subsets: `OE` stands for `Open-Ended`, `TP` stands for `Theorem Proving`, `MM` stands for `Multimodal`, `TO` stands for `Text-Only`, `CEE` stands for `Chinese Entrance Exam`, `COMP` stands for `Comprehensive`. **Note: The `TP` subsets can't be evaluated with auto-judge for now**.",
-    "zh": "OlympiadBench 是一个奥林匹克级别的双语多模态科学评测基准，包含来自数学和物理奥林匹克竞赛以及中国高考的 8,476 道题目。子集说明：`OE` 表示 `开放题`，`TP` 表示 `定理证明`，`MM` 表示 `多模态`，`TO` 表示 `纯文本`，`CEE` 表示 `中国高考`，`COMP` 表示 `综合`。**注意：目前 `TP` 子集无法通过自动判题进行评估**。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "ceval": {
-    "en": "C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.",
-    "zh": "C-Eval 是一个评估AI模型在STEM、社会科学和人文学科等中文考试中表现的基准，包含测试知识和推理能力的多项选择题。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "minerva_math": {
-    "en": "Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.",
-    "zh": "Minerva-math 是一个用于评估大语言模型数学与定量推理能力的基准，包含 **272 道题目**，主要来自 **MIT OpenCourseWare** 的课程，涵盖固态化学、天文学、微分方程和狭义相对论等 **大学及研究生水平** 的高级 STEM 科目。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "trivia_qa": {
-    "en": "TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.",
-    "zh": "TriviaQA 是一个大规模阅读理解数据集，包含从 trivia 网站收集的问答对。该数据集的问题可能有多个正确答案，适合用于评估模型基于上下文理解和生成答案的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "frames": {
-    "en": "FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.",
-    "zh": "FRAMES 是一个综合评估数据集，旨在测试检索增强生成（RAG）系统在事实性、检索准确性和推理能力方面的表现。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "bfcl_v3": {
     "en": "Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)",
-    "zh": "Berkeley Function Calling Leaderboard (BFCL) 是首个专门评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需安装 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "alpaca_eval": {
-    "en": "Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.",
-    "zh": "Alpaca Eval 2.0 是一个改进的指令跟随语言模型评估框架，具备更优的自动标注器、更新的基线模型和持续偏好计算，可提供更准确且成本更低的模型评估。目前不支持“长度控制胜率”；官方评判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-turbo`。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "ai2d": {
-    "en": "AI2D is a benchmark dataset for researching the understanding of diagrams by AI. It contains over 5,000 diverse diagrams from science textbooks (e.g., the water cycle, food webs). Each diagram is accompanied by multiple-choice questions that test an AI's ability to interpret visual elements, text labels, and their relationships. The benchmark is challenging because it requires jointly understanding the layout, symbols, and text to answer questions correctly.",
-    "zh": "AI2D 是一个用于研究 AI 理解图表能力的基准数据集，包含来自科学教科书的 5000 多个多样化图表（如水循环、食物链）。每个图表附带多项选择题，用于测试 AI 解读视觉元素、文本标签及其关系的能力。该基准具有挑战性，因其要求综合理解布局、符号和文本来正确回答问题。",
-    "updated_at": "2025-09-29T15:14:40Z"
-  },
-  "math_500": {
-    "en": "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",
-    "zh": "MATH-500 是一个用于评估AI模型数学推理能力的基准，包含500道涵盖五个难度级别的多样化数学题，旨在通过生成逐步解答并给出正确最终答案，测试模型解决复杂数学问题的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "zh": "Berkeley Function Calling Leaderboard (BFCL) 是首个专注于评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需安装 `pip install bfcl-eval==2025.6.16`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "general_t2i": {
     "en": "General Text-to-Image Benchmark",
     "zh": "通用文生图基准测试",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "tifa160": {
-    "en": "TIFA-160 Text-to-Image Benchmark",
-    "zh": "TIFA-160 文本到图像基准测试",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "winogrande": {
-    "en": "Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.",
-    "zh": "Winogrande 是一个用于评估 AI 模型常识推理能力的基准，专门设计用于测试模型在句子中消解歧义代词的能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "evalmuse": {
-    "en": "EvalMuse Text-to-Image Benchmark. Used for evaluating the quality and semantic alignment of finely generated images",
-    "zh": "EvalMuse 文本到图像基准，用于评估精细生成图像的质量和语义一致性",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "genai_bench": {
-    "en": "GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.",
-    "zh": "GenAI-Bench 文本到图像基准测试，包含 1600 个文本到图像任务的提示。",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "hpdv2": {
     "en": "HPDv2 Text-to-Image Benchmark. Evaluation metrics based on human preferences, trained on the Human Preference Dataset (HPD v2)",
     "zh": "HPDv2 文本到图像基准。基于人类偏好的评估指标，训练于人类偏好数据集（HPD v2）",
-    "updated_at": "2025-09-29T15:08:12Z"
+    "updated_at": "2025-10-27T11:40:04Z"
   },
-  "amc": {
-    "en": "AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.",
-    "zh": "AMC（美国数学竞赛）是一系列面向高中生的数学竞赛。",
-    "updated_at": "2025-09-29T15:08:12Z"
+  "evalmuse": {
+    "en": "EvalMuse Text-to-Image Benchmark. Used for evaluating the quality and semantic alignment of finely generated images",
+    "zh": "EvalMuse文本到图像基准，用于评估精细生成图像的质量和语义一致性",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
-  "gedit": {
-    "en": "GEdit-Bench Image Editing Benchmark, grounded in real-world usages is developed to support more authentic and comprehensive evaluation of image editing models.",
-    "zh": "GEdit-Bench 是一个基于真实使用场景的图像编辑基准，旨在支持对图像编辑模型进行更真实、全面的评估。",
-    "updated_at": "2025-09-29T15:08:12Z"
+  "tifa160": {
+    "en": "TIFA-160 Text-to-Image Benchmark",
+    "zh": "TIFA-160 文本到图像基准测试",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
-  "chinese_simpleqa": {
-    "en": "Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.",
-    "zh": "Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简单事实性问题上的表现。该数据集涵盖多种主题，用于测试模型对中文问题的理解与准确回答能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "drop": {
-    "en": "The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.",
-    "zh": "DROP（段落离散推理）基准旨在评估AI模型的阅读理解与推理能力，包含多种需模型阅读段落后根据内容回答问题的任务。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "gsm8k": {
-    "en": "GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.",
-    "zh": "GSM8K（小学数学8K）是一个包含小学数学题的数据集，旨在评估AI模型的数学推理能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "truthful_qa": {
-    "en": "TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model's understanding of factual information.",
-    "zh": "TruthfulQA 是一个用于评估 AI 模型准确、真实回答问题能力的基准，包含多项选择任务，重点考察模型对事实信息的理解。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "health_bench": {
-    "en": "HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.",
-    "zh": "HealthBench：一个全新基准，旨在更准确地衡量AI系统在医疗健康领域的能力。该基准与来自60个国家的262名医生合作构建，包含5,000个真实医疗对话，每个对话均配有医生定制的评分标准，用于评估模型回复质量。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "multi_if": {
-    "en": "Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.",
-    "zh": "Multi-IF 是一个用于评估大语言模型在多语言环境下多轮指令遵循能力的基准。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "race": {
-    "en": "RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.",
-    "zh": "RACE 是一个用于测试神经网络模型阅读理解与推理能力的基准，基于中国初高中考试构建。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "musr": {
-    "en": "MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.",
-    "zh": "MuSR 是一个用于评估 AI 模型在谋杀谜案、物体摆放和团队分配等选择题上表现的基准。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "mmlu": {
-    "en": "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",
-    "zh": "MMLU（大规模多任务语言理解）基准是一个综合评估套件，旨在评测语言模型在多个学科和任务中的表现。它涵盖历史、科学、数学等领域的多项选择题，能够有效衡量模型的理解与推理能力。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "math_vista": {
-    "en": "MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.",
-    "zh": "MathVista 是一个整合的视觉情境下数学推理基准，包含三个新构建的数据集：IQTest、FunctionQA 和 PaperQA，分别针对谜题图形的逻辑推理、函数图像的代数推理以及学术论文图表的科学推理，填补了现有视觉领域的空白。此外，该基准还整合了文献中的 9 个 MathQA 数据集和 19 个 VQA 数据集，显著提升了视觉感知与数学推理任务的多样性与复杂性。总计，MathVista 汇集了来自 31 个不同数据集的 6,141 个样本。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "super_gpqa": {
-    "en": "SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.",
-    "zh": "SuperGPQA 是一个大规模的多项选择题问答数据集，旨在评估模型在不同领域间的泛化能力。它包含来自 50 多个领域的 10 万多个问题，每个问题有 10 个选项。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "maritime_bench": {
-    "en": "MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.",
-    "zh": "MaritimeBench 是一个用于评估AI模型在 maritime 相关选择题上表现的基准，包含与 maritime 知识相关的问题，模型需从给定选项中选出正确答案。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "arena_hard": {
-    "en": "ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.",
-    "zh": "ArenaHard 是一个用于评估大语言模型在竞争环境中性能的基准，通过将模型相互对抗并完成一系列任务来衡量其相对优劣。它包含一系列需要推理、理解和生成能力的高难度任务。目前不支持“风格控制胜率”；官方评判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-0314`。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "hellaswag": {
-    "en": "HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.",
-    "zh": "HellaSwag 是一个用于自然语言理解中常识推理的基准测试，包含多项选择题，要求模型从给定上下文中选出最合理的后续内容。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "live_code_bench": {
-    "en": "Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
-    "zh": "Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以检验模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "arc": {
-    "en": "The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.",
-    "zh": "ARC（AI2推理挑战）基准通过源自科学考试的多项选择题来评估AI模型的推理能力，包含难度不同的两个子集：ARC-Easy和ARC-Challenge。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "gpqa_diamond": {
-    "en": "GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.",
-    "zh": "GPQA 是一个用于评估大语言模型（LLM）在复杂数学问题上推理能力的数据集，包含需要逐步推理才能得出正确答案的问题。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "bbh": {
-    "en": "The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.",
-    "zh": "BBH（Big Bench Hard）基准是一组具有挑战性的任务，旨在评估AI模型的推理能力。它包含开放式和选择题任务，涵盖多种推理技能。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "general_arena": {
-    "en": "GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).",
-    "zh": "GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争环境中完成特定任务，以评估其性能并识别各自的优势与不足。您应以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。",
-    "updated_at": "2025-10-21T17:14:24Z"
-  },
-  "cc_bench": {
-    "en": "CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.",
-    "zh": "CCBench 是 MMBench 的扩展，新增了关于中国传统文化的题目，涵盖书法绘画、文物、饮食服饰、历史人物、风景建筑、素描推理和传统表演等领域。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "mm_bench": {
-    "en": "MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.",
-    "zh": "MMBench 是一个综合评估流程，包含精心策划的多模态数据集和利用 ChatGPT 的新型 circularEval 策略。它由 MMBench 定义的 20 个能力维度构成，并包含翻译成中文的问题版本。",
-    "updated_at": "2025-09-29T15:08:12Z"
-  },
-  "blink": {
-    "en": "BLINK is a benchmark designed to evaluate the core visual perception abilities of multimodal large language models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions, accompanied by single or multiple images and visual prompts.",
-    "zh": "BLINK 是一个用于评估多模态大语言模型（MLLM）核心视觉感知能力的基准，它将14个经典计算机视觉任务转化为3,807道选择题，每道题配有单张或多张图像及视觉提示。",
-    "updated_at": "2025-09-29T15:57:32Z"
-  },
-  "infovqa": {
-    "en": "InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.",
-    "zh": "InfoVQA（信息视觉问答）是一个基准测试，旨在评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。",
-    "updated_at": "2025-09-30T15:23:22Z"
-  },
-  "docvqa": {
-    "en": "DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.",
-    "zh": "DocVQA（文档视觉问答）是一个基准测试，用于评估AI系统基于文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。",
-    "updated_at": "2025-09-30T15:23:22Z"
-  },
-  "ocr_bench_v2": {
-    "en": "OCRBench v2 is a large-scale bilingual text-centric benchmark with currently the most comprehensive set of tasks (4x more tasks than the previous multi-scene benchmark OCRBench), the widest coverage of scenarios (31 diverse scenarios including street scene, receipt, formula, diagram, and so on), and thorough evaluation metrics, with a total of 10, 000 human-verified question-answering pairs and a high proportion of difficult samples.",
-    "zh": "OCRBench v2 是一个大规模双语文本基准，包含目前最全面的任务集（任务数量是此前多场景基准 OCRBench 的 4 倍）、覆盖最广泛的场景（共 31 种多样化场景，如街景、收据、公式、图表等），并提供完善的评估指标，总计包含 10,000 个人工验证的问答对，且难题样本占比较高。",
-    "updated_at": "2025-10-14T11:18:40Z"
-  },
-  "ocr_bench": {
-    "en": "OCRBench is a comprehensive evaluation benchmark designed to assess the OCR capabilities of Large Multimodal Models. It comprises five components: Text Recognition, SceneText-Centric VQA, Document-Oriented VQA, Key Information Extraction, and Handwritten Mathematical Expression Recognition. The benchmark includes 1000 question-answer pairs, and all the answers undergo manual verification and correction to ensure a more precise evaluation.",
-    "zh": "OCRBench 是一个综合评测基准，旨在评估大一多模态模型的 OCR 能力。包含五个部分：文本识别、以场景文本为中心的视觉问答、面向文档的视觉问答、关键信息提取和手写数学表达式识别。该基准包含 1000 个问答对，所有答案均经过人工校验与修正，以确保更精确的评估。",
-    "updated_at": "2025-10-14T11:18:40Z"
-  },
-  "hallusion_bench": {
-    "en": "HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).",
-    "zh": "HallusionBench 是一个先进的诊断基准，旨在评估大型视觉语言模型（LVLM）中的图像-上下文推理能力，并分析模型在语言幻觉和视觉错觉方面的倾向。",
-    "updated_at": "2025-10-15T17:24:43Z"
-  },
-  "pope": {
-    "en": "POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.",
-    "zh": "POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，并重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的问题集用于评估。",
-    "updated_at": "2025-10-15T17:24:43Z"
-  },
-  "poly_math": {
-    "en": "PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.",
-    "zh": "PolyMath 是一个涵盖 18 种语言和 4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度的全面性、语言的多样性以及高质量的翻译，使其成为推理型大语言模型时代高度区分性的多语言数学评测基准。",
-    "updated_at": "2025-10-16T16:08:18Z"
-  },
-  "math_vision": {
-    "en": "The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.",
-    "zh": "MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。",
-    "updated_at": "2025-10-17T16:40:33Z"
-  },
-  "math_verse": {
-    "en": "MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.",
-    "zh": "MathVerse 是一个全面的视觉数学基准，旨在公平且深入地评估多模态大语言模型（MLLMs）。它包含来自公开资源的 2,612 道高质量、多学科带图数学题，每道题由人工标注员转化为六种不同版本，提供不同程度的多模态信息，共生成约 1.5 万项测试样本。该方法可全面评估 MLLMs 是否以及在多大程度上真正理解视觉图表以进行数学推理。",
-    "updated_at": "2025-10-17T16:40:33Z"
-  },
-  "simple_vqa": {
-    "en": "SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.",
-    "zh": "SimpleVQA 是首个全面评估多模态大语言模型（MLLMs）回答自然语言简答题事实准确性的多模态基准。SimpleVQA 具有六大特点：涵盖多种任务和场景，确保查询的高质量与挑战性，提供静态且不受时间影响的参考答案，并易于评估。",
-    "updated_at": "2025-10-17T16:40:33Z"
+  "genai_bench": {
+    "en": "GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.",
+    "zh": "GenAI-Bench 文本到图像基准，包含 1600 个文本到图像任务的提示。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "aa_lcr": {
     "en": "AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.",
     "zh": "AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。",
-    "updated_at": "2025-10-21T11:14:20Z"
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mm_star": {
+    "en": "MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.",
+    "zh": "MMStar：一个精英级不可或缺的视觉多模态基准，旨在确保每个精选样本都具备视觉依赖性、最小数据泄露，并需要先进的多模态能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "arena_hard": {
+    "en": "ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.",
+    "zh": "ArenaHard 是一个用于评估大语言模型在竞争环境中表现的基准，通过一系列任务将模型相互对战，以衡量其相对优劣。该基准包含需要推理、理解和生成能力的高难度任务。目前不支持“风格控制胜率”；官方裁判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-0314`。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "cc_bench": {
+    "en": "CCBench is an extension of MMBench with newly design questions about Chinese traditional culture, including Calligraphy Painting, Cultural Relic, Food & Clothes, Historical Figures, Scenery & Building, Sketch Reasoning and Traditional Show.",
+    "zh": "CCBench 是 MMBench 的扩展，新增了关于中国传统文化的题目，涵盖书法绘画、文物、饮食服饰、历史人物、风景建筑、素描推理和传统展演。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "pope": {
+    "en": "POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.",
+    "zh": "POPE（基于查询的对象探测评估）是一个用于评估大视觉语言模型（LVLM）中对象幻觉的基准。它通过让模型回答图像中是否存在特定对象的是/否问题来测试模型，旨在衡量模型响应与视觉内容的一致性，重点识别模型错误声称存在实际不存在对象的情况。该基准采用随机、流行和对抗等多种采样策略，构建了鲁棒的评估问题集。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "olympiad_bench": {
+    "en": "OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark, featuring 8,476 problems from Olympiad-level mathematics and physics competitions, including the Chinese college entrance exam. In the subsets: `OE` stands for `Open-Ended`, `TP` stands for `Theorem Proving`, `MM` stands for `Multimodal`, `TO` stands for `Text-Only`, `CEE` stands for `Chinese Entrance Exam`, `COMP` stands for `Comprehensive`. **Note: The `TP` subsets can't be evaluated with auto-judge for now**.",
+    "zh": "OlympiadBench 是一个奥林匹克级别的双语多模态科学评测基准，包含来自数学和物理奥林匹克竞赛及中国高考的 8,476 道题目。子集说明：`OE` 表示 `开放题`，`TP` 表示 `定理证明`，`MM` 表示 `多模态`，`TO` 表示 `纯文本`，`CEE` 表示 `中国高考`，`COMP` 表示 `综合`。**注意：目前 `TP` 子集无法通过自动评测**。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "winogrande": {
+    "en": "Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.",
+    "zh": "Winogrande 是一个用于评估 AI 模型在常识推理任务上表现的基准，专门用于测试模型解决句子中歧义代词的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "trivia_qa": {
+    "en": "TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.",
+    "zh": "TriviaQA 是一个大规模阅读理解数据集，包含从 trivia 网站收集的问答对。该数据集中的问题可能有多个正确答案，适用于评估模型基于上下文理解和生成答案的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mm_bench": {
+    "en": "MMBench is a comprehensive evaluation pipeline comprised of meticulously curated multimodal dataset and a novel circulareval strategy using ChatGPT. It is comprised of 20 ability dimensions defined by MMBench. It also contains chinese version with translated question.",
+    "zh": "MMBench 是一个综合评测流程，包含精心整理的多模态数据集和利用 ChatGPT 的新颖循环评测策略。它涵盖 MMBench 定义的 20 个能力维度，并包含翻译成中文的问题版本。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "docmath": {
+    "en": "DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.",
+    "zh": "DocMath-Eval 是一个专注于特定领域内数值推理的综合基准，要求模型理解长篇且专业的文档，并通过数值推理回答问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "competition_math": {
+    "en": "The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.",
+    "zh": "MATH（数学）基准通过算术、代数、几何等多种题型，评估AI模型的数学推理能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "ocr_bench": {
+    "en": "OCRBench is a comprehensive evaluation benchmark designed to assess the OCR capabilities of Large Multimodal Models. It comprises five components: Text Recognition, SceneText-Centric VQA, Document-Oriented VQA, Key Information Extraction, and Handwritten Mathematical Expression Recognition. The benchmark includes 1000 question-answer pairs, and all the answers undergo manual verification and correction to ensure a more precise evaluation.",
+    "zh": "OCRBench 是一个全面评估大模型OCR能力的基准，包含文本识别、以场景文本为中心的视觉问答、面向文档的视觉问答、关键信息提取和手写数学表达式识别五个部分。该基准包含1000个问答对，所有答案均经过人工校验与修正，以确保评估更加准确。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "humaneval": {
+    "en": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "HumanEval 是一个基准测试，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "chartqa": {
+    "en": "ChartQA is a benchmark designed to evaluate question-answering capabilities about charts (e.g., bar charts, line graphs, pie charts), focusing on both visual and logical reasoning.",
+    "zh": "ChartQA 是一个用于评估图表问答能力的基准，涵盖柱状图、折线图、饼图等，侧重于视觉和逻辑推理。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "chinese_simpleqa": {
+    "en": "Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.",
+    "zh": "Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简单事实问题上的表现。该数据集涵盖多种主题，用于测试模型理解和生成中文正确答案的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "gsm8k": {
+    "en": "GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.",
+    "zh": "GSM8K（小学数学8K）是一个小学数学问题数据集，旨在评估AI模型的数学推理能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "gpqa_diamond": {
+    "en": "GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.",
+    "zh": "GPQA 是一个用于评估大语言模型（LLM）在复杂数学问题上推理能力的数据集，包含需要逐步推理才能得出正确答案的问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "seed_bench_2_plus": {
+    "en": "SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). It consists of 2.3K multiple-choice questions with precise human annotations, spanning three broad categories: Charts, Maps, and Webs, each of which covers a wide spectrum of text-rich scenarios in the real world.",
+    "zh": "SEED-Bench-2-Plus 是一个大规模多模态大语言模型（MLLM）评测基准，包含 2.3K 道带精确人工标注的多项选择题，涵盖图表、地图和网页三大类别，覆盖现实世界中丰富的文本场景。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "ai2d": {
+    "en": "AI2D is a benchmark dataset for researching the understanding of diagrams by AI. It contains over 5,000 diverse diagrams from science textbooks (e.g., the water cycle, food webs). Each diagram is accompanied by multiple-choice questions that test an AI's ability to interpret visual elements, text labels, and their relationships. The benchmark is challenging because it requires jointly understanding the layout, symbols, and text to answer questions correctly.",
+    "zh": "AI2D 是一个用于研究 AI 理解图表能力的基准数据集，包含来自科学教科书的 5000 多个多样化图表（如水循环、食物网）。每个图表附带多项选择题，用于测试 AI 对视觉元素、文本标签及其关系的理解。该基准具有挑战性，因为正确回答问题需要同时理解布局、符号和文本。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "race": {
+    "en": "RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.",
+    "zh": "RACE 是一个用于测试神经网络模型阅读理解与推理能力的基准，基于中国初高中考试题目构建。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "omni_doc_bench": {
+    "en": "OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:\n- Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.\n- Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.\n**The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**",
+    "zh": "OmniDocBench 是一个面向真实场景下多样化文档解析的评估数据集，具有以下特点：  \n- **多样化的文档类型**：评测集包含 1355 个 PDF 页面，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，广泛覆盖学术论文、财务报告、报纸、教科书、手写笔记等。  \n- **丰富的标注信息**：包含 15 类块级元素（如文本段落、标题、表格等，共超过 2 万个）和 4 类跨行级元素（如文本行、行内公式、上下标等，共超过 8 万个）的位置信息，以及各元素区域的识别结果（文本标注、LaTeX 公式标注、同时支持 LaTeX 和 HTML 的表格标注）。OmniDocBench 还提供了文档组件的阅读顺序标注。此外，包含页面和块级别的多种属性标签，分别为 5 种页面属性、3 种文本属性和 6 种表格属性。  \n**EvalScope 中的评测实现了官方 [OmniDocBench-v1.5 仓库](https://github.com/opendatalab/OmniDocBench) 提供的 `end2end` 和 `quick_match` 方法。**",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "hellaswag": {
+    "en": "HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.",
+    "zh": "HellaSwag 是一个用于自然语言理解中常识推理的基准测试，包含多项选择题，要求模型从给定上下文中选出最合理的后续内容。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "gedit": {
+    "en": "GEdit-Bench Image Editing Benchmark, grounded in real-world usages is developed to support more authentic and comprehensive evaluation of image editing models.",
+    "zh": "GEdit-Bench 是基于真实使用场景构建的图像编辑基准，旨在支持对图像编辑模型进行更真实、全面的评估。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "docvqa": {
+    "en": "DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate AI systems on their ability to answer questions based on the content of document images, such as scanned pages, forms, or invoices. Unlike general visual question answering, it requires understanding not just the text extracted by OCR, but also the complex layout, structure, and visual elements of a document.",
+    "zh": "DocVQA（文档视觉问答）是一个基准，用于评估AI系统基于文档图像（如扫描页、表格或发票）内容回答问题的能力。与通用视觉问答不同，它不仅需要理解OCR提取的文本，还需理解文档复杂的布局、结构和视觉元素。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "truthful_qa": {
+    "en": "TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model's understanding of factual information.",
+    "zh": "TruthfulQA 是一个用于评估 AI 模型真实准确回答问题能力的基准，包含多项选择任务，侧重考察模型对事实信息的理解。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "poly_math": {
+    "en": "PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.",
+    "zh": "PolyMath 是一个涵盖 18 种语言、4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度全面性、语言多样性和高质量翻译，是推理型大语言模型时代极具区分度的多语言数学评测基准。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "bbh": {
+    "en": "The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.",
+    "zh": "BBH（Big Bench Hard）基准是一组具有挑战性的任务，旨在评估AI模型的推理能力。它包含开放式和选择题任务，涵盖多种推理技能。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "tau_bench": {
+    "en": "A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)",
+    "zh": "一个模拟用户（由语言模型模拟）与具备特定领域API工具和策略指南的语言代理之间动态对话的基准测试。评估前请先通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "musr": {
+    "en": "MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.",
+    "zh": "MuSR 是一个用于评估 AI 模型在谋杀谜案、物体位置和团队分配等选择题上表现的基准。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "zerobench": {
+    "en": "ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of a main set of 100 high-quality, manually curated questions covering numerous domains, reasoning types and image type. Questions in ZeroBench have been designed and calibrated to be beyond the capabilities of current frontier models. As such, none of the evaluated models achieves a non-zero pass@1 (with greedy decoding) or 5/5 reliability score.",
+    "zh": "ZeroBench 是一个具有挑战性的大型多模态模型（LMM）视觉推理基准，包含 100 道高质量、人工整理的核心问题，涵盖多个领域、推理类型和图像种类。ZeroBench 的问题设计和校准均超出当前主流模型的能力范围，因此所有评测模型均未能取得非零的 pass@1 分数（使用贪婪解码）或 5/5 的可靠性得分。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "arc": {
+    "en": "The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.",
+    "zh": "ARC（AI2推理挑战）基准通过科学考试中的选择题来评估AI模型的推理能力，包含难度不同的两个子集：ARC-Easy和ARC-Challenge。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mmlu_pro": {
+    "en": "MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.",
+    "zh": "MMLU-Pro 是一个用于评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，要求模型从给定选项中选出正确答案。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "math_500": {
+    "en": "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",
+    "zh": "MATH-500 是一个用于评估AI模型数学推理能力的基准，包含500道涵盖五个难度级别的多样化数学题，旨在通过生成逐步解题过程并给出正确最终答案来测试模型解决复杂数学问题的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
   },
   "conll2003": {
     "en": "The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as people, organizations, places, and various names.",
-    "zh": "ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人物、组织、地点及各类名称的文本。",
-    "updated_at": "2025-10-24T14:50:16Z"
-  "omni_doc_bench": {
-    "en": "OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:\n- Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.\n- Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.\n**The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**",
-    "zh": "OmniDocBench 是一个面向真实场景下多样化文档解析的评估数据集，具有以下特点：  \n- **多样化的文档类型**：评测集包含 1355 个 PDF 页面，涵盖 9 种文档类型、4 种布局类型和 3 种语言类型，广泛覆盖学术论文、财务报告、报纸、教科书、手写笔记等。  \n- **丰富的标注信息**：包含 15 类块级元素（如文本段落、标题、表格等，总计超过 2 万个）和 4 类跨度级元素（如文本行、行内公式、上下标等，总计超过 8 万个）的位置信息，以及各元素区域的识别结果（文本标注、LaTeX 公式标注、同时包含 LaTeX 和 HTML 标注的表格）。OmniDocBench 还提供了文档组件的阅读顺序标注，并包含页面级和块级的多种属性标签，分别为 5 种页面属性、3 种文本属性和 6 种表格属性。  \n**EvalScope 中的评测实现了官方 [OmniDocBench-v1.5 仓库](https://github.com/opendatalab/OmniDocBench) 提供的 `end2end` 和 `quick_match` 方法。**",
-    "updated_at": "2025-10-23T20:48:07Z"
+    "zh": "ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人名、组织、地点及各类名称的文本。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "amc": {
+    "en": "AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.",
+    "zh": "AMC（美国数学竞赛）是一系列面向高中生的数学竞赛。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "super_gpqa": {
+    "en": "SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.",
+    "zh": "SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型在不同领域的泛化能力。它包含来自 50 多个领域的 10 万多个问题，每个问题有 10 个选项。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "health_bench": {
+    "en": "HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.",
+    "zh": "HealthBench：一个旨在更好衡量AI系统医疗能力的新基准。该基准与来自60个国家的262名医生合作构建，包含5,000个真实医疗对话，每个对话均配有医生定制的评分标准来评估模型回复。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "aime24": {
+    "en": "The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.",
+    "zh": "AIME 2024 基准基于美国数学邀请赛（AIME）的题目，该赛事是一项享有盛誉的高中数学竞赛。此基准通过生成逐步解答并提供正确最终答案，来测试模型解决复杂数学问题的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "aime25": {
+    "en": "The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.",
+    "zh": "AIME 2025 基准基于美国数学邀请赛（AIME）的题目，该赛事是一项享有盛誉的高中数学竞赛。此基准通过生成逐步解题过程并给出正确最终答案，来测试模型解决复杂数学问题的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "drop": {
+    "en": "The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.",
+    "zh": "DROP（段落离散推理）基准用于评估AI模型的阅读理解与推理能力，包含多种任务，要求模型阅读文本并根据内容回答问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "iquiz": {
+    "en": "IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.",
+    "zh": "IQuiz 是一个用于评估 AI 模型智商与情商的基准测试，包含多项选择题，要求模型选出正确答案并提供解释。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "cmmlu": {
+    "en": "C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.",
+    "zh": "C-MMLU 是一个用于评估AI模型在中文语言任务上性能的基准，包括阅读理解、文本分类等。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mmlu_redux": {
+    "en": "MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.",
+    "zh": "MMLU-Redux 是一个评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，模型需从给定选项中选出正确答案，且错误选项已被修正。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mmmu_pro": {
+    "en": "MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.",
+    "zh": "MMMU-Pro 是一个增强的多模态基准，旨在严格评估先进AI模型在多种模态下的真实理解能力。它在原始 MMMU 基准基础上引入多项关键改进，提升了挑战性和现实性，确保对模型真正融合与理解图文信息的能力进行全面评估。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "blink": {
+    "en": "BLINK is a benchmark designed to evaluate the core visual perception abilities of multimodal large language models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions, accompanied by single or multiple images and visual prompts.",
+    "zh": "BLINK 是一个用于评估多模态大语言模型（MLLM）核心视觉感知能力的基准，它将14个经典计算机视觉任务转化为3,807道选择题，每道题配有单张或多张图像及视觉提示。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "hle": {
+    "en": "Humanity's Last Exam (HLE) is a language model benchmark consisting of 2,500 questions across a broad range of subjects. It was created jointly by the Center for AI Safety and Scale AI. The benchmark classifies the questions into the following broad subjects: mathematics (41%), physics (9%), biology/medicine (11%), humanities/social science (9%), computer science/artificial intelligence (10%), engineering (4%), chemistry (7%), and other (9%). Around 14% of the questions require the ability to understand both text and images, i.e., multi-modality. 24% of the questions are multiple-choice; the rest are short-answer, exact-match questions. \n**To evaluate the performance of model without multi-modality capabilities, please set the `extra_params[\"include_multi_modal\"]` to `False`.**",
+    "zh": "人类最后的考试（HLE）是一个涵盖2500道题的语言模型基准，由AI安全中心和Scale AI联合创建。题目分为以下几大类：数学（41%）、物理（9%）、生物/医学（11%）、人文/社会科学（9%）、计算机科学/人工智能（10%）、工程（4%）、化学（7%）及其他（9%）。约14%的题目需理解文本和图像，即多模态能力。24%为选择题，其余为短答案精确匹配题。  \n**如需评估不具备多模态能力的模型，请将 `extra_params[\"include_multi_modal\"]` 设为 `False`。**",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "math_vista": {
+    "en": "MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.",
+    "zh": "MathVista 是一个整合的视觉情境下数学推理基准，包含三个新构建的数据集：IQTest、FunctionQA 和 PaperQA，分别针对谜题图形的逻辑推理、函数图像的代数推理以及学术论文图表的科学推理，填补了现有视觉领域的空白。此外，它还整合了文献中的 9 个 MathQA 数据集和 19 个 VQA 数据集，显著提升了基准在视觉感知与数学推理挑战上的多样性和复杂性。总计，MathVista 汇集了来自 31 个不同数据集的 6,141 个样本。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "process_bench": {
+    "en": "ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.",
+    "zh": "ProcessBench 是一个用于评估AI模型数学推理能力的基准测试，包含 GSM8K、Math、OlympiadBench 和 OmniMath 等多个子集，每个子集均提供需逐步推理才能得出正确答案的问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "infovqa": {
+    "en": "InfoVQA (Information Visual Question Answering) is a benchmark designed to evaluate how well AI models can answer questions based on information-dense images, such as charts, graphs, diagrams, maps, and infographics.",
+    "zh": "InfoVQA（信息视觉问答）是一个基准，用于评估AI模型基于信息密集型图像（如图表、图形、示意图、地图和信息图）回答问题的能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "data_collection": {
+    "en": "Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)",
+    "zh": "自定义数据收集，混合多个评估数据集进行统一评估，旨在使用更少的数据实现对模型能力的更全面评估。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "math_verse": {
+    "en": "MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.",
+    "zh": "MathVerse 是一个全面的视觉数学基准，旨在公平、深入地评估多模态大语言模型（MLLMs）。它包含 2,612 道来自公开资源的高质量、多学科带图数学题。每道题目由人工标注员转化为六种不同版本，分别提供不同程度的多模态信息，共生成约 1.5 万项测试样本。该方法可全面评估 MLLMs 是否以及在多大程度上真正理解视觉图表以进行数学推理。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "ceval": {
+    "en": "C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.",
+    "zh": "C-Eval 是一个评估AI模型在包括STEM、社会科学和人文学科等多个学科中文考试中表现的基准，包含测试知识和推理能力的多项选择题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "ocr_bench_v2": {
+    "en": "OCRBench v2 is a large-scale bilingual text-centric benchmark with currently the most comprehensive set of tasks (4x more tasks than the previous multi-scene benchmark OCRBench), the widest coverage of scenarios (31 diverse scenarios including street scene, receipt, formula, diagram, and so on), and thorough evaluation metrics, with a total of 10, 000 human-verified question-answering pairs and a high proportion of difficult samples.",
+    "zh": "OCRBench v2 是一个大规模双语文本中心型基准，包含目前最全面的任务集（任务数量是此前多场景基准 OCRBench 的 4 倍）、覆盖最广泛的场景（共 31 种多样场景，如街景、收据、公式、图表等），并提供完善的评估指标，总计包含 10,000 个人工验证的问答对，且难题样本占比较高。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "math_vision": {
+    "en": "The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.",
+    "zh": "MATH-Vision（MATH-V）数据集是一个精心整理的包含3,040道高质量数学题的数据集，题目均来自真实数学竞赛，并配有视觉情境。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "maritime_bench": {
+    "en": "MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.",
+    "zh": "MaritimeBench 是一个用于评估AI模型在 maritime 相关选择题上表现的基准，包含需要模型从给定选项中选出正确答案的 maritime 知识问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mmlu": {
+    "en": "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",
+    "zh": "MMLU（大规模多任务语言理解）基准是一个综合评估套件，旨在评估语言模型在广泛主题和任务中的表现。它涵盖历史、科学、数学等多个领域的多项选择题，能够有效衡量模型的理解和推理能力。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "general_qa": {
+    "en": "A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).",
+    "zh": "一个用于自定义评估的通用问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "multi_if": {
+    "en": "Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.",
+    "zh": "Multi-IF 是一个用于评估大语言模型在多语言环境下多轮指令遵循能力的基准。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "general_arena": {
+    "en": "GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).",
+    "zh": "GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争性任务中相互对抗，评估其性能并分析各自的优缺点。您应以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "minerva_math": {
+    "en": "Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.",
+    "zh": "Minerva-math 是一个用于评估大语言模型数学与定量推理能力的基准，包含 **272 道题目**，主要来自 **MIT OpenCourseWare** 课程，涵盖固态化学、天文学、微分方程和狭义相对论等 **大学及研究生水平** 的高级 STEM 学科。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "ifeval": {
+    "en": "IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.",
+    "zh": "IFEval 是一个用于评估指令跟随型语言模型的基准，侧重于测试模型理解和响应各类提示的能力。它包含多样化的任务和指标，以全面评估模型性能。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "simple_qa": {
+    "en": "SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.",
+    "zh": "SimpleQA 是一个用于评估语言模型在简单问答任务上性能的基准，包含一系列需要基本推理和理解能力的直接问题。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "frames": {
+    "en": "FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.",
+    "zh": "FRAMES 是一个综合评估数据集，旨在测试检索增强生成（RAG）系统在事实性、检索准确性和推理能力方面的表现。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "live_code_bench": {
+    "en": "Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以衡量模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "mmmu": {
+    "en": "MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.",
+    "zh": "MMMU（面向专家级通用人工智能的大规模多学科多模态理解与推理基准）旨在评估多模态模型在需要大学水平知识和深度推理的跨学科任务上的表现。该基准包含从大学考试、测验和教材中精心收集的1.15万个多模态问题，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，涉及30个学科领域和183个子领域，包含图表、示意图、地图、表格、乐谱、化学结构等30种高度异构的图像类型。",
+    "updated_at": "2025-10-27T11:40:04Z"
+  },
+  "visulogic": {
+    "en": "VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.",
+    "zh": "VisuLogic 是一个旨在评估多模态大语言模型（MLLM）视觉推理能力的基准，独立于文本推理过程。它包含精心构建的跨类别视觉推理任务，根据所需推理技能分为六类（例如定量推理，涉及理解并推断图像中元素数量的变化）。与现有基准不同，VisuLogic 的视觉推理任务本身难以用语言描述，因而更具挑战性，能够更严格地评估 MLLM 的视觉推理能力。",
+    "updated_at": "2025-10-27T11:44:05Z"
   }
 }

@@ -1,5 +1,5 @@
 # flake8: noqa: E501
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -27,11 +27,12 @@ SUBSET_LIST = [
 
 @register_benchmark(
     BenchmarkMeta(
-        name='visu_logic',
+        name='visulogic',
         pretty_name='VisuLogic',
         dataset_id='evalscope/VisuLogic',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description='A Challenging Visual-centric Benchmark for Evaluating Multimodal Reasoning in MLLMs!',
+        description=
+        'VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',
@@ -46,8 +47,8 @@ class VisuLogicAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = record.get('question', '')
-        content_list: list[Content] = []
-        prompt_text = MULT_CHOICE_PROMPT.format(question=question).strip()
+        content_list: List[Content] = []
+        prompt_text = self.prompt_template.format(question=question).strip()
         content_list.append(ContentText(text=prompt_text))
 
         image = record.get('image')
@@ -64,6 +65,7 @@ class VisuLogicAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['label'],
+            choices=['A', 'B', 'C', 'D'],
             subset_key=record['tag'],
             metadata=metadata,
         )

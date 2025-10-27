@@ -26,7 +26,7 @@ SUBSET_LIST = ['chart', 'web', 'map']
         dataset_id='evalscope/SEED-Bench-2-Plus',
         tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description=
-        'SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). ',
+        'SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). It consists of 2.3K multiple-choice questions with precise human annotations, spanning three broad categories: Charts, Maps, and Webs, each of which covers a wide spectrum of text-rich scenarios in the real world.',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',
@@ -42,7 +42,7 @@ class SeedBench2PlusAdapter(VisionLanguageAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = record['question']
         answers_list = [record['choice_A'], record['choice_B'], record['choice_C'], record['choice_D']]
-        input_text = prompt(question=question, choices=answers_list, template=MULT_CHOICE_PROMPT)
+        input_text = prompt(question=question, choices=answers_list, template=self.prompt_template)
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record['image']
         if image:

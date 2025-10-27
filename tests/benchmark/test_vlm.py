@@ -271,7 +271,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('visu_logic', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('visulogic', dataset_args=dataset_args, limit=10, use_cache='outputs/20251027_105434', rerun_review=True)
 
     def test_zerobench_bench(self):
         dataset_args = {

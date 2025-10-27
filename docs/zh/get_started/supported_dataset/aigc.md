@@ -21,7 +21,7 @@
 - **数据集名称**: `evalmuse`
 - **数据集ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
 - **数据集描述**:
-  > EvalMuse 文本到图像基准，用于评估精细生成图像的质量和语义一致性
+  > EvalMuse文本到图像基准，用于评估精细生成图像的质量和语义一致性
 - **任务类别**: `TextToImage`
 - **评估指标**: `FGA_BLIP2Score`
 - **需要LLM Judge**: 否
@@ -37,7 +37,7 @@
 - **数据集名称**: `gedit`
 - **数据集ID**: [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary)
 - **数据集描述**:
-  > GEdit-Bench 是一个基于真实使用场景的图像编辑基准，旨在支持对图像编辑模型进行更真实、全面的评估。
+  > GEdit-Bench 是基于真实使用场景构建的图像编辑基准，旨在支持对图像编辑模型进行更真实、全面的评估。
 - **任务类别**: `ImageEditing`
 - **评估指标**: `Perceptual Similarity`, `Semantic Consistency`
 - **需要LLM Judge**: 是
@@ -59,7 +59,7 @@
 - **数据集名称**: `genai_bench`
 - **数据集ID**: [AI-ModelScope/T2V-Eval-Prompts](https://modelscope.cn/datasets/AI-ModelScope/T2V-Eval-Prompts/summary)
 - **数据集描述**:
-  > GenAI-Bench 文本到图像基准测试，包含 1600 个文本到图像任务的提示。
+  > GenAI-Bench 文本到图像基准，包含 1600 个文本到图像任务的提示。
 - **任务类别**: `TextToImage`
 - **评估指标**: `VQAScore`
 - **需要LLM Judge**: 否
