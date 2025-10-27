@@ -534,7 +534,7 @@ Please answer YES or NO without an explanation.
 - **数据集名称**: `real_world_qa`
 - **数据集ID**: [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary)
 - **数据集描述**:
-  > RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的 comprehension 水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对物理世界的理解。
+  > RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的理解水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对物理世界的理解。
 - **任务类别**: `Knowledge`, `MultiModal`, `QA`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
