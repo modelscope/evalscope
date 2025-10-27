@@ -121,6 +121,7 @@ class Tags:
     CHINESE = 'Chinese'
     COMMONSENSE = 'Commonsense'
     QA = 'QA'
+    NER = 'NER'
     READING_COMPREHENSION = 'ReadingComprehension'
     CUSTOM = 'Custom'
     INSTRUCTION_FOLLOWING = 'InstructionFollowing'

@@ -13,11 +13,14 @@
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `FunctionCalling` |
+| `broad-twitter-corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
-| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge` |
+| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
+| `copious` | [Copious](#copious) | `Knowledge`, `NER` |
+| `cross-ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
@@ -25,8 +28,10 @@
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
+| `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
@@ -37,12 +42,15 @@
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
+| `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
+| `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
+| `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
 | `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
@@ -53,6 +61,7 @@
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
+| `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
 
 ---
 
@@ -270,6 +279,47 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 
 ---
 
+### BroadTwitterCorpus
+
+[返回目录](#llm评测集)
+- **数据集名称**: `broad-twitter-corpus`
+- **数据集ID**: [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary)
+- **数据集描述**:
+  > BroadTwitterCorpus 是一个通过分层抽样在不同时间、地点和社会用途下收集的推文数据集。其目标是涵盖广泛的活动，从而提供一个更能代表这种最难处理的社交媒体形式中所用语言的数据集。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
 ### C-Eval
 
 [返回目录](#llm评测集)
@@ -373,11 +423,93 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **数据集ID**: [evalscope/conll2003](https://modelscope.cn/datasets/evalscope/conll2003/summary)
 - **数据集描述**:
   > ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人名、组织、地点及各类名称的文本。
-- **任务类别**: `Knowledge`
+- **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### Copious
+
+[返回目录](#llm评测集)
+- **数据集名称**: `copious`
+- **数据集ID**: [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary)
+- **数据集描述**:
+  > Copious语料库是一个涵盖广泛生物多样性实体的黄金标准语料库，包含从生物多样性遗产图书馆下载的668份文档，超过2.6万句句子和2.8万余个实体。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### CrossNER
+
+[返回目录](#llm评测集)
+- **数据集名称**: `cross-ner`
+- **数据集ID**: [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary)
+- **数据集描述**:
+  > CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖五个不同领域（人工智能、文学、音乐、政治、科学）。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `ai`, `literature`, `music`, `politics`, `science`
 
 - **提示模板**: 
 ```text
@@ -618,6 +750,47 @@ Example output: "My final verdict is tie: [[A=B]]".
 
 ---
 
+### GeniaNER
+
+[返回目录](#llm评测集)
+- **数据集名称**: `genia-ner`
+- **数据集ID**: [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary)
+- **数据集描述**:
+  > GeniaNER 包含 2,000 篇 MEDLINE 摘要，超过 40 万词和近 10 万条生物术语标注，现已发布。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
 ### GPQA-Diamond
 
 [返回目录](#llm评测集)
@@ -677,6 +850,47 @@ question:
 {question}
 
 Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}" (without quotes), where $ANSWER is replaced by the actual answer to the problem.
+
+```
+
+---
+
+### HarveyNER
+
+[返回目录](#llm评测集)
+- **数据集名称**: `harvey-ner`
+- **数据集ID**: [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary)
+- **数据集描述**:
+  > HarveyNER 是一个在推文中标注了细粒度位置的数据集。该数据集具有独特挑战性，包含大量非正式描述中的复杂且较长的位置提及。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
 
 ```
 
@@ -932,6 +1146,88 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
+### MIT-Movie-Trivia
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mit-movie-trivia`
+- **数据集ID**: [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary)
+- **数据集描述**:
+  > MIT-Movie-Trivia 数据集最初用于槽位填充，通过忽略某些槽位类型（如类型、评分）并将其他类型合并（如将导演和演员合并为“人物”，歌曲和电影标题合并为“标题”），以保持所有数据集中命名实体类型的一致性。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### MIT-Restaurant
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mit-restaurant`
+- **数据集ID**: [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary)
+- **数据集描述**:
+  > MIT-Restaurant 数据集是一个专门用于训练和测试自然语言处理（NLP）模型的餐厅评论文本集合，尤其适用于命名实体识别（NER）。该数据集包含来自真实评论的句子及其对应的 BIO 格式标签。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
 ### MMLU
 
 [返回目录](#llm评测集)
@@ -1099,6 +1395,47 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
+```
+
+---
+
+### OntoNotes5
+
+[返回目录](#llm评测集)
+- **数据集名称**: `ontonotes5`
+- **数据集ID**: [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary)
+- **数据集描述**:
+  > OntoNotes 5.0 是一个大型多语言语料库，包含英语、中文和阿拉伯语的多种体裁文本，如新闻、博客和广播对话。该语料库标注了丰富的语言信息层次，包括句法、谓词-论元结构、词义、命名实体和共指关系，支持自然语言处理的研究与开发。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```
 
 ---
@@ -1347,4 +1684,45 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+---
+
+### WNUT2017
+
+[返回目录](#llm评测集)
+- **数据集名称**: `wnut2017`
+- **数据集ID**: [extraordinarylab/wnut2017](https://modelscope.cn/datasets/extraordinarylab/wnut2017/summary)
+- **数据集描述**:
+  > WNUT2017 数据集包含来自 Twitter 和 YouTube 等社交媒体平台的用户生成文本，专为命名实体识别任务设计。
+- **任务类别**: `Knowledge`, `NER`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 5-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```
