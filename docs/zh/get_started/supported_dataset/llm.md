@@ -17,6 +17,7 @@
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
+| `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
@@ -31,6 +32,7 @@
 | `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `halueval` | [HaluEval](#halueval) | `Hallucination`, `Knowledge`, `Yes/No` |
 | `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
@@ -39,22 +41,29 @@
 | `ifeval` | [IFEval](#ifeval) | `InstructionFollowing` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
+| `logi_qa` | [LogiQA](#logiqa) | `MCQ`, `Reasoning` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
 | `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
+| `piqa` | [PIQA](#piqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
+| `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
+| `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
+| `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
 | `tau_bench` | [τ-bench](#τ-bench) | `FunctionCalling`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](#toolbench-static) | `FunctionCalling`, `Reasoning` |
@@ -388,6 +397,30 @@ Text to process:
 选项：
 {choices}
 
+```
+
+---
+
+### CommonsenseQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `commonsense_qa`
+- **数据集ID**: [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary)
+- **数据集描述**:
+  > CommonsenseQA 需要不同类型的常识知识来预测正确答案。
+- **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
 ```
 
 ---
@@ -855,6 +888,26 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 
 ---
 
+### HaluEval
+
+[返回目录](#llm评测集)
+- **数据集名称**: `halueval`
+- **数据集ID**: [evalscope/HaluEval](https://modelscope.cn/datasets/evalscope/HaluEval/summary)
+- **数据集描述**:
+  > HaluEval 是一个大规模生成并由人工标注的幻觉样本集合，用于评估大语言模型在识别幻觉方面的性能。
+- **任务类别**: `Hallucination`, `Knowledge`, `Yes/No`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `dialogue_samples`, `qa_samples`, `summarization_samples`
+
+- **提示模板**: 
+```text
+{question}
+```
+
+---
+
 ### HarveyNER
 
 [返回目录](#llm评测集)
@@ -1072,6 +1125,30 @@ Read the following function signature and docstring, and fully implement the fun
 
 ---
 
+### LogiQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `logi_qa`
+- **数据集ID**: [extraordinarylab/logiqa](https://modelscope.cn/datasets/extraordinarylab/logiqa/summary)
+- **数据集描述**:
+  > LogiQA 是一个源自专家编写的问题的数据集，用于测试人类的逻辑推理能力。
+- **任务类别**: `MCQ`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### MaritimeBench
 
 [返回目录](#llm评测集)
@@ -1121,6 +1198,30 @@ D. 扭应力
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MathQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `math_qa`
+- **数据集ID**: [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary)
+- **数据集描述**:
+  > MathQA 数据集通过使用一种新的表示语言，对 AQuA-RAT 数据集进行标注，生成完整的操作程序而构建。
+- **任务类别**: `MCQ`, `Math`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
 
 ---
@@ -1302,6 +1403,30 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
+### MRI-MCQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mri_mcqa`
+- **数据集ID**: [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary)
+- **数据集描述**:
+  > MRI-MCQA 是一个包含磁共振成像（MRI）相关选择题的基准测试。
+- **任务类别**: `Knowledge`, `MCQ`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### Multi-IF
 
 [返回目录](#llm评测集)
@@ -1440,6 +1565,30 @@ Text to process:
 
 ---
 
+### PIQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `piqa`
+- **数据集ID**: [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary)
+- **数据集描述**:
+  > PIQA 旨在解决自然语言中物理常识推理的难题。
+- **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### PolyMath
 
 [返回目录](#llm评测集)
@@ -1493,6 +1642,51 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 
 ---
 
+### PubMedQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `pubmedqa`
+- **数据集ID**: [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary)
+- **数据集描述**:
+  > PubMedQA 通过推理生物医学研究文本回答多项选择题。
+- **任务类别**: `Knowledge`, `Yes/No`
+- **评估指标**: `accuracy`, `f1_score`, `maybe_ratio`, `precision`, `recall`, `yes_ratio`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+{question}
+Please answer YES or NO or MAYBE without an explanation.
+```
+
+---
+
+### QASC
+
+[返回目录](#llm评测集)
+- **数据集名称**: `qasc`
+- **数据集ID**: [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary)
+- **数据集描述**:
+  > QASC 是一个专注于句子组合的问答数据集，包含 9,980 道八选一的多项选择题，涉及小学科学内容。
+- **任务类别**: `Knowledge`, `MCQ`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### RACE
 
 [返回目录](#llm评测集)
@@ -1535,6 +1729,30 @@ Answer the following multiple choice question. The last line of your response sh
 Answer the question:
 
 {question}
+```
+
+---
+
+### SIQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `siqa`
+- **数据集ID**: [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary)
+- **数据集描述**:
+  > 社交互动问答（SIQA）是一个用于测试社交常识智能的问答基准。与许多关注物理或分类知识的先前基准不同，Social IQa 侧重于推理人们的行为及其社会影响。
+- **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
 ```
 
 ---
