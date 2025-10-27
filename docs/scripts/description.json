@@ -403,5 +403,50 @@
     "en": "VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.",
     "zh": "VisuLogic 是一个旨在评估多模态大语言模型（MLLM）视觉推理能力的基准，独立于文本推理过程。它包含精心构建的跨类别视觉推理任务，根据所需推理技能分为六类（例如定量推理，涉及理解并推断图像中元素数量的变化）。与现有基准不同，VisuLogic 的视觉推理任务本身难以用语言描述，因而更具挑战性，能够更严格地评估 MLLM 的视觉推理能力。",
     "updated_at": "2025-10-27T11:44:05Z"
+  },
+  "cross-ner": {
+    "en": "CrossNER is a fully-labelled collected of named entity recognition (NER) data spanning over five diverse domains (AI, Literature, Music, Politics, Science).",
+    "zh": "CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖五个不同领域（人工智能、文学、音乐、政治、科学）。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "genia-ner": {
+    "en": "GeniaNER consisting of 2,000 MEDLINE abstracts has been released with more than 400,000 words and almost 100,000 annotations for biological terms.",
+    "zh": "GeniaNER 包含 2,000 篇 MEDLINE 摘要，超过 40 万词和近 10 万条生物术语标注，现已发布。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "harvey-ner": {
+    "en": "HarveyNER is a dataset with fine-grained locations annotated in tweets. This dataset presents unique challenges and characterizes many complex and long location mentions in informal descriptions.",
+    "zh": "HarveyNER 是一个在推文中标注了细粒度位置的数据集。该数据集具有独特挑战性，包含大量非正式描述中的复杂且较长的位置提及。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "broad-twitter-corpus": {
+    "en": "BroadTwitterCorpus is a dataset of tweets collected over stratified times, places and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.",
+    "zh": "BroadTwitterCorpus 是一个通过分层抽样在不同时间、地点和社会用途下收集的推文数据集。其目标是涵盖广泛的活动，从而提供一个更能代表这种最难处理的社交媒体形式中所用语言的数据集。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "mit-restaurant": {
+    "en": "The MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing Natural Language Processing (NLP) models, particularly for Named Entity Recognition (NER). It contains sentences from real reviews, along with corresponding labels in the BIO format.",
+    "zh": "MIT-Restaurant 数据集是一个专门用于训练和测试自然语言处理（NLP）模型的餐厅评论文本集合，尤其适用于命名实体识别（NER）。该数据集包含来自真实评论的句子及其对应的 BIO 格式标签。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "copious": {
+    "en": "Copious corpus is a gold standard corpus that covers a wide range of biodiversity entities, consisting of 668 documents downloaded from the Biodiversity Heritage Library with over 26K sentences and more than 28K entities.",
+    "zh": "Copious语料库是一个涵盖广泛生物多样性实体的黄金标准语料库，包含从生物多样性遗产图书馆下载的668份文档，超过2.6万句句子和2.8万余个实体。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "mit-movie-trivia": {
+    "en": "The MIT-Movie-Trivia dataset, originally created for slot filling, is modified by ignoring some slot types (e.g. genre, rating) and merging others (e.g. director and actor in person, and song and movie title in title) in order to keep consistent named entity types across all datasets.",
+    "zh": "MIT-Movie-Trivia 数据集最初用于槽位填充，通过忽略某些槽位类型（如类型、评分）并将其他类型合并（如将导演和演员合并为“人物”，歌曲和电影标题合并为“标题”），以保持所有数据集中命名实体类型的一致性。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "wnut2017": {
+    "en": "The WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for a named-entity recognition task.",
+    "zh": "WNUT2017 数据集包含来自 Twitter 和 YouTube 等社交媒体平台的用户生成文本，专为命名实体识别任务设计。",
+    "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "ontonotes5": {
+    "en": "OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres like news, weblogs, and broadcast conversations. It is richly annotated with multiple layers of linguistic information, including syntax, predicate-argument structure, word sense, named entities, and coreference to support research and development in natural language processing.",
+    "zh": "OntoNotes 5.0 是一个大型多语言语料库，包含英语、中文和阿拉伯语的多种体裁文本，如新闻、博客和广播对话。该语料库标注了丰富的语言信息层次，包括句法、谓词-论元结构、词义、命名实体和共指关系，支持自然语言处理的研究与开发。",
+    "updated_at": "2025-10-27T14:30:29Z"
   }
 }
