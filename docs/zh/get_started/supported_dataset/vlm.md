@@ -641,7 +641,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 
 
-\Let's think step by step and give the final answer in curly braces,
+Let's think step by step and give the final answer in curly braces,
 like this: {{final answer}}"
 
 ```
