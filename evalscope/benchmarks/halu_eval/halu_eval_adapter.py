@@ -9,7 +9,7 @@ from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.halu_eval.halu_eval_instructions import (
     DIALOGUE_INSTRUCTIONS,
-    QA_INSTURCTIONS,
+    QA_INSTRUCTIONS,
     SUMMARIZATION_INSTRUCTIONS,
 )
 from evalscope.constants import Tags
@@ -49,18 +49,18 @@ class HaluEvalAdapter(DefaultDataAdapter):
             dialogue_history = record['dialogue_history']
             response = record['response']
             hallucination = record['hallucination']
-            inputs = DIALOGUE_INSTRUCTIONS + '\n\n#Knowledge: ' + knowledge + '\n#Dialogue History#: ' + dialogue_history + '\n#Response#: ' + response + '\n#Your Judgement#:'
+            inputs = f'{DIALOGUE_INSTRUCTIONS}\n\n#Knowledge: {knowledge}\n#Dialogue History#: {dialogue_history}\n#Response#: {response}\n#Your Judgement#:'
         elif self.current_subset_name == 'qa_samples':
             knowledge = record['knowledge']
             question = record['question']
             answer = record['answer']
             hallucination = record['hallucination']
-            inputs = QA_INSTURCTIONS + '\n\n#Knowledge: ' + knowledge + '\n#Question#: ' + question + '\n#Answer#: ' + answer + '\n#Your Judgement#:'
+            inputs = f'{QA_INSTRUCTIONS}\n\n#Knowledge: {knowledge}\n#Question#: {question}\n#Answer#: {answer}\n#Your Judgement#:'
         elif self.current_subset_name == 'summarization_samples':
             document = record['document']
             summary = record['summary']
             hallucination = record['hallucination']
-            inputs = SUMMARIZATION_INSTRUCTIONS + '\n\n#Document#: ' + document + '\n#Summary#: ' + summary + '\n#Your Judgement#:'
+            inputs = f'{SUMMARIZATION_INSTRUCTIONS}\n\n#Document#: {document}\n#Summary#: {summary}\n#Your Judgement#:'
 
         input_text = self.prompt_template.format(question=inputs)
         content_list: List[Content] = [ContentText(text=input_text)]

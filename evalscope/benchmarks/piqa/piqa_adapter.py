@@ -4,7 +4,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTOIN = 'PIQA addresses the challenging task of reasoning about physical commonsense in natural language.'
+DESCRIPTION = 'PIQA addresses the challenging task of reasoning about physical commonsense in natural language.'
 
 
 @register_benchmark(
@@ -12,7 +12,7 @@ DESCRIPTOIN = 'PIQA addresses the challenging task of reasoning about physical c
         name='piqa',
         pretty_name='PIQA',
         tags=[Tags.REASONING, Tags.COMMONSENSE, Tags.MULTIPLE_CHOICE],
-        description=DESCRIPTOIN.strip(),
+        description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/piqa',
         metric_list=['acc'],
         few_shot_num=0,
@@ -22,9 +22,6 @@ DESCRIPTOIN = 'PIQA addresses the challenging task of reasoning about physical c
     )
 )
 class PIQAAdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

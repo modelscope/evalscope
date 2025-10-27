@@ -26,9 +26,6 @@ DESCRIPTION = (
 )
 class MathQAAdapter(MultiChoiceAdapter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

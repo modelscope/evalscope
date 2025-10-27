@@ -24,10 +24,7 @@ DESCRIPTION = (
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class QASCdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class QASCAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

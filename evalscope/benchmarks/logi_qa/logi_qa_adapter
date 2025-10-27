@@ -32,7 +32,7 @@ class LogiQAAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(
-            input=record['context'] + '\n' + record['question'],
+            input=f"{record['context']}\n{record['question']}",
             choices=record['choices'],
             target=record['answer'],
             metadata={},
