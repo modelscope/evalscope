@@ -31,7 +31,7 @@
   },
   "real_world_qa": {
     "en": "RealWorldQA is a benchmark designed to evaluate the real-world spatial understanding capabilities of multimodal AI models, contributed by XAI. It assesses how well these models comprehend physical environments. The benchmark consists of 700+ images, each accompanied by a question and a verifiable answer. These images are drawn from real-world scenarios, including those captured from vehicles. The goal is to advance AI models' understanding of our physical world.",
-    "zh": "RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的 comprehension 水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对物理世界的理解。",
+    "zh": "RealWorldQA 是由 XAI 提供的一个基准，旨在评估多模态 AI 模型对现实世界空间的理解能力，衡量其对物理环境的理解水平。该基准包含 700 多张来自真实场景（包括车载拍摄）的图像，每张图像均附有一个问题和可验证的答案，旨在推动 AI 模型对物理世界的理解。",
     "updated_at": "2025-10-27T11:40:04Z"
   },
   "hallusion_bench": {
