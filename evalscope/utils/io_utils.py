@@ -12,6 +12,7 @@ import yaml
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
+from typing import Tuple
 
 from evalscope.constants import DumpMode
 from evalscope.utils.logger import get_logger
@@ -438,3 +439,58 @@ def convert_normal_types(obj):
         return tuple(convert_normal_types(item) for item in obj)
     else:
         return obj
+
+
+def compress_image_to_limit(image_bytes: bytes, max_bytes: int = 10_000_000) -> Tuple[bytes, str]:
+    """
+    Ensure image bytes are under max_bytes by re-encoding to JPEG with quality reduction
+    and optional downscaling. Returns (processed_bytes, format_str).
+    If the original bytes are already below the limit, returns them as PNG.
+    """
+    if len(image_bytes) <= max_bytes:
+        return image_bytes, 'png'
+
+    try:
+        img = Image.open(BytesIO(image_bytes))
+    except Exception as exc:
+        logger.warning(f'Failed to open image bytes with PIL, sending original image; may exceed API limit: {exc}')
+        return image_bytes, 'png'
+
+    # Convert to RGB for JPEG if needed
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+
+    def encode_jpeg(source: Image.Image, quality: int) -> bytes:
+        buf = BytesIO()
+        source.save(buf, format='JPEG', quality=quality, optimize=True, progressive=True)
+        return buf.getvalue()
+
+    # Start with moderate quality and reduce
+    quality: int = 85
+    out: bytes = encode_jpeg(img, quality)
+    quality_floor: int = 40
+
+    while len(out) > max_bytes and quality > quality_floor:
+        quality -= 10
+        out = encode_jpeg(img, quality)
+
+    # If still too large, progressively downscale
+    min_side_floor: int = 256
+    scale: float = 0.9
+    while len(out) > max_bytes and min(img.size) > min_side_floor:
+        new_w = max(min_side_floor, int(img.width * scale))
+        new_h = max(min_side_floor, int(img.height * scale))
+        if (new_w, new_h) == img.size:
+            break
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+        out = encode_jpeg(img, quality)
+
+    if len(out) > max_bytes:
+        logger.warning(f'Image remains above limit after compression: size={len(out)} bytes (limit={max_bytes}).')
+    else:
+        logger.info(
+            f'Compressed image from {len(image_bytes)} to {len(out)} bytes; '
+            f'quality={quality}, size={img.width}x{img.height}.'
+        )
+
+    return out, 'jpeg'
