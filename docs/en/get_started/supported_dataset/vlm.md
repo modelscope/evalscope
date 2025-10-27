@@ -25,7 +25,10 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
+| `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
@@ -549,6 +552,30 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 ---
 
+### SEED-Bench-2-Plus
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `seed_bench_2_plus`
+- **Dataset ID**: [evalscope/SEED-Bench-2-Plus](https://modelscope.cn/datasets/evalscope/SEED-Bench-2-Plus/summary)
+- **Description**:
+  > SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). It consists of 2.3K multiple-choice questions with precise human annotations, spanning three broad categories: Charts, Maps, and Webs, each of which covers a wide spectrum of text-rich scenarios in the real world.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `chart`, `map`, `web`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### SimpleVQA
 
 [Back to Top](#vlm-benchmarks)
@@ -567,4 +594,54 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 Answer the question:
 
 {question}
+```
+
+---
+
+### VisuLogic
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `visulogic`
+- **Dataset ID**: [evalscope/VisuLogic](https://modelscope.cn/datasets/evalscope/VisuLogic/summary)
+- **Description**:
+  > VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
+
+- **Prompt Template**: 
+```text
+
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+
+{question}
+
+```
+
+---
+
+### ZeroBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `zerobench`
+- **Dataset ID**: [evalscope/zerobench](https://modelscope.cn/datasets/evalscope/zerobench/summary)
+- **Description**:
+  > ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of a main set of 100 high-quality, manually curated questions covering numerous domains, reasoning types and image type. Questions in ZeroBench have been designed and calibrated to be beyond the capabilities of current frontier models. As such, none of the evaluated models achieves a non-zero pass@1 (with greedy decoding) or 5/5 reliability score.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+{question}
+
+
+
+Let's think step by step and give the final answer in curly braces,
+like this: {{final answer}}"
+
 ```
