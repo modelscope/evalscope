@@ -446,6 +446,64 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('conll2003', dataset_args, limit=10)
 
+    def test_wnut2017_ner(self):
+        """Test WNUT2017 NER dataset."""
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('wnut2017', dataset_args, limit=10)
+
+    def test_logi_qa(self):
+        """Test LogiQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('logi_qa', dataset_args, limit=10)
+
+    def test_halu_eval(self):
+        """Test HaluEval dataset."""
+        dataset_args = {
+            'subset_list': ['dialogue_samples', 'qa_samples'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('halueval', dataset_args, limit=5)
+
+    def test_math_qa(self):
+        """Test MathQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('math_qa', dataset_args)
+
+    def test_mri_qa(self):
+        """Test MRI-QA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('mri_mcqa', dataset_args)
+
+    def test_piqa(self):
+        """Test PIQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('piqa', dataset_args)
+
+    def test_qasc(self):
+        """Test QASC dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('qasc', dataset_args)
+
+    def test_commonsense_qa(self):
+        """Test CommonsenseQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('commonsense_qa', dataset_args)
+
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

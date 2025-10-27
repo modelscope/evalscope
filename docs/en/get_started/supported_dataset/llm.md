@@ -17,6 +17,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
+| `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
@@ -31,6 +32,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `halueval` | [HaluEval](#halueval) | `Hallucination`, `Knowledge`, `Yes/No` |
 | `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
@@ -39,22 +41,29 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `ifeval` | [IFEval](#ifeval) | `InstructionFollowing` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
+| `logi_qa` | [LogiQA](#logiqa) | `MCQ`, `Reasoning` |
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
+| `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
 | `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
+| `piqa` | [PIQA](#piqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
+| `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
+| `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
+| `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
 | `tau_bench` | [τ-bench](#τ-bench) | `FunctionCalling`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](#toolbench-static) | `FunctionCalling`, `Reasoning` |
@@ -388,6 +397,30 @@ Text to process:
 选项：
 {choices}
 
+```
+
+---
+
+### CommonsenseQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `commonsense_qa`
+- **Dataset ID**: [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary)
+- **Description**:
+  > CommonsenseQA requires different types of commonsense knowledge to predict the correct answers.
+- **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
 ```
 
 ---
@@ -855,6 +888,26 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 
 ---
 
+### HaluEval
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `halueval`
+- **Dataset ID**: [evalscope/HaluEval](https://modelscope.cn/datasets/evalscope/HaluEval/summary)
+- **Description**:
+  > HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination.
+- **Task Categories**: `Hallucination`, `Knowledge`, `Yes/No`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `dialogue_samples`, `qa_samples`, `summarization_samples`
+
+- **Prompt Template**: 
+```text
+{question}
+```
+
+---
+
 ### HarveyNER
 
 [Back to Top](#llm-benchmarks)
@@ -1072,6 +1125,30 @@ Read the following function signature and docstring, and fully implement the fun
 
 ---
 
+### LogiQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `logi_qa`
+- **Dataset ID**: [extraordinarylab/logiqa](https://modelscope.cn/datasets/extraordinarylab/logiqa/summary)
+- **Description**:
+  > LogiQA is a dataset sourced from expert-written questions for testing human Logical reasoning.
+- **Task Categories**: `MCQ`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### MaritimeBench
 
 [Back to Top](#llm-benchmarks)
@@ -1121,6 +1198,30 @@ D. 扭应力
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MathQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `math_qa`
+- **Dataset ID**: [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary)
+- **Description**:
+  > MathQA dataset is gathered by using a new representation language to annotate over the AQuA-RAT dataset with fully-specified operational programs.
+- **Task Categories**: `MCQ`, `Math`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
 
 ---
@@ -1302,6 +1403,30 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
+### MRI-MCQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mri_mcqa`
+- **Dataset ID**: [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary)
+- **Description**:
+  > MRI-MCQA is a benchmark composed by multiple-choice questions related to Magnetic Resonance Imaging (MRI).
+- **Task Categories**: `Knowledge`, `MCQ`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### Multi-IF
 
 [Back to Top](#llm-benchmarks)
@@ -1440,6 +1565,30 @@ Text to process:
 
 ---
 
+### PIQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `piqa`
+- **Dataset ID**: [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary)
+- **Description**:
+  > PIQA addresses the challenging task of reasoning about physical commonsense in natural language.
+- **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### PolyMath
 
 [Back to Top](#llm-benchmarks)
@@ -1493,6 +1642,51 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 
 ---
 
+### PubMedQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `pubmedqa`
+- **Dataset ID**: [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary)
+- **Description**:
+  > PubMedQA reasons over biomedical research texts to answer the multiple-choice questions.
+- **Task Categories**: `Knowledge`, `Yes/No`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `maybe_ratio`, `precision`, `recall`, `yes_ratio`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+{question}
+Please answer YES or NO or MAYBE without an explanation.
+```
+
+---
+
+### QASC
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `qasc`
+- **Dataset ID**: [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary)
+- **Description**:
+  > QASC is a question-answering dataset with a focus on sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science
+- **Task Categories**: `Knowledge`, `MCQ`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+---
+
 ### RACE
 
 [Back to Top](#llm-benchmarks)
@@ -1535,6 +1729,30 @@ Answer the following multiple choice question. The last line of your response sh
 Answer the question:
 
 {question}
+```
+
+---
+
+### SIQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `siqa`
+- **Dataset ID**: [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary)
+- **Description**:
+  > Social Interaction QA (SIQA) is a question-answering benchmark for testing social commonsense intelligence. Contrary to many prior benchmarks that focus on physical or taxonomic knowledge, Social IQa focuses on reasoning about people's actions and their social implications.
+- **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
 ```
 
 ---

@@ -1,9 +1,11 @@
-from evalscope.constants import Tags
+# flake8: noqa: E501
+
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.constants import Tags
 
-DESCRIPTION = "LogiQA is a dataset sourced from expert-written questions for testing human Logical reasoning."
+DESCRIPTION = 'LogiQA is a dataset sourced from expert-written questions for testing human Logical reasoning.'
 
 PROMPT_TEMPLATE = r"""
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.

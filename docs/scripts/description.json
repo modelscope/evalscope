@@ -448,5 +448,50 @@
     "en": "OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres like news, weblogs, and broadcast conversations. It is richly annotated with multiple layers of linguistic information, including syntax, predicate-argument structure, word sense, named entities, and coreference to support research and development in natural language processing.",
     "zh": "OntoNotes 5.0 是一个大型多语言语料库，包含英语、中文和阿拉伯语的多种体裁文本，如新闻、博客和广播对话。该语料库标注了丰富的语言信息层次，包括句法、谓词-论元结构、词义、命名实体和共指关系，支持自然语言处理的研究与开发。",
     "updated_at": "2025-10-27T14:30:29Z"
+  },
+  "commonsense_qa": {
+    "en": "CommonsenseQA requires different types of commonsense knowledge to predict the correct answers.",
+    "zh": "CommonsenseQA 需要不同类型的常识知识来预测正确答案。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "qasc": {
+    "en": "QASC is a question-answering dataset with a focus on sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science",
+    "zh": "QASC 是一个专注于句子组合的问答数据集，包含 9,980 道八选一的多项选择题，涉及小学科学内容。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "logi_qa": {
+    "en": "LogiQA is a dataset sourced from expert-written questions for testing human Logical reasoning.",
+    "zh": "LogiQA 是一个源自专家编写的问题的数据集，用于测试人类的逻辑推理能力。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "math_qa": {
+    "en": "MathQA dataset is gathered by using a new representation language to annotate over the AQuA-RAT dataset with fully-specified operational programs.",
+    "zh": "MathQA 数据集通过使用一种新的表示语言，对 AQuA-RAT 数据集进行标注，生成完整的操作程序而构建。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "siqa": {
+    "en": "Social Interaction QA (SIQA) is a question-answering benchmark for testing social commonsense intelligence. Contrary to many prior benchmarks that focus on physical or taxonomic knowledge, Social IQa focuses on reasoning about people's actions and their social implications.",
+    "zh": "社交互动问答（SIQA）是一个用于测试社交常识智能的问答基准。与许多关注物理或分类知识的先前基准不同，Social IQa 侧重于推理人们的行为及其社会影响。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "pubmedqa": {
+    "en": "PubMedQA reasons over biomedical research texts to answer the multiple-choice questions.",
+    "zh": "PubMedQA 通过推理生物医学研究文本回答多项选择题。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "mri_mcqa": {
+    "en": "MRI-MCQA is a benchmark composed by multiple-choice questions related to Magnetic Resonance Imaging (MRI).",
+    "zh": "MRI-MCQA 是一个包含磁共振成像（MRI）相关选择题的基准测试。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "piqa": {
+    "en": "PIQA addresses the challenging task of reasoning about physical commonsense in natural language.",
+    "zh": "PIQA 旨在解决自然语言中物理常识推理的难题。",
+    "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "halueval": {
+    "en": "HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination.",
+    "zh": "HaluEval 是一个大规模生成并由人工标注的幻觉样本集合，用于评估大语言模型在识别幻觉方面的性能。",
+    "updated_at": "2025-10-27T19:02:03Z"
   }
 }
