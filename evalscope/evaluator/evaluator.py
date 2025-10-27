@@ -194,8 +194,8 @@ class DefaultEvaluator(Evaluator):
                 pending = set(future_to_sample.keys())
                 while pending:
                     done, not_done = wait(pending, timeout=HEARTBEAT_INTERVAL_SEC)
-                    if not_done:
-                        logger.info(f'Predicting heartbeat: still processing... pending={len(not_done)}')
+                    if not done:
+                        logger.info(f'Predicting: still processing... pending={len(not_done)}')
                         continue
 
                     for future in done:
