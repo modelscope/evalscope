@@ -12,11 +12,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
     """
 
     def __init__(self, query_parameters: Arguments):
+        assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'  # noqa: E501
         super().__init__(query_parameters)
-        assert self.query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer_path`.'  # noqa: E501
 
-        from modelscope import AutoTokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.query_parameters.tokenizer_path, trust_remote_code=True)
         self.prefix_length = self.query_parameters.prefix_length
         self.prefix_ids = self.get_random_inputs(self.prefix_length)
         self.template_len = self.get_template_len()

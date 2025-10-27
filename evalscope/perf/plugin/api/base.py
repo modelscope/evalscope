@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 from evalscope.perf.arguments import Arguments
+from evalscope.perf.utils.benchmark_util import BenchmarkData
 
 
 class ApiPluginBase:
@@ -28,13 +29,13 @@ class ApiPluginBase:
         raise NotImplementedError
 
     @abstractmethod
-    def parse_responses(self, responses: List, request: Any = None, **kwargs: Any) -> Tuple[int, int]:
+    def parse_responses(self, responses: List[Dict], request: str = None, **kwargs: Any) -> Tuple[int, int]:
         """Parser responses and return number of request and response tokens.
 
         Args:
-            responses (List[bytes]): List of http response body, for stream output,
+            responses (List[Dict]): List of http response body, for stream output,
                 there are multiple responses, each is bytes, for general only one.
-            request (Any): The request body.
+            request (str): The json string of request.
 
         Returns:
             Tuple: (Number of prompt_tokens and number of completion_tokens).
@@ -42,8 +43,9 @@ class ApiPluginBase:
         raise NotImplementedError
 
     @abstractmethod
-    async def process_request(self, client_session: aiohttp.ClientSession, url: str, headers: Dict,
-                              body: Dict) -> AsyncGenerator[Tuple[bool, int, Any], None]:
+    async def process_request(
+        self, client_session: aiohttp.ClientSession, url: str, headers: Dict, body: Dict
+    ) -> BenchmarkData:
         """Process the HTTP request and handle the response.
 
         Args:
@@ -52,8 +54,8 @@ class ApiPluginBase:
             headers: The request headers
             body: The request body
 
-        Yields:
-            Tuple[bool, int, Any]: (is_error, status_code, response_data)
+        Returns:
+            BenchmarkData: The benchmark data including response and timing info.
         """
         raise NotImplementedError
 

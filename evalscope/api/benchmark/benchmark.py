@@ -216,12 +216,26 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         return self._benchmark_meta.train_split
 
+    @train_split.setter
+    def train_split(self, value: str):
+        """
+        Set the train split of the benchmark.
+        """
+        self._benchmark_meta.train_split = value
+
     @property
     def eval_split(self) -> Optional[str]:
         """
         Return the eval split of the benchmark.
         """
         return self._benchmark_meta.eval_split
+
+    @eval_split.setter
+    def eval_split(self, value: str):
+        """
+        Set the eval split of the benchmark.
+        """
+        self._benchmark_meta.eval_split = value
 
     @property
     def prompt_template(self) -> Optional[str]:

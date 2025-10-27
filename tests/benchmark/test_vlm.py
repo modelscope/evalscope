@@ -3,7 +3,6 @@ from dotenv import dotenv_values
 
 env = dotenv_values('.env')
 
-import unittest
 
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger
@@ -58,7 +57,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': ['default']
         }
-        self._run_dataset_test('math_vista', dataset_args=dataset_args)
+        self._run_dataset_test('math_vista', dataset_args=dataset_args, limit=20)
 
     def test_mmmu_pro(self):
         dataset_args = {
@@ -216,3 +215,66 @@ class TestVLMBenchmark(TestBenchmark):
             ]
         }
         self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=1)
+
+    def test_hallusion_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+            'shuffle': True,
+        }
+        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=20)
+
+    def test_pope(self):
+        dataset_args = {
+            'subset_list': [
+                'popular',
+                'adversarial',
+                'random'
+            ]
+        }
+        self._run_dataset_test('pope', dataset_args=dataset_args, limit=5)
+
+    def test_math_vision(self):
+        dataset_args = {
+            'subset_list': [
+                'level 1',
+            ],
+            'shuffle': True,
+        }
+        self._run_dataset_test('math_vision', dataset_args=dataset_args, limit=20, use_cache='outputs/20251017_153210', rerun_review=True)
+
+    def test_math_verse(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+            'shuffle': True,
+        }
+        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=5, use_cache='outputs/20251017_161352', rerun_review=True)
+
+    def test_simple_vqa(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('simple_vqa', dataset_args=dataset_args, limit=10)
+
+    def test_omni_doc_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)
+
+    def test_seed_bench_2_plus_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('seed_bench_2_plus', dataset_args=dataset_args, limit=10)
+
+    def test_visu_logic_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('visulogic', dataset_args=dataset_args, limit=10)
+
+    def test_zerobench_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('zerobench', dataset_args=dataset_args, limit=5, eval_batch_size=1)

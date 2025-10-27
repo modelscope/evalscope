@@ -33,11 +33,17 @@ class Arguments(BaseArgument):
     rate: int = -1  # Rate limit for requests (default: -1, no limit)
     sleep_interval: int = 5  # Sleep interval between performance runs, in seconds
 
+    # Tuning knobs
+    db_commit_interval: int = 1000  # Number of rows buffered before committing to the DB
+    queue_size_multiplier: int = 5  # Maxsize for queue = parallel * this multiplier
+    in_flight_task_multiplier: int = 2  # Max scheduled tasks = parallel * this multiplier
+
     # Logging and debugging
     log_every_n_query: int = 10  # Log every N queries
     debug: bool = False  # Debug mode
-    wandb_api_key: Optional[str] = None  # WandB API key for logging
-    swanlab_api_key: Optional[str] = None  # SwanLab API key for logging
+    visualizer: Optional[str] = None  # Visualizer for logging, supports 'swanlab' or 'wandb'
+    wandb_api_key: Optional[str] = None  # Will be deprecated in the future
+    swanlab_api_key: Optional[str] = None  # Will be deprecated in the future
     name: Optional[str] = None  # Name for the run
 
     # Output settings
@@ -68,7 +74,7 @@ class Arguments(BaseArgument):
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
     min_tokens: Optional[int] = None  # Minimum number of tokens in the response
     n_choices: Optional[int] = None  # Number of response choices
-    seed: Optional[int] = 0  # Random seed for reproducibility
+    seed: Optional[int] = None  # Random seed for reproducibility
     stop: Optional[List[str]] = None  # Stop sequences for the response
     stop_token_ids: Optional[List[str]] = None  # Stop token IDs for the response
     stream: Optional[bool] = True  # Whether to stream the response
@@ -106,6 +112,14 @@ class Arguments(BaseArgument):
         assert len(self.number) == len(
             self.parallel
         ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
+
+        # Validate tuning knobs
+        if self.db_commit_interval <= 0:
+            self.db_commit_interval = 1
+        if self.queue_size_multiplier <= 0:
+            self.queue_size_multiplier = 1
+        if self.in_flight_task_multiplier <= 0:
+            self.in_flight_task_multiplier = 1
 
 
 class ParseKVAction(argparse.Action):
@@ -152,9 +166,15 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
 
+    # Tuning knobs
+    parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
+    parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
+    parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
+
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
+    parser.add_argument('--visualizer', type=str, default=None, help='The visualizer to use, default None')
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
     parser.add_argument('--name', type=str, help='The wandb/swanlab db result name and result db name')
@@ -190,7 +210,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)
-    parser.add_argument('--seed', type=int, help='The random seed', default=0)
+    parser.add_argument('--seed', type=int, help='The random seed', default=None)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)

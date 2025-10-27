@@ -1,4 +1,3 @@
-import time
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
@@ -10,7 +9,7 @@ logger = get_logger()
 
 @dataclass
 class BenchmarkData:
-    request: Any = None
+    request: str = None  # json serialized request body
     start_time: float = 0.0
     completed_time: float = 0.0
     chunk_times: List[float] = field(default_factory=list)
@@ -24,24 +23,26 @@ class BenchmarkData:
     time_per_output_token: float = 0.0
     inter_chunk_latency: List[float] = field(default_factory=list)
 
-    prompt_tokens = None
-    completion_tokens = None
-
-    def _calculate_query_stream_metric(self) -> None:
-        self.query_latency = self.completed_time - self.start_time
-        # only for stream responses
-        if len(self.chunk_times) > 1:
-            self.first_chunk_latency = self.chunk_times[0] - self.start_time
-            # remove the first chunk time from the total latency
-            self.time_per_output_token = (self.query_latency - self.first_chunk_latency
-                                          ) / (self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
-            self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
-        else:
-            self.first_chunk_latency = self.query_latency
+    # response content
+    generated_text: str = ''
+    error: Optional[str] = None
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
 
     def _calculate_tokens(self, api_plugin):
-        self.prompt_tokens, self.completion_tokens = \
-            api_plugin.parse_responses(self.response_messages, request=self.request)
+        if self.prompt_tokens is None or self.completion_tokens is None:
+            self.prompt_tokens, self.completion_tokens = api_plugin.parse_responses(
+                self.response_messages, request=self.request
+            )
+
+        # Calculate time per output token
+        if self.completion_tokens and self.completion_tokens > 1:
+            # tpot = (latency - ttft) / (output_len - 1)
+            self.time_per_output_token = (self.query_latency - self.first_chunk_latency) / (self.completion_tokens - 1)
+
+        # Ensure inter-chunk latency is available (compute from chunk_times if needed)
+        if not self.inter_chunk_latency and self.chunk_times:
+            self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
 
     def update_gpu_usage(self):
         if check_import('torch', raise_warning=False):
@@ -79,6 +80,7 @@ class BenchmarkMetrics:
     n_total_prompt_tokens: int = 0
     n_total_completion_tokens: int = 0
     start_time: Optional[float] = None
+    last_completed_time: Optional[float] = None
     total_time: float = 1.0
     n_total_queries: int = 0
     n_time_per_output_token: float = 0.0
@@ -97,9 +99,6 @@ class BenchmarkMetrics:
 
     def update_metrics(self, benchmark_data: BenchmarkData, api_plugin):
         self.n_total_queries += 1
-        if self.start_time is None:
-            self.start_time = benchmark_data.start_time
-        self.total_time = time.perf_counter() - self.start_time
 
         if benchmark_data.success:
             self.n_succeed_queries += 1
@@ -108,7 +107,6 @@ class BenchmarkMetrics:
             self.n_total_prompt_tokens += benchmark_data.prompt_tokens
             self.n_total_completion_tokens += benchmark_data.completion_tokens
 
-            benchmark_data._calculate_query_stream_metric()
             self.total_latency += benchmark_data.query_latency
             self.total_first_chunk_latency += benchmark_data.first_chunk_latency
             self.n_time_per_output_token += benchmark_data.time_per_output_token
@@ -117,6 +115,22 @@ class BenchmarkMetrics:
             self.n_failed_queries += 1
 
         self.calculate_averages()
+        self.update_total_time(benchmark_data)
+
+    def update_total_time(self, benchmark_data: BenchmarkData):
+        # Use the earliest start_time seen so far
+        if self.start_time is None:
+            self.start_time = benchmark_data.start_time
+        else:
+            self.start_time = min(self.start_time, benchmark_data.start_time)
+        # Track the latest completion time
+        if self.last_completed_time is None:
+            self.last_completed_time = benchmark_data.completed_time
+        else:
+            self.last_completed_time = max(self.last_completed_time, benchmark_data.completed_time)
+        # Compute total_time from request lifecycle timestamps to avoid consumer overhead
+        if self.start_time is not None and self.last_completed_time is not None:
+            self.total_time = max(self.last_completed_time - self.start_time, 0.0)
 
     def calculate_averages(self):
         if self.n_succeed_queries == 0:

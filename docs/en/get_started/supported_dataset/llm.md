@@ -4,6 +4,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
+| `aa_lcr` | [AA-LCR](#aa-lcr) | `Knowledge`, `LongContext`, `Reasoning` |
 | `aime24` | [AIME-2024](#aime-2024) | `Math`, `Reasoning` |
 | `aime25` | [AIME-2025](#aime-2025) | `Math`, `Reasoning` |
 | `alpaca_eval` | [AlpacaEval2.0](#alpacaeval20) | `Arena`, `InstructionFollowing` |
@@ -12,19 +13,25 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `FunctionCalling` |
+| `broad-twitter-corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
-| `data_collection` | [data_collection](#data_collection) | `Custom` |
+| `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
+| `copious` | [Copious](#copious) | `Knowledge`, `NER` |
+| `cross-ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
+| `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
+| `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
@@ -35,12 +42,16 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
+| `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
+| `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
+| `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
+| `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -50,10 +61,51 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
+| `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
 
 ---
 
 ## Benchmark Details
+
+### AA-LCR
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `aa_lcr`
+- **Dataset ID**: [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary)
+- **Description**:
+  > AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.
+- **Task Categories**: `Knowledge`, `LongContext`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "text_dir": null
+}
+```
+- **Prompt Template**: 
+```text
+
+BEGIN INPUT DOCUMENTS
+
+{documents_text}
+
+END INPUT DOCUMENTS
+
+Answer the following question using the input documents provided above.
+
+START QUESTION
+
+{question}
+
+END QUESTION
+
+```
+
+---
 
 ### AIME-2024
 
@@ -210,7 +262,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Dataset Name**: `bfcl_v3`
 - **Dataset ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **Description**:
-  > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
+  > Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive and executable function call evaluation** dedicated to assessing Large Language Models' (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability. Need to run `pip install bfcl-eval==2025.6.16` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)
 - **Task Categories**: `FunctionCalling`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -223,6 +275,47 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
     "underscore_to_dot": true,
     "is_fc_model": true
 }
+```
+
+---
+
+### BroadTwitterCorpus
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `broad-twitter-corpus`
+- **Dataset ID**: [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary)
+- **Description**:
+  > BroadTwitterCorpus is a dataset of tweets collected over stratified times, places and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```
 
 ---
@@ -323,13 +416,136 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ---
 
-### data_collection
+### CoNLL2003
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `conll2003`
+- **Dataset ID**: [evalscope/conll2003](https://modelscope.cn/datasets/evalscope/conll2003/summary)
+- **Description**:
+  > The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as people, organizations, places, and various names.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### Copious
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `copious`
+- **Dataset ID**: [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary)
+- **Description**:
+  > Copious corpus is a gold standard corpus that covers a wide range of biodiversity entities, consisting of 668 documents downloaded from the Biodiversity Heritage Library with over 26K sentences and more than 28K entities.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### CrossNER
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `cross-ner`
+- **Dataset ID**: [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary)
+- **Description**:
+  > CrossNER is a fully-labelled collected of named entity recognition (NER) data spanning over five diverse domains (AI, Literature, Music, Politics, Science).
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `ai`, `literature`, `music`, `politics`, `science`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### Data-Collection
 
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `data_collection`
 - **Dataset ID**: 
 - **Description**:
-  > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
+  > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)
 - **Task Categories**: `Custom`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -427,7 +643,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Dataset Name**: `general_arena`
 - **Dataset ID**: general_arena
 - **Description**:
-  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html).
+  > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).
 - **Task Categories**: `Arena`, `Custom`
 - **Evaluation Metrics**: `winrate`
 - **Requires LLM Judge**: Yes
@@ -494,7 +710,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Dataset Name**: `general_mcq`
 - **Dataset ID**: general_mcq
 - **Description**:
-  > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq).
+  > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).
 - **Task Categories**: `Custom`, `MCQ`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -519,7 +735,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Dataset Name**: `general_qa`
 - **Dataset ID**: general_qa
 - **Description**:
-  > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa).
+  > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).
 - **Task Categories**: `Custom`, `QA`
 - **Evaluation Metrics**: `BLEU`, `Rouge`
 - **Requires LLM Judge**: No
@@ -530,6 +746,47 @@ Example output: "My final verdict is tie: [[A=B]]".
 ```text
 请回答问题
 {question}
+```
+
+---
+
+### GeniaNER
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `genia-ner`
+- **Dataset ID**: [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary)
+- **Description**:
+  > GeniaNER consisting of 2,000 MEDLINE abstracts has been released with more than 400,000 words and almost 100,000 annotations for biological terms.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```
 
 ---
@@ -573,13 +830,67 @@ Answer the following multiple choice question. The last line of your response sh
 
 - **Prompt Template**: 
 ```text
-Solve the following math problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following math problem step by step. The last line of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
 
+Example:
+
+Let's solve the problem step by step.
+
+Problem: Eliza's rate per hour for the first 40 hours she works each week is $10. She also receives an overtime pay of 1.2 times her regular hourly rate. If Eliza worked for 45 hours this week, how much are her earnings for this week?
+
+Step 1: Calculate Eliza's earnings for the first 40 hours. Eliza's hourly rate is $10, so her earnings for the first 40 hours are $10/hour x 40 hours = $400.
+Step 2: Calculate Eliza's overtime pay rate. Eliza's overtime pay rate is 1.2 times her regular hourly rate, so her overtime pay rate is $10/hour x 1.2 = $12/hour.
+Step 3: Calculate Eliza's earnings for the overtime hours. Eliza worked for 45 hours, so her overtime hours are 45 hours - 40 hours = 5 hours. Her earnings for the overtime hours are $12/hour x 5 hours = $60.
+Step 4: Calculate Eliza's total earnings for the week. Eliza's total earnings for the week are her earnings for the first 40 hours plus her earnings for the overtime hours, which is $400 + $60 = $460.
+
+Answer:
+\boxed{{\text{{460}}}}
+
+question:
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}" (without quotes), where $ANSWER is replaced by the actual answer to the problem.
 
-Reasoning:
+```
+
+---
+
+### HarveyNER
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `harvey-ner`
+- **Dataset ID**: [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary)
+- **Description**:
+  > HarveyNER is a dataset with fine-grained locations annotated in tweets. This dataset presents unique challenges and characterizes many complex and long location mentions in informal descriptions.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
 
 ```
 
@@ -670,7 +981,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Dataset Name**: `humaneval`
 - **Dataset ID**: [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary)
 - **Description**:
-  > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior.
+  > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `Pass@1`
 - **Requires LLM Judge**: No
@@ -733,7 +1044,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **Dataset Name**: `live_code_bench`
 - **Dataset ID**: [AI-ModelScope/code_generation_lite](https://modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary)
 - **Description**:
-  > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions.
+  > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `Pass@1`
 - **Requires LLM Judge**: No
@@ -831,6 +1142,88 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MIT-Movie-Trivia
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mit-movie-trivia`
+- **Dataset ID**: [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary)
+- **Description**:
+  > The MIT-Movie-Trivia dataset, originally created for slot filling, is modified by ignoring some slot types (e.g. genre, rating) and merging others (e.g. director and actor in person, and song and movie title in title) in order to keep consistent named entity types across all datasets.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### MIT-Restaurant
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mit-restaurant`
+- **Dataset ID**: [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary)
+- **Description**:
+  > The MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing Natural Language Processing (NLP) models, particularly for Named Entity Recognition (NER). It contains sentences from real reviews, along with corresponding labels in the BIO format.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```
 
 ---
@@ -961,7 +1354,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `needle_haystack`
 - **Dataset ID**: [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary)
 - **Description**:
-  > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
+  > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)
 - **Task Categories**: `LongContext`, `Retrieval`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: Yes
@@ -1002,6 +1395,67 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
+```
+
+---
+
+### OntoNotes5
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `ontonotes5`
+- **Dataset ID**: [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary)
+- **Description**:
+  > OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres like news, weblogs, and broadcast conversations. It is richly annotated with multiple layers of linguistic information, including syntax, predicate-argument structure, word sense, named entities, and coreference to support research and development in natural language processing.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
+```
+
+---
+
+### PolyMath
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `poly_math`
+- **Dataset ID**: [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary)
+- **Description**:
+  > PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.
+- **Task Categories**: `Math`, `MultiLingual`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `ar`, `bn`, `de`, `en`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `pt`, `ru`, `sw`, `te`, `th`, `vi`, `zh`
+
+- **Prompt Template**: 
+```text
+{question}
 ```
 
 ---
@@ -1115,7 +1569,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `tau_bench`
 - **Dataset ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
 - **Description**:
-  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
+  > A benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent provided with domain-specific API tools and policy guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau-bench` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)
 - **Task Categories**: `FunctionCalling`, `Reasoning`
 - **Evaluation Metrics**: `Pass^1`
 - **Requires LLM Judge**: No
@@ -1143,7 +1597,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `tool_bench`
 - **Dataset ID**: [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary)
 - **Description**:
-  > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
+  > ToolBench is a benchmark for evaluating AI models on tool use tasks. It includes various subsets such as in-domain and out-of-domain, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html)
 - **Task Categories**: `FunctionCalling`, `Reasoning`
 - **Evaluation Metrics**: `Act.EM`, `F1`, `HalluRate`, `Plan.EM`, `Rouge-L`
 - **Requires LLM Judge**: No
@@ -1230,4 +1684,45 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+---
+
+### WNUT2017
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `wnut2017`
+- **Dataset ID**: [extraordinarylab/wnut2017](https://modelscope.cn/datasets/extraordinarylab/wnut2017/summary)
+- **Description**:
+  > The WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for a named-entity recognition task.
+- **Task Categories**: `Knowledge`, `NER`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Requires LLM Judge**: No
+- **Default Shots**: 5-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+You are a named entity recognition system that identifies the following entity types:
+{entities}
+
+Process the provided text and mark all named entities with XML-style tags.
+
+For example:
+<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
+
+Available entity tags: {entity_list}
+
+INSTRUCTIONS:
+1. Wrap your entire response in <response>...</response> tags.
+2. Inside these tags, include the original text with entity tags inserted.
+3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
+4. Tag ALL entities you can identify using the exact tag names provided.
+5. Do not include explanations, just the tagged text.
+6. If entity spans overlap, choose the most specific entity type.
+7. Ensure every opening tag has a matching closing tag.
+
+Text to process:
+{text}
+
 ```

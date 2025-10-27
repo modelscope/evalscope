@@ -4,7 +4,9 @@ import os
 import platform
 import threading
 import time
+import warnings
 from argparse import Namespace
+from logging import warn
 
 from evalscope.perf.utils.local_server import start_app
 from evalscope.perf.utils.log_utils import init_swanlab, init_wandb
@@ -79,9 +81,20 @@ def run_perf_benchmark(args):
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
 
     # Initialize wandb and swanlab
-    if args.wandb_api_key:
+    visualizer = args.visualizer
+    if visualizer is None:
+        if args.wandb_api_key is not None:
+            visualizer = 'wandb'
+            warnings.warn('--wandb-api-key is deprecated. Please use `--visualizer wandb` instead.', DeprecationWarning)
+        elif args.swanlab_api_key is not None:
+            visualizer = 'swanlab'
+            warnings.warn(
+                '--swanlab-api-key is deprecated. Please use `--visualizer swanlab` instead.', DeprecationWarning
+            )
+    args.visualizer = visualizer
+    if visualizer == 'wandb':
         init_wandb(args)
-    if args.swanlab_api_key:
+    elif visualizer == 'swanlab':
         init_swanlab(args)
 
     # Initialize local server if needed

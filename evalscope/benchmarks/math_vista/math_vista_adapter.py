@@ -4,7 +4,6 @@ from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -14,15 +13,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers,
 
 logger = get_logger()
 
-SUBSET_LIST = ['default']
-
-OPEN_PROMPT = """
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-
-{question}
-
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
-"""
+OPEN_PROMPT = '{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.'
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
@@ -38,8 +29,11 @@ OPEN_TYPE = 'free_form'
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description=
         'MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.',
-        subset_list=SUBSET_LIST,
-        metric_list=['acc'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
         eval_split='testmini',
         prompt_template=OPEN_PROMPT,
     )
@@ -85,20 +79,6 @@ class MathVistaAdapter(VisionLanguageAdapter):
         except ValueError:
             logger.warning(f"Answer '{value}' not found in options: {options}. This may cause evaluation issues.")
             return value
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        question_type = task_state.metadata['question_type']
-        if question_type == MULTI_CHOICE_TYPE:
-            answers = parse_answers(task_state)
-            return ''.join(sorted(list(answers)))
-        elif question_type == OPEN_TYPE:
-            pattern = r'ANSWER:\s*(.*)'
-            match = re.search(pattern, prediction)
-            if match:
-                return match.group(1).strip()
-            return ''
-        else:
-            raise ValueError(f'Unsupported question type: {question_type}')
 
     @staticmethod
     def create_content_and_answers_list(record: dict[str, Any], ) -> tuple[list[Content], list[str]]:

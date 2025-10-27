@@ -8,5 +8,6 @@ quick_start.md
 parameters.md
 examples.md
 speed_benchmark.md
+vs_vllm_bench.md
 custom.md
 :::

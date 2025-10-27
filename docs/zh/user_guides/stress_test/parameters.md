@@ -7,9 +7,8 @@
 - `--model` 测试模型名称。
 - `--url` 指定API地址，支持`/chat/completion`和`/completion`两种endpoint。
 - `--name` wandb/swanlab数据库结果名称和结果数据库名称，默认为: `{model_name}_{current_time}`，可选。
-- `--api` 指定服务API，目前支持[openai|dashscope|local|local_vllm]。
+- `--api` 指定服务API，目前支持[openai|local|local_vllm]。
   - 指定为`openai`，则使用支持OpenAI的API，需要提供`--url`参数。
-  - 指定为`dashscope`，则使用支持DashScope的API，需要提供`--url`参数。
   - 指定为`local`，则使用本地文件作为模型，并使用transformers进行推理。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 指定为`local_vllm`，则使用本地文件作为模型，并启动vllm推理服务。`--model`为模型文件路径，也可为model_id，将自动从modelscope下载模型，例如`Qwen/Qwen2.5-0.5B-Instruct`。
   - 您也可以自定义API，请参考[自定义API指南](./custom.md/#自定义请求-api)。
@@ -69,7 +68,7 @@
 - `--max-tokens` 可以生成的最大token数量。
 - `--min-tokens` 生成的最少token数量，不是所有模型服务都支持该参数，请查看对应API文档。对于`vLLM>=0.8.1`版本，需要额外设置`--extra-args '{"ignore_eos": true}'`。
 - `--n-choices` 生成的补全选择数量。
-- `--seed` 随机种子，默认为0。
+- `--seed` 随机种子，默认为None。
 - `--stop` 停止生成的tokens。
 - `--stop-token-ids` 设置停止生成的token的ID。
 - `--temperature` 采样温度，默认为0。
@@ -78,6 +77,12 @@
 - `--extra-args` 额外传入请求体的参数，格式为json字符串，例如`'{"ignore_eos": true}'`。
 
 ## 数据存储
-- `--wandb-api-key` wandb API密钥，如果设置，则度量将保存到wandb。
-- `--swanlab-api-key` swanlab API密钥，如果设置，则度量将保存到swanlab。
+- `--visualizer` 可视化工具，可选`wandb`或`swanlab`，如果设置，则指标将保存到指定的可视化工具。
+- `--wandb-api-key` wandb API密钥，用于登录wandb服务器。
+- `--swanlab-api-key` swanlab API密钥，用于登录swanlab服务器。
 - `--outputs-dir` 输出文件路径，默认为`./outputs`。
+
+## 其他参数
+- `--db-commit-interval` 在将结果写入SQLite数据库之前缓冲的行数，默认为1000。
+- `--queue-size-multiplier` 请求队列的最大大小，计算方式为`parallel * multiplier`，默认为5。
+- `--in-flight-task-multiplier` 最大调度任务数，计算方式为`parallel * multiplier`，默认为2。

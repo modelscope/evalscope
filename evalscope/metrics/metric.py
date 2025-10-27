@@ -43,7 +43,7 @@ class Accuracy(ExactMatch):
 
             results = []
             for prediction, reference in zip(predictions, references):
-                pred_answer = strip_answer_string(extract_answer(prediction))
+                pred_answer = extract_answer(prediction)
                 ref_answer = strip_answer_string(reference)
                 results.append(float(math_equal(pred_answer, ref_answer)))
 

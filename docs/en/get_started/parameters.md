@@ -42,7 +42,9 @@ Run `evalscope eval --help` to get the full list of parameters.
   - `reasoning_summary`: Optional enum (`'concise'`, `'detailed'`, `'auto'`); whether to provide a summary of reasoning steps. `'auto'` uses the most detailed summary available. Supported by OpenAI reasoning models.
   - `reasoning_history`: Optional enum (`'none'`, `'all'`, `'last'`, `'auto'`); whether reasoning content is included in chat message history.
   - `response_schema`: Optional ResponseSchema object, request returns formatted according to JSONSchema (output still requires validation). Supported by OpenAI, Google, Mistral.
-  - `extra_body`: Optional dict, extra request body for OpenAI-compatible services. Supported by OpenAI, vLLM, SGLang.
+  - `extra_body`: Optional dict, extra request body for OpenAI-compatible services.
+  - `extra_query`: Optional dict, extra query parameters for OpenAI-compatible services.
+  - `extra_headers`: Optional dict, extra headers for OpenAI-compatible services.
   - `height`: Optional integer, for image generation models, specifies image height.
   - `width`: Optional integer, for image generation models, specifies image width.
   - `num_inference_steps`: Optional integer, for image models, number of inference steps.

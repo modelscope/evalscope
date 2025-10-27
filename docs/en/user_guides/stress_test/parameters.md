@@ -6,12 +6,11 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--model`: Name of the test model.
 - `--url` specifies the API address, supporting two types of endpoints: `/chat/completion` and `/completion`.
 - `--name`: Name for the wandb/swanlab database result and result database, default is `{model_name}_{current_time}`, optional.
-- `--api`: Specify the service API, currently supports [openai|dashscope|local|local_vllm].
+- `--api`: Specify the service API, currently supports [openai|local|local_vllm].
   - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
-  - Select `dashscope` to use the API supporting DashScope, requiring the `--url` parameter.
   - Select `local` to use local files as models and perform inference using transformers. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
   - Select `local_vllm` to use local files as models and start the vllm inference service. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
-  - You can also use a custom API, refer to [Custom API Guide](./custom.md#custom-request-api).
+  - You can also use a custom API, refer to [Custom API Guide](./custom.md).
 - `--port`: The port for the local inference service, defaulting to 8877. This is only applicable to `local` and `local_vllm`.
 - `--attn-implementation`: Attention implementation method, default is None, optional [flash_attention_2|eager|sdpa], only effective when `api` is `local`.
 - `--api-key`: API key, optional.
@@ -67,7 +66,7 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--max-tokens`: The maximum number of tokens that can be generated.
 - `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
 - `--n-choices`: The number of completion choices to generate.
-- `--seed`: The random seed, default is 0.
+- `--seed`: The random seed, default is None.
 - `--stop`: Tokens that stop the generation.
 - `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
 - `--temperature`: Sampling temperature, default is 0.0
@@ -76,6 +75,12 @@ Execute `evalscope perf --help` to get a full parameter description:
 - `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
 
 ## Data Storage
-- `--wandb-api-key`: wandb API key, if set, metrics will be saved to wandb.
-- `--swanlab-api-key`: swanlab API key, if set, metrics will be saved to swanlab.
+- `--visualizer`: The visualizer to use, if set, metrics will be saved to the specified visualizer, can be `wandb` or `swanlab`, default None.
+- `--wandb-api-key`: wandb API key to use for logging metrics to wandb.
+- `--swanlab-api-key`: swanlab API key to use for logging metrics to swanlab.
 - `--outputs-dir` specifies the output file path, with a default value of `./outputs`.
+
+## Other Parameters
+- `--db-commit-interval` specifies the number of rows buffered before writing results to the SQLite database, default is 1000.
+- `--queue-size-multiplier` sets the maximum size of the request queue, calculated as `parallel * multiplier`, default is 5.
+- `--in-flight-task-multiplier` sets the maximum number of in-flight tasks, calculated as `parallel * multiplier`, default is 2.

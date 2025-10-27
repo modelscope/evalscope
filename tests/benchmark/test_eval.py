@@ -427,6 +427,25 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('minerva_math', dataset_args)
 
+    def test_poly_math(self):
+        dataset_args = {
+            'subset_list': ['zh', 'en', 'es'],
+        }
+        self._run_dataset_test('poly_math', dataset_args, use_cache='outputs/20251016_154028')
+
+    def test_aa_lcr(self):
+        dataset_args = {
+            'text_dir': 'data/aa_lcr',
+        }
+        self._run_dataset_test('aa_lcr', dataset_args)
+
+    def test_conll2003_ner(self):
+        """Test CoNLL2003 NER dataset."""
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('conll2003', dataset_args, limit=10)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

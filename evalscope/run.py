@@ -38,6 +38,7 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     if task_cfg.eval_backend != EvalBackend.NATIVE:
         result = run_non_native_backend(task_cfg, outputs)
     else:
+        logger.info('Running with native backend')
         result = evaluate_model(task_cfg, outputs)
 
         logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
@@ -94,12 +95,15 @@ def run_non_native_backend(task_cfg: TaskConfig, outputs: OutputsStructure) -> d
 def get_backend_manager_class(eval_backend: EvalBackend):
     """Get the backend manager class based on the evaluation backend."""
     if eval_backend == EvalBackend.OPEN_COMPASS:
+        logger.info('Using OpenCompassBackendManager')
         from evalscope.backend.opencompass import OpenCompassBackendManager
         return OpenCompassBackendManager
     elif eval_backend == EvalBackend.VLM_EVAL_KIT:
+        logger.info('Using VLMEvalKitBackendManager')
         from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
         return VLMEvalKitBackendManager
     elif eval_backend == EvalBackend.RAG_EVAL:
+        logger.info('Using RAGEvalBackendManager')
         from evalscope.backend.rag_eval import RAGEvalBackendManager
         return RAGEvalBackendManager
     elif eval_backend == EvalBackend.THIRD_PARTY:

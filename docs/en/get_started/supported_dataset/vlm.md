@@ -9,7 +9,10 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
+| `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -19,7 +22,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `ocr_bench_v2` | [OCRBench-v2](#ocrbench-v2) | `Knowledge`, `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](#olympiadbench) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](#omnibench) | `Knowledge`, `MCQ`, `MultiModal` |
+| `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
+| `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
+| `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
+| `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
@@ -142,6 +151,27 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### HallusionBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `hallusion_bench`
+- **Dataset ID**: [lmms-lab/HallusionBench](https://modelscope.cn/datasets/lmms-lab/HallusionBench/summary)
+- **Description**:
+  > HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).
+- **Task Categories**: `Hallucination`, `MultiModal`, `Yes/No`
+- **Evaluation Metrics**: `aAcc`, `fAcc`, `qAcc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
+```
+
+---
+
 ### InfoVQA
 
 [Back to Top](#vlm-benchmarks)
@@ -164,6 +194,48 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### MathVerse
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `math_verse`
+- **Dataset ID**: [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary)
+- **Description**:
+  > MathVerse, an all-around visual math benchmark designed for an equitable and in-depth evaluation of MLLMs. 2,612 high-quality, multi-subject math problems with diagrams from publicly available sources. Each problem is then transformed by human annotators into six distinct versions, each offering varying degrees of information content in multi-modality, contributing to 15K test samples in total. This approach allows MathVerse to comprehensively assess whether and how much MLLMs can truly understand the visual diagrams for mathematical reasoning.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `Text Dominant`, `Text Lite`, `Vision Dominant`, `Vision Intensive`, `Vision Only`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+---
+
+### MathVision
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `math_vision`
+- **Dataset ID**: [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary)
+- **Description**:
+  > The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `level 1`, `level 2`, `level 3`, `level 4`, `level 5`
+
+- **Prompt Template**: 
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+---
+
 ### MathVista
 
 [Back to Top](#vlm-benchmarks)
@@ -172,20 +244,15 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Description**:
   > MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.
 - **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
-- **Evaluation Metrics**: `acc`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
 - **Prompt Template**: 
 ```text
-
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
-
 {question}
-
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-
+Please reason step by step, and put your final answer within \boxed{{}} without units.
 ```
 
 ---
@@ -387,6 +454,80 @@ Answer the following multiple choice question based on the image and audio conte
 
 ---
 
+### OmniDocBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `omni_doc_bench`
+- **Dataset ID**: [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary)
+- **Description**:
+  > OmniDocBench is an evaluation dataset for diverse document parsing in real-world scenarios, with the following characteristics:
+  > - Diverse Document Types: The evaluation set contains 1355 PDF pages, covering 9 document types, 4 layout types and 3 language types. It has broad coverage including academic papers, financial reports, newspapers, textbooks, handwritten notes, etc.
+  > - Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.
+  > **The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `display_formula`, `reading_order`, `table`, `text_block`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "match_method": "quick_match"
+}
+```
+- **Prompt Template**: 
+```text
+ You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+    1. Text Processing:
+    - Accurately recognize all text content in the PDF image without guessing or inferring.
+    - Convert the recognized text into Markdown format.
+    - Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+    2. Mathematical Formula Processing:
+    - Convert all mathematical formulas to LaTeX format.
+    - Enclose inline formulas with \( \). For example: This is an inline formula \( E = mc^2 \)
+    - Enclose block formulas with \\[ \\]. For example: \[ \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} \]
+
+    3. Table Processing:
+    - Convert tables to HTML format.
+    - Wrap the entire table with <table> and </table>.
+
+    4. Figure Handling:
+    - Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+    5. Output Format:
+    - Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+    - For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+    Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.
+
+```
+
+---
+
+### POPE
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `pope`
+- **Dataset ID**: [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary)
+- **Description**:
+  > POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model's responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.
+- **Task Categories**: `Hallucination`, `MultiModal`, `Yes/No`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `adversarial`, `popular`, `random`
+
+- **Prompt Template**: 
+```text
+{question}
+Please answer YES or NO without an explanation.
+```
+
+---
+
 ### RealWorldQA
 
 [Back to Top](#vlm-benchmarks)
@@ -407,4 +548,100 @@ Read the picture and solve the following problem step by step.The last line of y
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+```
+
+---
+
+### SEED-Bench-2-Plus
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `seed_bench_2_plus`
+- **Dataset ID**: [evalscope/SEED-Bench-2-Plus](https://modelscope.cn/datasets/evalscope/SEED-Bench-2-Plus/summary)
+- **Description**:
+  > SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). It consists of 2.3K multiple-choice questions with precise human annotations, spanning three broad categories: Charts, Maps, and Webs, each of which covers a wide spectrum of text-rich scenarios in the real world.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `chart`, `map`, `web`
+
+- **Prompt Template**: 
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+---
+
+### SimpleVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `simple_vqa`
+- **Dataset ID**: [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary)
+- **Description**:
+  > SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.
+- **Task Categories**: `MultiModal`, `QA`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+Answer the question:
+
+{question}
+```
+
+---
+
+### VisuLogic
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `visulogic`
+- **Dataset ID**: [evalscope/VisuLogic](https://modelscope.cn/datasets/evalscope/VisuLogic/summary)
+- **Description**:
+  > VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.
+- **Task Categories**: `MCQ`, `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
+
+- **Prompt Template**: 
+```text
+
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+
+{question}
+
+```
+
+---
+
+### ZeroBench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `zerobench`
+- **Dataset ID**: [evalscope/zerobench](https://modelscope.cn/datasets/evalscope/zerobench/summary)
+- **Description**:
+  > ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Models (LMMs). It consists of a main set of 100 high-quality, manually curated questions covering numerous domains, reasoning types and image type. Questions in ZeroBench have been designed and calibrated to be beyond the capabilities of current frontier models. As such, none of the evaluated models achieves a non-zero pass@1 (with greedy decoding) or 5/5 reliability score.
+- **Task Categories**: `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**: 
+```text
+{question}
+
+
+
+Let's think step by step and give the final answer in curly braces,
+like this: {{final answer}}"
+
 ```
