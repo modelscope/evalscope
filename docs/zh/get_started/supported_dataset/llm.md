@@ -24,6 +24,10 @@
 | `cross-ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
+| `drivel_binary` | [DrivelologyBinaryClassification](#drivelologybinaryclassification) | `Yes/No` |
+| `drivel_multilabel` | [DrivelologyMultilabelClassification](#drivelologymultilabelclassification) | `MCQ` |
+| `drivel_selection` | [DrivelologyNarrativeSelection](#drivelologynarrativeselection) | `MCQ` |
+| `drivel_writing` | [DrivelologyNarrativeWriting](#drivelologynarrativewriting) | `Knowledge`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
@@ -95,7 +99,9 @@
     "text_dir": null
 }
 ```
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 
 BEGIN INPUT DOCUMENTS
@@ -114,6 +120,8 @@ END QUESTION
 
 ```
 
+</details>
+
 ---
 
 ### AIME-2024
@@ -129,11 +137,15 @@ END QUESTION
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -150,11 +162,15 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `AIME2025-II`, `AIME2025-I`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -171,10 +187,14 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `alpaca_eval_gpt4_baseline`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -191,11 +211,15 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `amc22`, `amc23`, `amc24`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -212,7 +236,9 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `ARC-Challenge`, `ARC-Easy`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -220,6 +246,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -236,10 +264,14 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -256,12 +288,16 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 3-shot
 - **数据集子集**: `boolean_expressions`, `causal_judgement`, `date_understanding`, `disambiguation_qa`, `dyck_languages`, `formal_fallacies`, `geometric_shapes`, `hyperbaton`, `logical_deduction_five_objects`, `logical_deduction_seven_objects`, `logical_deduction_three_objects`, `movie_recommendation`, `multistep_arithmetic_two`, `navigate`, `object_counting`, `penguins_in_a_table`, `reasoning_about_colored_objects`, `ruin_names`, `salient_translation_error_detection`, `snarks`, `sports_understanding`, `temporal_sequences`, `tracking_shuffled_objects_five_objects`, `tracking_shuffled_objects_seven_objects`, `tracking_shuffled_objects_three_objects`, `web_of_lies`, `word_sorting`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Q: {question}
 A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
 
 ```
+
+</details>
 
 ---
 
@@ -301,7 +337,9 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -326,6 +364,8 @@ Text to process:
 {text}
 
 ```
+
+</details>
 
 ---
 
@@ -342,7 +382,9 @@ Text to process:
 - **默认提示方式**: 5-shot
 - **数据集子集**: `accountant`, `advanced_mathematics`, `art_studies`, `basic_medicine`, `business_administration`, `chinese_language_and_literature`, `civil_servant`, `clinical_medicine`, `college_chemistry`, `college_economics`, `college_physics`, `college_programming`, `computer_architecture`, `computer_network`, `discrete_mathematics`, `education_science`, `electrical_engineer`, `environmental_impact_assessment_engineer`, `fire_engineer`, `high_school_biology`, `high_school_chemistry`, `high_school_chinese`, `high_school_geography`, `high_school_history`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `ideological_and_moral_cultivation`, `law`, `legal_professional`, `logic`, `mao_zedong_thought`, `marxism`, `metrology_engineer`, `middle_school_biology`, `middle_school_chemistry`, `middle_school_geography`, `middle_school_history`, `middle_school_mathematics`, `middle_school_physics`, `middle_school_politics`, `modern_chinese_history`, `operating_system`, `physician`, `plant_protection`, `probability_and_statistics`, `professional_tour_guide`, `sports_science`, `tax_accountant`, `teacher_qualification`, `urban_and_rural_planner`, `veterinary_medicine`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
 
@@ -351,6 +393,8 @@ Text to process:
 {choices}
 
 ```
+
+</details>
 
 ---
 
@@ -367,12 +411,16 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `中华文化`, `人文与社会科学`, `工程、技术与应用科学`, `生活、艺术与文化`, `社会`, `自然与自然科学`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 请回答问题：
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -389,7 +437,9 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `agronomy`, `anatomy`, `ancient_chinese`, `arts`, `astronomy`, `business_ethics`, `chinese_civil_service_exam`, `chinese_driving_rule`, `chinese_food_culture`, `chinese_foreign_policy`, `chinese_history`, `chinese_literature`, `chinese_teacher_qualification`, `clinical_knowledge`, `college_actuarial_science`, `college_education`, `college_engineering_hydrology`, `college_law`, `college_mathematics`, `college_medical_statistics`, `college_medicine`, `computer_science`, `computer_security`, `conceptual_physics`, `construction_project_management`, `economics`, `education`, `electrical_engineering`, `elementary_chinese`, `elementary_commonsense`, `elementary_information_and_technology`, `elementary_mathematics`, `ethnology`, `food_science`, `genetics`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_geography`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `human_sexuality`, `international_law`, `journalism`, `jurisprudence`, `legal_and_moral_basis`, `logical`, `machine_learning`, `management`, `marketing`, `marxist_theory`, `modern_chinese`, `nutrition`, `philosophy`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_study`, `sociology`, `sports_science`, `traditional_chinese_medicine`, `virology`, `world_history`, `world_religions`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
 
@@ -398,6 +448,8 @@ Text to process:
 {choices}
 
 ```
+
+</details>
 
 ---
 
@@ -414,7 +466,9 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -422,6 +476,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -438,7 +494,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 4-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Problem:
 {question}
@@ -446,6 +504,8 @@ Problem:
 Please reason step by step, and put your final answer within \boxed{{}}.
 
 ```
+
+</details>
 
 ---
 
@@ -462,7 +522,9 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -487,6 +549,8 @@ Text to process:
 {text}
 
 ```
+
+</details>
 
 ---
 
@@ -503,7 +567,9 @@ Text to process:
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -528,6 +594,8 @@ Text to process:
 {text}
 
 ```
+
+</details>
 
 ---
 
@@ -544,7 +612,9 @@ Text to process:
 - **默认提示方式**: 5-shot
 - **数据集子集**: `ai`, `literature`, `music`, `politics`, `science`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -569,6 +639,8 @@ Text to process:
 {text}
 
 ```
+
+</details>
 
 ---
 
@@ -601,7 +673,9 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `complong_testmini`, `compshort_testmini`, `simplong_testmini`, `simpshort_testmini`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Please read the following text and answer the question below.
 
@@ -613,6 +687,113 @@ Please read the following text and answer the question below.
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
 ```
+
+</details>
+
+---
+
+### DrivelologyBinaryClassification
+
+[返回目录](#llm评测集)
+- **数据集名称**: `drivel_binary`
+- **数据集ID**: [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary)
+- **数据集描述**:
+  > Drivelology，一种独特的语言现象，被称为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或修辞上具有颠覆性。
+- **任务类别**: `Yes/No`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `binary-classification`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### DrivelologyMultilabelClassification
+
+[返回目录](#llm评测集)
+- **数据集名称**: `drivel_multilabel`
+- **数据集ID**: [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary)
+- **数据集描述**:
+  > Drivelology，一种独特的语言现象，被称为“有深度的胡言乱语”——语法上通顺，但在语用上具有悖论性、情感负载或修辞颠覆性的言语。
+- **任务类别**: `MCQ`
+- **评估指标**: `exact_match`, `f1_macro`, `f1_micro`, `f1_weighted`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `multi-label-classification`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### DrivelologyNarrativeSelection
+
+[返回目录](#llm评测集)
+- **数据集名称**: `drivel_selection`
+- **数据集ID**: [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary)
+- **数据集描述**:
+  > Drivelology，一种独特的语言现象，被定义为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或具有修辞颠覆性。
+- **任务类别**: `MCQ`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `multiple-choice-english-easy`, `multiple-choice-english-hard`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Tell me the best option in the following options which represents the underlying narrative of the text?
+The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
+### DrivelologyNarrativeWriting
+
+[返回目录](#llm评测集)
+- **数据集名称**: `drivel_writing`
+- **数据集ID**: [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary)
+- **数据集描述**:
+  > Drivelology，一种独特的语言现象，表现为“有深度的 nonsense”——语法上连贯，但在语用上充满悖论、情感强烈或具有修辞性颠覆意味的言语。
+- **任务类别**: `Knowledge`, `Reasoning`
+- **评估指标**: `bert_score`, `gpt_score`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `narrative-writing-english`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.
+
+Please provide your response in English, with a clear and comprehensive explanation of the narrative.
+
+Text: {text}
+```
+
+</details>
 
 ---
 
@@ -629,7 +810,9 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You will be asked to read a passage and answer a question. {drop_examples}
 # Your Task
@@ -639,6 +822,8 @@ You will be asked to read a passage and answer a question. {drop_examples}
 
 Think step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.
 ```
+
+</details>
 
 ---
 
@@ -655,7 +840,9 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Please read the following text and answer the question below.
 
@@ -667,6 +854,8 @@ Please read the following text and answer the question below.
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
 ```
+
+</details>
 
 ---
 
@@ -699,7 +888,9 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
     "baseline": "qwen2.5-7b"
 }
 ```
-- **系统提示词**: 
+- **系统提示词**:
+<details><summary>View</summary>
+
 ```text
 Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.
 
@@ -721,7 +912,11 @@ After providing your explanation, you must output only one of the following choi
 
 Example output: "My final verdict is tie: [[A=B]]".
 ```
-- **提示模板**: 
+
+</details>
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 <|User Prompt|>
 {question}
@@ -734,6 +929,8 @@ Example output: "My final verdict is tie: [[A=B]]".
 {answer_2}
 <|The End of Assistant B's Answer|>
 ```
+
+</details>
 
 ---
 
@@ -750,7 +947,9 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
 
@@ -759,6 +958,8 @@ Example output: "My final verdict is tie: [[A=B]]".
 {choices}
 
 ```
+
+</details>
 
 ---
 
@@ -775,11 +976,15 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 请回答问题
 {question}
 ```
+
+</details>
 
 ---
 
@@ -796,7 +1001,9 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -822,6 +1029,8 @@ Text to process:
 
 ```
 
+</details>
+
 ---
 
 ### GPQA-Diamond
@@ -837,7 +1046,9 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -845,6 +1056,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -861,7 +1074,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 4-shot
 - **数据集子集**: `main`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Solve the following math problem step by step. The last line of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
 
@@ -886,6 +1101,8 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 
 ```
 
+</details>
+
 ---
 
 ### HaluEval
@@ -901,10 +1118,14 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 - **默认提示方式**: 0-shot
 - **数据集子集**: `dialogue_samples`, `qa_samples`, `summarization_samples`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -921,7 +1142,9 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -947,6 +1170,8 @@ Text to process:
 
 ```
 
+</details>
+
 ---
 
 ### HealthBench
@@ -968,12 +1193,16 @@ Text to process:
     "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
 }
 ```
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the question:
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -990,7 +1219,9 @@ Answer the question:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -998,6 +1229,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1021,10 +1254,14 @@ Answer the following multiple choice question. The entire content of your respon
     "include_multi_modal": true
 }
 ```
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -1042,11 +1279,15 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集子集**: `openai_humaneval`
 
 - **评测超时时间（秒）**: 4
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
 {question}
 ```
+
+</details>
 
 ---
 
@@ -1079,7 +1320,9 @@ Read the following function signature and docstring, and fully implement the fun
 - **默认提示方式**: 0-shot
 - **数据集子集**: `EQ`, `IQ`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
 
@@ -1088,6 +1331,8 @@ Read the following function signature and docstring, and fully implement the fun
 {choices}
 
 ```
+
+</details>
 
 ---
 
@@ -1113,7 +1358,9 @@ Read the following function signature and docstring, and fully implement the fun
     "debug": false
 }
 ```
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 ### Question:
 {question_content}
@@ -1122,6 +1369,8 @@ Read the following function signature and docstring, and fully implement the fun
 
 
 ```
+
+</details>
 
 ---
 
@@ -1138,7 +1387,9 @@ Read the following function signature and docstring, and fully implement the fun
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1146,6 +1397,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1162,7 +1415,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：
 
@@ -1179,6 +1434,8 @@ D. 扭应力
 {choices}
 ```
 
+</details>
+
 ---
 
 ### MATH-500
@@ -1194,11 +1451,15 @@ D. 扭应力
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -1215,7 +1476,9 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1223,6 +1486,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1239,11 +1504,15 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -1260,7 +1529,9 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -1285,6 +1556,8 @@ Text to process:
 {text}
 
 ```
+
+</details>
 
 ---
 
@@ -1301,7 +1574,9 @@ Text to process:
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -1327,6 +1602,8 @@ Text to process:
 
 ```
 
+</details>
+
 ---
 
 ### MMLU
@@ -1342,7 +1619,9 @@ Text to process:
 - **默认提示方式**: 5-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1350,6 +1629,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1366,7 +1647,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 5-shot
 - **数据集子集**: `biology`, `business`, `chemistry`, `computer science`, `economics`, `engineering`, `health`, `history`, `law`, `math`, `other`, `philosophy`, `physics`, `psychology`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1376,6 +1659,8 @@ Options:
 {choices}
 
 ```
+
+</details>
 
 ---
 
@@ -1392,7 +1677,9 @@ Options:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1400,6 +1687,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1416,7 +1705,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1424,6 +1715,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1462,7 +1755,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `murder_mysteries`, `object_placements`, `team_allocation`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1470,6 +1765,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1503,11 +1800,17 @@ Answer the following multiple choice question. The last line of your response sh
     "show_score": false
 }
 ```
-- **系统提示词**: 
+- **系统提示词**:
+<details><summary>View</summary>
+
 ```text
 You are a helpful AI bot that answers questions for a user. Keep your response short and direct
 ```
-- **提示模板**: 
+
+</details>
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Please read the following text and answer the question below.
 
@@ -1521,6 +1824,8 @@ Please read the following text and answer the question below.
 
 Don't give information outside the document or repeat your findings.
 ```
+
+</details>
 
 ---
 
@@ -1537,7 +1842,9 @@ Don't give information outside the document or repeat your findings.
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -1563,6 +1870,8 @@ Text to process:
 
 ```
 
+</details>
+
 ---
 
 ### PIQA
@@ -1578,7 +1887,9 @@ Text to process:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1586,6 +1897,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1602,10 +1915,14 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `ar`, `bn`, `de`, `en`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `pt`, `ru`, `sw`, `te`, `th`, `vi`, `zh`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -1622,7 +1939,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `gsm8k`, `math`, `olympiadbench`, `omnimath`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
 
@@ -1640,6 +1959,8 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 
 ```
 
+</details>
+
 ---
 
 ### PubMedQA
@@ -1655,11 +1976,15 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please answer YES or NO or MAYBE without an explanation.
 ```
+
+</details>
 
 ---
 
@@ -1676,7 +2001,9 @@ Please answer YES or NO or MAYBE without an explanation.
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1684,6 +2011,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1700,7 +2029,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 3-shot
 - **数据集子集**: `high`, `middle`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1708,6 +2039,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1724,12 +2057,16 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the question:
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -1746,7 +2083,9 @@ Answer the question:
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1754,6 +2093,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1770,7 +2111,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Aeronautical and Astronautical Science and Technology`, `Agricultural Engineering`, `Animal Husbandry`, `Applied Economics`, `Aquaculture`, `Architecture`, `Art Studies`, `Astronomy`, `Atmospheric Science`, `Basic Medicine`, `Biology`, `Business Administration`, `Chemical Engineering and Technology`, `Chemistry`, `Civil Engineering`, `Clinical Medicine`, `Computer Science and Technology`, `Control Science and Engineering`, `Crop Science`, `Education`, `Electrical Engineering`, `Electronic Science and Technology`, `Environmental Science and Engineering`, `Food Science and Engineering`, `Forestry Engineering`, `Forestry`, `Geography`, `Geological Resources and Geological Engineering`, `Geology`, `Geophysics`, `History`, `Hydraulic Engineering`, `Information and Communication Engineering`, `Instrument Science and Technology`, `Journalism and Communication`, `Language and Literature`, `Law`, `Library, Information and Archival Management`, `Management Science and Engineering`, `Materials Science and Engineering`, `Mathematics`, `Mechanical Engineering`, `Mechanics`, `Metallurgical Engineering`, `Military Science`, `Mining Engineering`, `Musicology`, `Naval Architecture and Ocean Engineering`, `Nuclear Science and Technology`, `Oceanography`, `Optical Engineering`, `Petroleum and Natural Gas Engineering`, `Pharmacy`, `Philosophy`, `Physical Education`, `Physical Oceanography`, `Physics`, `Political Science`, `Power Engineering and Engineering Thermophysics`, `Psychology`, `Public Administration`, `Public Health and Preventive Medicine`, `Sociology`, `Stomatology`, `Surveying and Mapping Science and Technology`, `Systems Science`, `Textile Science and Engineering`, `Theoretical Economics`, `Traditional Chinese Medicine`, `Transportation Engineering`, `Veterinary Medicine`, `Weapon Science and Technology`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -1778,6 +2121,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1838,7 +2183,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 0-shot
 - **数据集子集**: `rc.wikipedia`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Read the content and answer the following question.
 
@@ -1849,6 +2196,8 @@ Question: {question}
 Keep your The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
 ```
+
+</details>
 
 ---
 
@@ -1871,7 +2220,9 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
     "multiple_correct": false
 }
 ```
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1879,6 +2230,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1895,7 +2248,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
@@ -1903,6 +2258,8 @@ Answer the following multiple choice question. The entire content of your respon
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -1919,7 +2276,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
 
-- **提示模板**: 
+- **提示模板**:
+<details><summary>View</summary>
+
 ```text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
@@ -1944,3 +2303,5 @@ Text to process:
 {text}
 
 ```
+
+</details>
