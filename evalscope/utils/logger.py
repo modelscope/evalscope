@@ -108,7 +108,7 @@ def get_logger(
     handlers = [stream_handler]
 
     if is_worker0 and log_file is not None:
-        file_handler = logging.FileHandler(log_file, file_mode)
+        file_handler = logging.FileHandler(log_file, file_mode, encoding='utf-8')
         handlers.append(file_handler)
 
     for handler in handlers:
@@ -182,7 +182,7 @@ def add_file_handler_if_needed(
         except Exception:
             pass
 
-    file_handler = logging.FileHandler(target_path, file_mode)
+    file_handler = logging.FileHandler(target_path, file_mode, encoding='utf-8')
     file_handler.setFormatter(plain_detailed_formatter if log_level == logging.DEBUG else plain_simple_formatter)
     file_handler.setLevel(log_level)
     logger.addHandler(file_handler)
