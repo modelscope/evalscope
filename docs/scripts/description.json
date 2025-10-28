@@ -493,5 +493,25 @@
     "en": "HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination.",
     "zh": "HaluEval 是一个大规模生成并由人工标注的幻觉样本集合，用于评估大语言模型在识别幻觉方面的性能。",
     "updated_at": "2025-10-27T19:02:03Z"
+  },
+  "drivel_binary": {
+    "en": "Drivelology, a unique linguistic phenomenon characterised as \"nonsense with depth\" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.",
+    "zh": "Drivelology，一种独特的语言现象，被称为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或修辞上具有颠覆性。",
+    "updated_at": "2025-10-28T17:03:52Z"
+  },
+  "drivel_writing": {
+    "en": "Drivelology, a unique linguistic phenomenon characterised as \"nonsense with depth\" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.",
+    "zh": "Drivelology，一种独特的语言现象，表现为“有深度的 nonsense”——语法上连贯，但在语用上充满悖论、情感强烈或具有修辞性颠覆意味的言语。",
+    "updated_at": "2025-10-28T17:03:52Z"
+  },
+  "drivel_multilabel": {
+    "en": "Drivelology, a unique linguistic phenomenon characterised as \"nonsense with depth\" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.",
+    "zh": "Drivelology，一种独特的语言现象，被称为“有深度的胡言乱语”——语法上通顺，但在语用上具有悖论性、情感负载或修辞颠覆性的言语。",
+    "updated_at": "2025-10-28T17:03:52Z"
+  },
+  "drivel_selection": {
+    "en": "Drivelology, a unique linguistic phenomenon characterised as \"nonsense with depth\" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.",
+    "zh": "Drivelology，一种独特的语言现象，被定义为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或具有修辞颠覆性。",
+    "updated_at": "2025-10-28T17:03:52Z"
   }
 }
