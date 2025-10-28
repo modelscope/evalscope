@@ -354,18 +354,20 @@ class TestNativeBenchmark(TestBenchmark):
     def test_bfcl(self):
         """Test BFCL dataset."""
         dataset_args = {
-            'subset_list': [
-                'simple',
-                'live_multiple',
-                'multi_turn_base',
-                'multi_turn_miss_func'
-            ],
+            # 'subset_list': [
+            #     # 'simple',
+            #     # 'java',
+            #     # 'javascript',
+            #     # 'live_multiple',
+            #     # 'multi_turn_base',
+            #     # 'multi_turn_miss_func'
+            # ],
             'extra_params': {
                 'is_fc_model': True,
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', use_mock=True, debug=False, limit=None)
+        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=10)
 
     def test_tau_bench(self):
         dataset_args = {
