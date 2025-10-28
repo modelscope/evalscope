@@ -12,7 +12,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='harvey-ner',
+        name='harvey_ner',
         pretty_name='HarveyNER',
         dataset_id='extraordinarylab/harvey-ner',
         tags=[Tags.KNOWLEDGE, Tags.NER],
