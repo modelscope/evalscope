@@ -47,7 +47,9 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -55,6 +57,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -71,13 +75,17 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `Art_Style`, `Counting`, `Forensic_Detection`, `Functional_Correspondence`, `IQ_Test`, `Jigsaw`, `Multi-view_Reasoning`, `Object_Localization`, `Relative_Depth`, `Relative_Reflectance`, `Semantic_Correspondence`, `Spatial_Relation`, `Visual_Correspondence`, `Visual_Similarity`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format:
 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -94,7 +102,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `cc`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -102,6 +112,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -118,7 +130,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `augmented_test`, `human_test`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 
 {question}
@@ -126,6 +140,8 @@ Answer the following multiple choice question. The last line of your response sh
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
 
 ```
+
+</details>
 
 ---
 
@@ -142,12 +158,16 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Default Shots**: 0-shot
 - **Subsets**: `DocVQA`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
 ```
+
+</details>
 
 ---
 
@@ -164,11 +184,15 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please answer YES or NO without an explanation.
 ```
+
+</details>
 
 ---
 
@@ -185,12 +209,16 @@ Please answer YES or NO without an explanation.
 - **Default Shots**: 0-shot
 - **Subsets**: `InfographicVQA`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
 ```
+
+</details>
 
 ---
 
@@ -207,11 +235,15 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Default Shots**: 0-shot
 - **Subsets**: `Text Dominant`, `Text Lite`, `Vision Dominant`, `Vision Intensive`, `Vision Only`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -228,11 +260,15 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Default Shots**: 0-shot
 - **Subsets**: `level 1`, `level 2`, `level 3`, `level 4`, `level 5`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
 ```
+
+</details>
 
 ---
 
@@ -249,11 +285,15 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
 ```
+
+</details>
 
 ---
 
@@ -270,7 +310,9 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **Default Shots**: 0-shot
 - **Subsets**: `cn`, `en`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -278,6 +320,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -294,7 +338,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `coarse perception`, `fine-grained perception`, `instance reasoning`, `logical reasoning`, `math`, `science & technology`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question.
 The last line of your response should be of the following format:
@@ -303,6 +349,8 @@ where LETTER is one of A,B,C,D. Think step by step before answering.
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -319,7 +367,9 @@ where LETTER is one of A,B,C,D. Think step by step before answering.
 - **Default Shots**: 0-shot
 - **Subsets**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 
 Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
@@ -329,6 +379,8 @@ Solve the following problem step by step. The last line of your response should 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
 
 ```
+
+</details>
 
 ---
 
@@ -351,7 +403,9 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
     "dataset_format": "# choose from ['standard (4 options)', 'standard (10 options)', 'vision'], default 'standard (4 options)'"
 }
 ```
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -359,6 +413,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -375,10 +431,14 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `Artistic Text Recognition`, `Digit String Recognition`, `Doc-oriented VQA`, `Handwriting Recognition`, `Handwritten Mathematical Expression Recognition`, `Irregular Text Recognition`, `Key Information Extraction`, `Non-Semantic Text Recognition`, `Regular Text Recognition`, `Scene Text-centric VQA`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -395,10 +455,14 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `APP agent en`, `ASCII art classification en`, `VQA with position en`, `chart parsing en`, `cognition VQA cn`, `cognition VQA en`, `diagram QA en`, `document classification en`, `document parsing cn`, `document parsing en`, `fine-grained text recognition en`, `formula recognition cn`, `formula recognition en`, `full-page OCR cn`, `full-page OCR en`, `handwritten answer extraction cn`, `key information extraction cn`, `key information extraction en`, `key information mapping en`, `math QA en`, `reasoning VQA cn`, `reasoning VQA en`, `science QA en`, `table parsing cn`, `table parsing en`, `text counting en`, `text grounding en`, `text recognition en`, `text spotting en`, `text translation cn`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 ```
+
+</details>
 
 ---
 
@@ -415,11 +479,15 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `OE_MM_maths_en_COMP`, `OE_MM_maths_zh_CEE`, `OE_MM_maths_zh_COMP`, `OE_MM_physics_en_COMP`, `OE_MM_physics_zh_CEE`, `OE_TO_maths_en_COMP`, `OE_TO_maths_zh_CEE`, `OE_TO_maths_zh_COMP`, `OE_TO_physics_en_COMP`, `OE_TO_physics_zh_CEE`, `TP_MM_maths_en_COMP`, `TP_MM_maths_zh_CEE`, `TP_MM_maths_zh_COMP`, `TP_MM_physics_en_COMP`, `TP_TO_maths_en_COMP`, `TP_TO_maths_zh_CEE`, `TP_TO_maths_zh_COMP`, `TP_TO_physics_en_COMP`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+</details>
 
 ---
 
@@ -443,7 +511,9 @@ Please reason step by step, and put your final answer within \boxed{{}}.
     "use_audio": true
 }
 ```
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -451,6 +521,8 @@ Answer the following multiple choice question based on the image and audio conte
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -476,7 +548,9 @@ Answer the following multiple choice question based on the image and audio conte
     "match_method": "quick_match"
 }
 ```
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
  You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
 
@@ -505,6 +579,8 @@ Answer the following multiple choice question based on the image and audio conte
 
 ```
 
+</details>
+
 ---
 
 ### POPE
@@ -520,11 +596,15 @@ Answer the following multiple choice question based on the image and audio conte
 - **Default Shots**: 0-shot
 - **Subsets**: `adversarial`, `popular`, `random`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 Please answer YES or NO without an explanation.
 ```
+
+</details>
 
 ---
 
@@ -541,7 +621,9 @@ Please answer YES or NO without an explanation.
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
@@ -549,6 +631,8 @@ Read the picture and solve the following problem step by step.The last line of y
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
 ```
+
+</details>
 
 ---
 
@@ -565,7 +649,9 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Default Shots**: 0-shot
 - **Subsets**: `chart`, `map`, `web`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
@@ -573,6 +659,8 @@ Answer the following multiple choice question. The last line of your response sh
 
 {choices}
 ```
+
+</details>
 
 ---
 
@@ -589,12 +677,16 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 Answer the question:
 
 {question}
 ```
+
+</details>
 
 ---
 
@@ -611,7 +703,9 @@ Answer the question:
 - **Default Shots**: 0-shot
 - **Subsets**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
@@ -619,6 +713,8 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 ```
+
+</details>
 
 ---
 
@@ -635,7 +731,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
 
-- **Prompt Template**: 
+- **Prompt Template**:
+<details><summary>View</summary>
+
 ```text
 {question}
 
@@ -645,3 +743,5 @@ Let's think step by step and give the final answer in curly braces,
 like this: {{final answer}}"
 
 ```
+
+</details>
