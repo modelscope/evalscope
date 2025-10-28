@@ -25,7 +25,7 @@ DESCRIPTION = (
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BioMixQAdapter(MultiChoiceAdapter):
+class BioMixQAAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

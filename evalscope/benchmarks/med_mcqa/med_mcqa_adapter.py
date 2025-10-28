@@ -21,7 +21,7 @@ DESCRIPTION = 'MedMCQA is a large-scale MCQA dataset designed to address real-wo
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class MedMCQAdapter(MultiChoiceAdapter):
+class MedMCQAAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

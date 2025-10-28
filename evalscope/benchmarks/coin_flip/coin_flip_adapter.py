@@ -71,8 +71,8 @@ class CoinFlipAdapter(DefaultDataAdapter):
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
+        # Check for an exact match against the extracted answer.
+        result = 1 if reference == filtered_prediction else 0
         score.value = {'acc': result}
         return score
 
@@ -81,41 +81,39 @@ class CoinFlipAdapter(DefaultDataAdapter):
         Custom aggregation to compute accuracy, precision, recall, f1_score, and yes_ratio.
         """
 
-        def compute_metrics(scores: List[SampleScore]):
-            tp = fp = tn = fn = 0
-            yes_count = 0
-            total_count = len(scores)
+        tp = fp = tn = fn = 0
+        yes_count = 0
+        total_count = len(sample_scores)
 
-            for ss in scores:
-                gt = ss.sample_metadata['answer'].strip().upper()
-                # Get prediction based on score
-                pred = gt if ss.score.main_value == 1 else ('NO' if gt == 'YES' else 'YES')
-                if pred == 'YES':
-                    yes_count += 1
-                if pred == 'YES' and gt == 'YES':
-                    tp += 1
-                elif pred == 'YES' and gt == 'NO':
-                    fp += 1
-                elif pred == 'NO' and gt == 'NO':
-                    tn += 1
-                elif pred == 'NO' and gt == 'YES':
-                    fn += 1
+        for ss in sample_scores:
+            gt = ss.sample_metadata['answer'].strip().upper()
+            pred = ss.score.extracted_prediction.strip().upper()
 
-            accuracy = (tp + tn) / total_count if total_count > 0 else 0.0
-            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-            recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-            f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-            yes_ratio = yes_count / total_count if total_count > 0 else 0.0
+            if pred == 'YES':
+                yes_count += 1
+            if pred == 'YES' and gt == 'YES':
+                tp += 1
+            elif pred == 'YES' and gt == 'NO':
+                fp += 1
+            elif pred == 'NO' and gt == 'NO':
+                tn += 1
+            elif pred == 'NO' and gt == 'YES':
+                fn += 1
 
-            return {
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1_score': f1_score,
-                'yes_ratio': yes_ratio
-            }
+        accuracy = (tp + tn) / total_count if total_count > 0 else 0.0
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        yes_ratio = yes_count / total_count if total_count > 0 else 0.0
 
-        overall_metrics = compute_metrics(sample_scores)
+        overall_metrics = {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1_score,
+            'yes_ratio': yes_ratio
+        }
+
         agg_scores = []
         for metric_name, value in overall_metrics.items():
             agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))

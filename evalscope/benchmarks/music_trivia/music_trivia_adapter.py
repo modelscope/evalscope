@@ -16,7 +16,7 @@ DESCRIPTION = (
         name='music_trivia',
         pretty_name='MusicTrivia',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description='',
+        description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/music-trivia',
         metric_list=['acc'],
         few_shot_num=0,
@@ -26,9 +26,6 @@ DESCRIPTION = (
     )
 )
 class MusicTriviaAdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def record_to_sample(self, record) -> Sample:
         return Sample(
