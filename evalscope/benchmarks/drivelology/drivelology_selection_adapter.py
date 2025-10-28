@@ -3,7 +3,11 @@ from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 
-DESCRIPTION = ''
+DESCRIPTION = (
+    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
+    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
+    'or rhetorically subversive.'
+)
 
 PROMPT_TEMPLATE = r"""
 Tell me the best option in the following options which represents the underlying narrative of the text?

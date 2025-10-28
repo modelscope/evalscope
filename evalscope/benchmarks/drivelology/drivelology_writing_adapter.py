@@ -13,6 +13,12 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+DESCRIPTION = (
+    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
+    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
+    'or rhetorically subversive.'
+)
+
 # Keep the original generation and evaluation templates
 NARRATIVE_GENERATION_TEMPLATE = """
 You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.
@@ -73,7 +79,7 @@ def compute_bertscore_one_sample(
         name='drivel_writing',
         pretty_name='DrivelologyNarrativeWriting',
         tags=[Tags.KNOWLEDGE, Tags.REASONING],
-        description='Generate and evaluate implicit narratives for Drivelology texts',
+        description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['narrative-writing-english'],
         metric_list=['gpt_score', 'bert_score'],
@@ -145,9 +151,10 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                 logger.info(f"BERTScore: {score.value['bert_score']}")
             except Exception as e:
                 logger.error(f'BERTScore calculation failed: {e}')
-                score.value['bert_score'] = 0.5
+                # Use 0.0 for failures to avoid positively biasing the aggregate score.
+                score.value['bert_score'] = 0.0
         else:
-            score.value['bert_score'] = 0.5
+            score.value['bert_score'] = 0.0
 
         # Use LLM judge to evaluate narrative quality
         eval_prompt = NARRATIVE_EVALUATION_TEMPLATE.format(candidate=filtered_prediction, reference=reference)
@@ -176,8 +183,8 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                     gpt_score = (rating - 1) / 4.0
                     logger.info(f'Rating extracted (fallback): {rating}/5 -> {gpt_score}')
                 else:
-                    gpt_score = 0.5
-                    logger.warning('No rating found in response, using default 0.5')
+                    gpt_score = 0.0
+                    logger.warning('No rating found in response, using default 0.0')
 
         score.value['gpt_score'] = gpt_score
         score.explanation = f'LLM judge rating: {gpt_score:.2f}'
@@ -196,13 +203,13 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         """
         if not sample_scores:
             return [
-                AggScore(metric_name='gpt_score', score=0.5, num=0, metadata={}),
-                AggScore(metric_name='bert_score', score=0.5, num=0, metadata={})
+                AggScore(metric_name='gpt_score', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='bert_score', score=0.0, num=0, metadata={})
             ]
 
         # Extract scores
-        gpt_scores = [ss.score.value.get('gpt_score', 0.5) for ss in sample_scores]
-        bert_scores = [ss.score.value.get('bert_score', 0.5) for ss in sample_scores]
+        gpt_scores = [ss.score.value.get('gpt_score', 0.0) for ss in sample_scores]
+        bert_scores = [ss.score.value.get('bert_score', 0.0) for ss in sample_scores]
 
         # Calculate averages
         avg_gpt_score = sum(gpt_scores) / len(gpt_scores)

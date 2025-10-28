@@ -102,17 +102,15 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
             self.few_shot_num = 4
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        prompt = PROMPT_TEMPLATE.format(text=record['text'])
-        input_text = self.prompt_template.format(question=prompt)
-        content_list: List[Content] = [ContentText(text=input_text)]
+        if self.few_shot_num > 0:
+            prompt = FEWSHOT_PROMPT_TEMPLATE.format(text=record['text'])
+        else:
+            prompt = PROMPT_TEMPLATE.format(text=record['text'])
+        content_list: List[Content] = [ContentText(text=prompt)]
         answer = 'YES' if str(record['label']) == 'drivelology' else 'NO'  # 'YES' or 'NO'
         return Sample(input=[ChatMessageUser(content=content_list)], target=answer, metadata={
             'answer': answer,
         })
-
-    def format_fewshot_template(self, fewshot, sample):
-        prompt = FEWSHOT_PROMPT_TEMPLATE.format(text=sample.input)
-        return self.few_shot_prompt_template.format(question=prompt)
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         score = Score(
