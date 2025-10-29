@@ -351,7 +351,7 @@ class TestNativeBenchmark(TestBenchmark):
         """Test ToolBench dataset."""
         self._run_dataset_test('tool_bench')
 
-    def test_bfcl(self):
+    def test_bfcl_v3(self):
         """Test BFCL dataset."""
         dataset_args = {
             # 'subset_list': [
@@ -368,6 +368,16 @@ class TestNativeBenchmark(TestBenchmark):
             }
         }
         self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=10)
+
+    def test_bfcl_v4(self):
+        """Test BFCL v4 dataset."""
+        dataset_args = {
+            'extra_params': {
+                'is_fc_model': True,
+                'underscore_to_dot': True
+            }
+        }
+        self._run_dataset_test('bfcl_v4', dataset_args=dataset_args, model='qwen-plus', limit=10)
 
     def test_tau_bench(self):
         dataset_args = {
