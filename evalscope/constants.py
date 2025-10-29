@@ -18,6 +18,8 @@ DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
 HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  # 60 seconds
 DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
 
+JSON_PATTERNS = [r"```json\s*(.*?)\s*```", r"```(?:\w*\s*)?\s*(.*?)\s*```", r"(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})"]
+
 
 class HubType:
     MODELSCOPE = 'modelscope'
