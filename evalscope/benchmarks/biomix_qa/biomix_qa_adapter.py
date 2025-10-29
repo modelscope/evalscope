@@ -15,7 +15,7 @@ DESCRIPTION = (
     BenchmarkMeta(
         name='biomix_qa',
         pretty_name='BioMixQA',
-        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MEDICAL],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/biomix-qa',
         metric_list=['acc'],

@@ -6,7 +6,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 DESCRIPTION = (
     'QASC is a question-answering dataset with a focus on sentence composition. '
-    'It consists of 9,980 8-way multiple-choice questions about grade school science'
+    'It consists of 9,980 8-way multiple-choice questions about grade school science.'
 )
 
 

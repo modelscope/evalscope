@@ -43,7 +43,7 @@ Here are some examples of how to solve similar problems:
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/coin-flip',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        few_shot_num=8,
+        few_shot_num=0,
         train_split='validation',
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
@@ -66,13 +66,19 @@ class CoinFlipAdapter(DefaultDataAdapter):
             'answer': answer,
         })
 
+    def extract_answer(self, prediction, task_state):
+        import re
+
+        match = re.search(r'ANSWER:\s*(.*)', prediction)
+        return match.group(1) if match else prediction
+
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
         # Check for an exact match against the extracted answer.
-        result = 1 if reference == filtered_prediction else 0
+        result = 1 if reference in filtered_prediction else 0
         score.value = {'acc': result}
         return score
 
