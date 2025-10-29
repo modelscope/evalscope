@@ -1,9 +1,10 @@
 import json
-import re
+import os
 import traceback
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
+from tqdm import tqdm
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -16,7 +17,15 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.report import Category, Report, Subset, unweighted_average_from_subsets, weighted_average_from_subsets
+from evalscope.report import (
+    Category,
+    Report,
+    Subset,
+    percentage_weighted_average_from_subsets,
+    unweighted_average_from_subsets,
+    weighted_average_from_subsets,
+)
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -67,48 +76,8 @@ MEMORY_SCENARIO_NAME = [
 
 SINGLE_TURN_CATEGORY = NON_LIVE_CATEGORY + LIVE_CATEGORY
 AGENTIC_CATEGORY = MEMORY_CATEGORY + WEB_SEARCH_CATEGORY
-NON_SCORING_CATEGORY = ['format_sensitivity']
 
 ALL_SCORING_CATEGORIES = SINGLE_TURN_CATEGORY + MULTI_TURN_CATEGORY + AGENTIC_CATEGORY
-ALL_CATEGORIES = ALL_SCORING_CATEGORIES + NON_SCORING_CATEGORY
-
-TEST_COLLECTION_MAPPING = {
-    'all':
-    ALL_CATEGORIES,
-    'all_scoring':
-    ALL_SCORING_CATEGORIES,
-    'multi_turn':
-    MULTI_TURN_CATEGORY,
-    'single_turn':
-    SINGLE_TURN_CATEGORY,
-    'live':
-    LIVE_CATEGORY,
-    'non_live':
-    NON_LIVE_CATEGORY,
-    'non_python': [
-        'simple_java',
-        'simple_javascript',
-    ],
-    'python': [
-        'simple_python',
-        'irrelevance',
-        'parallel',
-        'multiple',
-        'parallel_multiple',
-        'live_simple',
-        'live_multiple',
-        'live_parallel',
-        'live_parallel_multiple',
-        'live_irrelevance',
-        'live_relevance',
-    ],
-    'memory':
-    MEMORY_CATEGORY,
-    'web_search':
-    WEB_SEARCH_CATEGORY,
-    'agentic':
-    AGENTIC_CATEGORY,
-}
 
 
 @register_benchmark(
@@ -130,6 +99,7 @@ TEST_COLLECTION_MAPPING = {
         extra_params={
             'underscore_to_dot': True,
             'is_fc_model': True,
+            'SERPAPI_API_KEY': 'SERPAPI_API_KEY must be set in environment variables for `web_search` categories.',
         }
     )
 )
@@ -148,7 +118,10 @@ class BFCLAdapter(DefaultDataAdapter):
 
         self.underscore_to_dot = self.extra_params.get('underscore_to_dot', True)
         self.is_fc_model = self.extra_params.get('is_fc_model', True)
-        self.model_result_dir = self.extra_params.get(Path(self._task_config.work_dir))
+        self.model_result_dir = Path(self._task_config.work_dir)
+        self.handler = None
+        self.prereq_entries = []
+        self.prereq_finished = False
 
     def load(self):
         """Load and process the BFCL dataset."""
@@ -178,9 +151,7 @@ class BFCLAdapter(DefaultDataAdapter):
         ground_truth_by_cat = defaultdict(list)
 
         for category in categories:
-            test_entries_by_cat[category] = load_dataset_entry(
-                category, include_prereq=False, include_language_specific_hint=False
-            )
+            test_entries_by_cat[category] = load_dataset_entry(category)
             if not is_relevance_or_irrelevance(category):
                 ground_truth_by_cat[category] = load_ground_truth_entry(category)
 
@@ -202,12 +173,16 @@ class BFCLAdapter(DefaultDataAdapter):
     ) -> DatasetDict:
         """Create a dataset for a single category by merging test and ground truth data."""
         from bfcl_eval.utils import (
+            clean_up_memory_prereq_entries,
+            is_memory_prereq,
             populate_initial_settings_for_memory_test_cases,
             populate_initial_settings_for_web_search_test_cases,
         )
 
         ground_truth_map = self._prepare_ground_truth_map(category, ground_truth_entries)
 
+        test_entries = clean_up_memory_prereq_entries(test_entries)
+        self.prereq_entries = [entry for entry in test_entries if is_memory_prereq(entry['id'])]
         test_entries = populate_initial_settings_for_web_search_test_cases(test_entries)
         test_entries = populate_initial_settings_for_memory_test_cases(
             test_entries, model_result_dir=self.model_result_dir
@@ -236,49 +211,160 @@ class BFCLAdapter(DefaultDataAdapter):
             metadata=record  # Store the full record for evaluation
         )
 
-    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
-        from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
-        from openai import OpenAI
+    @thread_safe
+    def _on_inference_start(self, model, sample):
+        if self.handler is not None:
+            return  # Handler already initialized
 
-        handler = OpenAICompletionsHandler(
+        from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
+
+        # Set env variables for OpenAI API
+        os.environ['OPENAI_API_KEY'] = model.api.api_key
+        os.environ['OPENAI_BASE_URL'] = model.api.base_url
+
+        self.handler = OpenAICompletionsHandler(
             model_name=model.name,
             temperature=model.config.temperature,
             registry_name=model.name,
             is_fc_model=self.is_fc_model,
         )
-        handler.client = OpenAI(api_key=model.api.api_key, base_url=model.api.base_url)
-        result = handler.inference(deepcopy(sample.metadata), include_input_log=False, exclude_state_log=False)
-        return ModelOutput(output=result['model_output'], metadata=result)
+
+        self._prereq_inference()
+
+    def _prereq_inference(self):
+        if self.prereq_finished:
+            return
+
+        from bfcl_eval.utils import get_directory_structure_by_id
+
+        for entry in tqdm(self.prereq_entries, desc='Running prereq inferences for memory snapshots...'):
+            memory_snapshot_folder = (
+                self.model_result_dir / get_directory_structure_by_id(entry['id']) / 'memory_snapshot'
+                / 'prereq_checkpoints'
+            )
+            exists_files = set(memory_snapshot_folder.rglob('*.json'))
+            if entry['id'] + '.json' in {f.name for f in exists_files}:
+                logger.info(f'Skipping prereq inference for entry ID {entry["id"]} as result already exists.')
+                continue
+
+            try:
+                self.handler.inference(deepcopy(entry), include_input_log=False, exclude_state_log=False)
+            except Exception as e:
+                logger.error(f'Error during prereq inference for entry ID {entry.get("id")}: {e}')
+                logger.error(traceback.format_exc())
+
+        self.prereq_finished = True
+
+    def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
+        try:
+            result, _ = self.handler.inference(
+                deepcopy(sample.metadata), include_input_log=False, exclude_state_log=False
+            )
+
+            output = ModelOutput.from_content(
+                model=model.name,
+                content=json.dumps(result),
+            )
+        except Exception as e:
+            # This is usually the case when the model getting stuck on one particular test case.
+            # For example, timeout error or FC model returning invalid JSON response.
+            # Since temperature is already set to 0.001, retrying the same test case will not help.
+            # So we continue the generation process and record the error message as the model response
+            logger.error(f'Error during inference for sample ID {sample.metadata.get("id")}: {e}')
+            logger.error(traceback.format_exc())
+
+            output = ModelOutput.from_content(
+                model=model.name,
+                content=json.dumps({
+                    'error': str(e),
+                    'error_message': traceback.format_exc(),
+                }),
+            )
+        return output
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
+        from bfcl_eval.constants.enums import Language, ReturnFormat
+        from bfcl_eval.eval_checker.eval_runner import (
+            _evaluate_single_agentic_entry,
+            _evaluate_single_ast_entry,
+            _evaluate_single_multi_turn_entry,
+            _evaluate_single_relevance_entry,
+        )
+        from bfcl_eval.utils import is_agentic, is_java, is_js, is_multi_turn, is_relevance_or_irrelevance
 
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
+        model_result = json.loads(filtered_prediction)
+        prompt = task_state.metadata
+        test_category = prompt['category']
+        index = prompt['id']
+        ground_truth = prompt.get('ground_truth', {})
+        # NOTE: This is hardcoded dummy model since its only use is to infer underscore_to_dot
+        model_name = 'gpt-4o-2024-11-20-FC' if self.underscore_to_dot else 'meta-llama/Llama-3.3-70B-Instruct-FC'
 
-        try:
+        if is_relevance_or_irrelevance(test_category):
+            entry_result = _evaluate_single_relevance_entry(
+                handler=self.handler,
+                index=index,
+                model_result_item=model_result,
+                prompt_entry=prompt,
+                model_name=model_name,
+                test_category=test_category
+            )
+        elif is_multi_turn(test_category):
+            entry_result = _evaluate_single_multi_turn_entry(
+                handler=self.handler,
+                test_entry_id=index,
+                model_result_list=model_result,
+                ground_truth_list=ground_truth,
+                prompt_entry=prompt,
+                model_name=model_name,
+                test_category=test_category
+            )
+        elif is_agentic(test_category):
+            entry_result = _evaluate_single_agentic_entry(
+                handler=self.handler,
+                index=index,
+                model_result_list=model_result,
+                possible_answer_item=ground_truth,
+                prompt_entry=prompt,
+                model_name=model_name,
+                test_category=test_category
+            )
+        else:
+            if is_java(test_category):
+                language = Language.JAVA
+                return_format = ReturnFormat.JAVA
+            elif is_js(test_category):
+                language = Language.JAVASCRIPT
+                return_format = ReturnFormat.JAVASCRIPT
+            else:
+                language = Language.PYTHON
+                return_format = ReturnFormat.PYTHON
+            entry_result = _evaluate_single_ast_entry(
+                handler=self.handler,
+                index=prompt['id'],
+                model_result_item=model_result,
+                possible_answer_item=ground_truth,
+                prompt_entry=prompt,
+                model_name=model_name,
+                test_category=test_category,
+                language=language,
+                return_format=return_format,
+            )
 
-            score.value = {
-                'acc': float(score_result['valid']),
-            }
-            score.explanation = score_result.get('error_message', 'Evaluation completed')
-            score.metadata = {
-                'raw_score_result': score_result,
-                'test_category': test_category,
-                'underscore_to_dot': self.underscore_to_dot,
-                'is_fc_model': self.is_fc_model
-            }
-            score.main_score_name = 'acc'
-
-        except Exception:
-            logger.error(f'Evaluation failed for sample: {task_state.sample_id}\n{traceback.format_exc()}')
-            score.value = {'acc': 0.0}
-            score.explanation = 'Evaluation failed with an unexpected error.'
-            score.metadata = {'error': traceback.format_exc()}
-            score.main_score_name = 'acc'
+        valid = 1 if entry_result['valid'] else 0
+        score.value = {'acc': valid}
+        score.metadata = {
+            'valid': bool(entry_result.get('valid')),
+            'error': str(entry_result.get('error')),
+            'error_message': str(entry_result.get('error_message')),
+            'error_type': str(entry_result.get('error_type')),
+        }
         return score
 
     def _on_generate_report_end(self, report: Report, output_dir, **kwargs):
@@ -289,11 +375,10 @@ class BFCLAdapter(DefaultDataAdapter):
         - step1: simple_python, java, javascript unweighted average as simple_ast
         - step2.1: simple_ast, multiple, parallel, parallel_multiple unweighted average as ast_non_live
         - step2.2: live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average as ast_live
-        - step2.3: irrelevance as hallucination_non_live
-        - step2.4: live_irrelevance, live_relevance weighted average as hallucination_live
-        - step2.5: multi_turn_base as multi_turn_base
-        - step2.6: multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average as multi_turn_augmented
-        - step3.1: ast_non_live, hallucination_non_live unweighted average as non_live
+        - step2.3: irrelevance, live_irrelevance as hallucination
+        - step2.4: multi_turn_base as multi_turn_base
+        - step2.5: multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average as multi_turn_augmented
+        - step3.1: ast_non_live, hallucination unweighted average as non_live
         - step3.2: ast_live, hallucination_live weighted average as live
         - step3.3: multi_turn_base, multi_turn_augmented unweighted average as multi_turn
         - step4: non_live, live, multi_turn unweighted average as overall
@@ -311,71 +396,64 @@ class BFCLAdapter(DefaultDataAdapter):
                 for subset in category.subsets:
                     subset_dict[subset.name] = subset
 
-            # Step 1: Calculate simple_ast (simple_python, java, javascript unweighted average)
-            simple_subsets = ['simple_python', 'java', 'javascript']
+            # Step 1: Calculate simple_ast (simple_python, simple_java, simple_javascript unweighted average)
+            simple_subsets = ['simple_python', 'simple_java', 'simple_javascript']
             simple_ast = unweighted_average_from_subsets(simple_subsets, subset_dict)
             subset_dict['simple_ast'] = simple_ast
 
-            # Step 2.1: Calculate ast_non_live
+            # Step 2.1: Calculate non_live
             # (simple_ast, multiple, parallel, parallel_multiple unweighted average)
-            ast_non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
-            ast_non_live = unweighted_average_from_subsets(ast_non_live_subsets, subset_dict)
-            subset_dict['ast_non_live'] = ast_non_live
-
-            # Step 2.2: Calculate ast_live
-            # (live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average)
-            live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
-            ast_live = weighted_average_from_subsets(live_subsets, subset_dict)
-            subset_dict['ast_live'] = ast_live
-
-            # Step 2.3: hallucination_non_live (irrelevance)
-            if 'irrelevance' in subset_dict:
-                subset_dict['hallucination_non_live'] = subset_dict['irrelevance']
-            else:
-                subset_dict['hallucination_non_live'] = Subset(name='hallucination_non_live', score=0, num=0)
-
-            # Step 2.4: Calculate hallucination_live (live_irrelevance, live_relevance weighted average)
-            hallucination_live_subsets = ['live_irrelevance', 'live_relevance']
-            hallucination_live = weighted_average_from_subsets(hallucination_live_subsets, subset_dict)
-            subset_dict['hallucination_live'] = hallucination_live
-
-            # Step 2.5: multi_turn_base
-            if 'multi_turn_base' not in subset_dict:
-                subset_dict['multi_turn_base'] = Subset(name='multi_turn_base', score=0, num=0)
-
-            # Step 2.6: Calculate multi_turn_augmented
-            # (multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average)
-            multi_turn_augmented_subsets = ['multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context']
-            multi_turn_augmented = weighted_average_from_subsets(multi_turn_augmented_subsets, subset_dict)
-            subset_dict['multi_turn_augmented'] = multi_turn_augmented
-
-            # Step 3.1: Calculate non_live (ast_non_live, hallucination_non_live unweighted average)
-            non_live_subsets = ['ast_non_live', 'hallucination_non_live']
+            non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
             non_live = unweighted_average_from_subsets(non_live_subsets, subset_dict)
             subset_dict['non_live'] = non_live
 
-            # Step 3.2: Calculate live (ast_live, hallucination_live weighted average)
-            live_agg_subsets = ['ast_live', 'hallucination_live']
-            live = weighted_average_from_subsets(live_agg_subsets, subset_dict)
+            # Step 2.2: Calculate live
+            # (live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average)
+            live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
+            live = weighted_average_from_subsets(live_subsets, subset_dict)
             subset_dict['live'] = live
 
-            # Step 3.3: Calculate multi_turn (multi_turn_base, multi_turn_augmented unweighted average)
-            multi_turn_subsets = ['multi_turn_base', 'multi_turn_augmented']
+            # Step 2.3: Calculate hallucination_live (live_irrelevance, irrelevance weighted average)
+            hallucination_subsets = ['live_irrelevance', 'irrelevance']
+            hallucination = unweighted_average_from_subsets(hallucination_subsets, subset_dict)
+            subset_dict['hallucination'] = hallucination
+
+            # Step 2.4: Calculate multi_turn (multi_turn_base, multi_turn_augmented unweighted average)
+            multi_turn_subsets = [
+                'multi_turn_base', 'multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context'
+            ]
             multi_turn = unweighted_average_from_subsets(multi_turn_subsets, subset_dict)
             subset_dict['multi_turn'] = multi_turn
 
-            # Step 4: Calculate overall (non_live, live, multi_turn unweighted average)
-            overall_subsets = ['non_live', 'live', 'multi_turn']
-            overall = unweighted_average_from_subsets(overall_subsets, subset_dict)
+            # Step 2.5 Calculate web_search (web_search_base, web_search_no_snippet unweighted average)
+            web_search_subsets = ['web_search_base', 'web_search_no_snippet']
+            web_search = unweighted_average_from_subsets(web_search_subsets, subset_dict)
+            subset_dict['web_search'] = web_search
+
+            # Step 2.6 Calculate memory (memory_kv, memory_vector, memory_rec_sum unweighted average)
+            memory_subsets = ['memory_kv', 'memory_vector', 'memory_rec_sum']
+            memory = unweighted_average_from_subsets(memory_subsets, subset_dict)
+            subset_dict['memory'] = memory
+
+            # Step 2.7 Calculate agentic (web_search, memory unweighted average)
+            agentic_subsets = ['web_search', 'memory']
+            agentic = unweighted_average_from_subsets(agentic_subsets, subset_dict)
+            subset_dict['agentic'] = agentic
+
+            # Step 4: Calculate overall (non_live, live, multi_turn percentage weighted average)
+            overall_subsets = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination']
+            overall = percentage_weighted_average_from_subsets(
+                overall_subsets, subset_dict, weights=[40, 30, 10, 10, 10]
+            )
             subset_dict['overall'] = overall
 
             # Add computed scores to the category
-            computed_subset_names = ['non_live', 'live', 'multi_turn', 'overall']
+            computed_subset_names = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination', 'overall']
 
             # Add the computed scores as new subsets in the metric
             dummy_subsets = []
             for subset_name in computed_subset_names:
-                if subset_name in subset_dict:
+                if subset_name in subset_dict and subset_dict[subset_name].num > 0:
                     subset = subset_dict[subset_name]
                     subset.name = subset_name.upper()
                     dummy_subsets.append(subset)

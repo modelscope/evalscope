@@ -273,7 +273,7 @@ class BFCLAdapter(DefaultDataAdapter):
         Finalize the report generation process. Calculate the overall score.
 
         Track the number of each category.
-        - step1: simple_python, java, javascript unweighted average as simple_ast
+        - step1: simple, java, javascript unweighted average as simple_ast
         - step2.1: simple_ast, multiple, parallel, parallel_multiple unweighted average as ast_non_live
         - step2.2: live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average as ast_live
         - step2.3: irrelevance as hallucination_non_live
@@ -298,8 +298,8 @@ class BFCLAdapter(DefaultDataAdapter):
                 for subset in category.subsets:
                     subset_dict[subset.name] = subset
 
-            # Step 1: Calculate simple_ast (simple_python, java, javascript unweighted average)
-            simple_subsets = ['simple_python', 'java', 'javascript']
+            # Step 1: Calculate simple_ast (simple, java, javascript unweighted average)
+            simple_subsets = ['simple', 'java', 'javascript']
             simple_ast = unweighted_average_from_subsets(simple_subsets, subset_dict)
             subset_dict['simple_ast'] = simple_ast
 

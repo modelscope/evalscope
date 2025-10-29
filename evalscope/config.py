@@ -196,7 +196,6 @@ class TaskConfig(BaseArgument):
                     }
                 elif self.eval_type == EvalType.SERVICE:
                     self.generation_config = {
-                        'max_tokens': 2048,
                         'temperature': 0.0,
                     }
         if isinstance(self.generation_config, dict):
