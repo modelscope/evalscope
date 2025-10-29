@@ -4,27 +4,24 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = (
-    'QASC is a question-answering dataset with a focus on sentence composition. '
-    'It consists of 9,980 8-way multiple-choice questions about grade school science.'
-)
+DESCRIPTION = 'MedMCQA is a large-scale MCQA dataset designed to address real-world medical entrance exam questions.'  # noqa: E501
 
 
 @register_benchmark(
     BenchmarkMeta(
-        name='qasc',
-        pretty_name='QASC',
+        name='med_mcqa',
+        pretty_name='Med-MCQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION.strip(),
-        dataset_id='extraordinarylab/qasc',
+        dataset_id='extraordinarylab/medmcqa',
         metric_list=['acc'],
         few_shot_num=0,
-        train_split=None,
+        train_split='train',
         eval_split='validation',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class QASCAdapter(MultiChoiceAdapter):
+class MedMCQAAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

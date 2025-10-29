@@ -515,6 +515,33 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('commonsense_qa', dataset_args)
 
+    def test_coin_flip(self):
+        """Test Coin Flip dataset."""
+        dataset_args = {
+            # 'few_shot_num': 0,
+        }
+        self._run_dataset_test('coin_flip', dataset_args)
+
+    def test_biomix_qa(self):
+        """Test BioMixQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('biomix_qa', dataset_args)
+
+    def test_music_trivia(self):
+        """Test Music Trivia dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('music_trivia', dataset_args)
+
+    def test_sciq(self):
+        """Test SciQ dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('sciq', dataset_args)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

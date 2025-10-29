@@ -13,7 +13,7 @@ DESCRIPTION = (
     BenchmarkMeta(
         name='mri_mcqa',
         pretty_name='MRI-MCQA',
-        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MEDICAL],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/mri-mcqa',
         metric_list=['acc'],

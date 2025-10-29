@@ -11,7 +11,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='genia-ner',
+        name='genia_ner',
         pretty_name='GeniaNER',
         dataset_id='extraordinarylab/genia-ner',
         tags=[Tags.KNOWLEDGE, Tags.NER],

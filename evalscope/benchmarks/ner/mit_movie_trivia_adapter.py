@@ -13,7 +13,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='mit-movie-trivia',
+        name='mit_movie_trivia',
         pretty_name='MIT-Movie-Trivia',
         dataset_id='extraordinarylab/mit-movie-trivia',
         tags=[Tags.KNOWLEDGE, Tags.NER],
