@@ -13,7 +13,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='mit-restaurant',
+        name='mit_restaurant',
         pretty_name='MIT-Restaurant',
         dataset_id='extraordinarylab/mit-restaurant',
         tags=[Tags.KNOWLEDGE, Tags.NER],

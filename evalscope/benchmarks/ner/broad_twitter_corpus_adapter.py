@@ -13,7 +13,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='broad-twitter-corpus',
+        name='broad_twitter_corpus',
         pretty_name='BroadTwitterCorpus',
         dataset_id='extraordinarylab/broad-twitter-corpus',
         tags=[Tags.KNOWLEDGE, Tags.NER],

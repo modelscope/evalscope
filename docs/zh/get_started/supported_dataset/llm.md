@@ -13,15 +13,17 @@
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `FunctionCalling` |
-| `broad-twitter-corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
+| `biomix_qa` | [BioMixQA](#biomixqa) | `Knowledge`, `MCQ`, `Medical` |
+| `broad_twitter_corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
+| `coin_flip` | [CoinFlip](#coinflip) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
-| `cross-ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
+| `cross_ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drivel_binary` | [DrivelologyBinaryClassification](#drivelologybinaryclassification) | `Yes/No` |
@@ -33,12 +35,12 @@
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
-| `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
+| `genia_ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
 | `halueval` | [HaluEval](#halueval) | `Hallucination`, `Knowledge`, `Yes/No` |
-| `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
-| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
+| `harvey_ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `Medical`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -49,14 +51,16 @@
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
+| `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
-| `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
-| `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
+| `mit_movie_trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
+| `mit_restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
-| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ` |
+| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
+| `music_trivia` | [MusicTrivia](#musictrivia) | `Knowledge`, `MCQ` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
@@ -66,6 +70,7 @@
 | `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
+| `sciq` | [SciQ](#sciq) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
@@ -324,13 +329,41 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 
 ---
 
+### BioMixQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `biomix_qa`
+- **数据集ID**: [extraordinarylab/biomix-qa](https://modelscope.cn/datasets/extraordinarylab/biomix-qa/summary)
+- **数据集描述**:
+  > BiomixQA 是一个经过整理的生物医学问答数据集，已被用于在不同大语言模型上验证基于知识图谱的检索增强生成（KG-RAG）框架。
+- **任务类别**: `Knowledge`, `MCQ`, `Medical`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### BroadTwitterCorpus
 
 [返回目录](#llm评测集)
-- **数据集名称**: `broad-twitter-corpus`
+- **数据集名称**: `broad_twitter_corpus`
 - **数据集ID**: [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary)
 - **数据集描述**:
-  > BroadTwitterCorpus 是一个通过分层抽样在不同时间、地点和社会用途下收集的推文数据集。其目标是涵盖广泛的活动，从而提供一个更能代表这种最难处理的社交媒体形式中所用语言的数据集。
+  > BroadTwitterCorpus 是一个通过分层抽样在不同时间、地点和社会用途下收集的推文数据集。其目标是涵盖广泛的活动，使数据集更能代表这种最难处理的社交媒体形式中所使用的语言。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
 - **需要LLM Judge**: 否
@@ -446,6 +479,38 @@ Text to process:
 问题：{question}
 选项：
 {choices}
+
+```
+
+</details>
+
+---
+
+### CoinFlip
+
+[返回目录](#llm评测集)
+- **数据集名称**: `coin_flip`
+- **数据集ID**: [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary)
+- **数据集描述**:
+  > CoinFlip 是一个符号推理数据集，用于测试大语言模型通过一系列操作跟踪二元状态变化的能力。每个示例描述不同人是否翻转硬币，需通过逻辑推理解答最终状态（正面或反面）。
+- **任务类别**: `Reasoning`, `Yes/No`
+- **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+
+{question}
+
+Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer YES or NO to the problem.
+
+Reasoning:
 
 ```
 
@@ -602,7 +667,7 @@ Text to process:
 ### CrossNER
 
 [返回目录](#llm评测集)
-- **数据集名称**: `cross-ner`
+- **数据集名称**: `cross_ner`
 - **数据集ID**: [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary)
 - **数据集描述**:
   > CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖五个不同领域（人工智能、文学、音乐、政治、科学）。
@@ -991,10 +1056,10 @@ Example output: "My final verdict is tie: [[A=B]]".
 ### GeniaNER
 
 [返回目录](#llm评测集)
-- **数据集名称**: `genia-ner`
+- **数据集名称**: `genia_ner`
 - **数据集ID**: [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary)
 - **数据集描述**:
-  > GeniaNER 包含 2,000 篇 MEDLINE 摘要，超过 40 万词和近 10 万条生物术语标注，现已发布。
+  > GeniaNER 包含 2,000 篇 MEDLINE 摘要，超过 40 万词和近 10 万个生物术语标注，现已发布。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
 - **需要LLM Judge**: 否
@@ -1132,10 +1197,10 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 ### HarveyNER
 
 [返回目录](#llm评测集)
-- **数据集名称**: `harvey-ner`
+- **数据集名称**: `harvey_ner`
 - **数据集ID**: [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary)
 - **数据集描述**:
-  > HarveyNER 是一个在推文中标注了细粒度位置的数据集。该数据集具有独特挑战性，包含大量非正式描述中的复杂且较长的位置提及。
+  > HarveyNER 是一个在推文中标注了细粒度位置的数据集，该数据集具有独特挑战性，包含大量复杂且较长的非正式位置描述。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
 - **需要LLM Judge**: 否
@@ -1181,7 +1246,7 @@ Text to process:
 - **数据集ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
 - **数据集描述**:
   > HealthBench：一个旨在更好衡量AI系统医疗能力的新基准。该基准与来自60个国家的262名医生合作构建，包含5,000个真实医疗对话，每个对话均配有医生定制的评分标准来评估模型回复。
-- **任务类别**: `Knowledge`, `QA`
+- **任务类别**: `Knowledge`, `Medical`, `QA`
 - **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
 - **需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
@@ -1491,6 +1556,34 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
+### Med-MCQA
+
+[返回目录](#llm评测集)
+- **数据集名称**: `med_mcqa`
+- **数据集ID**: [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary)
+- **数据集描述**:
+  > MedMCQA 是一个大规模的多项选择题数据集，旨在解决真实的医学入学考试问题。
+- **任务类别**: `Knowledge`, `MCQ`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### Minerva-Math
 
 [返回目录](#llm评测集)
@@ -1519,10 +1612,10 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 ### MIT-Movie-Trivia
 
 [返回目录](#llm评测集)
-- **数据集名称**: `mit-movie-trivia`
+- **数据集名称**: `mit_movie_trivia`
 - **数据集ID**: [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary)
 - **数据集描述**:
-  > MIT-Movie-Trivia 数据集最初用于槽位填充，通过忽略某些槽位类型（如类型、评分）并将其他类型合并（如将导演和演员合并为“人物”，歌曲和电影标题合并为“标题”），以保持所有数据集中命名实体类型的一致性。
+  > MIT-Movie-Trivia 数据集最初用于槽位填充，为保持各数据集中命名实体类型的一致性，忽略了一些槽位类型（如类型、评分），并将其他槽位合并（如将导演和演员合并为人物，歌曲和电影标题合并为标题）。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
 - **需要LLM Judge**: 否
@@ -1564,7 +1657,7 @@ Text to process:
 ### MIT-Restaurant
 
 [返回目录](#llm评测集)
-- **数据集名称**: `mit-restaurant`
+- **数据集名称**: `mit_restaurant`
 - **数据集ID**: [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary)
 - **数据集描述**:
   > MIT-Restaurant 数据集是一个专门用于训练和测试自然语言处理（NLP）模型的餐厅评论文本集合，尤其适用于命名实体识别（NER）。该数据集包含来自真实评论的句子及其对应的 BIO 格式标签。
@@ -1699,7 +1792,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集ID**: [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary)
 - **数据集描述**:
   > MRI-MCQA 是一个包含磁共振成像（MRI）相关选择题的基准测试。
-- **任务类别**: `Knowledge`, `MCQ`
+- **任务类别**: `Knowledge`, `MCQ`, `Medical`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -1739,6 +1832,34 @@ Answer the following multiple choice question. The entire content of your respon
     "max_turns": 3
 }
 ```
+
+---
+
+### MusicTrivia
+
+[返回目录](#llm评测集)
+- **数据集名称**: `music_trivia`
+- **数据集ID**: [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary)
+- **数据集描述**:
+  > MusicTrivia 是一个精选的多项选择题数据集，涵盖古典与现代音乐主题，包含作曲家、音乐时期及流行艺术家等相关问题，旨在评估事实记忆和特定领域的音乐知识。
+- **任务类别**: `Knowledge`, `MCQ`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
 
 ---
 
@@ -1994,7 +2115,7 @@ Please answer YES or NO or MAYBE without an explanation.
 - **数据集名称**: `qasc`
 - **数据集ID**: [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary)
 - **数据集描述**:
-  > QASC 是一个专注于句子组合的问答数据集，包含 9,980 道八选一的多项选择题，涉及小学科学内容。
+  > QASC 是一个注重句子组合的问答数据集，包含 9,980 道八选一的多项选择题，内容涉及小学科学。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
@@ -2034,6 +2155,34 @@ Answer the following multiple choice question. The entire content of your respon
 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
+### SciQ
+
+[返回目录](#llm评测集)
+- **数据集名称**: `sciq`
+- **数据集ID**: [extraordinarylab/sciq](https://modelscope.cn/datasets/extraordinarylab/sciq/summary)
+- **数据集描述**:
+  > SciQ 数据集包含关于物理、化学和生物等领域的众包科学考试题目。大多数问题还附有一段支持正确答案的证据文本。
+- **任务类别**: `Knowledge`, `MCQ`, `ReadingComprehension`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 

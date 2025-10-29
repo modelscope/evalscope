@@ -97,7 +97,7 @@ VERSION_FILE = {
     BenchmarkMeta(
         name='health_bench',
         pretty_name='HealthBench',
-        tags=[Tags.KNOWLEDGE, Tags.QA],
+        tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MEDICAL],
         description=
         'HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.',  # noqa: E501
         dataset_id='openai-mirror/healthbench',

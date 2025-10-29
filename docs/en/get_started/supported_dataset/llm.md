@@ -13,15 +13,17 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `FunctionCalling` |
-| `broad-twitter-corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
+| `biomix_qa` | [BioMixQA](#biomixqa) | `Knowledge`, `MCQ`, `Medical` |
+| `broad_twitter_corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](#chinese-simpleqa) | `Chinese`, `Knowledge`, `QA` |
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
+| `coin_flip` | [CoinFlip](#coinflip) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
-| `cross-ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
+| `cross_ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
 | `data_collection` | [Data-Collection](#data-collection) | `Custom` |
 | `docmath` | [DocMath](#docmath) | `LongContext`, `Math`, `Reasoning` |
 | `drivel_binary` | [DrivelologyBinaryClassification](#drivelologybinaryclassification) | `Yes/No` |
@@ -33,12 +35,12 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
-| `genia-ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
+| `genia_ner` | [GeniaNER](#genianer) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
 | `halueval` | [HaluEval](#halueval) | `Hallucination`, `Knowledge`, `Yes/No` |
-| `harvey-ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
-| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
+| `harvey_ner` | [HarveyNER](#harveyner) | `Knowledge`, `NER` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `Medical`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -49,14 +51,16 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
+| `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
-| `mit-movie-trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
-| `mit-restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
+| `mit_movie_trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
+| `mit_restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
-| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ` |
+| `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
+| `music_trivia` | [MusicTrivia](#musictrivia) | `Knowledge`, `MCQ` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
@@ -66,6 +70,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
+| `sciq` | [SciQ](#sciq) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
@@ -324,10 +329,38 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 
 ---
 
+### BioMixQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `biomix_qa`
+- **Dataset ID**: [extraordinarylab/biomix-qa](https://modelscope.cn/datasets/extraordinarylab/biomix-qa/summary)
+- **Description**:
+  > BiomixQA is a curated biomedical question-answering dataset. BiomixQA has been utilized to validate the Knowledge Graph based Retrieval-Augmented Generation (KG-RAG) framework across different LLMs.
+- **Task Categories**: `Knowledge`, `MCQ`, `Medical`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### BroadTwitterCorpus
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `broad-twitter-corpus`
+- **Dataset Name**: `broad_twitter_corpus`
 - **Dataset ID**: [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary)
 - **Description**:
   > BroadTwitterCorpus is a dataset of tweets collected over stratified times, places and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.
@@ -446,6 +479,38 @@ Text to process:
 问题：{question}
 选项：
 {choices}
+
+```
+
+</details>
+
+---
+
+### CoinFlip
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `coin_flip`
+- **Dataset ID**: [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary)
+- **Description**:
+  > CoinFlip is a symbolic reasoning dataset that tests an LLM's ability to track binary state changes through a sequence of actions. Each example describes whether a coin is flipped or not by different person, requiring logical inference to determine the final state (heads or tails).
+- **Task Categories**: `Reasoning`, `Yes/No`
+- **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+
+{question}
+
+Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer YES or NO to the problem.
+
+Reasoning:
 
 ```
 
@@ -602,7 +667,7 @@ Text to process:
 ### CrossNER
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `cross-ner`
+- **Dataset Name**: `cross_ner`
 - **Dataset ID**: [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary)
 - **Description**:
   > CrossNER is a fully-labelled collected of named entity recognition (NER) data spanning over five diverse domains (AI, Literature, Music, Politics, Science).
@@ -991,7 +1056,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 ### GeniaNER
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `genia-ner`
+- **Dataset Name**: `genia_ner`
 - **Dataset ID**: [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary)
 - **Description**:
   > GeniaNER consisting of 2,000 MEDLINE abstracts has been released with more than 400,000 words and almost 100,000 annotations for biological terms.
@@ -1132,7 +1197,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 ### HarveyNER
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `harvey-ner`
+- **Dataset Name**: `harvey_ner`
 - **Dataset ID**: [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary)
 - **Description**:
   > HarveyNER is a dataset with fine-grained locations annotated in tweets. This dataset presents unique challenges and characterizes many complex and long location mentions in informal descriptions.
@@ -1181,7 +1246,7 @@ Text to process:
 - **Dataset ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
 - **Description**:
   > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
-- **Task Categories**: `Knowledge`, `QA`
+- **Task Categories**: `Knowledge`, `Medical`, `QA`
 - **Evaluation Metrics**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
@@ -1491,6 +1556,34 @@ Answer the following multiple choice question. The last line of your response sh
 
 ---
 
+### Med-MCQA
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `med_mcqa`
+- **Dataset ID**: [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary)
+- **Description**:
+  > MedMCQA is a large-scale MCQA dataset designed to address real-world medical entrance exam questions.
+- **Task Categories**: `Knowledge`, `MCQ`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### Minerva-Math
 
 [Back to Top](#llm-benchmarks)
@@ -1519,7 +1612,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 ### MIT-Movie-Trivia
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `mit-movie-trivia`
+- **Dataset Name**: `mit_movie_trivia`
 - **Dataset ID**: [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary)
 - **Description**:
   > The MIT-Movie-Trivia dataset, originally created for slot filling, is modified by ignoring some slot types (e.g. genre, rating) and merging others (e.g. director and actor in person, and song and movie title in title) in order to keep consistent named entity types across all datasets.
@@ -1564,7 +1657,7 @@ Text to process:
 ### MIT-Restaurant
 
 [Back to Top](#llm-benchmarks)
-- **Dataset Name**: `mit-restaurant`
+- **Dataset Name**: `mit_restaurant`
 - **Dataset ID**: [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary)
 - **Description**:
   > The MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing Natural Language Processing (NLP) models, particularly for Named Entity Recognition (NER). It contains sentences from real reviews, along with corresponding labels in the BIO format.
@@ -1699,7 +1792,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset ID**: [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary)
 - **Description**:
   > MRI-MCQA is a benchmark composed by multiple-choice questions related to Magnetic Resonance Imaging (MRI).
-- **Task Categories**: `Knowledge`, `MCQ`
+- **Task Categories**: `Knowledge`, `MCQ`, `Medical`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -1739,6 +1832,34 @@ Answer the following multiple choice question. The entire content of your respon
     "max_turns": 3
 }
 ```
+
+---
+
+### MusicTrivia
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `music_trivia`
+- **Dataset ID**: [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary)
+- **Description**:
+  > MusicTrivia is a curated dataset of multiple-choice questions covering both classical and modern music topics. It includes questions about composers, musical periods, and popular artists, designed for evaluating factual recall and domain-specific music knowledge.
+- **Task Categories**: `Knowledge`, `MCQ`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+
+{question}
+
+{choices}
+```
+
+</details>
 
 ---
 
@@ -1994,7 +2115,7 @@ Please answer YES or NO or MAYBE without an explanation.
 - **Dataset Name**: `qasc`
 - **Dataset ID**: [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary)
 - **Description**:
-  > QASC is a question-answering dataset with a focus on sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science
+  > QASC is a question-answering dataset with a focus on sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
 - **Requires LLM Judge**: No
@@ -2034,6 +2155,34 @@ Answer the following multiple choice question. The entire content of your respon
 
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
+### SciQ
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `sciq`
+- **Dataset ID**: [extraordinarylab/sciq](https://modelscope.cn/datasets/extraordinarylab/sciq/summary)
+- **Description**:
+  > The SciQ dataset contains crowdsourced science exam questions about Physics, Chemistry and Biology, among others. For the majority of the questions, an additional paragraph with supporting evidence for the correct answer is provided.
+- **Task Categories**: `Knowledge`, `MCQ`, `ReadingComprehension`
+- **Evaluation Metrics**: `acc`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 

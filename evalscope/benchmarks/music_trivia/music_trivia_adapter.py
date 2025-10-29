@@ -5,26 +5,27 @@ from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 DESCRIPTION = (
-    'QASC is a question-answering dataset with a focus on sentence composition. '
-    'It consists of 9,980 8-way multiple-choice questions about grade school science.'
-)
+    'MusicTrivia is a curated dataset of multiple-choice questions covering both classical and modern music topics. '
+    'It includes questions about composers, musical periods, and popular artists, designed for evaluating '
+    'factual recall and domain-specific music knowledge.'
+)  # noqa: E501
 
 
 @register_benchmark(
     BenchmarkMeta(
-        name='qasc',
-        pretty_name='QASC',
+        name='music_trivia',
+        pretty_name='MusicTrivia',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION.strip(),
-        dataset_id='extraordinarylab/qasc',
+        dataset_id='extraordinarylab/music-trivia',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
-        eval_split='validation',
+        eval_split='test',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class QASCAdapter(MultiChoiceAdapter):
+class MusicTriviaAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         return Sample(

@@ -15,7 +15,7 @@ DESCRIPTION = (
 
 @register_benchmark(
     BenchmarkMeta(
-        name='cross-ner',
+        name='cross_ner',
         pretty_name='CrossNER',
         dataset_id='extraordinarylab/cross-ner',
         subset_list=['ai', 'literature', 'music', 'politics', 'science'],
