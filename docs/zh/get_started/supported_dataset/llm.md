@@ -12,7 +12,8 @@
 | `arc` | [ARC](#arc) | `MCQ`, `Reasoning` |
 | `arena_hard` | [ArenaHard](#arenahard) | `Arena`, `InstructionFollowing` |
 | `bbh` | [BBH](#bbh) | `Reasoning` |
-| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `FunctionCalling` |
+| `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent`, `FunctionCalling` |
+| `bfcl_v4` | [BFCL-v4](#bfcl-v4) | `Agent`, `FunctionCalling` |
 | `biomix_qa` | [BioMixQA](#biomixqa) | `Knowledge`, `MCQ`, `Medical` |
 | `broad_twitter_corpus` | [BroadTwitterCorpus](#broadtwittercorpus) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](#c-eval) | `Chinese`, `Knowledge`, `MCQ` |
@@ -74,7 +75,7 @@
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
-| `tau_bench` | [τ-bench](#τ-bench) | `FunctionCalling`, `Reasoning` |
+| `tau_bench` | [τ-bench](#τ-bench) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](#toolbench-static) | `FunctionCalling`, `Reasoning` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
@@ -313,7 +314,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **数据集ID**: [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary)
 - **数据集描述**:
   > Berkeley Function Calling Leaderboard (BFCL) 是首个专注于评估大语言模型（LLM）调用函数能力的**全面且可执行的函数调用评测**。与以往评测不同，BFCL 考虑了多种函数调用形式、多样化场景以及可执行性。评测前需安装 `pip install bfcl-eval==2025.10.27.1`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
-- **任务类别**: `FunctionCalling`
+- **任务类别**: `Agent`, `FunctionCalling`
 - **评估指标**: `acc`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -324,6 +325,30 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 {
     "underscore_to_dot": true,
     "is_fc_model": true
+}
+```
+
+---
+
+### BFCL-v4
+
+[返回目录](#llm评测集)
+- **数据集名称**: `bfcl_v4`
+- **数据集ID**: [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard)
+- **数据集描述**:
+  > 函数调用是智能体（Agents）的基础构建模块，伯克利函数调用排行榜（BFCL）V4 提供了针对大语言模型（LLM）的综合性智能体评估。BFCL V4 智能体评估包含网页搜索、记忆读写和格式敏感性。结合跨语言函数调用能力，这些构成了当前驱动智能体 LLM 发展的核心基础，涵盖深度研究、编程代理和法律代理等极具挑战性的前沿领域。评估前需运行 `pip install bfcl-eval==2025.10.27.1`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v4.html)
+- **任务类别**: `Agent`, `FunctionCalling`
+- **评估指标**: `acc`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `irrelevance`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `memory_kv`, `memory_rec_sum`, `memory_vector`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple_java`, `simple_javascript`, `simple_python`, `web_search_base`, `web_search_no_snippet`
+
+- **额外参数**: 
+```json
+{
+    "underscore_to_dot": true,
+    "is_fc_model": true,
+    "SERPAPI_API_KEY": null
 }
 ```
 
@@ -2282,7 +2307,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集ID**: [tau-bench](https://github.com/sierra-research/tau-bench)
 - **数据集描述**:
   > 一个模拟用户（由语言模型模拟）与具备特定领域API工具和策略指南的语言代理之间动态对话的基准测试。评估前请先通过 `pip install git+https://github.com/sierra-research/tau-bench` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau_bench.html)
-- **任务类别**: `FunctionCalling`, `Reasoning`
+- **任务类别**: `Agent`, `FunctionCalling`, `Reasoning`
 - **评估指标**: `Pass^1`
 - **需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

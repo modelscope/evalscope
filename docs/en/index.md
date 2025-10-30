@@ -49,6 +49,7 @@ advanced_guides/add_benchmark.md
 :caption: 🧰 Third-Party Tools
 third_party/tau_bench.md
 third_party/bfcl_v3.md
+third_party/bfcl_v4.md
 third_party/needle_haystack.md
 third_party/toolbench.md
 third_party/longwriter.md

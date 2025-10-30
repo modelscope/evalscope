@@ -568,5 +568,10 @@
     "en": "BiomixQA is a curated biomedical question-answering dataset. BiomixQA has been utilized to validate the Knowledge Graph based Retrieval-Augmented Generation (KG-RAG) framework across different LLMs.",
     "zh": "BiomixQA 是一个经过整理的生物医学问答数据集，已被用于在不同大语言模型上验证基于知识图谱的检索增强生成（KG-RAG）框架。",
     "updated_at": "2025-10-29T14:53:18Z"
+  },
+  "bfcl_v4": {
+    "en": "With function-calling being the building blocks of Agents, the Berkeley Function-Calling Leaderboard (BFCL) V4 presents a holistic agentic evaluation for LLMs. BFCL V4 Agentic includes web search, memory, and format sensitivity. Together, the ability to web search, read and write from memory, and the ability to invoke functions in different languages present the building blocks for the exciting and extremely challenging avenues that power agentic LLMs today from deep-research, to agents for coding and law. Need to run `pip install bfcl-eval==2025.10.27.1` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)",
+    "zh": "函数调用是智能体（Agents）的基础构建模块，伯克利函数调用排行榜（BFCL）V4 提供了针对大语言模型（LLM）的综合性智能体评估。BFCL V4 智能体评估包含网页搜索、记忆读写和格式敏感性。结合跨语言函数调用能力，这些构成了当前驱动智能体 LLM 发展的核心基础，涵盖深度研究、编程代理和法律代理等极具挑战性的前沿领域。评估前需运行 `pip install bfcl-eval==2025.10.27.1`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v4.html)",
+    "updated_at": "2025-10-30T15:31:31Z"
   }
 }

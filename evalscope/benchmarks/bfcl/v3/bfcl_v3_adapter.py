@@ -48,7 +48,7 @@ BFCL_V3_TO_V4_SUBJECT_MAPPING = {
     BenchmarkMeta(
         name='bfcl_v3',
         pretty_name='BFCL-v3',
-        tags=[Tags.FUNCTION_CALLING],
+        tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
         description='Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive '
         'and executable function call evaluation** '
         'dedicated to assessing Large Language Models\' (LLMs) ability to invoke '
@@ -66,7 +66,7 @@ BFCL_V3_TO_V4_SUBJECT_MAPPING = {
         }
     )
 )
-class BFCLAdapter(DefaultDataAdapter):
+class BFCLV3Adapter(DefaultDataAdapter):
     """
     BFCL adapter using the new data processing framework.
     """

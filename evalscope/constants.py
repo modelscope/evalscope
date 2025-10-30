@@ -138,6 +138,7 @@ class Tags:
     YES_NO = 'Yes/No'
     HALLUCINATION = 'Hallucination'
     MEDICAL = 'Medical'
+    AGENT = 'Agent'
 
 
 class FileConstants:
