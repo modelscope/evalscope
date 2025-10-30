@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
+
+load_dotenv('.env')
 
 env = dotenv_values('.env')
 
@@ -530,6 +532,14 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 0,
         }
         self._run_dataset_test('sciq', dataset_args)
+
+    def test_drivel_writing(self):
+        """Test Drivelology Narrative Writing dataset."""
+        dataset_args = {
+            'subset_list': ['narrative-writing-english'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('drivel_writing', dataset_args)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
