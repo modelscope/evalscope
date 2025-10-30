@@ -1,4 +1,5 @@
 import torch
+from functools import lru_cache
 from typing import List
 
 from evalscope.utils.import_utils import check_import
@@ -72,6 +73,7 @@ def compute_bertscore_batch(
     return results
 
 
+@lru_cache(maxsize=1)
 def get_comet_model():
     """Lazily load and cache the COMET model.
 
@@ -81,7 +83,7 @@ def get_comet_model():
     Returns:
         A COMET model instance.
     """
-    check_import('comet', 'comet', raise_error=True, feature_name='Text translation metrics')
+    check_import('comet', 'unbabel-comet', raise_error=True, feature_name='Text translation metrics')
     from comet import download_model, load_from_checkpoint
 
     model_path = download_model('Unbabel/wmt22-comet-da')
@@ -104,7 +106,7 @@ def compute_comet_score_one_sample(src: str, mt: str, ref: str) -> dict:
     """
     model = get_comet_model()
     data = [{'src': src, 'mt': mt, 'ref': ref}]
-    output = model.predict(data, batch_size=10, gpus=1 if torch.cuda.is_available() else 0)
+    output = model.predict(data, batch_size=1, gpus=1 if torch.cuda.is_available() else 0)
     return {'comet': round(output['scores'][0], 6)}
 
 
@@ -125,14 +127,10 @@ def compute_comet_batch(src_list: List[str],
     Returns:
         A list of dictionaries containing COMET scores for each sample.
     """
-    check_import('comet', 'comet', raise_error=True, feature_name='Text translation metrics')
-    from comet import download_model, load_from_checkpoint
+    check_import('comet', 'unbabel-comet', raise_error=True, feature_name='Text translation metrics')
 
     if model is None:
-        model_path = download_model('Unbabel/wmt22-comet-da')
-        model = load_from_checkpoint(model_path)
-        if torch.cuda.is_available():
-            model.cuda()
+        model = get_comet_model()
 
     data = [{'src': s, 'mt': m, 'ref': r} for s, m, r in zip(src_list, mt_list, ref_list)]
     output = model.predict(data, batch_size=batch_size, gpus=1 if torch.cuda.is_available() else 0)

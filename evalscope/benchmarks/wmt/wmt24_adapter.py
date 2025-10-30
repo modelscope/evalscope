@@ -1,4 +1,5 @@
 import os
+import torch
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -78,65 +79,6 @@ LANGUAGE_PAIRS = [
     'en-zu_za',
 ]
 
-LANGUAGE_BY_CODE = {
-    'ar_eg': 'arabic',
-    'ar_sa': 'arabic',
-    'bg_bg': 'bulgarian',
-    'bn_bd': 'bengali',
-    'bn_in': 'bengali',
-    'ca_es': 'catalan',
-    'cs_cz': 'czech',
-    'da_dk': 'danish',
-    'de_de': 'german',
-    'el_gr': 'greek',
-    'es_mx': 'spanish',
-    'et_ee': 'estonian',
-    'fa_ir': 'farsi',
-    'fi_fi': 'finnish',
-    'fil_ph': 'filipino',
-    'fr_ca': 'french',
-    'fr_fr': 'french',
-    'gu_in': 'gujarati',
-    'he_il': 'hebrew',
-    'hi_in': 'hindi',
-    'hr_hr': 'croatian',
-    'hu_hu': 'hungarian',
-    'id_id': 'indonesian',
-    'is_is': 'icelandic',
-    'it_it': 'italian',
-    'ja_jp': 'japanese',
-    'kn_in': 'kannada',
-    'ko_kr': 'korean',
-    'lt_lt': 'lithuanian',
-    'lv_lv': 'latvian',
-    'ml_in': 'malayalam',
-    'mr_in': 'marathi',
-    'nl_nl': 'dutch',
-    'no_no': 'norwegian',
-    'pa_in': 'punjabi',
-    'pl_pl': 'polish',
-    'pt_br': 'portuguese',
-    'pt_pt': 'portuguese',
-    'ro_ro': 'romanian',
-    'ru_ru': 'russian',
-    'sk_sk': 'slovak',
-    'sl_si': 'slovenian',
-    'sr_rs': 'serbian',
-    'sv_se': 'swedish',
-    'sw_ke': 'swahili',
-    'sw_tz': 'swahili',
-    'ta_in': 'tamil',
-    'te_in': 'telugu',
-    'th_th': 'thai',
-    'tr_tr': 'turkish',
-    'uk_ua': 'ukrainian',
-    'ur_pk': 'urdu',
-    'vi_vn': 'vietnamese',
-    'zh_cn': 'mandarin',
-    'zh_tw': 'mandarin',
-    'zu_za': 'zulu',
-}
-
 
 @register_benchmark(
     BenchmarkMeta(
@@ -171,7 +113,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         from bert_score import BERTScorer
         self.bert_scorer = BERTScorer(
             model_type='xlm-roberta-large',
-            rescale_with_baseline=False,
+            rescale_with_baseline=True,
         )
 
     def _init_comet_scorer(self):
@@ -306,7 +248,9 @@ class WMT24PPAdapter(DefaultDataAdapter):
                     'mt': pred,
                     'ref': ref
                 } for pred, ref, st in zip(preds, refs, states)]
-                model_output = self.comet_scorer.predict(data, batch_size=32, gpus=1, progress_bar=False)
+                model_output = self.comet_scorer.predict(
+                    data, batch_size=32, gpus=1 if torch.cuda.is_available() else 0, progress_bar=False
+                )
                 scores = model_output.scores if hasattr(model_output,
                                                         'scores') else [model_output.system_score] * len(data)
                 for s, comet_val in zip(score_objs, scores):
