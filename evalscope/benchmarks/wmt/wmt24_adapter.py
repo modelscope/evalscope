@@ -79,6 +79,66 @@ LANGUAGE_PAIRS = [
     'en-zu_za',
 ]
 
+LANGUAGE_BY_CODE = {
+    'ar_eg': 'arabic',
+    'ar_sa': 'arabic',
+    'bg_bg': 'bulgarian',
+    'bn_bd': 'bengali',
+    'bn_in': 'bengali',
+    'ca_es': 'catalan',
+    'cs_cz': 'czech',
+    'da_dk': 'danish',
+    'de_de': 'german',
+    'el_gr': 'greek',
+    'es_mx': 'spanish',
+    'et_ee': 'estonian',
+    'fa_ir': 'farsi',
+    'fi_fi': 'finnish',
+    'fil_ph': 'filipino',
+    'fr_ca': 'french',
+    'fr_fr': 'french',
+    'gu_in': 'gujarati',
+    'he_il': 'hebrew',
+    'hi_in': 'hindi',
+    'hr_hr': 'croatian',
+    'hu_hu': 'hungarian',
+    'id_id': 'indonesian',
+    'is_is': 'icelandic',
+    'it_it': 'italian',
+    'ja_jp': 'japanese',
+    'kn_in': 'kannada',
+    'ko_kr': 'korean',
+    'lt_lt': 'lithuanian',
+    'lv_lv': 'latvian',
+    'ml_in': 'malayalam',
+    'mr_in': 'marathi',
+    'nl_nl': 'dutch',
+    'no_no': 'norwegian',
+    'pa_in': 'punjabi',
+    'pl_pl': 'polish',
+    'pt_br': 'portuguese',
+    'pt_pt': 'portuguese',
+    'ro_ro': 'romanian',
+    'ru_ru': 'russian',
+    'sk_sk': 'slovak',
+    'sl_si': 'slovenian',
+    'sr_rs': 'serbian',
+    'sv_se': 'swedish',
+    'sw_ke': 'swahili',
+    'sw_tz': 'swahili',
+    'ta_in': 'tamil',
+    'te_in': 'telugu',
+    'th_th': 'thai',
+    'tr_tr': 'turkish',
+    'uk_ua': 'ukrainian',
+    'ur_pk': 'urdu',
+    'vi_vn': 'vietnamese',
+    'zh_cn': 'mandarin',
+    'zh_tw': 'mandarin',
+    'zu_za': 'zulu',
+    'en': 'english',
+}
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -146,8 +206,8 @@ class WMT24PPAdapter(DefaultDataAdapter):
         # Format the generation prompt with the text
         input_prompt = PROMPT_TEMPLATE.format(
             source_text=source_text,
-            source_language=source_language.capitalize(),
-            target_language=target_language.capitalize(),
+            source_language=LANGUAGE_BY_CODE[source_language],
+            target_language=LANGUAGE_BY_CODE[target_language],
         )
 
         # Create content list for the input
