@@ -68,6 +68,8 @@ class CacheManager:
             # Convert to task state for further processing
             cached_state = cached_model_result.to_task_state(dataset=dataset)
 
+            if cached_state is None:
+                continue
             cached_task_states.append(cached_state)
             cached_sample_ids.add(cached_state.sample_id)
 
@@ -283,9 +285,11 @@ class ModelResult(BaseModel):
         Raises:
             ValueError: If the sample index is not found in the dataset
         """
-        sample = dataset[self.index]
-        if not sample:
-            raise ValueError(f'Sample with index {self.index} not found in dataset')
+        try:
+            sample = dataset[self.index]
+        except IndexError:
+            logger.warning(f'Sample index {self.index} not found in dataset during cache restoration.')
+            return None
 
         # update metadata if exists
         if self.metadata:

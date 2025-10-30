@@ -8,6 +8,7 @@ if TYPE_CHECKING:
         gen_table,
         get_data_frame,
         get_report_list,
+        percentage_weighted_average_from_subsets,
         unweighted_average_from_subsets,
         weighted_average_from_subsets,
     )
@@ -22,6 +23,7 @@ else:
             'get_report_list',
             'weighted_average_from_subsets',
             'unweighted_average_from_subsets',
+            'percentage_weighted_average_from_subsets',
         ],
         'generator': [
             'ReportGenerator',

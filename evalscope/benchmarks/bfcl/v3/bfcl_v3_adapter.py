@@ -37,18 +37,24 @@ SUBJECT_MAPPING = {
     'multi_turn_long_context': 'MULTI_TURN'
 }
 
+BFCL_V3_TO_V4_SUBJECT_MAPPING = {
+    'simple': 'simple_python',
+    'java': 'simple_java',
+    'javascript': 'simple_javascript',
+}
+
 
 @register_benchmark(
     BenchmarkMeta(
         name='bfcl_v3',
         pretty_name='BFCL-v3',
-        tags=[Tags.FUNCTION_CALLING],
+        tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
         description='Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive '
         'and executable function call evaluation** '
         'dedicated to assessing Large Language Models\' (LLMs) ability to invoke '
         'functions. Unlike previous evaluations, '
         'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
-        'Need to run `pip install bfcl-eval==2025.6.16` before evaluating. '
+        'Need to run `pip install bfcl-eval==2025.10.27.1` before evaluating. '
         '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)',
         dataset_id='AI-ModelScope/bfcl_v3',
         subset_list=list(SUBJECT_MAPPING.keys()),
@@ -60,7 +66,7 @@ SUBJECT_MAPPING = {
         }
     )
 )
-class BFCLAdapter(DefaultDataAdapter):
+class BFCLV3Adapter(DefaultDataAdapter):
     """
     BFCL adapter using the new data processing framework.
     """
@@ -68,7 +74,7 @@ class BFCLAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('bfcl_eval', package='bfcl-eval==2025.6.16', raise_error=True, feature_name=self.pretty_name)
+        check_import('bfcl_eval', package='bfcl-eval==2025.10.27.1', raise_error=True, feature_name=self.pretty_name)
 
         self.category_map = SUBJECT_MAPPING
         self.reformat_subset = True
@@ -107,8 +113,8 @@ class BFCLAdapter(DefaultDataAdapter):
             record['turns'] = new_turns
 
         return Sample(
-            input=[ChatMessageUser(content='')],
-            target='',  # Will use the record for evaluation
+            input=[ChatMessageUser(content=json.dumps(record['turns']))],
+            target=json.dumps(record['ground_truth']),  # Will use the record for evaluation
             subset_key=record['subset'],
             metadata=record  # Store the full record for evaluation
         )
@@ -129,6 +135,8 @@ class BFCLAdapter(DefaultDataAdapter):
         )
         from bfcl_eval.utils import is_empty_output
 
+        from .utils import convert_format_language, convert_language
+
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
@@ -142,7 +150,7 @@ class BFCLAdapter(DefaultDataAdapter):
                 dummy_model = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 
             row = task_state.metadata
-            test_category = re.sub(r'_[0-9_-]+$', '', row['id'])
+            test_category = BFCL_V3_TO_V4_SUBJECT_MAPPING.get(row['test_category'], row['test_category'])
 
             if test_category in {'irrelevance', 'live_irrelevance', 'live_relevance'}:
                 error = None
@@ -154,7 +162,9 @@ class BFCLAdapter(DefaultDataAdapter):
                             params = tool_call[name]
                             decoded_tool_calls.append({name: params})
                     else:
-                        decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
+                        decoded_tool_calls = default_decode_ast_prompting(
+                            row['generation'][0][0], convert_format_language(row['language'])
+                        )
 
                     # successful decode means valid function call was present
                     contains_func_call = True
@@ -219,14 +229,16 @@ class BFCLAdapter(DefaultDataAdapter):
                             params = tool_call[name]
                             decoded_tool_calls.append({name: params})
                     else:
-                        decoded_tool_calls = default_decode_ast_prompting(row['generation'][0][0], row['language'])
+                        decoded_tool_calls = default_decode_ast_prompting(
+                            row['generation'][0][0], convert_format_language(row['language'])
+                        )
 
                     score_result = ast_checker(
                         row['functions'],
                         decoded_tool_calls,
                         row['ground_truth'],
-                        row['language'],
-                        row['test_category'],
+                        convert_language(row['language']),
+                        test_category,
                         dummy_model,
                     )
                 except Exception:

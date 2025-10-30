@@ -437,6 +437,8 @@ def convert_normal_types(obj):
         return [convert_normal_types(item) for item in obj]
     elif isinstance(obj, tuple):
         return tuple(convert_normal_types(item) for item in obj)
+    elif isinstance(obj, os.PathLike):
+        return str(obj)
     else:
         return obj
 
