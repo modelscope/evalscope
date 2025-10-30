@@ -79,6 +79,9 @@ AGENTIC_CATEGORY = MEMORY_CATEGORY + WEB_SEARCH_CATEGORY
 
 ALL_SCORING_CATEGORIES = SINGLE_TURN_CATEGORY + MULTI_TURN_CATEGORY + AGENTIC_CATEGORY
 
+DUMMY_MODEL_UNDERSCORE_TO_DOT = 'gpt-4o-2024-11-20-FC'
+DUMMY_MODEL_NO_UNDERSCORE_TO_DOT = 'meta-llama/Llama-3.3-70B-Instruct-FC'
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -187,6 +190,7 @@ class BFCLAdapter(DefaultDataAdapter):
         test_entries = populate_initial_settings_for_memory_test_cases(
             test_entries, model_result_dir=self.model_result_dir
         )
+        test_entries = [entry for entry in test_entries if not is_memory_prereq(entry['id'])]
 
         processed_entries = []
         for entry in test_entries:
@@ -242,8 +246,9 @@ class BFCLAdapter(DefaultDataAdapter):
                 self.model_result_dir / get_directory_structure_by_id(entry['id']) / 'memory_snapshot'
                 / 'prereq_checkpoints'
             )
-            exists_files = set(memory_snapshot_folder.rglob('*.json'))
-            if entry['id'] + '.json' in {f.name for f in exists_files}:
+            existing_filenames = {f.name for f in memory_snapshot_folder.rglob('*.json')}
+            if (entry['id'] + '.json') in existing_filenames:
+
                 logger.info(f'Skipping prereq inference for entry ID {entry["id"]} as result already exists.')
                 continue
 
@@ -304,7 +309,7 @@ class BFCLAdapter(DefaultDataAdapter):
         index = prompt['id']
         ground_truth = prompt.get('ground_truth', {})
         # NOTE: This is hardcoded dummy model since its only use is to infer underscore_to_dot
-        model_name = 'gpt-4o-2024-11-20-FC' if self.underscore_to_dot else 'meta-llama/Llama-3.3-70B-Instruct-FC'
+        model_name = DUMMY_MODEL_UNDERSCORE_TO_DOT if self.underscore_to_dot else DUMMY_MODEL_NO_UNDERSCORE_TO_DOT
 
         if is_relevance_or_irrelevance(test_category):
             entry_result = _evaluate_single_relevance_entry(

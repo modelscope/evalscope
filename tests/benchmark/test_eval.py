@@ -392,9 +392,9 @@ class TestNativeBenchmark(TestBenchmark):
                 # 'multi_turn_long_context',
                 # 'web_search_base',
                 # 'web_search_no_snippet',
-                'memory_kv',
+                # 'memory_kv',
                 # 'memory_vector',
-                # 'memory_rec_sum'
+                'memory_rec_sum'
             ],
             'extra_params': {
                 'is_fc_model': True,
