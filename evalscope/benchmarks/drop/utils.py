@@ -117,21 +117,32 @@ def _get_gold_answers(input_d: dict) -> List[str]:
     Parse the raw input labels (gold).
     """
 
-    def _flatten_validated_answers(validated_answers):
-        """Flattens a dict of lists of validated answers."""
-        valid_answers = [
-            {
-                'number': num,
-                'date': date,
-                'spans': spans
+    def _flatten_validated_answers(validated_answers: dict) -> List[dict]:
+        """
+        Flatten the validated_answers structure into a list of answer dictionaries.
+
+        Expected input:
+            validated_answers: {
+                'number': [...],
+                'date':   [...],
+                'spans':  [...]
             }
-            for num, date, spans in zip(
-                validated_answers['number'],
-                validated_answers['date'],
-                validated_answers['spans']
-            )
-        ]
-        return valid_answers
+
+        Each returned dict has keys: 'number', 'date', 'spans'.
+        If the input lists have different lengths, iteration stops at the shortest.
+        """
+        # Safely read lists from the input dict (default to empty lists)
+        numbers = validated_answers.get('number', [])
+        dates = validated_answers.get('date', [])
+        spans = validated_answers.get('spans', [])
+
+        # Ensure we only iterate as far as the shortest sequence to avoid IndexError
+        length = min(len(numbers), len(dates), len(spans))
+
+        flattened: List[dict] = []
+        for num, date, sp in zip(numbers[:length], dates[:length], spans[:length]):
+            flattened.append({'number': num, 'date': date, 'spans': sp})
+        return flattened
 
     answers = []
     answers_set = set()
