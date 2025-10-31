@@ -41,7 +41,7 @@ Answer:  43
         description=
         'The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.',  # noqa: E501
         dataset_id='AI-ModelScope/DROP',
-        metric_list=['acc'],
+        metric_list=['em', 'f1'],
         few_shot_num=3,
         train_split=None,
         eval_split='validation',
@@ -68,9 +68,10 @@ class DROPAdapter(DefaultDataAdapter):
         Returns:
             Sample: Sample object with input, target, and metadata.
         """
+        from .utils import _get_gold_answers
 
         # Parse gold answers
-        gold_answers = self._get_gold_answers(record)
+        gold_answers = _get_gold_answers(record)
 
         return Sample(
             input=record['question'],
@@ -100,33 +101,6 @@ class DROPAdapter(DefaultDataAdapter):
             query=query,
         )
 
-    def _get_gold_answers(self, input_d: dict) -> List[str]:
-        """
-        Parse the raw input labels (gold).
-        """
-
-        def _flatten_validated_answers(validated_answers):
-            """Flattens a dict of lists of validated answers."""
-            valid_answers = []
-            for i in range(len(validated_answers['number'])):
-                valid_answers.append({
-                    'number': validated_answers['number'][i],
-                    'date': validated_answers['date'][i],
-                    'spans': validated_answers['spans'][i],
-                })
-            return valid_answers
-
-        answers = []
-        answers_set = set()
-        candidates = [input_d['answer']] + _flatten_validated_answers(input_d['validated_answers'])
-        for candidate in candidates:
-            answer = DROPAdapter.parse_answer(candidate)
-            if answer in answers_set:
-                continue
-            answers_set.add(answer)
-            answers.append(answer)
-        return answers
-
     def extract_answer(self, prediction: str, task_state: TaskState):
         """
         Extract the answer from the model prediction.
@@ -145,7 +119,9 @@ class DROPAdapter(DefaultDataAdapter):
         """
         Calculate accuracy score by matching prediction with reference answers.
         """
-        from .utils import _answer_to_bags
+        import numpy as np
+
+        from .utils import _align_bags, _answer_to_bags
 
         score = Score(
             extracted_prediction=filtered_prediction,
@@ -153,6 +129,7 @@ class DROPAdapter(DefaultDataAdapter):
         )
 
         max_em = 0
+        max_f1 = 0
         reference = ast.literal_eval(reference) if isinstance(reference, str) else reference
         for gold_answer in reference:
             # Convert the answers to bags of answers
@@ -163,20 +140,16 @@ class DROPAdapter(DefaultDataAdapter):
                 exact_match = 1.0
             else:
                 exact_match = 0.0
+
+            f1_per_bag = _align_bags(predicted_bags[1], gold_bags[1])
+            f1_score = np.mean(f1_per_bag)
+            f1_score = round(f1_score, 2)
             # Check if the answer is empty
             if gold_answer[0].strip():
                 max_em = max(max_em, exact_match)
+                max_f1 = max(max_f1, f1_score)
 
-        score.value = {'acc': max_em}
-        score.main_score_name = 'acc'
+        score.value = {'em': max_em, 'f1': max_f1}
+        score.main_score_name = 'f1'
 
         return score
-
-    @staticmethod
-    def parse_answer(answer):
-        # NOTE: Everything is returned as a tuple for uniformity and hashability.
-        if answer['number'] != '':
-            return (str(answer['number']), )
-        if answer['spans'] != []:
-            return tuple(answer['spans'])
-        return (' '.join([answer['date']['day'], answer['date']['month'], answer['date']['year']]).strip(), )
