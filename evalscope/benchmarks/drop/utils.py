@@ -76,14 +76,8 @@ def _compute_f1(predicted_bag, gold_bag):
 
 
 def _match_numbers_if_present(gold_bag, predicted_bag):
-    gold_numbers = set()
-    predicted_numbers = set()
-    for word in gold_bag:
-        if _is_number(word):
-            gold_numbers.add(word)
-    for word in predicted_bag:
-        if _is_number(word):
-            predicted_numbers.add(word)
+    gold_numbers = {word for word in gold_bag if _is_number(word)}
+    predicted_numbers = {word for word in predicted_bag if _is_number(word)}
     if (not gold_numbers) or gold_numbers.intersection(predicted_numbers):
         return True
     return False
