@@ -119,13 +119,18 @@ def _get_gold_answers(input_d: dict) -> List[str]:
 
     def _flatten_validated_answers(validated_answers):
         """Flattens a dict of lists of validated answers."""
-        valid_answers = []
-        for i in range(len(validated_answers['number'])):
-            valid_answers.append({
-                'number': validated_answers['number'][i],
-                'date': validated_answers['date'][i],
-                'spans': validated_answers['spans'][i],
-            })
+        valid_answers = [
+            {
+                'number': num,
+                'date': date,
+                'spans': spans
+            }
+            for num, date, spans in zip(
+                validated_answers['number'],
+                validated_answers['date'],
+                validated_answers['spans']
+            )
+        ]
         return valid_answers
 
     answers = []
