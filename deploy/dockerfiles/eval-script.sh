@@ -15,5 +15,4 @@ evalscope eval \
  --api-key "${EVAL_API_KEY}" \
  --datasets "${EVAL_DATASETS}" \
  --eval-type "${EVAL_TYPE}" \
- --generation-config "${GENERATION_CONFIG}" \
- --limit "${EVAL_LIMIT}"
+ --generation-config "${GENERATION_CONFIG}"
