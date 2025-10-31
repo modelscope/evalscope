@@ -57,8 +57,6 @@ class DROPAdapter(DefaultDataAdapter):
         if self.few_shot_num != 0 and self.few_shot_num != 3:
             self.few_shot_num = 3
             logger.info(f'Few shot num is set to {self.few_shot_num} for DROP dataset by system.')
-        else:
-            self.few_shot_num = 0
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
