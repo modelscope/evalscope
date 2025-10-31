@@ -895,9 +895,9 @@ Text: {text}
 - **Description**:
   > The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.
 - **Task Categories**: `Reasoning`
-- **Evaluation Metrics**: `acc`
+- **Evaluation Metrics**: `em`, `f1`
 - **Requires LLM Judge**: No
-- **Default Shots**: 0-shot
+- **Default Shots**: 3-shot
 - **Subsets**: `default`
 
 - **Prompt Template**:
