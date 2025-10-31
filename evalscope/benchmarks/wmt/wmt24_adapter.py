@@ -1,5 +1,4 @@
 import os
-import torch
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -169,16 +168,28 @@ class WMT24PPAdapter(DefaultDataAdapter):
         self._init_comet_scorer()
 
     def _init_bert_scorer(self):
-        check_import('bert_score', 'bert_score', raise_error=True, feature_name='Text similarity metrics')
+        check_import(
+            'bert_score',
+            'bert_score',
+            raise_error=True,
+            feature_name='Text similarity metrics',
+        )
         from bert_score import BERTScorer
+
         self.bert_scorer = BERTScorer(
             model_type='xlm-roberta-large',
             rescale_with_baseline=True,
         )
 
     def _init_comet_scorer(self):
-        check_import('comet', 'unbabel-comet', raise_error=True, feature_name='Text similarity metrics')
+        check_import(
+            'comet',
+            'unbabel-comet',
+            raise_error=True,
+            feature_name='Text similarity metrics',
+        )
         from comet import download_model, load_from_checkpoint
+
         model_path = download_model('Unbabel/wmt22-comet-da')
         self.comet_scorer = load_from_checkpoint(model_path)
 
@@ -222,7 +233,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
                 'target_text': target_text,
                 'source_language': source_language,
                 'target_language': target_language,
-            }
+            },
         )
 
     def match_score(
@@ -257,7 +268,11 @@ class WMT24PPAdapter(DefaultDataAdapter):
             return self._pending_scores.pop(0)
 
         # Create a Score object for the current sample
-        score_obj = Score(prediction=original_prediction, extracted_prediction=filtered_prediction, value={})
+        score_obj = Score(
+            prediction=original_prediction,
+            extracted_prediction=filtered_prediction,
+            value={},
+        )
 
         # Add current sample to batch cache
         self._batch_cache.append((original_prediction, filtered_prediction, reference, task_state, score_obj))
@@ -281,6 +296,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         if 'bleu' in self.metric_list:
             try:
                 from evalscope.metrics import bleu_ngram_one_sample
+
                 bleu_results = [bleu_ngram_one_sample(p, r) for p, r in zip(preds, refs)]
                 for s, b in zip(score_objs, bleu_results):
                     s.value.update(b)
@@ -295,7 +311,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
                     s.value.update({
                         'bertscore-precision': round(p.item(), 6),
                         'bertscore-recall': round(r.item(), 6),
-                        'bertscore-f1': round(f1.item(), 6)
+                        'bertscore-f1': round(f1.item(), 6),
                     })
             except Exception as e:
                 logger.warning(f'[WMT24PPAdapter] BERTScore batch failed: {e}')
@@ -308,11 +324,20 @@ class WMT24PPAdapter(DefaultDataAdapter):
                     'mt': pred,
                     'ref': ref
                 } for pred, ref, st in zip(preds, refs, states)]
+                check_import('torch', 'torch', raise_error=False, feature_name='torch')
+                try:
+                    import torch
+                except ImportError:
+                    torch = None
                 model_output = self.comet_scorer.predict(
-                    data, batch_size=32, gpus=1 if torch.cuda.is_available() else 0, progress_bar=False
+                    data,
+                    batch_size=32,
+                    gpus=1 if torch.cuda.is_available() else 0,
+                    progress_bar=False,
                 )
-                scores = model_output.scores if hasattr(model_output,
-                                                        'scores') else [model_output.system_score] * len(data)
+                scores = (
+                    model_output.scores if hasattr(model_output, 'scores') else [model_output.system_score] * len(data)
+                )
                 for s, comet_val in zip(score_objs, scores):
                     s.value.update({'comet': round(float(comet_val), 6)})
             except Exception as e:
