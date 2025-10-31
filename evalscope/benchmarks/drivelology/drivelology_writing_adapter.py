@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -51,29 +52,6 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
 """.strip()  # noqa: E501
 
 
-def compute_bertscore_one_sample(
-    predictions: List[str], references: List[str], lang: str = 'en', model_type: str = 'roberta-large'
-) -> dict:
-    check_import('bert_score', 'bert_score', raise_error=True, feature_name='Text similarity metrics')
-    from bert_score import score as bert_score_fn
-    try:
-        P, R, F1 = bert_score_fn(
-            predictions, references, lang=lang, model_type=model_type, rescale_with_baseline=False, verbose=False
-        )
-        return {
-            'bertscore-precision': round(P[0].item(), 6),
-            'bertscore-recall': round(R[0].item(), 6),
-            'bertscore-f1': round(F1[0].item(), 6),
-        }
-    except Exception as e:
-        logger.error(f'BERTScore error: {e}')
-        return {
-            'bertscore-precision': 0.0,
-            'bertscore-recall': 0.0,
-            'bertscore-f1': 0.0,
-        }
-
-
 @register_benchmark(
     BenchmarkMeta(
         name='drivel_writing',
@@ -94,6 +72,14 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._use_llm_judge = True  # Use LLM as a judge by default
+
+        check_import(
+            'bert_score',
+            'bert_score',
+            raise_error=True,
+            feature_name='DrivelologyNarrativeWriting Text similarity metrics'
+        )
+        self.bert_scorer = None  # Lazy initialization
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
@@ -116,6 +102,33 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                 'reference_narrative': reference_narrative
             }
         )
+
+    @thread_safe
+    def _init_bert_score(self):
+        if self.bert_scorer is not None:
+            return
+
+        from bert_score import BERTScorer
+
+        self.bert_scorer = BERTScorer(model_type='roberta-large', lang='en', rescale_with_baseline=False)
+
+    def compute_bertscore_one_sample(self, predictions: List[str], references: List[str]) -> dict:
+        try:
+            self._init_bert_score()
+
+            P, R, F1 = self.bert_scorer.score(predictions, references)
+            return {
+                'bertscore-precision': round(P[0].item(), 6),
+                'bertscore-recall': round(R[0].item(), 6),
+                'bertscore-f1': round(F1[0].item(), 6),
+            }
+        except Exception as e:
+            logger.error(f'BERTScore error: {e}')
+            return {
+                'bertscore-precision': 0.0,
+                'bertscore-recall': 0.0,
+                'bertscore-f1': 0.0,
+            }
 
     def llm_match_score(
         self,
@@ -143,7 +156,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                 filtered_prediction_trunc = filtered_prediction[:max_length]
                 reference_trunc = reference[:max_length]
 
-                bertscore_results = compute_bertscore_one_sample(
+                bertscore_results = self.compute_bertscore_one_sample(
                     predictions=[filtered_prediction_trunc], references=[reference_trunc]
                 )
 
