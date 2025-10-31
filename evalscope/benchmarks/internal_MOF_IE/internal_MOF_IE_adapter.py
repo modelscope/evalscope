@@ -79,7 +79,7 @@ You must present your final extraction results within a markdown JSON code block
         pretty_name='IMOFIE',
         description='Internal dataset with MOF information extraction task',
         tags=[Tags.MULTI_MODAL, Tags.CUSTOM],
-        dataset_id='/home/dzj/evalscope/custom_eval/internal/MOF-extraction',
+        dataset_id='/app/custom_eval/internal/MOF-extraction',
         subset_list=SUBSET_LIST,
         metric_list=METRIC_LIST,
         few_shot_num=0,
