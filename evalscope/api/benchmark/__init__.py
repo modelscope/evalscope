@@ -3,8 +3,8 @@ from .adapters import (
     DefaultDataAdapter,
     ImageEditAdapter,
     MultiChoiceAdapter,
-    WOChoiceMultiChoiceAdapter,
     NERAdapter,
+    WOChoiceMultiChoiceAdapter,
     Text2ImageAdapter,
     VisionLanguageAdapter,
 )
