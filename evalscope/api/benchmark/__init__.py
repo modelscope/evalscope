@@ -3,6 +3,7 @@ from .adapters import (
     DefaultDataAdapter,
     ImageEditAdapter,
     MultiChoiceAdapter,
+    WOChoiceMultiChoiceAdapter,
     NERAdapter,
     Text2ImageAdapter,
     VisionLanguageAdapter,

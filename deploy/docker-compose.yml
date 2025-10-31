@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  vllm-service:
+    build: 
+      context: .
+      dockerfile: dockerfiles/Dockerfile_vllm
+    container_name: vllm-service
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MODEL_NAME=${MODEL_NAME}
+      - MODEL_PATH=${MODEL_PATH_PREFIX}/${MODEL_NAME}
+      - VLLM_HOST=${VLLM_HOST}
+      - VLLM_PORT=${VLLM_PORT}
+      - VLLM_DTYPE=${VLLM_DTYPE}
+      - VLLM_MAX_MODEL_LEN=${VLLM_MAX_MODEL_LEN}
+      - VLLM_TENSOR_PARALLEL_SIZE=${VLLM_TENSOR_PARALLEL_SIZE}
+      - VLLM_GPU_MEMORY_UTILIZATION=${VLLM_GPU_MEMORY_UTILIZATION}
+    volumes:
+      - /data/pretrained_models:/data/pretrained_models
+    ports:
+      - "${VLLM_PORT}:${VLLM_PORT}"
+    networks:
+      - eval-network
+    devices:
+      - "nvidia.com/gpu=all"
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://${VLLM_HOST}:${VLLM_PORT}/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+
+  eval-service:
+    build:
+      context: ~/evalscope
+      dockerfile: deploy/dockerfiles/Dockerfile_eval
+    container_name: eval-service
+    # depends_on:
+    #   vllm-service:
+    #     condition: service_healthy
+    environment:
+      - EVAL_MODEL_NAME=${MODEL_NAME}
+      - EVAL_API_URL=http://vllm-service:${VLLM_PORT}/v1
+      - EVAL_API_KEY=${EVAL_API_KEY}
+      - EVAL_DATASETS=${EVAL_DATASETS}
+      - EVAL_TYPE=${EVAL_TYPE}
+      - EVAL_LIMIT=${EVAL_LIMIT}
+      - EVAL_MAX_TOKENS=${EVAL_MAX_TOKENS}
+      - VLLM_PORT=${VLLM_PORT}
+    networks:
+      - eval-network
+
+networks:
+  eval-network:
+    driver: bridge
