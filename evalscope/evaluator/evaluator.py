@@ -10,6 +10,7 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
+from tqdm import tqdm
 from typing import TYPE_CHECKING, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
@@ -253,6 +254,15 @@ class DefaultEvaluator(Evaluator):
         def worker(task_state: TaskState) -> SampleScore:
             return self._review_task_state(task_state)
 
+        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
+            review_result = self.cache_manager.save_review_cache(
+                subset=subset,
+                task_state=task_state,
+                sample_score=sample_score,
+                save_metadata=self.benchmark.save_metadata
+            )
+            logger.debug(f'Review result: \n{review_result.pretty_print()}')
+
         def on_error(task_state: TaskState, exc: Exception) -> None:
             tb_str = traceback.format_exc()
             logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}')
@@ -269,18 +279,13 @@ class DefaultEvaluator(Evaluator):
             max_workers=self.task_config.judge_worker_num,
             heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
+            on_result=on_result,
+            filter_none_results=False,
         )
 
         # Batch calculate metrics if supported by the benchmark
         if self.benchmark.use_batch_scoring:
-            reviewed_scores = self.benchmark.batch_calculate_metrics(
-                task_states=task_states, sample_scores=reviewed_scores
-            )
-
-        # Save review results to cache
-        for sample_score, task_state in zip(reviewed_scores, task_states):
-            if sample_score is not None:
-                self._save_review_result(task_state, sample_score, subset)
+            reviewed_scores = self._batch_review_task_states(task_states, reviewed_scores)
 
         logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(cached_score_list)}')
         return cached_score_list + reviewed_scores
@@ -299,11 +304,33 @@ class DefaultEvaluator(Evaluator):
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
 
-    def _save_review_result(self, task_state: TaskState, sample_score: SampleScore, subset: str) -> None:
-        review_result = self.cache_manager.save_review_cache(
-            subset=subset, task_state=task_state, sample_score=sample_score, save_metadata=self.benchmark.save_metadata
-        )
-        logger.debug(f'Review result: \n{review_result.pretty_print()}')
+    def _batch_review_task_states(self, task_states: List[TaskState],
+                                  reviewed_scores: List[SampleScore]) -> List[SampleScore]:
+        valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
+        if not valid_indices:
+            return reviewed_scores
+
+        task_states = [task_states[i] for i in valid_indices]
+        reviewed_scores = [reviewed_scores[i] for i in valid_indices]
+
+        # Iterate in batches with progress bar
+        all_reviewed_scores = []
+        total = len(task_states)
+        batch_size = self.task_config.judge_worker_num
+        with tqdm(total=total, desc='Scoring (batch)', unit='sample') as pbar:
+            for start in range(0, total, batch_size):
+                # Process batch
+                end = min(start + batch_size, total)
+                batch_task_states = task_states[start:end]
+                batch_scores = reviewed_scores[start:end]
+                # Batch calculate metrics
+                updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
+                    task_states=batch_task_states, sample_scores=batch_scores
+                )
+                all_reviewed_scores.extend(updated_reviewed_scores)
+
+                pbar.update(len(batch_task_states))
+        return all_reviewed_scores
 
     def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
         """

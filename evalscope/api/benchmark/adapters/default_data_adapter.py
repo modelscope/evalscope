@@ -642,41 +642,29 @@ class DefaultDataAdapter(DataAdapter):
         if total == 0:
             return sample_scores
 
-        batch_size = self._task_config.judge_worker_num
+        # Prepare lists for batch processing
+        original_predictions: List[str] = []
+        filtered_predictions: List[str] = []
+        references: List[str] = []
 
-        # Iterate in batches with progress bar
-        with tqdm(total=total, desc='Scoring (batch)', unit='sample') as pbar:
-            for start in range(0, total, batch_size):
-                end = min(start + batch_size, total)
-                batch_task_states = task_states[start:end]
+        for ts in task_states:
+            pred = ts.output.completion
+            original_predictions.append(pred)
+            filtered_predictions.append(self.filter_prediction(pred, ts))
+            references.append(ts.target)
 
-                # Prepare lists for batch processing
-                original_predictions: List[str] = []
-                filtered_predictions: List[str] = []
-                references: List[str] = []
+        batch_scores = self.batch_match_score(
+            original_predictions=original_predictions,
+            filtered_predictions=filtered_predictions,
+            references=references,
+            task_states=task_states
+        )
 
-                for ts in batch_task_states:
-                    pred = ts.output.completion
-                    original_predictions.append(pred)
-                    filtered_predictions.append(self.filter_prediction(pred, ts))
-                    references.append(ts.target)
-
-                # Try batch scorer first
-                batch_scores = self.batch_match_score(
-                    original_predictions=original_predictions,
-                    filtered_predictions=filtered_predictions,
-                    references=references,
-                    task_states=batch_task_states
-                )
-
-                if batch_scores is not None:
-                    assert len(batch_scores) == (end - start), 'Batch scores length must match batch size.'
-                    # Replace the whole Score to preserve prediction/extracted_prediction/metadata
-                    for local_idx, batch_score in enumerate(batch_scores):
-                        idx = start + local_idx
-                        sample_scores[idx].score.value.update(batch_score.value)
-
-                pbar.update(end - start)
+        if batch_scores is not None:
+            assert len(batch_scores) == len(sample_scores), \
+                'Batch scores length must match sample scores length.'
+            for batch_score, sample_score in zip(batch_scores, sample_scores):
+                sample_score.score.value.update(batch_score.value)
 
         return sample_scores
 
