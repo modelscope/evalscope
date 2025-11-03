@@ -2,7 +2,7 @@ import json
 from collections import defaultdict
 from typing import List
 
-from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, T2IMetric
+from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.utils.import_utils import check_import
 from .metrics import mean
@@ -153,9 +153,9 @@ class ANLS(Metric):
 
 
 @register_metric(name='bertscore')
-class BertScore(Metric):
+class BertScore(SingletonMetric):
 
-    def __init__(self, model_id_or_path: str = 'google-bert/bert-base-chinese', **kwargs):
+    def _init_once(self, model_id_or_path: str = 'google-bert/bert-base-chinese', **kwargs):
         """BertScore metric.
 
         Args:

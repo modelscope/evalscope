@@ -8,8 +8,6 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.function_utils import thread_safe
-from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
