@@ -1,5 +1,4 @@
 # flake8: noqa
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
@@ -7,7 +6,6 @@ import time
 import torch
 import warnings
 from collections import defaultdict
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .utils import (
     bert_cos_score_idf,
@@ -253,6 +251,8 @@ class BERTScorer:
             - :param: `reference` (str): a reference sentence
             - :param: `fname` (str): path to save the output plot
         """
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
 
         assert isinstance(candidate, str)
         assert isinstance(reference, str)
