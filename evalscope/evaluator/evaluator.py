@@ -11,7 +11,7 @@ import os
 import traceback
 from collections import defaultdict
 from tqdm import tqdm
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Callable, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
@@ -285,9 +285,11 @@ class DefaultEvaluator(Evaluator):
 
         # Batch calculate metrics if supported by the benchmark
         if self.benchmark.use_batch_scoring:
-            reviewed_scores = self._batch_review_task_states(task_states, reviewed_scores)
+            reviewed_scores = self._batch_review_task_states(
+                task_states=task_states, reviewed_scores=reviewed_scores, subset=subset, on_result=on_result
+            )
 
-        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(cached_score_list)}')
+        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(reviewed_scores)}')
         return cached_score_list + reviewed_scores
 
     def _review_task_state(self, task_state: TaskState) -> SampleScore:
@@ -304,14 +306,19 @@ class DefaultEvaluator(Evaluator):
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
 
-    def _batch_review_task_states(self, task_states: List[TaskState],
-                                  reviewed_scores: List[SampleScore]) -> List[SampleScore]:
+    def _batch_review_task_states(
+        self, task_states: List[TaskState], reviewed_scores: List[SampleScore], subset: str,
+        on_result: Callable[[TaskState, SampleScore], None]
+    ) -> List[SampleScore]:
         valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
         if not valid_indices:
             return reviewed_scores
 
         task_states = [task_states[i] for i in valid_indices]
         reviewed_scores = [reviewed_scores[i] for i in valid_indices]
+
+        # Update cache
+        self.cache_manager.delete_review_cache(subset)
 
         # Iterate in batches with progress bar
         all_reviewed_scores = []
@@ -327,7 +334,11 @@ class DefaultEvaluator(Evaluator):
                 updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
                     task_states=batch_task_states, sample_scores=batch_scores
                 )
+                # Append results
                 all_reviewed_scores.extend(updated_reviewed_scores)
+                # Save each result to cache
+                for task_state, sample_score in zip(batch_task_states, updated_reviewed_scores):
+                    on_result(task_state, sample_score)
 
                 pbar.update(len(batch_task_states))
         return all_reviewed_scores
