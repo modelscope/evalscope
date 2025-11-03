@@ -4,6 +4,7 @@ from typing import List
 
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
+from evalscope.utils.import_utils import check_import
 from .metrics import mean
 
 
@@ -149,6 +150,26 @@ class ANLS(Metric):
                     question_result = 0.0
             res.append(question_result)
         return res
+
+
+@register_metric(name='bertscore')
+class BertScore(Metric):
+
+    def __init__(self, model_id_or_path: str = 'google-bert/bert-base-chinese', **kwargs):
+        """BertScore metric.
+
+        Args:
+            model_id_or_path (str, optional): The model ID on modelscope or path to the pre-trained model.
+                Defaults to 'google-bert/bert-base-chinese'.
+        """
+        check_import('torch', 'torch', raise_error=True, feature_name='BertScore Metric')
+
+        from .bert_score.scorer import BERTScorer
+        self.scorer = BERTScorer(model_id_or_path=model_id_or_path, batch_size=1024, **kwargs)
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        _, _, F1 = self.scorer.score(predictions, references)
+        return [round(f1.item(), 6) for f1 in F1]
 
 
 # ##################

@@ -161,9 +161,9 @@ class DefaultEvaluator(Evaluator):
         """
         # Initialize task state list and filter cached predictions if caching is enabled
         if self.use_cache:
-            task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
+            cached_task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
         else:
-            task_state_list = []
+            cached_task_state_list = []
 
         # Get output directory for storing model predictions
         model_prediction_dir = os.path.dirname(self.cache_manager.get_prediction_cache_path(subset))
@@ -171,7 +171,7 @@ class DefaultEvaluator(Evaluator):
         # Convert dataset to list for parallel processing
         dataset_list = list(dataset)
         if not dataset_list:
-            return task_state_list
+            return cached_task_state_list
 
         logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
 
@@ -190,7 +190,7 @@ class DefaultEvaluator(Evaluator):
                 return
             raise exc
 
-        new_task_states = run_in_threads_with_progress(
+        finished_task_states = run_in_threads_with_progress(
             dataset_list,
             worker,
             desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
@@ -198,11 +198,11 @@ class DefaultEvaluator(Evaluator):
             heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
+            filter_none_results=True,
         )
-        task_state_list.extend(new_task_states)
 
         logger.info(f'Finished getting predictions for subset: {subset}.')
-        return task_state_list
+        return cached_task_state_list + finished_task_states
 
     def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
         """
@@ -239,28 +239,19 @@ class DefaultEvaluator(Evaluator):
         """
         # Initialize sample score list and filter cached reviews if caching is enabled
         if self.use_cache and not self.task_config.rerun_review:
-            sample_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
+            cached_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
         else:
             # Init a clean sample score list
-            sample_score_list = []
+            cached_score_list = []
             self.cache_manager.delete_review_cache(subset)
 
         if not task_states:
-            return sample_score_list
+            return cached_score_list
 
         logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
 
         def worker(task_state: TaskState) -> SampleScore:
             return self._review_task_state(task_state)
-
-        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
-            review_result = self.cache_manager.save_review_cache(
-                subset=subset,
-                task_state=task_state,
-                sample_score=sample_score,
-                save_metadata=self.benchmark.save_metadata
-            )
-            logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
         def on_error(task_state: TaskState, exc: Exception) -> None:
             tb_str = traceback.format_exc()
@@ -270,19 +261,29 @@ class DefaultEvaluator(Evaluator):
                 return
             raise exc
 
-        new_scores = run_in_threads_with_progress(
+        # Run reviews in parallel
+        reviewed_scores = run_in_threads_with_progress(
             task_states,
             worker,
             desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
             max_workers=self.task_config.judge_worker_num,
             heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
-            on_result=on_result,
             on_error=on_error,
         )
-        sample_score_list.extend(new_scores)
 
-        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(sample_score_list)}')
-        return sample_score_list
+        # Batch calculate metrics if supported by the benchmark
+        if self.benchmark.use_batch_scoring:
+            reviewed_scores = self.benchmark.batch_calculate_metrics(
+                task_states=task_states, sample_scores=reviewed_scores
+            )
+
+        # Save review results to cache
+        for sample_score, task_state in zip(reviewed_scores, task_states):
+            if sample_score is not None:
+                self._save_review_result(task_state, sample_score, subset)
+
+        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(cached_score_list)}')
+        return cached_score_list + reviewed_scores
 
     def _review_task_state(self, task_state: TaskState) -> SampleScore:
         """
@@ -297,6 +298,12 @@ class DefaultEvaluator(Evaluator):
         # Compute evaluation metrics using the benchmark's metric calculation
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
+
+    def _save_review_result(self, task_state: TaskState, sample_score: SampleScore, subset: str) -> None:
+        review_result = self.cache_manager.save_review_cache(
+            subset=subset, task_state=task_state, sample_score=sample_score, save_metadata=self.benchmark.save_metadata
+        )
+        logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
     def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
         """
