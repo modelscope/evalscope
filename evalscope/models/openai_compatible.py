@@ -126,7 +126,7 @@ class OpenAICompatibleAPI(ModelAPI):
         for key in list(params.keys()):
             if key not in self._valid_params:
                 extra_body[key] = params.pop(key)
-        
+
         if extra_body:
             params['extra_body'] = extra_body
 
