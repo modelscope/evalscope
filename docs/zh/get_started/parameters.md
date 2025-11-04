@@ -29,11 +29,12 @@
   - `logit_bias`: 可选字典，映射token id到偏置值（-100~100），如"42=10,43=-10"。仅OpenAI、Grok、vLLM支持。
   - `seed`: 可选整数，随机种子。仅OpenAI、Google、Mistral、Groq、HuggingFace、vLLM支持。
   - `do_sample`: 可选布尔值，是否采用采样策略，否则为贪婪解码。仅Transformers模型支持。
+  - `top_k`: 可选整数，从top_k最可能的词中采样下一个词。仅Anthropic、Google、HuggingFace、vLLM、SGLang支持。
   - `logprobs`: 可选布尔值，是否返回输出token的对数概率。支持OpenAI、Grok、TogetherAI、HuggingFace、llama-cpp-python、vLLM、SGLang。
   - `top_logprobs`: 可选整数，返回每个位置概率最高的前top_logprobs个token及其概率（范围0~20）。仅OpenAI、Grok、HuggingFace、vLLM、SGLang支持。
   - `parallel_tool_calls`: 可选布尔值，工具调用时是否支持并行（默认True）。仅OpenAI、Groq支持。
   - `max_tool_output`: 可选整数，工具输出的最大字节数。默认16*1024。
-  - `extra_body`: 可选字典，向OpenAI兼容服务发送的额外请求体，例如`top_k`或自定义参数。
+  - `extra_body`: 可选字典，向OpenAI兼容服务发送的额外请求体。
   - `extra_query`: 可选字典，向OpenAI兼容服务发送的额外查询参数。
   - `extra_headers`: 可选字典，向OpenAI兼容服务发送的额外请求头。
   - `height`: 可选整数，图像生成模型专用，指定图像高度。

@@ -57,6 +57,9 @@ class GenerateConfig(BaseModel):
     presence_penalty: Optional[float] = Field(default=None)
     """Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. OpenAI, Google, Grok, Groq, vLLM, and SGLang only."""
 
+    repetition_penalty: Optional[float] = Field(default=None)
+    """Exponential penalty applied to existing tokens in the generated text. 1.0 means no penalty. OpenAI, HuggingFace, and vLLM only."""
+
     logit_bias: Optional[Dict[int, float]] = Field(default=None)
     """Map token Ids to an associated bias value from -100 to 100 (e.g. "42=10,43=-10"). OpenAI, Grok, Grok, and vLLM only."""
 

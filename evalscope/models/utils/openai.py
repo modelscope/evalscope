@@ -174,6 +174,8 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['stop'] = config.stop_seqs
     if config.presence_penalty is not None:
         params['presence_penalty'] = config.presence_penalty
+    if config.repetition_penalty is not None:
+        params['repetition_penalty'] = config.repetition_penalty
     if config.logit_bias is not None:
         params['logit_bias'] = config.logit_bias
     if config.seed is not None:
@@ -182,6 +184,8 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['temperature'] = config.temperature
     if config.top_p is not None:
         params['top_p'] = config.top_p
+    if config.top_k is not None:
+        params['top_k'] = config.top_k
     if config.n is not None:
         params['n'] = config.n
     if config.logprobs is not None:

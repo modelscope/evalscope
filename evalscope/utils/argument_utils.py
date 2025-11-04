@@ -61,4 +61,4 @@ def parse_int_or_float(num):
 def get_supported_params(func):
     """Get the supported parameters of a function."""
     sig = signature(func)
-    return list(sig.parameters.keys())
+    return set(sig.parameters.keys())

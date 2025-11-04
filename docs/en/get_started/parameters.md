@@ -31,6 +31,7 @@ Run `evalscope eval --help` to get the full list of parameters.
   - `logit_bias`: Optional dict mapping token ids to bias values (-100~100), e.g. `"42=10,43=-10"`. Supported by OpenAI, Grok, vLLM.
   - `seed`: Optional integer, random seed. Supported by OpenAI, Google, Mistral, Groq, HuggingFace, vLLM.
   - `do_sample`: Optional boolean, whether to use sampling strategy (otherwise greedy decoding). Supported by Transformers models.
+  - `top_k`: Optional integer, sample next token from the top_k most likely candidates. Supported by Anthropic, Google, HuggingFace, vLLM, SGLang.
   - `logprobs`: Optional boolean, whether to return log probabilities for output tokens. Supported by OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang.
   - `top_logprobs`: Optional integer (0~20), return the top top_logprobs tokens and their probabilities for each position. Supported by OpenAI, Grok, HuggingFace, vLLM, SGLang.
   - `parallel_tool_calls`: Optional boolean, whether to support parallel tool calls (default True). Supported by OpenAI, Groq.
@@ -41,7 +42,7 @@ Run `evalscope eval --help` to get the full list of parameters.
   - `reasoning_summary`: Optional enum (`'concise'`, `'detailed'`, `'auto'`); whether to provide a summary of reasoning steps. `'auto'` uses the most detailed summary available. Supported by OpenAI reasoning models.
   - `reasoning_history`: Optional enum (`'none'`, `'all'`, `'last'`, `'auto'`); whether reasoning content is included in chat message history.
   - `response_schema`: Optional ResponseSchema object, request returns formatted according to JSONSchema (output still requires validation). Supported by OpenAI, Google, Mistral.
-  - `extra_body`: Optional dict, extra request body for OpenAI-compatible services, e.g. `top_k` or custom parameters.
+  - `extra_body`: Optional dict, extra request body for OpenAI-compatible services.
   - `extra_query`: Optional dict, extra query parameters for OpenAI-compatible services.
   - `extra_headers`: Optional dict, extra headers for OpenAI-compatible services.
   - `height`: Optional integer, for image generation models, specifies image height.
