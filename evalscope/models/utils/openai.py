@@ -174,6 +174,8 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['stop'] = config.stop_seqs
     if config.presence_penalty is not None:
         params['presence_penalty'] = config.presence_penalty
+    if config.repetition_penalty is not None:
+        params['repetition_penalty'] = config.repetition_penalty
     if config.logit_bias is not None:
         params['logit_bias'] = config.logit_bias
     if config.seed is not None:
