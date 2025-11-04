@@ -2222,7 +2222,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 [返回目录](#llm评测集)
 - **数据集名称**: `simple_qa`
-- **数据集ID**: [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)
+- **数据集ID**: [evalscope/SimpleQA](https://modelscope.cn/datasets/evalscope/SimpleQA/summary)
 - **数据集描述**:
   > SimpleQA 是一个用于评估语言模型在简单问答任务上性能的基准，包含一系列需要基本推理和理解能力的直接问题。
 - **任务类别**: `Knowledge`, `QA`

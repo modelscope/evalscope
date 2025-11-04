@@ -101,7 +101,7 @@ Just return the letters "A", "B", or "C", with no text around it.
         tags=[Tags.KNOWLEDGE, Tags.QA],
         description=
         'SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.',  # noqa: E501
-        dataset_id='AI-ModelScope/SimpleQA',
+        dataset_id='evalscope/SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
         few_shot_num=0,
         train_split=None,

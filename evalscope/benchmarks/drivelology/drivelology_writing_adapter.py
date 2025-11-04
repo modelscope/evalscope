@@ -63,7 +63,7 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
                 'model_id_or_path': 'AI-ModelScope/roberta-large',
                 'model_type': 'roberta-large'
             },
-            'llm_match_score': {}
+            'gpt_score': {}
         },
         few_shot_num=0,
         train_split=None,
