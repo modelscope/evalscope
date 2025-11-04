@@ -2222,7 +2222,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `simple_qa`
-- **Dataset ID**: [AI-ModelScope/SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary)
+- **Dataset ID**: [evalscope/SimpleQA](https://modelscope.cn/datasets/evalscope/SimpleQA/summary)
 - **Description**:
   > SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.
 - **Task Categories**: `Knowledge`, `QA`

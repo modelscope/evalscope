@@ -223,7 +223,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_simple_qa(self):
         """Test SimpleQA dataset."""
-        self._run_dataset_test('simple_qa')
+        self._run_dataset_test('simple_qa', limit=None)
 
     def test_chinese_simpleqa(self):
         """Test Chinese SimpleQA dataset."""
