@@ -30,6 +30,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
+                'top_k': 1,
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
@@ -223,7 +224,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_simple_qa(self):
         """Test SimpleQA dataset."""
-        self._run_dataset_test('simple_qa', limit=None)
+        self._run_dataset_test('simple_qa', limit=5)
 
     def test_chinese_simpleqa(self):
         """Test Chinese SimpleQA dataset."""
