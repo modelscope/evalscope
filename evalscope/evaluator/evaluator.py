@@ -279,14 +279,15 @@ class DefaultEvaluator(Evaluator):
             max_workers=self.task_config.judge_worker_num,
             heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
-            on_result=on_result,
+            # Do not persist interim results when batch scoring is enabled
+            on_result=None if self.benchmark.use_batch_scoring else on_result,
             filter_none_results=False,
         )
 
         # Batch calculate metrics if supported by the benchmark
         if self.benchmark.use_batch_scoring:
             reviewed_scores = self._batch_review_task_states(
-                task_states=task_states, reviewed_scores=reviewed_scores, subset=subset, on_result=on_result
+                task_states=task_states, reviewed_scores=reviewed_scores, on_result=on_result
             )
 
         logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(reviewed_scores)}')
@@ -307,7 +308,7 @@ class DefaultEvaluator(Evaluator):
         return sample_score
 
     def _batch_review_task_states(
-        self, task_states: List[TaskState], reviewed_scores: List[SampleScore], subset: str,
+        self, task_states: List[TaskState], reviewed_scores: List[SampleScore],
         on_result: Callable[[TaskState, SampleScore], None]
     ) -> List[SampleScore]:
         valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
@@ -316,9 +317,6 @@ class DefaultEvaluator(Evaluator):
 
         task_states = [task_states[i] for i in valid_indices]
         reviewed_scores = [reviewed_scores[i] for i in valid_indices]
-
-        # Update cache
-        self.cache_manager.delete_review_cache(subset)
 
         # Iterate in batches with progress bar
         all_reviewed_scores = []
