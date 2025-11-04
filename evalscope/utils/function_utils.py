@@ -161,6 +161,7 @@ def run_in_threads_with_progress(
     heartbeat_sec: int,
     on_result: Optional[Callable[[T, R], None]] = None,
     on_error: Optional[Callable[[T, Exception], None]] = None,
+    filter_none_results: bool = False,
 ) -> List[R]:
     """
     Execute a collection of tasks concurrently with a ThreadPoolExecutor while
@@ -209,17 +210,19 @@ def run_in_threads_with_progress(
     if not pending_items:
         return []
 
-    results: List[R] = []
+    # Include indices to ensure results are returned in input order
+    indexed_items = list(enumerate(items))
+    results: List[Optional[R]] = [None] * len(items)  # Preallocate results list
 
     # Bound the pool by actual workload size for efficiency.
-    with ThreadPoolExecutor(max_workers=min(len(pending_items), max_workers)) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(indexed_items), max_workers)) as executor:
         # Submit all tasks up-front and map futures back to their originating item.
-        future_to_item = {executor.submit(worker, item): item for item in pending_items}
+        future_to_index = {executor.submit(worker, item): index for index, item in indexed_items}
 
         # Progress bar reflects total number of submitted tasks; updated per finished future.
-        with tqdm(total=len(pending_items), desc=desc, mininterval=1, dynamic_ncols=True) as pbar:
+        with tqdm(total=len(indexed_items), desc=desc, mininterval=1, dynamic_ncols=True) as pbar:
             # Track unfinished futures and poll with a timeout to enable heartbeat logs.
-            pending = set(future_to_item.keys())
+            pending = set(future_to_index.keys())
             while pending:
                 # Wait with timeout to detect stalls and emit heartbeats proactively.
                 done, not_done = wait(pending, timeout=heartbeat_sec)
@@ -230,17 +233,17 @@ def run_in_threads_with_progress(
 
                 # Consume completed futures.
                 for future in done:
-                    item = future_to_item[future]
+                    index = future_to_index[future]
                     try:
                         res = future.result()
-                        results.append(res)
+                        results[index] = res  # Store result at the correct index
                         # Invoke success callback in caller thread (not in worker).
                         if on_result is not None:
-                            on_result(item, res)
+                            on_result(items[index], res)
                     except Exception as exc:
                         # Delegate failure handling to on_error if provided; otherwise bubble up.
                         if on_error is not None:
-                            on_error(item, exc)
+                            on_error(items[index], exc)
                         else:
                             raise
                     finally:
@@ -250,4 +253,8 @@ def run_in_threads_with_progress(
                 # Continue polling remaining futures.
                 pending = not_done
 
+    # Return results, which are now guaranteed to be in input order
+    if filter_none_results:
+        # Filter out None results if on_error was used and some tasks failed
+        results = [res for res in results if res is not None]
     return results

@@ -40,6 +40,9 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         self.shuffle_choices = False
         """Whether to shuffle the choices in the dataset"""
 
+        self.use_batch_scoring = False
+        """Whether to use batch scoring for metrics that support it, need to be enabled in the benchmark as well"""
+
         self.save_metadata = True
         """Whether to save metadata in the review result"""
 
@@ -79,6 +82,12 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
 
     @abstractmethod
     def calculate_metrics(self, task_state: TaskState) -> SampleScore:
+        pass
+
+    @abstractmethod
+    def batch_calculate_metrics(self, task_states: List[TaskState],
+                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+        """Batch calculate metrics for a list of task states. Need to update sample_scores in place."""
         pass
 
     @abstractmethod

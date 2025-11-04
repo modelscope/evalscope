@@ -8,7 +8,6 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -51,29 +50,6 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
 """.strip()  # noqa: E501
 
 
-def compute_bertscore_one_sample(
-    predictions: List[str], references: List[str], lang: str = 'en', model_type: str = 'roberta-large'
-) -> dict:
-    check_import('bert_score', 'bert_score', raise_error=True, feature_name='Text similarity metrics')
-    from bert_score import score as bert_score_fn
-    try:
-        P, R, F1 = bert_score_fn(
-            predictions, references, lang=lang, model_type=model_type, rescale_with_baseline=False, verbose=False
-        )
-        return {
-            'bertscore-precision': round(P[0].item(), 6),
-            'bertscore-recall': round(R[0].item(), 6),
-            'bertscore-f1': round(F1[0].item(), 6),
-        }
-    except Exception as e:
-        logger.error(f'BERTScore error: {e}')
-        return {
-            'bertscore-precision': 0.0,
-            'bertscore-recall': 0.0,
-            'bertscore-f1': 0.0,
-        }
-
-
 @register_benchmark(
     BenchmarkMeta(
         name='drivel_writing',
@@ -82,7 +58,13 @@ def compute_bertscore_one_sample(
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['narrative-writing-english'],
-        metric_list=['gpt_score', 'bert_score'],
+        metric_list={
+            'bert_score': {
+                'model_id_or_path': 'AI-ModelScope/roberta-large',
+                'model_type': 'roberta-large'
+            },
+            'llm_match_score': {}
+        },
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -94,6 +76,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._use_llm_judge = True  # Use LLM as a judge by default
+        self.use_batch_scoring = True  # Enable batch scoring
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
@@ -117,6 +100,25 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
             }
         )
 
+    def batch_match_score(self, original_predictions, filtered_predictions, references, task_states):
+        """
+        Batch calculate the match scores using BERTScore.
+        """
+        from evalscope.metrics.metric import BertScore
+
+        score_args = self.metric_list.get('bert_score', {})
+        bert_scorer = BertScore(**score_args)
+        bert_score_f1 = bert_scorer.apply(filtered_predictions, references)
+        scores = []
+        for i in range(len(original_predictions)):
+            score = Score(
+                extracted_prediction=filtered_predictions[i],
+                prediction=original_predictions[i],
+                value={'bert_score': bert_score_f1[i]}
+            )
+            scores.append(score)
+        return scores
+
     def llm_match_score(
         self,
         original_prediction: str,
@@ -134,27 +136,6 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
         # Initialize score value dictionary
         score.value = {}
-
-        # Calculate BERTScore
-        if filtered_prediction and reference:
-            try:
-                # Truncate if needed to prevent memory issues
-                max_length = 1024
-                filtered_prediction_trunc = filtered_prediction[:max_length]
-                reference_trunc = reference[:max_length]
-
-                bertscore_results = compute_bertscore_one_sample(
-                    predictions=[filtered_prediction_trunc], references=[reference_trunc]
-                )
-
-                score.value['bert_score'] = bertscore_results['bertscore-f1']
-                logger.info(f"BERTScore: {score.value['bert_score']}")
-            except Exception as e:
-                logger.error(f'BERTScore calculation failed: {e}')
-                # Use 0.0 for failures to avoid positively biasing the aggregate score.
-                score.value['bert_score'] = 0.0
-        else:
-            score.value['bert_score'] = 0.0
 
         # Use LLM judge to evaluate narrative quality
         eval_prompt = NARRATIVE_EVALUATION_TEMPLATE.format(candidate=filtered_prediction, reference=reference)
@@ -212,8 +193,8 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         bert_scores = [ss.score.value.get('bert_score', 0.0) for ss in sample_scores]
 
         # Calculate averages
-        avg_gpt_score = sum(gpt_scores) / len(gpt_scores)
-        avg_bert_score = sum(bert_scores) / len(bert_scores)
+        avg_gpt_score = sum(gpt_scores) / len(gpt_scores) if gpt_scores else 0.0
+        avg_bert_score = sum(bert_scores) / len(bert_scores) if bert_scores else 0.0
 
         return [
             AggScore(
