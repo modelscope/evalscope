@@ -117,13 +117,18 @@ class OpenAICompatibleAPI(ModelAPI):
 
     def validate_request_params(self, params: Dict[str, Any]):
         """Hook for subclasses to do custom request parameter validation."""
-        valid_params = get_supported_params(self.client.chat.completions.create)
-        # Put param key that are not in valid_params into extra_body, and update extra_body in params
+        # Cache supported params to avoid repeated calls to inspect.signature.
+        if not hasattr(self, '_valid_params'):
+            self._valid_params = get_supported_params(self.client.chat.completions.create)
+
+        # Move unsupported parameters to extra_body.
         extra_body = params.get('extra_body', {})
         for key in list(params.keys()):
-            if key not in valid_params:
+            if key not in self._valid_params:
                 extra_body[key] = params.pop(key)
-        params['extra_body'] = extra_body
+        
+        if extra_body:
+            params['extra_body'] = extra_body
 
     def on_response(self, response: Dict[str, Any]) -> None:
         """Hook for subclasses to do custom response handling."""
