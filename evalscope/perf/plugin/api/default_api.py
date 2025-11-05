@@ -1,4 +1,5 @@
 import aiohttp
+import codecs
 import json
 import sys
 import time
@@ -19,11 +20,18 @@ class StreamedResponseHandler:
 
     def __init__(self):
         self.buffer = ''
+        # Keep decoder state across chunks to handle split multibyte sequences
+        self.decoder = codecs.getincrementaldecoder('utf-8')()
 
     def add_chunk(self, chunk_bytes: bytes) -> list[str]:
         """Add a chunk of bytes to the buffer and return any complete
         messages."""
-        chunk_str = chunk_bytes.decode('utf-8')
+        # Use incremental decoding so incomplete multibyte sequences don't error
+        try:
+            chunk_str = self.decoder.decode(chunk_bytes, final=False)
+        except UnicodeDecodeError:
+            # Fallback: drop malformed byte(s) instead of crashing
+            chunk_str = chunk_bytes.decode('utf-8', errors='ignore')
         self.buffer += chunk_str
 
         messages = []
