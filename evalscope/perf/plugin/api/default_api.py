@@ -30,7 +30,8 @@ class StreamedResponseHandler:
         try:
             chunk_str = self.decoder.decode(chunk_bytes, final=False)
         except UnicodeDecodeError:
-            # Fallback: drop malformed byte(s) instead of crashing
+            # Bad bytes: drop them and reset decoder state to avoid corruption
+            self.decoder.reset()
             chunk_str = chunk_bytes.decode('utf-8', errors='ignore')
         self.buffer += chunk_str
 
@@ -100,7 +101,7 @@ class DefaultApiPlugin(ApiPluginBase):
                     if 'text/event-stream' in content_type:
                         handler = StreamedResponseHandler()
                         async for chunk_bytes in response.content.iter_any():
-                            chunk_bytes = chunk_bytes.strip()
+
                             if not chunk_bytes:
                                 continue
 
