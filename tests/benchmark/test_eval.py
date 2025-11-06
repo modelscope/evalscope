@@ -578,6 +578,14 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('drivel_writing', dataset_args, limit=10)
 
+    def test_wmt24(self):
+        """Test WMT24 Translation dataset."""
+        dataset_args = {
+            'subset_list': ['en-zh_cn'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('wmt24pp', dataset_args, limit=10, use_cache='outputs/20251106_153525', rerun_review=True)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

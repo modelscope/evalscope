@@ -80,6 +80,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
+| `wmt24pp` | [WMT2024++](#wmt2024) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
 
 ---
@@ -2431,6 +2432,33 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### WMT2024++
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `wmt24pp`
+- **Dataset ID**: [extraordinarylab/wmt24pp](https://modelscope.cn/datasets/extraordinarylab/wmt24pp/summary)
+- **Description**:
+  > WMT2024 news translation benchmark supporting multiple language pairs. Each subset represents a specific translation direction
+- **Task Categories**: `MachineTranslation`, `MultiLingual`
+- **Evaluation Metrics**: `bert_score`, `bleu`, `comet`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `en-ar_eg`, `en-ar_sa`, `en-bg_bg`, `en-bn_in`, `en-ca_es`, `en-cs_cz`, `en-da_dk`, `en-de_de`, `en-el_gr`, `en-es_mx`, `en-et_ee`, `en-fa_ir`, `en-fi_fi`, `en-fil_ph`, `en-fr_ca`, `en-fr_fr`, `en-gu_in`, `en-he_il`, `en-hi_in`, `en-hr_hr`, `en-hu_hu`, `en-id_id`, `en-is_is`, `en-it_it`, `en-ja_jp`, `en-kn_in`, `en-ko_kr`, `en-lt_lt`, `en-lv_lv`, `en-ml_in`, `en-mr_in`, `en-nl_nl`, `en-no_no`, `en-pa_in`, `en-pl_pl`, `en-pt_br`, `en-pt_pt`, `en-ro_ro`, `en-ru_ru`, `en-sk_sk`, `en-sl_si`, `en-sr_rs`, `en-sv_se`, `en-sw_ke`, `en-sw_tz`, `en-ta_in`, `en-te_in`, `en-th_th`, `en-tr_tr`, `en-uk_ua`, `en-ur_pk`, `en-vi_vn`, `en-zh_cn`, `en-zh_tw`, `en-zu_za`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Translate the following {source_language} sentence into {target_language}:
+
+{source_language}: {source_text}
+{target_language}:
 ```
 
 </details>

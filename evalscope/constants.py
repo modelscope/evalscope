@@ -139,6 +139,7 @@ class Tags:
     HALLUCINATION = 'Hallucination'
     MEDICAL = 'Medical'
     AGENT = 'Agent'
+    MT = 'MachineTranslation'
 
 
 class FileConstants:
