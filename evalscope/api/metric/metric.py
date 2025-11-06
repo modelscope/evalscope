@@ -28,7 +28,8 @@ class Metric(ABC):
         return self.apply([prediction], [reference])[0]
 
 
-class T2IMetric(Metric):
+class SingletonMetric(Metric):
+    """Singleton base class for metrics."""
     _instance = None
 
     @thread_safe
@@ -47,6 +48,10 @@ class T2IMetric(Metric):
 
     def _init_once(self, *args, **kwargs):
         pass
+
+
+class T2IMetric(SingletonMetric):
+    """Singleton base class for T2I metrics."""
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Union[float, dict]]:
         pass

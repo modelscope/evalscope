@@ -244,9 +244,9 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
 
     # Add prompt templates
     if data_adapter.system_prompt:
-        technical_info.append(f'- **{text["system_prompt"]}**: \n```text\n{data_adapter.system_prompt}\n```')
+        technical_info.append(f'- **{text["system_prompt"]}**:\n<details><summary>View</summary>\n\n```text\n{data_adapter.system_prompt}\n```\n\n</details>')
     if data_adapter.prompt_template:
-        technical_info.append(f'- **{text["prompt_template"]}**: \n```text\n{data_adapter.prompt_template}\n```')
+        technical_info.append(f'- **{text["prompt_template"]}**:\n<details><summary>View</summary>\n\n```text\n{data_adapter.prompt_template}\n```\n\n</details>')
 
     return '\n'.join(details + [''] + technical_info + [''])
 

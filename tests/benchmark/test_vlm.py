@@ -260,3 +260,21 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)
+
+    def test_seed_bench_2_plus_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('seed_bench_2_plus', dataset_args=dataset_args, limit=10)
+
+    def test_visu_logic_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('visulogic', dataset_args=dataset_args, limit=10)
+
+    def test_zerobench_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('zerobench', dataset_args=dataset_args, limit=5, eval_batch_size=1)

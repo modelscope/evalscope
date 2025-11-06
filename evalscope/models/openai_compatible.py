@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
+from evalscope.utils.argument_utils import get_supported_params
 from .utils.openai import (
     chat_choices_from_openai,
     collect_stream_response,
@@ -84,6 +85,8 @@ class OpenAICompatibleAPI(ModelAPI):
             **completion_params,
         )
 
+        self.validate_request_params(request)
+
         try:
             # generate completion and save response for model call
             completion = self.client.chat.completions.create(**request)
@@ -111,6 +114,21 @@ class OpenAICompatibleAPI(ModelAPI):
             config=config,
             tools=tools,
         )
+
+    def validate_request_params(self, params: Dict[str, Any]):
+        """Hook for subclasses to do custom request parameter validation."""
+        # Cache supported params to avoid repeated calls to inspect.signature.
+        if not hasattr(self, '_valid_params'):
+            self._valid_params = get_supported_params(self.client.chat.completions.create)
+
+        # Move unsupported parameters to extra_body.
+        extra_body = params.get('extra_body', {})
+        for key in list(params.keys()):
+            if key not in self._valid_params:
+                extra_body[key] = params.pop(key)
+
+        if extra_body:
+            params['extra_body'] = extra_body
 
     def on_response(self, response: Dict[str, Any]) -> None:
         """Hook for subclasses to do custom response handling."""

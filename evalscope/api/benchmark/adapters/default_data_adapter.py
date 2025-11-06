@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 from functools import partial
 from overrides import override
+from tqdm.auto import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
@@ -611,6 +612,61 @@ class DefaultDataAdapter(DataAdapter):
         )
 
         return sample_score
+
+    def batch_match_score(
+        self, original_predictions: List[str], filtered_predictions: List[str], references: List[str],
+        task_states: List[TaskState]
+    ) -> Optional[List[Score]]:
+        """
+        Batch calculate evaluation scores by comparing predictions with references.
+
+        This method computes scores using all configured metrics for a batch of samples
+        and creates a list of Score objects with detailed evaluation results.
+
+        Args:
+            original_predictions (List[str]): The original, unfiltered model predictions
+            filtered_predictions (List[str]): The filtered and processed predictions
+            references (List[str]): The ground truth reference answers
+            task_states (List[TaskState]): The complete task states for context
+
+        Returns:
+            List[Score]: List of objects containing all calculated metric scores and metadata
+        """
+        return None  # Default implementation does not support batch scoring
+
+    @override
+    def batch_calculate_metrics(self, task_states: List[TaskState],
+                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+        """Batch calculate metrics for a list of task states with tqdm progress and batch processing."""
+        total = len(task_states)
+        if total == 0:
+            return sample_scores
+
+        # Prepare lists for batch processing
+        original_predictions: List[str] = []
+        filtered_predictions: List[str] = []
+        references: List[str] = []
+
+        for ts in task_states:
+            pred = ts.output.completion
+            original_predictions.append(pred)
+            filtered_predictions.append(self.filter_prediction(pred, ts))
+            references.append(ts.target)
+
+        batch_scores = self.batch_match_score(
+            original_predictions=original_predictions,
+            filtered_predictions=filtered_predictions,
+            references=references,
+            task_states=task_states
+        )
+
+        if batch_scores is not None:
+            assert len(batch_scores) == len(sample_scores), \
+                'Batch scores length must match sample scores length.'
+            for batch_score, sample_score in zip(batch_scores, sample_scores):
+                sample_score.score.value.update(batch_score.value)
+
+        return sample_scores
 
     @override
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

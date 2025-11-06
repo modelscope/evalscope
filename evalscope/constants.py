@@ -16,6 +16,7 @@ DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
     os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
 )  # ~/.cache/evalscope
 IS_BUILD_DOC = os.getenv('BUILD_DOC', '0') == '1'  # To avoid some heavy dependencies when building doc
+HEARTBEAT_INTERVAL_SEC = 60  # 60 seconds
 
 
 class HubType:
@@ -121,6 +122,7 @@ class Tags:
     CHINESE = 'Chinese'
     COMMONSENSE = 'Commonsense'
     QA = 'QA'
+    NER = 'NER'
     READING_COMPREHENSION = 'ReadingComprehension'
     CUSTOM = 'Custom'
     INSTRUCTION_FOLLOWING = 'InstructionFollowing'
@@ -135,6 +137,8 @@ class Tags:
     MULTI_TURN = 'MultiTurn'
     YES_NO = 'Yes/No'
     HALLUCINATION = 'Hallucination'
+    MEDICAL = 'Medical'
+    AGENT = 'Agent'
 
 
 class FileConstants:

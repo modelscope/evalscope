@@ -22,7 +22,7 @@ logger = get_logger()
     BenchmarkMeta(
         name='tau_bench',
         pretty_name='τ-bench',
-        tags=[Tags.FUNCTION_CALLING, Tags.REASONING],
+        tags=[Tags.FUNCTION_CALLING, Tags.REASONING, Tags.AGENT],
         description='A benchmark emulating dynamic conversations between a user (simulated by language models) '
         'and a language agent provided with domain-specific API tools and policy guidelines. '
         'Please install it with `pip install git+https://github.com/sierra-research/tau-bench` '

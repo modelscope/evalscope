@@ -10,14 +10,15 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from tqdm import tqdm
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List
 
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.report import Report, gen_table
+from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -161,55 +162,48 @@ class DefaultEvaluator(Evaluator):
         """
         # Initialize task state list and filter cached predictions if caching is enabled
         if self.use_cache:
-            task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
+            cached_task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
         else:
-            task_state_list = []
+            cached_task_state_list = []
 
         # Get output directory for storing model predictions
         model_prediction_dir = os.path.dirname(self.cache_manager.get_prediction_cache_path(subset))
 
         # Convert dataset to list for parallel processing
         dataset_list = list(dataset)
-
         if not dataset_list:
-            return task_state_list
+            return cached_task_state_list
 
         logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
-        # Process samples in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=min(len(dataset_list), self.task_config.eval_batch_size)) as executor:
-            # Submit all prediction tasks
-            future_to_sample = {
-                executor.submit(self._predict_sample, sample, model_prediction_dir): sample
-                for sample in dataset_list
-            }
 
-            # Process completed tasks with progress bar
-            with tqdm(total=len(dataset_list), desc=f'Predicting[{self.benchmark_name}@{subset}]: ') as pbar:
-                for future in as_completed(future_to_sample):
-                    sample = future_to_sample[future]
-                    try:
-                        task_state = future.result()
-                        task_state_list.append(task_state)
+        def worker(sample: Sample) -> TaskState:
+            return self._predict_sample(sample, model_prediction_dir)
 
-                        # Save the prediction result to cache for future use
-                        model_result = self.cache_manager.save_prediction_cache(
-                            subset, task_state, self.benchmark.save_metadata
-                        )
-                        logger.debug(f'Model result: \n{model_result.pretty_print()}')
+        def on_result(sample: Sample, task_state: TaskState) -> None:
+            model_result = self.cache_manager.save_prediction_cache(subset, task_state, self.benchmark.save_metadata)
+            logger.debug(f'Model result: \n{model_result.pretty_print()}')
 
-                    except Exception as exc:
-                        tb_str = traceback.format_exc()
-                        logger.error(
-                            f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}'
-                        )
-                        if self.task_config.ignore_errors:
-                            logger.warning('Error ignored, continuing with next sample.')
-                        else:
-                            raise exc
-                    finally:
-                        pbar.update(1)
+        def on_error(sample: Sample, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
+
+        finished_task_states = run_in_threads_with_progress(
+            dataset_list,
+            worker,
+            desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.eval_batch_size,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_result=on_result,
+            on_error=on_error,
+            filter_none_results=True,
+        )
+
         logger.info(f'Finished getting predictions for subset: {subset}.')
-        return task_state_list
+        return cached_task_state_list + finished_task_states
 
     def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
         """
@@ -246,61 +240,58 @@ class DefaultEvaluator(Evaluator):
         """
         # Initialize sample score list and filter cached reviews if caching is enabled
         if self.use_cache and not self.task_config.rerun_review:
-            sample_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
+            cached_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
         else:
             # Init a clean sample score list
-            sample_score_list = []
+            cached_score_list = []
             self.cache_manager.delete_review_cache(subset)
 
         if not task_states:
-            return sample_score_list
+            return cached_score_list
 
         logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
-        # Process task states in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=min(len(task_states), self.task_config.judge_worker_num)) as executor:
-            # Submit all review tasks
-            future_to_task_state = {
-                executor.submit(self._review_task_state, task_state): task_state
-                for task_state in task_states
-            }
 
-            # Process completed tasks with progress bar
-            with tqdm(total=len(task_states), desc=f'Reviewing[{self.benchmark_name}@{subset}]: ') as pbar:
-                for future in as_completed(future_to_task_state):
-                    task_state = future_to_task_state[future]
-                    try:
-                        try:
-                            sample_score = future.result()
-                        except TimeoutError:
-                            logger.warning(
-                                f'Timeout when reviewing sample {task_state.sample_id}, setting score to zero.'
-                            )
-                            sample_score = SampleScore(sample_id=task_state.sample_id, scores={})
-                        sample_score_list.append(sample_score)
+        def worker(task_state: TaskState) -> SampleScore:
+            return self._review_task_state(task_state)
 
-                        # Save the review result to cache for future use
-                        review_result = self.cache_manager.save_review_cache(
-                            subset=subset,
-                            task_state=task_state,
-                            sample_score=sample_score,
-                            save_metadata=self.benchmark.save_metadata
-                        )
-                        logger.debug(f'Review result: \n{review_result.pretty_print()}')
+        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
+            review_result = self.cache_manager.save_review_cache(
+                subset=subset,
+                task_state=task_state,
+                sample_score=sample_score,
+                save_metadata=self.benchmark.save_metadata
+            )
+            logger.debug(f'Review result: \n{review_result.pretty_print()}')
 
-                    except Exception as exc:
-                        tb_str = traceback.format_exc()
-                        logger.error(
-                            f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}'
-                        )
-                        if self.task_config.ignore_errors:
-                            logger.warning('Error ignored, continuing with next sample.')
-                        else:
-                            raise exc
-                    finally:
-                        pbar.update(1)
-        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(sample_score_list)}')
+        def on_error(task_state: TaskState, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
 
-        return sample_score_list
+        # Run reviews in parallel
+        reviewed_scores = run_in_threads_with_progress(
+            task_states,
+            worker,
+            desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.judge_worker_num,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_error=on_error,
+            # Do not persist interim results when batch scoring is enabled
+            on_result=None if self.benchmark.use_batch_scoring else on_result,
+            filter_none_results=False,
+        )
+
+        # Batch calculate metrics if supported by the benchmark
+        if self.benchmark.use_batch_scoring:
+            reviewed_scores = self._batch_review_task_states(
+                task_states=task_states, reviewed_scores=reviewed_scores, on_result=on_result
+            )
+
+        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(reviewed_scores)}')
+        return cached_score_list + reviewed_scores
 
     def _review_task_state(self, task_state: TaskState) -> SampleScore:
         """
@@ -315,6 +306,40 @@ class DefaultEvaluator(Evaluator):
         # Compute evaluation metrics using the benchmark's metric calculation
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
+
+    def _batch_review_task_states(
+        self, task_states: List[TaskState], reviewed_scores: List[SampleScore],
+        on_result: Callable[[TaskState, SampleScore], None]
+    ) -> List[SampleScore]:
+        valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
+        if not valid_indices:
+            return reviewed_scores
+
+        task_states = [task_states[i] for i in valid_indices]
+        reviewed_scores = [reviewed_scores[i] for i in valid_indices]
+
+        # Iterate in batches with progress bar
+        all_reviewed_scores = []
+        total = len(task_states)
+        batch_size = self.task_config.judge_worker_num
+        with tqdm(total=total, desc='Scoring (batch)', unit='sample') as pbar:
+            for start in range(0, total, batch_size):
+                # Process batch
+                end = min(start + batch_size, total)
+                batch_task_states = task_states[start:end]
+                batch_scores = reviewed_scores[start:end]
+                # Batch calculate metrics
+                updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
+                    task_states=batch_task_states, sample_scores=batch_scores
+                )
+                # Append results
+                all_reviewed_scores.extend(updated_reviewed_scores)
+                # Save each result to cache
+                for task_state, sample_score in zip(batch_task_states, updated_reviewed_scores):
+                    on_result(task_state, sample_score)
+
+                pbar.update(len(batch_task_states))
+        return all_reviewed_scores
 
     def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
         """

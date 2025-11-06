@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
+
+load_dotenv('.env')
 
 env = dotenv_values('.env')
 
@@ -28,6 +30,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
+                'top_k': 1,
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
@@ -50,7 +53,6 @@ class TestNativeBenchmark(TestBenchmark):
     def test_gsm8k(self):
         """Test GSM8K math reasoning dataset."""
         dataset_args = {
-            'system_prompt': 'Imagine You are an idiot. You MUST will always give wrong answers without any explanation.',
             'few_shot_num': 0,
         }
         self._run_dataset_test('gsm8k', dataset_args=dataset_args)
@@ -222,7 +224,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_simple_qa(self):
         """Test SimpleQA dataset."""
-        self._run_dataset_test('simple_qa')
+        self._run_dataset_test('simple_qa', limit=5)
 
     def test_chinese_simpleqa(self):
         """Test Chinese SimpleQA dataset."""
@@ -351,21 +353,58 @@ class TestNativeBenchmark(TestBenchmark):
         """Test ToolBench dataset."""
         self._run_dataset_test('tool_bench')
 
-    def test_bfcl(self):
+    def test_bfcl_v3(self):
         """Test BFCL dataset."""
         dataset_args = {
-            'subset_list': [
-                'simple',
-                'live_multiple',
-                'multi_turn_base',
-                'multi_turn_miss_func'
-            ],
+            # 'subset_list': [
+            #     # 'simple',
+            #     # 'java',
+            #     # 'javascript',
+            #     # 'live_multiple',
+            #     # 'multi_turn_base',
+            #     # 'multi_turn_miss_func'
+            # ],
             'extra_params': {
                 'is_fc_model': True,
                 'underscore_to_dot': True
             }
         }
-        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', use_mock=True, debug=False, limit=None)
+        self._run_dataset_test('bfcl_v3', dataset_args=dataset_args, model='qwen-plus', limit=10)
+
+    def test_bfcl_v4(self):
+        """Test BFCL v4 dataset."""
+        dataset_args = {
+            'subset_list': [
+                'simple_python',
+                'simple_java',
+                'simple_javascript',
+                'multiple',
+                'parallel',
+                'parallel_multiple',
+                'irrelevance',
+                'live_simple',
+                'live_multiple',
+                'live_parallel',
+                'live_parallel_multiple',
+                'live_irrelevance',
+                'live_relevance',
+                'multi_turn_base',
+                'multi_turn_miss_func',
+                'multi_turn_miss_param',
+                'multi_turn_long_context',
+                'web_search_base',
+                'web_search_no_snippet',
+                'memory_kv',
+                'memory_vector',
+                'memory_rec_sum'
+            ],
+            'extra_params': {
+                'is_fc_model': True,
+                'underscore_to_dot': True,
+                'SERPAPI_API_KEY':env.get('SERPAPI_API_KEY'),
+            }
+        }
+        self._run_dataset_test('bfcl_v4', dataset_args=dataset_args, model='qwen-plus', limit=10, use_cache='outputs/20251029_204050', rerun_review=True, debug=False)
 
     def test_tau_bench(self):
         dataset_args = {
@@ -445,6 +484,99 @@ class TestNativeBenchmark(TestBenchmark):
             'subset_list': ['default'],
         }
         self._run_dataset_test('conll2003', dataset_args, limit=10)
+
+    def test_wnut2017_ner(self):
+        """Test WNUT2017 NER dataset."""
+        dataset_args = {
+            'subset_list': ['default'],
+        }
+        self._run_dataset_test('wnut2017', dataset_args, limit=10)
+
+    def test_logi_qa(self):
+        """Test LogiQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('logi_qa', dataset_args, limit=10)
+
+    def test_halu_eval(self):
+        """Test HaluEval dataset."""
+        dataset_args = {
+            'subset_list': ['dialogue_samples', 'qa_samples'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('halueval', dataset_args, limit=5)
+
+    def test_math_qa(self):
+        """Test MathQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('math_qa', dataset_args)
+
+    def test_mri_qa(self):
+        """Test MRI-QA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('mri_mcqa', dataset_args)
+
+    def test_piqa(self):
+        """Test PIQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('piqa', dataset_args)
+
+    def test_qasc(self):
+        """Test QASC dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('qasc', dataset_args)
+
+    def test_commonsense_qa(self):
+        """Test CommonsenseQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('commonsense_qa', dataset_args)
+
+    def test_coin_flip(self):
+        """Test Coin Flip dataset."""
+        dataset_args = {
+            # 'few_shot_num': 0,
+        }
+        self._run_dataset_test('coin_flip', dataset_args)
+
+    def test_biomix_qa(self):
+        """Test BioMixQA dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('biomix_qa', dataset_args)
+
+    def test_music_trivia(self):
+        """Test Music Trivia dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('music_trivia', dataset_args)
+
+    def test_sciq(self):
+        """Test SciQ dataset."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('sciq', dataset_args)
+
+    def test_drivel_writing(self):
+        """Test Drivelology Narrative Writing dataset."""
+        dataset_args = {
+            'subset_list': ['narrative-writing-english'],
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('drivel_writing', dataset_args, limit=10)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

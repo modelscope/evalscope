@@ -136,3 +136,49 @@ def unweighted_average_from_subsets(
 
     unweighted_avg = sum(scores) / len(scores) if scores else 0
     return Subset(name=new_name, score=unweighted_avg, num=total_count)
+
+
+def percentage_weighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], weights: List[float], new_name: str = ''
+) -> Subset:
+    """Calculate percentage weighted average for given subsets.
+
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        weights (List[float]): The weight for each corresponding accuracy entry.
+            Can sum to any positive value – they will be normalised internally.
+        new_name (str): Name for the resulting Subset object.
+
+    Returns:
+        Subset: A new Subset object with percentage weighted average score.
+    """
+    assert len(subset_names) == len(weights), \
+        'The number of subset names must match the number of weights.'
+
+    valid_subsets = []
+    valid_weights = []
+    total_count = 0
+
+    for name, weight in zip(subset_names, weights):
+        if name in subset_dict:
+            subset = subset_dict[name]
+            valid_subsets.append(subset)
+            valid_weights.append(weight)
+            total_count += subset.num
+
+    if not valid_subsets:
+        return Subset(name=new_name, score=0, num=0)
+
+    weight_sum = sum(valid_weights)
+    assert weight_sum > 0, \
+        f"Sum of weights for percentage_weighted_average_from_subsets for '{new_name}' is not positive."
+
+    # Normalise weights so that they sum to 1.0
+    weights_norm = [w / weight_sum for w in valid_weights]
+
+    total_score = 0
+    for subset, weight in zip(valid_subsets, weights_norm):
+        total_score += subset.score * weight
+
+    return Subset(name=new_name, score=total_score, num=total_count)
