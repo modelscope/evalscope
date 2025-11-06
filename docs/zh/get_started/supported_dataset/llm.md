@@ -80,6 +80,7 @@
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
+| `wmt24pp` | [WMT2024++](#wmt2024) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
 
 ---
@@ -2431,6 +2432,33 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### WMT2024++
+
+[返回目录](#llm评测集)
+- **数据集名称**: `wmt24pp`
+- **数据集ID**: [extraordinarylab/wmt24pp](https://modelscope.cn/datasets/extraordinarylab/wmt24pp/summary)
+- **数据集描述**:
+  > WMT2024新闻翻译基准，支持多种语言对，每个子集代表一个特定的翻译方向。
+- **任务类别**: `MachineTranslation`, `MultiLingual`
+- **评估指标**: `bert_score`, `bleu`, `comet`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `en-ar_eg`, `en-ar_sa`, `en-bg_bg`, `en-bn_in`, `en-ca_es`, `en-cs_cz`, `en-da_dk`, `en-de_de`, `en-el_gr`, `en-es_mx`, `en-et_ee`, `en-fa_ir`, `en-fi_fi`, `en-fil_ph`, `en-fr_ca`, `en-fr_fr`, `en-gu_in`, `en-he_il`, `en-hi_in`, `en-hr_hr`, `en-hu_hu`, `en-id_id`, `en-is_is`, `en-it_it`, `en-ja_jp`, `en-kn_in`, `en-ko_kr`, `en-lt_lt`, `en-lv_lv`, `en-ml_in`, `en-mr_in`, `en-nl_nl`, `en-no_no`, `en-pa_in`, `en-pl_pl`, `en-pt_br`, `en-pt_pt`, `en-ro_ro`, `en-ru_ru`, `en-sk_sk`, `en-sl_si`, `en-sr_rs`, `en-sv_se`, `en-sw_ke`, `en-sw_tz`, `en-ta_in`, `en-te_in`, `en-th_th`, `en-tr_tr`, `en-uk_ua`, `en-ur_pk`, `en-vi_vn`, `en-zh_cn`, `en-zh_tw`, `en-zu_za`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Translate the following {source_language} sentence into {target_language}:
+
+{source_language}: {source_text}
+{target_language}:
 ```
 
 </details>

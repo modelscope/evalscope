@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -144,66 +143,37 @@ LANGUAGE_BY_CODE = {
         name='wmt24pp',
         pretty_name='WMT2024++',
         dataset_id='extraordinarylab/wmt24pp',
-        tags=[Tags.MULTI_LINGUAL],
+        tags=[Tags.MULTI_LINGUAL, Tags.MT],
         description=(
             'WMT2024 news translation benchmark supporting multiple language pairs. '
             'Each subset represents a specific translation direction'
         ),
         subset_list=LANGUAGE_PAIRS,
         eval_split='test',
-        metric_list=['bleu', 'bert_score', 'comet'],
+        metric_list={
+            'bleu': {},
+            'bert_score': {
+                'model_id_or_path': 'AI-ModelScope/xlm-roberta-large',
+                'model_type': 'xlm-roberta-large'
+            },
+            'comet': {
+                'model_id_or_path': 'evalscope/wmt22-comet-da',
+            }
+        },
         few_shot_num=0,
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class WMT24PPAdapter(DefaultDataAdapter):
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize adapter and configure dataset subsets."""
         super().__init__(**kwargs)
         self.reformat_subset = True
+        self.use_batch_scoring = True  # Enable batch scoring
 
-        self._load_nltk_resources()
-        self._init_bert_scorer()
-        self._init_comet_scorer()
-
-    def _init_bert_scorer(self):
-        check_import(
-            'bert_score',
-            'bert_score',
-            raise_error=True,
-            feature_name='Text similarity metrics',
-        )
-        from bert_score import BERTScorer
-
-        self.bert_scorer = BERTScorer(
-            model_type='xlm-roberta-large',
-            rescale_with_baseline=True,
-        )
-
-    def _init_comet_scorer(self):
-        check_import(
-            'comet',
-            'unbabel-comet',
-            raise_error=True,
-            feature_name='Text similarity metrics',
-        )
-        from comet import download_model, load_from_checkpoint
-
-        model_path = download_model('Unbabel/wmt22-comet-da')
-        self.comet_scorer = load_from_checkpoint(model_path)
-
-    def _load_nltk_resources(self):
-        check_import('nltk', 'nltk', raise_error=True, feature_name='NLTK')
-        import nltk
-
-        required_resources = ['punkt_tab', 'punkt', 'averaged_perceptron_tagger']
-
-        for resource in required_resources:
-            try:
-                nltk.data.find(f'tokenizers/{resource}')
-            except LookupError:
-                nltk.download(resource, quiet=True)
+        if 'comet' in self.metric_list:
+            check_import('comet', 'unbabel-comet', raise_error=True, feature_name='COMETScore Metric')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
@@ -215,7 +185,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         source_language, target_language = language_pair.split('-')
 
         # Format the generation prompt with the text
-        input_prompt = PROMPT_TEMPLATE.format(
+        input_prompt = self.prompt_template.format(
             source_text=source_text,
             source_language=LANGUAGE_BY_CODE[source_language],
             target_language=LANGUAGE_BY_CODE[target_language],
@@ -243,118 +213,82 @@ class WMT24PPAdapter(DefaultDataAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        """Compute translation metrics in batch mode, ensuring dataset consistency.
-
-        This method supports efficient batched evaluation for BLEU, BERTScore, and COMET.
-        It ensures proper ordering, memory control, and metric consistency across batches.
-
-        Args:
-            original_prediction: Raw model output.
-            filtered_prediction: Cleaned or trimmed model output.
-            reference: Ground truth translation.
-            task_state: Task runtime state (used to detect final batch).
-
-        Returns:
-            A `Score` object containing computed metric results for the current sample.
-        """
-        # Initialize cache structures (only on first run)
-        if not hasattr(self, '_batch_cache'):
-            self._batch_cache = []
-        if not hasattr(self, '_pending_scores'):
-            self._pending_scores = []
-
-        # Return any pending results first
-        if self._pending_scores:
-            return self._pending_scores.pop(0)
-
+        """Compute per-sample translation metrics."""
         # Create a Score object for the current sample
-        score_obj = Score(
+        score = Score(
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
             value={},
         )
-
-        # Add current sample to batch cache
-        self._batch_cache.append((original_prediction, filtered_prediction, reference, task_state, score_obj))
-
-        # Check batch execution condition
-        batch_limit = 128
-        is_last_batch = getattr(task_state, 'is_last', False)
-        should_compute = len(self._batch_cache) >= batch_limit or is_last_batch
-
-        # Defer computation if batch is not yet full
-        if not should_compute:
-            return score_obj
-
-        # Extract batch data
-        preds = [x[1] for x in self._batch_cache]
-        refs = [x[2] for x in self._batch_cache]
-        states = [x[3] for x in self._batch_cache]
-        score_objs = [x[4] for x in self._batch_cache]
 
         # ---- BLEU ----
         if 'bleu' in self.metric_list:
             try:
                 from evalscope.metrics import bleu_ngram_one_sample
 
-                bleu_results = [bleu_ngram_one_sample(p, r) for p, r in zip(preds, refs)]
-                for s, b in zip(score_objs, bleu_results):
-                    s.value.update(b)
+                bleu_results = bleu_ngram_one_sample(filtered_prediction, reference)
+                score.value.update(bleu_results)
+            except Exception as e:
+                logger.warning(f'[WMT24PPAdapter] BLEU single-sample calculation failed: {e}')
+        return score
+
+    def batch_match_score(
+        self,
+        original_predictions: List[str],
+        filtered_predictions: List[str],
+        references: List[str],
+        task_states: List[TaskState],
+    ) -> List[Score]:
+        """Compute batched translation metrics (BLEU, BERTScore, COMET)."""
+        scores: List[Score] = []
+        for i in range(len(original_predictions)):
+            score = Score(
+                extracted_prediction=filtered_predictions[i],
+                prediction=original_predictions[i],
+                value={},
+            )
+            scores.append(score)
+
+        # ---- BLEU (per-sample within batch) ----
+        if 'bleu' in self.metric_list:
+            try:
+                from evalscope.metrics import bleu_ngram_one_sample
+
+                for i in range(len(scores)):
+                    bleu_results = bleu_ngram_one_sample(filtered_predictions[i], references[i])
+                    scores[i].value.update(bleu_results)
             except Exception as e:
                 logger.warning(f'[WMT24PPAdapter] BLEU batch calculation failed: {e}')
 
         # ---- BERTScore ----
         if 'bert_score' in self.metric_list:
             try:
-                P, R, F1 = self.bert_scorer.score(preds, refs)
-                for s, p, r, f1 in zip(score_objs, P, R, F1):
-                    s.value.update({
-                        'bertscore-precision': round(p.item(), 6),
-                        'bertscore-recall': round(r.item(), 6),
-                        'bertscore-f1': round(f1.item(), 6),
-                    })
+                from evalscope.metrics.metric import BertScore
+
+                score_args = self.metric_list.get('bert_score', {})
+                bert_scorer = BertScore(**score_args)
+                bert_score_f1 = bert_scorer.apply(filtered_predictions, references)
+                for i in range(len(scores)):
+                    scores[i].value.update({'bert_score': bert_score_f1[i]})
             except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] BERTScore batch failed: {e}')
+                logger.warning(f'[WMT24PPAdapter] BERTScore batch calculation failed: {e}')
 
         # ---- COMET ----
         if 'comet' in self.metric_list:
             try:
+                from evalscope.metrics.metric import COMETScore
+
+                score_args = self.metric_list.get('comet', {})
+                comet_scorer = COMETScore(**score_args)
                 data = [{
                     'src': st.metadata.get('source_text'),
                     'mt': pred,
                     'ref': ref
-                } for pred, ref, st in zip(preds, refs, states)]
-                check_import('torch', 'torch', raise_error=False, feature_name='torch')
-                try:
-                    import torch
-                except ImportError:
-                    torch = None
-                model_output = self.comet_scorer.predict(
-                    data,
-                    batch_size=32,
-                    gpus=1 if torch.cuda.is_available() else 0,
-                    progress_bar=False,
-                )
-                scores = (
-                    model_output.scores if hasattr(model_output, 'scores') else [model_output.system_score] * len(data)
-                )
-                for s, comet_val in zip(score_objs, scores):
-                    s.value.update({'comet': round(float(comet_val), 6)})
+                } for pred, ref, st in zip(filtered_predictions, references, task_states)]
+                comet_scores = comet_scorer.apply(data)
+                for i in range(len(scores)):
+                    scores[i].value.update({'comet': comet_scores[i]})
             except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] COMET batch failed: {e}')
+                logger.warning(f'[WMT24PPAdapter] COMET batch calculation failed: {e}')
 
-        # Determine main score name (priority order)
-        for s in score_objs:
-            if 'comet' in s.value:
-                s.main_score_name = 'comet'
-            elif 'bleu' in s.value:
-                s.main_score_name = 'bleu'
-            elif 'bertscore-f1' in s.value:
-                s.main_score_name = 'bertscore-f1'
-
-        # Queue computed results and clear batch cache
-        self._pending_scores.extend(score_objs)
-        self._batch_cache.clear()
-
-        # Return the first result (EvalScope framework consumes one at a time)
-        return self._pending_scores.pop(0)
+        return scores
