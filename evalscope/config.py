@@ -208,14 +208,14 @@ class TaskConfig(BaseArgument):
         if self.timeout is not None:
             deprecated_warning(
                 logger,
-                'The `timeout` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.timeout` instead.'
+                'The `timeout` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.timeout` instead.'
             )
             self.generation_config.timeout = self.timeout
 
         if self.stream is not None:
             deprecated_warning(
                 logger,
-                'The `stream` parameter is deprecated and will be removed in v1.1.0. Use `generation_config.stream` instead.'
+                'The `stream` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.stream` instead.'
             )
             self.generation_config.stream = self.stream
 
@@ -224,7 +224,7 @@ class TaskConfig(BaseArgument):
             self.generation_config.n = 1
             deprecated_warning(
                 logger,
-                'The `n` parameter in generation_config is deprecated and will be removed in v1.1.0. Use `TaskConfig.repeats` instead.'
+                'The `n` parameter in generation_config is deprecated and will be removed in v2.0.0. Use `TaskConfig.repeats` instead.'
             )
 
     def __init_default_model_args(self):

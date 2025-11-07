@@ -13,6 +13,7 @@
 
 llm.md
 vlm.md
+agent.md
 aigc.md
 other/index.md
 :::

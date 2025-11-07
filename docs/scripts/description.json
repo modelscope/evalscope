@@ -578,5 +578,10 @@
     "en": "WMT2024 news translation benchmark supporting multiple language pairs. Each subset represents a specific translation direction",
     "zh": "WMT2024新闻翻译基准，支持多种语言对，每个子集代表一个特定的翻译方向。",
     "updated_at": "2025-11-06T15:54:15Z"
+  },
+  "tau2_bench": {
+    "en": "τ²-bench (Tau Squared Bench) is an extension and enhancement of the original τ-bench (Tau Bench), which is a benchmark designed to evaluate conversational AI agents that interact with users through domain-specific API tools and guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)",
+    "zh": "τ²-bench（Tau Squared Bench）是原始 τ-bench（Tau Bench）的扩展和增强版本，旨在评估通过特定领域 API 工具和规则与用户交互的对话式 AI 代理。请在评估前使用 `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)",
+    "updated_at": "2025-11-07T14:31:57Z"
   }
 }

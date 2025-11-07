@@ -40,7 +40,7 @@ task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
-    eval_type='service',  # 使用API模型服务
+    eval_type='openai_api',  # 使用API模型服务
     datasets=['tau_bench'],
     dataset_args={
         'tau_bench': {
