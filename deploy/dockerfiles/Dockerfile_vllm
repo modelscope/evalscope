@@ -3,12 +3,9 @@ FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-runtime
 RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list \
     && apt-get update && apt-get install -y \
     build-essential
-#     && rm -rf /var/lib/apt/lists/*
 
 RUN pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/simple \
     && pip install vllm
-    # && export UV_DEFAULT_INDEX="https://mirrors.ustc.edu.cn/pypi/simple" \
-    # && uv pip install vllm
 
 WORKDIR /app
 COPY dockerfiles/start-vllm.sh /app/

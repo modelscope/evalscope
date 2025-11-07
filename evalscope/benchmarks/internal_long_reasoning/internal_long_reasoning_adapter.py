@@ -15,8 +15,8 @@ from evalscope.utils.multi_choices import WOChoiceMultipleChoiceTemplate
 logger = get_logger()
 
 SUBSET_LIST = [
-    "MultiChoice",
-    "NoneMultiChoice"
+    "mcq_knowledge",
+    "mcq_reasoning"
 ]
 
 @register_benchmark(
@@ -25,12 +25,12 @@ SUBSET_LIST = [
         pretty_name='ILReasoning',
         description='Internal dataset with multiple-choice question answering subset and free form answering subset ',
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
-        dataset_id='/app/custom_eval/internal/long-reasoning',
+        dataset_id='/app/custom_eval/internal/Reason_Knowledge_Dataset/Dataset_v1',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
-        eval_split='test',
+        eval_split=None,
         prompt_template=WOChoiceMultipleChoiceTemplate.MULTIPLE_ANSWER,
     )
 )
