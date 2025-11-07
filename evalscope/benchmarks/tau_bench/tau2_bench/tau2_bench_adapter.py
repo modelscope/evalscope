@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from typing import Dict, List
 
@@ -19,15 +20,15 @@ logger = get_logger()
 
 @register_benchmark(
     BenchmarkMeta(
-        name='tau_bench',
-        pretty_name='τ-bench',
+        name='tau2_bench',
+        pretty_name='τ2-bench',
         tags=[Tags.FUNCTION_CALLING, Tags.REASONING, Tags.AGENT],
         description='A benchmark emulating dynamic conversations between a user (simulated by language models) '
         'and a language agent provided with domain-specific API tools and policy guidelines. '
-        'Please install it with `pip install git+https://github.com/sierra-research/tau-bench` '
+        'Please install it with `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` '
         'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)',  # noqa: E501
-        dataset_id='https://github.com/sierra-research/tau-bench',
-        subset_list=['airline', 'retail'],
+        dataset_id='evalscope/tau2-bench-data',
+        subset_list=['airline', 'retail', 'telecom'],
         metric_list=['Pass^1'],
         eval_split='test',
         extra_params={
@@ -41,14 +42,14 @@ logger = get_logger()
         }
     )
 )
-class TauBenchAdapter(DefaultDataAdapter):
+class Tau2BenchAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         check_import(
-            'tau_bench',
-            package='git+https://github.com/sierra-research/tau-bench',
+            'tau2',
+            package='git+https://github.com/sierra-research/tau2-bench@v0.2.0',
             raise_error=True,
             feature_name=self.pretty_name
         )
@@ -59,55 +60,33 @@ class TauBenchAdapter(DefaultDataAdapter):
         self.api_base = self.extra_params.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
         self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.0, 'max_tokens': 4096})
 
-        self._patch_env_completion()
-
-    @run_once
-    def _patch_env_completion(self) -> str:
-        from tau_bench.envs.user import LLMUserSimulationEnv
-
-        def new_generate_next_message(self, messages):
-            from evalscope.api.messages import dict_to_chat_message
-            from evalscope.api.model import GenerateConfig, get_model
-            from evalscope.constants import EvalType
-
-            user_server = get_model(
-                model=adapter_instance.user_model,
-                eval_type=EvalType.SERVICE,
-                base_url=adapter_instance.api_base,
-                api_key=adapter_instance.api_key,
-                config=GenerateConfig(**adapter_instance.generation_config)
-            )
-
-            res = user_server.generate(input=[dict_to_chat_message(msg) for msg in messages])
-
-            message = {'role': 'assistant', 'content': res.completion}
-            self.messages.append(message)
-            self.total_cost = 0
-            return res.completion
-
-        # get the current instance of TauBenchAdapter
-        adapter_instance = self
-        LLMUserSimulationEnv.generate_next_message = new_generate_next_message
-
     def load(self):
-        from tau_bench.envs import get_env
+        # Load dataset
+        dataset_name_or_path = self.dataset_id
+        if os.path.exists(dataset_name_or_path):
+            logger.info(f'Loading dataset from {dataset_name_or_path}')
+            dataset_path = dataset_name_or_path
+        else:
+            from modelscope import dataset_snapshot_download
+            logger.info(f'Loading dataset from modelscope: > dataset_name: {dataset_name_or_path}')
+            dataset_path = dataset_snapshot_download(dataset_name_or_path)
+
+        # Set Tau2 data dir
+        os.environ['TAU2_DATA_DIR'] = dataset_path
+
+        # Load data for each domain
+        from tau2.agent.llm_agent import LLMGTAgent
+        from tau2.registry import registry
 
         data_dict = defaultdict(dict)
-        for env_name in self.subset_list:
-            logger.info(f'Loading TauBench environment: {env_name}')
-            env = get_env(
-                env_name=env_name,
-                user_strategy='llm',
-                user_model='dummy',  # Use dummy model to prevent errors
-                user_provider='openai',  # Use dummy provider to prevent errors
-                task_split=self.eval_split,
-            )
-            tasks = []
-            for i in range(len(env.tasks)):
-                tasks.append({
-                    'task_index': i,
-                    'env_name': env_name,
-                })
+        for domain_name in self.subset_list:
+            logger.info(f'Loading Tau2-Bench environment: {domain_name}')
+            # Get tasks
+            task_loader = registry.get_tasks_loader(domain_name)
+            tasks = task_loader()
+            tasks = [task for task in tasks if LLMGTAgent.check_valid_task(task)]
+            tasks = [task.model_dump(exclude_unset=True) for task in tasks]
+
             # load dataset
             dataset = DictDataLoader(
                 dict_list=tasks,
@@ -117,7 +96,7 @@ class TauBenchAdapter(DefaultDataAdapter):
                 shuffle=self.shuffle,
             ).load()
 
-            data_dict[env_name] = dataset
+            data_dict[domain_name] = dataset
 
         test_dataset = DatasetDict(data_dict)
 
@@ -126,15 +105,15 @@ class TauBenchAdapter(DefaultDataAdapter):
     def record_to_sample(self, record: Dict) -> Sample:
         """Convert a data record to a Sample object."""
         return Sample(
-            input=[ChatMessageUser(content='')],
+            input=[ChatMessageUser(content=record['description']['purpose'] or '')],
             target='',  # Will use the record for evaluation
-            subset_key=record['env_name'],
+            subset_key=record['user_scenario']['instructions']['domain'],
             metadata=record  # Store the full record for evaluation
         )
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
         from .generation import predict
-        return predict(model, sample)
+        return predict(model, sample, adapter_instance=self)
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state) -> Score:
 
@@ -146,7 +125,7 @@ class TauBenchAdapter(DefaultDataAdapter):
         try:
             # Parse the prediction to get the reward
             task_result = task_state.metadata['task_result']
-            reward = task_result.get('reward', 0.0)
+            reward = task_result['reward']
 
             score.value = {
                 'Pass^1': float(reward),
@@ -154,8 +133,6 @@ class TauBenchAdapter(DefaultDataAdapter):
             score.explanation = f'Task completed with reward: {reward}'
             score.metadata = {
                 'task_result': task_result,
-                'env_name': task_state.metadata.get('env_name', 'unknown'),
-                'task_index': task_state.metadata.get('task_index', -1)
             }
             score.main_score_name = 'Pass^1'
 

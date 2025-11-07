@@ -418,12 +418,30 @@ class TestNativeBenchmark(TestBenchmark):
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
                     'temperature': 0.0,
-                    'max_tokens': 12000,
                     'stream': True
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=5, model='qwq-plus', stream=True)
+        self._run_dataset_test('tau_bench', dataset_args, limit=5, model='qwen-plus', stream=True)
+
+    def test_tau2_bench(self):
+        dataset_args = {
+            'subset_list': [
+                'airline',
+                'retail',
+                'telecom'
+            ],
+            'extra_params': {
+                'user_model': 'qwen-plus',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'generation_config': {
+                    'temperature': 0.0,
+                    'stream': True
+                }
+            }
+        }
+        self._run_dataset_test('tau2_bench', dataset_args, limit=5, model='qwen-plus', stream=True)
 
     def test_r1_collection(self):
         dataset_args = {

@@ -47,16 +47,22 @@ def thread_safe(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def run_once(func):
-    """Decorator to ensure a function is only run once."""
-    has_run = False
-    result = None
+def run_once(func: Callable[..., T]) -> Callable[..., T]:
+    """Decorator to ensure a function is executed at most once across threads."""
+    lock = threading.RLock()
+    has_run: bool = False
+    result: Optional[T] = None
 
+    @wraps(func)
     def wrapper(*args, **kwargs):
         nonlocal has_run, result
-        if not has_run:
-            result = func(*args, **kwargs)
-            has_run = True
+        if has_run:
+            return result
+        # Double-checked locking to avoid redundant locking on hot path
+        with lock:
+            if not has_run:
+                result = func(*args, **kwargs)
+                has_run = True
         return result
 
     return wrapper
