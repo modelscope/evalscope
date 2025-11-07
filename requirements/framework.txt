@@ -14,6 +14,7 @@ overrides
 pandas
 pillow
 pydantic
+pylatexenc
 pyyaml>=5.1
 requests
 rich

@@ -141,7 +141,7 @@ class AIME25Adapter(DefaultDataAdapter):
 
         # Use the custom grade_answer function for evaluation
         try:
-            is_correct = grade_answer(extract_answer(filtered_prediction), reference)
+            is_correct = grade_answer(extract_answer(original_prediction), reference)
             accuracy_score = 1.0 if is_correct else 0.0
             score.value['acc'] = accuracy_score
         except Exception as e:
