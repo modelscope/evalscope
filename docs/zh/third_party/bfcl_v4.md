@@ -90,32 +90,33 @@ task_cfg = TaskConfig(
     eval_type='openai_api',  # 使用API模型服务
     datasets=['bfcl_v4'],
     eval_batch_size=10,
-    subset_list=[  # 评测子任务列表
-        'simple_python',
-        'simple_java',
-        'simple_javascript',
-        'multiple',
-        'parallel',
-        'parallel_multiple',
-        'irrelevance',
-        'live_simple',
-        'live_multiple',
-        'live_parallel',
-        'live_parallel_multiple',
-        'live_irrelevance',
-        'live_relevance',
-        'multi_turn_base',
-        'multi_turn_miss_func',
-        'multi_turn_miss_param',
-        'multi_turn_long_context',
-        'web_search_base',
-        'web_search_no_snippet',
-        'memory_kv',
-        'memory_vector',
-        'memory_rec_sum'
-    ],
     dataset_args={
         'bfcl_v4': {
+            # 评测子任务列表
+            'subset_list': [
+                'simple_python',
+                'simple_java',
+                'simple_javascript',
+                'multiple',
+                'parallel',
+                'parallel_multiple',
+                'irrelevance',
+                'live_simple',
+                'live_multiple',
+                'live_parallel',
+                'live_parallel_multiple',
+                'live_irrelevance',
+                'live_relevance',
+                'multi_turn_base',
+                'multi_turn_miss_func',
+                'multi_turn_miss_param',
+                'multi_turn_long_context',
+                'web_search_base',
+                'web_search_no_snippet',
+                'memory_kv',
+                'memory_vector',
+                'memory_rec_sum'
+            ],
             'extra_params':{
                 # 模型在函数名称中拒绝使用点号（`.`）；设置此项，以便在评估期间自动将点号转换为下划线。
                 'underscore_to_dot': True,
