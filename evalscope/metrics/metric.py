@@ -438,3 +438,96 @@ class PassAtK(Aggregator):
                 )
 
         return aggregated_scores
+
+
+@register_aggregation(name='mean_and_pass_at_k')
+class MeanPassAtK(Aggregator):
+
+    def __init__(self):
+
+        self.name = 'mean_and_pass_at_k'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate scores by computing the pass@k for each metric using group_id.
+
+        Args:
+            scores: List of sample scores to aggregate
+
+        Returns:
+            List of aggregated scores with pass@k values
+        """
+
+        # Get all metric names
+        metrics = list(scores[0].score.value.keys())
+        # Calculate pass@k for all metrics
+        for metric_name in metrics:
+            pass_groups = defaultdict(bool)
+            # Calculate pass@k for each group_id, using the best score in the group as pass@k
+            for score in scores:
+                group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
+                print(score.score.value.keys())
+                pass_groups[group_id] = max(pass_groups[group_id], score.score.value[metric_name])
+
+            # Calculate the repetition count k for each problem
+            k = int(len(scores) / len(pass_groups))
+
+            # Add the corresponding pass@k for the metric to each score's value
+            for score in scores:
+                group_id = getattr(score, 'group_id', score.sample_id)
+                score.score.value.update({f'{metric_name}_pass@{k}': pass_groups[group_id]})
+
+        # Calculate the mean value for all metrics and their corresponding pass@k
+        m = Mean()
+        return m(scores)
+
+
+@register_aggregation(name='mean_and_vote_at_k')
+class MeanVoteAtK(Aggregator):
+
+    def __init__(self):
+
+        self.name = 'mean_and_vote_at_k'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate scores by computing the vote@k for each metric using group_id.
+
+        Args:
+            scores: List of sample scores to aggregate
+
+        Returns:
+            List of aggregated scores with vote@k values
+        """
+        # Get all metric names
+        metrics = list(scores[0].score.value.keys())
+
+        # Calculate pass@k for all metrics
+        for metric_name in metrics:
+
+            # Count of occurrences for each answer in each group_id
+            answer_groups = defaultdict(lambda: defaultdict(int))
+            # Score for each answer in each group_id
+            scores_groups = defaultdict(lambda: defaultdict(float))
+            # Score of the most frequently occurring answer
+            final_scores_groups = defaultdict(int)
+            # Count different answers for this metric
+            for score in scores:
+                group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
+                answer_prediction = getattr(score.score, 'extracted_prediction', None)
+                answer_groups[group_id][answer_prediction] += 1
+                scores_groups[group_id][answer_prediction] = score.score.value[metric_name]
+            # Calculate the repetition count k for each problem
+            k = int(len(scores) / len(answer_groups))
+
+            # Use the score of the most frequently occurring answer as the group's score
+            for group_id in answer_groups:
+                final_scores_groups[group_id] = scores_groups[group_id][
+                    max(answer_groups[group_id], key=answer_groups[group_id].get)]
+
+            # Add the corresponding vote@k for the metric to each score's value
+            for score in scores:
+                group_id = getattr(score, 'group_id', score.sample_id)
+                score.score.value.update({f'{metric_name}_vote@{k}': final_scores_groups[group_id]})
+
+        # Calculate the mean value for all metrics and their corresponding pass@k
+        m = Mean()
+        return m(scores)
