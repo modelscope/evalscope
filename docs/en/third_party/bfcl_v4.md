@@ -90,32 +90,33 @@ task_cfg = TaskConfig(
     eval_type='openai_api',  # Using API model service
     datasets=['bfcl_v4'],
     eval_batch_size=10,
-    subset_list=[  # List of evaluation subtasks
-        'simple_python',
-        'simple_java',
-        'simple_javascript',
-        'multiple',
-        'parallel',
-        'parallel_multiple',
-        'irrelevance',
-        'live_simple',
-        'live_multiple',
-        'live_parallel',
-        'live_parallel_multiple',
-        'live_irrelevance',
-        'live_relevance',
-        'multi_turn_base',
-        'multi_turn_miss_func',
-        'multi_turn_miss_param',
-        'multi_turn_long_context',
-        'web_search_base',
-        'web_search_no_snippet',
-        'memory_kv',
-        'memory_vector',
-        'memory_rec_sum'
-    ],
     dataset_args={
         'bfcl_v4': {
+            # List of evaluation subtasks
+            'subset_list': [
+                'simple_python',
+                'simple_java',
+                'simple_javascript',
+                'multiple',
+                'parallel',
+                'parallel_multiple',
+                'irrelevance',
+                'live_simple',
+                'live_multiple',
+                'live_parallel',
+                'live_parallel_multiple',
+                'live_irrelevance',
+                'live_relevance',
+                'multi_turn_base',
+                'multi_turn_miss_func',
+                'multi_turn_miss_param',
+                'multi_turn_long_context',
+                'web_search_base',
+                'web_search_no_snippet',
+                'memory_kv',
+                'memory_vector',
+                'memory_rec_sum'
+            ],
             'extra_params':{
                 # Model refuses to use dots (`.`) in function names; set this to automatically convert dots to underscores during evaluation.
                 'underscore_to_dot': True,
