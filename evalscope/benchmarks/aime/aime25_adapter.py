@@ -158,7 +158,7 @@ class AIME25Adapter(DefaultDataAdapter):
             prediction=original_prediction,
         )
 
-        judge_prompt = JUDGE_PROMPT.format(expression1=filtered_prediction, expression2=reference)
+        judge_prompt = JUDGE_PROMPT.format(expression1=original_prediction, expression2=reference)
 
         # Request judge and obtain score
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
