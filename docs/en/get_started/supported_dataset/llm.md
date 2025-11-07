@@ -1706,7 +1706,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `mmlu_pro`
-- **Dataset ID**: [modelscope/MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary)
+- **Dataset ID**: [TIGER-Lab/MMLU-Pro](https://modelscope.cn/datasets/TIGER-Lab/MMLU-Pro/summary)
 - **Description**:
   > MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.
 - **Task Categories**: `Knowledge`, `MCQ`

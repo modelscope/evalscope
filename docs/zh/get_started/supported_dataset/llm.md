@@ -1706,7 +1706,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 [返回目录](#llm评测集)
 - **数据集名称**: `mmlu_pro`
-- **数据集ID**: [modelscope/MMLU-Pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro/summary)
+- **数据集ID**: [TIGER-Lab/MMLU-Pro](https://modelscope.cn/datasets/TIGER-Lab/MMLU-Pro/summary)
 - **数据集介绍**:
   > MMLU-Pro 是一个用于评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，要求模型从给定选项中选出正确答案。
 - **任务类别**: `Knowledge`, `MCQ`

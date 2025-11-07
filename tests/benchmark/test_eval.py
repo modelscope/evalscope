@@ -86,7 +86,7 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 2,
             'subset_list': ['computer science', 'math']
         }
-        self._run_dataset_test('mmlu_pro', use_mock=False, dataset_args=dataset_args, repeats=2)
+        self._run_dataset_test('mmlu_pro', dataset_args=dataset_args, repeats=2)
 
     def test_mmlu_redux(self):
         """Test MMLU-Redux reasoning dataset."""

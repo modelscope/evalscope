@@ -39,7 +39,7 @@ SUBSET_LIST = [
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description=
         'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
-        dataset_id='modelscope/MMLU-Pro',
+        dataset_id='TIGER-Lab/MMLU-Pro',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         few_shot_num=5,
