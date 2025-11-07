@@ -53,6 +53,7 @@ advanced_guides/add_benchmark.md
 :hidden:
 :caption: 🧰 第三方工具
 third_party/tau_bench.md
+third_party/tau2_bench.md
 third_party/bfcl_v3.md
 third_party/bfcl_v4.md
 third_party/needle_haystack.md

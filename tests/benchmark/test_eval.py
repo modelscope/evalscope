@@ -422,7 +422,7 @@ class TestNativeBenchmark(TestBenchmark):
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=5, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau_bench', dataset_args, limit=10, model='qwen-plus', stream=True)
 
     def test_tau2_bench(self):
         dataset_args = {
@@ -441,7 +441,7 @@ class TestNativeBenchmark(TestBenchmark):
                 }
             }
         }
-        self._run_dataset_test('tau2_bench', dataset_args, limit=5, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau2_bench', dataset_args, limit=10, model='qwen-plus', stream=True)
 
     def test_r1_collection(self):
         dataset_args = {

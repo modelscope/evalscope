@@ -40,7 +40,7 @@ task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
-    eval_type='service',  # Use API model service
+    eval_type='openai_api',  # Use API model service
     datasets=['tau_bench'],
     dataset_args={
         'tau_bench': {
@@ -51,7 +51,6 @@ task_cfg = TaskConfig(
                 'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'generation_config': {
                     'temperature': 0.7,
-                    'max_tokens': 1024
                 }
             }
         }
@@ -60,8 +59,6 @@ task_cfg = TaskConfig(
     limit=5,  # Limit the number of evaluations for quick testing; remove for full evaluation
     generation_config={
         'temperature': 0.6,
-        'n': 1,
-        'max_tokens': 4096,
     },
 )
 

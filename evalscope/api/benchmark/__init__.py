@@ -1,4 +1,5 @@
 from .adapters import (
+    AgentAdapter,
     DefaultDataAdapter,
     ImageEditAdapter,
     MultiChoiceAdapter,

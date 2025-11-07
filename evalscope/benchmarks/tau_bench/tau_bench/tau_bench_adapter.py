@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
@@ -41,7 +41,7 @@ logger = get_logger()
         }
     )
 )
-class TauBenchAdapter(DefaultDataAdapter):
+class TauBenchAdapter(AgentAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

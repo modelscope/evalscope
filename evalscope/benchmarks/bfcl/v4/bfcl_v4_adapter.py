@@ -5,7 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
@@ -55,7 +55,7 @@ logger = get_logger()
         }
     )
 )
-class BFCLV4Adapter(DefaultDataAdapter):
+class BFCLV4Adapter(AgentAdapter):
     """
     BFCL adapter using the new data processing framework.
     """

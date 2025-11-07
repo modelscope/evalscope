@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.dataset.dataset import DatasetDict
 from evalscope.api.dataset.loader import DictDataLoader
@@ -21,12 +21,13 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='tau2_bench',
-        pretty_name='τ2-bench',
+        pretty_name='τ²-bench',
         tags=[Tags.FUNCTION_CALLING, Tags.REASONING, Tags.AGENT],
-        description='A benchmark emulating dynamic conversations between a user (simulated by language models) '
-        'and a language agent provided with domain-specific API tools and policy guidelines. '
+        description='τ²-bench (Tau Squared Bench) is an extension and enhancement of the original '
+        'τ-bench (Tau Bench), which is a benchmark designed to evaluate conversational AI agents '
+        'that interact with users through domain-specific API tools and guidelines. '
         'Please install it with `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` '
-        'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)',  # noqa: E501
+        'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)',  # noqa: E501
         dataset_id='evalscope/tau2-bench-data',
         subset_list=['airline', 'retail', 'telecom'],
         metric_list=['Pass^1'],
@@ -42,7 +43,7 @@ logger = get_logger()
         }
     )
 )
-class Tau2BenchAdapter(DefaultDataAdapter):
+class Tau2BenchAdapter(AgentAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

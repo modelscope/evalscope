@@ -1,3 +1,4 @@
+import json
 import sys
 import tau2.utils.llm_utils as tau_llm_utils
 from tau2.data_model.message import AssistantMessage, Message, ToolCall
@@ -14,6 +15,7 @@ from evalscope.api.model.model import Model
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.tool.tool_info import ToolInfo
 from evalscope.constants import EvalType
+from evalscope.models.utils.openai import openai_chat_choices
 from evalscope.utils.function_utils import run_once
 
 MODEL_DICT: Dict[str, Model] = {
@@ -109,7 +111,8 @@ def patched_generate(
         tool_choice=tool_choice,
     )
 
-    choice = completion.choices[0]
+    oa_choices = openai_chat_choices(completion.choices, include_reasoning=False)
+    choice = oa_choices[0]
     msg = choice.message
 
     tool_calls = msg.tool_calls or []
@@ -117,7 +120,7 @@ def patched_generate(
         ToolCall(
             id=tool_call.id,
             name=tool_call.function.name,
-            arguments=tool_call.function.arguments,
+            arguments=json.loads(tool_call.function.arguments),
         ) for tool_call in tool_calls
     ]
     tool_calls = tool_calls or None

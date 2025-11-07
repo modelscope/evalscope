@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, dict_to_chat_message
@@ -28,7 +28,7 @@ logger = get_logger()
         eval_split='test',
     )
 )
-class ToolBenchAdapter(DefaultDataAdapter):
+class ToolBenchAdapter(AgentAdapter):
     """
     ToolBench adapter using the new data processing framework.
     """

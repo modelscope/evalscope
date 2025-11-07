@@ -14,6 +14,7 @@ You can also use other tools supported by this framework for evaluation, such as
 
 llm.md
 vlm.md
+agent.md
 aigc.md
 other/index.md
 :::

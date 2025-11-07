@@ -7,6 +7,7 @@ from tqdm import tqdm
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import (
+    AgentAdapter,
     DataAdapter,
     DefaultDataAdapter,
     ImageEditAdapter,
@@ -38,7 +39,7 @@ def get_dataset_detail_locale_dict(category: str):
             'en': 'Dataset ID'
         },
         'description': {
-            'zh': '数据集描述',
+            'zh': '数据集介绍',
             'en': 'Description'
         },
         'task_categories': {
@@ -50,7 +51,7 @@ def get_dataset_detail_locale_dict(category: str):
             'en': 'Evaluation Metrics'
         },
         'requires_llm_judge': {
-            'zh': '需要LLM Judge',
+            'zh': '是否需要LLM Judge',
             'en': 'Requires LLM Judge'
         },
         'default_shots': {
@@ -90,7 +91,7 @@ def get_dataset_detail_locale_dict(category: str):
             'en': 'No'
         },
         'no_description': {
-            'zh': '暂无详细描述',
+            'zh': '暂无详细介绍',
             'en': 'No detailed description available'
         }
     }
@@ -311,6 +312,8 @@ def get_adapters():
             adapters['aigc'].append(adapter)
         elif isinstance(adapter, (VisionLanguageAdapter,)):
             adapters['vlm'].append(adapter)
+        elif isinstance(adapter, AgentAdapter):
+            adapters['agent'].append(adapter)
         else:
             adapters['llm'].append(adapter)
 

@@ -3,7 +3,7 @@ import re
 import traceback
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
@@ -66,7 +66,7 @@ BFCL_V3_TO_V4_SUBJECT_MAPPING = {
         }
     )
 )
-class BFCLV3Adapter(DefaultDataAdapter):
+class BFCLV3Adapter(AgentAdapter):
     """
     BFCL adapter using the new data processing framework.
     """
