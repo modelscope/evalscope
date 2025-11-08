@@ -467,7 +467,6 @@ class MeanPassAtK(Aggregator):
             # Calculate pass@k for each group_id, using the best score in the group as pass@k
             for score in scores:
                 group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
-                print(score.score.value.keys())
                 pass_groups[group_id] = max(pass_groups[group_id], score.score.value[metric_name])
 
             # Calculate the repetition count k for each problem
