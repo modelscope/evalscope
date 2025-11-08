@@ -532,6 +532,6 @@ class MeanVoteAtK(Aggregator):
                 group_id = getattr(score, 'group_id', score.sample_id)
                 score.score.value.update({f'{metric_name}_vote@{k}': final_scores_groups[group_id]})
 
-        # Calculate the mean value for all metrics and their corresponding pass@k
+        # Calculate the mean value for all metrics and their corresponding vote@k
         m = Mean()
         return m(scores)
