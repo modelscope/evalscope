@@ -512,7 +512,7 @@ class MeanVoteAtK(Aggregator):
             # Score for each answer in each group_id
             scores_groups = defaultdict(lambda: defaultdict(float))
             # Score of the most frequently occurring answer
-            final_scores_groups = defaultdict(int)
+            final_scores_groups = defaultdict(float)
             # Count different answers for this metric
             for score in scores:
                 group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
