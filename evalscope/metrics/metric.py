@@ -499,7 +499,9 @@ class MeanVoteAtK(Aggregator):
         Returns:
             List of aggregated scores with vote@k values
         """
-        # Get all metric names
+        if not scores:
+            return []
+
         metrics = list(scores[0].score.value.keys())
 
         # Calculate pass@k for all metrics
