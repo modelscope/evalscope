@@ -456,6 +456,8 @@ class MeanPassAtK(Aggregator):
         Returns:
             List of aggregated scores with pass@k values
         """
+        if not scores:
+            return []
 
         # Get all metric names
         metrics = list(scores[0].score.value.keys())
