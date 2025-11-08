@@ -504,7 +504,7 @@ class MeanVoteAtK(Aggregator):
 
         metrics = list(scores[0].score.value.keys())
 
-        # Calculate pass@k for all metrics
+        # Calculate vote@k for all metrics
         for metric_name in metrics:
 
             # Count of occurrences for each answer in each group_id
