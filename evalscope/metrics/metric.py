@@ -463,7 +463,7 @@ class MeanPassAtK(Aggregator):
         metrics = list(scores[0].score.value.keys())
         # Calculate pass@k for all metrics
         for metric_name in metrics:
-            pass_groups = defaultdict(bool)
+            pass_groups = defaultdict(float)
             # Calculate pass@k for each group_id, using the best score in the group as pass@k
             for score in scores:
                 group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
