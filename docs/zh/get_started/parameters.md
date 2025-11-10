@@ -64,11 +64,14 @@
   - `few_shot_random`: 是否随机采样few-shot数据，默认为`False`。
   - `shuffle`: 是否在评测前打乱数据，默认为`False`。
   - `shuffle_choices`: 是否在评测前打乱选项顺序，默认为`False`，仅多选题数据集支持。
-  - `metric_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前支持`acc`, `Pass@k`等。例如`humaneval`数据集可指定`["Pass@1", "Pass@5"]`，注意此时需要指定`repeats=5`让模型在同一个样本上推理5次。
+  - `metric_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前默认支持`acc`，其他计算的指标可在数据集列表中查看。
+  - `aggregation`: 评测结果的聚合方式，默认为`mean`，还可选:
+    - `mean_and_pass_at_k`: 计算平均值和`pass_at_k`，需指定`repeats=k`，自动计算同一样例k次的至少有一次通过的概率。例如`humaneval`数据集可指定`repeats=5`，将计算模型在同一样例5次生成结果中的通过率。
+    - `mean_and_vote_at_k`: 计算平均值和`vote_at_k`，需指定`repeats=k`，自动计算同一样例k次的投票结果，从而计算最终结果。
+    - `mean_and_pass_hat_k`: 计算平均值和`pass_hat_k`，需指定`repeats=k`，自动计算同一样例k次全部通过的概率。例如`tau2_bench`数据集可指定`repeats=3`，将计算模型在同一样例3次生成结果中的通过率。
   - `filters`: 评测数据集的过滤器，指定后将使用给定的过滤器过滤评测结果，可用来处理推理模型的输出，目前支持：
-    - `remove_until {string}`: 过滤掉模型输出结果中指定字符串之前的部分。
+    - `remove_until {string}`: 过滤掉模型输出结果中指定字符串之前的部分。例如`ifeval`数据集可指定`{"remove_until": "</think>"}`，将过滤掉模型输出结果中`</think>`之前的部分，避免影响打分。
     - `extract {regex}`: 提取模型输出结果中指定正则表达式匹配的部分。
-    例如`ifeval`数据集可指定`{"remove_until": "</think>"}`，将过滤掉模型输出结果中`</think>`之前的部分，避免影响打分。
   - `extra_params`: 数据集相关的额外参数，具体参数参考[各个数据集](./supported_dataset/index.md)的说明，例如`hle`数据集的`include_multi_modal`参数。
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`

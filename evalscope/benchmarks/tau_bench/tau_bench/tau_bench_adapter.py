@@ -28,7 +28,7 @@ logger = get_logger()
         'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)',  # noqa: E501
         dataset_id='https://github.com/sierra-research/tau-bench',
         subset_list=['airline', 'retail'],
-        metric_list=['Pass^1'],
+        aggregation='mean_and_pass_hat_k',
         eval_split='test',
         extra_params={
             'user_model': 'qwen-plus',
@@ -149,7 +149,7 @@ class TauBenchAdapter(AgentAdapter):
             reward = task_result.get('reward', 0.0)
 
             score.value = {
-                'Pass^1': float(reward),
+                'acc': float(reward),
             }
             score.explanation = f'Task completed with reward: {reward}'
             score.metadata = {
@@ -157,12 +157,12 @@ class TauBenchAdapter(AgentAdapter):
                 'env_name': task_state.metadata.get('env_name', 'unknown'),
                 'task_index': task_state.metadata.get('task_index', -1)
             }
-            score.main_score_name = 'Pass^1'
+            score.main_score_name = 'acc'
 
         except Exception as e:
-            score.value = {'Pass^1': 0.0}
+            score.value = {'acc': 0.0}
             score.explanation = f'Evaluation failed: {str(e)}'
             score.metadata = {'error': str(e)}
-            score.main_score_name = 'Pass^1'
+            score.main_score_name = 'acc'
 
         return score

@@ -7,12 +7,11 @@ from typing import Dict, List
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.utils.import_utils import check_import
-from .metrics import calculate_pass_at_k, mean
+from .metrics import calculate_pass_at_k, calculate_pass_hat_k, mean, normalize_text
 
-
-def normalize_text(text: str) -> str:
-    """Normalize text by lowering case and stripping whitespace."""
-    return text.strip().lower()
+# ##################
+# NLP Metrics ######
+# ##################
 
 
 @register_metric(name='exact_match')
@@ -210,7 +209,7 @@ class COMETScore(SingletonMetric):
 
 # ##################
 # T2I Metrics ######
-####################
+# ##################
 @register_metric(name='VQAScore')
 class VQAScore(T2IMetric):
 
@@ -549,5 +548,64 @@ class MeanVoteAtK(Aggregator):
                 score.score.value.update({f'{metric_name}_vote@{k}': final_scores_groups[group_id]})
 
         # Calculate the mean value for all metrics and their corresponding vote@k
+        m = Mean()
+        return m(scores)
+
+
+@register_aggregation(name='mean_and_pass_hat_k')
+class MeanPassHatK(Aggregator):
+
+    def __init__(self):
+        self.name = 'mean_and_pass_hat_k'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        """Add per-metric pass^k using calculate_pass_hat_k, then mean-aggregate.
+
+        For each metric:
+        - Group scores by group_id
+        - Collect binary correctness values
+        - Infer k as approximate repeats and clamp to min attempts across groups
+        - Compute per-group pass^k via calculate_pass_hat_k
+        - Annotate each sample with metric_pass^{k} for its group
+        Finally run Mean() over the augmented metric set.
+        """
+        if not scores:
+            return []
+
+        # Freeze metric names before augmenting values to avoid iterating injected keys
+        metrics = list(scores[0].score.value.keys())
+
+        for metric_name in metrics:
+            # group_id -> list[float] (0/1 correctness values)
+            group_values: Dict[str, List[float]] = defaultdict(list)
+            for s in scores:
+                group_id = getattr(s, 'group_id', s.sample_id)
+                value = float(s.score.value[metric_name])
+                group_values[group_id].append(value)
+
+            if not group_values:
+                continue
+
+            # Infer repeats and clamp to the smallest group size to satisfy k <= n
+            approx_k = int(len(scores) / len(group_values)) if len(group_values) > 0 else 1
+            min_n = min(len(vals) for vals in group_values.values())
+            k = max(1, min(approx_k, min_n))
+
+            # Compute per-group pass^k
+            pass_hat_k_map: Dict[str, float] = {}
+            for gid, vals in group_values.items():
+                n = len(vals)
+                c = int(sum(vals))
+                # calculate_pass_hat_k requires k <= n; ensured by clamping above
+                pass_hat_k_map[gid] = float(calculate_pass_hat_k(n, c, k))
+
+            # Annotate each sample with its group's pass^k
+            suffix = f'pass^{k}'
+            injected_key = f'{metric_name}_{suffix}'
+            for s in scores:
+                group_id = getattr(s, 'group_id', s.sample_id)
+                s.score.value[injected_key] = pass_hat_k_map[group_id]
+
+        # Mean aggregate over original + injected pass^k metrics
         m = Mean()
         return m(scores)

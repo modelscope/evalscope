@@ -24,7 +24,7 @@ logger = get_logger()
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',
         dataset_id='AI-ModelScope/code_generation_lite',
         subset_list=['release_latest'],
-        metric_list=['Pass@1'],
+        aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template=
         '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
@@ -105,7 +105,7 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                 )
                 pass_rate = metrics['pass@1'] / 100  # convert to point scale
 
-                score.value = {'pass': float(pass_rate > 0)}
+                score.value = {'acc': float(pass_rate > 0)}
                 score.explanation = f"Pass@1: {metrics['pass@1']}%"
 
                 # Convert numpy types to native Python types for JSON serialization
@@ -120,7 +120,7 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                     'final_metadata': serializable_final_metadata
                 }
             except Exception as e:
-                score.value = {'pass': False}
+                score.value = {'acc': False}
                 score.explanation = f'Evaluation failed: {str(e)}'
                 score.metadata = {'error': str(e)}
         else:
@@ -133,7 +133,7 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                     self, filtered_prediction, evaluation_sample, timeout=self.review_timeout, debug=self.debug
                 )
 
-                score.value = {'pass': passed}
+                score.value = {'acc': passed}
                 score.explanation = f"Sandbox execution: {'Passed' if passed else 'Failed'}"
                 score.metadata = {
                     'timeout': self.review_timeout,
@@ -142,22 +142,9 @@ class LiveCodeBenchAdapter(DefaultDataAdapter):
                     'detailed_results': detailed_results
                 }
             except Exception as e:
-                score.value = {'pass': False}
+                score.value = {'acc': False}
                 score.explanation = f'Sandbox evaluation failed: {str(e)}'
                 score.metadata = {'error': str(e), 'execution_method': 'sandbox'}
 
-        score.main_score_name = 'pass'
+        score.main_score_name = 'acc'
         return score
-
-    def aggregate_scores(self, sample_scores):
-        from evalscope.metrics.metric import PassAtK
-
-        # calculate pass@k here
-        agg_list = []
-        for metric in self.metric_list:
-            if metric.lower().startswith('pass@'):
-                k = int(metric.split('@')[1])
-                # Get the scores for this metric
-                agg = PassAtK(k)
-                agg_list.extend(agg(sample_scores))
-        return agg_list

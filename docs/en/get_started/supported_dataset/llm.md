@@ -92,6 +92,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
   > AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluating long-context retrieval and reasoning capabilities of language models across multiple documents.
 - **Task Categories**: `Knowledge`, `LongContext`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -136,6 +137,7 @@ END QUESTION
   > The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -161,6 +163,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > The AIME 2025 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model's ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `AIME2025-II`, `AIME2025-I`
@@ -169,8 +172,12 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 <details><summary>View</summary>
 
 ```text
+
+Solve the following math problem step by step. Put your answer inside \boxed{{}}.
+
 {question}
-Please reason step by step, and put your final answer within \boxed{{}}.
+
+Remember to put your answer inside \boxed{{}}.
 ```
 
 </details>
@@ -186,6 +193,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, featuring an improved auto-annotator, updated baselines, and continuous preference calculation to provide more accurate and cost-effective model assessments. Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.
 - **Task Categories**: `Arena`, `InstructionFollowing`
 - **Evaluation Metrics**: `winrate`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `alpaca_eval_gpt4_baseline`
@@ -210,6 +218,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `amc22`, `amc23`, `amc24`
@@ -235,6 +244,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > The ARC (AI2 Reasoning Challenge) benchmark is designed to evaluate the reasoning capabilities of AI models through multiple-choice questions derived from science exams. It includes two subsets: ARC-Easy and ARC-Challenge, which vary in difficulty.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `ARC-Challenge`, `ARC-Easy`
@@ -263,6 +273,7 @@ Answer the following multiple choice question. The entire content of your respon
   > ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.
 - **Task Categories**: `Arena`, `InstructionFollowing`
 - **Evaluation Metrics**: `winrate`
+- **Aggregation Methods**: `elo`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -287,6 +298,7 @@ Answer the following multiple choice question. The entire content of your respon
   > The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.
 - **Task Categories**: `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 3-shot
 - **Subsets**: `boolean_expressions`, `causal_judgement`, `date_understanding`, `disambiguation_qa`, `dyck_languages`, `formal_fallacies`, `geometric_shapes`, `hyperbaton`, `logical_deduction_five_objects`, `logical_deduction_seven_objects`, `logical_deduction_three_objects`, `movie_recommendation`, `multistep_arithmetic_two`, `navigate`, `object_counting`, `penguins_in_a_table`, `reasoning_about_colored_objects`, `ruin_names`, `salient_translation_error_detection`, `snarks`, `sports_understanding`, `temporal_sequences`, `tracking_shuffled_objects_five_objects`, `tracking_shuffled_objects_seven_objects`, `tracking_shuffled_objects_three_objects`, `web_of_lies`, `word_sorting`
@@ -313,6 +325,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
   > BiomixQA is a curated biomedical question-answering dataset. BiomixQA has been utilized to validate the Knowledge Graph based Retrieval-Augmented Generation (KG-RAG) framework across different LLMs.
 - **Task Categories**: `Knowledge`, `MCQ`, `Medical`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -341,6 +354,7 @@ Answer the following multiple choice question. The entire content of your respon
   > BroadTwitterCorpus is a dataset of tweets collected over stratified times, places and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -386,6 +400,7 @@ Text to process:
   > C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `accountant`, `advanced_mathematics`, `art_studies`, `basic_medicine`, `business_administration`, `chinese_language_and_literature`, `civil_servant`, `clinical_medicine`, `college_chemistry`, `college_economics`, `college_physics`, `college_programming`, `computer_architecture`, `computer_network`, `discrete_mathematics`, `education_science`, `electrical_engineer`, `environmental_impact_assessment_engineer`, `fire_engineer`, `high_school_biology`, `high_school_chemistry`, `high_school_chinese`, `high_school_geography`, `high_school_history`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `ideological_and_moral_cultivation`, `law`, `legal_professional`, `logic`, `mao_zedong_thought`, `marxism`, `metrology_engineer`, `middle_school_biology`, `middle_school_chemistry`, `middle_school_geography`, `middle_school_history`, `middle_school_mathematics`, `middle_school_physics`, `middle_school_politics`, `modern_chinese_history`, `operating_system`, `physician`, `plant_protection`, `probability_and_statistics`, `professional_tour_guide`, `sports_science`, `tax_accountant`, `teacher_qualification`, `urban_and_rural_planner`, `veterinary_medicine`
@@ -415,6 +430,7 @@ Text to process:
   > Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.
 - **Task Categories**: `Chinese`, `Knowledge`, `QA`
 - **Evaluation Metrics**: `is_correct`, `is_incorrect`, `is_not_attempted`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `中华文化`, `人文与社会科学`, `工程、技术与应用科学`, `生活、艺术与文化`, `社会`, `自然与自然科学`
@@ -441,6 +457,7 @@ Text to process:
   > C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `agronomy`, `anatomy`, `ancient_chinese`, `arts`, `astronomy`, `business_ethics`, `chinese_civil_service_exam`, `chinese_driving_rule`, `chinese_food_culture`, `chinese_foreign_policy`, `chinese_history`, `chinese_literature`, `chinese_teacher_qualification`, `clinical_knowledge`, `college_actuarial_science`, `college_education`, `college_engineering_hydrology`, `college_law`, `college_mathematics`, `college_medical_statistics`, `college_medicine`, `computer_science`, `computer_security`, `conceptual_physics`, `construction_project_management`, `economics`, `education`, `electrical_engineering`, `elementary_chinese`, `elementary_commonsense`, `elementary_information_and_technology`, `elementary_mathematics`, `ethnology`, `food_science`, `genetics`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_geography`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `human_sexuality`, `international_law`, `journalism`, `jurisprudence`, `legal_and_moral_basis`, `logical`, `machine_learning`, `management`, `marketing`, `marxist_theory`, `modern_chinese`, `nutrition`, `philosophy`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_study`, `sociology`, `sports_science`, `traditional_chinese_medicine`, `virology`, `world_history`, `world_religions`
@@ -470,6 +487,7 @@ Text to process:
   > CoinFlip is a symbolic reasoning dataset that tests an LLM's ability to track binary state changes through a sequence of actions. Each example describes whether a coin is flipped or not by different person, requiring logical inference to determine the final state (heads or tails).
 - **Task Categories**: `Reasoning`, `Yes/No`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Aggregation Methods**: `f1`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -502,6 +520,7 @@ Reasoning:
   > CommonsenseQA requires different types of commonsense knowledge to predict the correct answers.
 - **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -530,6 +549,7 @@ Answer the following multiple choice question. The entire content of your respon
   > The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 4-shot
 - **Subsets**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
@@ -558,6 +578,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as people, organizations, places, and various names.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -603,6 +624,7 @@ Text to process:
   > Copious corpus is a gold standard corpus that covers a wide range of biodiversity entities, consisting of 668 documents downloaded from the Biodiversity Heritage Library with over 26K sentences and more than 28K entities.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -648,6 +670,7 @@ Text to process:
   > CrossNER is a fully-labelled collected of named entity recognition (NER) data spanning over five diverse domains (AI, Literature, Music, Politics, Science).
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `ai`, `literature`, `music`, `politics`, `science`
@@ -693,6 +716,7 @@ Text to process:
   > Custom Data collection, mixing multiple evaluation datasets for a unified evaluation, aiming to use less data to achieve a more comprehensive assessment of the model's capabilities. [Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)
 - **Task Categories**: `Custom`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -709,6 +733,7 @@ Text to process:
   > DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within specialized domains. It requires the model to comprehend long and specialized documents and perform numerical reasoning to answer the given question.
 - **Task Categories**: `LongContext`, `Math`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `complong_testmini`, `compshort_testmini`, `simplong_testmini`, `simpshort_testmini`
@@ -741,6 +766,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
 - **Task Categories**: `Yes/No`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Aggregation Methods**: `f1`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `binary-classification`
@@ -765,6 +791,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
 - **Task Categories**: `MCQ`
 - **Evaluation Metrics**: `exact_match`, `f1_macro`, `f1_micro`, `f1_weighted`
+- **Aggregation Methods**: `f1_weighted`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `multi-label-classification`
@@ -789,6 +816,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
 - **Task Categories**: `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `multiple-choice-english-easy`, `multiple-choice-english-hard`
@@ -818,6 +846,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
   > Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
 - **Task Categories**: `Knowledge`, `Reasoning`
 - **Evaluation Metrics**: `bert_score`, `gpt_score`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `narrative-writing-english`
@@ -846,6 +875,7 @@ Text: {text}
   > The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.
 - **Task Categories**: `Reasoning`
 - **Evaluation Metrics**: `em`, `f1`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 3-shot
 - **Subsets**: `default`
@@ -876,6 +906,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
   > FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.
 - **Task Categories**: `LongContext`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -908,6 +939,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > GeneralArena is a custom benchmark designed to evaluate the performance of large language models in a competitive setting, where models are pitted against each other in custom tasks to determine their relative strengths and weaknesses. You should provide the model outputs in the format of a list of dictionaries, where each dictionary contains the model name and its report path. For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).
 - **Task Categories**: `Arena`, `Custom`
 - **Evaluation Metrics**: `winrate`
+- **Aggregation Methods**: `elo`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -983,6 +1015,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > A general multiple-choice question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).
 - **Task Categories**: `Custom`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1012,6 +1045,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > A general question answering dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).
 - **Task Categories**: `Custom`, `QA`
 - **Evaluation Metrics**: `BLEU`, `Rouge`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1037,6 +1071,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > GeniaNER consisting of 2,000 MEDLINE abstracts has been released with more than 400,000 words and almost 100,000 annotations for biological terms.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -1082,6 +1117,7 @@ Text to process:
   > GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1109,7 +1145,8 @@ Answer the following multiple choice question. The last line of your response sh
 - **Description**:
   > GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.
 - **Task Categories**: `Math`, `Reasoning`
-- **Evaluation Metrics**: `acc`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 4-shot
 - **Subsets**: `main`
@@ -1154,6 +1191,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
   > HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination.
 - **Task Categories**: `Hallucination`, `Knowledge`, `Yes/No`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `dialogue_samples`, `qa_samples`, `summarization_samples`
@@ -1178,6 +1216,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
   > HarveyNER is a dataset with fine-grained locations annotated in tweets. This dataset presents unique challenges and characterizes many complex and long location mentions in informal descriptions.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -1223,6 +1262,7 @@ Text to process:
   > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
 - **Task Categories**: `Knowledge`, `Medical`, `QA`
 - **Evaluation Metrics**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **Aggregation Methods**: `clipped_mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
@@ -1255,6 +1295,7 @@ Answer the question:
   > HellaSwag is a benchmark for commonsense reasoning in natural language understanding tasks. It consists of multiple-choice questions where the model must select the most plausible continuation of a given context.
 - **Task Categories**: `Commonsense`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1284,6 +1325,7 @@ Answer the following multiple choice question. The entire content of your respon
   > **To evaluate the performance of model without multi-modality capabilities, please set the `extra_params["include_multi_modal"]` to `False`.**
 - **Task Categories**: `Knowledge`, `QA`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
@@ -1313,7 +1355,8 @@ Answer the following multiple choice question. The entire content of your respon
 - **Description**:
   > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: `Pass@1`
+- **Evaluation Metrics**: 
+- **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `openai_humaneval`
@@ -1340,6 +1383,7 @@ Read the following function signature and docstring, and fully implement the fun
   > IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.
 - **Task Categories**: `InstructionFollowing`
 - **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1356,6 +1400,7 @@ Read the following function signature and docstring, and fully implement the fun
   > IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `EQ`, `IQ`
@@ -1384,7 +1429,8 @@ Read the following function signature and docstring, and fully implement the fun
 - **Description**:
   > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: `Pass@1`
+- **Evaluation Metrics**: 
+- **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `release_latest`
@@ -1423,6 +1469,7 @@ Read the following function signature and docstring, and fully implement the fun
   > LogiQA is a dataset sourced from expert-written questions for testing human Logical reasoning.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1451,6 +1498,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MaritimeBench is a benchmark for evaluating AI models on maritime-related multiple-choice questions. It consists of questions related to maritime knowledge, where the model must select the correct answer from given options.
 - **Task Categories**: `Chinese`, `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1487,6 +1535,7 @@ D. 扭应力
   > MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
@@ -1512,6 +1561,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > MathQA dataset is gathered by using a new representation language to annotate over the AQuA-RAT dataset with fully-specified operational programs.
 - **Task Categories**: `MCQ`, `Math`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1540,6 +1590,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MedMCQA is a large-scale MCQA dataset designed to address real-world medical entrance exam questions.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1568,6 +1619,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Minerva-math is a benchmark designed to evaluate the mathematical and quantitative reasoning capabilities of LLMs. It consists of **272 problems** sourced primarily from **MIT OpenCourseWare** courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential equations, and special relativity at the **university and graduate level**.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1593,6 +1645,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > The MIT-Movie-Trivia dataset, originally created for slot filling, is modified by ignoring some slot types (e.g. genre, rating) and merging others (e.g. director and actor in person, and song and movie title in title) in order to keep consistent named entity types across all datasets.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -1638,6 +1691,7 @@ Text to process:
   > The MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing Natural Language Processing (NLP) models, particularly for Named Entity Recognition (NER). It contains sentences from real reviews, along with corresponding labels in the BIO format.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -1683,6 +1737,7 @@ Text to process:
   > The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
@@ -1711,6 +1766,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `biology`, `business`, `chemistry`, `computer science`, `economics`, `engineering`, `health`, `history`, `law`, `math`, `other`, `philosophy`, `physics`, `psychology`
@@ -1741,6 +1797,7 @@ Options:
   > MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. The bad answers are corrected.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `{'acc': {'allow_inclusion': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
@@ -1769,6 +1826,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MRI-MCQA is a benchmark composed by multiple-choice questions related to Magnetic Resonance Imaging (MRI).
 - **Task Categories**: `Knowledge`, `MCQ`, `Medical`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1797,6 +1855,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
 - **Task Categories**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
 - **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `Chinese`, `English`, `French`, `German`, `Hindi`, `Italian`, `Portuguese`, `Russian`, `Spanish`, `Thai`, `Vietnamese`
@@ -1819,6 +1878,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MusicTrivia is a curated dataset of multiple-choice questions covering both classical and modern music topics. It includes questions about composers, musical periods, and popular artists, designed for evaluating factual recall and domain-specific music knowledge.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -1847,6 +1907,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `murder_mysteries`, `object_placements`, `team_allocation`
@@ -1875,6 +1936,7 @@ Answer the following multiple choice question. The last line of your response sh
   > Needle in a Haystack is a benchmark focused on information retrieval tasks. It requires the model to find specific information within a large corpus of text. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html)
 - **Task Categories**: `LongContext`, `Retrieval`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `chinese`, `english`
@@ -1934,6 +1996,7 @@ Don't give information outside the document or repeat your findings.
   > OntoNotes Release 5.0 is a large, multilingual corpus containing text in English, Chinese, and Arabic across various genres like news, weblogs, and broadcast conversations. It is richly annotated with multiple layers of linguistic information, including syntax, predicate-argument structure, word sense, named entities, and coreference to support research and development in natural language processing.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`
@@ -1979,6 +2042,7 @@ Text to process:
   > PIQA addresses the challenging task of reasoning about physical commonsense in natural language.
 - **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2007,6 +2071,7 @@ Answer the following multiple choice question. The entire content of your respon
   > PolyMath is a multilingual mathematical reasoning benchmark covering 18 languages and 4 easy-to-hard difficulty levels, with 9,000 high-quality problem samples. Our benchmark ensures difficulty comprehensiveness, language diversity, and high-quality translation, making it a highly discriminative multilingual mathematical benchmark in the era of reasoning LLMs.
 - **Task Categories**: `Math`, `MultiLingual`, `Reasoning`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `ar`, `bn`, `de`, `en`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `pt`, `ru`, `sw`, `te`, `th`, `vi`, `zh`
@@ -2031,6 +2096,7 @@ Answer the following multiple choice question. The entire content of your respon
   > ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.
 - **Task Categories**: `Math`, `Reasoning`
 - **Evaluation Metrics**: `correct_acc`, `error_acc`, `simple_f1_score`
+- **Aggregation Methods**: `f1`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `gsm8k`, `math`, `olympiadbench`, `omnimath`
@@ -2068,6 +2134,7 @@ Please put your final answer (i.e., the index) in oxed{{}}.
   > PubMedQA reasons over biomedical research texts to answer the multiple-choice questions.
 - **Task Categories**: `Knowledge`, `Yes/No`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `maybe_ratio`, `precision`, `recall`, `yes_ratio`
+- **Aggregation Methods**: `f1`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2093,6 +2160,7 @@ Please answer YES or NO or MAYBE without an explanation.
   > QASC is a question-answering dataset with a focus on sentence composition. It consists of 9,980 8-way multiple-choice questions about grade school science.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2121,6 +2189,7 @@ Answer the following multiple choice question. The entire content of your respon
   > RACE is a benchmark for testing reading comprehension and reasoning abilities of neural models. It is constructed from Chinese middle and high school examinations.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 3-shot
 - **Subsets**: `high`, `middle`
@@ -2149,6 +2218,7 @@ Answer the following multiple choice question. The last line of your response sh
   > The SciQ dataset contains crowdsourced science exam questions about Physics, Chemistry and Biology, among others. For the majority of the questions, an additional paragraph with supporting evidence for the correct answer is provided.
 - **Task Categories**: `Knowledge`, `MCQ`, `ReadingComprehension`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2177,6 +2247,7 @@ Answer the following multiple choice question. The entire content of your respon
   > SimpleQA is a benchmark designed to evaluate the performance of language models on simple question-answering tasks. It includes a set of straightforward questions that require basic reasoning and understanding capabilities.
 - **Task Categories**: `Knowledge`, `QA`
 - **Evaluation Metrics**: `is_correct`, `is_incorrect`, `is_not_attempted`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2203,6 +2274,7 @@ Answer the question:
   > Social Interaction QA (SIQA) is a question-answering benchmark for testing social commonsense intelligence. Contrary to many prior benchmarks that focus on physical or taxonomic knowledge, Social IQa focuses on reasoning about people's actions and their social implications.
 - **Task Categories**: `Commonsense`, `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2231,6 +2303,7 @@ Answer the following multiple choice question. The entire content of your respon
   > SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `Aeronautical and Astronautical Science and Technology`, `Agricultural Engineering`, `Animal Husbandry`, `Applied Economics`, `Aquaculture`, `Architecture`, `Art Studies`, `Astronomy`, `Atmospheric Science`, `Basic Medicine`, `Biology`, `Business Administration`, `Chemical Engineering and Technology`, `Chemistry`, `Civil Engineering`, `Clinical Medicine`, `Computer Science and Technology`, `Control Science and Engineering`, `Crop Science`, `Education`, `Electrical Engineering`, `Electronic Science and Technology`, `Environmental Science and Engineering`, `Food Science and Engineering`, `Forestry Engineering`, `Forestry`, `Geography`, `Geological Resources and Geological Engineering`, `Geology`, `Geophysics`, `History`, `Hydraulic Engineering`, `Information and Communication Engineering`, `Instrument Science and Technology`, `Journalism and Communication`, `Language and Literature`, `Law`, `Library, Information and Archival Management`, `Management Science and Engineering`, `Materials Science and Engineering`, `Mathematics`, `Mechanical Engineering`, `Mechanics`, `Metallurgical Engineering`, `Military Science`, `Mining Engineering`, `Musicology`, `Naval Architecture and Ocean Engineering`, `Nuclear Science and Technology`, `Oceanography`, `Optical Engineering`, `Petroleum and Natural Gas Engineering`, `Pharmacy`, `Philosophy`, `Physical Education`, `Physical Oceanography`, `Physics`, `Political Science`, `Power Engineering and Engineering Thermophysics`, `Psychology`, `Public Administration`, `Public Health and Preventive Medicine`, `Sociology`, `Stomatology`, `Surveying and Mapping Science and Technology`, `Systems Science`, `Textile Science and Engineering`, `Theoretical Economics`, `Traditional Chinese Medicine`, `Transportation Engineering`, `Veterinary Medicine`, `Weapon Science and Technology`
@@ -2259,6 +2332,7 @@ Answer the following multiple choice question. The last line of your response sh
   > TriviaQA is a large-scale reading comprehension dataset consisting of question-answer pairs collected from trivia websites. It includes questions with multiple possible answers, making it suitable for evaluating the ability of models to understand and generate answers based on context.
 - **Task Categories**: `QA`, `ReadingComprehension`
 - **Evaluation Metrics**: `{'acc': {'allow_inclusion': True}}`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `rc.wikipedia`
@@ -2290,6 +2364,7 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
   > TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model's understanding of factual information.
 - **Task Categories**: `Knowledge`
 - **Evaluation Metrics**: `multi_choice_acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `multiple_choice`
@@ -2324,6 +2399,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.
 - **Task Categories**: `MCQ`, `Reasoning`
 - **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -2352,6 +2428,7 @@ Answer the following multiple choice question. The entire content of your respon
   > WMT2024 news translation benchmark supporting multiple language pairs. Each subset represents a specific translation direction
 - **Task Categories**: `MachineTranslation`, `MultiLingual`
 - **Evaluation Metrics**: `bert_score`, `bleu`, `comet`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `en-ar_eg`, `en-ar_sa`, `en-bg_bg`, `en-bn_in`, `en-ca_es`, `en-cs_cz`, `en-da_dk`, `en-de_de`, `en-el_gr`, `en-es_mx`, `en-et_ee`, `en-fa_ir`, `en-fi_fi`, `en-fil_ph`, `en-fr_ca`, `en-fr_fr`, `en-gu_in`, `en-he_il`, `en-hi_in`, `en-hr_hr`, `en-hu_hu`, `en-id_id`, `en-is_is`, `en-it_it`, `en-ja_jp`, `en-kn_in`, `en-ko_kr`, `en-lt_lt`, `en-lv_lv`, `en-ml_in`, `en-mr_in`, `en-nl_nl`, `en-no_no`, `en-pa_in`, `en-pl_pl`, `en-pt_br`, `en-pt_pt`, `en-ro_ro`, `en-ru_ru`, `en-sk_sk`, `en-sl_si`, `en-sr_rs`, `en-sv_se`, `en-sw_ke`, `en-sw_tz`, `en-ta_in`, `en-te_in`, `en-th_th`, `en-tr_tr`, `en-uk_ua`, `en-ur_pk`, `en-vi_vn`, `en-zh_cn`, `en-zh_tw`, `en-zu_za`
@@ -2379,6 +2456,7 @@ Translate the following {source_language} sentence into {target_language}:
   > The WNUT2017 dataset is a collection of user-generated text from various social media platforms, like Twitter and YouTube, specifically designed for a named-entity recognition task.
 - **Task Categories**: `Knowledge`, `NER`
 - **Evaluation Metrics**: `accuracy`, `f1_score`, `precision`, `recall`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 5-shot
 - **Subsets**: `default`

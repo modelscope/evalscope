@@ -23,6 +23,7 @@ logger = get_logger()
         'HallusionBench is an advanced diagnostic benchmark designed to evaluate image-context reasoning, analyze models\' tendencies for language hallucination and visual illusion in large vision-language models (LVLMs).',  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
+        aggregation='f1',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
     )

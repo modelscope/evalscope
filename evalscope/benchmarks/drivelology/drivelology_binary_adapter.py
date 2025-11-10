@@ -86,6 +86,7 @@ logger = get_logger()
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['binary-classification'],
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
+        aggregation='f1',
         few_shot_num=0,
         eval_split='test',
         prompt_template='{question}',

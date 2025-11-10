@@ -24,6 +24,7 @@
   > EvalMuse文本到图像基准，用于评估精细生成图像的质量和语义一致性
 - **任务类别**: `TextToImage`
 - **评估指标**: `FGA_BLIP2Score`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `EvalMuse`
@@ -40,6 +41,7 @@
   > GEdit-Bench 是基于真实使用场景构建的图像编辑基准，旨在支持对图像编辑模型进行更真实、全面的评估。
 - **任务类别**: `ImageEditing`
 - **评估指标**: `Perceptual Similarity`, `Semantic Consistency`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `background_change`, `color_alter`, `material_alter`, `motion_change`, `ps_human`, `style_change`, `subject-add`, `subject-remove`, `subject-replace`, `text_change`, `tone_transfer`
@@ -62,6 +64,7 @@
   > GenAI-Bench 文本到图像基准，包含 1600 个文本到图像任务的提示。
 - **任务类别**: `TextToImage`
 - **评估指标**: `VQAScore`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `GenAI-Bench-1600`
@@ -78,6 +81,7 @@
   > 通用文生图基准测试
 - **任务类别**: `Custom`, `TextToImage`
 - **评估指标**: `PickScore`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -94,6 +98,7 @@
   > HPDv2 文本到图像基准。基于人类偏好的评估指标，训练于人类偏好数据集（HPD v2）
 - **任务类别**: `TextToImage`
 - **评估指标**: `HPSv2.1Score`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `HPDv2`
@@ -110,6 +115,7 @@
   > TIFA-160 文本到图像基准测试
 - **任务类别**: `TextToImage`
 - **评估指标**: `PickScore`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `TIFA-160`

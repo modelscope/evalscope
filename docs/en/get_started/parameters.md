@@ -72,11 +72,14 @@ Example usage:
   - `few_shot_random`: Whether to sample few-shot data randomly (default `False`).
   - `shuffle`: Indicates whether to randomize the data before evaluation, with the default setting being `False`.
   - `shuffle_choices`: Specifies whether to rearrange the order of choices before evaluation, defaulting to `False`. This option is only applicable to multiple-choice datasets.
-  - `metric_list`: List of metrics for the dataset; will use specified metrics for evaluation. Currently supports `acc`, `Pass@k`, etc. For example, `humaneval` dataset can specify `["Pass@1", "Pass@5"]`. Note: you must set `repeats=5` to let the model infer 5 times for each sample.
-  - `filters`: Filters for the dataset; will use specified filters to process results. Used to handle model output. Currently supported:
-    - `remove_until {string}`: Remove everything in the model output before the specified string.
-    - `extract {regex}`: Extract part of the model output matching the specified regex.
-    For example, in `ifeval`, specify `{"remove_until": "</think>"}` to remove everything before `</think>` in model output, to avoid affecting scoring.
+- `metric_list`: The metric list for the evaluation dataset. When specified, the given metrics will be used for evaluation. Currently, `acc` is supported by default. Other computed metrics can be found in the dataset list.
+  - `aggregation`: The aggregation method for evaluation results. Default is `mean`. Other options include:
+    - `mean_and_pass_at_k`: Calculates the mean and `pass_at_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing at least once across k attempts for the same example. For instance, the `humaneval` dataset can specify `repeats=5` to calculate the pass rate among 5 generated results for the same example.
+    - `mean_and_vote_at_k`: Calculates the mean and `vote_at_k`. Requires specifying `repeats=k`, which automatically calculates the voting result across k attempts for the same example to determine the final result.
+    - `mean_and_pass_hat_k`: Calculates the mean and `pass_hat_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing all k attempts for the same example. For instance, the `tau2_bench` dataset can specify `repeats=3` to calculate the pass rate among 3 generated results for the same example.
+  - `filters`: Filters for the evaluation dataset. When specified, the given filters will be used to filter evaluation results and can be used to process the output of inference models. Currently supported filters include:
+    - `remove_until {string}`: Removes the portion before the specified string in the model output. For example, the `ifeval` dataset can specify `{"remove_until": "</think>"}` to filter out the portion before `</think>` in the model output, preventing it from affecting scoring.
+    - `extract {regex}`: Extracts the portion of the model output that matches the specified regular expression.
   - `extra_params`: Extra parameters related to the dataset. Refer to the documentation of [each dataset](./supported_dataset/index.md) for specific parameters, e.g., the `include_multi_modal` parameter for the `hle` dataset.
 - `--dataset-dir`: Dataset download path, default is `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset source, default is `modelscope`, optional value is `huggingface`.

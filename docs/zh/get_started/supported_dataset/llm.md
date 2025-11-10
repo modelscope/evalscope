@@ -92,6 +92,7 @@
   > AA-LCR（人工分析长上下文检索）是一个用于评估语言模型在多文档场景下长上下文检索与推理能力的基准。
 - **任务类别**: `Knowledge`, `LongContext`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -136,6 +137,7 @@ END QUESTION
   > AIME 2024 基准基于美国数学邀请赛（AIME）的题目，该赛事是一项享有盛誉的高中数学竞赛。此基准通过生成逐步解答并提供正确最终答案，来测试模型解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -161,6 +163,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > AIME 2025 基准基于美国数学邀请赛（AIME）的题目，该赛事是一项享有盛誉的高中数学竞赛。此基准通过生成逐步解题过程并给出正确最终答案，来测试模型解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `AIME2025-II`, `AIME2025-I`
@@ -169,8 +172,12 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 <details><summary>View</summary>
 
 ```text
+
+Solve the following math problem step by step. Put your answer inside \boxed{{}}.
+
 {question}
-Please reason step by step, and put your final answer within \boxed{{}}.
+
+Remember to put your answer inside \boxed{{}}.
 ```
 
 </details>
@@ -186,6 +193,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > Alpaca Eval 2.0 是一个改进的指令遵循语言模型评估框架，具备升级的自动标注器、更新的基线模型和持续偏好计算，可提供更准确且成本更低的模型评估。目前不支持“长度控制胜率”；官方裁判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-turbo`。
 - **任务类别**: `Arena`, `InstructionFollowing`
 - **评估指标**: `winrate`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `alpaca_eval_gpt4_baseline`
@@ -210,6 +218,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > AMC（美国数学竞赛）是一系列面向高中生的数学竞赛。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `amc22`, `amc23`, `amc24`
@@ -235,6 +244,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > ARC（AI2推理挑战）基准通过科学考试中的选择题来评估AI模型的推理能力，包含难度不同的两个子集：ARC-Easy和ARC-Challenge。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `ARC-Challenge`, `ARC-Easy`
@@ -263,6 +273,7 @@ Answer the following multiple choice question. The entire content of your respon
   > ArenaHard 是一个用于评估大语言模型在竞争环境中表现的基准，通过一系列任务将模型相互对战，以衡量其相对优劣。该基准包含需要推理、理解和生成能力的高难度任务。目前不支持“风格控制胜率”；官方裁判模型为 `gpt-4-1106-preview`，基线模型为 `gpt-4-0314`。
 - **任务类别**: `Arena`, `InstructionFollowing`
 - **评估指标**: `winrate`
+- **聚合方法**: `elo`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -287,6 +298,7 @@ Answer the following multiple choice question. The entire content of your respon
   > BBH（Big Bench Hard）基准是一组具有挑战性的任务，旨在评估AI模型的推理能力。它包含开放式和选择题任务，涵盖多种推理技能。
 - **任务类别**: `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 3-shot
 - **数据集子集**: `boolean_expressions`, `causal_judgement`, `date_understanding`, `disambiguation_qa`, `dyck_languages`, `formal_fallacies`, `geometric_shapes`, `hyperbaton`, `logical_deduction_five_objects`, `logical_deduction_seven_objects`, `logical_deduction_three_objects`, `movie_recommendation`, `multistep_arithmetic_two`, `navigate`, `object_counting`, `penguins_in_a_table`, `reasoning_about_colored_objects`, `ruin_names`, `salient_translation_error_detection`, `snarks`, `sports_understanding`, `temporal_sequences`, `tracking_shuffled_objects_five_objects`, `tracking_shuffled_objects_seven_objects`, `tracking_shuffled_objects_three_objects`, `web_of_lies`, `word_sorting`
@@ -313,6 +325,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
   > BiomixQA 是一个经过整理的生物医学问答数据集，已被用于在不同大语言模型上验证基于知识图谱的检索增强生成（KG-RAG）框架。
 - **任务类别**: `Knowledge`, `MCQ`, `Medical`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -341,6 +354,7 @@ Answer the following multiple choice question. The entire content of your respon
   > BroadTwitterCorpus 是一个通过分层抽样在不同时间、地点和社会用途下收集的推文数据集。其目标是涵盖广泛的活动，使数据集更能代表这种最难处理的社交媒体形式中所使用的语言。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -386,6 +400,7 @@ Text to process:
   > C-Eval 是一个评估AI模型在包括STEM、社会科学和人文学科等多个学科中文考试中表现的基准，包含测试知识和推理能力的多项选择题。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `accountant`, `advanced_mathematics`, `art_studies`, `basic_medicine`, `business_administration`, `chinese_language_and_literature`, `civil_servant`, `clinical_medicine`, `college_chemistry`, `college_economics`, `college_physics`, `college_programming`, `computer_architecture`, `computer_network`, `discrete_mathematics`, `education_science`, `electrical_engineer`, `environmental_impact_assessment_engineer`, `fire_engineer`, `high_school_biology`, `high_school_chemistry`, `high_school_chinese`, `high_school_geography`, `high_school_history`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `ideological_and_moral_cultivation`, `law`, `legal_professional`, `logic`, `mao_zedong_thought`, `marxism`, `metrology_engineer`, `middle_school_biology`, `middle_school_chemistry`, `middle_school_geography`, `middle_school_history`, `middle_school_mathematics`, `middle_school_physics`, `middle_school_politics`, `modern_chinese_history`, `operating_system`, `physician`, `plant_protection`, `probability_and_statistics`, `professional_tour_guide`, `sports_science`, `tax_accountant`, `teacher_qualification`, `urban_and_rural_planner`, `veterinary_medicine`
@@ -415,6 +430,7 @@ Text to process:
   > Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简单事实问题上的表现。该数据集涵盖多种主题，用于测试模型理解和生成中文正确答案的能力。
 - **任务类别**: `Chinese`, `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `中华文化`, `人文与社会科学`, `工程、技术与应用科学`, `生活、艺术与文化`, `社会`, `自然与自然科学`
@@ -441,6 +457,7 @@ Text to process:
   > C-MMLU 是一个用于评估AI模型在中文语言任务上性能的基准，包括阅读理解、文本分类等。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `agronomy`, `anatomy`, `ancient_chinese`, `arts`, `astronomy`, `business_ethics`, `chinese_civil_service_exam`, `chinese_driving_rule`, `chinese_food_culture`, `chinese_foreign_policy`, `chinese_history`, `chinese_literature`, `chinese_teacher_qualification`, `clinical_knowledge`, `college_actuarial_science`, `college_education`, `college_engineering_hydrology`, `college_law`, `college_mathematics`, `college_medical_statistics`, `college_medicine`, `computer_science`, `computer_security`, `conceptual_physics`, `construction_project_management`, `economics`, `education`, `electrical_engineering`, `elementary_chinese`, `elementary_commonsense`, `elementary_information_and_technology`, `elementary_mathematics`, `ethnology`, `food_science`, `genetics`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_geography`, `high_school_mathematics`, `high_school_physics`, `high_school_politics`, `human_sexuality`, `international_law`, `journalism`, `jurisprudence`, `legal_and_moral_basis`, `logical`, `machine_learning`, `management`, `marketing`, `marxist_theory`, `modern_chinese`, `nutrition`, `philosophy`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_study`, `sociology`, `sports_science`, `traditional_chinese_medicine`, `virology`, `world_history`, `world_religions`
@@ -470,6 +487,7 @@ Text to process:
   > CoinFlip 是一个符号推理数据集，用于测试大语言模型通过一系列操作跟踪二元状态变化的能力。每个示例描述不同人是否翻转硬币，需通过逻辑推理解答最终状态（正面或反面）。
 - **任务类别**: `Reasoning`, `Yes/No`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -502,6 +520,7 @@ Reasoning:
   > CommonsenseQA 需要不同类型的常识知识来预测正确答案。
 - **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -530,6 +549,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MATH（数学）基准通过算术、代数、几何等多种题型，评估AI模型的数学推理能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 4-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
@@ -558,6 +578,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > ConLL-2003 数据集用于命名实体识别（NER）任务，是 ConLL-2003 共享任务会议的一部分，包含标注了人名、组织、地点及各类名称的文本。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -603,6 +624,7 @@ Text to process:
   > Copious语料库是一个涵盖广泛生物多样性实体的黄金标准语料库，包含从生物多样性遗产图书馆下载的668份文档，超过2.6万句句子和2.8万余个实体。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -648,6 +670,7 @@ Text to process:
   > CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖五个不同领域（人工智能、文学、音乐、政治、科学）。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `ai`, `literature`, `music`, `politics`, `science`
@@ -693,6 +716,7 @@ Text to process:
   > 自定义数据收集，混合多个评估数据集进行统一评估，旨在使用更少的数据实现对模型能力的更全面评估。[使用参考](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 - **任务类别**: `Custom`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -709,6 +733,7 @@ Text to process:
   > DocMath-Eval 是一个专注于特定领域内数值推理的综合基准，要求模型理解长篇且专业的文档，并通过数值推理回答问题。
 - **任务类别**: `LongContext`, `Math`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `complong_testmini`, `compshort_testmini`, `simplong_testmini`, `simpshort_testmini`
@@ -741,6 +766,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology，一种独特的语言现象，被称为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或修辞上具有颠覆性。
 - **任务类别**: `Yes/No`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `binary-classification`
@@ -765,6 +791,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology，一种独特的语言现象，被称为“有深度的胡言乱语”——语法上通顺，但在语用上具有悖论性、情感负载或修辞颠覆性的言语。
 - **任务类别**: `MCQ`
 - **评估指标**: `exact_match`, `f1_macro`, `f1_micro`, `f1_weighted`
+- **聚合方法**: `f1_weighted`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `multi-label-classification`
@@ -789,6 +816,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > Drivelology，一种独特的语言现象，被定义为“有深度的 nonsense”——语句在语法上连贯，但在语用上却充满矛盾、情感强烈或具有修辞颠覆性。
 - **任务类别**: `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `multiple-choice-english-easy`, `multiple-choice-english-hard`
@@ -818,6 +846,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
   > Drivelology，一种独特的语言现象，表现为“有深度的 nonsense”——语法上连贯，但在语用上充满悖论、情感强烈或具有修辞性颠覆意味的言语。
 - **任务类别**: `Knowledge`, `Reasoning`
 - **评估指标**: `bert_score`, `gpt_score`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `narrative-writing-english`
@@ -846,6 +875,7 @@ Text: {text}
   > DROP（段落离散推理）基准用于评估AI模型的阅读理解与推理能力，包含多种任务，要求模型阅读文本并根据内容回答问题。
 - **任务类别**: `Reasoning`
 - **评估指标**: `em`, `f1`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 3-shot
 - **数据集子集**: `default`
@@ -876,6 +906,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
   > FRAMES 是一个综合评估数据集，旨在测试检索增强生成（RAG）系统在事实性、检索准确性和推理能力方面的表现。
 - **任务类别**: `LongContext`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -908,6 +939,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
   > GeneralArena 是一个自定义基准，旨在通过将大语言模型置于竞争性任务中相互对抗，评估其性能并分析各自的优缺点。您应以字典列表格式提供模型输出，每个字典包含模型名称及其报告路径。有关使用此基准的详细说明，请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)。
 - **任务类别**: `Arena`, `Custom`
 - **评估指标**: `winrate`
+- **聚合方法**: `elo`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -983,6 +1015,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > 一个用于自定义评估的通用多项选择题问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#mcq)。
 - **任务类别**: `Custom`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1012,6 +1045,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > 一个用于自定义评估的通用问答数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。
 - **任务类别**: `Custom`, `QA`
 - **评估指标**: `BLEU`, `Rouge`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1037,6 +1071,7 @@ Example output: "My final verdict is tie: [[A=B]]".
   > GeniaNER 包含 2,000 篇 MEDLINE 摘要，超过 40 万词和近 10 万个生物术语标注，现已发布。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -1082,6 +1117,7 @@ Text to process:
   > GPQA 是一个用于评估大语言模型（LLM）在复杂数学问题上推理能力的数据集，包含需要逐步推理才能得出正确答案的问题。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1109,7 +1145,8 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集介绍**:
   > GSM8K（小学数学8K）是一个小学数学问题数据集，旨在评估AI模型的数学推理能力。
 - **任务类别**: `Math`, `Reasoning`
-- **评估指标**: `acc`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 4-shot
 - **数据集子集**: `main`
@@ -1154,6 +1191,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
   > HaluEval 是一个大规模生成并由人工标注的幻觉样本集合，用于评估大语言模型在识别幻觉方面的性能。
 - **任务类别**: `Hallucination`, `Knowledge`, `Yes/No`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`, `yes_ratio`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `dialogue_samples`, `qa_samples`, `summarization_samples`
@@ -1178,6 +1216,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
   > HarveyNER 是一个在推文中标注了细粒度位置的数据集，该数据集具有独特挑战性，包含大量复杂且较长的非正式位置描述。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -1223,6 +1262,7 @@ Text to process:
   > HealthBench：一个旨在更好衡量AI系统医疗能力的新基准。该基准与来自60个国家的262名医生合作构建，包含5,000个真实医疗对话，每个对话均配有医生定制的评分标准来评估模型回复。
 - **任务类别**: `Knowledge`, `Medical`, `QA`
 - **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **聚合方法**: `clipped_mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
@@ -1255,6 +1295,7 @@ Answer the question:
   > HellaSwag 是一个用于自然语言理解中常识推理的基准测试，包含多项选择题，要求模型从给定上下文中选出最合理的后续内容。
 - **任务类别**: `Commonsense`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1284,6 +1325,7 @@ Answer the following multiple choice question. The entire content of your respon
   > **如需评估不具备多模态能力的模型，请将 `extra_params["include_multi_modal"]` 设为 `False`。**
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Biology/Medicine`, `Chemistry`, `Computer Science/AI`, `Engineering`, `Humanities/Social Science`, `Math`, `Other`, `Physics`
@@ -1313,7 +1355,8 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集介绍**:
   > HumanEval 是一个基准测试，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: `Pass@1`
+- **评估指标**: 
+- **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `openai_humaneval`
@@ -1340,6 +1383,7 @@ Read the following function signature and docstring, and fully implement the fun
   > IFEval 是一个用于评估指令跟随型语言模型的基准，侧重于测试模型理解和响应各类提示的能力。它包含多样化的任务和指标，以全面评估模型性能。
 - **任务类别**: `InstructionFollowing`
 - **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1356,6 +1400,7 @@ Read the following function signature and docstring, and fully implement the fun
   > IQuiz 是一个用于评估 AI 模型智商与情商的基准测试，包含多项选择题，要求模型选出正确答案并提供解释。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `EQ`, `IQ`
@@ -1384,7 +1429,8 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集介绍**:
   > Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以衡量模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: `Pass@1`
+- **评估指标**: 
+- **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `release_latest`
@@ -1423,6 +1469,7 @@ Read the following function signature and docstring, and fully implement the fun
   > LogiQA 是一个源自专家编写的问题的数据集，用于测试人类的逻辑推理能力。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1451,6 +1498,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MaritimeBench 是一个用于评估AI模型在 maritime 相关选择题上表现的基准，包含需要模型从给定选项中选出正确答案的 maritime 知识问题。
 - **任务类别**: `Chinese`, `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1487,6 +1535,7 @@ D. 扭应力
   > MATH-500 是一个用于评估AI模型数学推理能力的基准，包含500道涵盖五个难度级别的多样化数学题，旨在通过生成逐步解题过程并给出正确最终答案来测试模型解决复杂数学问题的能力。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Level 1`, `Level 2`, `Level 3`, `Level 4`, `Level 5`
@@ -1512,6 +1561,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > MathQA 数据集通过使用一种新的表示语言，对 AQuA-RAT 数据集进行标注，生成完整的操作程序而构建。
 - **任务类别**: `MCQ`, `Math`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1540,6 +1590,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MedMCQA 是一个大规模的多项选择题数据集，旨在解决真实的医学入学考试问题。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1568,6 +1619,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Minerva-math 是一个用于评估大语言模型数学与定量推理能力的基准，包含 **272 道题目**，主要来自 **MIT OpenCourseWare** 课程，涵盖固态化学、天文学、微分方程和狭义相对论等 **大学及研究生水平** 的高级 STEM 学科。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1593,6 +1645,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
   > MIT-Movie-Trivia 数据集最初用于槽位填充，为保持各数据集中命名实体类型的一致性，忽略了一些槽位类型（如类型、评分），并将其他槽位合并（如将导演和演员合并为人物，歌曲和电影标题合并为标题）。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -1638,6 +1691,7 @@ Text to process:
   > MIT-Restaurant 数据集是一个专门用于训练和测试自然语言处理（NLP）模型的餐厅评论文本集合，尤其适用于命名实体识别（NER）。该数据集包含来自真实评论的句子及其对应的 BIO 格式标签。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -1683,6 +1737,7 @@ Text to process:
   > MMLU（大规模多任务语言理解）基准是一个综合评估套件，旨在评估语言模型在广泛主题和任务中的表现。它涵盖历史、科学、数学等多个领域的多项选择题，能够有效衡量模型的理解和推理能力。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
@@ -1711,6 +1766,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MMLU-Pro 是一个用于评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，要求模型从给定选项中选出正确答案。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `biology`, `business`, `chemistry`, `computer science`, `economics`, `engineering`, `health`, `history`, `law`, `math`, `other`, `philosophy`, `physics`, `psychology`
@@ -1741,6 +1797,7 @@ Options:
   > MMLU-Redux 是一个评估语言模型在多个学科选择题上表现的基准，涵盖不同领域的问题，模型需从给定选项中选出正确答案，且错误选项已被修正。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `{'acc': {'allow_inclusion': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `abstract_algebra`, `anatomy`, `astronomy`, `business_ethics`, `clinical_knowledge`, `college_biology`, `college_chemistry`, `college_computer_science`, `college_mathematics`, `college_medicine`, `college_physics`, `computer_security`, `conceptual_physics`, `econometrics`, `electrical_engineering`, `elementary_mathematics`, `formal_logic`, `global_facts`, `high_school_biology`, `high_school_chemistry`, `high_school_computer_science`, `high_school_european_history`, `high_school_geography`, `high_school_government_and_politics`, `high_school_macroeconomics`, `high_school_mathematics`, `high_school_microeconomics`, `high_school_physics`, `high_school_psychology`, `high_school_statistics`, `high_school_us_history`, `high_school_world_history`, `human_aging`, `human_sexuality`, `international_law`, `jurisprudence`, `logical_fallacies`, `machine_learning`, `management`, `marketing`, `medical_genetics`, `miscellaneous`, `moral_disputes`, `moral_scenarios`, `nutrition`, `philosophy`, `prehistory`, `professional_accounting`, `professional_law`, `professional_medicine`, `professional_psychology`, `public_relations`, `security_studies`, `sociology`, `us_foreign_policy`, `virology`, `world_religions`
@@ -1769,6 +1826,7 @@ Answer the following multiple choice question. The last line of your response sh
   > MRI-MCQA 是一个包含磁共振成像（MRI）相关选择题的基准测试。
 - **任务类别**: `Knowledge`, `MCQ`, `Medical`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1797,6 +1855,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Multi-IF 是一个用于评估大语言模型在多语言环境下多轮指令遵循能力的基准。
 - **任务类别**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
 - **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Chinese`, `English`, `French`, `German`, `Hindi`, `Italian`, `Portuguese`, `Russian`, `Spanish`, `Thai`, `Vietnamese`
@@ -1819,6 +1878,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MusicTrivia 是一个精选的多项选择题数据集，涵盖古典与现代音乐主题，包含作曲家、音乐时期及流行艺术家等相关问题，旨在评估事实记忆和特定领域的音乐知识。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -1847,6 +1907,7 @@ Answer the following multiple choice question. The entire content of your respon
   > MuSR 是一个用于评估 AI 模型在谋杀谜案、物体位置和团队分配等选择题上表现的基准。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `murder_mysteries`, `object_placements`, `team_allocation`
@@ -1875,6 +1936,7 @@ Answer the following multiple choice question. The last line of your response sh
   > “大海捞针”是一个专注于信息检索任务的基准，要求模型在大量文本中找出特定信息。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 - **任务类别**: `LongContext`, `Retrieval`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `chinese`, `english`
@@ -1934,6 +1996,7 @@ Don't give information outside the document or repeat your findings.
   > OntoNotes 5.0 是一个大型多语言语料库，包含英语、中文和阿拉伯语的多种体裁文本，如新闻、博客和广播对话。该语料库标注了丰富的语言信息层次，包括句法、谓词-论元结构、词义、命名实体和共指关系，支持自然语言处理的研究与开发。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`
@@ -1979,6 +2042,7 @@ Text to process:
   > PIQA 旨在解决自然语言中物理常识推理的难题。
 - **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2007,6 +2071,7 @@ Answer the following multiple choice question. The entire content of your respon
   > PolyMath 是一个涵盖 18 种语言、4 个由易到难难度级别的多语言数学推理基准，包含 9,000 个高质量问题样本。该基准确保了难度全面性、语言多样性和高质量翻译，是推理型大语言模型时代极具区分度的多语言数学评测基准。
 - **任务类别**: `Math`, `MultiLingual`, `Reasoning`
 - **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `ar`, `bn`, `de`, `en`, `es`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `pt`, `ru`, `sw`, `te`, `th`, `vi`, `zh`
@@ -2031,6 +2096,7 @@ Answer the following multiple choice question. The entire content of your respon
   > ProcessBench 是一个用于评估AI模型数学推理能力的基准测试，包含 GSM8K、Math、OlympiadBench 和 OmniMath 等多个子集，每个子集均提供需逐步推理才能得出正确答案的问题。
 - **任务类别**: `Math`, `Reasoning`
 - **评估指标**: `correct_acc`, `error_acc`, `simple_f1_score`
+- **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `gsm8k`, `math`, `olympiadbench`, `omnimath`
@@ -2068,6 +2134,7 @@ Please put your final answer (i.e., the index) in oxed{{}}.
   > PubMedQA 通过推理生物医学研究文本回答多项选择题。
 - **任务类别**: `Knowledge`, `Yes/No`
 - **评估指标**: `accuracy`, `f1_score`, `maybe_ratio`, `precision`, `recall`, `yes_ratio`
+- **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2093,6 +2160,7 @@ Please answer YES or NO or MAYBE without an explanation.
   > QASC 是一个注重句子组合的问答数据集，包含 9,980 道八选一的多项选择题，内容涉及小学科学。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2121,6 +2189,7 @@ Answer the following multiple choice question. The entire content of your respon
   > RACE 是一个用于测试神经网络模型阅读理解与推理能力的基准，基于中国初高中考试题目构建。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 3-shot
 - **数据集子集**: `high`, `middle`
@@ -2149,6 +2218,7 @@ Answer the following multiple choice question. The last line of your response sh
   > SciQ 数据集包含关于物理、化学和生物等领域的众包科学考试题目。大多数问题还附有一段支持正确答案的证据文本。
 - **任务类别**: `Knowledge`, `MCQ`, `ReadingComprehension`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2177,6 +2247,7 @@ Answer the following multiple choice question. The entire content of your respon
   > SimpleQA 是一个用于评估语言模型在简单问答任务上性能的基准，包含一系列需要基本推理和理解能力的直接问题。
 - **任务类别**: `Knowledge`, `QA`
 - **评估指标**: `is_correct`, `is_incorrect`, `is_not_attempted`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2203,6 +2274,7 @@ Answer the question:
   > 社交互动问答（SIQA）是一个用于测试社交常识智能的问答基准。与许多关注物理或分类知识的先前基准不同，Social IQa 侧重于推理人们的行为及其社会影响。
 - **任务类别**: `Commonsense`, `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2231,6 +2303,7 @@ Answer the following multiple choice question. The entire content of your respon
   > SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型在不同领域的泛化能力。它包含来自 50 多个领域的 10 万多个问题，每个问题有 10 个选项。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Aeronautical and Astronautical Science and Technology`, `Agricultural Engineering`, `Animal Husbandry`, `Applied Economics`, `Aquaculture`, `Architecture`, `Art Studies`, `Astronomy`, `Atmospheric Science`, `Basic Medicine`, `Biology`, `Business Administration`, `Chemical Engineering and Technology`, `Chemistry`, `Civil Engineering`, `Clinical Medicine`, `Computer Science and Technology`, `Control Science and Engineering`, `Crop Science`, `Education`, `Electrical Engineering`, `Electronic Science and Technology`, `Environmental Science and Engineering`, `Food Science and Engineering`, `Forestry Engineering`, `Forestry`, `Geography`, `Geological Resources and Geological Engineering`, `Geology`, `Geophysics`, `History`, `Hydraulic Engineering`, `Information and Communication Engineering`, `Instrument Science and Technology`, `Journalism and Communication`, `Language and Literature`, `Law`, `Library, Information and Archival Management`, `Management Science and Engineering`, `Materials Science and Engineering`, `Mathematics`, `Mechanical Engineering`, `Mechanics`, `Metallurgical Engineering`, `Military Science`, `Mining Engineering`, `Musicology`, `Naval Architecture and Ocean Engineering`, `Nuclear Science and Technology`, `Oceanography`, `Optical Engineering`, `Petroleum and Natural Gas Engineering`, `Pharmacy`, `Philosophy`, `Physical Education`, `Physical Oceanography`, `Physics`, `Political Science`, `Power Engineering and Engineering Thermophysics`, `Psychology`, `Public Administration`, `Public Health and Preventive Medicine`, `Sociology`, `Stomatology`, `Surveying and Mapping Science and Technology`, `Systems Science`, `Textile Science and Engineering`, `Theoretical Economics`, `Traditional Chinese Medicine`, `Transportation Engineering`, `Veterinary Medicine`, `Weapon Science and Technology`
@@ -2259,6 +2332,7 @@ Answer the following multiple choice question. The last line of your response sh
   > TriviaQA 是一个大规模阅读理解数据集，包含从 trivia 网站收集的问答对。该数据集中的问题可能有多个正确答案，适用于评估模型基于上下文理解和生成答案的能力。
 - **任务类别**: `QA`, `ReadingComprehension`
 - **评估指标**: `{'acc': {'allow_inclusion': True}}`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `rc.wikipedia`
@@ -2290,6 +2364,7 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
   > TruthfulQA 是一个用于评估 AI 模型真实准确回答问题能力的基准，包含多项选择任务，侧重考察模型对事实信息的理解。
 - **任务类别**: `Knowledge`
 - **评估指标**: `multi_choice_acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `multiple_choice`
@@ -2324,6 +2399,7 @@ Answer the following multiple choice question. The entire content of your respon
   > Winogrande 是一个用于评估 AI 模型在常识推理任务上表现的基准，专门用于测试模型解决句子中歧义代词的能力。
 - **任务类别**: `MCQ`, `Reasoning`
 - **评估指标**: `acc`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`
@@ -2352,6 +2428,7 @@ Answer the following multiple choice question. The entire content of your respon
   > WMT2024新闻翻译基准，支持多种语言对，每个子集代表一个特定的翻译方向。
 - **任务类别**: `MachineTranslation`, `MultiLingual`
 - **评估指标**: `bert_score`, `bleu`, `comet`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `en-ar_eg`, `en-ar_sa`, `en-bg_bg`, `en-bn_in`, `en-ca_es`, `en-cs_cz`, `en-da_dk`, `en-de_de`, `en-el_gr`, `en-es_mx`, `en-et_ee`, `en-fa_ir`, `en-fi_fi`, `en-fil_ph`, `en-fr_ca`, `en-fr_fr`, `en-gu_in`, `en-he_il`, `en-hi_in`, `en-hr_hr`, `en-hu_hu`, `en-id_id`, `en-is_is`, `en-it_it`, `en-ja_jp`, `en-kn_in`, `en-ko_kr`, `en-lt_lt`, `en-lv_lv`, `en-ml_in`, `en-mr_in`, `en-nl_nl`, `en-no_no`, `en-pa_in`, `en-pl_pl`, `en-pt_br`, `en-pt_pt`, `en-ro_ro`, `en-ru_ru`, `en-sk_sk`, `en-sl_si`, `en-sr_rs`, `en-sv_se`, `en-sw_ke`, `en-sw_tz`, `en-ta_in`, `en-te_in`, `en-th_th`, `en-tr_tr`, `en-uk_ua`, `en-ur_pk`, `en-vi_vn`, `en-zh_cn`, `en-zh_tw`, `en-zu_za`
@@ -2379,6 +2456,7 @@ Translate the following {source_language} sentence into {target_language}:
   > WNUT2017 数据集包含来自 Twitter 和 YouTube 等社交媒体平台的用户生成文本，专为命名实体识别任务设计。
 - **任务类别**: `Knowledge`, `NER`
 - **评估指标**: `accuracy`, `f1_score`, `precision`, `recall`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 5-shot
 - **数据集子集**: `default`

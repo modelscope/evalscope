@@ -12,6 +12,11 @@ from collections.abc import Iterable
 from typing import Dict, List, Union
 
 
+def normalize_text(text: str) -> str:
+    """Normalize text by lowering case and stripping whitespace."""
+    return text.strip().lower()
+
+
 def mean(arr: list):
     if not arr:
         return 0.0
@@ -467,6 +472,22 @@ def calculate_pass_at_k(
         num_samples_it = iter(num_samples)
 
     return np.array([estimator(int(n), int(c), k) for n, c in zip(num_samples_it, num_correct)])
+
+
+def calculate_pass_hat_k(num_trials: int, success_count: int, k: int) -> float:
+    """
+    Compute the pass^k metric for the given number of trials, success count, and k.
+    from https://arxiv.org/pdf/2406.12045
+    Args:
+        num_trials: The number of trials.
+        success_count: The number of successful trials.
+        k: The number of trials to consider.
+    Returns:
+        The pass^k metric.
+    """
+    if num_trials < k:
+        raise ValueError(f'Number of trials {num_trials} is less than k {k}.')
+    return math.comb(success_count, k) / math.comb(num_trials, k)
 
 
 def levenshtein_distance(s1, s2):

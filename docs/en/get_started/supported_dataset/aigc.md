@@ -24,6 +24,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > EvalMuse Text-to-Image Benchmark. Used for evaluating the quality and semantic alignment of finely generated images
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `FGA_BLIP2Score`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `EvalMuse`
@@ -40,6 +41,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > GEdit-Bench Image Editing Benchmark, grounded in real-world usages is developed to support more authentic and comprehensive evaluation of image editing models.
 - **Task Categories**: `ImageEditing`
 - **Evaluation Metrics**: `Perceptual Similarity`, `Semantic Consistency`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
 - **Subsets**: `background_change`, `color_alter`, `material_alter`, `motion_change`, `ps_human`, `style_change`, `subject-add`, `subject-remove`, `subject-replace`, `text_change`, `tone_transfer`
@@ -62,6 +64,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `VQAScore`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `GenAI-Bench-1600`
@@ -78,6 +81,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > General Text-to-Image Benchmark
 - **Task Categories**: `Custom`, `TextToImage`
 - **Evaluation Metrics**: `PickScore`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`
@@ -94,6 +98,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > HPDv2 Text-to-Image Benchmark. Evaluation metrics based on human preferences, trained on the Human Preference Dataset (HPD v2)
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `HPSv2.1Score`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `HPDv2`
@@ -110,6 +115,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
   > TIFA-160 Text-to-Image Benchmark
 - **Task Categories**: `TextToImage`
 - **Evaluation Metrics**: `PickScore`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `TIFA-160`

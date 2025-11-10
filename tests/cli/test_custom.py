@@ -93,9 +93,6 @@ class TestRunCustom(unittest.TestCase):
                 'bbh': {
                     'subset_list': ['word_sorting', 'movie_recommendation'],
                 },
-                'humaneval': {
-                    'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
-                },
                 'trivia_qa': {
                     'dataset_id': 'data/data/trivia_qa',
                 },
