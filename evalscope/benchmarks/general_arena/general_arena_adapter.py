@@ -34,6 +34,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
         'For detailed instructions on how to use this benchmark, please refer to the [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).',
         dataset_id='general_arena',
         metric_list=['winrate'],
+        aggregation='elo',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

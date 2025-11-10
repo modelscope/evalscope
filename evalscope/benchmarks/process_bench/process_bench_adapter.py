@@ -39,6 +39,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
         dataset_id='Qwen/ProcessBench',
         subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
         metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],
+        aggregation='f1',
         eval_split='test',
         prompt_template=CRITIQUE_TEMPLATE
     )

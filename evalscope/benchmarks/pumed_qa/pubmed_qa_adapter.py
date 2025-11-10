@@ -22,6 +22,7 @@ DESCRIPTION = ('PubMedQA reasons over biomedical research texts to answer the mu
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/pubmed-qa',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio', 'maybe_ratio'],
+        aggregation='f1',
         few_shot_num=0,
         eval_split='test',
         prompt_template='{question}\nPlease answer YES or NO or MAYBE without an explanation.',

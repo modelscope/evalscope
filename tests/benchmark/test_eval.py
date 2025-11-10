@@ -28,7 +28,7 @@ class TestNativeBenchmark(TestBenchmark):
             'limit': 5,
             'generation_config': {
                 'max_tokens': 4096,
-                'temperature': 0.0,
+                'temperature': 0.7,
                 'seed': 42,
                 'top_k': 1,
                 'parallel_tool_calls': True
@@ -336,14 +336,14 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list': ['gsm8k', 'math'],
         }
-        self._run_dataset_test('process_bench', dataset_args, use_cache='outputs/20250819_161844')
+        self._run_dataset_test('process_bench', dataset_args)
 
     def test_humaneval(self):
         """Test HumanEval dataset."""
         dataset_args = {
-            'metric_list': ['Pass@1']
+            # 'metric_list': ['Pass@1']
         }
-        self._run_dataset_test('humaneval', dataset_args)
+        self._run_dataset_test('humaneval', dataset_args, limit=10, repeats=3)
 
     def test_live_code_bench(self):
         """Test LiveCodeBench dataset."""
@@ -355,7 +355,7 @@ class TestNativeBenchmark(TestBenchmark):
                 'end_date': '2025-02-28'
             },
         }
-        self._run_dataset_test('live_code_bench', dataset_args, limit=20, use_cache='outputs/20250918_200232', rerun_review=True)
+        self._run_dataset_test('live_code_bench', dataset_args, limit=10, repeats=3, model='qwen2.5-14b-instruct')
 
     def test_tool_bench(self):
         """Test ToolBench dataset."""
@@ -430,7 +430,7 @@ class TestNativeBenchmark(TestBenchmark):
                 }
             }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=10, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau_bench', dataset_args, limit=5, repeats=2, model='qwen-plus', stream=True)
 
     def test_tau2_bench(self):
         dataset_args = {
@@ -449,7 +449,7 @@ class TestNativeBenchmark(TestBenchmark):
                 }
             }
         }
-        self._run_dataset_test('tau2_bench', dataset_args, limit=10, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau2_bench', dataset_args, limit=5, repeats=2, model='qwen-plus', stream=True)
 
     def test_r1_collection(self):
         dataset_args = {

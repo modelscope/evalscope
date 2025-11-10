@@ -85,9 +85,6 @@ dataset_args={
     'gpqa_diamond': {
         'few_shot_num': 0,
     },
-    'humaneval': {
-        'metric_list': ['Pass@1', 'Pass@2', 'Pass@5'],
-    },
     'competition_math': {
         'subset_list': ['Level 1']
     },

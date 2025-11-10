@@ -25,7 +25,7 @@ logger = get_logger()
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='opencompass/humaneval',
         subset_list=['openai_humaneval'],
-        metric_list=['Pass@1'],
+        aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template=
         'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',
@@ -89,21 +89,8 @@ class HumanevalAdapter(DefaultDataAdapter):
             res = self.execute_code_in_sandbox(code=check_program, timeout=self.review_timeout, language='python')
             passed = res.get('status') == 'success'
         # Set score values
-        score.value = {'pass': passed}
+        score.value = {'acc': passed}
         score.metadata = {'task_id': problem['task_id'], 'timeout': self.review_timeout, 'execution_result': res}
-        score.main_score_name = 'pass'
+        score.main_score_name = 'acc'
 
         return score
-
-    def aggregate_scores(self, sample_scores):
-        from evalscope.metrics.metric import PassAtK
-
-        # caculate pass@k here
-        agg_list = []
-        for metric in self.metric_list:
-            if metric.lower().startswith('pass@'):
-                k = int(metric.split('@')[1])
-                # Get the scores for this metric
-                agg = PassAtK(k)
-                agg_list.extend(agg(sample_scores))
-        return agg_list

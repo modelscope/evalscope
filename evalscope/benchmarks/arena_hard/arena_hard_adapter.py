@@ -29,6 +29,7 @@ GRADER_TEMPLATE = """<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's
         'Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.',
         dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
         metric_list=['winrate'],
+        aggregation='elo',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

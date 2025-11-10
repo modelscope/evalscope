@@ -22,6 +22,7 @@ logger = get_logger()
         'POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model\'s responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.',  # noqa: E501
         dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
+        aggregation='f1',
         subset_list=['popular', 'adversarial', 'random'],
         default_subset='Full',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',

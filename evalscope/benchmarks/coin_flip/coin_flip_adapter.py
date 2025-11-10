@@ -43,6 +43,7 @@ Here are some examples of how to solve similar problems:
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/coin-flip',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
+        aggregation='f1',
         few_shot_num=0,
         train_split='validation',
         eval_split='test',

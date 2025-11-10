@@ -4,7 +4,7 @@ import os
 os.environ['BUILD_DOC'] = '1'  # To avoid some heavy dependencies
 from collections import defaultdict
 from tqdm import tqdm
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from evalscope.api.benchmark import (
     AgentAdapter,
@@ -49,6 +49,10 @@ def get_dataset_detail_locale_dict(category: str):
         'evaluation_metrics': {
             'zh': '评估指标',
             'en': 'Evaluation Metrics'
+        },
+        'aggregation_methods': {
+            'zh': '聚合方法',
+            'en': 'Aggregation Methods'
         },
         'requires_llm_judge': {
             'zh': '是否需要LLM Judge',
@@ -125,7 +129,7 @@ def get_document_locale_dict(category: str):
         }
     }
 
-def wrap_key_words(keywords: list[str]) -> str:
+def wrap_key_words(keywords: Union[str, List[str]]) -> str:
     """
     将关键词列表转换为Markdown格式的字符串
     
@@ -137,6 +141,8 @@ def wrap_key_words(keywords: list[str]) -> str:
     """
 
     # 使用逗号分隔关键词，并添加反引号格式化
+    if isinstance(keywords, str):
+        return f'`{keywords}`'
     return ', '.join(sorted([f'`{keyword}`' for keyword in keywords]))
 
 def process_dictionary(data: dict) -> str:
@@ -225,6 +231,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
         f'- **{text["description"]}**:\n{format_description(description)}',
         f'- **{text["task_categories"]}**: {wrap_key_words(data_adapter.tags)}',
         f'- **{text["evaluation_metrics"]}**: {wrap_key_words(data_adapter.metric_list)}',
+        f'- **{text["aggregation_methods"]}**: {wrap_key_words(data_adapter.aggregation)}',
         f'- **{text["requires_llm_judge"]}**: {text["yes"] if data_adapter._use_llm_judge else text["no"]}',
         f'- **{text["default_shots"]}**: {data_adapter.few_shot_num}-shot'
     ]
