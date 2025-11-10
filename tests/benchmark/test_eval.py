@@ -57,6 +57,14 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('gsm8k', dataset_args=dataset_args)
 
+    def test_gsm8k_pass_at_k(self):
+        """Test GSM8K math reasoning dataset with Pass@k metric."""
+        dataset_args = {
+            'few_shot_num': 0,
+            'aggregation': 'mean_and_pass_at_k',
+        }
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, repeats=3)
+
     def test_gsm8k_local(self):
         """Test GSM8K math reasoning dataset with local path."""
         dataset_args = {
