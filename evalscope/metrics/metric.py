@@ -1,4 +1,5 @@
 import json
+import numpy as np
 import os
 from collections import defaultdict
 from typing import Dict, List
@@ -6,7 +7,7 @@ from typing import Dict, List
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.utils.import_utils import check_import
-from .metrics import mean
+from .metrics import calculate_pass_at_k, mean
 
 
 def normalize_text(text: str) -> str:
@@ -393,10 +394,6 @@ class PassAtK(Aggregator):
         if not scores:
             return []
 
-        import numpy as np
-
-        from .metrics import calculate_pass_at_k
-
         # Group scores by metric name and group_id
         metric_groups = defaultdict(lambda: defaultdict(list))
 
@@ -444,40 +441,61 @@ class PassAtK(Aggregator):
 class MeanPassAtK(Aggregator):
 
     def __init__(self):
-
         self.name = 'mean_and_pass_at_k'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Aggregate scores by computing the pass@k for each metric using group_id.
+        """Add per-metric pass@k (computed via calculate_pass_at_k) to each sample, then mean-aggregate.
 
-        Args:
-            scores: List of sample scores to aggregate
-
-        Returns:
-            List of aggregated scores with pass@k values
+        For each metric:
+        - Group scores by group_id
+        - Collect binary correctness values
+        - Infer k as (total samples / number of groups) assuming uniform repetitions
+        - Compute per-group pass@k via calculate_pass_at_k
+        - Annotate each sample with metric_pass@k for its group
+        Finally run Mean() over the augmented metric set.
         """
         if not scores:
             return []
 
-        # Get all metric names
+        # Extract metric names present in score values
         metrics = list(scores[0].score.value.keys())
-        # Calculate pass@k for all metrics
+
         for metric_name in metrics:
-            pass_groups = defaultdict(float)
-            # Calculate pass@k for each group_id, using the best score in the group as pass@k
-            for score in scores:
-                group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
-                pass_groups[group_id] = max(pass_groups[group_id], score.score.value[metric_name])
+            # group_id -> list[float] (0/1 correctness values)
+            group_values: Dict[str, List[float]] = defaultdict(list)
+            for s in scores:
+                group_id = getattr(s, 'group_id', s.sample_id)
+                value = float(s.score.value[metric_name])
+                group_values[group_id].append(value)
 
-            # Calculate the repetition count k for each problem
-            k = int(len(scores) / len(pass_groups))
+            if not group_values:
+                continue
 
-            # Add the corresponding pass@k for the metric to each score's value
-            for score in scores:
-                group_id = getattr(score, 'group_id', score.sample_id)
-                score.score.value.update({f'{metric_name}_pass@{k}': pass_groups[group_id]})
+            # Infer k (assumes roughly uniform repeats)
+            k = int(len(scores) / len(group_values)) if len(group_values) > 0 else 1
+            if k <= 0:
+                k = 1
 
-        # Calculate the mean value for all metrics and their corresponding pass@k
+            # Prepare inputs for calculate_pass_at_k
+            num_samples: List[int] = []
+            num_correct: List[int] = []
+            group_order: List[str] = []
+            for gid, vals in group_values.items():
+                group_order.append(gid)
+                num_samples.append(len(vals))
+                num_correct.append(int(sum(vals)))
+
+            # Compute per-group pass@k
+            pass_at_k_list = calculate_pass_at_k(num_samples, num_correct, k)
+            # Map back: group_id -> pass@k value
+            pass_at_k_map = {gid: float(v) for gid, v in zip(group_order, pass_at_k_list)}
+
+            # Annotate each sample with its group's pass@k
+            for s in scores:
+                group_id = getattr(s, 'group_id', s.sample_id)
+                s.score.value[f'{metric_name}_pass@{k}'] = pass_at_k_map[group_id]
+
+        # Delegate mean aggregation over original + injected pass@k metrics
         m = Mean()
         return m(scores)
 
