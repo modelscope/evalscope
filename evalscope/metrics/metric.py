@@ -42,13 +42,12 @@ class Accuracy(ExactMatch):
                     results.append(0.0)
             return results
         elif self.numeric:
-            from .math_parser import extract_answer, math_equal, strip_answer_string
+            from .math_parser import math_equal, strip_answer_string
 
             results = []
             for prediction, reference in zip(predictions, references):
-                pred_answer = extract_answer(prediction)
                 ref_answer = strip_answer_string(reference)
-                results.append(float(math_equal(pred_answer, ref_answer)))
+                results.append(float(math_equal(prediction, ref_answer)))
 
             return results
         else:

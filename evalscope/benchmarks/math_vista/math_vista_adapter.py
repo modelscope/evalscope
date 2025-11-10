@@ -107,3 +107,8 @@ class MathVistaAdapter(VisionLanguageAdapter):
             image_base64 = bytes_to_base64(image['bytes'], format='jpg', add_header=True)
             content_list.append(ContentImage(image=image_base64))
         return content_list, answers_list
+
+    def extract_answer(self, prediction: str, task_state):
+        from evalscope.metrics.math_parser import extract_answer
+
+        return extract_answer(prediction)

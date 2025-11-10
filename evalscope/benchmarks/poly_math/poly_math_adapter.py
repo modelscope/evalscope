@@ -84,6 +84,11 @@ class PolyMathAdapter(DefaultDataAdapter):
             },
         )
 
+    def extract_answer(self, prediction: str, task_state):
+        from evalscope.metrics.math_parser import extract_answer
+
+        return extract_answer(prediction)
+
     def _on_generate_report_end(self, report: Report, output_dir, **kwargs):
         """
         Finalize the report generation process. Calculate the difficulty-weighted accuracy (DW-ACC)
