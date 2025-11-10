@@ -55,7 +55,11 @@ Here are some examples of how to solve similar problems:
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        metric_list=['acc'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )
@@ -83,13 +87,6 @@ class GSM8KAdapter(DefaultDataAdapter):
             return ''
 
     def extract_answer(self, prediction: str, task_state: TaskState):
-        boxed_match = re.search(r'\\boxed\\{\\text\\{([^}]*)\\}\\}', prediction)
-        if boxed_match:
-            result = boxed_match.group(1).strip()
-            return result.strip()
+        from evalscope.metrics.math_parser import extract_answer
 
-        from evalscope.filters.extraction import RegexFilter
-
-        regex = RegexFilter(regex_pattern=r'(-?[0-9.,]{2,})|(-?[0-9]+)', group_select=-1)
-        res = regex(prediction)
-        return res.replace(',', '').replace('+', '').strip().strip('.')
+        return extract_answer(prediction)

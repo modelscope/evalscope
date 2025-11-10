@@ -98,3 +98,8 @@ class MathVerseAdapter(VisionLanguageAdapter):
             subset_key=record['problem_version'],
             metadata=metadata,
         )
+
+    def extract_answer(self, prediction: str, task_state):
+        from evalscope.metrics.math_parser import extract_answer
+
+        return extract_answer(prediction)

@@ -46,3 +46,8 @@ class MinervaMathAdapter(DefaultDataAdapter):
                 'idx': record['idx'],
             },
         )
+
+    def extract_answer(self, prediction: str, task_state):
+        from evalscope.metrics.math_parser import extract_answer
+
+        return extract_answer(prediction)
