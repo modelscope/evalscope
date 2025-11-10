@@ -9,10 +9,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.metrics.math_parser import extract_answer
 from evalscope.utils.logger import get_logger
-from .grader import grade_answer
-from .math_normalize import normalize_answer
 
 # flake8: noqa
 
@@ -127,6 +124,9 @@ class AIME25Adapter(DefaultDataAdapter):
         Returns:
             str: The extracted answer
         """
+        from evalscope.metrics.math_parser import extract_answer
+        from .math_normalize import normalize_answer
+
         extracted_pred = extract_answer(prediction)
         filtered_pred = normalize_answer(extracted_pred)
         return filtered_pred
@@ -134,6 +134,9 @@ class AIME25Adapter(DefaultDataAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
+        from evalscope.metrics.math_parser import extract_answer
+        from .grader import grade_answer
+
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
