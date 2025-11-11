@@ -21,6 +21,7 @@ from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
 from evalscope.utils.logger import get_logger
+from evalscope.version import __version__ as evalscope_version
 
 logger = get_logger()
 
@@ -137,6 +138,9 @@ class TaskConfig(BaseArgument):
 
     sandbox_config: Optional[Dict] = field(default_factory=dict)
     """Configuration for sandboxed code execution environments."""
+
+    evalscope_version: Optional[str] = evalscope_version
+    """EvalScope version used for the evaluation."""
 
     def __post_init__(self):
         self.__init_model_and_id()
