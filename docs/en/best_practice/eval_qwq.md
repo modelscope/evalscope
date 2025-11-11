@@ -44,7 +44,7 @@ from evalscope import TaskConfig, run_task
 task_config = TaskConfig(
     api_url='http://0.0.0.0:8801/v1',  # Inference service address
     model='Qwen/QwQ-32B',  # Model name (must match the deployed model name)
-    eval_type='openai_api',  # Evaluation type; SERVICE indicates evaluating the inference service
+    eval_type='openai_api',  # Evaluation type; 'openai_api' indicates evaluating the inference service
     datasets=['math_500'],  # Dataset name
     dataset_args={'math_500': {'few_shot_num': 0}},  # Dataset parameters
     eval_batch_size=32,  # Number of concurrent requests
