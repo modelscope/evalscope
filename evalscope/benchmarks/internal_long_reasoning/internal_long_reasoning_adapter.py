@@ -25,13 +25,13 @@ SUBSET_LIST = [
         pretty_name='ILReasoning',
         description='Internal dataset with multiple-choice question answering subset and free form answering subset ',
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
-        dataset_id='/app/custom_eval/internal/Reason_Knowledge_Dataset/Dataset_v1',
+        dataset_id='/home/dzj/evalscope/custom_eval/internal/Reason_Knowledge_Dataset/Dataset_v1',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
         eval_split=None,
-        prompt_template=WOChoiceMultipleChoiceTemplate.MULTIPLE_ANSWER,
+        prompt_template=WOChoiceMultipleChoiceTemplate.MULTIPLE_ANSWER_COT,
     )
 )
 class ILReasoningAdapter(WOChoiceMultiChoiceAdapter):
@@ -41,6 +41,7 @@ class ILReasoningAdapter(WOChoiceMultiChoiceAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.multiple_correct = True
         self.choices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
     def load_from_disk(self, **kwargs):
