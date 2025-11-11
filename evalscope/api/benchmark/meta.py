@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from evalscope.constants import OutputType
+from evalscope.version import __version__ as evalscope_version
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -80,10 +81,13 @@ class BenchmarkMeta:
     """Whether to shuffle the choices in multiple-choice datasets."""
 
     review_timeout: Optional[float] = None
-    """ Timeout for review in seconds."""
+    """Timeout for review in seconds."""
 
     extra_params: Dict = field(default_factory=dict)
-    """ Additional parameters for the benchmark."""
+    """Additional parameters for the benchmark."""
+
+    evalscope_version: Optional[str] = evalscope_version
+    """EvalScope version used for the benchmark."""
 
     def __post_init__(self):
         """Validate fields after initialization."""
