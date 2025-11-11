@@ -1,0 +1,57 @@
+{
+    "name": "qwen2.5-14b-instruct@humaneval",
+    "dataset_name": "humaneval",
+    "dataset_pretty_name": "HumanEval",
+    "dataset_description": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "model_name": "qwen2.5-14b-instruct",
+    "score": 1.0,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 1.0,
+            "macro_score": 1.0,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 1.0,
+                    "macro_score": 1.0,
+                    "subsets": [
+                        {
+                            "name": "openai_humaneval",
+                            "score": 1.0,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_acc_pass@1",
+            "num": 10,
+            "score": 1.0,
+            "macro_score": 1.0,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 1.0,
+                    "macro_score": 1.0,
+                    "subsets": [
+                        {
+                            "name": "openai_humaneval",
+                            "score": 1.0,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

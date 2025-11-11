@@ -1,0 +1,39 @@
+{
+    "name": "qwen2.5-7b-instruct@iquiz",
+    "dataset_name": "iquiz",
+    "dataset_pretty_name": "IQuiz",
+    "dataset_description": "IQuiz is a benchmark for evaluating AI models on IQ and EQ questions. It consists of multiple-choice questions where the model must select the correct answer and provide an explanation.",
+    "model_name": "qwen2.5-7b-instruct",
+    "score": 0.35,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 20,
+            "score": 0.35,
+            "macro_score": 0.35,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 20,
+                    "score": 0.35,
+                    "macro_score": 0.35,
+                    "subsets": [
+                        {
+                            "name": "IQ",
+                            "score": 0.5,
+                            "num": 10
+                        },
+                        {
+                            "name": "EQ",
+                            "score": 0.2,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

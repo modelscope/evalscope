@@ -1,0 +1,321 @@
+analysis_report: false
+api_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+chat_template: null
+dataset_args:
+  gpqa_diamond:
+    aggregation: mean
+    dataset_id: AI-ModelScope/gpqa_diamond
+    default_subset: default
+    description: GPQA is a dataset for evaluating the reasoning ability of large language
+      models (LLMs) on complex mathematical problems. It contains questions that require
+      step-by-step reasoning to arrive at the correct answer.
+    eval_split: train
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - acc
+    name: gpqa_diamond
+    output_types:
+    - generation
+    pretty_name: GPQA-Diamond
+    prompt_template: 'Answer the following multiple choice question. The last line
+      of your response should be of the following format: ''ANSWER: $LETTER'' (without
+      quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+
+      {question}
+
+
+      {choices}'
+    query_template: null
+    review_timeout: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - Knowledge
+    - MCQ
+    train_split: null
+  gsm8k:
+    aggregation: mean
+    dataset_id: AI-ModelScope/gsm8k
+    default_subset: default
+    description: GSM8K (Grade School Math 8K) is a dataset of grade school math problems,
+      designed to evaluate the mathematical reasoning abilities of AI models.
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 4
+    few_shot_prompt_template: 'Here are some examples of how to solve similar problems:
+
+
+      {fewshot}
+
+
+      Solve the following math problem step by step. The last line of your response
+      should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
+
+
+      Example:
+
+
+      Let''s solve the problem step by step.
+
+
+      Problem: Eliza''s rate per hour for the first 40 hours she works each week is
+      $10. She also receives an overtime pay of 1.2 times her regular hourly rate.
+      If Eliza worked for 45 hours this week, how much are her earnings for this week?
+
+
+      Step 1: Calculate Eliza''s earnings for the first 40 hours. Eliza''s hourly
+      rate is $10, so her earnings for the first 40 hours are $10/hour x 40 hours
+      = $400.
+
+      Step 2: Calculate Eliza''s overtime pay rate. Eliza''s overtime pay rate is
+      1.2 times her regular hourly rate, so her overtime pay rate is $10/hour x 1.2
+      = $12/hour.
+
+      Step 3: Calculate Eliza''s earnings for the overtime hours. Eliza worked for
+      45 hours, so her overtime hours are 45 hours - 40 hours = 5 hours. Her earnings
+      for the overtime hours are $12/hour x 5 hours = $60.
+
+      Step 4: Calculate Eliza''s total earnings for the week. Eliza''s total earnings
+      for the week are her earnings for the first 40 hours plus her earnings for the
+      overtime hours, which is $400 + $60 = $460.
+
+
+      Answer:
+
+      \boxed{{\text{{460}}}}
+
+
+      question:
+
+      {question}
+
+
+      Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}"
+      (without quotes), where $ANSWER is replaced by the actual answer to the problem.
+
+      '
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - acc:
+        numeric: true
+    name: gsm8k
+    output_types:
+    - generation
+    pretty_name: GSM8K
+    prompt_template: 'Solve the following math problem step by step. The last line
+      of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
+
+
+      Example:
+
+
+      Let''s solve the problem step by step.
+
+
+      Problem: Eliza''s rate per hour for the first 40 hours she works each week is
+      $10. She also receives an overtime pay of 1.2 times her regular hourly rate.
+      If Eliza worked for 45 hours this week, how much are her earnings for this week?
+
+
+      Step 1: Calculate Eliza''s earnings for the first 40 hours. Eliza''s hourly
+      rate is $10, so her earnings for the first 40 hours are $10/hour x 40 hours
+      = $400.
+
+      Step 2: Calculate Eliza''s overtime pay rate. Eliza''s overtime pay rate is
+      1.2 times her regular hourly rate, so her overtime pay rate is $10/hour x 1.2
+      = $12/hour.
+
+      Step 3: Calculate Eliza''s earnings for the overtime hours. Eliza worked for
+      45 hours, so her overtime hours are 45 hours - 40 hours = 5 hours. Her earnings
+      for the overtime hours are $12/hour x 5 hours = $60.
+
+      Step 4: Calculate Eliza''s total earnings for the week. Eliza''s total earnings
+      for the week are her earnings for the first 40 hours plus her earnings for the
+      overtime hours, which is $400 + $60 = $460.
+
+
+      Answer:
+
+      \boxed{{\text{{460}}}}
+
+
+      question:
+
+      {question}
+
+
+      Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}"
+      (without quotes), where $ANSWER is replaced by the actual answer to the problem.
+
+      '
+    query_template: null
+    review_timeout: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - main
+    system_prompt: null
+    tags:
+    - Math
+    - Reasoning
+    train_split: train
+  humaneval:
+    aggregation: mean_and_pass_at_k
+    dataset_id: opencompass/humaneval
+    default_subset: default
+    description: HumanEval is a benchmark for evaluating the ability of code generation
+      models to write Python functions based on given specifications. It consists
+      of programming tasks with a defined input-output behavior. **By default the
+      code is executed in local environment. We recommend using sandbox execution
+      to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html)
+      for more details.**
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list: []
+    name: humaneval
+    output_types:
+    - generation
+    pretty_name: HumanEval
+    prompt_template: 'Read the following function signature and docstring, and fully
+      implement the function described. Your response should only contain the code
+      for this function.
+
+      {question}'
+    query_template: null
+    review_timeout: 4
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - openai_humaneval
+    system_prompt: null
+    tags:
+    - Coding
+    train_split: null
+  ifeval:
+    aggregation: mean
+    dataset_id: opencompass/ifeval
+    default_subset: default
+    description: IFEval is a benchmark for evaluating instruction-following language
+      models, focusing on their ability to understand and respond to various prompts.
+      It includes a diverse set of tasks and metrics to assess model performance comprehensively.
+    eval_split: train
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - prompt_level_strict
+    - inst_level_strict
+    - prompt_level_loose
+    - inst_level_loose
+    name: ifeval
+    output_types:
+    - generation
+    pretty_name: IFEval
+    prompt_template: ''
+    query_template: null
+    review_timeout: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - InstructionFollowing
+    train_split: null
+  iquiz:
+    aggregation: mean
+    dataset_id: AI-ModelScope/IQuiz
+    default_subset: default
+    description: IQuiz is a benchmark for evaluating AI models on IQ and EQ questions.
+      It consists of multiple-choice questions where the model must select the correct
+      answer and provide an explanation.
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - acc
+    name: iquiz
+    output_types:
+    - generation
+    pretty_name: IQuiz
+    prompt_template: '回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中
+      LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+
+      问题：{question}
+
+      选项：
+
+      {choices}
+
+      '
+    query_template: null
+    review_timeout: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - IQ
+    - EQ
+    system_prompt: null
+    tags:
+    - Knowledge
+    - MCQ
+    - Chinese
+    train_split: null
+dataset_dir: /root/.cache/modelscope/hub/datasets
+dataset_hub: modelscope
+datasets:
+- gsm8k
+- iquiz
+- ifeval
+- humaneval
+- gpqa_diamond
+debug: false
+eval_backend: Native
+eval_batch_size: 10
+eval_config: null
+eval_type: openai_api
+evalscope_version: 0.0.0_dev
+generation_config:
+  batch_size: 10
+  stream: true
+  temperature: 0.7
+  timeout: 60000
+ignore_errors: false
+judge_model_args: {}
+judge_strategy: auto
+judge_worker_num: 1
+limit: 10
+model: qwen2.5-14b-instruct
+model_args: {}
+model_id: qwen2.5-14b-instruct
+model_task: text_generation
+repeats: 1
+rerun_review: false
+sandbox_config: {}
+sandbox_manager_config: {}
+sandbox_type: docker
+seed: 42
+stream: true
+timeout: 60000
+use_cache: examples/viz/qwen2.5-14b-instruct
+use_sandbox: false
+work_dir: examples/viz/qwen2.5-14b-instruct

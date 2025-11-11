@@ -301,7 +301,7 @@ EvalScope supports evaluating model services deployed via APIs (such as services
     ```shell
     evalscope eval \
      --model qwen2.5 \
-     --eval-type service \
+     --eval-type openai_api \
      --api-url http://127.0.0.1:8801/v1 \
      --api-key EMPTY \
      --datasets gsm8k \

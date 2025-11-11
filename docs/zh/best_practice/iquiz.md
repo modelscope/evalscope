@@ -106,7 +106,7 @@ evalscope eval \
   --model Qwen2.5-72B-Instruct \
   --api-url http://localhost:8801/v1 \
   --api-key EMPTY \
-  --eval-type service \
+  --eval-type openai_api \
   --eval-batch-size 16 \
   --datasets iquiz 
 ```

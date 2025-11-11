@@ -36,17 +36,17 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|docs/
+        exclude: thirdparty/|docs/|examples
       - id: check-yaml
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/
+        exclude: thirdparty/|docs/|examples
       - id: requirements-txt-fixer
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: double-quote-string-fixer
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: check-merge-conflict
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: mixed-line-ending
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
         args: ["--fix=lf"]

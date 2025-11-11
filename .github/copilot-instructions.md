@@ -30,7 +30,7 @@ Use these repo-specific rules to ship changes confidently. Prefer concrete patte
 - Install for dev: `pip install -e .` (or `make dev` for `dev,perf,docs` + pre-commit). Extras in `pyproject.toml`.
 - Quick eval (CLI): `evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5`.
 - Quick eval (Python): `from evalscope import run_task, TaskConfig; run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limit=5))`.
-- API eval (OpenAI-compatible): set `--eval-type service` or `TaskConfig(eval_type='openai_api')`, provide `--api-url/--api-key`.
+- API eval (OpenAI-compatible): set `--eval-type openai_api` or `TaskConfig(eval_type='openai_api')`, provide `--api-url/--api-key`.
 - Perf benchmark: `evalscope perf --url http://127.0.0.1:8801/v1/chat/completions --api openai --model qwen2.5 --parallel 5 -n 20` (see `test_perf.sh`).
 - Visualization: `evalscope app` (see README “Visualization of Evaluation Results”).
 

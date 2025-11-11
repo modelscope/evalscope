@@ -1,0 +1,34 @@
+{
+    "name": "qwen2.5-7b-instruct@gsm8k",
+    "dataset_name": "gsm8k",
+    "dataset_pretty_name": "GSM8K",
+    "dataset_description": "GSM8K (Grade School Math 8K) is a dataset of grade school math problems, designed to evaluate the mathematical reasoning abilities of AI models.",
+    "model_name": "qwen2.5-7b-instruct",
+    "score": 0.9,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 0.9,
+            "macro_score": 0.9,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9,
+                    "macro_score": 0.9,
+                    "subsets": [
+                        {
+                            "name": "main",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}
