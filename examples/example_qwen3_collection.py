@@ -34,7 +34,7 @@ def run_test_think():
     task_cfg = TaskConfig(
         model='Qwen3-32B',
         api_url='http://127.0.0.1:8801/v1/chat/completions',
-        eval_type='service',
+        eval_type='openai_api',
         datasets=[
             'data_collection',
         ],
@@ -64,7 +64,7 @@ def run_test_no_think():
     task_cfg = TaskConfig(
         model='Qwen3-32B-no-think',
         api_url='http://127.0.0.1:8801/v1/chat/completions',
-        eval_type='service',
+        eval_type='openai_api',
         datasets=[
             'data_collection',
         ],
@@ -95,7 +95,7 @@ def run_math_thinking():
     task_cfg = TaskConfig(
         model='Qwen3-32B',
         api_url='http://127.0.0.1:8801/v1/chat/completions',
-        eval_type='service',
+        eval_type='openai_api',
         datasets=[
             'math_500',
         ],

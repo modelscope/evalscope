@@ -300,7 +300,7 @@ EvalScope 支持评测通过 API 部署的模型服务（如 vLLM 部署的服�
     ```shell
     evalscope eval \
      --model qwen2.5 \
-     --eval-type service \
+     --eval-type openai_api \
      --api-url http://127.0.0.1:8801/v1 \
      --api-key EMPTY \
      --datasets gsm8k \
