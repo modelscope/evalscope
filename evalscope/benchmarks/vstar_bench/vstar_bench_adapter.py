@@ -48,7 +48,7 @@ class VstarBenchAdapter(VisionLanguageAdapter):
     
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question: str = record.get('text', '')
-        content_list: list[Content] = []
+        content_list: List[Content] = []
         prompt_text = MULT_CHOICE_PROMPT.format(question=question).strip()
         content_list.append(ContentText(text=prompt_text))
 
@@ -57,7 +57,7 @@ class VstarBenchAdapter(VisionLanguageAdapter):
             image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)
             content_list.append(ContentImage(image=image_base64))
         
-        target = record['label']
+        target = record.get('label', '')
 
         metadata: Dict[str, Any] = {
             'category': record.get('category'),

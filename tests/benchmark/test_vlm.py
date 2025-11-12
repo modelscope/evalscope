@@ -297,7 +297,7 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('a_okvqa', dataset_args=dataset_args, limit=10)
 
-    def test_vstar_bench_bench(self):
+    def test_vstar_bench(self)::
         dataset_args = {
             # 'subset_list': ['default']
         }

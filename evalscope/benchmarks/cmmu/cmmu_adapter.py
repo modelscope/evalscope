@@ -108,7 +108,7 @@ class CMMUAdapter(VisionLanguageAdapter):
             'id': record.get('id'),
         }
 
-        question_type = record['type']
+        question_type = record.get('type')
         if question_type==OPEN_TYPE:
             target_str="" 
             if len(record['answer'])>0:

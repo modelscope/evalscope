@@ -45,8 +45,8 @@ class AOkvqaAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question: str = record.get('question', '')
-        answers_list: List[str] = record['choices']
-        content_list: list[Content] = []
+        answers_list: List[str] = record.get('choices', [])
+        content_list: List[Content] = []
         input_text = prompt(question=question, choices=answers_list, template=MULT_CHOICE_PROMPT)
         content_list.append(ContentText(text=input_text))
 
