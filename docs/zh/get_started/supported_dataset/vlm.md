@@ -4,10 +4,12 @@
 
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
+| `a_okvqa` | [A-OKVQA](#a-okvqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
@@ -25,14 +27,45 @@
 | `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `science_qa` | [ScienceQA](#scienceqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `vstar_bench` | [V*Bench](#vbench) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
 ## 数据集详情
+
+### A-OKVQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `a_okvqa`
+- **数据集ID**: [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary)
+- **数据集介绍**:
+  > A-OKVQA 是一个用于探究视觉问答中常识推理和外部知识的基准。与仅依赖图像内容的基础 VQA 任务不同，A-OKVQA 要求模型运用广泛的常识和事实性世界知识来回答问题，包含选择题和开放性问题，是对 AI 系统推理能力的一项极具挑战性的测试。
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
 
 ### AI2D
 
@@ -142,6 +175,36 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
+
+```
+
+</details>
+
+---
+
+### CMMU
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `cmmu`
+- **数据集ID**: [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary)
+- **数据集介绍**:
+  > CMMU是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`, `QA`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `biology`, `chemistry`, `geography`, `history`, `math`, `physics`, `politics`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+问题：{question}
+选项：
+{choices}
 
 ```
 
@@ -657,6 +720,35 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 ---
 
+### ScienceQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `science_qa`
+- **数据集ID**: [AI-ModelScope/ScienceQA](https://modelscope.cn/datasets/AI-ModelScope/ScienceQA/summary)
+- **数据集介绍**:
+  > ScienceQA 是一个包含多项选择题的多模态科学问答基准，题目源自小学和中学课程，涵盖自然科学、社会科学和语言科学等多个领域。该基准的主要特点是大多数问题均配有图像和文本上下文，并附有详细的讲解与解释，支持正确答案，有助于推动能够生成思维链的模型研究。
+- **任务类别**: `Knowledge`, `MCQ`, `MultiModal`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### SEED-Bench-2-Plus
 
 [返回目录](#vlm评测集)
@@ -726,6 +818,35 @@ Answer the question:
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+
+{question}
+
+```
+
+</details>
+
+---
+
+### V*Bench
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `vstar_bench`
+- **数据集ID**: [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary)
+- **数据集介绍**:
+  > V*Bench 是一个用于评估多模态推理系统中视觉搜索能力的基准，专注于在高分辨率图像中主动定位和识别特定视觉信息的能力，这对于需要细粒度视觉理解的任务至关重要。该基准有助于评估模型在自然语言指令引导下，在复杂视觉场景中执行目标视觉查询并进行推理的表现。
+- **任务类别**: `Grounding`, `MCQ`, `MultiModal`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
 
 - **提示模板**:
 <details><summary>View</summary>

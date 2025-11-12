@@ -266,6 +266,8 @@ class TaskConfig(BaseArgument):
     def to_dict(self):
         result = copy.copy(self.__dict__)
         del result['api_key']  # Do not expose api_key in the config
+        # Only deepcopy judge_model_args if it exists
+        result['judge_model_args'] = copy.deepcopy(self.judge_model_args)
         if 'api_key' in result.get('judge_model_args', {}):
             del result['judge_model_args']['api_key']  # Do not expose api_key in judge_model_args
 

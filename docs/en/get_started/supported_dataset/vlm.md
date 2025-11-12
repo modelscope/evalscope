@@ -4,10 +4,12 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
+| `a_okvqa` | [A-OKVQA](#a-okvqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `ai2d` | [AI2D](#ai2d) | `Knowledge`, `MultiModal`, `QA` |
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
@@ -25,14 +27,45 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `omni_doc_bench` | [OmniDocBench](#omnidocbench) | `Knowledge`, `MultiModal`, `QA` |
 | `pope` | [POPE](#pope) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](#realworldqa) | `Knowledge`, `MultiModal`, `QA` |
+| `science_qa` | [ScienceQA](#scienceqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `vstar_bench` | [V*Bench](#vbench) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
 
 ---
 
 ## Benchmark Details
+
+### A-OKVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `a_okvqa`
+- **Dataset ID**: [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary)
+- **Description**:
+  > A-OKVQA is a benchmark designed to probe commonsense reasoning and outside knowledge in visual question answering. Unlike basic VQA tasks that rely solely on the image content, A-OKVQA requires models to utilize a broad spectrum of commonsense and factual knowledge about the world to answer its questions. It includes both multiple-choice and open-ended questions, making it a particularly challenging test for assessing the reasoning capabilities of AI systems.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
 
 ### AI2D
 
@@ -142,6 +175,36 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
+
+```
+
+</details>
+
+---
+
+### CMMU
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `cmmu`
+- **Dataset ID**: [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary)
+- **Description**:
+  > CMMU is a novel multi-modal benchmark designed to evaluate domain-specific knowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: Yes
+- **Default Shots**: 0-shot
+- **Subsets**: `biology`, `chemistry`, `geography`, `history`, `math`, `physics`, `politics`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+
+问题：{question}
+选项：
+{choices}
 
 ```
 
@@ -657,6 +720,35 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 ---
 
+### ScienceQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `science_qa`
+- **Dataset ID**: [AI-ModelScope/ScienceQA](https://modelscope.cn/datasets/AI-ModelScope/ScienceQA/summary)
+- **Description**:
+  > ScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers a diverse range of subjects, including natural science, social science, and language science. A key feature of this benchmark is that most questions are accompanied by both image and text contexts, and are annotated with detailed lectures and explanations that support the correct answer, facilitating research into models that can generate chains of thought.
+- **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+```
+
+</details>
+
+---
+
 ### SEED-Bench-2-Plus
 
 [Back to Top](#vlm-benchmarks)
@@ -726,6 +818,35 @@ Answer the question:
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+
+{question}
+
+```
+
+</details>
+
+---
+
+### V*Bench
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `vstar_bench`
+- **Dataset ID**: [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary)
+- **Description**:
+  > V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on the ability to actively locate and identify specific visual information in high-resolution images, which is crucial for tasks requiring fine-grained visual understanding. This benchmark helps assess how well models can perform targeted visual queries, often guided by natural language instructions, to find and reason about specific elements in complex visual scenes .
+- **Task Categories**: `Grounding`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
 
 - **Prompt Template**:
 <details><summary>View</summary>
