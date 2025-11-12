@@ -6,8 +6,8 @@
 
 可以使用 `--dataset [speed_benchmark|speed_benchmark_long]`来指定速度测试的数据集：
 
-- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。
-- `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。
+- `speed_benchmark`: 测试[1, 6144, 14336, 30720]长度的prompt，固定输出2048个token。一共8个请求，每个长度的prompt各2个请求。
+- `speed_benchmark_long`: 测试[63488, 129024]长度的prompt，固定输出2048个token。一共4个请求，每个长度的prompt各2个请求。
 
 
 ## 在线API推理

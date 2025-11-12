@@ -28,6 +28,12 @@ class PerfBenchCMD(CLICommand):
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
-        from evalscope.perf.main import run_perf_benchmark
+        try:
+            from evalscope.perf.main import run_perf_benchmark
+        except ImportError as e:
+            raise ImportError(
+                f'Failed to import run_perf_benchmark from evalscope.perf.main, due to {e}. '
+                "Please run `pip install 'evalscope[perf]'`."
+            )
 
         run_perf_benchmark(self.args)

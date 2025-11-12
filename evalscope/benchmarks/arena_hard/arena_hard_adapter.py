@@ -1,71 +1,98 @@
-import re
-from collections import defaultdict
-from typing import Any, List
+# flake8: noqa: E501
+from typing import Any, Dict, List
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import LLMJudge, Metric, mean, metric_registry
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
-# flake8: noqa
 
 logger = get_logger()
 
-GRADER_SYSTEM_PROMPT = "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\"."  # noqa: E501
+GRADER_SYSTEM_PROMPT = """Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\"."""  # noqa: E501
 
-GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>".strip(
-)  # noqa: E501
+GRADER_TEMPLATE = """<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>""".strip(
+)
 
 
-@Benchmark.register(
-    name='arena_hard',
-    pretty_name='ArenaHard',
-    dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
-    metric_list=['winrate'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test')
-class AlpacaEvalAdapter(DataAdapter):
+@register_benchmark(
+    BenchmarkMeta(
+        name='arena_hard',
+        pretty_name='ArenaHard',
+        tags=[Tags.INSTRUCTION_FOLLOWING, Tags.ARENA],
+        description=
+        'ArenaHard is a benchmark designed to evaluate the performance of large language models in a competitive setting, '
+        'where models are pitted against each other in a series of tasks to determine their relative strengths and weaknesses. '
+        'It includes a set of challenging tasks that require reasoning, understanding, and generation capabilities. '
+        'Currently not support `style-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-0314`.',
+        dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
+        metric_list=['winrate'],
+        aggregation='elo',
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template='{question}'
+    )
+)
+class ArenaHardAdapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # register metrics
-        metric_registry.register(Metric(name='winrate', object=mean))
+        self._use_llm_judge = True  # Use LLM as a judge by default
 
-        # whether to use LLM as a judge
-        self.llm_as_a_judge = True
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a data record to a Sample object.
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        question = input_d['question']
-        return self.gen_prompt_data(question)
+        Args:
+            record (Dict[str, Any]): Input data record.
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        return input_d['prediction']
+        Returns:
+            Sample: Sample object with input, target, and metadata.
+        """
+        question = record['question']
+        baseline_prediction = record['prediction']  # baseline model prediction
 
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, **kwargs) -> str:
-        return result.strip()
+        return Sample(
+            input=question, target=baseline_prediction, metadata={'capability': record.get('capability', 'unknown')}
+        )
 
-    def match(self, gold: str, pred: str):
-        # simple match
-        logger.warning(f'Please use LLMJudge to match the result for {self.name}')
-        return None
+    def llm_match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        from .utils import get_judge_score, post_process_arenahard
 
-    def llm_match(self, gold: Any, pred: Any, judge: LLMJudge, **kwargs) -> dict:
-        from .utils import post_process_arenahard
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-        raw_input = kwargs.get('raw_input', None)
-        question = raw_input['question']
-        # gold is baseline answer 'A', pred is model answer 'B'
-        prompt1 = GRADER_TEMPLATE.format(question=question, answer_1=gold, answer_2=pred)
+        question = task_state.input_text
+
+        # reference is baseline answer 'A', filtered_prediction is model answer 'B'
+        prompt1 = GRADER_TEMPLATE.format(question=question, answer_1=reference, answer_2=filtered_prediction)
         # reverse the order
-        prompt2 = GRADER_TEMPLATE.format(question=question, answer_1=pred, answer_2=gold)
+        prompt2 = GRADER_TEMPLATE.format(question=question, answer_1=filtered_prediction, answer_2=reference)
+
         # get grading response
-        game1_response = judge(prompt1, system_prompt=GRADER_SYSTEM_PROMPT)
-        game2_response = judge(prompt2, system_prompt=GRADER_SYSTEM_PROMPT)
+        game1_response = self.llm_judge.judge(prompt1, system_prompt=GRADER_SYSTEM_PROMPT)
+        game2_response = self.llm_judge.judge(prompt2, system_prompt=GRADER_SYSTEM_PROMPT)
+
         # parse grading response
         res1 = post_process_arenahard(game1_response)
         res2 = post_process_arenahard(game2_response)
-        return {
+
+        score1 = get_judge_score(res1, reverse=True)
+        score2 = get_judge_score(res2, reverse=False)
+
+        battle_result = {
             'model_a':
             'gpt4-0314',
             'model_b':
@@ -84,22 +111,26 @@ class AlpacaEvalAdapter(DataAdapter):
             ]
         }
 
-    def compute_metric(self, review_res_list: List[dict], **kwargs) -> List[dict]:
-        """
-        compute score of the model
-        """
+        # Set score based on the battle result
+        score.value = {'score': (score1 + score2) / 2}
+        score.explanation = f'LLM judge battles: Game1: {game1_response[:100]}... Game2: {game2_response[:100]}...'
+        score.metadata = {
+            'source': 'llm_judge',
+            'judge_strategy': self.judge_strategy,
+            'model': self.llm_judge.model_id,
+            'battle_result': battle_result
+        }
+        return score
+
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         import pandas as pd
 
         from .utils import compute_mle_elo, get_battles_from_row, get_bootstrap_result, get_win_rate_column
 
-        if isinstance(review_res_list[0], list):
-            review_res_list = [item for sublist in review_res_list for item in sublist]
-
-        battles = pd.concat([get_battles_from_row(res) for res in review_res_list])
+        battles = pd.concat([get_battles_from_row(res.score.metadata['battle_result']) for res in sample_scores])
 
         bootstrap_online_elo = compute_mle_elo(battles)
 
-        # bootstrap_elo_lu = get_bootstrap_result(battles, compute_mle_elo, 100)
         stats = pd.DataFrame()
         stats['results'] = None
         stats['results'] = stats['results'].astype('object')
@@ -108,11 +139,11 @@ class AlpacaEvalAdapter(DataAdapter):
             # assert model in bootstrap_elo_lu.columns
             stats.at[i, 'model'] = model
             stats.at[i, 'score'] = bootstrap_online_elo[model]
-            # stats.at[i, "lower"] = np.percentile(bootstrap_elo_lu[model], 2.5)
-            # stats.at[i, "upper"] = np.percentile(bootstrap_elo_lu[model], 97.5)
-
-        # stats['score'] = get_win_rate_column(stats, 'score', 'gpt4-0314').tolist()
 
         score = get_win_rate_column(stats, 'score', 'gpt4-0314').at['test_model']
 
-        return [{'metric_name': 'winrate', 'score': score, 'num': len(review_res_list)}]
+        return [AggScore(
+            score=score,
+            metric_name='winrate',
+            num=len(sample_scores),
+        )]

@@ -19,7 +19,7 @@ simple_schema = CollectionSchema(name='reasoning', datasets=[
 其中：
 - `name` 是数据混合schema的名称
 - `datasets` 是数据集列表，每个数据集(DatasetInfo)包含 `name`、`weight`、`task_type`、`tags` 和 `args` 等属性。
-    - `name` 是数据集的名称，支持的数据集名称见[数据集列表](../../get_started/supported_dataset.md#1-原生支持的数据集)
+    - `name` 是数据集的名称，支持的数据集名称见[数据集列表](../../get_started/supported_dataset/index.md)
     - `weight` 是数据集的权重，类型为float，用于加权采样，默认为1.0，采样时所有数据会归一化（数值需要大于0）
     - `task_type` 是数据集的任务类型，可自行填写
     - `tags` 是数据集的标签，可自行填写

@@ -44,7 +44,7 @@ from evalscope import TaskConfig, run_task
 task_config = TaskConfig(
     api_url='http://0.0.0.0:8801/v1',  # 推理服务地址
     model='Qwen/QwQ-32B',  # 模型名称 (需要与部署时的模型名称一致)
-    eval_type='service',  # 评测类型，SERVICE表示评测推理服务
+    eval_type='openai_api',  # 评测类型，'openai_api'表示评测推理服务
     datasets=['math_500'],  # 数据集名称
     dataset_args={'math_500': {'few_shot_num': 0}},  # 数据集参数
     eval_batch_size=32,  # 发送请求的并发数
@@ -77,18 +77,18 @@ run_task(task_config)
 +---------+-----------+---------------+----------+-------+---------+---------+ 
 ```
 
-如果想运行[其他数据集](../get_started/supported_dataset.md#1-原生支持的数据集)，可以修改上述配置中的`datasets`和`dataset_args`参数，例如：
+如果想运行[其他数据集](../get_started/supported_dataset/index.md)，可以修改上述配置中的`datasets`和`dataset_args`参数，例如：
 
 ```python
 # ...
 datasets=[
     # 'math_500',  # 数据集名称
-    'gpqa',
+    'gpqa_diamond',
     'aime24'
 ],
 dataset_args={
     # 'math_500': {'few_shot_num': 0 } ,
-    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
+    'gpqa_diamond': {'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```

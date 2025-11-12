@@ -1,6 +1,12 @@
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import OutputType
-from evalscope.metrics import extract_answer, math_equal, strip_answer_string
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
+from typing import Any, Dict
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
@@ -8,42 +14,42 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-@Benchmark.register(
-    name='aime24',
-    pretty_name='AIME-2024',
-    dataset_id='HuggingFaceH4/aime_2024',
-    subset_list=['default'],
-    metric_list=['AveragePass@1'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='train',  # Only train set is available
-    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+@register_benchmark(
+    BenchmarkMeta(
+        name='aime24',
+        pretty_name='AIME-2024',
+        tags=[Tags.MATH, Tags.REASONING],
+        description=
+        'The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model\'s ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.',  # noqa: E501
+        dataset_id='HuggingFaceH4/aime_2024',
+        subset_list=['default'],
+        metric_list=[{
+            'acc': {
+                'numeric': True
+            }
+        }],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='train',  # Only train set is available
+        prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+    )
 )
-class AIME24Adapter(DataAdapter):
+class AIME24Adapter(DefaultDataAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate the prompt for the model input.
-        """
-        problem = input_d['problem']
-        full_prompt = self.prompt_template.format(query=problem)
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        return Sample(
+            input=record['problem'],
+            target=record['answer'],
+            metadata={
+                'problem_id': record.get('id', ''),
+                'solution': record.get('solution', ''),
+            },
+        )
 
-        return self.gen_prompt_data(full_prompt)
+    def extract_answer(self, prediction: str, task_state):
+        from evalscope.metrics.math_parser import extract_answer
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Extract the gold answer from the input dict.
-        return strip_answer_string(input_d['answer'])
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-        """
-        # Note: Use same extraction method for both of checkpoint/service/custom
-        result = strip_answer_string(extract_answer(result))
-        return result
-
-    def match(self, gold: str, pred: str) -> float:
-        return math_equal(pred, gold)
+        return extract_answer(prediction)

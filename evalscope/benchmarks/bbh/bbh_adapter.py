@@ -1,16 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import json
 import os
-import random
 import re
+from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import AnswerKeys
-from evalscope.metrics import exact_match
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
-# flake8: noqa
 
 logger = get_logger()
 
@@ -55,190 +54,148 @@ FREE_FORM_LIST = [
 TASK_TYPE = 'task_type'
 SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
+PROMPT_TEMPLATE = """
+Q: {question}
+A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
+""".lstrip()  # noqa: E501
 
-@Benchmark.register(
-    name='bbh',
-    pretty_name='BBH',
-    dataset_id='modelscope/bbh',
-    subset_list=SUBSET_LIST,
-    metric_list=['AverageAccuracy'],
-    few_shot_num=3,
-    train_split=None,
-    eval_split='test',
-    prompt_template="Q: {query}\nA: Let's think step by step.",
+FEWSHOT_TEMPLATE = """
+{fewshot}
+
+""".lstrip() + PROMPT_TEMPLATE
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='bbh',
+        pretty_name='BBH',
+        dataset_id='evalscope/bbh',
+        tags=[Tags.REASONING],
+        description=
+        'The BBH (Big Bench Hard) benchmark is a collection of challenging tasks designed to evaluate the reasoning capabilities of AI models. It includes both free-form and multiple-choice tasks, covering a wide range of reasoning skills.',  # noqa: E501
+        subset_list=SUBSET_LIST,
+        few_shot_num=3,
+        train_split=None,
+        eval_split='test',
+        metric_list=['acc'],
+        prompt_template=PROMPT_TEMPLATE,
+        few_shot_prompt_template=FEWSHOT_TEMPLATE,
+    )
 )
-class BBHAdapter(DataAdapter):
+class BBHAdapter(DefaultDataAdapter):
     """
     Adapter for BBH free-form and multiple-choices sub-tasks.
     """
 
     def __init__(self, **kwargs):
-
         few_shot_num = kwargs.get('few_shot_num', 3)
 
         if few_shot_num != 3 and few_shot_num != 0:
-            logger.error(f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
-                         f'Use 3-shot by default.')
+            logger.error(
+                f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
+                f'Use 3-shot by default.'
+            )
             kwargs['few_shot_num'] = 3
 
         super().__init__(**kwargs)
 
-    def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
-        data_dict = {}
-        for subset_name in subset_list:
-            for split_name in [self.eval_split]:
-                if os.path.exists(dataset_name_or_path):
-                    file_path = os.path.join(dataset_name_or_path, f'{subset_name}.json')
-                else:
-                    file_path: str = os.path.join(work_dir, dataset_name_or_path, f'{subset_name}.json')
-                if os.path.exists(file_path):
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        examples = json.load(f)['examples']
-                        if subset_name in data_dict:
-                            data_dict[subset_name].update({split_name: examples})
-                        else:
-                            data_dict[subset_name] = {split_name: examples}
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        input = record['input']
+        target = record['target'].replace('(', '').replace(')', '').strip()  # Clean up the target answer
 
-        return data_dict
+        # Determine task type based on subset name
+        task_type = None
+        subset_name = self.current_subset_name
+        if subset_name in MULTIPLE_CHOICE_LIST:
+            task_type = MULTIPLE_CHOICE
+        elif subset_name in FREE_FORM_LIST:
+            task_type = FREE_FORM
 
-    def gen_prompt(self, input_d: dict, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate model prompt from raw data, unify the prompt format for bbh(multiple choice) benchmark.
+        metadata = {TASK_TYPE: task_type}
 
-        Args:
-            input_d (dict): The raw input. A single data format of the BBH:
+        return Sample(input=input, target=target, metadata=metadata, subset_key=subset_name)
 
-            {
-                'input': '((-1 + 2 + 9 * 5) - (-2 + -4 + -4 * -7)) =',
-                'target': '24',
-            }
+    def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
+        # Load CoT prompts from file for BBH
+        subset_name = sample.subset_key
+        if subset_name:
+            cot_file_path = os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{subset_name}.txt')
+            if os.path.exists(cot_file_path):
+                with open(cot_file_path, 'r', encoding='utf-8') as f:
+                    fewshot = f.read().strip()
+        return self.few_shot_prompt_template.format(
+            fewshot=fewshot,
+            question=sample.input,
+        )
 
-        Returns:
-            {'data': ['xxx']}
-        """
-        # few_shot_list: should be ['xxxx']
-        if len(few_shot_list) > 0:
-            cot_prompts = 'Follow the given examples and answer the question.\n' + few_shot_list[0]
-        else:
-            cot_prompts = ''
-        full_prompt = cot_prompts + self.prompt_template.format(query=input_d['input'])
-
-        return self.gen_prompt_data(full_prompt)
-
-    def gen_prompts(self, data_dict: dict) -> dict:
-        """
-        Generate dataset prompts from raw input, unify the prompt format for different datasets.
-
-        Args:
-            data_dict:  Refer to the output of load method: evalscope.benchmarks.benchmark.Benchmark.load
-
-        Returns:
-            {'subset_name': [prompt_d_1, prompt_d_2, ...]}
-            prompt_d_i (dict): refer to the output of gen_prompt method.
-
-        e.g. train -- few-shot data, test -- target dataset to evaluate.
-        """
-        res_dict: dict = {}
-
-        if self.few_shot_num < 0:
-            raise ValueError(f'Invalid shot_num: {self.few_shot_num} for few-shot evaluation.')
-
-        logger.info(f'Use default settings: '
-                    f'> few_shot_num: {self.few_shot_num}, '
-                    f'> few_shot_split: {self.train_split}, '
-                    f'> target_eval_split: {self.eval_split}')
-
-        for sub_name, sub_data_dict in data_dict.items():
-            few_shot_data = []
-            if self.few_shot_num > 0:
-                with open(
-                        os.path.join(os.path.dirname(__file__), 'cot_prompts', f'{sub_name}.txt'), 'r',
-                        encoding='utf-8') as f:
-                    cot_prompt_str = f.read()
-                few_shot_data = [cot_prompt_str]
-
-            res_dict[sub_name] = []
-            for sample_d in sub_data_dict[self.eval_split]:
-                prompt_d = self.gen_prompt(input_d=sample_d, few_shot_list=few_shot_data)
-                sample_d_new = sample_d.copy()
-                if sub_name in MULTIPLE_CHOICE_LIST:
-                    sample_d_new[TASK_TYPE] = MULTIPLE_CHOICE
-                elif sub_name in FREE_FORM_LIST:
-                    sample_d_new[TASK_TYPE] = FREE_FORM
-                else:
-                    raise ValueError(f'Invalid subset name: {sub_name}')
-
-                prompt_d[AnswerKeys.RAW_INPUT] = sample_d_new
-                res_dict[sub_name].append(prompt_d)
-
-        return res_dict
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        # Get the gold choice
-        gold = input_d.get('target', '')
-        # remove brackets
-        if gold is None:
-            logger.error(f'BBHAdapter: gold is None.')
-        gold = gold.replace('(', '').replace(')', '')
-        return gold
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        """
-        Parse the model output to get the answer. Could be the best choice index.
-
-        Args:
-            result: Predicted answer from the model. Usually a string for chat.
-            raw_input_d (dict): The raw input. Depending on the dataset.
-            eval_type: 'checkpoint' or 'service' or `custom`, default: 'checkpoint'
-
-        Returns:
-            The parsed answer. Depending on the dataset. Usually a string for chat.
-        """
-        # Note: to use same extraction method for both of checkpoint/service/custom.
-        task_type: str = raw_input_d.get(TASK_TYPE)
+    def extract_answer(self, prediction: str, task_state: TaskState):
+        task_type = task_state.metadata.get(TASK_TYPE)
 
         if task_type == MULTIPLE_CHOICE:
-            return self._extract_mc_answer(result)
+            return self._extract_mc_answer(prediction)
         elif task_type == FREE_FORM:
-            return self._extract_ff_answer(result)
+            return self._extract_ff_answer(prediction)
         else:
-            raise ValueError(f'Invalid task type: {task_type}')
-
-    def match(self, gold: str, pred: str) -> float:
-        return exact_match(gold=gold, pred=pred)
+            return prediction.strip()
 
     @classmethod
     def _extract_mc_answer(cls, ans: str) -> str:
         """
-        Extract the answer from the model output for Multiple choice task.
+        Extract normalized answer for BBH multiple-choice tasks.
+        Handles formats like:
+        - "answer is (A)"
+        - "The answer is A."
+        - Extra text after answer.
+        Always uses the *last* occurrence of "answer is".
         """
-        ans_line = ans.split('answer is ')
-        if len(ans_line) != 1:
-            ans = ans_line[1].strip()
-        match = re.search(r'\(([A-Z])\)*', ans)
+        ans = ans.strip()
+
+        parts = ans.split('So the answer is ')
+        if len(parts) > 1:
+            ans = parts[-1].strip()
+        ans = ans.split('\n')[0].strip()
+
+        # Remove trailing period
+        if ans.endswith('.'):
+            ans = ans[:-1].strip()
+
+        # Capture uppercase letter inside parentheses (A) (B) ...
+        match = re.search(r'\(([A-Z])\)', ans)
         if match:
             return match.group(1)
-        match = re.search(r'([A-Z])', ans)
+
+        # Capture single uppercase letter
+        match = re.search(r'\b([A-Z])\b', ans)
         if match:
             return match.group(1)
+
         return ans
 
     @classmethod
     def _extract_ff_answer(cls, ans: str):
         """
-        Extract the answer from the model output for Free-form task.
+        Extract the normalized answer for BBH free-form tasks.
+        Handles patterns like:
+        - "answer is XXX."
+        - "The answer is **valid**."
+        - Extra trailing dots / line breaks.
+        - Bold-marked answers (**xxx**).
+        Always uses the *last* occurrence of "answer is".
         """
-        pattern = r'answer is\s+(.*?)\.'
+        ans = ans.strip()
 
-        match = re.search(pattern, ans)
-        if match:
-            res = match.group(1)
-            return res
+        parts = ans.split('So the answer is ')
+        if len(parts) > 1:
+            ans = parts[-1].strip()
+        ans = ans.split('\n')[0].strip()
 
-        ans_line = ans.split('answer is ')
-        if len(ans_line) != 1:
-            ans = ans_line[1].strip()
-        ans = ans.split('\n')[0]
+        # Remove trailing period
         if ans.endswith('.'):
-            ans = ans[:-1]
+            ans = ans[:-1].strip()
+
+        # If answer is in bold (**xxx**), prefer the content inside
+        match = re.search(r'\*\*(.*?)\*\*', ans)
+        if match:
+            ans = match.group(1).strip()
+
         return ans

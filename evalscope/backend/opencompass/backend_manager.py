@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
 import subprocess
 import tempfile
 from dataclasses import asdict
@@ -7,7 +8,8 @@ from typing import Optional, Union
 
 from evalscope.backend.base import BackendManager
 from evalscope.backend.opencompass.api_meta_template import get_template
-from evalscope.utils import get_module_path, get_valid_list, is_module_installed
+from evalscope.utils.import_utils import get_module_path, is_module_installed
+from evalscope.utils.io_utils import get_valid_list
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -45,7 +47,6 @@ class OpenCompassBackendManager(BackendManager):
                     datasets: list, the datasets.
                     models: list, the models.
                     work_dir (Optional): str, the working directory. Default to None, which means the current directory.
-                    dry_run (Optional): bool, the dry-run flag. Default to False.
                     debug (Optional): bool, the debug flag. Default to False.
                     reuse (Optional): str, reuse previous outputs & results. Default to None.
                     generation_kwargs (Optional): dict, the generation config. Default to {}.
@@ -138,7 +139,6 @@ class OpenCompassBackendManager(BackendManager):
             cmd_str = f'python -m run_oc ' \
                       f'--models {" ".join(self.args.models)} ' \
                       f'--datasets {" ".join(self.args.datasets)} ' \
-                      f'{self.get_restore_arg("dry-run", self.args.dry_run)} ' \
                       f'{self.get_arg_with_default("work-dir", self.args.work_dir)}'
 
         elif cmd_mode == CmdMode.SCRIPT:
@@ -180,8 +180,10 @@ class OpenCompassBackendManager(BackendManager):
             else:
                 valid_dataset_names, invalid_dataset_names = get_valid_list(dataset_names, dataset_names_all)
                 if len(invalid_dataset_names) > 0:
-                    logger.error(f'Invalid datasets: {invalid_dataset_names}, '
-                                 f'refer to the following list to get proper dataset name: {dataset_names_all}')
+                    logger.error(
+                        f'Invalid datasets: {invalid_dataset_names}, '
+                        f'refer to the following list to get proper dataset name: {dataset_names_all}'
+                    )
                 assert len(valid_dataset_names) > 0, f'No valid datasets. ' \
                                                      f'To get the valid datasets, please refer to {dataset_names_all}'
 
@@ -204,7 +206,7 @@ class OpenCompassBackendManager(BackendManager):
                     model_d['meta_template'] = get_template(model_d['meta_template'])
 
                 # set the 'abbr' as the 'path' if 'abbr' is not specified
-                model_d['abbr'] = model_d['path']
+                model_d['abbr'] = os.path.basename(model_d['path'])
 
                 model_config = ApiModelConfig(**model_d)
                 models.append(asdict(model_config))
@@ -250,7 +252,8 @@ if __name__ == '__main__':
                 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'
             }],
             'limit': 5
-        })
+        }
+    )
     all_datasets = OpenCompassBackendManager.list_datasets()
     print(f'all_datasets: {all_datasets}')
     oc_backend_manager.run()

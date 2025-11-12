@@ -44,20 +44,25 @@ from evalscope.utils import get_logger
 
 logger = get_logger()
 
-# Deal with nltk punkt_tab.zip tokenizer file to avoid downloading issue
-try:
-    nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data/tokenizers')
-    os.makedirs(nltk_dir, exist_ok=True)
-    punkt_path = os.path.join(nltk_dir, 'punkt_tab.zip')
-    punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
 
-    if not os.path.exists(punkt_path):
-        os.system(f'wget --timeout=10 --tries=3 -P {nltk_dir} {punkt_tab_url}')
-        os.system(f'unzip {punkt_path} -d {nltk_dir}')
-    else:
-        logger.debug(f'{punkt_path} already exists, skipping download')
-except Exception as e:
-    logger.error(f'Try to download punkt_tab.zip for nltk failed: {e}')
+def check_nltk_data():
+    """
+    Check if nltk data is available in the system.
+    If not, download the necessary data files.
+    """
+    try:
+        nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data/tokenizers')
+        os.makedirs(nltk_dir, exist_ok=True)
+        punkt_path = os.path.join(nltk_dir, 'punkt_tab.zip')
+        punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
+
+        if not os.path.exists(punkt_path):
+            os.system(f'wget --timeout=10 --tries=3 -P {nltk_dir} {punkt_tab_url}')
+            os.system(f'unzip {punkt_path} -d {nltk_dir}')
+        else:
+            logger.debug(f'{punkt_path} already exists, skipping download')
+    except Exception as e:
+        logger.error(f'Try to download punkt_tab.zip for nltk failed: {e}')
 
 
 class RougeScorer(scoring.BaseScorer):
@@ -83,11 +88,11 @@ class RougeScorer(scoring.BaseScorer):
     """
 
     def __init__(self, rouge_types, use_stemmer=False, split_summaries=False, tokenizer=None):
-
         self.rouge_types = rouge_types
         if tokenizer:
             self._tokenizer = tokenizer
         else:
+            check_nltk_data()
             self._tokenizer = tokenizers.DefaultTokenizer(use_stemmer)
             logging.info('Using default tokenizer.')
 

@@ -3,27 +3,28 @@ import json
 import pickle
 import sqlite3
 
-result_db_path = './outputs/qwen2.5_benchmark_20241111_160543.db'
-con = sqlite3.connect(result_db_path)
-query_sql = "SELECT request, response_messages, prompt_tokens, completion_tokens \
-                FROM result WHERE success='1'"
+db_path = 'your db path'
+conn = sqlite3.connect(db_path)
+cursor = conn.cursor()
 
-# how to save base64.b64encode(pickle.dumps(benchmark_data["request"])).decode("ascii"),
-with con:
-    rows = con.execute(query_sql).fetchall()
-    if len(rows) > 0:
-        for row in rows:
-            request = row[0]
-            responses = row[1]
-            request = base64.b64decode(request)
-            request = pickle.loads(request)
-            responses = base64.b64decode(responses)
-            responses = pickle.loads(responses)
-            response_content = ''
-            for response in responses:
-                response = json.loads(response)
-                if not response['choices']:
-                    continue
-                response_content += response['choices'][0]['delta']['content']
-            print('prompt: %s, tokens: %s, completion: %s, tokens: %s' %
-                  (request['messages'][0]['content'], row[2], response_content, row[3]))
+# 获取列名
+cursor.execute('PRAGMA table_info(result)')
+columns = [info[1] for info in cursor.fetchall()]
+print('列名：', columns)
+
+cursor.execute('SELECT * FROM result WHERE success=1 AND first_chunk_latency > 1')
+rows = cursor.fetchall()
+print(f'len(rows): {len(rows)}')
+
+for row in rows:
+    row_dict = dict(zip(columns, row))
+    # 解码request
+    row_dict['request'] = pickle.loads(base64.b64decode(row_dict['request']))
+    # 解码response_messages
+    row_dict['response_messages'] = pickle.loads(base64.b64decode(row_dict['response_messages']))
+    # print(row_dict)
+    print(
+        f"request_id: {json.loads(row_dict['response_messages'][0])['id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"  # noqa: E501
+    )
+    # 如果只想看一个可以break
+    # break

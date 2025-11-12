@@ -1,6 +1,5 @@
 import os
 import time
-import torch
 from contextlib import contextmanager
 from functools import partial
 from pydantic import BaseModel, Field
@@ -95,6 +94,7 @@ class TextCompletionResponse(BaseModel):
 class ChatService:
 
     def __init__(self, model_path, attn_implementation):
+        import torch
         from modelscope import AutoModelForCausalLM, AutoTokenizer
         from transformers import TextIteratorStreamer
 
@@ -204,7 +204,8 @@ class ChatService:
 
     def _prepare_chat_inputs(self, request: ChatCompletionRequest):
         formatted_prompt = self.tokenizer.apply_chat_template(
-            request.messages, tokenize=False, add_generation_prompt=True)
+            request.messages, tokenize=False, add_generation_prompt=True
+        )
         inputs = self.tokenizer(formatted_prompt, return_tensors='pt', padding=False).to(self.device)
         prompt_tokens = len(inputs['input_ids'][0])
         return formatted_prompt, inputs, prompt_tokens

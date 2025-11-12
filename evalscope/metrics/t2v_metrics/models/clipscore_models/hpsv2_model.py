@@ -44,11 +44,12 @@ class HPSV2ScoreModel(ScoreModel):
             image_std=None,
             image_resize_mode='longest',
             aug_cfg={},
-            output_dict=True)
+            output_dict=True
+        )
 
         # update weight
         model_weight_path = download_file('AI-ModelScope/HPSv2', HPS_VERSION_MAP[self.model_name], self.cache_dir)
-        checkpoint = torch.load(model_weight_path, map_location=self.device)
+        checkpoint = torch.load(model_weight_path, map_location=self.device, weights_only=False)
         self.model.load_state_dict(checkpoint['state_dict'])
         self.tokenizer = open_clip.get_tokenizer(self.arch)
         self.model.eval()

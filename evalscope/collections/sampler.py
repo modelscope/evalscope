@@ -1,18 +1,17 @@
 import random
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass, field
+from pydantic import BaseModel, Field
 from tqdm import tqdm
 from typing import List, Optional
 
 from evalscope.collections.schema import CollectionSchema, DatasetInfo
 
 
-@dataclass
-class DatasetEntry:
+class DatasetEntry(BaseModel):
     index: int = 0
-    prompt: dict = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
-    categories: List[str] = field(default_factory=list)
+    prompt: dict = Field(default_factory=dict)
+    tags: List[str] = Field(default_factory=list)
+    categories: List[str] = Field(default_factory=list)
     task_type: str = ''
     weight: float = 0.0
     dataset_name: str = ''
@@ -33,17 +32,18 @@ class Sampler(ABC):
         all_data = []
         data_dict = dataset.get_data()
         for subset_name, subset_data in data_dict.items():
-            for prompt in subset_data:
+            for sample in subset_data:
                 all_data.append(
                     DatasetEntry(
-                        prompt=prompt,
+                        prompt=sample.model_dump(exclude_none=True),
                         tags=dataset.tags,
                         categories=dataset.hierarchy,
                         task_type=dataset.task_type,
                         weight=dataset.weight,
                         dataset_name=dataset.name,
                         subset_name=subset_name,
-                    ))
+                    )
+                )
         count = min(count, len(all_data))  # avoid sampling more than the dataset size
         sampled_data = random.sample(all_data, k=count)
         return sampled_data
@@ -52,7 +52,7 @@ class Sampler(ABC):
         result = []
         for i, entry in enumerate(all_data):
             entry.index = i
-            result.append(asdict(entry))
+            result.append(entry.model_dump())
         return result
 
 

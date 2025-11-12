@@ -12,11 +12,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
     """
 
     def __init__(self, query_parameters: Arguments):
+        assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'  # noqa: E501
         super().__init__(query_parameters)
-        assert self.query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer_path`.'  # noqa: E501
 
-        from modelscope import AutoTokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.query_parameters.tokenizer_path, trust_remote_code=True)
         self.prefix_length = self.query_parameters.prefix_length
         self.prefix_ids = self.get_random_inputs(self.prefix_length)
         self.template_len = self.get_template_len()
@@ -37,12 +35,23 @@ class RandomDatasetPlugin(DatasetPluginBase):
         input_lens = np.random.randint(min_prompt_length, max_prompt_length, size=self.number)
         offsets = np.random.randint(0, self.tokenizer.vocab_size, size=self.number)
 
+        vocab_size = self.tokenizer.vocab_size
+
         for i in range(self.number):
-            prompt_ids = ((offsets[i] + i + np.arange(input_lens[i])) % self.tokenizer.vocab_size).tolist()
-            prompt = self.tokenizer.decode(self.prefix_ids + prompt_ids)
+            inner_seq = ((offsets[i] + i + np.arange(input_lens[i])) % vocab_size).tolist()
+            token_sequence = self.prefix_ids + inner_seq
+            prompt = self.tokenizer.decode(token_sequence)
+
+            # After decoding the prompt we have to encode and decode it again.
+            # This is done because in some cases N consecutive tokens
+            # give a string tokenized into != N number of tokens.
+            total_input_len = self.prefix_length + int(input_lens[i])
+            re_encoded_sequence = self.tokenizer.encode(prompt, add_special_tokens=False)[:total_input_len]
+            prompt = self.tokenizer.decode(re_encoded_sequence)
 
             if self.query_parameters.apply_chat_template:
-                yield [{'role': 'user', 'content': prompt}]
+                message = self.create_message(prompt)
+                yield [message]
             else:
                 yield prompt
 
@@ -53,6 +62,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
         return input_ids
 
     def get_template_len(self):
-        empty_message = [{'role': 'user', 'content': ''}]
+        empty_message = [self.create_message(text='')]
         template = self.tokenizer.apply_chat_template(empty_message, tokenize=True, add_generation_prompt=True)
         return len(template)

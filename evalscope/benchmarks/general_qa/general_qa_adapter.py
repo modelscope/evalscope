@@ -1,134 +1,94 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os.path
-from collections import defaultdict
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.metrics import bleu_ngram_one_sample, compute_rouge_score_one_sample_zh, mean
-from evalscope.utils.io_utils import jsonl_to_list
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, dict_to_chat_message
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+PROMPT_TEMPLATE = '请回答问题\n{question}'
 
-@Benchmark.register(
-    name='general_qa',
-    dataset_id='general_qa',
-    subset_list=['default'],
-    metric_list=['AverageBLEU', 'AverageRouge'],
-    few_shot_num=0,
-    train_split=None,
-    eval_split='test',
-    prompt_template='请回答问题\n{query}',
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='general_qa',
+        pretty_name='General-QA',
+        description='A general question answering dataset for custom evaluation. '
+        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).',  # noqa: E501
+        tags=[Tags.QA, Tags.CUSTOM],
+        dataset_id='general_qa',
+        metric_list=['BLEU', 'Rouge'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='test',
+        prompt_template=PROMPT_TEMPLATE,
+    )
 )
-class GeneralQAAdapter(DataAdapter):
-    # TODO: set few_shot_num
+class GeneralQAAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
 
-    def load(self, dataset_name_or_path: str = None, subset_list: list = None, **kwargs) -> dict:
-        dataset_name_or_path = dataset_name_or_path or self.dataset_id
-        subset_list = subset_list or self.subset_list
+    def load_from_disk(self, **kwargs):
+        return super().load_from_disk(use_local_loader=True)
 
-        data_file_dict = defaultdict(str)
-        data_item_dict = defaultdict(list)
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """
+        Convert a data record to a Sample object.
 
-        # get data file path and subset name
-        if os.path.isdir(dataset_name_or_path):
-            for subset_name in subset_list:
-                data_file_dict[subset_name] = os.path.join(dataset_name_or_path, f'{subset_name}.jsonl')
-        elif os.path.isfile(dataset_name_or_path):
-            cur_subset_name = os.path.splitext(os.path.basename(dataset_name_or_path))[0]
-            data_file_dict[cur_subset_name] = dataset_name_or_path
+        Args:
+            record (Dict[str, Any]): Input data record.
+
+        Returns:
+            Sample: Sample object with input, target, and metadata.
+        """
+        query = record.get('question') or record.get('query')
+        answer = record.get('answer') or record.get('response')
+        system_prompt = record.get('system')
+        messages = record.get('messages')
+
+        message_list = []
+        if messages:
+            message_list = [dict_to_chat_message(m) for m in messages]
         else:
-            raise ValueError(f'Invalid dataset path: {dataset_name_or_path}')
+            if system_prompt:
+                message_list.append(ChatMessageSystem(content=system_prompt))
+            message_list.append(ChatMessageUser(content=query))
 
-        # load data from local disk
-        try:
-            for subset_name, file_path in data_file_dict.items():
-                data_item_dict[subset_name] = jsonl_to_list(file_path)
-        except Exception as e:
-            raise ValueError(f'Failed to load data from {self.dataset_id}, got error: {e}')
+        return Sample(input=message_list, target=answer or '')
 
-        data_dict = {subset_name: {'test': data_item_dict[subset_name]} for subset_name in data_file_dict.keys()}
-
-        return data_dict
-
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         """
-        Args:
-            input_d:
-                format1: {'history': [['q1', 'a1'], ['q2', 'a2']], 'question': '', 'answer': ''}
-                format2: {'history': [['q1', 'a1'], ['q2', 'a2']], 'query': '', 'response': ''}
-
-        Returns:
-            {'data': [prompt]}
-
+        Calculate evaluation scores by comparing prediction with reference.
         """
-        # prompt = f"'<|im_start|>user\n{input_d['input']}<|im_end|>\n<|im_start|>assistant\n'"
-        history = input_d.get('history', [])  # history: [['q1', 'a1'], ['q2', 'a2'], ...]
-        if len(history) > 0:
-            logger.warning('The history is not included in the prompt for GeneralQA. \
-                           To be supported in the future.')
+        # Initialize the score object with prediction details
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
-        query = input_d.get('question', '') or input_d.get('query', '')
-        system_prompt = input_d.get('system')
-        prompt = self.prompt_template.format(query=query)
-        return self.gen_prompt_data(prompt, system_prompt=system_prompt)
+        # Calculate scores for each configured metric
+        for metric in self.metric_list:
+            try:
+                if metric == 'Rouge':
+                    from evalscope.metrics.rouge_metric import compute_rouge_score_one_sample_zh
 
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Args:
-            input_d: {'history': [], 'question': '', 'answer': ''}
+                    score.value.update(compute_rouge_score_one_sample_zh([filtered_prediction], [reference]))
+                elif metric == 'BLEU':
+                    from evalscope.metrics import bleu_ngram_one_sample
 
-        Returns:
-            gold_answer: str
+                    score.value.update(bleu_ngram_one_sample(filtered_prediction, reference))
+            except Exception as e:
+                logger.error(f'Error calculating metric {metric}: {e}')
+                return None
 
-        """
-        return input_d.get('answer', '') or input_d.get('response', '')
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
-        """
-        Args:
-            result: str
-
-        Returns:
-            pred_result: str
-
-        """
-        return result
-
-    def match(self, gold: str, pred: str) -> dict:
-        """
-        Args:
-            gold: str
-            pred: str
-
-        Returns:
-            bleu_score: dict
-
-        """
-        res = dict()
-        if 'AverageRouge' in self.metric_list:
-            rouge_dict = compute_rouge_score_one_sample_zh([pred], [gold])
-            res.update(rouge_dict)
-        if 'AverageBLEU' in self.metric_list:
-            bleu_dict = bleu_ngram_one_sample(pred, gold)
-            res.update(bleu_dict)
-        return res
-
-    def compute_metric(self, review_res_list: Union[List[dict], List[List[dict]]], **kwargs) -> List[dict]:
-        """
-        compute weighted mean of the bleu score of all samples
-
-        Args:
-            review_res_list: [score1, score2, ...]
-
-        Returns:
-            avg_res: List[dict]
-
-        """
-        items = super().compute_dict_metric(review_res_list, **kwargs)
-        return [{'metric_name': k, 'score': mean(v), 'num': len(v)} for k, v in items.items()]
+        score.main_score_name = 'Rouge-L-R'
+        return score

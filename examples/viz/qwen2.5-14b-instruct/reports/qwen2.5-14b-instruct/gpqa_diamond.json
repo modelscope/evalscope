@@ -1,0 +1,34 @@
+{
+    "name": "qwen2.5-14b-instruct@gpqa_diamond",
+    "dataset_name": "gpqa_diamond",
+    "dataset_pretty_name": "GPQA-Diamond",
+    "dataset_description": "GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.",
+    "model_name": "qwen2.5-14b-instruct",
+    "score": 0.6,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 0.6,
+            "macro_score": 0.6,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.6,
+                    "macro_score": 0.6,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.6,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

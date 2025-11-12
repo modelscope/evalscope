@@ -1,9 +1,11 @@
 # http requests
 aiohttp
 fastapi
+jinja2
 # for calc result.
 numpy
+rich
 sse_starlette
 # for tokenizer
 transformers
-unicorn
+uvicorn

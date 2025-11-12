@@ -7,8 +7,7 @@ from typing import List, Union
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import EvalBackend
 from evalscope.report import gen_table
-from evalscope.utils import csv_to_list, get_latest_folder_path
-from evalscope.utils.io_utils import OutputsStructure, json_to_dict, yaml_to_dict
+from evalscope.utils.io_utils import OutputsStructure, csv_to_list, get_latest_folder_path, json_to_dict, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -30,7 +29,7 @@ class Summarizer:
             with open(report_file, 'r') as f:
                 res_list.append(json.load(f))
 
-        report_table: str = gen_table([reports_dir])
+        report_table: str = gen_table(reports_path_list=[reports_dir])
         logger.info(f'*** Report table ***\n{report_table}')
 
         return res_list
@@ -81,7 +80,7 @@ class Summarizer:
 
                 summary_file_path = summary_files[0]
                 # Example: [{'dataset': 'gsm8k', 'version': '1d7fe4', 'metric': 'accuracy', 'mode': 'gen', 'qwen-7b-chat': '53.98'} # noqa: E501
-                summary_res: List[dict] = csv_to_list(file_path=summary_file_path)
+                summary_res: List[dict] = csv_to_list(summary_file_path)
                 final_res_list.extend(summary_res)
             elif eval_backend == EvalBackend.VLM_EVAL_KIT:
                 eval_config = Summarizer.parse_eval_config(candidate_task)

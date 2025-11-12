@@ -19,7 +19,7 @@ simple_schema = CollectionSchema(name='reasoning', datasets=[
 Where:
 - `name` is the name of the data mixing schema.
 - `datasets` is a list of datasets, where each dataset (DatasetInfo) includes attributes such as `name`, `weight`, `task_type`, `tags`, and `args`.
-    - `name` is the name of the dataset. Supported dataset names can be found in the [dataset list](../../get_started/supported_dataset.md#1-native-supported-datasets).
+    - `name` is the name of the dataset. Supported dataset names can be found in the [dataset list](../../get_started/supported_dataset/llm.md).
     - `weight` is the weight of the dataset, used for weighted sampling. The default is 1.0, and all data will be normalized during sampling. (The value must be greater than 0)
     - `task_type` is the task type of the dataset and can be filled in as needed.
     - `tags` are labels for the dataset, which can also be filled in as needed.

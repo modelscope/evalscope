@@ -164,6 +164,30 @@ evalscope perf \
   --debug
 ```
 
+## 使用random图文数据集
+使用`random_vl`数据集，随机生成图像和文本输入，在`random`基础上增加了图像相关参数（`image-width`，`image-height`，`image-format`，`image-num`）。
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-VL-3B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random_vl \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 0 \
+  --min-prompt-length 100 \
+  --max-prompt-length 100 \
+  --image-width 512 \
+  --image-height 512 \
+  --image-format RGB \
+  --image-num 1 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-VL-3B-Instruct \
+  --debug
+```
+
 ## 使用SwanLab记录测试结果
 
 请使用如下命令安装SwanLab:
@@ -173,7 +197,7 @@ pip install swanlab
 
 启动测试前添加如下参数:
 ```bash
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```  
 

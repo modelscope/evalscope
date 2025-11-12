@@ -1,299 +1,252 @@
 # ❓ FAQ
 
-Below are some common issues encountered during the use of EvalScope.
+This section compiles common issues and solutions encountered when using EvalScope.
 
 ```{important}
-Most issues with using EvalScope may have been fixed in the latest version. It is recommended to first pull the code from the main branch and try installing it again to see if the issue can be resolved. Please ensure you are using the latest version of the code.
+We recommend updating to the latest `main` branch code when encountering issues. Many problems may have already been fixed in the latest version.
 ```
 
-## Model Benchmark Testing
+## Quick Navigation
 
-### Q0: Why are the evaluation results 0 or significantly incorrect?
+- [❓ FAQ](#-faq)
+  - [Quick Navigation](#quick-navigation)
+  - [Installation \& Environment](#installation--environment)
+  - [Model Evaluation](#model-evaluation)
+    - [Evaluation Configuration \& Parameters](#evaluation-configuration--parameters)
+    - [Result Anomalies \& Troubleshooting](#result-anomalies--troubleshooting)
+    - [Model \& Dataset Support](#model--dataset-support)
+    - [Framework Usage \& Extension](#framework-usage--extension)
+  - [Performance Testing (perf)](#performance-testing-perf)
+    - [Basic Usage \& Configuration](#basic-usage--configuration)
+    - [Performance Metrics \& Troubleshooting](#performance-metrics--troubleshooting)
+  - [Citing Us](#citing-us)
 
-A: Use the following methods to troubleshoot the problem:
-  1. Confirm whether the model interface can perform inference normally.
-  2. Check the model’s output in the `outputs/2025xxxxx/predictions/` path and confirm whether the model has output and whether the output is normal.
-  3. Start the visualization interface with `evalscope app` to check if the evaluation results are normal.
+## Installation & Environment
 
-### Q1: Why is the accuracy measured by the inference model very low, such as the QwQ model on ifeval?
+**Q: How to use EvalScope through Docker?**
 
-A: Add `"filters": {"remove_until": "</think>"}` to the ifeval in `--datast-args` to remove the model's thinking process.
+**A:** You can use the official ModelScope image which includes EvalScope. For details, please refer to the [Environment Setup Documentation](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F).
 
-### Q2: When using the API model service to evaluate embeddings, an error occurs: openai.BadRequestError: Error code: 400 - {'object': 'error', 'message': 'dimensions is currently not supported', 'type': 'BadRequestError', 'param': None, 'code': 400}
+**Q: What to do when compilation fails during `pip install evalscope[all]`?**
 
-A: Set `'dimensions': None` or do not set this parameter.
+**A:** Try installing `pip install python-dotenv` separately first, then execute `pip install evalscope[all]`.
 
-### Q3: In the outputs/2025xxxxx/predictions/ path, the content of the last few cases of the model output is null.
+**Q: Environment conflicts between `evalscope[app]` and other libraries (like `bfcl-eval`)?**
 
-A: The output length is insufficient and was truncated prematurely.
+**A:** Please try installing these libraries separately rather than in a single command. For `bfcl-eval`, try version `2025.6.16`.
 
-### Q4: Does the current built-in evaluation set of evalscope (such as LiveCodebench, AIME, MATH-500) only support pass1 evaluation? Does it support passk evaluation?
+**Q: How to handle the `trust_remote_code=True` warning during evaluation?**
 
-A: 
-1. This framework supports the `n_sample` parameter in QwQ evaluation. You can set `n` in the generation config to calculate the average metrics of multiple samples. Refer to: https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5
-2. This framework supports the `pass@k` metric. Refer to https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id3 in the `metrics_list`.
+**A:** This is an informational warning that doesn't affect the evaluation process. EvalScope framework has `trust_remote_code=True` set by default, so you can use it safely.
 
-### Q5: An error occurred when loading the dataset from the local path, missing `dtype`.
+**Q: Error in Notebook environment: `RuntimeError: Cannot run the event loop while another loop is running`?**
 
-A: There is an issue with loading local datasets, which will be fixed in the next version of modelscope. The temporary solution is to manually delete the `dataset_infos.json` file in the dataset directory.
+**A:** Please write the evaluation code in a Python script file (`.py`) and execute it in the terminal, avoiding running it in Notebook.
 
-### Q6: When evaluating Qwen2-audio, after running several text metrics, the reply content is all exclamation marks.
+## Model Evaluation
 
-A: Refer to the reproduction code:
-```python
-from evalscope.run import run_task
+### Evaluation Configuration & Parameters
 
-task_cfg = {
-    'model': '/opt/nas/n/AudioLLM/allkinds_ckpt/Qwen/Qwen2-Audio-7B-Instruct',
-    'datasets': ['gsm8k', 'math_500', "gpqa", "mmlu_pro", "mmlu_redux"],
-    'limit': 100
-}
+**Q: How to perform pass@k evaluation or generate multiple answers per sample?**
 
-run_task(task_cfg=task_cfg)
-```
-Currently, support for locally loaded multimodal models is not very comprehensive. It is recommended to use an inference service such as vllm to pull up the api for evaluation.
+**A:** Set the `n` parameter in `generation_config`. The value of `n` represents the number of answers generated per sample. The framework will automatically calculate metrics like `pass@k`.
+Reference documentation: [Generation Config](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2), [QwQ Evaluation Practice](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5).
 
-### Q7: Error when evaluating large multimodal models: Unknown benchmark.
+**Q: How to remove "thinking process" from model outputs (like `<think>...</think>`)?**
 
-A: Refer to [here](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmevalkit) for multimodal evaluation. You need to use the VLMEval tool.
-
-### Q8: When evaluating Gemma3 series models, a RuntimeError: CUDA error: device-side assert triggered occurs.
-
-A: Gemma3 is a multimodal model. The current chat_adapter of the framework does not support multimodal models well. It is recommended to use a model inference framework (such as vllm) to pull up the model service for evaluation.
-
-### Q9: How to perform multi-card evaluation?
-
-A: Currently, data parallel acceleration is not supported.
-
-### Q10: The visualization tool for the model inference service's stress test cannot find the report.
-
-A: This visualization tool is specifically for displaying model evaluation results and is not suitable for visualizing stress test results of model inference services. For visualizing stress test results of model inference services, refer to the [stress test result visualization guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/examples.html#wandb).
-
-### Q11: Is there an available docker?
-
-A: You can view the [latest image](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F) using modelscope's official image, which includes the evalscope library.
-
-### Q12: When evaluating the ifeval dataset, an error occurs: Unable to detect language for text कामाची घाई.
-
-A: The error message contains:
-due to Need to load profiles.
-NotADirectoryError: [Errno 20] Not a directory: '/nltk_data/tokenizers/punkt_tab.zip/punkt_tab/english/collocations.tab'
-
-Solution:
-1. `unzip /path/to/nltk_data/tokenizers/punkt_tab.zip`
-2. Command as follows
+**A:** Use the `--dataset-args` parameter to add `filters` for specific datasets. For example, to remove content before `</think>` when evaluating ifeval dataset:
 ```shell
-!evalscope eval
---model xxxx
---api-url xxxx
---api-key xxxxx
---generation-config temperature=1.0
---eval-type service
---eval-batch-size 50
---datasets ifeval
---judge-worker-num 1
+--dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
+```
+If your model uses different thinking tags like `<|end_of_thinking|>`, simply replace it accordingly.
+
+**Q: How to use a local model as a Judge Model?**
+
+**A:** You can deploy the local model as an API service using frameworks like vLLM, then specify its service address in `--judge-model-args`.
+
+**Q: How to set timeout for judge models?**
+
+**A:** Set the `timeout` parameter in the `generation_config` of `--judge-model-args`.
+
+**Q: How to add custom request headers when evaluating API services?**
+
+**A:** Set `extra_headers` in `generation_config`.
+```python
+# Example
+task_config = TaskConfig(
+    # ...
+    generation_config={'extra_headers': {'Authorization': 'Bearer YOUR_TOKEN'}}
+)
 ```
 
-### Q13: Incorrect bad case set when evaluating the Math-500 dataset.
+**Q: How to set up multi-GPU evaluation?**
 
-A: The mathematical parsing rules have issues, and writing these matching rules is quite complex, making it difficult to cover all cases. You can set a judge model and use LLM for recall, which can reduce misjudgments, as follows:
+**A:** EvalScope currently doesn't support Data Parallel. However, you can achieve model parallelism through:
+1.  **Using inference services**: Start a multi-GPU inference service with frameworks like vLLM (e.g., set `--tensor-parallel-size`), then evaluate through API.
+2.  **Local loading**: Specify `device_map=auto` in `--model-args` to automatically distribute model weights across multiple devices.
+
+**Q: Error with `stream` parameter: `unrecognized arguments: --stream True`?**
+
+**A:** `--stream` is a switch parameter, use it directly without appending `True`. Correct usage: `--stream`.
+
+### Result Anomalies & Troubleshooting
+
+**Q: How to troubleshoot obviously abnormal evaluation results (like extremely low accuracy)?**
+
+**A:** Please follow these steps:
+1.  **Check model interface**: Confirm that the model service or local model can generate responses normally.
+2.  **Review prediction files**: Check JSONL files in the `outputs/<timestamp>/predictions/` directory to confirm model outputs meet expectations.
+3.  **Visualization analysis**: Use `evalscope app` to start the visualization interface for intuitive result viewing and analysis.
+
+**Q: Unstable evaluation results - inconsistent across runs?**
+
+**A:** Inconsistent results are usually caused by sampling randomness. Try these methods to stabilize results:
+1.  Set `temperature=0` in `generation_config`.
+2.  Set a fixed `seed` parameter.
+
+**Q: When evaluating `humaneval` and other code generation tasks, scores are much lower than expected?**
+
+**A:**
+1.  **Check model type**: Use Instruct or Chat models. Base models may have issues like repetition due to not following instructions.
+2.  **Remove thinking process**: Some models generate thinking process before code. Please refer to [this method](#evaluation-configuration--parameters) for filtering.
+3.  **Adjust generation length**: Default maximum generation length may be insufficient. Please appropriately increase `max_tokens` in `generation_config`.
+
+**Q: Inaccurate answer extraction or misjudgments when evaluating `MATH-500` dataset?**
+
+**A:** Math problem answer formats are complex, and rule-based parsing can't cover all cases. We recommend using LLM as an auxiliary judge to improve accuracy:
 ```python
+# Set in TaskConfig or DataAdapter
 judge_strategy=JudgeStrategy.LLM_RECALL,
 judge_model_args={
     'model_id': 'qwen2.5-72b-instruct',
-    'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    'api_url': '...',
+    'api_key': '...'
 }
 ```
-Refer to: [Parameter Explanation](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge), [Usage Example](https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#id9)
+Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge).
 
-### Q14: Using qwen2.5-72b-instruct to segment solution, the === in the figure indicates different solutions separated out. This prompt cannot constrain the model to segment correctly.
+**Q: `Connection error` when evaluating `alpaca_eval`?**
 
-A: This prompt:
-https://github.com/modelscope/evalscope/blob/595ac60f22b1248d5333a27ffd4b9eeae7f57727/evalscope/third_party/thinkbench/resources/reformat_template.txt
+**A:** `alpaca_eval` requires specifying a Judge Model for scoring. It uses OpenAI API by default, and connection will fail if related keys aren't configured. Please specify an available judge model through `--judge-model-args`.
 
-This prompt is used to segment steps, not to divide sub-solutions. You can adjust the prompt to divide sub-solutions.
+**Q: How to continue from checkpoint after evaluation interruption?**
 
-### Q15: What is the default temperature when evaluating service?
+**A:** Checkpoint resumption is supported. Use the `--use-cache` parameter and specify the output directory path from the previous evaluation to reuse completed model predictions and evaluation results.
 
-A: The default is 0.
+**Q: `evalscope app` visualization interface is inaccessible or charts display abnormally?**
 
-### Q16: What should I do if the results are inaccurate or unstable when evaluating on AIME24?
+**A:**
+- **Inaccessible**: Try upgrading `gradio` version to `4.20.0` or higher.
+- **Chart anomalies**: Try downgrading `plotly` version to `5.15.0`.
 
-A: The default metric for AIME is pass@1, and it is estimated to be more accurate with sufficient samples. You can set n to a larger value, or set temperature and seed to make the model output as consistent as possible.
+**Q: Error when loading models locally: `Expected all tensors to be on the same device`?**
 
-### Q17: The gradio program for visualizing evaluation results does not work offline (without public network).
+**A:** This is usually caused by insufficient GPU memory. `device_map='auto'` may allocate some weights to CPU. Please ensure sufficient GPU memory or try running on smaller models.
 
-A: You can refer to the solution here [gradio-app/gradio#7934](https://github.com/gradio-app/gradio/issues/7934).
+### Model & Dataset Support
 
-### Q18: Does the multimodal custom Q&A format not support judges?
+**Q: How to evaluate multimodal models (like Qwen-VL, Gemma3)?**
 
-A: Custom Q&A requires implementing the judge logic yourself.
+**A:**
+- **Language capability evaluation**: For evaluation on text datasets (like MMLU), we recommend deploying multimodal models as API services using frameworks like vLLM, then evaluating through API. Direct local loading of multimodal models for pure text evaluation may not be fully supported.
+- **Multimodal capability evaluation**: For evaluation on multimodal datasets (like MMBench), you need to use the VLMEvalKit backend. Please refer to [VLMEvalKit Backend Documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmeval).
 
-### Q19: Running the aime 2024 evaluation reports an SSLError.
+**Q: Error when evaluating `embeddings` models via API service: `dimensions is currently not supported`?**
 
-A: Example of the error:
-```text
-requests.exceptions.SSLError: HTTPSConnectionPool(host='www.modelscope.cn', port=443): Max retries exceeded with url: /api/v1/datasets/HuggingFaceH4/aime_2024 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1007)')))
-```
+**A:** Set `'dimensions': None` in `generation_config` or don't pass this parameter.
 
-The error reason is that the data-args is written incorrectly, and it should be like this:
-```python
-dataset_args={
-    'aime24': {
-        'local_path': "/var/AIME_2024/",
-        'few_shot_num': 3
-    }
-},
-```
+**Q: Error when loading datasets locally (like missing `dtype`)?**
 
-### Q20: How to set the number of times a sample is inferred to generate several answers during dataset evaluation?
+**A:** This is a known issue. Temporary solution: manually delete the `dataset_infos.json` file in the dataset cache directory, then retry.
 
-A: Specify in the generation config.
+**Q: How to use custom datasets for evaluation?**
 
-Refer to: https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2
+**A:** EvalScope supports custom datasets. Please refer to the following documentation:
+- **LLM Custom Datasets**: [Link](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html)
+- **Multimodal Custom Datasets**: [Link](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#id3)
 
-### Q21: What is the warning about modelscope - WARNING - Use trust_remote_code=True. Will invoke codes from ceval-exam. Please make sure that you can trust the external codes. How can the trust_remote_code=True parameter be passed?
+**Q: What do `-f`, `-p`, `-r` represent in `rouge` metrics?**
 
-A: This is a warning and does not affect the evaluation process. The framework already defaults to `trust_remote_code=True`.
+**A:** They are three variants of the ROUGE metric:
+- **-r (Recall)**: Measures how much of the reference text content is covered by generated text.
+- **-p (Precision)**: Measures how much content in generated text is accurate and relevant.
+- **-f (F-measure)**: F1-score, harmonic mean of precision and recall, serving as a comprehensive metric.
 
-### Q22: What should I do if a base model exceeds the maximum token during api evaluation and reports an error?
+### Framework Usage & Extension
 
-A: The api evaluation uses the `chat` interface. Evaluating the base model may have some problems (the model output will not stop), and it is recommended to use the Instruct model for testing.
+**Q: How to add a custom Benchmark?**
 
-### Q23: When starting a service with vllm, it repeatedly reports retrying request issues and then starts reporting Error when calling OpenAI API: Request timed out.
+**A:** You can inherit from `DataAdapter` and implement its methods, then register through the `@register_benchmark` decorator. For detailed steps, please refer to [Adding Benchmark Documentation](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html).
 
-A: The model output is relatively long. Try adding the `stream` parameter and increasing `timeout`.
+**Q: How to adapt custom model APIs that are not OpenAI-style?**
 
-### Q24: How to evaluate the performance of multimodal models (such as Qwen-2.5-vl) on language model evaluation datasets (such as MMLU)?
+**A:** You can implement your own `Model` class to interface with specific API formats. Please refer to [Custom Model Tutorial](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_model.html).
 
-A: It is recommended to use vllm and other frameworks to pull up services for evaluation of multimodal models. Local loading of multimodal models is not yet supported.
+**Q: How to debug or modify EvalScope source code?**
 
-Refer to: https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#api
+**A:** Please use source code installation. After cloning the project locally, execute `pip install -e .` in the project root directory. This way, any modifications to the code will take effect immediately.
 
-### Q25: The stream parameter reports an error: EvalScope Command Line tool: error: unrecognized arguments: --stream True.
+**Q: Why can't evaluation metrics align between EvalScope and OpenCompass?**
 
-A: Use `--stream` directly without adding `True`.
+**A:** Different evaluation frameworks have differences in implementation details (like prompt templates, post-processing logic, metric calculation methods), making it difficult to achieve complete alignment. We recommend conducting horizontal comparisons between models within the same framework.
 
-### Q26: An error occurs when executing an example: RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cpu and cuda:0! (when checking argument for argument index in method wrapper_CUDA__index_select).
+## Performance Testing (perf)
 
-A: First confirm whether the video memory is sufficient. Since the default device map is auto, some weights may be allocated to the cpu. You can try adding `--model-args device_map=cuda`.
+### Basic Usage & Configuration
 
-### Q27: For r1-type models, does the evaluation process ignore the thinking part and directly evaluate the generated final result, or does it evaluate the answer with the thinking process and result together?
+**Q: What should I fill in for the `--url` parameter in `evalscope perf`?**
 
-A: Currently, no additional processing is done on `<think>` content. By default, `<think>` and `<answer>` are placed together, and the answer is parsed from there for evaluation. Post-processing filters are supported, and it is recommended to filter out the thinking part for inference models.
-Usage example:
+**A:**
+- **General scenarios**: For most OpenAI API-compatible services, use the `/v1/chat/completions` endpoint.
+- **`speed_benchmark` dataset**: This specific dataset is used for testing completion performance and should be used with the `/v1/completions` endpoint to avoid overhead from Chat Template processing.
+
+**Q: How to use local files as stress test datasets?**
+
+**A:** Specify `--dataset-path` and set `--dataset line_by_line`. The program will read file content line by line as prompts.
+
+**Q: How to stress test multimodal models?**
+
+**A:** Currently supports the `flickr8k` dataset for multimodal stress testing. Set `--dataset flickr8k`.
+
+**Q: How to set System Prompt during stress testing?**
+
+**A:** Pass it as a JSON string in the `model` parameter, for example:
 ```shell
---datasets ifeval
---dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}'
+--model '{"model": "my-model", "system_prompt": "You are a helpful assistant."}'
 ```
 
-### Q28: Abnormal chart display in the visualization interface.
+### Performance Metrics & Troubleshooting
 
-A: Try downgrading plotly to version 5.23.0.
+**Q: When stress testing Ollama, concurrency won't increase - what to do?**
 
-### Q29: Is there currently an entry for evaluating directly based on prediction results?
+**A:** Try setting the environment variable `export OLLAMA_NUM_PARALLEL=10` (or other appropriate value) before executing the stress test command to increase Ollama's parallel processing capability.
 
-A: Refer to this: https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id5, set the use_cache parameter.
+**Q: Why is TTFT (Time To First Token) the same as Latency (Total Latency)?**
 
-## Model Stress Testing
+**A:** To accurately measure TTFT, you must add the `--stream` parameter in the stress test command to enable streaming output. Otherwise, TTFT will equal the total latency when receiving complete responses.
 
-### Q1: When testing ollama, I found that when the concurrency is greater than 5, the Throughput (average tokens/s) value always does not go up. My graphics card, cpu, memory, and io have no bottlenecks. What is the problem?
+**Q: TTFT metric is too high during stress testing, far exceeding single request response time?**
 
-A: Refer to the reproduction code:
-```shell
-ollama run deepseek-r1:7b
+**A:** When concurrency exceeds service processing capacity, requests enter a queue to wait. TTFT includes queuing time, so increased TTFT under high concurrency is normal and reflects the service's real performance under high load.
 
-evalscope perf --url http://127.0.0.1:11434/v1/chat/completions --parallel 20 --model deepseek-r1:7b --number 50 --api openai --dataset longalpaca --stream --tokenizer-path /home/data/DeepSeek-R1-Distill-Qwen-7B/
+**Q: Stress test results show `nan`?**
+
+**A:** Please check if input data format is correct. For example, the `openqa` dataset uses the `question` field in JSONL files as prompts by default. If fields don't match or file format is incorrect, it may cause inability to process requests properly.
+
+**Q: How to visualize stress test results?**
+
+**A:** Results from the `perf` subcommand are not suitable for `evalscope app`. However, visualization through `wandb` or `swanlab` is supported. Please refer to [Stress Test Result Visualization Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6).
+
+## Citing Us
+
+**Q: I used EvalScope in my work - how should I cite it?**
+
+**A:** Thank you very much! You can use the following BibTeX format to cite our work:
 ```
-
-Add an export OLLAMA_NUM_PARALLEL=10.
-
-### Q2: Unable to use --min-tokens 2048 --max-tokens 2048 \ to control the output length.
-
-A: `--min-tokens` is not supported by all model services. Please check the documentation of the corresponding API service.
-
-- Explanation: The corresponding API service documentation refers to the documentation of the model service being tested, whether it is provided by an inference engine service or a cloud service provider.
-
-### Q3: An error occurs when running the speed benchmark script.
-
-A: Refer to the error message
-```text
-2025-03-31 08:56:52,172 - evalscope - http_client.py - on_request_chunk_sent - 125 - DEBUG - Request sent: <method='POST', url=URL('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'), truncated_chunk='{"prompt": "熵", "model": "qwen2.5-72b-instruct", "max_tokens": 2048, "min_tokens": 2048, "seed": 42, "stop": [], "stop_token_ids": []}'>
-2025-03-31 08:56:52,226 - evalscope - http_client.py - on_response_chunk_received - 137 - DEBUG - Request received: <method='POST', url=URL('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'), truncated_chunk='{"error":{"code":"missing_required_parameter","param":"message","message":"you must provide a messages parameter","type":"invalid_request_error"},"request_id":"chatcmpl-816a021e-5d7e-9eff-91a2-36aed4641546"}'>
+@misc{evalscope_2024,
+    title={{EvalScope}: Evaluation Framework for Large Models},
+    author={ModelScope Team},
+    year={2024},
+    url={https://github.com/modelscope/evalscope}
+}
 ```
-Refer to the reproduction code
-```shell
-evalscope perf
---parallel 1
---url 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
---model 'qwen2.5-72b-instruct'
---log-every-n-query 5
---connect-timeout 6000
---read-timeout 6000
---max-tokens 2048
---min-tokens 2048
---api openai
---api-key 'sk-xxxxxx'
---dataset speed_benchmark
---debug
-```
-For speed testing, the `--url` needs to use the `/v1/completions` endpoint instead of the `/v1/chat/completions`, to avoid the extra handling of the chat template affecting the input length.
-
-### Q4: Does perf stress testing support custom parsing of the return body?
-
-A: Refer to the documentation: https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#api
-
-### Q5: Which parameter can be adjusted to increase concurrent processing?
-
-A: You can refer to this: [vllm-project/vllm#3561](https://github.com/vllm-project/vllm/issues/3561).
-
-### Q6: When executing with the stream, but under 128 concurrency, it waits for the entire batch of concurrency to finish before proceeding with the next 128 concurrent requests, while without the stream it completes one and enters a new request. This results in much lower throughput with the stream.
-
-A: Refer to the example code:
-```shell
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions'
---parallel 128
---model 'test'
---log-every-n-query 10
---read-timeout=1200
---dataset-path '/model/open_qa.jsonl'
--n 1000
---max-prompt-length 32000
---api openai
---stop '<|im_end|>'
---dataset openqa
-```
-Reduce concurrency and try again.
-
-### Q7: TTFT test results seem incorrect, as the total time for completing 50 requests is only 30 seconds, and TTFT is also 30 seconds. What is going on?
-
-A: To accurately measure the Time to First Token (TTFT) metric, the request must include the --stream parameter; otherwise, TTFT will be the same as Latency.
-
-### Q8: How to test a custom API model (not openai or vllm service), and which aspects should be modified, what parameters are required?
-
-A: 
-1. For model performance testing, any service compatible with OpenAI API format is supported.
-2. For model inference service stress testing, refer to [custom request API](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#api).
-
-The --no-test-connection parameter is now supported to skip connection testing.
-
-### Q9: Why does the ttft time output differ significantly from the ttft time collected by vllm?
-
-A: The TTFT obtained by evalscope is the end-to-end time, starting from when the request is sent and ending when the first token is received. It includes network transmission and processing time, which may differ from the service-side statistics.
-
-### Q10: If the request times out, can a longer timeout parameter be set?
-
-A: Yes, just add the following parameters:
-```shell
---connect-timeout 60000 \
---read-timeout 60000 \
-```
-
-### Q11: In the example of testing the inference speed of model services, how is the model understood?
-
-A: The `model` is the name of the model deployed by the model service framework, such as `gpt-4o`, `o1-mini`, etc.
-
-### Q12: KTransformers stream output cannot be recognized and reports ZeroDivisionError: float division by zero.
-
-A: The deployed model service seems not to return usage information, which is different from the standard OpenAI API format. It requires the `--tokenizer-path` parameter to calculate the number of `tokens`.

@@ -4,9 +4,9 @@ import glob
 import os
 import pandas as pd
 from tabulate import tabulate
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
 
-from evalscope.report.utils import Report
+from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -32,42 +32,153 @@ def get_report_list(reports_path_list: List[str]) -> List[Report]:
     return report_list
 
 
-def get_data_frame(report_list: List[Report],
-                   flatten_metrics: bool = True,
-                   flatten_categories: bool = True) -> pd.DataFrame:
+def get_data_frame(
+    report_list: List[Report],
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False
+) -> pd.DataFrame:
     tables = []
     for report in report_list:
-        df = report.to_dataframe(flatten_metrics=flatten_metrics, flatten_categories=flatten_categories)
+        df = report.to_dataframe(
+            flatten_metrics=flatten_metrics,
+            flatten_categories=flatten_categories,
+            add_overall_metric=add_overall_metric
+        )
         tables.append(df)
     return pd.concat(tables, ignore_index=True)
 
 
-def gen_table(reports_path_list: list) -> str:
-    report_list = get_report_list(reports_path_list)
-    table = get_data_frame(report_list)
+def gen_table(
+    reports_path_list: list[str] = None,
+    report_list: list[Report] = None,
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False
+) -> str:
+    """
+    Generates a formatted table from a list of report paths or Report objects.
+
+    Args:
+        reports_path_list (list[str], optional): List of file paths to report files.
+            Either this or `report_list` must be provided.
+        report_list (list[Report], optional): List of Report objects.
+            Either this or `reports_path_list` must be provided.
+        flatten_metrics (bool, optional): Whether to flatten the metrics in the output table. Defaults to True.
+        flatten_categories (bool, optional): Whether to flatten the categories in the output table. Defaults to True.
+        add_overall_metric (bool, optional): Whether to add an overall metric column to the table. Defaults to False.
+
+    Returns:
+        str: A string representation of the table in grid format.
+
+    Raises:
+        AssertionError: If neither `reports_path_list` nor `report_list` is provided.
+    """
+    assert (reports_path_list is not None) or (report_list is not None), \
+        'Either reports_path_list or report_list must be provided.'
+    if report_list is None:
+        report_list = get_report_list(reports_path_list)
+    # Generate a DataFrame from the report list
+    table = get_data_frame(
+        report_list,
+        flatten_metrics=flatten_metrics,
+        flatten_categories=flatten_categories,
+        add_overall_metric=add_overall_metric
+    )
     return tabulate(table, headers=table.columns, tablefmt='grid', showindex=False)
 
 
-class ReportsRecorder:
-    COMMON_DATASET_PATH = []
-    CUSTOM_DATASET_PATH = []
+def weighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], new_name: str = ''
+) -> Subset:
+    """Calculate weighted average for given subsets.
 
-    def __init__(self, oss_url: str = '', endpoint: str = ''):
-        pass
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        new_name (str): Name for the resulting Subset object.
+
+    Returns:
+        Subset: A new Subset object with weighted average score
+    """
+    total_score = 0
+    total_count = 0
+    for name in subset_names:
+        if name in subset_dict:
+            subset = subset_dict[name]
+            total_score += subset.score * subset.num
+            total_count += subset.num
+
+    weighted_avg = total_score / total_count if total_count > 0 else 0
+    return Subset(name=new_name, score=weighted_avg, num=total_count)
 
 
-if __name__ == '__main__':
-    report_dir_1 = './outputs/20250117_151926'
-    # report_dir_2 = './outputs/20250107_204445/reports'
+def unweighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], new_name: str = ''
+) -> Subset:
+    """Calculate unweighted average for given subsets.
 
-    report_table = gen_table([report_dir_1])
-    print(report_table)
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        new_name (str): Name for the resulting Subset object.
 
-    # ALL VALUES ONLY FOR EXAMPLE
-    # +--------------------------+-------------------+-------------+
-    # | Model                    | CompetitionMath   | GSM8K       |
-    # +==========================+===================+=============+
-    # | ZhipuAI_chatglm2-6b-base | 25.0 (acc)        | 30.50 (acc) |
-    # +--------------------------+-------------------+-------------+
-    # | ZhipuAI_chatglm2-6b      | 30.5 (acc)        | 40.50 (acc) |
-    # +--------------------------+-------------------+-------------+
+    Returns:
+        Subset: A new Subset object with unweighted average score
+    """
+    scores = []
+    total_count = 0
+    for name in subset_names:
+        if name in subset_dict:
+            subset = subset_dict[name]
+            scores.append(subset.score)
+            total_count += subset.num
+
+    unweighted_avg = sum(scores) / len(scores) if scores else 0
+    return Subset(name=new_name, score=unweighted_avg, num=total_count)
+
+
+def percentage_weighted_average_from_subsets(
+    subset_names: List[str], subset_dict: Dict[str, Subset], weights: List[float], new_name: str = ''
+) -> Subset:
+    """Calculate percentage weighted average for given subsets.
+
+    Args:
+        subset_names (List[str]): List of subset names to include in the average.
+        subset_dict (Dict[str, Subset]): Dictionary mapping subset names to Subset objects.
+        weights (List[float]): The weight for each corresponding accuracy entry.
+            Can sum to any positive value – they will be normalised internally.
+        new_name (str): Name for the resulting Subset object.
+
+    Returns:
+        Subset: A new Subset object with percentage weighted average score.
+    """
+    assert len(subset_names) == len(weights), \
+        'The number of subset names must match the number of weights.'
+
+    valid_subsets = []
+    valid_weights = []
+    total_count = 0
+
+    for name, weight in zip(subset_names, weights):
+        if name in subset_dict:
+            subset = subset_dict[name]
+            valid_subsets.append(subset)
+            valid_weights.append(weight)
+            total_count += subset.num
+
+    if not valid_subsets:
+        return Subset(name=new_name, score=0, num=0)
+
+    weight_sum = sum(valid_weights)
+    assert weight_sum > 0, \
+        f"Sum of weights for percentage_weighted_average_from_subsets for '{new_name}' is not positive."
+
+    # Normalise weights so that they sum to 1.0
+    weights_norm = [w / weight_sum for w in valid_weights]
+
+    total_score = 0
+    for subset, weight in zip(valid_subsets, weights_norm):
+        total_score += subset.score * weight
+
+    return Subset(name=new_name, score=total_score, num=total_count)

@@ -1,119 +1,76 @@
 # ToolBench
 
-## Description
-We evaluate the effectiveness of tool learning benchmark: [ToolBench](https://arxiv.org/pdf/2307.16789) (Qin et al.,2023b). The task involve integrating API calls to accomplish tasks, where the agent must accurately select the appropriate API and compose necessary API requests.
+## 描述
+我们评估ToolBench基准的有效性：[ToolBench](https://arxiv.org/pdf/2307.16789) (Qin et al.,2023b)。任务涉及集成API调用以完成任务，Agent必须准确选择合适的API并构建必要的API请求。
 
-Moreover, we partition the test set of ToolBench into in-domain and out-of-domain based on whether the tools used in the test instances have been seen during training.
+此外，我们根据测试实例中使用的工具在训练期间是否被看到，将ToolBench的测试集划分为域内（in domain）和域外（out of domain）。此划分使我们能够评估在分布内和分布外场景中的性能。我们将此数据集称为`ToolBench-Static`。
 
-This division allows us to evaluate performance in both in-distribution and out-of-distribution scenarios. We call this dataset to be `ToolBench-Static`.
+有关更多详细信息，请参阅：[Small LLMs Are Weak Tool Learners: A Multi-LLM Agent](https://arxiv.org/abs/2401.07324)
 
-For more details, please refer to: [Small LLMs Are Weak Tool Learners: A Multi-LLM Agent](https://arxiv.org/abs/2401.07324)
+## 数据集
 
-## Dataset
+数据集[链接](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/dataPeview)
 
-- Dataset statistics:
-  - Number of in_domain: 1588
-  - Number of out_domain: 781
+- 数据集统计信息：
+  - 域内数量：1588
+  - 域外数量：781
 
-## Usage
-
-### Installation
-
-```bash
-pip install evalscope -U
-pip install ms-swift -U
-pip install rouge -U
-```
-
-
-### Download the dataset
-
-```bash
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/toolbench-static/data.zip
-```
-
-
-### Unzip the dataset
-
-```bash
-unzip data.zip
-# The dataset will be unzipped to the `/path/to/data/toolbench_static` folder
-```
-
-
-### Task configuration
-
-There are two ways to configure the task: dict and yaml.
-
-1. Configuration with dict:
+## 使用方法
 
 ```python
-your_task_config = {
-    'infer_args': {
-        'model_name_or_path': '/path/to/model_dir',
-        'model_type': 'qwen2-7b-instruct',
-        'data_path': 'data/toolbench_static',
-        'output_dir': 'output_res',
-        'deploy_type': 'swift',
-        'max_new_tokens': 2048,
-        'num_infer_samples': None
-    },
-    'eval_args': {
-        'input_path': 'output_res',
-        'output_path': 'output_res'
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen3-1.7B',
+    datasets=['tool_bench'],
+    limit=5,
+    eval_batch_size=5,
+    generation_config={
+        'max_tokens': 1000,  # 最大生成token数，建议设置为较大值避免输出截断
+        'temperature': 0.7,  # 采样温度 (qwen 报告推荐值)
+        'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
+        'top_k': 20,  # top-k采样 (qwen 报告推荐值)
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
     }
-}
-```
-- Arguments:
-  - `model_name_or_path`: The path to the model local directory.
-  - `model_type`: The model type, refer to [model type list](https://swift.readthedocs.io/en/latest/Instruction/Supported-models-datasets.html#llm)
-  - `data_path`: The path to the dataset directory contains `in_domain.json` and `out_of_domain.json` files.
-  - `output_dir`: The path to the output directory. Default to `output_res`.
-  - `deploy_type`: The deploy type, default to `swift`.
-  - `max_new_tokens`: The maximum number of tokens to generate.
-  - `num_infer_samples`: The number of samples to infer. Default to `None`, which means infer all samples.
-  - `input_path`: The path to the input directory for evaluation, should be the same as `output_dir` of `infer_args`.
-  - `output_path`: The path to the output directory for evaluation.
+)
 
-
-2. Configuration with yaml:
-
-```yaml
-infer_args:
-  model_name_or_path: /path/to/model_dir      # absolute path is recommended
-  model_type: qwen2-7b-instruct
-  data_path: /path/to/data/toolbench_static   # absolute path is recommended
-  deploy_type: swift
-  max_new_tokens: 2048
-  num_infer_samples: null
-  output_dir: output_res
-eval_args:
-  input_path: output_res
-  output_path: output_res
-```
-refer to [config_default.yaml](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/toolbench_static/config_default.yaml) for more details.
-
-
-### Run the task
-
-```python
-from evalscope.third_party.toolbench_static import run_task
-
-# Run the task with dict configuration
-run_task(task_cfg=your_task_config)
-
-# Run the task with yaml configuration
-run_task(task_cfg='/path/to/your_task_config.yaml')
+run_task(task_cfg=task_cfg)
 ```
 
+结果如下(部分脏数据被自动丢弃，导致in_domain样本数量减少)：
+```text
++------------+------------+-----------+---------------+-------+---------+---------+
+| Model      | Dataset    | Metric    | Subset        |   Num |   Score | Cat.0   |
++============+============+===========+===============+=======+=========+=========+
+| Qwen3-1.7B | tool_bench | Act.EM    | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Act.EM    | out_of_domain |     5 |  0.2    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Plan.EM   | in_domain     |     0 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Plan.EM   | out_of_domain |     0 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | F1        | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | F1        | out_of_domain |     5 |  0.2    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | HalluRate | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | HalluRate | out_of_domain |     5 |  0.4    | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Rouge-L   | in_domain     |     2 |  0      | default |
++------------+------------+-----------+---------------+-------+---------+---------+
+| Qwen3-1.7B | tool_bench | Rouge-L   | out_of_domain |     5 |  0.1718 | default |
++------------+------------+-----------+---------------+-------+---------+---------+ 
+```
 
-### Results and metrics
+## 结果和指标
 
-- Metrics:
-  - `Plan.EM`: The agent’s planning decisions at each step for using tools invocation, generating answer, or giving up. Exact match score.
-  - `Act.EM`: Action exact match score, including the tool name and arguments.
-  - `HalluRate`（lower is better）: The hallucination rate of the agent's answers at each step.
-  - `Avg.F1`: The average F1 score of the agent's tools calling at each step.
-  - `R-L`: The Rouge-L score of the agent's answers at each step.
+- 指标：
+  - `Plan.EM`：代理在每一步使用工具调用、生成答案或放弃的计划决策。精确匹配得分。
+  - `Act.EM`：动作精确匹配得分，包括工具名称和参数。
+  - `HalluRate`（越低越好）：代理在每一步回答时的幻觉率。
+  - `Avg.F1`：代理在每一步调用工具的平均F1得分。
+  - `Rouge-L`：代理在每一步回答的Rouge-L得分。
 
-Generally, we focus on `Act.EM`, `HalluRate` and `Avg.F1` metrics.
+通常，我们关注`Act.EM`、`HalluRate`和`Avg.F1`指标。

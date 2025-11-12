@@ -9,7 +9,12 @@ import random
 import sacrebleu
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import Dict, List, Union
+
+
+def normalize_text(text: str) -> str:
+    """Normalize text by lowering case and stripping whitespace."""
+    return text.strip().lower()
 
 
 def mean(arr: list):
@@ -22,16 +27,28 @@ def mean(arr: list):
 
 
 def pass_at_k(arr: Union[List[int], List[List[int]]], k: int = 1) -> float:
+    """
+    Calculates the pass@k metric using the calculate_pass_at_k function.
+
+    Args:
+        arr: List of binary values (1 for correct, 0 for incorrect) or list of such lists
+        k: Number of attempts allowed
+
+    Returns:
+        The average pass@k score across all problems
+    """
     if not arr:
         return 0.0
+    if not isinstance(arr[0], list):
+        # If arr is a simple list of binary results, convert it to a list of lists
+        arr = [arr]
 
-    def sub_pass_at_k(sub_arr: List[int]) -> float:
-        return 1.0 if any(sub_arr[:k]) else 0.0
+    # For list of lists case, each inner list represents attempts for one problem
+    num_samples = [len(sub_arr) for sub_arr in arr]
+    num_correct = [sum(sub_arr) for sub_arr in arr]
+    pass_at_k_values = calculate_pass_at_k(num_samples, num_correct, k)
 
-    if isinstance(arr[0], list):
-        return sum(sub_pass_at_k(sub_arr) for sub_arr in arr) / len(arr)
-    else:
-        return sum(arr) / len(arr)
+    return float(np.mean(pass_at_k_values))
 
 
 def pop_stddev(arr):
@@ -179,7 +196,7 @@ def bleu(items):
     return sacrebleu.corpus_bleu(preds, refs).score
 
 
-def bleu_ngram_one_sample(predict, reference):
+def bleu_ngram_one_sample(predict: str, reference: str):
     """
     Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
 
@@ -223,7 +240,7 @@ def chrf(items):
     Source: https://github.com/m-popovic/chrF
     Paper: https://www.aclweb.org/anthology/W15-3049.pdf
 
-    Higher is better  # TODO I think
+    Higher is better
     """
     refs = list(zip(*items))[0]
     preds = list(zip(*items))[1]
@@ -310,11 +327,11 @@ def bootstrap_stderr(f, xs, iters):
 
     print('bootstrapping for stddev:', f.__name__)
     for bootstrap in tqdm(
-            pool.imap(
-                _bootstrap_internal(f, chunk_size),
-                [(i, xs) for i in range(iters // chunk_size)],
-            ),
-            total=iters // chunk_size,
+        pool.imap(
+            _bootstrap_internal(f, chunk_size),
+            [(i, xs) for i in range(iters // chunk_size)],
+        ),
+        total=iters // chunk_size,
     ):
         # sample w replacement
         res.extend(bootstrap)
@@ -349,15 +366,17 @@ def yesno(x):
         return 'no'
 
 
-def compute_elo(battles,
-                col_model_a='model_a',
-                col_model_b='model_b',
-                col_win='win',
-                tie_values=['tie', 'tie (bothbad)'],
-                k=32,
-                scale=400,
-                base=10,
-                init_rating=1000):
+def compute_elo(
+    battles,
+    col_model_a='model_a',
+    col_model_b='model_b',
+    col_win='win',
+    tie_values=['tie', 'tie (bothbad)'],
+    k=32,
+    scale=400,
+    base=10,
+    init_rating=1000
+):
     rating = defaultdict(lambda: init_rating)
 
     for rd, model_a, model_b, win in battles[[col_model_a, col_model_b, col_win]].itertuples():
@@ -422,9 +441,11 @@ def calculate_arc_accuracy(question_answers: Dict[str, str], predictions: Dict[s
     return score / len(question_answers)
 
 
-def calculate_pass_at_k(num_samples: Union[int, List[int], np.ndarray],
-                        num_correct: Union[List[int], np.ndarray],
-                        k: int = 1) -> np.ndarray:
+def calculate_pass_at_k(
+    num_samples: Union[int, List[int], np.ndarray],
+    num_correct: Union[List[int], np.ndarray],
+    k: int = 1
+) -> np.ndarray:
     """
     Estimates pass@k of each problem and returns them in an array.
     Examples:
@@ -451,3 +472,35 @@ def calculate_pass_at_k(num_samples: Union[int, List[int], np.ndarray],
         num_samples_it = iter(num_samples)
 
     return np.array([estimator(int(n), int(c), k) for n, c in zip(num_samples_it, num_correct)])
+
+
+def calculate_pass_hat_k(num_trials: int, success_count: int, k: int) -> float:
+    """
+    Compute the pass^k metric for the given number of trials, success count, and k.
+    from https://arxiv.org/pdf/2406.12045
+    Args:
+        num_trials: The number of trials.
+        success_count: The number of successful trials.
+        k: The number of trials to consider.
+    Returns:
+        The pass^k metric.
+    """
+    if num_trials < k:
+        raise ValueError(f'Number of trials {num_trials} is less than k {k}.')
+    return math.comb(success_count, k) / math.comb(num_trials, k)
+
+
+def levenshtein_distance(s1, s2):
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2 + 1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]

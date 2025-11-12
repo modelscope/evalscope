@@ -1,18 +1,9 @@
-import base64
-from io import BytesIO
-from PIL import Image
 from typing import Any, Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
-
-
-def PIL_to_base64(image: Image.Image) -> str:
-    buffered = BytesIO()
-    image.save(buffered, format='JPEG')
-    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-    return img_str
+from evalscope.utils.io_utils import PIL_to_base64
 
 
 @register_dataset('flickr8k')
@@ -31,21 +22,7 @@ class FlickrDatasetPlugin(DatasetPluginBase):
         for item in dataset:
             pil_image = item['jpg']
             text = item['txt']
-            base64_iamge = PIL_to_base64(pil_image)
+            base64_image = PIL_to_base64(pil_image, add_header=True)
 
-            yield [{
-                'role':
-                'user',
-                'content': [
-                    {
-                        'type': 'text',
-                        'text': text,
-                    },
-                    {
-                        'type': 'image_url',
-                        'image_url': {
-                            'url': f'data:image/jpeg;base64,{base64_iamge}',
-                        }
-                    },
-                ],
-            }]
+            message = self.create_message(text=text, image_urls=base64_image)
+            yield [message]

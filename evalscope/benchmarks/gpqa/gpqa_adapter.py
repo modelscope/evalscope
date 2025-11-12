@@ -1,60 +1,70 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
 import os
 import random
 import re
+from typing import Any, Dict
 
-from evalscope.benchmarks import Benchmark, DataAdapter
-from evalscope.constants import EvalType, OutputType
-from evalscope.metrics import exact_match
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
+
+logger = get_logger()
 
 
-@Benchmark.register(
-    name='gpqa',
-    pretty_name='GPQA',
-    dataset_id='modelscope/gpqa',
-    model_adapter=OutputType.GENERATION,
-    output_types=[OutputType.MULTIPLE_CHOICE, OutputType.GENERATION],
-    subset_list=['gpqa_extended', 'gpqa_main', 'gpqa_diamond'],
-    metric_list=['AveragePass@1'],
-    few_shot_num=5,
-    train_split=None,
-    eval_split='train',  # only have train split
-    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+@register_benchmark(
+    BenchmarkMeta(
+        name='gpqa_diamond',
+        pretty_name='GPQA-Diamond',
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
+        description=
+        'GPQA is a dataset for evaluating the reasoning ability of large language models (LLMs) on complex mathematical problems. It contains questions that require step-by-step reasoning to arrive at the correct answer.',  # noqa: E501
+        dataset_id='AI-ModelScope/gpqa_diamond',
+        metric_list=['acc'],
+        few_shot_num=0,
+        train_split=None,
+        eval_split='train',  # only have train split
+        prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
+    )
 )
-class GPQAAdapter(DataAdapter):
+class GPQAAdapter(MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.choices = ['A', 'B', 'C', 'D']
-        if self.few_shot_num and self.few_shot_num > 0:
-            self.prompt_prefix = 'Here are some example questions from experts. Answer the final question yourself, following the format of the previous questions exactly.\n'  # noqa: E501
-            self.prompt_prefix += open(
-                os.path.join(os.path.dirname(__file__), 'chain_of_thought.txt'), 'r',
-                encoding='utf-8').read() + '\nQuestion: '
-        else:
-            self.prompt_prefix = 'What is the correct answer to this question:'
+        if self.few_shot_num > 0 and self.few_shot_num != 5:
+            logger.warning(
+                f'Only support few_shot_num 0 or 5 for {self.dataset_id}, but got {self.few_shot_num}. Use 5-shot by default.'  # noqa: E501
+            )
+            self.few_shot_num = 5
 
-    def gen_prompt(self, input_d: dict, subset_name: str, few_shot_list: list, **kwargs) -> dict:
-        """
-        Generate model prompt from input data.
-        example:
-        {
-            "question":"Two people are playing the following game. A fair coin is tossed into the air. Person A says that in a single toss of the coin, the tail will come. So it's like the first shot or the third shot or the fifth shot. Person B says that the coin will come with a double toss. So like the second, fourth, sixth or eighth shot. Imagine this game played forever. What is the probability that person A wins this game?",
-            "choice1":"1/2",
-            "choice2":"1/4",
-            "choice3":"2/3",
-            "choice4":"1/8",
-            "answer":"C",
-        }
-        """  # noqa: E501
-        processed_input_d = self.__process_input(input_d)
-        input_d['answer'] = processed_input_d['answer']  # add answer to input_d for answer extraction
-        query = self.prompt_prefix + f"{input_d['Question']}\n{self.__form_options(processed_input_d['choices'])}"  # noqa: E501
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        # Process the input to create shuffled choices and correct answer
+        processed_data = self._process_input(record)
 
-        prompt = self.prompt_template.format(query=query)
-        return self.gen_prompt_data(prompt)
+        return Sample(
+            input=record['Question'],
+            choices=processed_data['choices'],
+            target=processed_data['answer'],
+            subset_key=record.get('subset', ''),
+            metadata={
+                'correct_answer':
+                record['Correct Answer'],
+                'incorrect_answers':
+                [record['Incorrect Answer 1'], record['Incorrect Answer 2'], record['Incorrect Answer 3']],
+            },
+        )
 
-    def __process_input(self, input_d: dict) -> dict:
+    def format_fewshot_template(self, fewshot, sample):
+        from .prompt import FEW_SHOT_SAMPLES
+
+        return FEW_SHOT_TEMPLATE.format(fewshot=FEW_SHOT_SAMPLES, ) + self.format_prompt_template(sample)
+
+    def _process_input(self, input_d: dict) -> dict:
+        """Process input to shuffle choices and determine correct answer letter."""
 
         def preprocess(text):
             if text is None:
@@ -74,53 +84,7 @@ class GPQAAdapter(DataAdapter):
         random.shuffle(choices)
         correct_answer_index = choices.index(preprocess(input_d['Correct Answer']))
 
-        out_doc = {
-            'choices': [choices[0], choices[1], choices[2], choices[3]],
+        return {
+            'choices': choices,
             'answer': f'{chr(65 + correct_answer_index)}',
         }
-        return out_doc
-
-    def __form_options(self, options: list):
-        option_str = 'Choices:\n'
-        for opt, choice in zip(options, self.choices):
-            option_str += f'({choice}) {opt}' + '\n'
-        return option_str
-
-    def get_gold_answer(self, input_d: dict) -> str:
-        """
-        Parse the raw input labels (gold).
-        """
-        return input_d['answer']
-
-    def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = EvalType.CHECKPOINT) -> str:
-        """
-        Parse the predicted result and extract proper answer.
-        """
-        if self.model_adapter == OutputType.MULTIPLE_CHOICE:
-            return result
-        else:
-            return GPQAAdapter.get_multiple_choice_answer(result)
-
-    def match(self, gold: str, pred: str) -> float:
-        """
-        Match the gold answer and the predicted answer.
-        """
-        return exact_match(gold=gold, pred=pred)
-
-    @staticmethod
-    def get_multiple_choice_answer(pred: str):
-        tmp = re.findall(r'\b(A|B|C|D)\b', pred.upper())
-        if tmp:
-            pred = tmp
-        else:
-            pred = [pred.strip().strip('.')]
-
-        if len(pred) == 0:
-            pred = ''
-        else:
-            pred = pred[-1]
-
-        # Remove the period at the end, again!
-        pred = pred.rstrip('.').rstrip('/')
-
-        return pred

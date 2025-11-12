@@ -4,7 +4,7 @@ The logic in this file largely borrows from Qwen2.5-Math codebase at https://git
 # flake8: noqa
 import re
 import regex
-from latex2sympy2 import latex2sympy
+from latex2sympy2_extended import latex2sympy
 from math import isclose
 from sympy import N, simplify
 from sympy.parsing.latex import parse_latex
@@ -153,9 +153,11 @@ def strip_answer_string(string):
 
     # cdot
     # string = string.replace("\\cdot", "")
-    if (string.startswith('{') and string.endswith('}') and string.isalnum()
-            or string.startswith('(') and string.endswith(')') and string.isalnum()
-            or string.startswith('[') and string.endswith(']') and string.isalnum()):
+    if (
+        string.startswith('{') and string.endswith('}') and string.isalnum()
+        or string.startswith('(') and string.endswith(')') and string.isalnum()
+        or string.startswith('[') and string.endswith(']') and string.isalnum()
+    ):
         string = string[1:-1]
 
     # inf
@@ -209,6 +211,11 @@ def strip_answer_string(string):
     # Remove grade level (e.g., 12th grade) and just maintain the integer
     string = re.sub(r'thgrade$', '', string)
 
+    # Normalize thousands-formatted numbers (e.g., 70,000 or -1,234,567.89) by removing commas
+    # This must run before the "list of integers" sorting to avoid misclassifying numbers with thousand separators.
+    if re.fullmatch(r'\s*-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s*', string):
+        string = string.replace(',', '')
+
     # If the answer is a list of integers (without parenthesis), sort them
     if re.fullmatch(r'(\s*-?\d+\s*,)*\s*-?\d+\s*', string):
         # Split the string into a list of integers
@@ -260,6 +267,8 @@ def extract_answer(pred_str, use_last_number=True):
     elif '答案是' in pred_str:
         # Handle Chinese few-shot multiple choice problem answer extraction
         pred = pred_str.split('答案是')[1].strip().split('\n\n')[0].strip()
+    elif 'ANSWER:' in pred_str:
+        pred = pred_str.split('ANSWER:')[-1].strip()
     else:  # use the last number
         if use_last_number:
             pattern = '-?\d*\.?\d+'
@@ -387,9 +396,8 @@ def math_equal(
 
     ## deal with [], (), {}
     pred_str, ref_str = prediction, reference
-    if (prediction.startswith('[') and prediction.endswith(']')
-            and not reference.startswith('(')) or (prediction.startswith('(') and prediction.endswith(')')
-                                                   and not reference.startswith('[')):
+    if (prediction.startswith('[') and prediction.endswith(']') and not reference.startswith('(')
+        ) or (prediction.startswith('(') and prediction.endswith(')') and not reference.startswith('[')):
         pred_str = pred_str.strip('[]()')
         ref_str = ref_str.strip('[]()')
     for s in ['{', '}', '(', ')']:
@@ -399,25 +407,29 @@ def math_equal(
         return True
 
     ## [a, b] vs. [c, d], return a==c and b==d
-    if (regex.match(r'(\(|\[).+(\)|\])', prediction) is not None
-            and regex.match(r'(\(|\[).+(\)|\])', reference) is not None):
+    if (
+        regex.match(r'(\(|\[).+(\)|\])', prediction) is not None
+        and regex.match(r'(\(|\[).+(\)|\])', reference) is not None
+    ):
         pred_parts = prediction[1:-1].split(',')
         ref_parts = reference[1:-1].split(',')
         if len(pred_parts) == len(ref_parts):
-            if all(
-                [math_equal(pred_parts[i], ref_parts[i], include_percentage, is_close)
-                 for i in range(len(pred_parts))]):
+            if all([
+                math_equal(pred_parts[i], ref_parts[i], include_percentage, is_close) for i in range(len(pred_parts))
+            ]):
                 return True
     if ((prediction.startswith('\\begin{pmatrix}') or prediction.startswith('\\begin{bmatrix}'))
-            and (prediction.endswith('\\end{pmatrix}') or prediction.endswith('\\end{bmatrix}'))
-            and (reference.startswith('\\begin{pmatrix}') or reference.startswith('\\begin{bmatrix}'))
-            and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))):
+        and (prediction.endswith('\\end{pmatrix}') or prediction.endswith('\\end{bmatrix}'))
+        and (reference.startswith('\\begin{pmatrix}') or reference.startswith('\\begin{bmatrix}'))
+        and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))):
         pred_lines = [
-            line.strip() for line in prediction[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            line.strip()
+            for line in prediction[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
             if line.strip()
         ]
         ref_lines = [
-            line.strip() for line in reference[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            line.strip()
+            for line in reference[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
             if line.strip()
         ]
         matched = True
@@ -427,12 +439,12 @@ def math_equal(
                 ref_parts = ref_line.split('&')
                 if len(pred_parts) == len(ref_parts):
                     if not all([
-                            math_equal(
-                                pred_parts[i],
-                                ref_parts[i],
-                                include_percentage,
-                                is_close,
-                            ) for i in range(len(pred_parts))
+                        math_equal(
+                            pred_parts[i],
+                            ref_parts[i],
+                            include_percentage,
+                            is_close,
+                        ) for i in range(len(pred_parts))
                     ]):
                         matched = False
                         break
@@ -524,3 +536,10 @@ def symbolic_equal(a, b):
         pass
 
     return False
+
+
+if __name__ == '__main__':
+    print(math_equal('\n\\boxed{70,\\!000}\n', '70000'))
+    print(extract_answer('The answer is \\boxed{70,\\!000}'))
+    print(strip_answer_string(extract_answer('The answer is \\boxed{70,\\!000}')))
+    print(math_equal(extract_answer('The answer is \\boxed{70,\\!000}'), '70000'))

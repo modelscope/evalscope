@@ -61,17 +61,18 @@ def t5_tokenizer_image_token(prompt, tokenizer, image_token_index=IMAGE_TOKEN_IN
 
 
 def load_pretrained_model(
-        model_cls,
-        model_args,
-        model_path=None,
-        tokenizer_path=None,
-        model_max_length=None,
-        padding_side=None,
-        image_aspect_ratio='pad',  # or 'square'
-        mmprojector_repo=None,
-        mmprojector_name=None,
-        device='cuda',
-        cache_dir=CACHE_DIR):
+    model_cls,
+    model_args,
+    model_path=None,
+    tokenizer_path=None,
+    model_max_length=None,
+    padding_side=None,
+    image_aspect_ratio='pad',  # or 'square'
+    mmprojector_repo=None,
+    mmprojector_name=None,
+    device='cuda',
+    cache_dir=CACHE_DIR
+):
     tokenizer_dict = {}
     if model_max_length:
         tokenizer_dict['model_max_length'] = model_max_length
@@ -80,7 +81,7 @@ def load_pretrained_model(
 
     from ..utils import download_file
 
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, use_fast=False, **tokenizer_dict)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, **tokenizer_dict)
     # tokenizer.pad_token = tokenizer.unk_token # could be redundant
 
     model_path = download_file(model_path, cache_dir=cache_dir)
@@ -106,7 +107,8 @@ def load_pretrained_model(
         model_args.pretrain_mm_mlp_adapter = pretrain_mm_mlp_adapter  # important to set to correct path
 
         model.get_model().initialize_vision_modules(
-            model_args)  # This will load the CLIP vision encoder and MLP projector
+            model_args
+        )  # This will load the CLIP vision encoder and MLP projector
     else:
         model.resize_token_embeddings(len(tokenizer))  # perhaps not needed
 

@@ -1,7 +1,7 @@
 import json
 import sys
 from abc import abstractmethod
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 
@@ -15,6 +15,11 @@ class DatasetPluginBase:
             dataset_path (str, optional): The input dataset path. Defaults to None.
         """
         self.query_parameters = query_parameters
+        if query_parameters.tokenizer_path:
+            from modelscope import AutoTokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(query_parameters.tokenizer_path, trust_remote_code=True)
+        else:
+            self.tokenizer = None
 
     def __next__(self):
         for item in self.build_messages():
@@ -64,3 +69,40 @@ class DatasetPluginBase:
         data = json.loads(content)
         for item in data:
             yield item
+
+    def create_message(self, text: str, image_urls: Union[List[str], str] = None, role: str = 'user') -> Dict:
+        """Create a message with text and optional image URLs.
+
+        Args:
+            text (str): The text content of the message.
+            image_urls (List[str], optional): List of image URLs. Defaults to None.
+            role (str, optional): The role of the message sender. Defaults to "user".
+
+        Returns:
+            Dict: A dictionary representing the message.
+        """
+        if image_urls is None:
+            message = {'role': role, 'content': text}
+        else:
+            message = {'role': role, 'content': [{'type': 'text', 'text': text}]}
+            if isinstance(image_urls, str):
+                image_urls = [image_urls]
+            for url in image_urls:
+                message['content'].append({'type': 'image_url', 'image_url': {'url': url}})
+        return message
+
+    def check_prompt_length(self, prompt: str) -> Tuple[bool, int]:
+        """Check if the prompt length is within the specified range.
+
+        Args:
+            prompt (str): The input prompt string.
+
+        Returns:
+            Tuple[bool, int]: A tuple containing a boolean indicating whether the prompt is valid and its length.
+        """
+        if self.tokenizer is None:
+            prompt_length = len(prompt)
+        else:
+            prompt_length = len(self.tokenizer.encode(prompt))
+        is_valid = self.query_parameters.min_prompt_length <= prompt_length <= self.query_parameters.max_prompt_length
+        return is_valid, prompt_length

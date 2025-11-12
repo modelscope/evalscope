@@ -1,6 +1,5 @@
 import base64
 import os
-import tiktoken
 import torch
 from openai import OpenAI
 from typing import List
@@ -42,6 +41,8 @@ class GPT4VModel(VQAScoreModel):
     def load_model(self):
         """Load the model, tokenizer, image transform
         """
+        import tiktoken
+
         self.tokenizer = tiktoken.encoding_for_model(self.model_name)
         self.client = OpenAI(api_key=self.openai_key)
         # self.candidate_answers = GPT4V_MODELS[self.model_name]['candidate_answers']
@@ -122,11 +123,13 @@ class GPT4VModel(VQAScoreModel):
             print(completion.choices[0].logprobs.content[0].top_logprobs)
             return torch.Tensor([0.0])
 
-    def forward(self,
-                images: List[str],
-                texts: List[str],
-                question_template: str = default_question_template,
-                answer_template: str = default_answer_template) -> torch.Tensor:
+    def forward(
+        self,
+        images: List[str],
+        texts: List[str],
+        question_template: str = default_question_template,
+        answer_template: str = default_answer_template
+    ) -> torch.Tensor:
         """Forward pass of the model to return n scores for n (image, text) pairs (in PyTorch Tensor)
         """
         assert len(images) == len(texts), 'Number of images and texts must match'

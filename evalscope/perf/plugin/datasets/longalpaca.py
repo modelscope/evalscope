@@ -22,9 +22,10 @@ class LongAlpacaDatasetPlugin(DatasetPluginBase):
             ds = self.dataset_json_list(self.query_parameters.dataset_path)
         for item in ds:
             prompt = item['instruction'].strip()
-            if len(prompt) > self.query_parameters.min_prompt_length and len(
-                    prompt) < self.query_parameters.max_prompt_length:
+            is_valid, _ = self.check_prompt_length(prompt)
+            if is_valid:
                 if self.query_parameters.apply_chat_template:
-                    yield [{'role': 'user', 'content': prompt}]
+                    message = self.create_message(prompt)
+                    yield [message]
                 else:
                     yield prompt

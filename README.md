@@ -4,13 +4,12 @@
     <br>
 <p>
 
-
 <p align="center">
   <a href="README_zh.md">中文</a> &nbsp ｜ &nbsp English &nbsp
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/python-%E2%89%A53.9-5be.svg">
+<img src="https://img.shields.io/badge/python-%E2%89%A53.10-5be.svg">
 <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
@@ -18,81 +17,86 @@
 <p>
 
 <p align="center">
-<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documents</a>
+<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  Chinese Documentation</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documentation</a>
 <p>
 
-> ⭐ If you like this project, please click the "Star" button at the top right to support us. Your support is our motivation to keep going!
 
-## 📋 Contents
-- [📋 Contents](#-contents)
-- [📝 Introduction](#-introduction)
-- [☎ User Groups](#-user-groups)
-- [🎉 News](#-news)
-- [🛠️ Installation](#️-installation)
-  - [Method 1: Install Using pip](#method-1-install-using-pip)
-  - [Method 2: Install from Source](#method-2-install-from-source)
-- [🚀 Quick Start](#-quick-start)
-  - [Method 1. Using Command Line](#method-1-using-command-line)
-  - [Method 2. Using Python Code](#method-2-using-python-code)
-  - [Basic Parameter](#basic-parameter)
-  - [Output Results](#output-results)
-- [📈 Visualization of Evaluation Results](#-visualization-of-evaluation-results)
-- [🌐 Evaluation of Specified Model API](#-evaluation-of-specified-model-api)
-- [⚙️ Custom Parameter Evaluation](#️-custom-parameter-evaluation)
-  - [Parameter](#parameter)
-- [Evaluation Backend](#evaluation-backend)
-- [📈 Model Serving Performance Evaluation](#-model-serving-performance-evaluation)
-- [🖊️ Custom Dataset Evaluation](#️-custom-dataset-evaluation)
-- [🏟️ Arena Mode](#️-arena-mode)
-- [👷‍♂️ Contribution](#️-contribution)
-- [🔜 Roadmap](#-roadmap)
-- [Star History](#star-history)
-
+> ⭐ If you like this project, please click the "Star" button in the upper right corner to support us. Your support is our motivation to move forward!
 
 ## 📝 Introduction
 
-EvalScope is [ModelScope](https://modelscope.cn/)'s official framework for model evaluation and benchmarking, designed for diverse assessment needs. It supports various model types including large language models, multimodal, embedding, reranker, and CLIP models.
+EvalScope is a powerful and easily extensible model evaluation framework created by the [ModelScope Community](https://modelscope.cn/), aiming to provide a one-stop evaluation solution for large model developers.
 
-The framework accommodates multiple evaluation scenarios such as end-to-end RAG evaluation, arena mode, and inference performance testing. It features built-in benchmarks and metrics like MMLU, CMMLU, C-Eval, and GSM8K. Seamlessly integrated with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, EvalScope enables one-click evaluations, offering comprehensive support for model training and assessment 🚀
+Whether you want to evaluate the general capabilities of models, conduct multi-model performance comparisons, or need to stress test models, EvalScope can meet your needs.
+
+## ✨ Key Features
+
+- **📚 Comprehensive Evaluation Benchmarks**: Built-in multiple industry-recognized evaluation benchmarks including MMLU, C-Eval, GSM8K, and more.
+- **🧩 Multi-modal and Multi-domain Support**: Supports evaluation of various model types including Large Language Models (LLM), Vision Language Models (VLM), Embedding, Reranker, AIGC, and more.
+- **🚀 Multi-backend Integration**: Seamlessly integrates multiple evaluation backends including OpenCompass, VLMEvalKit, RAGEval to meet different evaluation needs.
+- **⚡ Inference Performance Testing**: Provides powerful model service stress testing tools, supporting multiple performance metrics such as TTFT, TPOT.
+- **📊 Interactive Reports**: Provides WebUI visualization interface, supporting multi-dimensional model comparison, report overview and detailed inspection.
+- **⚔️ Arena Mode**: Supports multi-model battles (Pairwise Battle), intuitively ranking and evaluating models.
+- **🔧 Highly Extensible**: Developers can easily add custom datasets, models and evaluation metrics.
+
+<details><summary>🏛️ Overall Architecture</summary>
 
 <p align="center">
-  <img src="docs/en/_static/images/evalscope_framework.png" width="70%">
-  <br>EvalScope Framework.
+    <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png" style="width: 70%;">
+    <br>EvalScope Overall Architecture.
 </p>
 
-<details><summary>Framework Description</summary>
+1.  **Input Layer**
+    - **Model Sources**: API models (OpenAI API), Local models (ModelScope)
+    - **Datasets**: Standard evaluation benchmarks (MMLU/GSM8k etc.), Custom data (MCQ/QA)
 
-The architecture includes the following modules:
-1. **Model Adapter**: The model adapter is used to convert the outputs of specific models into the format required by the framework, supporting both API call models and locally run models.
-2. **Data Adapter**: The data adapter is responsible for converting and processing input data to meet various evaluation needs and formats.
-3. **Evaluation Backend**:
-    - **Native**: EvalScope’s own **default evaluation framework**, supporting various evaluation modes, including single model evaluation, arena mode, baseline model comparison mode, etc.
-    - **OpenCompass**: Supports [OpenCompass](https://github.com/open-compass/opencompass) as the evaluation backend, providing advanced encapsulation and task simplification, allowing you to submit tasks for evaluation more easily.
-    - **VLMEvalKit**: Supports [VLMEvalKit](https://github.com/open-compass/VLMEvalKit) as the evaluation backend, enabling easy initiation of multi-modal evaluation tasks, supporting various multi-modal models and datasets.
-    - **RAGEval**: Supports RAG evaluation, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html).
-    - **ThirdParty**: Other third-party evaluation tasks, such as ToolBench.
-4. **Performance Evaluator**: Model performance evaluation, responsible for measuring model inference service performance, including performance testing, stress testing, performance report generation, and visualization.
-5. **Evaluation Report**: The final generated evaluation report summarizes the model's performance, which can be used for decision-making and further model optimization.
-6. **Visualization**: Visualization results help users intuitively understand evaluation results, facilitating analysis and comparison of different model performances.
+2.  **Core Functions**
+    - **Multi-backend Evaluation**: Native backend, OpenCompass, MTEB, VLMEvalKit, RAGAS
+    - **Performance Monitoring**: Supports multiple model service APIs and data formats, tracking TTFT/TPOP and other metrics
+    - **Tool Extensions**: Integrates Tool-Bench, Needle-in-a-Haystack, etc.
+
+3.  **Output Layer**
+    - **Structured Reports**: Supports JSON, Table, Logs
+    - **Visualization Platform**: Supports Gradio, Wandb, SwanLab
 
 </details>
 
-## ☎ User Groups
+## 🎉 What's New
 
-Please scan the QR code below to join our community groups:
+> [!IMPORTANT]
+> **Version 1.0 Refactoring**
+>
+> Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
 
-[Discord Group](https://discord.com/invite/D27yfEFVz5)              |  WeChat Group | DingTalk Group
-:-------------------------:|:-------------------------:|:-------------------------:
-<img src="docs/asset/discord_qr.jpg" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+- 🔥 **[2025.11.07]** Added support for τ²-bench, an extended and enhanced version of τ-bench that includes a series of code fixes and adds telecom domain troubleshooting scenarios. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html).
+- 🔥 **[2025.10.30]** Added support for BFCL-v4, enabling evaluation of agent capabilities including web search and long-term memory. See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html).
+- 🔥 **[2025.10.27]** Added support for LogiQA, HaluEval, MathQA, MRI-QA, PIQA, QASC, CommonsenseQA and other evaluation benchmarks. Thanks to @[penguinwang96825](https://github.com/penguinwang96825) for the code implementation.
+- 🔥 **[2025.10.26]** Added support for Conll-2003, CrossNER, Copious, GeniaNER, HarveyNER, MIT-Movie-Trivia, MIT-Restaurant, OntoNotes5, WNUT2017 and other Named Entity Recognition evaluation benchmarks. Thanks to @[penguinwang96825](https://github.com/penguinwang96825) for the code implementation.
+- 🔥 **[2025.10.21]** Optimized sandbox environment usage in code evaluation, supporting both local and remote operation modes. For details, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html).
+- 🔥 **[2025.10.20]** Added support for evaluation benchmarks including PolyMath, SimpleVQA, MathVerse, MathVision, AA-LCR; optimized evalscope perf performance to align with vLLM Bench. For details, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/vs_vllm_bench.html).
+- 🔥 **[2025.10.14]** Added support for OCRBench, OCRBench-v2, DocVQA, InfoVQA, ChartQA, and BLINK multimodal image-text evaluation benchmarks.
+- 🔥 **[2025.09.22]** Code evaluation benchmarks (HumanEval, LiveCodeBench) now support running in a sandbox environment. To use this feature, please install [ms-enclave](https://github.com/modelscope/ms-enclave) first.
+- 🔥 **[2025.09.19]** Added support for multimodal image-text evaluation benchmarks including RealWorldQA, AI2D, MMStar, MMBench, and OmniBench, as well as pure text evaluation benchmarks such as Multi-IF, HealthBench, and AMC.
+- 🔥 **[2025.09.05]** Added support for vision-language multimodal model evaluation tasks, such as MathVista and MMMU. For more supported datasets, please [refer to the documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/vlm.html).
+- 🔥 **[2025.09.04]** Added support for image editing task evaluation, including the [GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench) benchmark. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/image_edit.html).
+- 🔥 **[2025.08.22]** Version 1.0 Refactoring. Break changes, please [refer to](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html#switching-to-version-v1-0).
+- 🔥 **[2025.07.18]** The model stress testing now supports randomly generating image-text data for multimodal model evaluation. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#id4).
+- 🔥 **[2025.07.16]** Support for [τ-bench](https://github.com/sierra-research/tau-bench) has been added, enabling the evaluation of AI Agent performance and reliability in real-world scenarios involving dynamic user and tool interactions. For usage instructions, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html#bench).
+- 🔥 **[2025.07.14]** Support for "Humanity's Last Exam" ([Humanity's-Last-Exam](https://modelscope.cn/datasets/cais/hle)), a highly challenging evaluation benchmark. For usage instructions, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/llm.html#humanity-s-last-exam).
+- 🔥 **[2025.07.03]** Refactored Arena Mode: now supports custom model battles, outputs a model leaderboard, and provides battle result visualization. See [reference](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details.
+<details><summary>More</summary>
 
-
-## 🎉 News
-
+- 🔥 **[2025.06.28]** Optimized custom dataset evaluation: now supports evaluation without reference answers. Enhanced LLM judge usage, with built-in modes for "scoring directly without reference answers" and "checking answer consistency with reference answers". See [reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for details.
+- 🔥 **[2025.06.19]** Added support for the [BFCL-v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3) benchmark, designed to evaluate model function-calling capabilities across various scenarios. For more information, refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html).
+- 🔥 **[2025.06.02]** Added support for the Needle-in-a-Haystack test. Simply specify `needle_haystack` to conduct the test, and a corresponding heatmap will be generated in the `outputs/reports` folder, providing a visual representation of the model's performance. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/needle_haystack.html) for more details.
+- 🔥 **[2025.05.29]** Added support for two long document evaluation benchmarks: [DocMath](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) and [FRAMES](https://modelscope.cn/datasets/iic/frames/summary). For usage guidelines, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/index.html).
+- 🔥 **[2025.05.16]** Model service performance stress testing now supports setting various levels of concurrency and outputs a performance test report. [Reference example](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/quick_start.html#id3).
+- 🔥 **[2025.05.13]** Added support for the [ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static) dataset to evaluate model's tool-calling capabilities. Refer to the [documentation](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) for usage instructions. Also added support for the [DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/dataPeview) and [Winogrande](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val) benchmarks to assess the reasoning capabilities of models.
 - 🔥 **[2025.04.29]** Added Qwen3 Evaluation Best Practices, [welcome to read 📖](https://evalscope.readthedocs.io/en/latest/best_practice/qwen3.html)
 - 🔥 **[2025.04.27]** Support for text-to-image evaluation: Supports 8 metrics including MPS, HPSv2.1Score, etc., and evaluation benchmarks such as EvalMuse, GenAI-Bench. Refer to the [user documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html) for more details.
 - 🔥 **[2025.04.10]** Model service stress testing tool now supports the `/v1/completions` endpoint (the default endpoint for vLLM benchmarking)
 - 🔥 **[2025.04.08]** Support for evaluating embedding model services compatible with the OpenAI API has been added. For more details, check the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html#configure-evaluation-parameters).
-- 🔥 **[2025.03.27]** Added support for [AlpacaEval](https://www.modelscope.cn/datasets/AI-ModelScope/alpaca_eval/dataPeview) and [ArenaHard](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) evaluation benchmarks. For usage notes, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
+- 🔥 **[2025.03.27]** Added support for [AlpacaEval](https://www.modelscope.cn/datasets/AI-ModelScope/alpaca_eval/dataPeview) and [ArenaHard](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) evaluation benchmarks. For usage notes, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset/index.html)
 - 🔥 **[2025.03.20]** The model inference service stress testing now supports generating prompts of specified length using random values. Refer to the [user guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#using-the-random-dataset) for more details.
 - 🔥 **[2025.03.13]** Added support for the [LiveCodeBench](https://www.modelscope.cn/datasets/AI-ModelScope/code_generation_lite/summary) code evaluation benchmark, which can be used by specifying `live_code_bench`. Supports evaluating QwQ-32B on LiveCodeBench, refer to the [best practices](https://evalscope.readthedocs.io/en/latest/best_practice/eval_qwq.html).
 - 🔥 **[2025.03.11]** Added support for the [SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/SimpleQA/summary) and [Chinese SimpleQA](https://modelscope.cn/datasets/AI-ModelScope/Chinese-SimpleQA/summary) evaluation benchmarks. These are used to assess the factual accuracy of models, and you can specify `simple_qa` and `chinese_simpleqa` for use. Support for specifying a judge model is also available. For more details, refer to the [relevant parameter documentation](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html).
@@ -105,8 +109,6 @@ Please scan the QR code below to join our community groups:
 - 🔥 **[2025.02.13]** Added support for evaluating DeepSeek distilled models, including AIME24, MATH-500, and GPQA-Diamond datasets，refer to [best practice](https://evalscope.readthedocs.io/en/latest/best_practice/deepseek_r1_distill.html); Added support for specifying the `eval_batch_size` parameter to accelerate model evaluation.
 - 🔥 **[2025.01.20]** Support for visualizing evaluation results, including single model evaluation results and multi-model comparison, refer to the [📖 Visualizing Evaluation Results](https://evalscope.readthedocs.io/en/latest/get_started/visualization.html) for more details; Added [`iquiz`](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary) evaluation example, evaluating the IQ and EQ of the model.
 - 🔥 **[2025.01.07]** Native backend: Support for model API evaluation is now available. Refer to the [📖 Model API Evaluation Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html#api) for more details. Additionally, support for the `ifeval` evaluation benchmark has been added.
-<details><summary>More</summary>
-
 - 🔥🔥 **[2024.12.31]** Support for adding benchmark evaluations, refer to the [📖 Benchmark Evaluation Addition Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html); support for custom mixed dataset evaluations, allowing for more comprehensive model evaluations with less data, refer to the [📖 Mixed Dataset Evaluation Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html).
 - 🔥 **[2024.12.13]** Model evaluation optimization: no need to pass the `--template-type` parameter anymore; supports starting evaluation with `evalscope eval --args`. Refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/get_started/basic_usage.html) for more details.
 - 🔥 **[2024.11.26]** The model inference service performance evaluator has been completely refactored: it now supports local inference service startup and Speed Benchmark; asynchronous call error handling has been optimized. For more details, refer to the [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html).
@@ -126,67 +128,71 @@ Please scan the QR code below to join our community groups:
 
 </details>
 
-## 🛠️ Installation
-### Method 1: Install Using pip
-We recommend using conda to manage your environment and installing dependencies with pip:
+## ❤️ Community & Support
 
-1. Create a conda environment (optional)
+Welcome to join our community to communicate with other developers and get help.
+
+[Discord Group](https://discord.com/invite/D27yfEFVz5)              |  WeChat Group | DingTalk Group
+:-------------------------:|:-------------------------:|:-------------------------:
+<img src="docs/asset/discord_qr.jpg" width="160" height="160">  |  <img src="docs/asset/wechat.png" width="160" height="160"> | <img src="docs/asset/dingding.png" width="160" height="160">
+
+
+
+## 🛠️ Environment Setup
+
+We recommend using `conda` to create a virtual environment and install with `pip`.
+
+1.  **Create and Activate Conda Environment** (Python 3.10 recommended)
     ```shell
-    # It is recommended to use Python 3.10
     conda create -n evalscope python=3.10
-    # Activate the conda environment
     conda activate evalscope
     ```
 
-2. Install dependencies using pip
-    ```shell
-    pip install evalscope                # Install Native backend (default)
-    # Additional options
-    pip install 'evalscope[opencompass]'   # Install OpenCompass backend
-    pip install 'evalscope[vlmeval]'       # Install VLMEvalKit backend
-    pip install 'evalscope[rag]'           # Install RAGEval backend
-    pip install 'evalscope[perf]'          # Install dependencies for the model performance testing module
-    pip install 'evalscope[app]'           # Install dependencies for visualization
-    pip install 'evalscope[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
-    ```
+2.  **Install EvalScope**
 
-> [!WARNING]
-> As the project has been renamed to `evalscope`, for versions `v0.4.3` or earlier, you can install using the following command:
-> ```shell
-> pip install llmuses<=0.4.3
-> ```
-> To import relevant dependencies using `llmuses`:
-> ``` python
-> from llmuses import ...
-> ```
+    - **Method 1: Install via PyPI (Recommended)**
+      ```shell
+      pip install evalscope
+      ```
 
-### Method 2: Install from Source
-1. Download the source code
-    ```shell
-    git clone https://github.com/modelscope/evalscope.git
-    ```
+    - **Method 2: Install from Source (For Development)**
+      ```shell
+      git clone https://github.com/modelscope/evalscope.git
+      cd evalscope
+      pip install -e .
+      ```
 
-2. Install dependencies
+3.  **Install Additional Dependencies** (Optional)
+    Install corresponding feature extensions according to your needs:
     ```shell
-    cd evalscope/
-    pip install -e .                  # Install Native backend
-    # Additional options
-    pip install -e '.[opencompass]'   # Install OpenCompass backend
-    pip install -e '.[vlmeval]'       # Install VLMEvalKit backend
-    pip install -e '.[rag]'           # Install RAGEval backend
-    pip install -e '.[perf]'          # Install Perf dependencies
-    pip install -e '.[app]'           # Install visualization dependencies
-    pip install -e '.[all]'           # Install all backends (Native, OpenCompass, VLMEvalKit, RAGEval)
+    # Performance testing
+    pip install 'evalscope[perf]'
+
+    # Visualization App
+    pip install 'evalscope[app]'
+
+    # Other evaluation backends
+    pip install 'evalscope[opencompass]'
+    pip install 'evalscope[vlmeval]'
+    pip install 'evalscope[rag]'
+
+    # Install all dependencies
+    pip install 'evalscope[all]'
     ```
+    > If you installed from source, please replace `evalscope` with `.`, for example `pip install '.[perf]'`.
+
+> [!NOTE]
+> This project was formerly known as `llmuses`. If you need to use `v0.4.3` or earlier versions, please run `pip install llmuses<=0.4.3` and use `from llmuses import ...` for imports.
 
 
 ## 🚀 Quick Start
 
-To evaluate a model on specified datasets using default configurations, this framework supports two ways to initiate evaluation tasks: using the command line or using Python code.
+You can start evaluation tasks in two ways: **command line** or **Python code**.
 
 ### Method 1. Using Command Line
 
-Execute the `eval` command in any directory:
+Execute the `evalscope eval` command in any path to start evaluation. The following command will evaluate the `Qwen/Qwen2.5-0.5B-Instruct` model on `gsm8k` and `arc` datasets, taking only 5 samples from each dataset.
+
 ```bash
 evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
@@ -196,7 +202,23 @@ evalscope eval \
 
 ### Method 2. Using Python Code
 
-When using Python code for evaluation, you need to submit the evaluation task using the `run_task` function, passing a `TaskConfig` as a parameter. It can also be a Python dictionary, yaml file path, or json file path, for example:
+Use the `run_task` function and `TaskConfig` object to configure and start evaluation tasks.
+
+```python
+from evalscope import run_task, TaskConfig
+
+# Configure evaluation task
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2.5-0.5B-Instruct',
+    datasets=['gsm8k', 'arc'],
+    limit=5
+)
+
+# Start evaluation
+run_task(task_cfg)
+```
+
+<details><summary><b>💡 Tip:</b> `run_task` also supports dictionaries, YAML or JSON files as configuration.</summary>
 
 **Using Python Dictionary**
 
@@ -208,30 +230,10 @@ task_cfg = {
     'datasets': ['gsm8k', 'arc'],
     'limit': 5
 }
-
 run_task(task_cfg=task_cfg)
 ```
 
-<details><summary>More Startup Methods</summary>
-
-**Using `TaskConfig`**
-
-```python
-from evalscope.run import run_task
-from evalscope.config import TaskConfig
-
-task_cfg = TaskConfig(
-    model='Qwen/Qwen2.5-0.5B-Instruct',
-    datasets=['gsm8k', 'arc'],
-    limit=5
-)
-
-run_task(task_cfg=task_cfg)
-```
-
-**Using `yaml` file**
-
-`config.yaml`:
+**Using YAML File** (`config.yaml`)
 ```yaml
 model: Qwen/Qwen2.5-0.5B-Instruct
 datasets:
@@ -239,37 +241,15 @@ datasets:
   - arc
 limit: 5
 ```
-
 ```python
 from evalscope.run import run_task
 
 run_task(task_cfg="config.yaml")
 ```
-
-**Using `json` file**
-
-`config.json`:
-```json
-{
-    "model": "Qwen/Qwen2.5-0.5B-Instruct",
-    "datasets": ["gsm8k", "arc"],
-    "limit": 5
-}
-```
-
-```python
-from evalscope.run import run_task
-
-run_task(task_cfg="config.json")
-```
 </details>
 
-### Basic Parameter
-- `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, e.g., [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); or use the local path of the model, e.g., `/path/to/model`
-- `--datasets`: Dataset names, supports inputting multiple datasets separated by spaces. Datasets will be automatically downloaded from modelscope. For supported datasets, refer to the [Dataset List](https://evalscope.readthedocs.io/en/latest/get_started/supported_dataset.html)
-- `--limit`: Maximum amount of evaluation data for each dataset. If not specified, it defaults to evaluating all data. Can be used for quick validation
-
 ### Output Results
+After evaluation completion, you will see a report in the terminal in the following format:
 ```text
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 | Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
@@ -282,31 +262,115 @@ run_task(task_cfg="config.json")
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 
-## 📈 Visualization of Evaluation Results
+## 📈 Advanced Usage
 
-1. Install the dependencies required for visualization, including gradio, plotly, etc.
-```bash
-pip install 'evalscope[app]'
+### Custom Evaluation Parameters
+
+You can fine-tune model loading, inference, and dataset configuration through command line parameters.
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512}' \
+ --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
+ --datasets gsm8k \
+ --limit 10
 ```
 
-2. Start the Visualization Service
+- `--model-args`: Model loading parameters such as `revision`, `precision`, etc.
+- `--generation-config`: Model generation parameters such as `temperature`, `max_tokens`, etc.
+- `--dataset-args`: Dataset configuration parameters such as `few_shot_num`, etc.
 
-Run the following command to start the visualization service.
-```bash
-evalscope app
-```
-You can access the visualization service in the browser if the following output appears.
+For details, please refer to [📖 Complete Parameter Guide](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html).
+
+### Evaluating Online Model APIs
+
+EvalScope supports evaluating model services deployed via APIs (such as services deployed with vLLM). Simply specify the service address and API Key.
+
+1.  **Start Model Service** (using vLLM as example)
+    ```shell
+    export VLLM_USE_MODELSCOPE=True
+    python -m vllm.entrypoints.openai.api_server \
+      --model Qwen/Qwen2.5-0.5B-Instruct \
+      --served-model-name qwen2.5 \
+      --port 8801
+    ```
+
+2.  **Run Evaluation**
+    ```shell
+    evalscope eval \
+     --model qwen2.5 \
+     --eval-type openai_api \
+     --api-url http://127.0.0.1:8801/v1 \
+     --api-key EMPTY \
+     --datasets gsm8k \
+     --limit 10
+    ```
+
+### ⚔️ Arena Mode
+
+Arena mode evaluates model performance through pairwise battles between models, providing win rates and rankings, perfect for horizontal comparison of multiple models.
+
 ```text
-* Running on local URL:  http://127.0.0.1:7861
-
-To create a public link, set `share=True` in `launch()`.
+# Example evaluation results
+Model           WinRate (%)  CI (%)
+------------  -------------  ---------------
+qwen2.5-72b            69.3  (-13.3 / +12.2)
+qwen2.5-7b             50    (+0.0 / +0.0)
+qwen2.5-0.5b            4.7  (-2.5 / +4.4)
 ```
+For details, please refer to [📖 Arena Mode Usage Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html).
+
+### 🖊️ Custom Dataset Evaluation
+
+EvalScope allows you to easily add and evaluate your own datasets. For details, please refer to [📖 Custom Dataset Evaluation Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/index.html).
+
+
+## 🧪 Other Evaluation Backends
+EvalScope supports launching evaluation tasks through third-party evaluation frameworks (we call them "backends") to meet diverse evaluation needs.
+
+- **Native**: EvalScope's default evaluation framework with comprehensive functionality.
+- **OpenCompass**: Focuses on text-only evaluation. [📖 Usage Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/opencompass_backend.html)
+- **VLMEvalKit**: Focuses on multi-modal evaluation. [📖 Usage Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/vlmevalkit_backend.html)
+- **RAGEval**: Focuses on RAG evaluation, supporting Embedding and Reranker models. [📖 Usage Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/index.html)
+- **Third-party Evaluation Tools**: Supports evaluation tasks like [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html).
+
+## ⚡ Inference Performance Evaluation Tool
+EvalScope provides a powerful stress testing tool for evaluating the performance of large language model services.
+
+- **Key Metrics**: Supports throughput (Tokens/s), first token latency (TTFT), token generation latency (TPOT), etc.
+- **Result Recording**: Supports recording results to `wandb` and `swanlab`.
+- **Speed Benchmarks**: Can generate speed benchmark results similar to official reports.
+
+For details, please refer to [📖 Performance Testing Usage Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html).
+
+Example output is shown below:
+<p align="center">
+    <img src="docs/en/user_guides/stress_test/images/multi_perf.png" style="width: 80%;">
+</p>
+
+
+## 📊 Visualizing Evaluation Results
+
+EvalScope provides a Gradio-based WebUI for interactive analysis and comparison of evaluation results.
+
+1.  **Install Dependencies**
+    ```bash
+    pip install 'evalscope[app]'
+    ```
+
+2.  **Start Service**
+    ```bash
+    evalscope app
+    ```
+    Visit `http://127.0.0.1:7861` to open the visualization interface.
 
 <table>
   <tr>
     <td style="text-align: center;">
-      <img src="docs/en/get_started/images/setting.png" alt="Setting" style="width: 75%;" />
-      <p>Setting Interface</p>
+      <img src="docs/en/get_started/images/setting.png" alt="Setting" style="width: 85%;" />
+      <p>Settings Interface</p>
     </td>
     <td style="text-align: center;">
       <img src="docs/en/get_started/images/model_compare.png" alt="Model Compare" style="width: 100%;" />
@@ -319,114 +383,19 @@ To create a public link, set `share=True` in `launch()`.
       <p>Report Overview</p>
     </td>
     <td style="text-align: center;">
-      <img src="docs/en/get_started/images/report_details.png" alt="Report Details" style="width: 80%;" />
+      <img src="docs/en/get_started/images/report_details.png" alt="Report Details" style="width: 85%;" />
       <p>Report Details</p>
     </td>
   </tr>
 </table>
 
-For more details, refer to: [📖 Visualization of Evaluation Results](https://evalscope.readthedocs.io/en/latest/get_started/visualization.html)
+For details, please refer to [📖 Visualizing Evaluation Results](https://evalscope.readthedocs.io/en/latest/get_started/visualization.html).
 
-## 🌐 Evaluation of Specified Model API
+## 👷‍♂️ Contributing
 
-Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the `eval-type` parameter must be specified as `service`, for example:
+We welcome any contributions from the community! If you want to add new evaluation benchmarks, models, or features, please refer to our [Contributing Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html).
 
-For example, to launch a model service using [vLLM](https://github.com/vllm-project/vllm):
-
-```shell
-export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
-```
-Then, you can use the following command to evaluate the model API service:
-```shell
-evalscope eval \
- --model qwen2.5 \
- --api-url http://127.0.0.1:8801/v1 \
- --api-key EMPTY \
- --eval-type service \
- --datasets gsm8k \
- --limit 10
-```
-
-## ⚙️ Custom Parameter Evaluation
-
-For more customized evaluations, such as customizing model parameters or dataset parameters, you can use the following command. The evaluation startup method is the same as simple evaluation. Below shows how to start the evaluation using the `eval` command:
-
-```shell
-evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
- --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
- --datasets gsm8k \
- --limit 10
-```
-
-### Parameter
-- `--model-args`: Model loading parameters, separated by commas in `key=value` format. Default parameters:
-  - `revision`: Model version, default is `master`
-  - `precision`: Model precision, default is `auto`
-  - `device_map`: Model device allocation, default is `auto`
-- `--generation-config`: Generation parameters, separated by commas in `key=value` format. Default parameters:
-  - `do_sample`: Whether to use sampling, default is `false`
-  - `max_length`: Maximum length, default is 2048
-  - `max_new_tokens`: Maximum length of generation, default is 512
-- `--dataset-args`: Configuration parameters for evaluation datasets, passed in `json` format. The key is the dataset name, and the value is the parameters. Note that it needs to correspond one-to-one with the values in the `--datasets` parameter:
-  - `few_shot_num`: Number of few-shot examples
-  - `few_shot_random`: Whether to randomly sample few-shot data, if not set, defaults to `true`
-
-Reference: [Full Parameter Description](https://evalscope.readthedocs.io/en/latest/get_started/parameters.html)
-
-
-## Evaluation Backend
-EvalScope supports using third-party evaluation frameworks to initiate evaluation tasks, which we call Evaluation Backend. Currently supported Evaluation Backend includes:
-- **Native**: EvalScope's own **default evaluation framework**, supporting various evaluation modes including single model evaluation, arena mode, and baseline model comparison mode.
-- [OpenCompass](https://github.com/open-compass/opencompass): Initiate OpenCompass evaluation tasks through EvalScope. Lightweight, easy to customize, supports seamless integration with the LLM fine-tuning framework ms-swift. [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/opencompass_backend.html)
-- [VLMEvalKit](https://github.com/open-compass/VLMEvalKit): Initiate VLMEvalKit multimodal evaluation tasks through EvalScope. Supports various multimodal models and datasets, and offers seamless integration with the LLM fine-tuning framework ms-swift. [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/vlmevalkit_backend.html)
-- **RAGEval**: Initiate RAG evaluation tasks through EvalScope, supporting independent evaluation of embedding models and rerankers using [MTEB/CMTEB](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/mteb.html), as well as end-to-end evaluation using [RAGAS](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/ragas.html): [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/backend/rageval_backend/index.html)
-- **ThirdParty**: Third-party evaluation tasks, such as [ToolBench](https://evalscope.readthedocs.io/en/latest/third_party/toolbench.html) and [LongBench-Write](https://evalscope.readthedocs.io/en/latest/third_party/longwriter.html).
-
-
-## 📈 Model Serving Performance Evaluation
-A stress testing tool focused on large language models, which can be customized to support various dataset formats and different API protocol formats.
-
-Reference: Performance Testing [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/index.html)
-
-**Supports wandb for recording results**
-
-![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
-
-**Supports swanlab for recording results**
-
-![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
-
-**Supports Speed Benchmark**
-
-It supports speed testing and provides speed benchmarks similar to those found in the [official Qwen](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html) reports:
-
-```text
-Speed Benchmark Results:
-+---------------+-----------------+----------------+
-| Prompt Tokens | Speed(tokens/s) | GPU Memory(GB) |
-+---------------+-----------------+----------------+
-|       1       |      50.69      |      0.97      |
-|     6144      |      51.36      |      1.23      |
-|     14336     |      49.93      |      1.59      |
-|     30720     |      49.56      |      2.34      |
-+---------------+-----------------+----------------+
-```
-
-## 🖊️ Custom Dataset Evaluation
-EvalScope supports custom dataset evaluation. For detailed information, please refer to the Custom Dataset Evaluation [📖User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/index.html)
-
-
-## 🏟️ Arena Mode
-The Arena mode allows multiple candidate models to be evaluated through pairwise battles, and can choose to use the AI Enhanced Auto-Reviewer (AAR) automatic evaluation process or manual evaluation to obtain the evaluation report.
-
-Refer to: Arena Mode [📖 User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html)
-
-## 👷‍♂️ Contribution
-
-EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn), is continuously optimizing its benchmark evaluation features! We invite you to refer to the [Contribution Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/add_benchmark.html) to easily add your own evaluation benchmarks and share your contributions with the community. Let’s work together to support the growth of EvalScope and make our tools even better! Join us now!
+Thanks to all developers who have contributed to EvalScope!
 
 <a href="https://github.com/modelscope/evalscope/graphs/contributors" target="_blank">
   <table>
@@ -438,21 +407,20 @@ EvalScope, as the official evaluation tool of [ModelScope](https://modelscope.cn
   </table>
 </a>
 
-## 🔜 Roadmap
-- [ ] Support for better evaluation report visualization
-- [x] Support for mixed evaluations across multiple datasets
-- [x] RAG evaluation
-- [x] VLM evaluation
-- [x] Agents evaluation
-- [x] vLLM
-- [ ] Distributed evaluating
-- [x] Multi-modal evaluation
-- [ ] Benchmarks
-  - [ ] GAIA
-  - [ ] GPQA
-  - [x] MBPP
+
+## 📚 Citation
+
+If you use EvalScope in your research, please cite our work:
+```bibtex
+@misc{evalscope_2024,
+    title={{EvalScope}: Evaluation Framework for Large Models},
+    author={ModelScope Team},
+    year={2024},
+    url={https://github.com/modelscope/evalscope}
+}
+```
 
 
-## Star History
+## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)

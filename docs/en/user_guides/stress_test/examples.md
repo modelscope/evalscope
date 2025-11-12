@@ -161,6 +161,31 @@ evalscope perf \
   --debug
 ```
 
+## Using the Random Multimodal Dataset
+
+Use the `random_vl` dataset to randomly generate image and text inputs. Based on the `random` dataset, it adds image-related parameters (`image-width`, `image-height`, `image-format`, `image-num`).
+
+```bash
+evalscope perf \
+  --parallel 20 \
+  --model Qwen2.5-VL-3B-Instruct \
+  --url http://127.0.0.1:8801/v1/chat/completions \
+  --api openai \
+  --dataset random_vl \
+  --min-tokens 128 \
+  --max-tokens 128 \
+  --prefix-length 0 \
+  --min-prompt-length 100 \
+  --max-prompt-length 100 \
+  --image-width 512 \
+  --image-height 512 \
+  --image-format RGB \
+  --image-num 1 \
+  --number 100 \
+  --tokenizer-path Qwen/Qwen2.5-VL-3B-Instruct \
+  --debug
+```
+
 ## Using wandb to Record Test Results
 
 Please install wandb:
@@ -170,7 +195,7 @@ pip install wandb
 
 When starting, add the following parameters:
 ```bash
---wandb-api-key 'wandb_api_key'
+--visualizer wandb
 --name 'name_of_wandb_log'
 ```  
 
@@ -185,7 +210,7 @@ pip install swanlab
 
 When starting, add the following parameters:
 ```bash
---swanlab-api-key 'swanlab_api_key'
+--visualizer swanlab
 --name 'name_of_swanlab_log'
 ```
 

@@ -1,29 +1,47 @@
 # 简介
 
-EvalScope是[魔搭社区](https://modelscope.cn/)官方推出的模型评测与性能基准测试框架，内置多个常用测试基准和评测指标，如MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH和HumanEval等；支持多种类型的模型评测，包括LLM、多模态LLM、embedding模型和reranker模型。EvalScope还适用于多种评测场景，如端到端RAG评测、竞技场模式和模型推理性能压测等。此外，通过ms-swift训练框架的无缝集成，可一键发起评测，实现了模型训练到评测的全链路支持。
+[EvalScope](https://github.com/modelscope/evalscope) 是魔搭社区倾力打造的模型评测与性能基准测试框架，为您的模型评估需求提供一站式解决方案。无论您在开发什么类型的模型，EvalScope 都能满足您的需求：
+
+- 🧠 大语言模型
+- 🎨 多模态模型
+- 🔍 Embedding 模型
+- 🏆 Reranker 模型
+- 🖼️ CLIP 模型
+- 🎭 AIGC模型（图生文/视频）
+- ...以及更多！
+
+EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力助手：
+
+- 🏅 内置多个业界认可的测试基准和评测指标：MMLU、CMMLU、C-Eval、GSM8K 等。
+- 📊 模型推理性能压测：确保您的模型在实际应用中表现出色。
+- 🚀 与 [ms-swift](https://github.com/modelscope/ms-swift) 训练框架无缝集成，一键发起评测，为您的模型开发提供从训练到评估的全链路支持。
 
 ## 整体架构
-![EvalScope 架构图](../_static/images/evalscope_framework.png)
+![EvalScope 架构图](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
 *EvalScope 架构图.*
 
 包括以下模块：
 
-1. **Model Adapter**: 模型适配器，用于将特定模型的输出转换为框架所需的格式，支持API调用的模型和本地运行的模型。
+1. 输入层
+- **模型来源**：API模型（OpenAI API）、本地模型（ModelScope）
+- **数据集**：标准评测基准（MMLU/GSM8k等）、自定义数据（MCQ/QA）
 
-2. **Data Adapter**: 数据适配器，负责转换和处理输入数据，以便适应不同的评测需求和格式。
+2. 核心功能
+- **多后端评估**
+   - 原生后端：LLM/VLM/Embedding/T2I模型统一评估
+   - 集成框架：OpenCompass/MTEB/VLMEvalKit/RAGAS
 
-3. **Evaluation Backend**: 
-    - **Native**：EvalScope自身的**默认评测框架**，支持多种评测模式，包括单模型评测、竞技场模式、Baseline模型对比模式等。
-    - **OpenCompass**：支持[OpenCompass](https://github.com/open-compass/opencompass)作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评测。
-    - **VLMEvalKit**：支持[VLMEvalKit](https://github.com/open-compass/VLMEvalKit)作为评测后端，轻松发起多模态评测任务，支持多种多模态模型和数据集。
-    - **ThirdParty**：其他第三方评测任务，如[ToolBench](../third_party/toolbench.md)。
-    - **RAGEval**：支持RAG评测，支持使用[MTEB/CMTEB](../user_guides/backend/rageval_backend/mteb.md)进行embedding模型和reranker的独立评测，以及使用[RAGAS](../user_guides/backend/rageval_backend/ragas.md)进行端到端评测。
-4. **Performance Evaluator**: 模型性能评测，负责具体衡量模型推理服务性能，包括性能评测、压力测试、性能评测报告生成、可视化。
+- **性能监控**
+   - 模型插件：支持多种模型服务API
+   - 数据插件：支持多种数据格式
+   - 指标追踪：TTFT/TPOP/稳定性 等指标
 
-5. **Evaluation Report**: 最终生成的评测报告，总结模型的性能表现，报告可以用于决策和进一步的模型优化。
+- **工具扩展**
+   - 集成：Tool-Bench/Needle-in-a-Haystack/BFCL-v3
 
-6. **Visualization**: 可视化结果，帮助用户更直观地理解评测结果，便于分析和比较不同模型的表现。
-
+3. 输出层
+- **结构化报告**: 支持JSON/Table/Logs
+- **可视化平台**：支持Gradio/Wandb/SwanLab
 
 ## 框架特点
 - **基准数据集**：预置了多个常用测试基准，包括：MMLU、CMMLU、C-Eval、GSM8K、ARC、HellaSwag、TruthfulQA、MATH、HumanEval等。

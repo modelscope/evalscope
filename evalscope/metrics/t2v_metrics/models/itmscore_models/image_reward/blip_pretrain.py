@@ -30,7 +30,8 @@ def create_vit(vit, image_size, use_grad_checkpointing=False, ckpt_layer=0, drop
             num_heads=12,
             use_grad_checkpointing=use_grad_checkpointing,
             ckpt_layer=ckpt_layer,
-            drop_path_rate=0 or drop_path_rate)
+            drop_path_rate=0 or drop_path_rate
+        )
     elif vit == 'large':
         vision_width = 1024
         visual_encoder = VisionTransformer(
@@ -41,7 +42,8 @@ def create_vit(vit, image_size, use_grad_checkpointing=False, ckpt_layer=0, drop
             num_heads=16,
             use_grad_checkpointing=use_grad_checkpointing,
             ckpt_layer=ckpt_layer,
-            drop_path_rate=0.1 or drop_path_rate)
+            drop_path_rate=0.1 or drop_path_rate
+        )
     return visual_encoder, vision_width
 
 

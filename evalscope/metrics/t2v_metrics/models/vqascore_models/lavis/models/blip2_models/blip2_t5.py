@@ -66,8 +66,9 @@ class Blip2T5(Blip2Base):
 
         self.tokenizer = self.init_tokenizer()
 
-        self.visual_encoder, self.ln_vision = self.init_vision_encoder(vit_model, img_size, drop_path_rate,
-                                                                       use_grad_checkpoint, vit_precision)
+        self.visual_encoder, self.ln_vision = self.init_vision_encoder(
+            vit_model, img_size, drop_path_rate, use_grad_checkpoint, vit_precision
+        )
         if freeze_vit:
             for name, param in self.visual_encoder.named_parameters():
                 param.requires_grad = False
@@ -136,8 +137,9 @@ class Blip2T5(Blip2Base):
 
             encoder_atts = torch.cat([atts_t5, input_tokens.attention_mask], dim=1)
 
-            targets = output_tokens.input_ids.masked_fill(output_tokens.input_ids == self.t5_tokenizer.pad_token_id,
-                                                          -100)
+            targets = output_tokens.input_ids.masked_fill(
+                output_tokens.input_ids == self.t5_tokenizer.pad_token_id, -100
+            )
 
             inputs_embeds = self.t5_model.encoder.embed_tokens(input_tokens.input_ids)
             inputs_embeds = torch.cat([inputs_t5, inputs_embeds], dim=1)
@@ -234,17 +236,19 @@ class Blip2T5(Blip2Base):
 
         return output_text
 
-    def predict_answers(self,
-                        samples,
-                        num_beams=5,
-                        inference_method='generate',
-                        max_len=10,
-                        min_len=1,
-                        num_ans_candidates=128,
-                        answer_list=None,
-                        prompt='',
-                        length_penalty=-1,
-                        **kwargs):
+    def predict_answers(
+        self,
+        samples,
+        num_beams=5,
+        inference_method='generate',
+        max_len=10,
+        min_len=1,
+        num_ans_candidates=128,
+        answer_list=None,
+        prompt='',
+        length_penalty=-1,
+        **kwargs
+    ):
         image = samples['image']
         with self.maybe_autocast():
             image_embeds = self.ln_vision(self.visual_encoder(image))
@@ -318,13 +322,15 @@ class Blip2T5(Blip2Base):
 
                 self._lemmatizer = spacy.load('en_core_web_sm')
             except ImportError:
-                logging.error("""
+                logging.error(
+                    """
                     Please install spacy and en_core_web_sm model to apply lemmatization.
                     python -m spacy download en_core_web_sm
                     OR
                     import spacy.cli
                     spacy.cli.download("en_core_web_sm")
-                    """)
+                    """
+                )
                 exit(1)
 
         return self._lemmatizer

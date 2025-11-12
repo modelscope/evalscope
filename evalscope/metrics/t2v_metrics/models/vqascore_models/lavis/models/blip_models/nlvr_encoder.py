@@ -10,11 +10,13 @@ import torch
 import torch.utils.checkpoint
 from torch import Tensor, device, nn
 from transformers.activations import ACT2FN
-from transformers.modeling_outputs import (BaseModelOutputWithPastAndCrossAttentions,
-                                           BaseModelOutputWithPoolingAndCrossAttentions)
-from transformers.modeling_utils import (PreTrainedModel, apply_chunking_to_forward, find_pruneable_heads_and_indices,
-                                         prune_linear_layer)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPastAndCrossAttentions,
+    BaseModelOutputWithPoolingAndCrossAttentions,
+)
+from transformers.modeling_utils import PreTrainedModel
 from transformers.models.bert.configuration_bert import BertConfig
+from transformers.pytorch_utils import apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer
 from transformers.utils import logging
 from typing import Tuple
 
@@ -76,8 +78,10 @@ class BertSelfAttention(nn.Module):
         super().__init__()
         self.config = config
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, 'embedding_size'):
-            raise ValueError('The hidden size (%d) is not a multiple of the number of attention '
-                             'heads (%d)' % (config.hidden_size, config.num_attention_heads))
+            raise ValueError(
+                'The hidden size (%d) is not a multiple of the number of attention '
+                'heads (%d)' % (config.hidden_size, config.num_attention_heads)
+            )
 
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
@@ -465,7 +469,8 @@ class BertEncoder(nn.Module):
 
                 if use_cache:
                     logger.warn(
-                        '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...')
+                        '`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...'
+                    )
                     use_cache = False
 
                 def create_custom_forward(module):
@@ -506,13 +511,15 @@ class BertEncoder(nn.Module):
             all_hidden_states = all_hidden_states + (hidden_states, )
 
         if not return_dict:
-            return tuple(v for v in [
-                hidden_states,
-                next_decoder_cache,
-                all_hidden_states,
-                all_self_attentions,
-                all_cross_attentions,
-            ] if v is not None)
+            return tuple(
+                v for v in [
+                    hidden_states,
+                    next_decoder_cache,
+                    all_hidden_states,
+                    all_self_attentions,
+                    all_cross_attentions,
+                ] if v is not None
+            )
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
             past_key_values=next_decoder_cache,
@@ -703,8 +710,11 @@ class BertModel(BertPreTrainedModel):
             else:
                 extended_attention_mask = attention_mask[:, None, None, :]
         else:
-            raise ValueError('Wrong shape for input_ids (shape {}) or attention_mask (shape {})'.format(
-                input_shape, attention_mask.shape))
+            raise ValueError(
+                'Wrong shape for input_ids (shape {}) or attention_mask (shape {})'.format(
+                    input_shape, attention_mask.shape
+                )
+            )
 
         # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
         # masked positions, this operation will create a tensor which is 0.0 for
@@ -753,7 +763,8 @@ class BertModel(BertPreTrainedModel):
         """
         output_attentions = (output_attentions if output_attentions is not None else self.config.output_attentions)
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
         return_dict = (return_dict if return_dict is not None else self.config.use_return_dict)
 
         if is_decoder:
@@ -786,8 +797,9 @@ class BertModel(BertPreTrainedModel):
 
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
-        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(attention_mask, input_shape, device,
-                                                                                 is_decoder)
+        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(
+            attention_mask, input_shape, device, is_decoder
+        )
 
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]

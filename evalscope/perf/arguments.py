@@ -3,13 +3,14 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from evalscope.constants import DEFAULT_WORK_DIR
+from evalscope.utils import BaseArgument
 
 
 @dataclass
-class Arguments:
+class Arguments(BaseArgument):
     # Model and API
     model: str  # Model name or path
     model_id: Optional[str] = None  # Model identifier
@@ -27,15 +28,22 @@ class Arguments:
     no_test_connection: bool = False  # Test the connection before starting the benchmark
 
     # Performance and parallelism
-    number: int = 1000  # Number of requests to be made
-    parallel: int = 1  # Number of parallel requests
+    number: Union[int, List[int]] = 1000  # Number of requests to be made
+    parallel: Union[int, List[int]] = 1  # Number of parallel requests
     rate: int = -1  # Rate limit for requests (default: -1, no limit)
+    sleep_interval: int = 5  # Sleep interval between performance runs, in seconds
+
+    # Tuning knobs
+    db_commit_interval: int = 1000  # Number of rows buffered before committing to the DB
+    queue_size_multiplier: int = 5  # Maxsize for queue = parallel * this multiplier
+    in_flight_task_multiplier: int = 2  # Max scheduled tasks = parallel * this multiplier
 
     # Logging and debugging
     log_every_n_query: int = 10  # Log every N queries
     debug: bool = False  # Debug mode
-    wandb_api_key: Optional[str] = None  # WandB API key for logging
-    swanlab_api_key: Optional[str] = None  # SwanLab API key for logging
+    visualizer: Optional[str] = None  # Visualizer for logging, supports 'swanlab' or 'wandb'
+    wandb_api_key: Optional[str] = None  # Will be deprecated in the future
+    swanlab_api_key: Optional[str] = None  # Will be deprecated in the future
     name: Optional[str] = None  # Name for the run
 
     # Output settings
@@ -48,6 +56,12 @@ class Arguments:
     prompt: Optional[str] = None  # The prompt text
     query_template: Optional[str] = None  # Template for the query
     apply_chat_template: Optional[bool] = None  # Whether to apply chat template
+    # random vl settings
+    image_width: int = 224  # Width of the image for random VL dataset
+    image_height: int = 224  # Height of the image for random VL dataset
+    image_format: str = 'RGB'  # Image format for random VL dataset
+    image_num: int = 1  # Number of images for random VL dataset
+    image_patch_size: int = 28  # Patch size for image tokenizer, only for local image token calculation
 
     # Dataset settings
     dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
@@ -55,27 +69,19 @@ class Arguments:
 
     # Response settings
     frequency_penalty: Optional[float] = None  # Frequency penalty for the response
+    repetition_penalty: Optional[float] = None  # Repetition penalty for the response
     logprobs: Optional[bool] = None  # Whether to log probabilities
     max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
     min_tokens: Optional[int] = None  # Minimum number of tokens in the response
     n_choices: Optional[int] = None  # Number of response choices
-    seed: Optional[int] = 0  # Random seed for reproducibility
-    stop: Optional[List[str]] = field(default_factory=list)  # Stop sequences for the response
-    stop_token_ids: Optional[List[str]] = field(default_factory=list)  # Stop token IDs for the response
+    seed: Optional[int] = None  # Random seed for reproducibility
+    stop: Optional[List[str]] = None  # Stop sequences for the response
+    stop_token_ids: Optional[List[str]] = None  # Stop token IDs for the response
     stream: Optional[bool] = True  # Whether to stream the response
     temperature: float = 0.0  # Temperature setting for the response
     top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
     top_k: Optional[int] = None  # Top-k sampling setting for the response
     extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
-
-    @staticmethod
-    def from_args(args):
-        # Convert Namespace to a dictionary and filter out None values
-        args_dict = {k: v for k, v in vars(args).items() if v is not None}
-
-        if 'func' in args_dict:
-            del args_dict['func']  # Note: compat CLI arguments
-        return Arguments(**args_dict)
 
     def __post_init__(self):
         # Set the default headers
@@ -98,11 +104,22 @@ class Arguments:
         if self.apply_chat_template is None:
             self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
 
-    def __str__(self):
-        return json.dumps(self.to_dict(), indent=4, default=str, ensure_ascii=False)
+        # Set number and parallel to lists if they are integers
+        if isinstance(self.number, int):
+            self.number = [self.number]
+        if isinstance(self.parallel, int):
+            self.parallel = [self.parallel]
+        assert len(self.number) == len(
+            self.parallel
+        ), f'The length of number and parallel should be the same, but got number: {self.number} and parallel: {self.parallel}'  # noqa: E501
 
-    def to_dict(self) -> Dict[str, Any]:
-        return self.__dict__
+        # Validate tuning knobs
+        if self.db_commit_interval <= 0:
+            self.db_commit_interval = 1
+        if self.queue_size_multiplier <= 0:
+            self.queue_size_multiplier = 1
+        if self.in_flight_task_multiplier <= 0:
+            self.in_flight_task_multiplier = 1
 
 
 class ParseKVAction(argparse.Action):
@@ -143,13 +160,21 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--no-test-connection', action='store_false', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism
-    parser.add_argument('-n', '--number', type=int, default=1000, help='How many requests to be made')
-    parser.add_argument('--parallel', type=int, default=1, help='Set number of concurrency requests, default 1')
+    parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
+    parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
+    parser.add_argument(
+        '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
+
+    # Tuning knobs
+    parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')
+    parser.add_argument('--queue-size-multiplier', type=int, default=5, help='Queue maxsize = parallel * multiplier')
+    parser.add_argument('--in-flight-task-multiplier', type=int, default=2, help='Max scheduled tasks = parallel * multiplier')  # noqa: E501
 
     # Logging and debugging
     parser.add_argument('--log-every-n-query', type=int, default=10, help='Logging every n query')
     parser.add_argument('--debug', action='store_true', default=False, help='Debug request send')
+    parser.add_argument('--visualizer', type=str, default=None, help='The visualizer to use, default None')
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
     parser.add_argument('--name', type=str, help='The wandb/swanlab db result name and result db name')
@@ -162,6 +187,12 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
     parser.add_argument(
         '--apply-chat-template', type=argparse.BooleanOptionalAction, default=None, help='Apply chat template to the prompt')  # noqa: E501
+    # random vl settings
+    parser.add_argument('--image-width', type=int, default=224, help='Width of the image for random VL dataset')
+    parser.add_argument('--image-height', type=int, default=224, help='Height of the image for random VL dataset')
+    parser.add_argument('--image-format', type=str, default='RGB', help='Image format for random VL dataset')
+    parser.add_argument('--image-num', type=int, default=1, help='Number of images for random VL dataset')
+    parser.add_argument('--image-patch-size', type=int, default=28, help='Patch size for image tokenizer, only for local image token calculation')  # noqa: E501
 
     # Output settings
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
@@ -172,13 +203,14 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Response settings
     parser.add_argument('--frequency-penalty', type=float, help='The frequency_penalty value', default=None)
+    parser.add_argument('--repetition-penalty', type=float, help='The repetition_penalty value', default=None)
     parser.add_argument('--logprobs', action='store_true', help='The logprobs', default=None)
     parser.add_argument(
         '--max-tokens', type=int, help='The maximum number of tokens that can be generated', default=2048)
     parser.add_argument(
         '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)
-    parser.add_argument('--seed', type=int, help='The random seed', default=0)
+    parser.add_argument('--seed', type=int, help='The random seed', default=None)
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)

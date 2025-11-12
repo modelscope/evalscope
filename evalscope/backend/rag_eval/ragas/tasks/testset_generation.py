@@ -113,7 +113,8 @@ def generate_testset(args: TestsetGenerationArguments) -> None:
 
     # generate testset
     generator = TestsetGenerator(
-        llm=wrapped_llm, embedding_model=wrapped_embeddings, knowledge_graph=knowledge_graph, persona_list=persona_list)
+        llm=wrapped_llm, embedding_model=wrapped_embeddings, knowledge_graph=knowledge_graph, persona_list=persona_list
+    )
 
     testset = generator.generate(
         testset_size=args.test_size,

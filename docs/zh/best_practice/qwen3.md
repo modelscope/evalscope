@@ -116,7 +116,7 @@ evalscope perf \
 
 为了全面评测模型的各方面能力，我们可以混合EvalScope已支持的benchmark，构建一个全面的评测集合。下面是一个评测集合的例子，覆盖了主流的benchmark，评测了模型的代码能力(LiveCodeBench)、数学能力(AIME2024, AIME2025)、知识能力(MMLU-Pro, CEVAL)、指令遵循(IFEval)等。
 
-运行如下代码即可根据定义的Schema自动下载并混合数据集，并将构建的评测集合保存在本地的jsonl文件中。当然你也可以跳过这个步骤，直接使用我们放在了[ModelScope仓库](https://modelscope.cn/datasets/modelscope/EvalScope-Qwen3-Test/summary)中处理好的数据集合。
+运行如下代码即可根据定义的Schema自动下载并混合数据集，并将构建的评测集合保存在本地的jsonl文件中。当然你也可以跳过这个步骤，直接使用我们放在了[ModelScope仓库](https://modelscope.cn/datasets/evalscope/Qwen3-Test-Collection/summary)中处理好的数据集合。
 
 ```python
 from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
@@ -139,7 +139,7 @@ schema = CollectionSchema(name='Qwen3', datasets=[
         DatasetInfo(name='math_500', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime24', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
         DatasetInfo(name='aime25', weight=1, task_type='math', tags=['en'], args={'few_shot_num': 0}),
-        DatasetInfo(name='gpqa', weight=1, task_type='knowledge', tags=['en'], args={'subset_list': ['gpqa_diamond'], 'few_shot_num': 0})
+        DatasetInfo(name='gpqa_diamond', weight=1, task_type='knowledge', tags=['en'], args={'few_shot_num': 0})
     ])
 ])
 
@@ -158,13 +158,13 @@ from evalscope import TaskConfig, run_task
 task_cfg = TaskConfig(
     model='Qwen3-32B',
     api_url='http://127.0.0.1:8801/v1/chat/completions',
-    eval_type='service',
+    eval_type='openai_api',
     datasets=[
         'data_collection',
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
             'filters': {'remove_until': '</think>'}  # 过滤掉思考的内容
         }
     },
@@ -216,13 +216,13 @@ from evalscope import TaskConfig, run_task
 task_cfg = TaskConfig(
     model='Qwen3-32B',
     api_url='http://127.0.0.1:8801/v1/chat/completions',
-    eval_type='service',
+    eval_type='openai_api',
     datasets=[
         'data_collection',
     ],
     dataset_args={
         'data_collection': {
-            'dataset_id': 'modelscope/EvalScope-Qwen3-Test',
+            'dataset_id': 'evalscope/Qwen3-Test-Collection',
         }
     },
     eval_batch_size=128,
@@ -232,7 +232,7 @@ task_cfg = TaskConfig(
         'top_p': 0.8,  # top-p采样 (qwen 报告推荐值)
         'top_k': 20,  # top-k采样 (qwen 报告推荐值)
         'n': 1,  # 每个请求产生的回复数量
-        'chat_template_kwargs': {'enable_thinking': False}  # 关闭思考模式
+        'extra_body':{'chat_template_kwargs': {'enable_thinking': False}}  # 关闭思考模式
     },
     timeout=60000,  # 超时时间
     stream=True,  # 是否使用流式输出

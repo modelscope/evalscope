@@ -4,7 +4,7 @@ The EvalScope framework supports the evaluation of various text-to-image models,
 
 ## Supported Evaluation Datasets
 
-Please refer to the [documentation](../../get_started/supported_dataset.md#aigc-evaluation-datasets).
+Please refer to the [documentation](../../get_started/supported_dataset/aigc.md).
 
 ## Supported Evaluation Metrics
 
@@ -44,6 +44,7 @@ from evalscope.constants import ModelTask
 task_cfg = TaskConfig(
     model='stabilityai/stable-diffusion-xl-base-1.0',  # model id on modelscope
     model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    eval_type=EvalType.TEXT2IMAGE,
     model_args={
         'pipeline_cls': 'DiffusionPipeline',
         'use_safetensors': True,
@@ -145,7 +146,9 @@ Provide a JSONL file in the following format:
 
 #### Configure Evaluation Task
 
-Below is example code using a custom evaluation dataset, showcasing the use of all metrics:
+The development process for current text-to-image models is becoming increasingly intricate. Some developers need to rely on visual workflow tools like ComfyUI for multi-module composition or utilize API interfaces to access cloud-based model services, such as Stable Diffusion WebUI or commercial API platforms. In these scenarios, EvalScope offers a "model-free" evaluation mode. This mode allows users to initiate the evaluation process by simply providing a list of prompt texts and the corresponding image storage paths, without the need to download model weights locally or perform inference computations.
+
+Users can configure custom prompts for evaluation tasks using the following command.
 
 ```{note}
 - For custom evaluation tasks, you do not need to provide the `model` parameter, `model_id` is used to specify the model name. Simply configure the `image_path` of the corresponding model generation.
@@ -156,9 +159,12 @@ Run the following code:
 
 ```python
 from evalscope import TaskConfig, run_task
+from evalscope.constants import ModelTask, EvalType
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
+    model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    eval_type=EvalType.TEXT2IMAGE,
     datasets=[
         'general_t2i'
     ],
@@ -225,9 +231,12 @@ Configure the corresponding evaluation task, and run the following code:
 
 ```python
 from evalscope import TaskConfig, run_task
+from evalscope.constants import ModelTask, EvalType
 
 task_cfg = TaskConfig(
     model_id='T2I-Model',
+    model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    eval_type=EvalType.TEXT2IMAGE,
     datasets=[
         'evalmuse',
     ],

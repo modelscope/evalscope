@@ -1,438 +1,393 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+"""
+Default evaluator implementation for running benchmark evaluations.
 
-import json
+This module provides the DefaultEvaluator class which orchestrates the entire
+evaluation process including data loading, model inference, metric calculation,
+and report generation.
+"""
+
 import os
-import time
-from collections import OrderedDict, defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from copy import deepcopy
+import traceback
+from collections import defaultdict
 from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, List
 
-from evalscope.benchmarks import DataAdapter
-from evalscope.config import TaskConfig
-from evalscope.constants import AnswerKeys, DumpMode, EvalStage, EvalType, JudgeStrategy, ReviewKeys
-from evalscope.models import BaseModelAdapter
+from evalscope.api.dataset import Dataset, DatasetDict, Sample
+from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
+from evalscope.api.metric import AggScore, SampleScore
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.report import Report, gen_table
-from evalscope.utils import dict_torch_dtype_to_str, gen_hash
-from evalscope.utils.io_utils import OutputsStructure, dump_jsonl_data, jsonl_to_list
+from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from evalscope.api.benchmark import DataAdapter
+    from evalscope.api.model import Model
+    from evalscope.config import TaskConfig
+    from evalscope.utils.io_utils import OutputsStructure
 
 logger = get_logger()
 
 
-class Evaluator(object):
+class DefaultEvaluator(Evaluator):
     """
-    The evaluator for model on datasets.
+    Default Evaluator for running evaluations on benchmarks.
+
+    This evaluator handles the complete evaluation pipeline:
+    1. Loading datasets from benchmarks
+    2. Running model inference on samples
+    3. Calculating evaluation metrics
+    4. Generating and saving reports
+    5. Managing caching for predictions and reviews
 
     Args:
-        dataset_name_or_path: str, the dataset name or path.
-                if the dataset is a local path, e.g. /path/to/your_dataset_name,
-                then the task name will be the basename of the path, which is `your_dataset_name`.
-        data_adapter: DataAdapter, the data adapter for the dataset.
-        model_adapter: BaseModelAdapter, the model adapter for the model.
-        outputs: OutputsStructure, the outputs dir. Default: None
-        task_cfg: TaskConfig, the overall task config. Default: None
-        **kwargs: kwargs.
+        benchmark: The data adapter for loading and processing data.
+        model: The model to be evaluated.
+        outputs: The output structure for saving evaluation results.
+        task_config: The task configuration.
     """
 
-    def __init__(self,
-                 data_adapter: DataAdapter,
-                 model_adapter: BaseModelAdapter,
-                 outputs: OutputsStructure = None,
-                 task_cfg: TaskConfig = None,
-                 **kwargs):
+    def __init__(
+        self,
+        benchmark: 'DataAdapter',
+        model: 'Model',
+        outputs: 'OutputsStructure',
+        task_config: 'TaskConfig',
+    ):
+        # Store core components needed for evaluation
+        self.benchmark = benchmark
+        self.model = model
+        self.outputs = outputs
+        self.task_config = task_config
 
-        self.dataset_name = data_adapter.name
-        self.dataset_name_or_path = os.path.expanduser(data_adapter.dataset_id)
-        self.model_name = task_cfg.model_id
-        self.custom_task_name = f'{self.model_name}_{self.dataset_name}'
+        # Extract frequently used identifiers
+        self.benchmark_name = benchmark.name
+        """Name of the benchmark being evaluated."""
 
-        self.data_adapter = data_adapter
-        self.model_adapter = model_adapter
-        self.model_cfg = model_adapter.model_cfg
-        self.eval_type = task_cfg.eval_type
-        self.dataset_hub = task_cfg.dataset_hub
-        self.stage = task_cfg.stage
-        self.use_cache = task_cfg.use_cache
-        self.task_cfg = task_cfg
-        # Deal with the output paths
-        self.outputs_structure = outputs
-        self.kwargs = kwargs
+        self.model_name = task_config.model_id
+        """ID of the model being evaluated."""
 
-        self._init_judge()
+        self.use_cache = task_config.use_cache
+        """Whether to use cache for predictions."""
 
-    def _init_judge(self):
-        if self.task_cfg.judge_strategy == JudgeStrategy.RULE:
-            self.judge = None
-        else:
-            from evalscope.metrics import LLMJudge
-            self.judge = LLMJudge(**self.task_cfg.judge_model_args)
-
-    def load_dataset(self):
-        dataset = self.data_adapter.load(
-            work_dir=os.path.expanduser(self.task_cfg.dataset_dir), datasets_hub=self.dataset_hub, **self.kwargs)
-
-        # Get prompts from dataset
-        prompts = self.data_adapter.gen_prompts(data_dict=dataset)
-
-        # Limit and index prompts
-        limited_prompts = defaultdict(list)
-        for subset_name, prompts_list in prompts.items():
-            limit = self.task_cfg.limit or len(prompts_list)
-            for index, prompt in enumerate(prompts_list[:limit]):
-                prompt[AnswerKeys.INDEX] = index
-                limited_prompts[subset_name].append(prompt)
-
-        return limited_prompts
-
-    def _generate_answer_id(self, model_cfg, input_d, infer_cfg):
-        model_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(model_cfg).items())), ensure_ascii=False)
-        input_prompt_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(input_d).items())), ensure_ascii=False)
-        infer_cfg_str = json.dumps(OrderedDict(sorted(dict_torch_dtype_to_str(infer_cfg).items())), ensure_ascii=False)
-        return 'answer-' + gen_hash(model_cfg_str + input_prompt_str + infer_cfg_str)
-
-    def _process_answer(self, answer_d, input_d, subset_name, answer_id):
-        answer_d[AnswerKeys.MODEL_SPEC] = self.model_adapter.model_cfg
-        answer_d[AnswerKeys.ANSWER_ID] = answer_id
-        answer_d[AnswerKeys.SUBSET_NAME] = subset_name
-        answer_d[AnswerKeys.RAW_INPUT] = input_d[AnswerKeys.RAW_INPUT]
-        # answer_d[AnswerKeys.ORIGIN_PROMPT] = input_d
-        answer_d[AnswerKeys.INDEX] = input_d[AnswerKeys.INDEX]
-        return answer_d
-
-    def _get_answer(self, input_prompts, subset_name, infer_cfg) -> List[dict]:
-        answers_list = []
-        answer_ds: List[dict] = self.model_adapter.predict(inputs=input_prompts, infer_cfg=infer_cfg)
-        for answer_d, input_prompt in zip(answer_ds, input_prompts):
-            answer_id = self._generate_answer_id(self.model_adapter.model_cfg, input_prompt, infer_cfg)
-            processed_answer = self._process_answer(answer_d, input_prompt, subset_name, answer_id)
-            answers_list.append(processed_answer)
-        return answers_list
-
-    @staticmethod
-    def filter_answer(use_cache, prompts_list, pred_file_path) -> dict:
-        # Filter prompts that have been answered
-        answers_list = []
-        if not use_cache or not os.path.exists(pred_file_path):
-            return answers_list, prompts_list
-
-        def get_answered_indices(answers_list: List[Dict]) -> List[int]:
-            indices = [answer.get(AnswerKeys.INDEX) for answer in answers_list]
-
-            if all(index is None for index in indices):
-                return list(range(len(answers_list)))
-
-            return [index for index in indices if index is not None]
-
-        answers_list = jsonl_to_list(pred_file_path)
-        answered_indices = set(get_answered_indices(answers_list))
-        logger.info(f'Reusing predictions from {pred_file_path}, got {len(answered_indices)} answers.')
-
-        prompts = [prompt for i, prompt in enumerate(prompts_list) if i not in answered_indices]
-        return answers_list, prompts
-
-    def get_answers(self, subset_name: str, prompts_list: List[dict], infer_cfg: dict = None, **kwargs) -> list:
-        """
-        Get answers from model inference.
-        It is required to rewrite this method to support your own evaluator.
-
-        Args:
-            subset_name: subset name for benchmark.
-            prompts_list: prompts list.
-            infer_cfg: model inference config.
-                Attributes:
-                    do_sample: bool, whether to use sampling.
-                    top_k: int, the number of highest probability vocabulary tokens to keep for top-k-filtering.
-                    top_p: float, if set to float < 1, only the most probable tokens with probabilities to add.
-                    temperature: float, the value used to module the next token probabilities.
-                    num_beams: int, number of beams for beam search. 1 means no beam search.
-                    max_length: int, the max length of the sequence to be generated.
-                    max_new_tokens: int, the max number of new tokens to be generated.
-                    repetition_penalty: float, the parameter for repetition penalty. 1.0 means no penalty.
-            **kwargs: kwargs.
-
-        Returns: The list of answers.
-        """
-        assert self.data_adapter is not None, 'data_adapter must be provided when calling func get_answers() !'
-        assert self.model_adapter is not None, 'model must be provided when calling func get_answers() !'
-        assert len(prompts_list) > 0, 'prompts_list must not be empty when calling func get_answers() !'
-
-        pred_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
-        pred_file_path = os.path.join(self.outputs_structure.predictions_dir, self.model_name, pred_file_name)
-        os.makedirs(os.path.dirname(pred_file_path), exist_ok=True)
-
-        answers_list, prompts_list = Evaluator.filter_answer(self.use_cache, prompts_list, pred_file_path)
-
-        eval_batch_size = self.task_cfg.eval_batch_size
-        if self.task_cfg.eval_type == EvalType.SERVICE:
-            with tqdm(total=len(prompts_list), desc=f'Predicting({subset_name}): ') as pbar:
-                with ThreadPoolExecutor(max_workers=eval_batch_size) as executor:
-                    futures = []
-                    for input_prompt in prompts_list:
-                        futures.append(executor.submit(self._get_answer, [input_prompt], subset_name, infer_cfg))
-                    for future in as_completed(futures):
-                        answer_ds: List[dict] = future.result()
-                        answers_list.extend(answer_ds)
-                        dump_jsonl_data(answer_ds, pred_file_path, dump_mode=DumpMode.APPEND)
-                        pbar.update(len(answer_ds))
-        else:
-            batch_prompts_list = [
-                prompts_list[i:i + eval_batch_size] for i in range(0, len(prompts_list), eval_batch_size)
-            ]
-            with tqdm(total=len(prompts_list), desc=f'Predicting({subset_name}): ') as pbar:
-                for batch_prompts in batch_prompts_list:
-                    answer_ds: List[dict] = self._get_answer(
-                        input_prompts=batch_prompts, subset_name=subset_name, infer_cfg=infer_cfg)
-                    answers_list.extend(answer_ds)
-                    dump_jsonl_data(answer_ds, pred_file_path, dump_mode=DumpMode.APPEND)
-                    pbar.update(len(batch_prompts))
-
-        logger.info(f'Dump predictions to {pred_file_path}.')
-        return answers_list
-
-    def _get_review(self, answer_d: dict, review_id: str = None, reviewer_spec: dict = None) -> dict:
-
-        if reviewer_spec is None:
-            reviewer_spec = {}
-
-        review_res = deepcopy(answer_d)
-        choices = review_res[AnswerKeys.CHOICES]
-        if len(choices) == 0:
-            review_res[ReviewKeys.REVIEWED] = False
-            review_res[ReviewKeys.REVIEW_ID] = None
-            review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-            review_res[ReviewKeys.REVIEW_TIME] = time.time()
-            return review_res
-
-        rev_choices = []
-        for choice in choices:
-            raw_input_d: dict = review_res[AnswerKeys.RAW_INPUT]
-            answer_content = choice[ReviewKeys.MESSAGE][ReviewKeys.CONTENT]
-            gold_content = self.data_adapter.get_gold_answer(raw_input_d)
-
-            # Get review result based on judge strategy
-            use_llm = (
-                self.task_cfg.judge_strategy == JudgeStrategy.LLM
-                or (self.task_cfg.judge_strategy == JudgeStrategy.AUTO and self.data_adapter.llm_as_a_judge))
-
-            if use_llm:
-                # Use LLM as judge
-                assert self.judge is not None, f'Judge model is required for LLM judging {self.data_adapter.name}'
-                review_result = self.data_adapter.llm_match(
-                    gold_content, answer_content, self.judge, raw_input=raw_input_d)
-                pred = answer_content
-            else:
-                # Use rule-based judging
-                pred_content = self.data_adapter.parse_pred_result(
-                    result=answer_content, raw_input_d=raw_input_d, eval_type=self.eval_type)
-                review_result = self.data_adapter.match(gold_content, pred_content)
-
-                # For LLM_RECALL strategy, use LLM to re-judge if rule-based result is not good
-                if (self.task_cfg.judge_strategy == JudgeStrategy.LLM_RECALL
-                        and isinstance(review_result, (bool, int, float)) and not bool(review_result)):
-                    assert self.judge is not None, f'Judge model is required for LLM_RECALL strategy {self.data_adapter.name}'  # noqa: E501
-                    review_result = self.data_adapter.llm_match(
-                        gold_content, answer_content, self.judge, raw_input=raw_input_d)
-                    pred = answer_content
-                else:
-                    pred = pred_content
-
-            choice[ReviewKeys.REVIEW] = {
-                ReviewKeys.GOLD: gold_content if gold_content != raw_input_d else '*Same as Input*',
-                ReviewKeys.PRED: pred,
-                ReviewKeys.RESULT: review_result
-            }
-            rev_choices.append(choice)
-
-        review_res[AnswerKeys.CHOICES] = rev_choices
-        review_res[ReviewKeys.REVIEWED] = True
-        review_res[ReviewKeys.REVIEW_ID] = review_id
-        review_res[ReviewKeys.REVIEWER_SPEC] = reviewer_spec
-        review_res[ReviewKeys.REVIEW_TIME] = time.time()
-
-        return review_res
-
-    def _generate_review_id(self, answer_d):
-        # Gen review_id (concat: answer_id + reviewer_spec)
-        answer_id = answer_d[AnswerKeys.ANSWER_ID]
-        reviewer_spec = {'metric': self.data_adapter.metric_list, 'reviewer': ['Evaluator'], 'revision': ['default']}
-        reviewer_spec_str = json.dumps(
-            OrderedDict(sorted(dict_torch_dtype_to_str(reviewer_spec).items())), ensure_ascii=False)
-        review_id = 'review-' + gen_hash(answer_id + reviewer_spec_str)
-        return review_id, reviewer_spec
-
-    def get_reviews(self, subset_name: str, answers_list: List[dict], **kwargs) -> list:
-        """
-        Get reviews from answers.
-        It is required to rewrite this method to support your own evaluator.
-
-        Args:
-            subset_name: subset name of benchmark
-            answers_list: inference results list.
-            **kwargs: kwargs.
-
-        Returns: reviews list.
-        """
-        reviews_list = []
-
-        review_file_name = self.dataset_name + '_' + subset_name + '.jsonl'
-        review_file_path = os.path.join(self.outputs_structure.reviews_dir, self.model_name, review_file_name)
-        os.makedirs(os.path.dirname(review_file_path), exist_ok=True)
-
-        if self.use_cache and os.path.exists(review_file_path):
-            logger.info(f'Updating the review file: {review_file_path} ...')
-            os.remove(review_file_path)
-
-        def process_single_review(answer_d):
-            review_id, reviewer_spec = self._generate_review_id(answer_d)
-            # Get review
-            review_d = self._get_review(answer_d=answer_d, review_id=review_id, reviewer_spec=reviewer_spec)
-            logger.debug(review_d)
-            return review_d
-
-        with ThreadPoolExecutor(max_workers=self.task_cfg.judge_worker_num) as executor:
-            # Submit all tasks and get futures
-            futures = [executor.submit(process_single_review, answer_d) for answer_d in answers_list]
-
-            # Process completed futures with progress bar
-            for future in tqdm(as_completed(futures), total=len(futures), desc=f'Reviewing({subset_name}): '):
-                review_d = future.result()
-                reviews_list.append(review_d)
-                # Dump reviews
-                dump_jsonl_data(review_d, review_file_path, dump_mode=DumpMode.APPEND)
-
-        return reviews_list
-
-    def compute_metrics(self, reviews_list: List[dict]) -> List[dict]:
-        """
-        To compute metrics from reviews_list for each subset.
-        It is required to rewrite this method to support your own evaluator.
-
-        Args:
-            reviews_list: reviews list.
-
-        Returns:
-            The metric result. Depends on the metric function in data_adapter.
-        """
-
-        review_res_list = []
-        max_choices = max(
-            len(review_d[AnswerKeys.CHOICES]) for review_d in reviews_list if review_d[ReviewKeys.REVIEWED])
-        for review_d in reviews_list:
-            if not review_d[ReviewKeys.REVIEWED]:
-                logger.warning(f'Review not finished for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
-                continue
-
-            if len(review_d[AnswerKeys.CHOICES]) == 0:
-                logger.warning(f'No choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}')
-                continue
-            elif len(review_d[AnswerKeys.CHOICES]) == 1 and max_choices == 1:
-                review_res = review_d[AnswerKeys.CHOICES][0][ReviewKeys.REVIEW][ReviewKeys.RESULT]
-            else:
-                review_res = [choice[ReviewKeys.REVIEW][ReviewKeys.RESULT] for choice in review_d[AnswerKeys.CHOICES]]
-                if len(review_d[AnswerKeys.CHOICES]) < max_choices:
-                    logger.warning(
-                        f'Less choices found for answer_id: {review_d[AnswerKeys.ANSWER_ID]}, '
-                        f'max_choices is {max_choices}, but only {len(review_d[AnswerKeys.CHOICES])} choices found')
-
-            review_res_list.append(review_res)
-
-        metric_score: List[dict] = self.data_adapter.compute_metric(
-            review_res_list=review_res_list, reviews_list=reviews_list)
-
-        return metric_score
-
-    def dump_report(self, reviews_score_all: List[dict], use_table: bool = True):
-        """
-        Get report for total reviews of specific dataset.
-        It is required to rewrite this method to support your own evaluator.
-
-        Args:
-            reviews_score_all: reviews score list. Generated by func self.data_adapter.compute_metric().
-            use_table: whether to generate table for reports. Default to True.
-
-        Returns: None
-        """
-        # Get report map
-        report_map: Report = self.data_adapter.gen_report(
-            subset_score_map=reviews_score_all,
-            report_name=self.custom_task_name,
+        # Initialize cache manager for storing and retrieving cached results
+        self.cache_manager = CacheManager(
+            outputs=outputs,
             model_name=self.model_name,
-            dataset_name=self.dataset_name)
+            benchmark_name=self.benchmark_name,
+        )
 
-        # Dump report
-        report_path: str = os.path.join(self.outputs_structure.reports_dir, self.model_name,
-                                        self.dataset_name + '.json')
-        os.makedirs(os.path.dirname(report_path), exist_ok=True)
-
-        # Write report
-        with open(report_path, 'w') as f:
-            f.write(json.dumps(report_map.to_dict(), ensure_ascii=False, indent=4))
-        logger.info(f'Dump report: {report_path} \n')
-
-        # Make table
-        if use_table:
-            try:
-                report_table: str = gen_table([self.outputs_structure.reports_dir])
-                logger.info(f'Report table: \n{report_table} \n')
-            except Exception:
-                logger.error('Failed to generate report table.')
-        return report_map
-
-    def eval(self, **kwargs) -> dict:
+    def eval(self) -> Report:
         """
-        Evaluate the model on the specific benchmark. Streaming & parallel mode is supported.
-        It is required to rewrite this method to support your own evaluator.
+        Run the complete evaluation process.
 
-        The evaluation process is as follows:
-            1. Get the input samples from the dataset (benchmarks on the ModelScope or HuggingFace).
-            2. Get the input prompts from dataset with specific data adapter.
-            3. Get answers with model inference.
-            4. Get reviews with metric function (or reviewers).
-            5. Generate report from review results.
-
-        Args:
-            infer_cfg: The config for model inference.
+        This is the main entry point that orchestrates the entire evaluation:
+        1. Load dataset from benchmark
+        2. Evaluate each subset independently
+        3. Aggregate scores across subsets
+        4. Generate final evaluation report
 
         Returns:
-            Dict of results. Depends on the stage of evaluation.
-
-            stage == 'all': return the report_map
-            stage == 'infer': return the answers_map
-            stage == 'review': return the reviews_map
+            Report: The complete evaluation report containing all metrics and results.
         """
+        # Load the dataset and evaluate each subset
+        logger.info(f'Start evaluating benchmark: {self.benchmark_name}')
+        dataset_dict = self.benchmark.load_dataset()
+        agg_score_dict = defaultdict(list)
 
-        logger.info(f'**** Start evaluating on dataset {self.dataset_name_or_path} ****')
-
-        reviews_score_all = {}  # {subset_name: (score, num)}
-        stage_answers_dict = {}
-        stage_reviews_dict = {}
-
-        prompts = self.load_dataset()
-        for subset_name, prompts_list in prompts.items():
-
-            answers_list: list = self.get_answers(
-                subset_name=subset_name, prompts_list=prompts_list, infer_cfg=self.task_cfg.generation_config, **kwargs)
-            if self.stage == EvalStage.INFER:
-                stage_answers_dict[subset_name] = answers_list
+        # Process each subset (e.g., test, validation) independently
+        logger.info('Evaluating all subsets of the dataset...')
+        for subset, dataset in dataset_dict.items():
+            if len(dataset) == 0:
+                logger.info(f'No samples found in subset: {subset}, skipping.')
                 continue
+            logger.info(f'Evaluating subset: {subset}')
+            subset_score = self.evaluate_subset(subset, dataset)
+            agg_score_dict[subset] = subset_score
 
-            reviews_list: list = self.get_reviews(subset_name=subset_name, answers_list=answers_list, **kwargs)
+        # Generate the report based on aggregated scores
+        logger.info('Generating report...')
+        report = self.get_report(agg_score_dict)
 
-            metric_res = self.compute_metrics(reviews_list=reviews_list)
-            reviews_score_all[subset_name] = metric_res
-            stage_reviews_dict[subset_name] = reviews_list
+        # Finalize the evaluation process
+        self.finalize()
+        logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
+        return report
 
-        if self.stage == EvalStage.INFER:
-            return stage_answers_dict
+    def evaluate_subset(self, subset: str, dataset: Dataset) -> List[AggScore]:
+        """
+        Evaluate a single subset of the dataset.
 
-        if self.stage == EvalStage.REVIEW:
-            return stage_reviews_dict
+        This method processes one subset through the complete evaluation pipeline:
+        1. Get model predictions for all samples
+        2. Calculate evaluation metrics for predictions
+        3. Aggregate individual sample scores
 
-        # Generate report
-        report_map = self.dump_report(reviews_score_all)
+        Args:
+            subset: Name of the subset being evaluated (e.g., 'test', 'validation').
+            dataset: The dataset subset containing samples to evaluate.
 
-        logger.info(f'**** Evaluation finished on {self.dataset_name_or_path} ****\n')
+        Returns:
+            List[AggScore]: Aggregated scores for this subset.
+        """
+        # Get model predictions for all samples in the subset
+        logger.info(f'Getting predictions for subset: {subset}')
+        task_states = self.get_answers(subset, dataset)
 
-        return report_map
+        # Calculate evaluation metrics for each prediction
+        logger.info(f'Getting reviews for subset: {subset}')
+        sample_scores = self.get_reviews(subset, task_states)
+
+        # Aggregate individual sample scores into subset-level metrics
+        logger.info(f'Aggregating scores for subset: {subset}')
+        agg_scores = self.benchmark.aggregate_scores(sample_scores=sample_scores)
+        return agg_scores
+
+    def get_answers(self, subset: str, dataset: Dataset) -> List[TaskState]:
+        """
+        Get model predictions for all samples in the dataset subset.
+
+        This method handles:
+        1. Loading cached predictions if available and caching is enabled
+        2. Running model inference on remaining samples in parallel
+        3. Saving new predictions to cache
+
+        Args:
+            subset: Name of the subset being processed.
+            dataset: The dataset subset containing samples for prediction.
+
+        Returns:
+            List[TaskState]: Task states containing model predictions for each sample.
+        """
+        # Initialize task state list and filter cached predictions if caching is enabled
+        if self.use_cache:
+            cached_task_state_list, dataset = self.cache_manager.filter_prediction_cache(subset, dataset)
+        else:
+            cached_task_state_list = []
+
+        # Get output directory for storing model predictions
+        model_prediction_dir = os.path.dirname(self.cache_manager.get_prediction_cache_path(subset))
+
+        # Convert dataset to list for parallel processing
+        dataset_list = list(dataset)
+        if not dataset_list:
+            return cached_task_state_list
+
+        logger.info(f'Processing {len(dataset_list)} samples, if data is large, it may take a while.')
+
+        def worker(sample: Sample) -> TaskState:
+            return self._predict_sample(sample, model_prediction_dir)
+
+        def on_result(sample: Sample, task_state: TaskState) -> None:
+            model_result = self.cache_manager.save_prediction_cache(subset, task_state, self.benchmark.save_metadata)
+            logger.debug(f'Model result: \n{model_result.pretty_print()}')
+
+        def on_error(sample: Sample, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'{sample.model_dump_json(indent=2)} prediction failed: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
+
+        finished_task_states = run_in_threads_with_progress(
+            dataset_list,
+            worker,
+            desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.eval_batch_size,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_result=on_result,
+            on_error=on_error,
+            filter_none_results=True,
+        )
+
+        logger.info(f'Finished getting predictions for subset: {subset}.')
+        return cached_task_state_list + finished_task_states
+
+    def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
+        """
+        Helper method to predict a single sample.
+
+        Args:
+            sample: The sample to predict.
+            model_prediction_dir: Directory for storing model predictions.
+
+        Returns:
+            TaskState: The task state containing the prediction result.
+        """
+        logger.debug(f'\n{sample.pretty_print()}')
+
+        # Run model inference on the current sample
+        task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+        return task_state
+
+    def get_reviews(self, subset: str, task_states: List[TaskState]) -> List[SampleScore]:
+        """
+        Calculate evaluation metrics for model predictions.
+
+        This method handles:
+        1. Loading cached review results if available and caching is enabled
+        2. Computing metrics for remaining task states in parallel
+        3. Saving new review results to cache
+
+        Args:
+            subset: Name of the subset being reviewed.
+            task_states: List of task states containing model predictions.
+
+        Returns:
+            List[SampleScore]: Evaluation scores for each sample.
+        """
+        # Initialize sample score list and filter cached reviews if caching is enabled
+        if self.use_cache and not self.task_config.rerun_review:
+            cached_score_list, task_states = self.cache_manager.filter_review_cache(subset, task_states)
+        else:
+            # Init a clean sample score list
+            cached_score_list = []
+            self.cache_manager.delete_review_cache(subset)
+
+        if not task_states:
+            return cached_score_list
+
+        logger.info(f'Reviewing {len(task_states)} samples, if data is large, it may take a while.')
+
+        def worker(task_state: TaskState) -> SampleScore:
+            return self._review_task_state(task_state)
+
+        def on_result(task_state: TaskState, sample_score: SampleScore) -> None:
+            review_result = self.cache_manager.save_review_cache(
+                subset=subset,
+                task_state=task_state,
+                sample_score=sample_score,
+                save_metadata=self.benchmark.save_metadata
+            )
+            logger.debug(f'Review result: \n{review_result.pretty_print()}')
+
+        def on_error(task_state: TaskState, exc: Exception) -> None:
+            tb_str = traceback.format_exc()
+            logger.error(f'Error when review sample {task_state.sample_id}: due to {exc}\nTraceback:\n{tb_str}')
+            if self.task_config.ignore_errors:
+                logger.warning('Error ignored, continuing with next sample.')
+                return
+            raise exc
+
+        # Run reviews in parallel
+        reviewed_scores = run_in_threads_with_progress(
+            task_states,
+            worker,
+            desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
+            max_workers=self.task_config.judge_worker_num,
+            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
+            on_error=on_error,
+            # Do not persist interim results when batch scoring is enabled
+            on_result=None if self.benchmark.use_batch_scoring else on_result,
+            filter_none_results=False,
+        )
+
+        # Batch calculate metrics if supported by the benchmark
+        if self.benchmark.use_batch_scoring:
+            reviewed_scores = self._batch_review_task_states(
+                task_states=task_states, reviewed_scores=reviewed_scores, on_result=on_result
+            )
+
+        logger.info(f'Finished reviewing subset: {subset}. Total reviewed: {len(reviewed_scores)}')
+        return cached_score_list + reviewed_scores
+
+    def _review_task_state(self, task_state: TaskState) -> SampleScore:
+        """
+        Helper method to review a single task state.
+
+        Args:
+            task_state: The task state to review.
+
+        Returns:
+            SampleScore: The evaluation score for the task state.
+        """
+        # Compute evaluation metrics using the benchmark's metric calculation
+        sample_score = self.benchmark.calculate_metrics(task_state=task_state)
+        return sample_score
+
+    def _batch_review_task_states(
+        self, task_states: List[TaskState], reviewed_scores: List[SampleScore],
+        on_result: Callable[[TaskState, SampleScore], None]
+    ) -> List[SampleScore]:
+        valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
+        if not valid_indices:
+            return reviewed_scores
+
+        task_states = [task_states[i] for i in valid_indices]
+        reviewed_scores = [reviewed_scores[i] for i in valid_indices]
+
+        # Iterate in batches with progress bar
+        all_reviewed_scores = []
+        total = len(task_states)
+        batch_size = self.task_config.judge_worker_num
+        with tqdm(total=total, desc='Scoring (batch)', unit='sample') as pbar:
+            for start in range(0, total, batch_size):
+                # Process batch
+                end = min(start + batch_size, total)
+                batch_task_states = task_states[start:end]
+                batch_scores = reviewed_scores[start:end]
+                # Batch calculate metrics
+                updated_reviewed_scores = self.benchmark.batch_calculate_metrics(
+                    task_states=batch_task_states, sample_scores=batch_scores
+                )
+                # Append results
+                all_reviewed_scores.extend(updated_reviewed_scores)
+                # Save each result to cache
+                for task_state, sample_score in zip(batch_task_states, updated_reviewed_scores):
+                    on_result(task_state, sample_score)
+
+                pbar.update(len(batch_task_states))
+        return all_reviewed_scores
+
+    def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
+        """
+        Generate a comprehensive evaluation report from aggregated scores.
+
+        This method handles:
+        1. Creating the evaluation report from scores
+        2. Generating and displaying a summary table
+        3. Optionally generating detailed analysis
+        4. Saving the report to file
+
+        Args:
+            agg_score_dict: Dictionary mapping subset names to their aggregated scores.
+
+        Returns:
+            Report: The complete evaluation report.
+        """
+        assert agg_score_dict, 'No scores to generate report from.'
+
+        # Get paths for saving the report
+        report_path = self.cache_manager.get_report_path()
+        report_file = self.cache_manager.get_report_file()
+
+        # Generate the main evaluation report using benchmark-specific logic
+        report = self.benchmark.generate_report(
+            scores=agg_score_dict, model_name=self.model_name, output_dir=report_path
+        )
+
+        # Generate and display a summary table of results
+        try:
+            report_table = gen_table(report_list=[report], add_overall_metric=self.benchmark.add_overall_metric)
+            logger.info(f'\n{self.benchmark_name} report table:'
+                        f'\n{report_table} \n')
+        except Exception:
+            logger.error('Failed to generate report table.')
+
+        # Generate detailed analysis if requested in configuration
+        if self.task_config.analysis_report:
+            logger.info('Generating report analysis, please wait ...')
+            analysis = report.generate_analysis(self.task_config.judge_model_args)
+            logger.info(f'Report analysis:\n{analysis}')
+        else:
+            logger.info('Skipping report analysis (`analysis_report=False`).')
+
+        # Save the complete report to file
+        report.to_json(report_file)
+        logger.info(f'Dump report to: {report_file} \n')
+        return report
+
+    def finalize(self, *args, **kwargs):
+        self.benchmark.finalize(*args, **kwargs)

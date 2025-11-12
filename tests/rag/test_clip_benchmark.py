@@ -1,13 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import subprocess
 import unittest
 
 from evalscope.run import run_task
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
+from tests.utils import test_level_list
 
 logger = get_logger()
 
@@ -39,7 +38,11 @@ class TestCLIPBenchmark(unittest.TestCase):
                             'model_name': 'AI-ModelScope/chinese-clip-vit-large-patch14-336px',
                         }
                     ],
-                    'dataset_name': ['muge', 'mnist'],
+                    'dataset_name': [
+                        'muge',
+                        'mnist',
+                        'flickr8k'
+                    ],
                     'split': 'test',
                     'batch_size': 128,
                     'num_workers': 1,

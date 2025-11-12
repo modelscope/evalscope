@@ -1,300 +1,253 @@
 # ❓ 常见问题
 
-下面是EvalScope使用过程中遇到的一些常见问题
+这里汇集了 EvalScope 使用过程中常见的各类问题及其解决方案。
 
 ```{important}
-EvalScope使用中出现的大部分问题可能已经在最新版本中修复，建议先拉main分支代码安装再试试，看问题是否可以解决，请确保使用的是最新版本的代码。
+我们建议您在遇到问题时，首先尝试更新到最新的 `main` 分支代码。许多问题可能已在最新版本中得到修复。
 ```
 
-## 模型benchmark测试
+## 快速导航
 
-### Q0: 为什么评测的结果为0/评测结果明显不对？
+- [❓ 常见问题](#-常见问题)
+  - [快速导航](#快速导航)
+  - [安装与环境](#安装与环境)
+  - [模型评测](#模型评测)
+    - [评测配置与参数](#评测配置与参数)
+    - [结果异常与问题排查](#结果异常与问题排查)
+    - [模型与数据集支持](#模型与数据集支持)
+    - [框架使用与扩展](#框架使用与扩展)
+  - [性能压测 (perf)](#性能压测-perf)
+    - [基本用法与配置](#基本用法与配置)
+    - [性能指标与问题排查](#性能指标与问题排查)
+  - [引用我们](#引用我们)
 
-A: 使用如下方法排查问题：
-  1. 确认模型接口是否可以正常推理
-  2. 在`outputs/2025xxxxx/predictions/`路径下查看模型的输出，确认模型是否有输出，输出是否正常
-  3. 使用`evalscope app`启动可视化界面，查看评测结果是否正常
+## 安装与环境
 
-### Q1: 为什么推理模型测出来的精度很低，例如QwQ模型在ifeval上?
+**Q: 如何通过 Docker 使用 EvalScope？**
 
-A: `--datast-args` 的 ifeval加上 `"filters": {"remove_until": "</think>"}'`，去掉模型的思考过程。
+**A:** 您可以使用 ModelScope 官方提供的镜像，其中已包含 EvalScope。详情请参考[环境安装文档](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F)。
 
-### Q2: 使用API模型服务评测embeddings报错 openai.BadRequestError: Error code: 400 - {'object': 'error', 'message': 'dimensions is currently not supported', 'type': 'BadRequestError', 'param': None, 'code': 400}
+**Q: `pip install evalscope[all]` 安装时编译失败怎么办？**
 
-A: 设置`'dimensions': None`，或者不设置该参数
+**A:** 尝试先单独安装 `pip install python-dotenv`，然后再执行 `pip install evalscope[all]`。
 
-### Q3: 查看outputs/2025xxxxx/predictions/路径下面模型的输出最后几个case的内容为null
+**Q: `evalscope[app]` 与其他库（如 `bfcl-eval`）存在环境冲突？**
 
-A: 输出长度不够，被提前截断了
+**A:** 请尝试单独安装这些库，而不是在一条命令中同时安装。对于 `bfcl-eval`，可以尝试 `2025.6.16` 版本。
 
-### Q4: evalscope 当前内置的评测集（例如 LiveCodebench、AIME、MATH-500）等只支持 pass1 评测吗？支持 passk 评测吗？
+**Q: 评测时出现 `trust_remote_code=True` 的警告，如何处理？**
 
-A: 
-1. 本框架支持QwQ评测中的`n_sample`参数，在generation config中设置`n`可计算多个sample的平均指标，参考：https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5
-2. 本框架支持 `pass@k` 指标，参考 https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id3 中的`metrics_list`
+**A:** 这是一个提示性警告，不影响评测流程。EvalScope 框架已默认设置 `trust_remote_code=True`，您可以放心使用。
 
-### Q5: 数据集从本地加载报错，缺少`dtype` ?
+**Q: 在 Notebook 环境中运行评测报错 `RuntimeError: Cannot run the event loop while another loop is running`？**
 
-A: 数据集本地加载是有点问题，需要modelscope下个版本修复，临时的解决方案是先手动删掉数据集目录下的`dataset_infos.json` 这个文件
+**A:** 请将评测代码写入一个 Python 脚本文件（`.py`），然后在终端中执行，避免在 Notebook 中运行。
 
-### Q6: 评估Qwen2-audio的时候，跑了几个文本指标，回复的内容全是感叹号
 
-A: 参考复现代码：
-```python
-from evalscope.run import run_task
+## 模型评测
 
-task_cfg = {
-    'model': '/opt/nas/n/AudioLLM/allkinds_ckpt/Qwen/Qwen2-Audio-7B-Instruct',
-    'datasets': ['gsm8k', 'math_500', "gpqa", "mmlu_pro", "mmlu_redux"],
-    'limit': 100
-}
+### 评测配置与参数
 
-run_task(task_cfg=task_cfg)
-```
-目前对于本地加载的多模态模型支持并不完善，建议使用vllm等推理服务拉起api来评测
+**Q: 如何进行 pass@k 评测或一个样本生成多个答案？**
 
-### Q7: 评测多模态大模型时报错：Unknown benchmark
+**A:** 在 `generation_config` 中设置 `n` 参数即可。`n` 的值表示每个样本生成答案的数量。框架会自动计算 `pass@k` 等指标。
+参考文档：[Generation Config](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2)、[QwQ 评测实践](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5)。
 
-A: 多模态评测参考[这里](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmevalkit) ，需要使用VLMEval 工具
+**Q: 如何移除模型输出中的“思考过程”（如 `<think>...</think>`）？**
 
-### Q8: 评估Gemma3系列模型时出现RuntimeError: CUDA error: device-side assert triggered错误
-
-A: gemma3是多模态模型，目前框架的chat_adapter对于多模态模型的支持不是很完善，建议使用模型推理框架（vllm等）拉起模型服务来进行评测
-
-### Q9: 如何进行多卡评估？
-
-A: 目前暂不支持data parallel的加速方式
-
-### Q10: 模型推理服务的压测使用可视化工具找不到报告
-
-A: 该可视化工具专门用于展示模型评测结果，不适用于模型推理服务的压测结果可视化。如需查看模型推理服务的压测结果可视化，请参考[压测结果可视化指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/examples.html#wandb)。
-
-### Q11: 是否有可用的docker？
-
-A: 使用镜像可以查看[这里](https://modelscope.cn/docs/intro/environment-setup#%E6%9C%80%E6%96%B0%E9%95%9C%E5%83%8F)，使用modelscope的官方镜像，里面包含了evalscope库
-
-### Q12: ifeval数据集做评测的时候报-Unable to detect language for text कामाची घाई
-
-A: 报错信息包含：
-due to Need to load profiles.
-NotADirectoryError: [Errno 20] Not a directory: '/nltk_data/tokenizers/punkt_tab.zip/punkt_tab/english/collocations.tab'
-
-解决方案：
-1. `unzip /path/to/nltk_data/tokenizers/punkt_tab.zip`
-2. 命令如下
+**A:** 使用 `--dataset-args` 参数为特定数据集添加 `filters`。例如，移除 ifeval 数据集评测时 `</think>` 之前的内容：
 ```shell
-!evalscope eval
---model xxxx
---api-url xxxx
---api-key xxxxx
---generation-config temperature=1.0
---eval-type service
---eval-batch-size 50
---datasets ifeval
---judge-worker-num 1
+--dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
+```
+如果您的模型使用不同的思考标签，如 `<|end_of_thinking|>`，只需替换即可。
+
+**Q: 如何使用本地模型作为裁判模型（Judge Model）？**
+
+**A:** 您可以使用 vLLM 等框架将本地模型部署为一个 API 服务，然后在 `--judge-model-args` 中指定其服务地址。
+
+**Q: 如何为裁判模型设置超时时间？**
+
+**A:** 在 `--judge-model-args` 的 `generation_config` 中设置 `timeout` 参数。
+
+**Q: 如何在评测 API 服务时添加自定义请求头（Header）？**
+
+**A:** 在 `generation_config` 中设置 `extra_headers` 即可。
+```python
+# 示例
+task_config = TaskConfig(
+    # ...
+    generation_config={'extra_headers': {'Authorization': 'Bearer YOUR_TOKEN'}}
+)
 ```
 
-### Q13: Math-500数据集评估结果误判badcase集合
+**Q: 如何设置多卡评测？**
 
-A: 这是数学解析规则出问题了，写这些匹配规则比较复杂，case也很难覆盖完全。
-可以设置judge model，用LLM做召回，能减少误判，如下：
+**A:** EvalScope 目前不支持数据并行（Data Parallel）。但您可以通过以下方式实现模型并行：
+1.  **使用推理服务**：用 vLLM 等框架启动一个多卡推理服务（例如设置 `--tensor-parallel-size`），然后通过 API 方式进行评测。
+2.  **本地加载**：在 `--model-args` 中指定 `device_map=auto`，使模型权重自动分配到多个设备上。
+
+**Q: `stream` 参数报错 `unrecognized arguments: --stream True`？**
+
+**A:** `--stream` 是一个开关参数，直接使用即可，无需附加 `True`。正确用法：`--stream`。
+
+### 结果异常与问题排查
+
+**Q: 评测结果明显异常（如精度极低）如何排查？**
+
+**A:** 请遵循以下步骤：
+1.  **检查模型接口**：确认模型服务或本地模型能正常生成回复。
+2.  **查看预测文件**：检查 `outputs/<timestamp>/predictions/` 目录下的 JSONL 文件，确认模型输出是否符合预期。
+3.  **可视化分析**：使用 `evalscope app` 启动可视化界面，直观地查看和分析评测结果。
+
+**Q: 评测结果不稳定，两次运行结果不一致怎么办？**
+
+**A:** 结果不一致通常由采样随机性导致。可以尝试以下方法固定结果：
+1.  在 `generation_config` 中设置 `temperature=0`。
+2.  设置固定的 `seed` 参数。
+
+**Q: 评测 `humaneval` 等代码生成任务时，分数远低于预期？**
+
+**A:**
+1.  **检查模型类型**：请使用 Instruct 或 Chat 模型，Base 模型可能因不遵循指令而产生复读等问题。
+2.  **移除思考过程**：部分模型会在代码前生成思考过程，请参考[这里](#评测配置与参数)的方法进行过滤。
+3.  **调整生成长度**：默认最大生成长度可能不足，请在 `generation_config` 中适当调高 `max_tokens`。
+
+**Q: `MATH-500` 数据集评测时，答案提取不准或存在误判？**
+
+**A:** 数学问题的答案格式复杂，规则解析难以覆盖所有情况。建议使用 LLM 作为辅助裁判来提升准确率：
 ```python
+# 在 TaskConfig 或 DataAdapter 中设置
 judge_strategy=JudgeStrategy.LLM_RECALL,
 judge_model_args={
     'model_id': 'qwen2.5-72b-instruct',
-    'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    'api_url': '...',
+    'api_key': '...'
 }
 ```
-参考：[参数说明](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge), [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#id9)
+参考文档：[裁判模型参数](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge)。
 
-### Q14：使用qwen2.5-72b-instruct分割solution，图中===表示分隔出的不同solution，该prompt无法约束模型正确分隔
+**Q: 评测 `alpaca_eval` 时报错 `Connection error`？**
 
-A: 这个prompt：
-https://github.com/modelscope/evalscope/blob/595ac60f22b1248d5333a27ffd4b9eeae7f57727/evalscope/third_party/thinkbench/resources/reformat_template.txt
+**A:** `alpaca_eval` 需要指定一个裁判模型（Judge Model）进行打分。默认使用 OpenAI API，如果未配置相关 Key 会导致连接失败。请通过 `--judge-model-args` 指定一个可用的裁判模型。
 
-这个prompt是用来分割step的，不是划分sub-solution的，你可以调整prompt来划分sub-solution
+**Q: 评测中断后，如何从断点处继续？**
 
-### Q15: 在评测service时，默认temperature是多少？
+**A:** 支持断点续评。使用 `--use-cache` 参数并指定上次评测的输出目录路径，即可重用已完成的模型预测和评估结果。
 
-A: 默认是0
+**Q: `evalscope app` 可视化界面无法访问或图表显示异常？**
 
-### Q16: 在AIME24上进行评测的时候结果不准或者不稳定怎么办？
+**A:**
+- **无法访问**：尝试升级 `gradio` 版本到 `4.20.0` 或更高。
+- **图表异常**：尝试降级 `plotly` 版本到 `5.15.0`。
 
-A: aime 默认的指标是 pass@1，采样得够多才估计得更准，可以设置 n 为较大的值，也可以设置temperature 和 seed，让模型的输出尽量一致
+**Q: 本地加载模型时报错 `Expected all tensors to be on the same device`？**
 
-### Q17: 评测结果可视化的gradio程序，离线部署后无法工作(无公网)
+**A:** 这通常是显存不足导致的。`device_map='auto'` 可能会将部分权重分配到 CPU。请确保有足够显存，或尝试在更小规模的模型上运行。
 
-A: 可以参考这里的解决方法 [gradio-app/gradio#7934](https://github.com/gradio-app/gradio/issues/7934)
+### 模型与数据集支持
 
-### Q18: 多模态自定义问答题格式不支持裁判么？
+**Q: 如何评测多模态模型（如 Qwen-VL, Gemma3）？**
 
-A: 自定义问答题需要自己实现judge的逻辑
+**A:**
+- **语言能力评测**：对于在文本数据集（如 MMLU）上的评测，建议使用 vLLM 等框架将多模态模型部署为 API 服务，然后通过 API 方式进行评测。直接本地加载多模态模型进行纯文本评测可能支持不完善。
+- **多模态能力评测**：对于在多模态数据集（如 MMBench）上的评测，需要使用 VLMEvalKit 后端。具体请参考[VLMEvalKit 后端文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmeval)。
 
-### Q19: 运行aime 2024 评估, 报SSLError错误
+**Q: 使用 API 服务评测 `embeddings` 模型时报错 `dimensions is currently not supported`？**
 
-A: 报错示例：
-```text
-requests.exceptions.SSLError: HTTPSConnectionPool(host='www.modelscope.cn', port=443): Max retries exceeded with url: /api/v1/datasets/HuggingFaceH4/aime_2024 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1007)')))
-```
+**A:** 在 `generation_config` 中设置 `'dimensions': None` 或不传递该参数。
 
-报错原因是data-args写的不对，应该是这样：
-```python
-dataset_args={
-    'aime24': {
-        'local_path': "/var/AIME_2024/",
-        'few_shot_num': 3
-    }
-},
-```
+**Q: 从本地加载数据集报错（如缺少 `dtype`）？**
 
-### Q20: 数据集评测时如何设置一个样本推理几次生成几个答案？
+**A:** 这是一个已知问题。临时解决方案是：手动删除数据集缓存目录下的 `dataset_infos.json` 文件，然后重试。
 
-A: 在generation config里面指定
+**Q: 如何使用自定义数据集进行评测？**
 
-参考：https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2
+**A:** EvalScope 支持自定义数据集。请参考以下文档：
+- **LLM 自定义数据集**：[链接](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html)
+- **多模态自定义数据集**：[链接](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#id3)
 
-### Q21: modelscope - WARNING - Use trust_remote_code=True. Will invoke codes from ceval-exam. Please make sure that you can trust the external codes. 这个警告是怎么回事？trust_remote_code=True这个参数要怎么传递？
+**Q: `rouge` 指标的 `-f`, `-p`, `-r` 分别代表什么？**
 
-A: 这个是warning不影响评测流程，框架已经默认`trust_remote_code=True`
+**A:** 它们是 ROUGE 指标的三个变体：
+- **-r (Recall)**: 召回率，衡量生成文本覆盖了多少参考文本的内容。
+- **-p (Precision)**: 精确率，衡量生成文本中有多少内容是准确且相关的。
+- **-f (F-measure)**: F1-score，精确率和召回率的调和平均数，是综合性指标。
 
-### Q22: api评测的时候使用base模型超过最大token报错怎么办？
+### 框架使用与扩展
 
-A: api评测走的是 `chat` 接口，base模型评测可能会有点问题（模型输出不会停止），建议用Instruct模型来测试
+**Q: 如何新增一个自定义的 Benchmark？**
 
-### Q23: 用vllm起服务总是报几次retrying request问题后，就开始报 Error when calling OpenAI API: Request timed out.
+**A:** 您可以继承 `DataAdapter` 并实现其方法，然后通过 `@register_benchmark` 装饰器进行注册。详细步骤请参考[新增 Benchmark 文档](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/add_benchmark.html)。
 
-A: 模型输出比较长，尝试加上`stream`参数, `timeout`加大
+**Q: 如何适配非 OpenAI 风格的自定义模型 API？**
 
-### Q24: 请问如何评测多模态模型（如Qwen-2.5-vl）在语言模型评测数据集（如MMLU）上的性能？
+**A:** 您可以实现自己的 `Model` 类来对接特定的 API 格式。请参考[自定义模型教程](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_model.html)。
 
-A: 多模态模型建议用vllm这种框架拉起服务再评测，目前还没支持多模态模型本地加载
+**Q: 如何调试或修改 EvalScope 源码？**
 
-参考：https://evalscope.readthedocs.io/zh-cn/latest/get_started/basic_usage.html#api
+**A:** 请使用源码安装方式。将项目克隆到本地后，在项目根目录执行 `pip install -e .`。这样您对代码的任何修改都会立即生效。
 
-### Q25: stream参数报错 EvalScope Command Line tool: error: unrecognized arguments: --stream True
+**Q: EvalScope 与 OpenCompass 的评测指标为何无法对齐？**
 
-A: 直接用 `--stream` 不要填加 `True` 
+**A:** 不同评测框架在实现细节（如 Prompt 模板、后处理逻辑、指标计算方式）上存在差异，导致结果难以完全对齐。建议在同一框架内进行模型间的横向对比。
 
-### Q26： 执行示例报错 RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cpu and cuda:0! (when checking argument for argument index in method wrapper_CUDA__index_select)
+## 性能压测 (perf)
 
-A: 首先确认显存是否足够，由于默认的device map是auto，可能有些权重被分到cpu上了，可以尝试增加`--model-args device_map=cuda `
+### 基本用法与配置
 
-### Q27： 对于r1类的模型，评估过程会忽略思考部分，直接对生成的最终结果进行评测吗？还是将思考过程和结果一起作为答案进行评测？
+**Q: `evalscope perf` 的 `--url` 参数应该填什么？**
 
-A: 目前并没有对`<think>`内容做额外的处理，默认是`<think>`和`<answer>`放在一起的，然后从里面解析答案来评测。已经支持后处理过滤器, 建议对推理模型过滤掉思考部分。
-使用示例：
+**A:**
+- **通用场景**：对于大多数与 OpenAI API 兼容的服务，请使用 `/v1/chat/completions` 端点。
+- **`speed_benchmark` 数据集**：此特定数据集用于测试补全（completion）性能，需配合 `/v1/completions` 端点使用，以避免 Chat Template 处理带来的开销。
+
+**Q: 如何使用本地文件作为压测数据集？**
+
+**A:** 指定 `--dataset-path` 并设置 `--dataset line_by_line`，程序会逐行读取文件内容作为 Prompt。
+
+**Q: 如何压测多模态模型？**
+
+**A:** 目前支持 `flickr8k` 数据集进行多模态压测。设置 `--dataset flickr8k` 即可。
+
+**Q: 压测时如何设置 System Prompt？**
+
+**A:** 在 `model` 参数中以 JSON 字符串形式传入，例如：
 ```shell
---datasets ifeval
---dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}'
+--model '{"model": "my-model", "system_prompt": "You are a helpful assistant."}'
 ```
 
-### Q28： 可视化界面图表展示异常
+### 性能指标与问题排查
 
-A: plotly 尝试降到 5.23.0 版本
+**Q: 压测 Ollama 时，并发上不去怎么办？**
 
-### Q29: 现阶段是否有直接基于预测结果进行评估的入口
+**A:** 尝试在执行压测命令前，设置环境变量 `export OLLAMA_NUM_PARALLEL=10` (或其他合适的数值) 来增加 Ollama 的并行处理能力。
 
-A: 参考这个 https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id5 ，设置use_cache参数
+**Q: TTFT（首 Token 时间）指标为何与 Latency（总延迟）相同？**
 
-## 模型压测
+**A:** 要准确测量 TTFT，必须在压测命令中添加 `--stream` 参数以启用流式输出。否则，TTFT 将等于接收到完整响应时的总延迟。
 
-### Q1: 测试ollama发现，当并发数大于5后，Throughput(average tokens/s)的值始终上不去，我的显卡 cpu 内存 io都不存在瓶颈，是怎么回事？
+**Q: 压测时 TTFT 指标过高，远超单次请求的响应时间？**
 
-A: 参考复现代码：
-```shell
-ollama run deepseek-r1:7b
+**A:** 当并发数超过服务处理能力时，请求会进入队列等待。TTFT 包含排队时间，因此在高并发下 TTFT 变长是正常现象，反映了服务在高负载下的真实表现。
 
-evalscope perf --url http://127.0.0.1:11434/v1/chat/completions --parallel 20 --model deepseek-r1:7b --number 50 --api openai --dataset longalpaca --stream --tokenizer-path /home/data/DeepSeek-R1-Distill-Qwen-7B/
+**Q: 压测结果显示为 `nan`？**
+
+**A:** 请检查输入数据格式是否正确。例如，`openqa` 数据集默认使用 JSONL 文件中的 `question` 字段作为 Prompt。如果字段不匹配或文件格式错误，可能导致无法正确处理请求。
+
+**Q: 压测结果如何可视化？**
+
+**A:** `perf` 子命令的结果不适用于 `evalscope app`。但支持通过 `wandb` 或 `swanlab` 进行可视化。请参考[压测结果可视化指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6)。
+
+## 引用我们
+
+**Q: 我在我的工作中使用了 EvalScope，该如何引用它？**
+
+**A:** 非常感谢！您可以使用下面的 BibTeX 格式来引用我们的工作：
 ```
-
-加一个 export OLLAMA_NUM_PARALLEL=10
-
-### Q2：无法使用--min-tokens 2048 --max-tokens 2048 \控制输出的长度
-
-A: `--min-tokens` 不是所有模型服务都支持该参数，请查看对应API服务的文档。
-
-- 解释：对应API服务的文档指的是测试的模型服务的文档，就是谁提供的API服务，可能是推理引擎拉起的服务，也可能是云服务商提供的服务。
-
-### Q3: 速度基准测试脚本运行报错 
-
-A: 参考报错信息
-```text
-2025-03-31 08:56:52,172 - evalscope - http_client.py - on_request_chunk_sent - 125 - DEBUG - Request sent: <method='POST', url=URL('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'), truncated_chunk='{"prompt": "熵", "model": "qwen2.5-72b-instruct", "max_tokens": 2048, "min_tokens": 2048, "seed": 42, "stop": [], "stop_token_ids": []}'>
-2025-03-31 08:56:52,226 - evalscope - http_client.py - on_response_chunk_received - 137 - DEBUG - Request received: <method='POST', url=URL('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'), truncated_chunk='{"error":{"code":"missing_required_parameter","param":"message","message":"you must provide a messages parameter","type":"invalid_request_error"},"request_id":"chatcmpl-816a021e-5d7e-9eff-91a2-36aed4641546"}'>
+@misc{evalscope_2024,
+    title={{EvalScope}: Evaluation Framework for Large Models},
+    author={ModelScope Team},
+    year={2024},
+    url={https://github.com/modelscope/evalscope}
+}
 ```
-参考复现代码
-```shell
-evalscope perf
---parallel 1
---url 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
---model 'qwen2.5-72b-instruct'
---log-every-n-query 5
---connect-timeout 6000
---read-timeout 6000
---max-tokens 2048
---min-tokens 2048
---api openai
---api-key 'sk-xxxxxx'
---dataset speed_benchmark
---debug
-```
-速度测试`--url`需要使用`/v1/completions`端点，而不是`/v1/chat/completions`，避免chat template的额外处理对输入长度有影响。
-
-### Q4: perf压测支持自定义解析返回体吗？
-
-A: 请参考文档：https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#api
-
-### Q5: 调整那个参数可以加大并发处理吗
-
-A: 你可以参考一下这个：[vllm-project/vllm#3561](https://github.com/vllm-project/vllm/issues/3561)
-
-### Q6: 带stream的执行命令，但是在128并发的情况下，他会等同一个批次的并发全部执行完后再进行第二个128并发的请求， 而不带stream的时候会完成一个进去一个新的请求，导致在stream情况下最后的到的吞吐量会低很多
-
-A: 参考示例代码：
-```shell
-evalscope perf --url 'http://127.0.0.1:8000/v1/chat/completions'
---parallel 128
---model 'test'
---log-every-n-query 10
---read-timeout=1200
---dataset-path '/model/open_qa.jsonl'
--n 1000
---max-prompt-length 32000
---api openai
---stop '<|im_end|>'
---dataset openqa
-```
-降低并发再尝试一下
-
-### Q7: TTFT测试结果不对劲，我完成50个请求的总时间才30多秒，TTFT也是30多秒，什么情况
-
-A: 要准确统计Time to First Token (TTFT)指标，需要在请求中包含--stream参数，否则TTFT将与Latency相同。
-
-### Q8: 如何测试自定义API模型（非openai、vllm服务），应该修改哪些地方，有哪些参数是必需的？
-
-A: 
-1. 模型性能测试的话，只要是兼容OpenAI API格式的服务都支持
-2. 模型推理服务压测的话，参考[自定义请求API](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/custom.html#api)
-
-现在已支持--no-test-connection参数，可以跳过链接测试
-
-### Q9: 为什么输出的ttft时间与vllm收集的ttft时间相差较大
-
-A: evalscope得到的TTFT是end-to-end的时间，从请求发出开始计时，到接受到第一个token结束，中间有网络传输和处理时间，跟服务端统计结果可能有些偏差
-
-### Q10: 如果请求超时了，可以设置更长的timeout参数嘛？
-
-A: 可以，添加下面的参数即可
-```shell
- --connect-timeout 60000 \
- --read-timeout 60000 \
-```
-
-### Q11: 测试模型服务的推理速度的示例中，model怎么理解？
-
-A: `model`填的是模型服务框架部署的模型名称，比如OpenAI的服务有`gpt-4o`, `o1-mini`等模型
-
-### Q12: KTransformers 流输出无法识别报错ZeroDivisionError: float division by zero
-
-A: 部署的模型服务似乎没有返回使用信息，这与标准的 OpenAI API 格式不同，需要传递 `--tokenizer-path` 参数来计算 `token` 数量。

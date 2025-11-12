@@ -145,11 +145,15 @@ evalscope/data/
 
 
 /tmp
-/data
+/data*
+*.zip
 output/
 /test*.*
 *.ttf
+*.zip
 _build/
 swift.test*
 /cache
 evalscope/backend/rag_eval/ragas/prompts/chinese
+logs
+.gradio

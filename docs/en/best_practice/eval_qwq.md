@@ -1,4 +1,4 @@
-# Best Practices for Evaluating the QwQ Model
+# Evaluating the QwQ Model
 
 Today (March 6, 2025), the Qwen team released the QwQ-32B model, which has demonstrated performance comparable to DeepSeek-R1-671B in a series of benchmark tests. The results below showcase the performance comparison of QwQ-32B with other leading models.
 
@@ -44,7 +44,7 @@ from evalscope import TaskConfig, run_task
 task_config = TaskConfig(
     api_url='http://0.0.0.0:8801/v1',  # Inference service address
     model='Qwen/QwQ-32B',  # Model name (must match the deployed model name)
-    eval_type='service',  # Evaluation type; SERVICE indicates evaluating the inference service
+    eval_type='openai_api',  # Evaluation type; 'openai_api' indicates evaluating the inference service
     datasets=['math_500'],  # Dataset name
     dataset_args={'math_500': {'few_shot_num': 0}},  # Dataset parameters
     eval_batch_size=32,  # Number of concurrent requests
@@ -77,17 +77,17 @@ The output will look as follows, displaying the model's accuracy on problems at 
 +---------+-----------+---------------+----------+-------+---------+---------+
 ```
 
-If you want to run the model on [other datasets](../get_started/supported_dataset.md#1-native-supported-datasets), you can modify the `datasets` and `dataset_args` parameters in the configuration as follows:
+If you want to run the model on [other datasets](../get_started/supported_dataset/llm.md), you can modify the `datasets` and `dataset_args` parameters in the configuration as follows:
 
 ```python
 datasets=[
     # 'math_500',  # Dataset name
-    'gpqa',
+    'gpqa_diamond',
     'aime24'
 ],
 dataset_args={
     # 'math_500': {'few_shot_num': 0 } ,
-    'gpqa': {'subset_list': ['gpqa_diamond'], 'few_shot_num': 0},
+    'gpqa_diamond': {'few_shot_num': 0},
     'aime24': {'few_shot_num': 0}
 },
 ```

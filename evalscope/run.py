@@ -9,12 +9,9 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from evalscope.config import TaskConfig, parse_task_config
 from evalscope.constants import DataCollection, EvalBackend
-from evalscope.utils import seed_everything
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import configure_logging, get_logger
-
-if TYPE_CHECKING:
-    from evalscope.models import LocalModel
+from evalscope.utils.model_utils import seed_everything
 
 logger = get_logger()
 
@@ -41,7 +38,11 @@ def run_single_task(task_cfg: TaskConfig, run_time: str) -> dict:
     if task_cfg.eval_backend != EvalBackend.NATIVE:
         result = run_non_native_backend(task_cfg, outputs)
     else:
+        logger.info('Running with native backend')
         result = evaluate_model(task_cfg, outputs)
+
+        logger.info(f'Finished evaluation for {task_cfg.model_id} on {task_cfg.datasets}')
+        logger.info(f'Output directory: {outputs.outputs_dir}')
 
     return result
 
@@ -94,79 +95,80 @@ def run_non_native_backend(task_cfg: TaskConfig, outputs: OutputsStructure) -> d
 def get_backend_manager_class(eval_backend: EvalBackend):
     """Get the backend manager class based on the evaluation backend."""
     if eval_backend == EvalBackend.OPEN_COMPASS:
+        logger.info('Using OpenCompassBackendManager')
         from evalscope.backend.opencompass import OpenCompassBackendManager
         return OpenCompassBackendManager
     elif eval_backend == EvalBackend.VLM_EVAL_KIT:
+        logger.info('Using VLMEvalKitBackendManager')
         from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
         return VLMEvalKitBackendManager
     elif eval_backend == EvalBackend.RAG_EVAL:
+        logger.info('Using RAGEvalBackendManager')
         from evalscope.backend.rag_eval import RAGEvalBackendManager
         return RAGEvalBackendManager
     elif eval_backend == EvalBackend.THIRD_PARTY:
         raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
 
 
-def evaluate_model(task_cfg: TaskConfig, outputs: OutputsStructure) -> dict:
+def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     """Evaluate the model based on the provided task configuration."""
-    from evalscope.models import get_local_model
+    from evalscope.api.evaluator import Evaluator
+    from evalscope.api.model import get_model_with_task_config
+    from evalscope.api.registry import get_benchmark
+    from evalscope.evaluator import DefaultEvaluator
+    from evalscope.report import gen_table
 
     # Initialize evaluator
     eval_results = {}
-    base_model = get_local_model(task_cfg)
-    evaluators = []
-    for dataset_name in task_cfg.datasets:
-        evaluator = create_evaluator(task_cfg, dataset_name, outputs, base_model)
+    # Initialize model
+    model = get_model_with_task_config(task_config=task_config)
+    # Initialize evaluators for each dataset
+    evaluators: List[Evaluator] = []
+    for dataset_name in task_config.datasets:
+        # Create evaluator for each dataset
+        benchmark = get_benchmark(dataset_name, task_config)
+        evaluator = DefaultEvaluator(
+            task_config=task_config,
+            model=model,
+            benchmark=benchmark,
+            outputs=outputs,
+        )
         evaluators.append(evaluator)
 
-    # dump task_cfg to outputs.configs_dir after creating evaluators
-    task_cfg.dump_yaml(outputs.configs_dir)
-    logger.info(task_cfg)
+        # Update task_config.dataset_args with benchmark metadata, except for DataCollection
+        if dataset_name != DataCollection.NAME:
+            task_config.dataset_args[dataset_name] = benchmark.to_dict()
 
+    # dump task_cfg to outputs.configs_dir after creating evaluators
+    task_config.dump_yaml(outputs.configs_dir)
+    logger.info(task_config)
+
+    # Run evaluation for each evaluator
     for evaluator in evaluators:
         res_dict = evaluator.eval()
-        eval_results[evaluator.dataset_name] = res_dict
+        eval_results[evaluator.benchmark.name] = res_dict
 
+    # Make overall report
+    try:
+        report_table: str = gen_table(reports_path_list=[outputs.reports_dir], add_overall_metric=True)
+        logger.info(f'Overall report table: \n{report_table} \n')
+    except Exception:
+        logger.error('Failed to generate report table.')
     # Clean up
-    if base_model is not None:
+    if model is not None:
         import gc
-        import torch
 
-        del base_model
+        del model
         del evaluators
-        torch.cuda.empty_cache()
         gc.collect()
 
+        from evalscope.utils.import_utils import check_import
+        if check_import('torch', raise_warning=False):
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
     return eval_results
-
-
-def create_evaluator(task_cfg: TaskConfig, dataset_name: str, outputs: OutputsStructure, base_model: 'LocalModel'):
-    """Create an evaluator object for the specified dataset."""
-    from evalscope.benchmarks import Benchmark, BenchmarkMeta
-    from evalscope.evaluator import Evaluator
-    from evalscope.models import initialize_model_adapter
-
-    benchmark: BenchmarkMeta = Benchmark.get(dataset_name)
-
-    if dataset_name == DataCollection.NAME:
-        # EvaluatorCollection is a collection of evaluators
-        from evalscope.collections import EvaluatorCollection
-        data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
-        return EvaluatorCollection(task_cfg, data_adapter, outputs, base_model)
-
-    # Initialize data adapter first to update config
-    data_adapter = benchmark.get_data_adapter(config=task_cfg.dataset_args.get(dataset_name, {}))
-    # Initialize model adapter
-    model_adapter = initialize_model_adapter(task_cfg, data_adapter, base_model)
-
-    # update task_cfg.dataset_args
-    task_cfg.dataset_args[dataset_name] = benchmark.to_string_dict()
-
-    return Evaluator(
-        data_adapter=data_adapter,
-        model_adapter=model_adapter,
-        outputs=outputs,
-        task_cfg=task_cfg,
-    )
 
 
 def main():

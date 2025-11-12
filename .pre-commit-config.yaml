@@ -15,11 +15,11 @@ repos:
                 evalscope/metrics/t2v_metrics
             )
   - repo: https://github.com/PyCQA/isort.git
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
-  - repo: https://github.com/pre-commit/mirrors-yapf.git
-    rev: v0.32.0
+  - repo: https://github.com/google/yapf
+    rev: v0.43.0
     hooks:
       - id: yapf
         exclude: |
@@ -36,20 +36,17 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|docs/
+        exclude: thirdparty/|docs/|examples
       - id: check-yaml
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/
+        exclude: thirdparty/|docs/|examples
       - id: requirements-txt-fixer
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: double-quote-string-fixer
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
       - id: check-merge-conflict
-        exclude: thirdparty/
-      - id: fix-encoding-pragma
-        exclude: thirdparty/
-        args: ["--remove"]
+        exclude: thirdparty/|docs/|examples
       - id: mixed-line-ending
-        exclude: thirdparty/
+        exclude: thirdparty/|docs/|examples
         args: ["--fix=lf"]

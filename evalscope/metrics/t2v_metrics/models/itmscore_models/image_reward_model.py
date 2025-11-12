@@ -53,7 +53,8 @@ class ImageRewardScoreModel(ScoreModel):
         images = self.load_images(images)
         for index in range(len(texts)):
             text_input = self.model.blip.tokenizer(
-                texts[index], padding='max_length', truncation=True, max_length=35, return_tensors='pt').to(self.device)
+                texts[index], padding='max_length', truncation=True, max_length=35, return_tensors='pt'
+            ).to(self.device)
             image_embeds = self.model.blip.visual_encoder(images[index].unsqueeze(0))
             image_atts = torch.ones(image_embeds.size()[:-1], dtype=torch.long).to(self.device)
             text_output = self.model.blip.text_encoder(

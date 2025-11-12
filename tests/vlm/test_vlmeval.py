@@ -1,12 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from dotenv import dotenv_values
 
+from tests.utils import test_level_list
+
 env = dotenv_values('.env')
 import unittest
 
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
-from evalscope.utils import is_module_installed, test_level_list
+from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -62,7 +64,11 @@ class TestVLMEval(unittest.TestCase):
         task_cfg = {
             'eval_backend': 'VLMEvalKit',
             'eval_config': {
-                'data': ['SEEDBench_IMG', 'ChartQA_TEST'],
+                'data': [
+                    # 'SEEDBench_IMG',
+                    # 'ChartQA_TEST',
+                    'MMDU'
+                    ],
                 'limit': 5,
                 'mode': 'all',
                 'model': [

@@ -1,56 +1,33 @@
-# Basic Usage
+# Quick Start
 
-## Simple Evaluation
-Evaluate a model on specified datasets using default configurations. This framework supports two ways to initiate evaluation tasks: via command line or using Python code.
+EvalScope is an evaluation framework designed for large models, aiming to provide a simple, easy-to-use, and comprehensive evaluation process. This guide will walk you through various evaluation tasks from simple to complex, helping you get started quickly.
 
-### Method 1. Using Command Line
+## Start Your First Evaluation
 
-::::{tab-set}
-:::{tab-item} Use the `eval` command
+You can evaluate a model on specified datasets using default configurations through either command line or Python code.
 
-Execute the `eval` command from any directory:
+### Method 1: Using Command Line
+
+Execute the `evalscope eval` command in any path to start evaluation. This is the most recommended way to get started.
+
 ```bash
 evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --datasets gsm8k arc \
  --limit 5
 ```
-:::
 
-:::{tab-item} Run `run.py`
+**Basic Parameter Description:**
+- `--model`: Specify the model's ModelScope ID (e.g., `Qwen/Qwen2.5-0.5B-Instruct`) or local path.
+- `--datasets`: Specify one or more dataset names, separated by spaces. For supported datasets, please refer to [Dataset List](./supported_dataset/index.md).
+- `--limit`: Maximum number of samples to evaluate per dataset, convenient for quick verification. If not set, all data will be evaluated.
 
-Execute from the `evalscope` root directory:
-```bash
-python evalscope/run.py \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --datasets gsm8k arc \
- --limit 5
-```
-:::
-::::
+### Method 2: Using Python Code
 
-### Method 2. Using Python Code
-
-When using Python code for evaluation, submit the evaluation task with the `run_task` function by passing in a `TaskConfig` as a parameter. It can also be a Python dictionary, a YAML file path, or a JSON file path, for example:
+By calling the `run_task` function with a `TaskConfig` configuration, you can run evaluation in a Python environment. The configuration can be a `TaskConfig` object, Python dictionary, or `yaml`/`json` file path.
 
 ::::{tab-set}
-:::{tab-item} Using Python Dictionary
-
-```python
-from evalscope.run import run_task
-
-task_cfg = {
-    'model': 'Qwen/Qwen2.5-0.5B-Instruct',
-    'datasets': ['gsm8k', 'arc'],
-    'limit': 5
-}
-
-run_task(task_cfg=task_cfg)
-```
-:::
-
-:::{tab-item} Using `TaskConfig`
-
+:::{tab-item} Using `TaskConfig` Object
 ```python
 from evalscope.run import run_task
 from evalscope.config import TaskConfig
@@ -64,10 +41,21 @@ task_cfg = TaskConfig(
 run_task(task_cfg=task_cfg)
 ```
 :::
+:::{tab-item} Using Python Dictionary
+```python
+from evalscope.run import run_task
 
-:::{tab-item} Using `yaml` file
+task_cfg = {
+    'model': 'Qwen/Qwen2.5-0.5B-Instruct',
+    'datasets': ['gsm8k', 'arc'],
+    'limit': 5
+}
 
-```{code-block} yaml 
+run_task(task_cfg=task_cfg)
+```
+:::
+:::{tab-item} Using YAML File
+```{code-block} yaml
 :caption: config.yaml
 
 model: Qwen/Qwen2.5-0.5B-Instruct
@@ -76,16 +64,13 @@ datasets:
   - arc
 limit: 5
 ```
-
 ```python
 from evalscope.run import run_task
 
 run_task(task_cfg="config.yaml")
 ```
 :::
-
-:::{tab-item} Using `json` file
-
+:::{tab-item} Using JSON File
 ```{code-block} json
 :caption: config.json
 
@@ -95,24 +80,18 @@ run_task(task_cfg="config.yaml")
     "limit": 5
 }
 ```
-
 ```python
 from evalscope.run import run_task
 
 run_task(task_cfg="config.json")
 ```
 :::
-
 ::::
 
+### View Evaluation Results
 
-### Basic Parameter Descriptions
-- `--model`: Specifies the `model_id` of the model in [ModelScope](https://modelscope.cn/), which can be automatically downloaded, for example, [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary); it can also be a local path to the model, e.g., `/path/to/model`.
-- `--datasets`: Dataset names, supporting multiple datasets separated by spaces. Datasets will be automatically downloaded from ModelScope; refer to the [Dataset List](./supported_dataset.md#1-native-supported-datasets) for supported datasets.
-- `--limit`: Maximum amount of evaluation data per dataset. If not specified, it defaults to evaluating all data, which can be used for quick validation.
+After evaluation is complete, the terminal will print a score report in the following format:
 
-
-### Output Results
 ```text
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 | Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
@@ -125,74 +104,73 @@ run_task(task_cfg="config.json")
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 
+```{seealso}
+In addition to command line reports, you can also use our visualization tools to analyze evaluation results in depth.
 
-## Complex Evaluation
-For more customized evaluations, like setting custom model parameters or dataset parameters, you can use the following command. The method to initiate evaluation is the same as in simple evaluation. Below is an example using the `eval` command to start the evaluation:
+Reference: [Evaluation Result Visualization](visualization.md)
+```
+
+## Advanced Usage
+
+### Customize Evaluation Parameters
+
+You can fine-tune model loading, inference generation, and dataset configuration by passing JSON-formatted strings.
 
 ```shell
 evalscope eval \
- --model Qwen/Qwen2.5-0.5B-Instruct \
- --model-args revision=master,precision=torch.float16,device_map=auto \
- --generation-config do_sample=true,temperature=0.5 \
+ --model Qwen/Qwen3-0.6B \
+ --model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}' \
+ --generation-config '{"do_sample":true,"temperature":0.6,"max_tokens":512}' \
  --dataset-args '{"gsm8k": {"few_shot_num": 0, "few_shot_random": false}}' \
  --datasets gsm8k \
  --limit 10
 ```
 
-### Parameter Descriptions
-- `--model-args`: Model loading parameters, separated by commas in the `key=value` format, default parameters:
-  - `revision`: Model version, defaults to `master`
-  - `precision`: Model precision, defaults to `auto`
-  - `device_map`: Device allocation for the model, defaults to `auto`
-  
-- `--generation-config`: Generation parameters, separated by commas in the `key=value` format, default parameters:
-  - `do_sample`: Whether to use sampling, defaults to `false`
-  - `max_length`: Maximum length, defaults to 2048
-  - `max_new_tokens`: Maximum length for generation, defaults to 512
-  
-- `--dataset-args`: Settings parameters for the evaluation dataset, provided in `json` format, where the key is the dataset name and the value is the parameter. Note that these must correspond one-to-one with the values in the `--datasets` parameter:
-  - `few_shot_num`: Number of few-shot samples
-  - `few_shot_random`: Whether to randomly sample few-shot data; if not set, defaults to `true`
+**Common Parameter Description:**
+- `--model-args`: Model loading parameters, such as `revision` (version), `precision` (precision), `device_map` (device mapping).
+- `--generation-config`: Inference generation parameters, such as `do_sample` (sampling), `temperature` (temperature), `max_tokens` (maximum length).
+- `--dataset-args`: Dataset-specific parameters, keyed by dataset name. For example, `few_shot_num` (few-shot quantity).
 
 ```{seealso}
-Reference: [All Parameter Descriptions](parameters.md)
+To view all configurable options, please refer to: [Complete Parameter Description](parameters.md)
 ```
 
-### Output Results
+### Evaluate Online Model APIs
 
-```text
-+-----------------------+-----------------+
-| Model                 | gsm8k           |
-+=======================+=================+
-| Qwen2.5-0.5B-Instruct | (gsm8k/acc) 0.2 |
-+-----------------------+-----------------+
-```
+EvalScope supports evaluating model services compatible with OpenAI API format. Simply specify the service address, API Key, and set `eval-type` to `openai_api`.
 
-## Model API Service Evaluation
+**1. Start Model Service**
 
-Specify the model API service address (api_url) and API Key (api_key) to evaluate the deployed model API service. In this case, the `eval-type` parameter must be specified as `service`, for example:
-
-For example, to launch a model service using [vLLM](https://github.com/vllm-project/vllm):
-
+Using vLLM as an example, start a model service:
 ```shell
-export VLLM_USE_MODELSCOPE=True && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-0.5B-Instruct --served-model-name qwen2.5 --trust_remote_code --port 8801
+# Please install vLLM first: pip install vllm
+export VLLM_USE_MODELSCOPE=True
+python -m vllm.entrypoints.openai.api_server \
+  --model Qwen/Qwen2.5-0.5B-Instruct \
+  --served-model-name qwen2.5 \
+  --trust-remote-code \
+  --port 8801
 ```
-Then, you can use the following command to evaluate the model API service:
+
+**2. Run Evaluation**
+
+Use the following command to evaluate the API service:
 ```shell
 evalscope eval \
  --model qwen2.5 \
  --api-url http://127.0.0.1:8801/v1 \
  --api-key EMPTY \
- --eval-type service \
+ --eval-type openai_api \
  --datasets gsm8k \
  --limit 10
 ```
 
-## Using the Judge Model
+### Using Judge Models for Assessment
 
-During evaluation, the judge model can be used to assess the output of a model. Some datasets require the use of a judge model for evaluation, such as the `simple_qa` dataset. Use the following command to start the evaluation:
+For certain subjective or open-ended tasks (such as `simple_qa`), you can specify a powerful "judge model" to evaluate the target model's output.
 
 ```python
+import os
 from evalscope import TaskConfig, run_task
 from evalscope.constants import EvalType, JudgeStrategy
 
@@ -201,11 +179,7 @@ task_cfg = TaskConfig(
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type=EvalType.SERVICE,
-    datasets=[
-        # 'simple_qa',
-        'chinese_simpleqa',
-    ],
-    eval_batch_size=5,
+    datasets=['chinese_simpleqa'],
     limit=5,
     judge_strategy=JudgeStrategy.AUTO,
     judge_model_args={
@@ -219,81 +193,64 @@ run_task(task_cfg=task_cfg)
 ```
 
 ```{seealso}
-See also: [Judge Model Parameters](./parameters.md#judge-parameters)
+For detailed configuration of judge models, please refer to: [Judge Model Parameters](./parameters.md#judge-parameters)
 ```
 
+### Offline Evaluation
 
-## Using Local Datasets and Models
+In offline environments, you can use locally cached models and datasets for evaluation.
 
-By default, datasets are hosted on [ModelScope](https://modelscope.cn/datasets) and require internet access for loading. If you are in an offline environment, you can use local datasets. The process is as follows:
+**1. Prepare Local Datasets**
 
-Assume the current local working path is `/path/to/workdir`.
+Datasets are hosted on [ModelScope](https://modelscope.cn/datasets) by default and require internet connection to load. For offline environments, you can use local datasets and models with the following process:
 
-### Download Dataset to Local
-
-```{important}
-Before downloading the dataset, please confirm whether the dataset you want to use is stored in a `zip` file or available on modelscope.
-```
-
-#### Download Zip Dataset
-
-Due to historical reasons, some datasets are loaded by executing Python scripts. We have organized these datasets into a `zip` file, which includes the following datasets:
-```text
-.
-├── arc
-├── bbh
-├── ceval
-├── cmmlu
-├── competition_math
-├── general_qa
-├── gsm8k
-├── hellaswag
-├── humaneval
-├── mmlu
-├── race
-├── trivia_qa
-└── truthful_qa
-```
-
-For these datasets, execute the following commands:
-```shell
-wget https://modelscope.oss-cn-beijing.aliyuncs.com/open_data/benchmark/data.zip
-unzip data.zip
-```
-The unzipped datasets will be located in the `/path/to/workdir/data` directory, which will be used as the value for the `local_path` parameter in subsequent steps.
-
-#### Download Modelscope Dataset
-
-For datasets that are not in a `zip` file, such as the [mmlu_pro](https://modelscope.cn/datasets/modelscope/MMLU-Pro) dataset, refer to the dataset address in the [Supported Datasets](./supported_dataset.md#1-native-supported-datasets) document and execute the following commands:
-
+1) First, check the ModelScope ID of the dataset you want to use: Find the **Dataset ID** of the dataset you need in the [Supported Datasets](./supported_dataset/index.md) list, for example, the ID for `mmlu_pro` is `modelscope/MMLU-Pro`.
+2) Use the modelscope command to download the dataset: Click "Dataset Files" tab -> Click "Download Dataset" -> Copy the command line
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/datasets/modelscope/MMLU-Pro.git
+# Download dataset
+modelscope download --dataset modelscope/MMLU-Pro --local_dir ./data/mmlu_pro
 ```
+3) Use the directory `./data/mmlu_pro` as the value for the `local_path` parameter.
 
-Use the directory `/path/to/MMLU-Pro` as the value for the `local_path` parameter.
+**2. Prepare Local Models**
 
+Model files are hosted on the ModelScope Hub and require internet connection to load. When you need to create evaluation tasks in an offline environment, you can download models locally in advance:
 
-### Download the Model Locally
-Model files are hosted on the ModelScope Hub and require internet access for loading. If you need to create evaluation tasks in an offline environment, you can download the model to your local machine in advance:
-
-For example, use Git to download the Qwen2.5-0.5B-Instruct model locally:
+For example, use the modelscope command to download the [Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct) model locally:
 ```bash
-git lfs install
-git clone https://www.modelscope.cn/Qwen/Qwen2.5-0.5B-Instruct.git
+modelscope download --model modelscope/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
 ```
 
 ```{seealso}
-[ModelScope Model Download Guide](https://modelscope.cn/docs/models/download)
+For more download options, please refer to [ModelScope Download Guide](https://modelscope.cn/docs/models/download).
 ```
 
-### Execute Evaluation Task
-Run the following command to perform the evaluation, passing in the local dataset path and model path. Note that `local_path` must correspond one-to-one with the values in the `--datasets` parameter:
+**3. Run Offline Evaluation**
+
+In the evaluation command, point `--model` to the local model path and specify the dataset's `local_path` through `--dataset-args`.
 
 ```shell
 evalscope eval \
- --model /path/to/workdir/Qwen2.5-0.5B-Instruct \
- --datasets arc \
- --dataset-args '{"arc": {"local_path": "/path/to/workdir/data/arc"}}' \
+ --model ./model/qwen2.5 \
+ --datasets mmlu_pro \
+ --dataset-args '{"mmlu_pro": {"local_path": "./data/mmlu_pro"}}' \
  --limit 10
+```
+
+## Migration from v0.1.x
+
+If you previously used v0.1.x version, please note the following major changes after upgrading to v1.0+:
+
+1.  **Local Datasets**: `zip` compressed package format is no longer supported. Please refer to the [Offline Evaluation](#offline-evaluation) guide and use the `local_path` parameter to load local datasets.
+2.  **Visualization Compatibility**: The output report format in v1.0 has been updated, and old reports are incompatible with the new visualization tools.
+3.  **Inference Parameters**: The model inference parameter `n` has been removed. Please use the `repeats` parameter to control the number of repeated generations.
+4.  **Evaluation Process Control**: The `stage` parameter has been removed. Added `rerun_review` parameter to force re-execution of the scoring step when `use_cache=True`.
+5.  **Dataset Names**: The `gpqa` dataset has been renamed to `gpqa_diamond` and no longer requires manual specification of `subset_list`.
+
+## Frequently Asked Questions
+
+Encountering issues during evaluation? We've compiled a list of frequently asked questions to help you solve problems.
+
+```{seealso}
+Reference: [Frequently Asked Questions](faq.md)
 ```

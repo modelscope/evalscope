@@ -155,7 +155,8 @@ class MetricLogger(object):
                             time=str(iter_time),
                             data=str(data_time),
                             memory=torch.cuda.max_memory_allocated() / MB,
-                        ))
+                        )
+                    )
                 else:
                     print(
                         log_msg.format(
@@ -165,7 +166,8 @@ class MetricLogger(object):
                             meters=str(self),
                             time=str(iter_time),
                             data=str(data_time),
-                        ))
+                        )
+                    )
             i += 1
             end = time.time()
         total_time = time.time() - start_time

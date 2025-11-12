@@ -1,31 +1,30 @@
-accelerate
-datasets>=3.0.0,<=3.2.0
-immutabledict
+colorlog
+datasets==3.6.0
+docstring_parser
+dotenv
 jieba
 jsonlines
 langdetect
-latex2sympy2
+latex2sympy2_extended[antlr4_9_3]
 matplotlib
-modelscope[framework]
+modelscope[framework]>=1.27
 nltk>=3.9
 openai
+overrides
 pandas
 pillow
-pyarrow
+pydantic
+pylatexenc
 pyyaml>=5.1
 requests
+rich
 rouge-chinese
 rouge-score>=0.1.0
 sacrebleu
 scikit-learn
 seaborn
-# for evaluation
 sympy
-# streamlit
 tabulate
-# pip3 install --no-dependencies -r requirements/framework.txt
-torch
-torchvision
 tqdm
 transformers>=4.33
 word2number
