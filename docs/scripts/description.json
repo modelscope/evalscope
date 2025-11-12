@@ -585,9 +585,9 @@
     "updated_at": "2025-11-07T14:31:57Z"
   },
   "cmmu": {
-    "en": "CMMU is a novel multi-modal benchmark designed to evaluate domain-specificknowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.",
-    "zh": "CMMU 是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。",
-    "updated_at": "2025-11-12T17:03:14Z"
+    "en": "CMMU is a novel multi-modal benchmark designed to evaluate domain-specific knowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.",
+    "zh": "CMMU是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。",
+    "updated_at": "2025-11-12T17:21:32Z"
   },
   "vstar_bench": {
     "en": "V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on the ability to actively locate and identify specific visual information in high-resolution images, which is crucial for tasks requiring fine-grained visual understanding. This benchmark helps assess how well models can perform targeted visual queries, often guided by natural language instructions, to find and reason about specific elements in complex visual scenes .",

@@ -188,7 +188,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **数据集名称**: `cmmu`
 - **数据集ID**: [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary)
 - **数据集介绍**:
-  > CMMU 是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。
+  > CMMU是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。
 - **任务类别**: `Knowledge`, `MCQ`, `MultiModal`, `QA`
 - **评估指标**: `{'acc': {'numeric': True}}`
 - **聚合方法**: `mean`

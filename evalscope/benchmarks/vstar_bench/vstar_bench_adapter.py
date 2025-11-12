@@ -26,7 +26,7 @@ Answer the following multiple choice question. The last line of your response sh
         name='vstar_bench',
         pretty_name='V*Bench',
         dataset_id='lmms-lab/vstar-bench',
-        tags=[Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.GROUDING],
+        tags=[Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.GROUNDING],
         description=
         'V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on the ability to actively locate and identify specific visual information in high-resolution images, which is crucial for tasks requiring fine-grained visual understanding. This benchmark helps assess how well models can perform targeted visual queries, often guided by natural language instructions, to find and reason about specific elements in complex visual scenes .',
         metric_list=['acc'],

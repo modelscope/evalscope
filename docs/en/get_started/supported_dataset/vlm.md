@@ -188,7 +188,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Dataset Name**: `cmmu`
 - **Dataset ID**: [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary)
 - **Description**:
-  > CMMU is a novel multi-modal benchmark designed to evaluate domain-specificknowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.
+  > CMMU is a novel multi-modal benchmark designed to evaluate domain-specific knowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.
 - **Task Categories**: `Knowledge`, `MCQ`, `MultiModal`, `QA`
 - **Evaluation Metrics**: `{'acc': {'numeric': True}}`
 - **Aggregation Methods**: `mean`

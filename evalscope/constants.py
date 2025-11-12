@@ -140,7 +140,7 @@ class Tags:
     MEDICAL = 'Medical'
     AGENT = 'Agent'
     MT = 'MachineTranslation'
-    GROUDING = 'Grounding'
+    GROUNDING = 'Grounding'
 
 
 class FileConstants:

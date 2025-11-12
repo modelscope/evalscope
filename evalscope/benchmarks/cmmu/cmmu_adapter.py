@@ -20,14 +20,12 @@ SUBSET_LIST = ['biology', 'chemistry', 'geography', 'history', 'math', 'physics'
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
 MULTIPLE_RESPONSE_PROMPT = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
 
-FILL_IN_BLANK_PROMPT = """
-
-逐步解决以下填空问题。这包括多个问题，按照"问题(1): $QUESTION_1 问题(2): $QUESTION_2 问题(3): $QUESTION_3..."的格式（不含引号）$QUESTION-X（X指一个数字）代表一个具体的问题
+FILL_IN_BLANK_PROMPT = """逐步解决以下填空问题。这包括多个问题，按照"问题(1): $QUESTION_1 问题(2): $QUESTION_2 问题(3): $QUESTION_3..."的格式（不含引号）$QUESTION-X（X指一个数字）代表一个具体的问题
 
 {question}
 
 记住在最后单独一行写上你的答案，格式为"答案(X): $ANSWER_X"（不含引号），其中$ANSWER_X是对应X号问题(QUESTION-X)的答案。
-"""
+"""  # noqa: E501
 
 MULTI_CHOICE_TYPE = 'multiple-choice'
 MULTIPLE_RESPONSE_TYPE = 'multiple-response'
@@ -41,7 +39,7 @@ FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
         dataset_id='evalscope/CMMU',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description=(
-            'CMMU is a novel multi-modal benchmark designed to evaluate domain-specific'
+            'CMMU is a novel multi-modal benchmark designed to evaluate domain-specific '
             'knowledge across seven foundational subjects: math, biology, physics, chemistry, '
             'geography, politics, and history.'
         ),
