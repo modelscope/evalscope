@@ -59,8 +59,6 @@ class TauBenchAdapter(AgentAdapter):
         self.api_base = self.extra_params.get('api_base', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
         self.generation_config = self.extra_params.get('generation_config', {'temperature': 0.0, 'max_tokens': 4096})
 
-        self._patch_env_completion()
-
     @run_once
     def _patch_env_completion(self) -> str:
         from tau_bench.envs.user import LLMUserSimulationEnv
@@ -91,6 +89,8 @@ class TauBenchAdapter(AgentAdapter):
 
     def load(self):
         from tau_bench.envs import get_env
+
+        self._patch_env_completion()
 
         data_dict = defaultdict(dict)
         for env_name in self.subset_list:

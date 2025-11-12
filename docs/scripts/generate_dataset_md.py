@@ -286,7 +286,7 @@ def generate_full_documentation(adapters: list[DataAdapter], category: str, lang
     for adapter in adapters:
         name = adapter.name
         pretty_name = adapter.pretty_name or name
-        link_name = pretty_name.lower().replace(' ', '-').replace('.', '').replace("'", '').replace('+', '')
+        link_name = pretty_name.lower().replace(' ', '-').replace('.', '').replace("'", '').replace('+', '').replace('*', '')
         tags = wrap_key_words(adapter.tags)
         index.append(f'| `{name}` | [{pretty_name}](#{link_name}) | {tags} |')
     
