@@ -32,7 +32,7 @@ class TestVLMBenchmark(TestBenchmark):
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
             'judge_model_args': {
-                'model_id': 'qwen2.5-72b-instruct',
+                'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -289,7 +289,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('cmmu', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('cmmu', dataset_args=dataset_args, use_cache='outputs/20251112_163342', limit=10, rerun_review=True, judge_worker_num=1)
 
     def test_a_okvqa_bench(self):
         dataset_args = {
@@ -297,7 +297,7 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('a_okvqa', dataset_args=dataset_args, limit=10)
 
-    def test_vstar_bench(self)::
+    def test_vstar_bench(self):
         dataset_args = {
             # 'subset_list': ['default']
         }

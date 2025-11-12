@@ -583,5 +583,25 @@
     "en": "τ²-bench (Tau Squared Bench) is an extension and enhancement of the original τ-bench (Tau Bench), which is a benchmark designed to evaluate conversational AI agents that interact with users through domain-specific API tools and guidelines. Please install it with `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)",
     "zh": "τ²-bench（Tau Squared Bench）是原始 τ-bench（Tau Bench）的扩展和增强版本，旨在评估通过特定领域 API 工具和规则与用户交互的对话式 AI 代理。请在评估前使用 `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` 安装并设置用户模型。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)",
     "updated_at": "2025-11-07T14:31:57Z"
+  },
+  "cmmu": {
+    "en": "CMMU is a novel multi-modal benchmark designed to evaluate domain-specificknowledge across seven foundational subjects: math, biology, physics, chemistry, geography, politics, and history.",
+    "zh": "CMMU 是一个新颖的多模态基准，旨在评估数学、生物、物理、化学、地理、政治和历史七个基础学科领域的专业知识。",
+    "updated_at": "2025-11-12T17:03:14Z"
+  },
+  "vstar_bench": {
+    "en": "V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on the ability to actively locate and identify specific visual information in high-resolution images, which is crucial for tasks requiring fine-grained visual understanding. This benchmark helps assess how well models can perform targeted visual queries, often guided by natural language instructions, to find and reason about specific elements in complex visual scenes .",
+    "zh": "V*Bench 是一个用于评估多模态推理系统中视觉搜索能力的基准，专注于在高分辨率图像中主动定位和识别特定视觉信息的能力，这对于需要细粒度视觉理解的任务至关重要。该基准有助于评估模型在自然语言指令引导下，在复杂视觉场景中执行目标视觉查询并进行推理的表现。",
+    "updated_at": "2025-11-12T17:03:14Z"
+  },
+  "a_okvqa": {
+    "en": "A-OKVQA is a benchmark designed to probe commonsense reasoning and outside knowledge in visual question answering. Unlike basic VQA tasks that rely solely on the image content, A-OKVQA requires models to utilize a broad spectrum of commonsense and factual knowledge about the world to answer its questions. It includes both multiple-choice and open-ended questions, making it a particularly challenging test for assessing the reasoning capabilities of AI systems.",
+    "zh": "A-OKVQA 是一个用于探究视觉问答中常识推理和外部知识的基准。与仅依赖图像内容的基础 VQA 任务不同，A-OKVQA 要求模型运用广泛的常识和事实性世界知识来回答问题，包含选择题和开放性问题，是对 AI 系统推理能力的一项极具挑战性的测试。",
+    "updated_at": "2025-11-12T17:03:14Z"
+  },
+  "science_qa": {
+    "en": "ScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers a diverse range of subjects, including natural science, social science, and language science. A key feature of this benchmark is that most questions are accompanied by both image and text contexts, and are annotated with detailed lectures and explanations that support the correct answer, facilitating research into models that can generate chains of thought.",
+    "zh": "ScienceQA 是一个包含多项选择题的多模态科学问答基准，题目源自小学和中学课程，涵盖自然科学、社会科学和语言科学等多个领域。该基准的主要特点是大多数问题均配有图像和文本上下文，并附有详细的讲解与解释，支持正确答案，有助于推动能够生成思维链的模型研究。",
+    "updated_at": "2025-11-12T17:03:14Z"
   }
 }

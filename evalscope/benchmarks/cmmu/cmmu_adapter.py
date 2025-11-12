@@ -6,58 +6,33 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
-from evalscope.api.registry import register_benchmark
 from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, answer_character, prompt
-
-# flake8: noqa
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, parse_answers_zh, prompt
 
 logger = get_logger()
 
-SUBSET_LIST = [
-    'biology',
-    'chemistry',
-    'geography',
-    'history',
-    'math',
-    'physics',
-    'politics'
-]
+SUBSET_LIST = ['biology', 'chemistry', 'geography', 'history', 'math', 'physics', 'politics']
 
-MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
-MULTIPLE_RESPONSE_PROMPT = MultipleChoiceTemplate.MULTIPLE_ANSWER_COT
-OPEN_PROMPT = """
-Solve the following fill in the blank problem step by step. 
-This includes multiple questions according to "QUESTION_1: $QUESTION_1 QUESTION_2: $QUESTION_2 QUESTION_3: $QUESTION_3..."(without quotes)
-$QUESTION-X (X refers to a number) represents a specific question
-The answer only needs to be answered by filling in the blanks and separating them with semicolons
-Answer in Chinese
-The last line of your response should be of the form "ANSWER_X: $ANSWER_X" (without quotes) where $ANSWER_X is the answer to QUESTION-X corresponding to the X number.
+MULT_CHOICE_PROMPT = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+MULTIPLE_RESPONSE_PROMPT = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+
+FILL_IN_BLANK_PROMPT = """
+
+逐步解决以下填空问题。这包括多个问题，按照"问题(1): $QUESTION_1 问题(2): $QUESTION_2 问题(3): $QUESTION_3..."的格式（不含引号）$QUESTION-X（X指一个数字）代表一个具体的问题
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER_X: $ANSWER_X" (without quotes) where $ANSWER_X is the answer to QUESTION-X corresponding to the X number, and you do not need to use a \\boxed command.
-"""
-GRADER_TEMPLATE = """
-You are an expert evaluator specializing in assessing fill-in-the-blank questions and choice questions in primary school to hight school exams. I will give you a question, the expected correct answer, and a test-taker's response to the question.
-Here is a new example.
-```
-question: {question}
-the expected correct answer: {target}
-a test-taker's response to the question: {predicted_answer}
-```
-You need to understand the given question, compare the standard answer with the provided response, and output the following values:
-Return Y for correct, N for incorrect.
-
-Just return the letters "Y" or "N", with no text around it.
+记住在最后单独一行写上你的答案，格式为"答案(X): $ANSWER_X"（不含引号），其中$ANSWER_X是对应X号问题(QUESTION-X)的答案。
 """
 
 MULTI_CHOICE_TYPE = 'multiple-choice'
 MULTIPLE_RESPONSE_TYPE = 'multiple-response'
-OPEN_TYPE = 'fill-in-the-blank'
+FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -87,16 +62,10 @@ class CMMUAdapter(VisionLanguageAdapter):
         super().__init__(*args, **kwargs)
         self.reformat_subset = True
         self._use_llm_judge = True
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        question: str = record.get('question_info', '')
         content_list, answers_list = CMMUAdapter.create_content_and_answers_list(record)
-        
-        if len(record['answer'])>0:
-            target = record['answer'][0]
-        else:
-            target = ""
-        
+
         metadata: Dict[str, Any] = {
             'type': record.get('type'),
             'grade_band': record.get('grade_band'),
@@ -109,11 +78,8 @@ class CMMUAdapter(VisionLanguageAdapter):
         }
 
         question_type = record.get('type')
-        if question_type==OPEN_TYPE:
-            target_str="" 
-            if len(record['answer'])>0:
-                for i in range(len(record['answer'])):
-                    target_str += (";" if target_str else "") + f"ANSWER_{i}: {record['answer'][i]}"
+        if question_type == FILL_IN_BLANK_TYPE:
+            target_str = '\n'.join(f'答案 ({i+1}): {ans}' for i, ans in enumerate(record['answer']))
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=target_str,
@@ -121,10 +87,10 @@ class CMMUAdapter(VisionLanguageAdapter):
                 metadata=metadata,
             )
         else:
-            if len(record['answer'])>0:
+            if len(record['answer']) > 0:
                 target_str = record['answer'][0]
             else:
-                target_str = ""
+                target_str = ''
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=target_str,
@@ -132,7 +98,17 @@ class CMMUAdapter(VisionLanguageAdapter):
                 subset_key=record['subject'],
                 metadata=metadata,
             )
-    
+
+    def extract_answer(self, prediction, task_state):
+        question_type = task_state.metadata['type']
+        if question_type in [MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE]:
+            is_multi_answer = question_type == MULTIPLE_RESPONSE_TYPE
+            answers = parse_answers_zh(task_state, multiple_correct=is_multi_answer)
+            multi_answer = ''.join(sorted(list(answers)))
+            return multi_answer
+        else:
+            return prediction.strip()
+
     def llm_match_score(
         self,
         original_prediction: str,
@@ -144,32 +120,40 @@ class CMMUAdapter(VisionLanguageAdapter):
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
+
         question = task_state.input_text
         question_type = task_state.metadata['type']
-        if question_type in [MULTI_CHOICE_TYPE,MULTIPLE_RESPONSE_TYPE]:
-            answers = parse_answers(task_state)
-            multi_answer = ''.join(sorted(list(answers)))
-            prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=multi_answer)
+        if question_type in [MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE]:
+            score.value = {'acc': 1 if filtered_prediction == reference else 0}
         else:
-            prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
-        judge_response = self.llm_judge.judge(prompt)
-        match = re.search(r'(Y|N)', judge_response)
-        res = match.group(0) if match else 'N'
+            from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
 
-        score.value = {
-            'is_correct': 1 if res == 'Y' else 0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
-        score.main_score_name = 'is_correct'
+            prompt = EVALUATION_USER_TEMPLATE.format(
+                question=question, target=reference, predicted_answer=original_prediction
+            )
+            judge_response = self.llm_judge.judge(prompt, system_prompt=EVALUATION_SYSTEM_PROMPT)
+            try:
+                ans_parsed = ast.literal_eval(judge_response)
+                correctness = ans_parsed.get('correct', 0)
+                analysis = ans_parsed.get('analysis', '')
+            except Exception:
+                pattern = re.compile(r'"correct"\s*:\s*1')
+                match = re.search(pattern, judge_response)
+                correctness = 1 if match else 0
+
+            score.value = {
+                'acc': correctness,
+            }
+            score.explanation = f'LLM judge: {judge_response}'
+            score.metadata = {
+                'source': 'llm_judge',
+                'judge_strategy': self.judge_strategy,
+                'analysis': analysis,
+                'model': self.llm_judge.model_id
+            }
+        score.main_score_name = 'acc'
         return score
 
-
-    
     @staticmethod
     def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
@@ -186,26 +170,25 @@ class CMMUAdapter(VisionLanguageAdapter):
         """
         question_type = record['type']
 
-        if question_type==MULTI_CHOICE_TYPE:
+        if question_type == MULTI_CHOICE_TYPE:
             answers_list: List[str] = record['options']
             input_text = prompt(question=record['question_info'], choices=answers_list, template=MULT_CHOICE_PROMPT)
             content_list: List[Content] = [ContentText(text=input_text)]
         elif question_type == MULTIPLE_RESPONSE_TYPE:
             answers_list: List[str] = record['options']
-            input_text = prompt(question=record['question_info'], choices=answers_list, template=MULTIPLE_RESPONSE_PROMPT)
+            input_text = prompt(
+                question=record['question_info'], choices=answers_list, template=MULTIPLE_RESPONSE_PROMPT
+            )
             content_list: List[Content] = [ContentText(text=input_text)]
         else:
             answers_list: List[str] = []
-            sub_questions_str = ""
-            if len(record['sub_questions'])>0:
-                for i in range(len(record['sub_questions'])):
-                    sub_questions_str += (";" if sub_questions_str else "") + f"QUESTION_{i}: {record['sub_questions'][i]}"
+            sub_questions_str = '\n'.join(f'问题 ({i+1}): {q}' for i, q in enumerate(record['sub_questions']))
             open_question = record['question_info'] + sub_questions_str
-            content_list: List[Content] = [ContentText(text=OPEN_PROMPT.format(question=open_question))]
-        
+            content_list: List[Content] = [ContentText(text=FILL_IN_BLANK_PROMPT.format(question=open_question))]
+
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
             content_list.append(ContentImage(image=image_base64))
-        
+
         return content_list, answers_list

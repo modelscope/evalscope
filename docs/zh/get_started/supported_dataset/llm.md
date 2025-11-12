@@ -1024,7 +1024,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 <details><summary>View</summary>
 
 ```text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
+回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
 
 问题：{question}
 选项：
