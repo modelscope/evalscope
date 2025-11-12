@@ -278,3 +278,27 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('zerobench', dataset_args=dataset_args, limit=5, eval_batch_size=1)
+
+    def test_science_qa_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('science_qa', dataset_args=dataset_args, limit=10)
+
+    def test_cmmu_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('cmmu', dataset_args=dataset_args, limit=10)
+
+    def test_a_okvqa_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('a_okvqa', dataset_args=dataset_args, limit=10)
+
+    def test_vstar_bench_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('vstar_bench', dataset_args=dataset_args, limit=10)
