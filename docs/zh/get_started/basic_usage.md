@@ -114,6 +114,8 @@ run_task(task_cfg="config.json")
 
 ### 自定义评测参数
 
+**示例1. 调整模型加载和推理生成参数** 
+
 您可以通过传入 JSON 格式的字符串来精细化控制模型加载、推理生成和数据集配置。
 
 ```shell
@@ -130,6 +132,20 @@ evalscope eval \
 - `--model-args`: 模型加载参数，例如 `revision` (版本), `precision` (精度), `device_map` (设备映射)。
 - `--generation-config`: 推理生成参数，例如 `do_sample` (采样), `temperature` (温度), `max_tokens` (最大长度)。
 - `--dataset-args`: 数据集专属参数，以数据集名称为键。例如 `few_shot_num` (少样本数量)。
+
+**示例2. 调整结果聚合方式**
+
+对于需要多次生成的任务（如数学题），可以通过 `--repeats` 参数指定重复生成次数k，并使用 `dataset-args` 调整结果聚合方式，例如 `mean_and_vote_at_k`、`mean_and_pass_at_k`、`mean_and_pass^k`。
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k"}}' \
+ --repeats 5
+```
+
 
 ```{seealso}
 查看所有可配置项，请参考：[全部参数说明](parameters.md)

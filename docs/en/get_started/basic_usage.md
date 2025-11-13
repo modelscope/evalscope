@@ -114,7 +114,9 @@ Reference: [Evaluation Result Visualization](visualization.md)
 
 ### Customize Evaluation Parameters
 
-You can fine-tune model loading, inference generation, and dataset configuration by passing JSON-formatted strings.
+ **Example 1. Adjusting Model Loading and Inference Generation Parameters**
+
+You can fine-tune the control of model loading, inference generation, and dataset configuration by passing JSON-formatted strings.
 
 ```shell
 evalscope eval \
@@ -126,10 +128,23 @@ evalscope eval \
  --limit 10
 ```
 
-**Common Parameter Description:**
+**Common Parameter Descriptions:**
 - `--model-args`: Model loading parameters, such as `revision` (version), `precision` (precision), `device_map` (device mapping).
 - `--generation-config`: Inference generation parameters, such as `do_sample` (sampling), `temperature` (temperature), `max_tokens` (maximum length).
-- `--dataset-args`: Dataset-specific parameters, keyed by dataset name. For example, `few_shot_num` (few-shot quantity).
+- `--dataset-args`: Dataset-specific parameters, keyed by dataset name. For example, `few_shot_num` (number of few-shot examples).
+
+ **Example 2. Adjusting Result Aggregation Methods**
+
+For tasks that require multiple generations (such as math problems), you can specify the number of repeated generations k using the `--repeats` parameter, and adjust the result aggregation method through `dataset-args`, such as `mean_and_vote_at_k`, `mean_and_pass_at_k`, `mean_and_pass^k`.
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k"}}' \
+ --repeats 5
+```
 
 ```{seealso}
 To view all configurable options, please refer to: [Complete Parameter Description](parameters.md)
