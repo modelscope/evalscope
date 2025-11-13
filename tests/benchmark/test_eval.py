@@ -612,6 +612,13 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('wmt24pp', dataset_args, limit=10, use_cache='outputs/20251106_153525', rerun_review=True)
 
+    def test_swe_bench_verified_mini(self):
+        """Test SWE-bench-verified-mini dataset."""
+        dataset_args = {
+            # 'few_shot_num': 0,
+        }
+        self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=1)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark
