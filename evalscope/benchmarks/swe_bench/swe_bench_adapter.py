@@ -1,16 +1,13 @@
 import json
-import re
-import traceback
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.report import Category, Report, Subset
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -30,8 +27,9 @@ logger = get_logger()
         dataset_id='princeton-nlp/SWE-bench_Verified',
         metric_list=['acc'],
         eval_split='test',
-        prompt_template='Please solve the following coding issue:\n\n{question}',
+        prompt_template='{question}',
         extra_params={
+            'oracle_dataset_id': 'princeton-nlp/SWE-bench_oracle',
             'build_docker_images': True,
             'pull_remote_images_if_available': True,
         }
@@ -46,11 +44,28 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
 
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
+        self.oracle_dataset_id: str = self.extra_params.get('oracle_dataset_id', 'princeton-nlp/SWE-bench_oracle')
+
+    def load(self):
+        logger.info(f'Loading oracle dataset: {self.oracle_dataset_id}')
+        loader = RemoteDataLoader(
+            data_id_or_path=self.oracle_dataset_id,
+            split='test',
+            sample_fields=FieldSpec(input='problem_statement', metadata=[
+                'instance_id',
+                'text',
+            ])
+        )
+        oracle_dataset = loader.load()
+        self.oracle_samples = {s.metadata['instance_id']: s.metadata for s in oracle_dataset}
+
+        return super().load()
 
     def record_to_sample(self, record) -> Sample:
         return Sample(
-            input=record['problem_statement'],
+            input=self.oracle_samples[record['instance_id']]['text'],
             metadata={
+                'problem_statement': record['problem_statement'],
                 'instance_id': record['instance_id'],
                 'base_commit': record['base_commit'],
                 'patch': record['patch'],
@@ -66,8 +81,7 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
         )
 
     def _post_process_samples(self):
-        """build images in post process samples"""
-
+        """Build images in post process samples"""
         from .build_images import build_images
 
         if self.build_docker_images:
@@ -81,12 +95,49 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
                 use_remote_images=self.pull_remote_images_if_available,
             )
 
-            # update metadata with docker image
-            for sample in samples:
-                instance_id = sample.metadata['instance_id']
-                sample.metadata['docker_image'] = id_to_docker_image_map[instance_id]
+            # Replace docker_image_from_id function with authoritative source
+            def get_docker_image(instance_id: str) -> str:
+                return id_to_docker_image_map.get(instance_id, '')
+
+            docker_image_from_id = get_docker_image
+        else:
+            from .utils import get_remote_docker_image_from_id
+
+            docker_image_from_id = get_remote_docker_image_from_id
+
+        # update metadata with docker image
+        for sample in samples:
+            instance_id = sample.metadata['instance_id']
+            sample.metadata['docker_image'] = docker_image_from_id(instance_id)
 
         super()._post_process_samples()
+
+    def extract_answer(self, prediction: str, task_state) -> str:
+        """Extract the final answer from the model output."""
+        from swebench.inference.make_datasets.utils import extract_diff
+
+        return extract_diff(prediction)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        from .utils import eval_instance
+
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
+
+        result = eval_instance(
+            instance=task_state.metadata,
+            pred=filtered_prediction,
+            timeout=1800,
+            log_dir=self._task_config.work_dir,
+        )
+
+        score.value = {'acc': float(result.get('resolved', 0.0))}
+        score.metadata = result
+        return score
 
 
 @register_benchmark(
@@ -103,6 +154,12 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
         dataset_id='evalscope/swe-bench-verified-mini',
         metric_list=['acc'],
         eval_split='test',
+        prompt_template='{question}',
+        extra_params={
+            'build_docker_images': True,
+            'pull_remote_images_if_available': True,
+            'oracle_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+        }
     )
 )
 class SWEBenchVerifiedMiniAdapter(SWEBenchVerifiedAdapter):

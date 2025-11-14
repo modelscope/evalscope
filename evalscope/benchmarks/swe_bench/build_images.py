@@ -1,7 +1,12 @@
-from typing import Dict, List, Literal
+import traceback
+from typing import Dict, List, Literal, TYPE_CHECKING
 
-from evalscope.api.dataset import Dataset, Sample
+from tqdm import tqdm
+
+from evalscope.api.dataset import Dataset
 from evalscope.utils.logger import get_logger
+if TYPE_CHECKING:
+    from swebench.harness.test_spec.test_spec import TestSpec
 
 logger = get_logger()
 
@@ -39,7 +44,7 @@ def build_images(
 
     # The swebench library requires a huggingface version of the code to be loaded in order to build the images.
     # We load the dataset and then use the library to build the images.
-    samples_hf: List[SWEbenchInstance] = [sample_to_hf(s) for s in samples]
+    samples_hf: List[SWEbenchInstance] = [s.metadata for s in samples]
 
     # We also keep a mapping from instance_ids to the name of the docker image
     id_to_docker_image: Dict[str, str] = {}
@@ -64,7 +69,7 @@ def build_images(
         logger.info(f'Attempting to pull {len(samples_to_build_images_for)} SWE-BENCH images from Docker Hub')
         successfully_pulled = []
 
-        for sample in samples_to_build_images_for:
+        for sample in tqdm(samples_to_build_images_for, desc='Pulling SWE-Bench images'):
             instance_id = sample['instance_id']
             image_name = id_to_docker_image[instance_id]
             # Extract just the image name without the tag
@@ -113,19 +118,46 @@ def build_images(
     return id_to_docker_image
 
 
-def sample_to_hf(sample: Sample) -> Dict[str, str]:
-    assert sample.metadata is not None
-    return {
-        'problem_statement': str(sample.input),
-        'base_commit': sample.metadata['base_commit'],
-        'instance_id': sample.metadata['instance_id'],
-        'patch': sample.metadata['patch'],
-        'PASS_TO_PASS': sample.metadata['PASS_TO_PASS'],
-        'FAIL_TO_PASS': sample.metadata['FAIL_TO_PASS'],
-        'test_patch': sample.metadata['test_patch'],
-        'version': sample.metadata['version'],
-        'repo': sample.metadata['repo'],
-        'environment_setup_commit': sample.metadata['environment_setup_commit'],
-        'hints_text': sample.metadata['hints_text'],
-        'created_at': sample.metadata['created_at'],
-    }
+def build_container(
+    test_spec: 'TestSpec',
+    client,
+):
+    """
+    Builds the instance image for the given test spec and creates a container from the image.
+
+    Args:
+        test_spec (TestSpec): Test spec to build the instance image and container for
+        client (docker.DockerClient): Docker client for building image + creating the container
+        run_id (str): Run ID identifying process, used for the container name
+    """
+    from swebench.harness.docker_utils import cleanup_container
+    from swebench.harness.constants import (
+        DOCKER_USER,
+    )
+    # Build corresponding instance image
+    container = None
+    try:
+        # Create the container
+        logger.info(f"Creating container for {test_spec.instance_id}...")
+
+        # Define arguments for running the container
+        run_args = test_spec.docker_specs.get("run_args", {})
+        cap_add = run_args.get("cap_add", [])
+
+        container = client.containers.create(
+            image=test_spec.instance_image_key,
+            name=test_spec.get_instance_container_name(),
+            user=DOCKER_USER,
+            detach=True,
+            command="tail -f /dev/null",
+            platform=test_spec.platform,
+            cap_add=cap_add,
+        )
+        logger.info(f"Container for {test_spec.instance_id} created: {container.id}")
+        return container
+    except Exception as e:
+        # If an error occurs, clean up the container and raise an exception
+        logger.error(f"Error creating container for {test_spec.instance_id}: {e}")
+        logger.info(traceback.format_exc())
+        cleanup_container(client, container, logger)
+        raise e

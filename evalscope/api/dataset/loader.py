@@ -29,7 +29,7 @@ class DataLoader(ABC):
         subset: str = 'default',
         version: str = None,
         limit: Union[int, float] = None,
-        data_source: Optional[str] = None,
+        data_source: Optional[str] = HubType.MODELSCOPE,
         shuffle: bool = False,
         shuffle_choices: Optional[Union[bool, int]] = None,
         seed: Optional[int] = None,

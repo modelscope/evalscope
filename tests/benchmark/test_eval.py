@@ -617,7 +617,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             # 'few_shot_num': 0,
         }
-        self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=1)
+        self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=5)
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
