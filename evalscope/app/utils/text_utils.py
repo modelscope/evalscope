@@ -8,7 +8,6 @@ from typing import Any, List, Optional
 
 from evalscope.utils.logger import get_logger
 
-# TODO: Remove unused imports/constants if not needed (e.g., LATEX_DELIMITERS, Dict).
 logger = get_logger()
 
 

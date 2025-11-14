@@ -134,7 +134,6 @@ def build_container(
     Args:
         test_spec (TestSpec): Test spec to build the instance image and container for
         client (docker.DockerClient): Docker client for building image + creating the container
-        run_id (str): Run ID identifying process, used for the container name
     """
     from swebench.harness.constants import DOCKER_USER
     from swebench.harness.docker_utils import cleanup_container
