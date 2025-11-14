@@ -1,10 +1,10 @@
 import traceback
-from typing import Dict, List, Literal, TYPE_CHECKING
-
 from tqdm import tqdm
+from typing import TYPE_CHECKING, Dict, List, Literal
 
 from evalscope.api.dataset import Dataset
 from evalscope.utils.logger import get_logger
+
 if TYPE_CHECKING:
     from swebench.harness.test_spec.test_spec import TestSpec
 
@@ -130,34 +130,33 @@ def build_container(
         client (docker.DockerClient): Docker client for building image + creating the container
         run_id (str): Run ID identifying process, used for the container name
     """
+    from swebench.harness.constants import DOCKER_USER
     from swebench.harness.docker_utils import cleanup_container
-    from swebench.harness.constants import (
-        DOCKER_USER,
-    )
+
     # Build corresponding instance image
     container = None
     try:
         # Create the container
-        logger.info(f"Creating container for {test_spec.instance_id}...")
+        logger.info(f'Creating container for {test_spec.instance_id}...')
 
         # Define arguments for running the container
-        run_args = test_spec.docker_specs.get("run_args", {})
-        cap_add = run_args.get("cap_add", [])
+        run_args = test_spec.docker_specs.get('run_args', {})
+        cap_add = run_args.get('cap_add', [])
 
         container = client.containers.create(
             image=test_spec.instance_image_key,
             name=test_spec.get_instance_container_name(),
             user=DOCKER_USER,
             detach=True,
-            command="tail -f /dev/null",
+            command='tail -f /dev/null',
             platform=test_spec.platform,
             cap_add=cap_add,
         )
-        logger.info(f"Container for {test_spec.instance_id} created: {container.id}")
+        logger.info(f'Container for {test_spec.instance_id} created: {container.id}')
         return container
     except Exception as e:
         # If an error occurs, clean up the container and raise an exception
-        logger.error(f"Error creating container for {test_spec.instance_id}: {e}")
+        logger.error(f'Error creating container for {test_spec.instance_id}: {e}')
         logger.info(traceback.format_exc())
         cleanup_container(client, container, logger)
         raise e

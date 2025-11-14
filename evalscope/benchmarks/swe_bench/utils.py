@@ -37,9 +37,9 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
         DOCKER_PATCH,
         DOCKER_USER,
         DOCKER_WORKDIR,
-        KEY_PREDICTION,
         KEY_INSTANCE_ID,
         KEY_MODEL,
+        KEY_PREDICTION,
         LOG_TEST_OUTPUT,
         UTF8,
     )
@@ -47,6 +47,7 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
     from swebench.harness.grading import get_eval_report
     from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
     from swebench.harness.utils import EvaluationError
+
     from .build_images import build_container
 
     # Build + start instance container (instance image should already be built)
@@ -62,10 +63,10 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
             KEY_MODEL: '',
         }
         log_dir = Path(log_dir) / 'swebench_log' / instance_id
-        
+
         log_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f'Starting evaluation for {instance_id} in log dir {log_dir}...')
-        
+
         client = DockerClient.from_env()
         container = build_container(test_spec, client=client)
         container.start()
