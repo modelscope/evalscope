@@ -603,5 +603,20 @@
     "en": "ScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers a diverse range of subjects, including natural science, social science, and language science. A key feature of this benchmark is that most questions are accompanied by both image and text contexts, and are annotated with detailed lectures and explanations that support the correct answer, facilitating research into models that can generate chains of thought.",
     "zh": "ScienceQA 是一个包含多项选择题的多模态科学问答基准，题目源自小学和中学课程，涵盖自然科学、社会科学和语言科学等多个领域。该基准的主要特点是大多数问题均配有图像和文本上下文，并附有详细的讲解与解释，支持正确答案，有助于推动能够生成思维链的模型研究。",
     "updated_at": "2025-11-12T17:03:14Z"
+  },
+  "swe_bench_lite": {
+    "en": "SWE-bench Lite is subset of SWE-bench, a dataset that tests systems' ability to solve GitHub issues automatically. The dataset collects 300 test Issue-Pull Request pairs from 11 popular Python. Evaluation is performed by unit test verification using post-PR behavior as the reference solution. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)",
+    "zh": "SWE-bench Lite 是 SWE-bench 的一个子集，该数据集用于测试系统自动解决 GitHub 问题的能力。数据集包含来自 11 个流行 Python 项目的 200 对测试 Issue-PR 样本，评估通过单元测试完成，以 PR 后的行为作为参考解。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)",
+    "updated_at": "2025-11-14T15:13:00Z"
+  },
+  "swe_bench_verified": {
+    "en": "SWE-bench Verified is a subset of 500 samples from the SWE-bench test set, which have been human-validated for quality. SWE-bench is a dataset that tests systems' ability to solve GitHub issues automatically. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)",
+    "zh": "SWE-bench Verified 是 SWE-bench 测试集中经人工验证质量的 500 个样本子集。SWE-bench 是一个用于测试系统自动解决 GitHub 问题能力的数据集。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)",
+    "updated_at": "2025-11-14T15:13:00Z"
+  },
+  "swe_bench_verified_mini": {
+    "en": "SWEBench-verified-mini is a subset of SWEBench-verified that uses 50 instead of 500 datapoints, requires 5GB instead of 130GB of storage and has approximately the same distribution of performance, test pass rates and difficulty as the original dataset. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)",
+    "zh": "SWEBench-verified-mini 是 SWEBench-verified 的子集，包含 50 个数据点（而非 500 个），存储需求为 5GB（而非 130GB），性能、测试通过率和难度分布与原始数据集基本一致。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)",
+    "updated_at": "2025-11-14T15:13:00Z"
   }
 }

@@ -46,7 +46,6 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
     from swebench.harness.docker_utils import cleanup_container, copy_to_container, exec_run_with_timeout
     from swebench.harness.grading import get_eval_report
     from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
-    from swebench.harness.utils import EvaluationError
 
     from .build_images import build_container
 
@@ -94,11 +93,7 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
                 logger.info(f'Failed to apply patch to container: {git_apply_cmd}')
         if not applied_patch:
             logger.info(f'{APPLY_PATCH_FAIL}:\n{val.output.decode(UTF8)}')
-            raise EvaluationError(
-                instance_id,
-                f'{APPLY_PATCH_FAIL}:\n{val.output.decode(UTF8)}',
-                logger,
-            )
+            raise Exception(f'{instance_id} {APPLY_PATCH_FAIL}:\n{val.output.decode(UTF8)}')
 
         # Get git diff before running eval script
         git_diff_output_before = (
@@ -120,11 +115,7 @@ def eval_instance(instance: dict, pred: str, timeout: int = 1800, log_dir: str =
             logger.info(f'Test output for {instance_id} written to {test_output_path}')
             if timed_out:
                 f.write(f'\n\nTimeout error: {timeout} seconds exceeded.')
-                raise EvaluationError(
-                    instance_id,
-                    f'Test timed out after {timeout} seconds.',
-                    logger,
-                )
+                raise TimeoutError(f'{instance_id} Test timed out after {timeout} seconds.')
 
         # Get git diff after running eval script (ignore permission changes)
         git_diff_output_after = (

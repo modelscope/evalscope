@@ -244,7 +244,7 @@ class TaskConfig(BaseArgument):
     def __init_default_sandbox_config(self):
         if not self.use_sandbox:
             return
-        check_import('ms_enclave', 'ms_enclave[docker]', raise_error=True)
+        check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
 
         if not self.sandbox_type:
             self.sandbox_type = 'docker'

@@ -60,16 +60,9 @@ Please note the following when using this evaluation benchmark:
 
 Before running the evaluation, you need to install the following dependencies:
 
-Install `evalscope`
-```bash
-# Before the release of v1.1.2, it's recommended to install evalscope from source
-git clone https://github.com/modelscope/evalscope.git
-cd evalscope/
-pip install -e .
-```
 
-Install `bfcl-eval`
 ```bash
+pip install evalscope
 pip install bfcl-eval==2025.10.27.1 
 ```
 

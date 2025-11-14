@@ -91,9 +91,6 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
         self.tokenizer_path = self.extra_params.get('tokenizer_path', 'Qwen/Qwen3-0.6B')
         self.show_score = self.extra_params.get('show_score', False)
 
-        self._init_tokenizer()
-        self._init_length()
-
     def _init_length(self):
         """ Initialize context lengths and document depth percentages based on the provided parameters."""
         import numpy as np
@@ -123,6 +120,9 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
 
     def load(self):
         """Load dataset from local disk or remote."""
+        self._init_tokenizer()
+        self._init_length()
+
         dataset_name_or_path = self.dataset_id
         if os.path.exists(dataset_name_or_path):
             logger.info(f'Loading dataset from {dataset_name_or_path}')

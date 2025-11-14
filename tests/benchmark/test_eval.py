@@ -612,6 +612,24 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('wmt24pp', dataset_args, limit=10, use_cache='outputs/20251106_153525', rerun_review=True)
 
+    def test_swe_bench_verified(self):
+        """Test SWE-bench-verified dataset."""
+        dataset_args = {
+            'extra_params': {
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
+                'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+            }
+        }
+        self._run_dataset_test('swe_bench_verified', dataset_args, limit=5)
+
+    def test_swe_bench_lite(self):
+        """Test SWE-bench-lite dataset."""
+        dataset_args = {
+            # 'few_shot_num': 0,
+        }
+        self._run_dataset_test('swe_bench_lite', dataset_args, limit=5)
+
     def test_swe_bench_verified_mini(self):
         """Test SWE-bench-verified-mini dataset."""
         dataset_args = {

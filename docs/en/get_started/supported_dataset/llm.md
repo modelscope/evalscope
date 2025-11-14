@@ -73,6 +73,9 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
+| `swe_bench_lite` | [SWE-bench_Lite](#swe-bench_lite) | `Coding` |
+| `swe_bench_verified` | [SWE-bench_Verified](#swe-bench_verified) | `Coding` |
+| `swe_bench_verified_mini` | [SWE-bench_Verified_mini](#swe-bench_verified_mini) | `Coding` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
@@ -2317,6 +2320,105 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### SWE-bench_Lite
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `swe_bench_lite`
+- **Dataset ID**: [princeton-nlp/SWE-bench_Lite](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Lite/summary)
+- **Description**:
+  > SWE-bench Lite is subset of SWE-bench, a dataset that tests systems' ability to solve GitHub issues automatically. The dataset collects 300 test Issue-Pull Request pairs from 11 popular Python. Evaluation is performed by unit test verification using post-PR behavior as the reference solution. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true,
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### SWE-bench_Verified
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `swe_bench_verified`
+- **Dataset ID**: [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary)
+- **Description**:
+  > SWE-bench Verified is a subset of 500 samples from the SWE-bench test set, which have been human-validated for quality. SWE-bench is a dataset that tests systems' ability to solve GitHub issues automatically. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle",
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### SWE-bench_Verified_mini
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `swe_bench_verified_mini`
+- **Dataset ID**: [evalscope/swe-bench-verified-mini](https://modelscope.cn/datasets/evalscope/swe-bench-verified-mini/summary)
+- **Description**:
+  > SWEBench-verified-mini is a subset of SWEBench-verified that uses 50 instead of 500 datapoints, requires 5GB instead of 130GB of storage and has approximately the same distribution of performance, test pass rates and difficulty as the original dataset. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true,
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+{question}
 ```
 
 </details>

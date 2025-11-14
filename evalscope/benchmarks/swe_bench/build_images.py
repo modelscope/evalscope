@@ -77,7 +77,13 @@ def build_images(
 
             try:
                 logger.info(f'Pulling {image_name}...')
-                docker_client.images.pull(image_name)
+                for line in docker_client.api.pull(image_name, stream=True, decode=True):
+                    status = line.get('status')
+                    progress = line.get('progress')
+                    if progress:
+                        logger.info(f'{status} {progress}')
+                    else:
+                        logger.info(status)
                 # Tag the pulled image with the expected name
                 docker_client.api.tag(image_name, image_base_name, 'latest')
                 successfully_pulled.append(instance_id)
@@ -145,7 +151,6 @@ def build_container(
 
         container = client.containers.create(
             image=test_spec.instance_image_key,
-            name=test_spec.get_instance_container_name(),
             user=DOCKER_USER,
             detach=True,
             command='tail -f /dev/null',

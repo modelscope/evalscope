@@ -1,11 +1,10 @@
 import json
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
-from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -18,7 +17,7 @@ logger = get_logger()
     BenchmarkMeta(
         name='swe_bench_verified',
         pretty_name='SWE-bench_Verified',
-        tags=[Tags.FUNCTION_CALLING, Tags.AGENT, Tags.CODING],
+        tags=[Tags.CODING],
         description='SWE-bench Verified is a subset of 500 samples from the SWE-bench test set, '
         'which have been human-validated for quality. SWE-bench is a dataset that tests systems\' '
         'ability to solve GitHub issues automatically. '
@@ -29,13 +28,13 @@ logger = get_logger()
         eval_split='test',
         prompt_template='{question}',
         extra_params={
-            'oracle_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
             'build_docker_images': True,
             'pull_remote_images_if_available': True,
         }
     )
 )
-class SWEBenchVerifiedAdapter(AgentAdapter):
+class SWEBenchVerifiedAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -44,26 +43,26 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
 
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
-        self.oracle_dataset_id: str = self.extra_params.get('oracle_dataset_id', 'princeton-nlp/SWE-bench_oracle')
+        self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
 
     def load(self):
-        logger.info(f'Loading oracle dataset: {self.oracle_dataset_id}')
+        logger.info(f'Loading oracle dataset: {self.inference_dataset_id}')
         loader = RemoteDataLoader(
-            data_id_or_path=self.oracle_dataset_id,
+            data_id_or_path=self.inference_dataset_id,
             split='test',
             sample_fields=FieldSpec(input='problem_statement', metadata=[
                 'instance_id',
                 'text',
             ])
         )
-        oracle_dataset = loader.load()
-        self.oracle_samples = {s.metadata['instance_id']: s.metadata for s in oracle_dataset}
+        infer_dataset = loader.load()
+        self.infer_samples = {s.metadata['instance_id']: s.metadata for s in infer_dataset}
 
         return super().load()
 
     def record_to_sample(self, record) -> Sample:
         return Sample(
-            input=self.oracle_samples[record['instance_id']]['text'],
+            input=self.infer_samples[record['instance_id']]['text'],
             metadata={
                 'problem_statement': record['problem_statement'],
                 'instance_id': record['instance_id'],
@@ -144,7 +143,7 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
     BenchmarkMeta(
         name='swe_bench_verified_mini',
         pretty_name='SWE-bench_Verified_mini',
-        tags=[Tags.FUNCTION_CALLING, Tags.AGENT, Tags.CODING],
+        tags=[Tags.CODING],
         description='SWEBench-verified-mini is a subset of SWEBench-verified '
         'that uses 50 instead of 500 datapoints, requires 5GB instead of 130GB '
         'of storage and has approximately the same distribution of performance, '
@@ -158,9 +157,35 @@ class SWEBenchVerifiedAdapter(AgentAdapter):
         extra_params={
             'build_docker_images': True,
             'pull_remote_images_if_available': True,
-            'oracle_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
         }
     )
 )
 class SWEBenchVerifiedMiniAdapter(SWEBenchVerifiedAdapter):
+    ...
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='swe_bench_lite',
+        pretty_name='SWE-bench_Lite',
+        tags=[Tags.CODING],
+        description='SWE-bench Lite is subset of SWE-bench, a dataset that tests systems\' '
+        'ability to solve GitHub issues automatically. The dataset collects 300 test '
+        'Issue-Pull Request pairs from 11 popular Python. Evaluation is performed by '
+        'unit test verification using post-PR behavior as the reference solution. '
+        'Need to run `pip install swebench==4.1.0` before evaluating. '
+        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)',
+        dataset_id='princeton-nlp/SWE-bench_Lite',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params={
+            'build_docker_images': True,
+            'pull_remote_images_if_available': True,
+            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+        }
+    )
+)
+class SWEBenchLiteAdapter(SWEBenchVerifiedAdapter):
     ...

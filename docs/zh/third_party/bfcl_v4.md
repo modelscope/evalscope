@@ -60,16 +60,8 @@ SUBSET_LIST = [
 
 在运行评测之前需要安装以下依赖：
 
-安装 `evalscope`
 ```bash
-# v1.1.2 版本发布之前，建议从源码安装 evalscope
-git clone https://github.com/modelscope/evalscope.git
-cd evalscope/
-pip install -e .
-```
-
-安装 `bfcl-eval`
-```bash
+pip install evalscope
 pip install bfcl-eval==2025.10.27.1 
 ```
 
