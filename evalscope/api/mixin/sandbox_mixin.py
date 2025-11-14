@@ -26,13 +26,7 @@ class SandboxMixin:
         # Lazy init state
         self._initialized: bool = False
 
-        # NOTE: Initialization is deferred.
         super().__init__()
-
-    async def _async_init(self):
-        """Async initialization helper."""
-        await self.init_sandbox_manager_async()
-        await self.init_sandbox_async()
 
     @property
     def use_sandbox(self) -> bool:
@@ -67,8 +61,8 @@ class SandboxMixin:
             return True
 
         # Initialize manager and sandbox using the class-level runner
-        AsyncioLoopRunner.run(self.init_sandbox_manager_async())
-        AsyncioLoopRunner.run(self.init_sandbox_async())
+        self.init_sandbox_manager()
+        self.init_sandbox()
 
         self._initialized = True
         return True
@@ -97,12 +91,6 @@ class SandboxMixin:
 
     def init_sandbox_manager(self) -> Optional['SandboxManager']:
         """Initialize the sandbox manager."""
-        if self._manager is not None:
-            return self._manager
-
-        if not self.use_sandbox:
-            return None
-
         return AsyncioLoopRunner.run(self.init_sandbox_manager_async())
 
     async def init_sandbox_async(self) -> Optional[str]:
@@ -132,12 +120,6 @@ class SandboxMixin:
 
     def init_sandbox(self) -> Optional[str]:
         """Initialize the sandbox instance."""
-        if self._sandbox_id is not None:
-            return self._sandbox_id
-
-        if not self.use_sandbox:
-            return None
-
         return AsyncioLoopRunner.run(self.init_sandbox_async())
 
     def execute_code_in_sandbox(self, code: str, timeout: int = 60, language: str = 'python') -> Dict[str, Any]:

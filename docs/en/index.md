@@ -47,6 +47,7 @@ advanced_guides/add_benchmark.md
 :::{toctree}
 :hidden:
 :caption: 🧰 Third-Party Tools
+third_party/swe_bench.md
 third_party/tau_bench.md
 third_party/tau2_bench.md
 third_party/bfcl_v3.md

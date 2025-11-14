@@ -73,6 +73,9 @@
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `super_gpqa` | [SuperGPQA](#supergpqa) | `Knowledge`, `MCQ` |
+| `swe_bench_lite` | [SWE-bench_Lite](#swe-bench_lite) | `Coding` |
+| `swe_bench_verified` | [SWE-bench_Verified](#swe-bench_verified) | `Coding` |
+| `swe_bench_verified_mini` | [SWE-bench_Verified_mini](#swe-bench_verified_mini) | `Coding` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
@@ -2317,6 +2320,105 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### SWE-bench_Lite
+
+[返回目录](#llm评测集)
+- **数据集名称**: `swe_bench_lite`
+- **数据集ID**: [princeton-nlp/SWE-bench_Lite](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Lite/summary)
+- **数据集介绍**:
+  > SWE-bench Lite 是 SWE-bench 的一个子集，该数据集用于测试系统自动解决 GitHub 问题的能力。数据集包含来自 11 个流行 Python 项目的 200 对测试 Issue-PR 样本，评估通过单元测试完成，以 PR 后的行为作为参考解。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true,
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### SWE-bench_Verified
+
+[返回目录](#llm评测集)
+- **数据集名称**: `swe_bench_verified`
+- **数据集ID**: [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary)
+- **数据集介绍**:
+  > SWE-bench Verified 是 SWE-bench 测试集中经人工验证质量的 500 个样本子集。SWE-bench 是一个用于测试系统自动解决 GitHub 问题能力的数据集。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle",
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
+```
+
+</details>
+
+---
+
+### SWE-bench_Verified_mini
+
+[返回目录](#llm评测集)
+- **数据集名称**: `swe_bench_verified_mini`
+- **数据集ID**: [evalscope/swe-bench-verified-mini](https://modelscope.cn/datasets/evalscope/swe-bench-verified-mini/summary)
+- **数据集介绍**:
+  > SWEBench-verified-mini 是 SWEBench-verified 的子集，包含 50 个数据点（而非 500 个），存储需求为 5GB（而非 130GB），性能、测试通过率和难度分布与原始数据集基本一致。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "build_docker_images": true,
+    "pull_remote_images_if_available": true,
+    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
 ```
 
 </details>

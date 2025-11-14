@@ -12,7 +12,6 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils import get_logger
-from evalscope.utils.function_utils import run_once
 from evalscope.utils.import_utils import check_import
 
 logger = get_logger()
