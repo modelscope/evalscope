@@ -1,6 +1,7 @@
 import copy
 import os
 import random
+import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
@@ -36,6 +37,7 @@ class DataLoader(ABC):
         auto_id: bool = True,
         repeats: int = 1,
         trust_remote: bool = True,
+        force_redownload: bool = False,
         **kwargs
     ):
         self.data_id_or_path = data_id_or_path
@@ -52,6 +54,7 @@ class DataLoader(ABC):
         self.auto_id = auto_id
         self.repeats = repeats
         self.trust_remote = trust_remote
+        self.force_redownload = force_redownload
         self.kwargs = kwargs
 
     @abstractmethod
@@ -69,7 +72,9 @@ class RemoteDataLoader(DataLoader):
 
     def load(self) -> Dataset:
         import datasets
+        from datasets import DownloadMode as HFDownloadMode
         from modelscope import MsDataset
+        from modelscope.utils.constant import DownloadMode as MSDownloadMode
 
         path = self.data_id_or_path
         # resolve data_to_sample function
@@ -78,12 +83,21 @@ class RemoteDataLoader(DataLoader):
         dataset_hash = gen_hash(f'{path}{self.split}{self.subset}{self.version}{self.kwargs}')
         datasets_cache_dir = os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, 'datasets')
         dataset_cache_dir = os.path.join(datasets_cache_dir, f'{safe_filename(path)}-{dataset_hash}')
+        # force re-download: remove local cache if requested
+        if self.force_redownload and os.path.exists(dataset_cache_dir):
+            logger.info(f'Force redownload enabled. Removing cached dataset at: {dataset_cache_dir}')
+            shutil.rmtree(dataset_cache_dir, ignore_errors=True)
+
         if os.path.exists(dataset_cache_dir):
             dataset = datasets.load_from_disk(dataset_cache_dir)
         else:
             logger.info(
                 f'Loading dataset {path} from {self.data_source} > subset: {self.subset} > split: {self.split} ...'
             )
+            # prepare download_mode for both backends when force_redownload is requested
+            hf_download_mode = None if not self.force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
+            ms_download_mode = None if not self.force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
+
             if self.data_source == HubType.MODELSCOPE:
                 dataset = MsDataset.load(
                     dataset_name=path,
@@ -91,6 +105,7 @@ class RemoteDataLoader(DataLoader):
                     subset_name=self.subset,
                     version=self.version,
                     trust_remote_code=self.trust_remote,
+                    download_mode=ms_download_mode,
                     **self.kwargs,
                 )
                 # convert to Huggingface dataset if necessary
@@ -109,6 +124,7 @@ class RemoteDataLoader(DataLoader):
                     split=self.split,
                     revision=self.version,
                     trust_remote_code=self.trust_remote,
+                    download_mode=hf_download_mode,
                     **self.kwargs,
                 )
 

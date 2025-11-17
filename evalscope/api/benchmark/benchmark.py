@@ -369,6 +369,20 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         self._benchmark_meta.shuffle_choices = value
 
     @property
+    def force_redownload(self) -> bool:
+        """
+        Return whether to force redownload the dataset from remote source.
+        """
+        return self._benchmark_meta.force_redownload
+
+    @force_redownload.setter
+    def force_redownload(self, value: bool):
+        """
+        Set whether to force redownload the dataset from remote source.
+        """
+        self._benchmark_meta.force_redownload = value
+
+    @property
     def review_timeout(self) -> Optional[float]:
         """
         Return the timeout for the review process.

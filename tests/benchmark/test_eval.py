@@ -637,6 +637,23 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=5)
 
+    def test_general_fc(self):
+        """Test General Function Calling dataset."""
+        dataset_args = {
+            # 'local_path': 'custom_eval/text/general_fc',
+            # 'subset_list': ['example']
+            # 'force_redownload': True,
+        }
+        self._run_dataset_test('general_fc', dataset_args, limit=10, model='qwen-plus', stream=True)
+
+    def test_general_fc_local(self):
+        """Test General Function Calling dataset with local path."""
+        dataset_args = {
+            'local_path': 'custom_eval/text/fc',
+            'subset_list': ['example']
+        }
+        self._run_dataset_test('general_fc', dataset_args, limit=10, model='qwen-plus', stream=True)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark

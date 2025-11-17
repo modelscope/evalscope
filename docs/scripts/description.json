@@ -618,5 +618,10 @@
     "en": "SWEBench-verified-mini is a subset of SWEBench-verified that uses 50 instead of 500 datapoints, requires 5GB instead of 130GB of storage and has approximately the same distribution of performance, test pass rates and difficulty as the original dataset. Need to run `pip install swebench==4.1.0` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)",
     "zh": "SWEBench-verified-mini 是 SWEBench-verified 的子集，包含 50 个数据点（而非 500 个），存储需求为 5GB（而非 130GB），性能、测试通过率和难度分布与原始数据集基本一致。评估前需运行 `pip install swebench==4.1.0`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)",
     "updated_at": "2025-11-14T15:13:00Z"
+  },
+  "general_fc": {
+    "en": "A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).",
+    "zh": "用于自定义评估的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。",
+    "updated_at": "2025-11-17T20:49:12Z"
   }
 }

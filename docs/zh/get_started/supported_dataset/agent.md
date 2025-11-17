@@ -6,6 +6,7 @@
 |------------|----------|----------|
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](#bfcl-v4) | `Agent`, `FunctionCalling` |
+| `general_fc` | [General-FunctionCalling](#general-functioncalling) | `Agent`, `Custom`, `FunctionCalling` |
 | `tau2_bench` | [τ²-bench](#τ²-bench) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tau_bench` | [τ-bench](#τ-bench) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](#toolbench-static) | `FunctionCalling`, `Reasoning` |
@@ -60,6 +61,23 @@
     "SERPAPI_API_KEY": null
 }
 ```
+
+---
+
+### General-FunctionCalling
+
+[返回目录](#agent评测集)
+- **数据集名称**: `general_fc`
+- **数据集ID**: [evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/summary)
+- **数据集介绍**:
+  > 用于自定义评估的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。
+- **任务类别**: `Agent`, `Custom`, `FunctionCalling`
+- **评估指标**: `count_finish_reason_tool_call`, `count_successful_tool_call`, `schema_accuracy`, `tool_call_f1`
+- **聚合方法**: `f1`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
 
 ---
 
