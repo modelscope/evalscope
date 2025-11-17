@@ -70,7 +70,7 @@
 - **数据集名称**: `general_fc`
 - **数据集ID**: [evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/summary)
 - **数据集介绍**:
-  > 用于自定义评估的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。
+  > 一个用于自定义评测的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#fc)。
 - **任务类别**: `Agent`, `Custom`, `FunctionCalling`
 - **评估指标**: `count_finish_reason_tool_call`, `count_successful_tool_call`, `schema_accuracy`, `tool_call_f1`
 - **聚合方法**: `f1`

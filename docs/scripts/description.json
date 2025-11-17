@@ -620,8 +620,8 @@
     "updated_at": "2025-11-14T15:13:00Z"
   },
   "general_fc": {
-    "en": "A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).",
-    "zh": "用于自定义评估的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#qa)。",
-    "updated_at": "2025-11-17T20:49:12Z"
+    "en": "A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).",
+    "zh": "一个用于自定义评测的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#fc)。",
+    "updated_at": "2025-11-17T20:54:09Z"
   }
 }

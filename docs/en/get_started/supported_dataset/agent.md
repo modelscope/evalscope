@@ -70,7 +70,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Dataset Name**: `general_fc`
 - **Dataset ID**: [evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/summary)
 - **Description**:
-  > A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).
+  > A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).
 - **Task Categories**: `Agent`, `Custom`, `FunctionCalling`
 - **Evaluation Metrics**: `count_finish_reason_tool_call`, `count_successful_tool_call`, `schema_accuracy`, `tool_call_f1`
 - **Aggregation Methods**: `f1`
