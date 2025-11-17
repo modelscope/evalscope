@@ -104,7 +104,7 @@ qa/
 └── example.jsonl
 ```
 
-The JSONL file should be formatted as follows:
+This JSONL file contains one sample per line and supports the following three structures (please choose one and keep it consistent within the same file):
 
 ```json
 {"system": "You are a geographer", "query": "What is the capital of China?", "response": "The capital of China is Beijing"}
@@ -112,10 +112,19 @@ The JSONL file should be formatted as follows:
 {"messages": [{"role": "system", "content": "You are a geographer"}, {"role": "user", "content": "What is the largest desert in the world?"}], "response": "It is the Sahara Desert"}
 ```
 
-In this context:
-- `system` is the system prompt (optional field).
-- `query` is the question, or you can set `messages` as a list of dialogue messages, including `role` (role) and `content` (content), to simulate a conversation scenario. When both are set, the `query` field will be ignored.
-- `response` is the correct answer. For Q&A tasks with reference answers, this field must exist; for those without reference answers, it can be empty.
+Field descriptions and required fields:
+- Format 1 (system + query [+ response])
+  - query: Required
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+  - system: Optional
+- Format 2 (query [+ response])
+  - query: Required
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+- Format 3 (messages [+ response])
+  - messages: Required, array elements are {"role": "system"|"user"|"assistant", "content": "<text>"}; the last entry is recommended to be a user question
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+
+
 ### Reference Answer Q&A
 
 Below is how to configure the evaluation of reference answer Q&A tasks using the `Qwen2.5` model on `example.jsonl`.

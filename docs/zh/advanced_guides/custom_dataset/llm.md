@@ -104,7 +104,7 @@ qa/
 └── example.jsonl
 ```
 
-该jsonline文件需要为下面的格式：
+该 JSONL 文件为一行一条样本，支持以下三种结构（在同一文件中请选择一种并保持一致）：
 
 ```json
 {"system": "你是一位地理学家", "query": "中国的首都是哪里？", "response": "中国的首都是北京"}
@@ -112,10 +112,17 @@ qa/
 {"messages": [{"role": "system", "content": "你是一位地理学家"}, {"role": "user", "content": "世界上最大的沙漠是哪个？"}], "response": "是撒哈拉沙漠"}
 ```
 
-其中：
-- `system`是系统prompt（可选字段）。
-- `query`是问题，或者设置 `messages`对话消息列表，包含`role`（角色）和`content`（内容），用于模拟对话场景。同时设置时，`query`字段将被忽略。
-- `response`是正确回答。对于有参考答案的问答题，这个字段必须存在；对于无参考答案的问答题，这个字段可以为空。
+字段说明与必填项：
+- 格式1（system + query [+ response]）
+  - query：必填
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
+  - system：可选
+- 格式2（query [+ response]）
+  - query：必填
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
+- 格式3（messages [+ response]）
+  - messages：必填，数组元素为 {"role": "system"|"user"|"assistant", "content": "<文本>"}；建议最后一条为用户提问
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
 
 ### 有参考答案问答
 
