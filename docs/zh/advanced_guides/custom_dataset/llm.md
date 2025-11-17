@@ -299,7 +299,7 @@ run_task(task_cfg=task_cfg)
 ```
 </details>
 
-## 工具调用格式（Function Calling）
+## 工具调用格式（FC）
 
 适用于需要函数调用决策与参数结构校验的评测场景，用于测试模型是否能在函数调用时正确决策并传递参数。支持：
 - 预置数据集：evalscope/GeneralFunctionCall-Test

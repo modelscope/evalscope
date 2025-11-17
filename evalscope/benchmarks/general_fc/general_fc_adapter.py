@@ -21,7 +21,7 @@ logger = get_logger()
         name='general_fc',
         pretty_name='General-FunctionCalling',
         description='A general function calling dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).',  # noqa: E501
+        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).',  # noqa: E501
         tags=[Tags.FUNCTION_CALLING, Tags.CUSTOM, Tags.AGENT],
         dataset_id='evalscope/GeneralFunctionCall-Test',
         metric_list=[
