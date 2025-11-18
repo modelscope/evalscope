@@ -139,8 +139,9 @@ class HLEAdapter(DefaultDataAdapter):
         # Parse judge response to get accuracy score
         accuracy_score = re.search(r'GRADE:\s*([CI])', judge_response, re.IGNORECASE)
         if accuracy_score:
+            grade = accuracy_score.group(1).upper()
             score.value = {
-                'acc': 1.0 if accuracy_score.group(1) == 'C' else 0.0,
+                'acc': 1.0 if grade == 'C' else 0.0,
             }
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
