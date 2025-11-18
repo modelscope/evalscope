@@ -46,16 +46,21 @@ class TestPerf(unittest.TestCase):
 
 
     def test_run_perf_speed_benchmark(self):
-        task_cfg = {
-            'url': 'http://127.0.0.1:8001/v1/completions',
-            'parallel': 1,
-            'model': 'qwen2.5',
-            'api': 'openai',
-            'dataset': 'speed_benchmark',
-            'min_tokens': 2048,
-            'max_tokens': 2048,
-            'debug': True,
-        }
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            model='qwen2.5-coder-7b-instruct',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            number=8,
+            dataset='speed_benchmark',
+            min_tokens=2048,
+            max_tokens=2048,
+            seed=None,
+            stream=False,
+            extra_args={'ignore_eos': True}
+        )
+
         run_perf_benchmark(task_cfg)
 
 
@@ -138,7 +143,7 @@ class TestPerf(unittest.TestCase):
             prefix_length=0,
             min_prompt_length=1024,
             max_prompt_length=1024,
-            stream=False,
+            stream=True,
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             seed=None,
             extra_args={'ignore_eos': True}

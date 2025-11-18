@@ -79,6 +79,9 @@ class BenchmarkMeta:
     shuffle_choices: bool = False
     """Whether to shuffle the choices in multiple-choice datasets."""
 
+    force_redownload: bool = False
+    """Whether to force redownload the dataset from remote source."""
+
     review_timeout: Optional[float] = None
     """ Timeout for review in seconds."""
 

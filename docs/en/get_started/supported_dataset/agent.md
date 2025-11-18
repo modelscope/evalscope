@@ -6,6 +6,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 |------------|----------|----------|
 | `bfcl_v3` | [BFCL-v3](#bfcl-v3) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](#bfcl-v4) | `Agent`, `FunctionCalling` |
+| `general_fc` | [General-FunctionCalling](#general-functioncalling) | `Agent`, `Custom`, `FunctionCalling` |
 | `tau2_bench` | [τ²-bench](#τ²-bench) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tau_bench` | [τ-bench](#τ-bench) | `Agent`, `FunctionCalling`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](#toolbench-static) | `FunctionCalling`, `Reasoning` |
@@ -60,6 +61,23 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
     "SERPAPI_API_KEY": null
 }
 ```
+
+---
+
+### General-FunctionCalling
+
+[Back to Top](#agent-benchmarks)
+- **Dataset Name**: `general_fc`
+- **Dataset ID**: [evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/summary)
+- **Description**:
+  > A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).
+- **Task Categories**: `Agent`, `Custom`, `FunctionCalling`
+- **Evaluation Metrics**: `count_finish_reason_tool_call`, `count_successful_tool_call`, `schema_accuracy`, `tool_call_f1`
+- **Aggregation Methods**: `f1`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
 
 ---
 

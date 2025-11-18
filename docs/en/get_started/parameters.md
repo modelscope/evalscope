@@ -80,6 +80,7 @@ Example usage:
   - `filters`: Filters for the evaluation dataset. When specified, the given filters will be used to filter evaluation results and can be used to process the output of inference models. Currently supported filters include:
     - `remove_until {string}`: Removes the portion before the specified string in the model output. For example, the `ifeval` dataset can specify `{"remove_until": "</think>"}` to filter out the portion before `</think>` in the model output, preventing it from affecting scoring.
     - `extract {regex}`: Extracts the portion of the model output that matches the specified regular expression.
+  - `force_redownload`: Whether to force re-download the dataset. Default is `False`. Set to `True` if the downloaded dataset needs to be updated.
   - `extra_params`: Extra parameters related to the dataset. Refer to the documentation of [each dataset](./supported_dataset/index.md) for specific parameters, e.g., the `include_multi_modal` parameter for the `hle` dataset.
 - `--dataset-dir`: Dataset download path, default is `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset source, default is `modelscope`, optional value is `huggingface`.

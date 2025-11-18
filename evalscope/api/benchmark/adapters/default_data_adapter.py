@@ -257,6 +257,7 @@ class DefaultDataAdapter(DataAdapter):
             shuffle=self.shuffle,  # Shuffle dataset if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
+            force_redownload=self.force_redownload,  # Force redownload if enabled
         )
         dataset = loader.load()
         return dataset
@@ -287,7 +288,8 @@ class DefaultDataAdapter(DataAdapter):
             if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
-            data_source=self.dataset_hub,
+            data_source=self.dataset_hub,  # Data source configuration
+            force_redownload=self.force_redownload,  # Force redownload if enabled
         )
         dataset = loader.load()
         return dataset
