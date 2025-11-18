@@ -69,6 +69,11 @@ class LLMJudgeMixin:
         if self.judge_strategy == JudgeStrategy.RULE:
             return None
         else:
+            if not self._task_config.judge_model_args:
+                raise ValueError(
+                    'LLM judge model arguments must be provided for LLM-based judge strategies. '
+                    'Please check your task configuration.'
+                )
             return LLMJudge(**self._task_config.judge_model_args)
 
     def maybe_llm_match_score(
