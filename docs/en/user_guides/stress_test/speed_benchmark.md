@@ -21,6 +21,7 @@ evalscope perf \
  --parallel 1 \
  --url http://127.0.0.1:8000/v1/completions \
  --model qwen2.5 \
+ --number 8 \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
  --read-timeout 6000 \
@@ -36,6 +37,7 @@ evalscope perf \
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --parallel 1 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
+ --number 8 \
  --attn-implementation flash_attention_2 \
  --log-every-n-query 5 \
  --connect-timeout 6000 \
@@ -64,6 +66,7 @@ Speed Benchmark Results:
 ```bash
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --parallel 1 \
+ --number 8 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --log-every-n-query 5 \
  --connect-timeout 6000 \

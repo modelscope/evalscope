@@ -19,6 +19,7 @@
 ```bash
 evalscope perf \
  --parallel 1 \
+ --number 8 \
  --url http://127.0.0.1:8000/v1/completions \
  --model qwen2.5 \
  --log-every-n-query 5 \
@@ -27,8 +28,7 @@ evalscope perf \
  --max-tokens 2048 \
  --min-tokens 2048 \
  --api openai \
- --dataset speed_benchmark \
- --debug
+ --dataset speed_benchmark
 ```
 
 
@@ -45,7 +45,7 @@ CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --min-tokens 2048 \
  --api local \
  --dataset speed_benchmark \
- --debug
+ --number 8
 ```
 
 输出示例：
@@ -65,6 +65,7 @@ Speed Benchmark Results:
 ```bash
 CUDA_VISIBLE_DEVICES=0 evalscope perf \
  --parallel 1 \
+ --number 8 \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --log-every-n-query 5 \
  --connect-timeout 6000 \

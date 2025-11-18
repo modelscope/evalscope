@@ -68,6 +68,7 @@ EvalScope 是由[魔搭社区](https://modelscope.cn/)打造的一款功能强�
 >
 > 版本 1.0 对评测框架进行了重大重构，在 `evalscope/api` 下建立了全新的、更模块化且易扩展的 API 层。主要改进包括：为基准、样本和结果引入了标准化数据模型；对基准和指标等组件采用注册表式设计；并重写了核心评测器以协同新架构。现有的基准已迁移到这一 API，实现更加简洁、一致且易于维护。
 
+- 🔥 **[2025.11.18]** 支持自定义 Function-Call（工具调用）数据集，来测试模型能否适时并正确调用工具，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#fc)
 - 🔥 **[2025.11.14]** 新增支持SWE-bench_Verified, SWE-bench_Lite, SWE-bench_Verified_mini 代码评测基准，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)。
 - 🔥 **[2025.11.12]** 新增`pass@k`、`vote@k`、`pass^k`等指标聚合方法；新增支持A_OKVQA, CMMU, ScienceQ, V*Bench等多模态评测基准。
 - 🔥 **[2025.11.07]** 新增支持τ²-bench，是 τ-bench 的扩展与增强版本，包含一系列代码修复，并新增了电信（telecom）领域的故障排查场景，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)。
