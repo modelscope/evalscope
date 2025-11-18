@@ -1,11 +1,11 @@
 # Large Language Model
 
-This framework supports multiple-choice questions and question-answering questions, with two predefined dataset formats. The usage process is as follows:
+This framework supports multiple-choice questions, question-answering questions, and function calling, with three predefined dataset formats. The usage process is as follows:
 
 ## Multiple-Choice Question Format (MCQ)
 Suitable for scenarios where users need multiple-choice questions. The evaluation metric is accuracy.
 
-### 1. Data Preparation
+### Data Preparation
 
 Prepare files in multiple-choice question format, supporting both CSV and JSONL formats. The directory structure is as follows:
 
@@ -46,7 +46,7 @@ Where:
 - `A`, `B`, `C`, `D`, etc., are the options, supporting up to 10 choices
 - `answer` is the correct option
 
-### 2. Configuration Task
+### Configuration Task
 
 ````{note}
 The default `prompt_template` supports four options, as shown below, where `{query}` is the placeholder for the prompt. If you need fewer or more options, you can customize the `prompt_template`.
@@ -104,7 +104,7 @@ qa/
 └── example.jsonl
 ```
 
-The JSONL file should be formatted as follows:
+This JSONL file contains one sample per line and supports the following three structures (please choose one and keep it consistent within the same file):
 
 ```json
 {"system": "You are a geographer", "query": "What is the capital of China?", "response": "The capital of China is Beijing"}
@@ -112,10 +112,19 @@ The JSONL file should be formatted as follows:
 {"messages": [{"role": "system", "content": "You are a geographer"}, {"role": "user", "content": "What is the largest desert in the world?"}], "response": "It is the Sahara Desert"}
 ```
 
-In this context:
-- `system` is the system prompt (optional field).
-- `query` is the question, or you can set `messages` as a list of dialogue messages, including `role` (role) and `content` (content), to simulate a conversation scenario. When both are set, the `query` field will be ignored.
-- `response` is the correct answer. For Q&A tasks with reference answers, this field must exist; for those without reference answers, it can be empty.
+Field descriptions and required fields:
+- Format 1 (system + query [+ response])
+  - query: Required
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+  - system: Optional
+- Format 2 (query [+ response])
+  - query: Required
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+- Format 3 (messages [+ response])
+  - messages: Required, array elements are {"role": "system"|"user"|"assistant", "content": "<text>"}; the last entry is recommended to be a user question
+  - response: Required when evaluating with reference answers; can be omitted or left empty when evaluating without reference answers
+
+
 ### Reference Answer Q&A
 
 Below is how to configure the evaluation of reference answer Q&A tasks using the `Qwen2.5` model on `example.jsonl`.
@@ -288,4 +297,151 @@ run_task(task_cfg=task_cfg)
 +================+============+================+==========+=======+=========+=========+
 | Qwen2.5-0.5B-Instruct | general_qa | AverageAccuracy | example  |   12 | 0.6375 | default |
 +----------------+------------+----------------+----------+-------+---------+---------+
+```
+
+</details>
+
+## Function Calling Format (FC)
+
+Applicable to evaluation scenarios that require function call decision-making and parameter structure validation. Supports:
+- Preset dataset: evalscope/GeneralFunctionCall-Test
+- Custom dataset: Pass in JSONL files via local path
+
+The data is synthesized from official MoonshotAI [public samples](https://github.com/MoonshotAI/K2-Vendor-Verifier), including labels for "whether tool should be triggered" (K2-Thinking model as label source), facilitating experiment reproduction and automated regression testing.
+
+### Data Format
+
+Data is provided in JSONL format, with one sample per line, containing conversation context, tool definitions, and labels indicating whether tools should be triggered.
+
+Example structure (one JSON object per line):
+```json
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are an assistant"
+        },
+        {
+            "role": "user",
+            "content": "Please add 2 and 3"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "add",
+                "description": "Add two numbers together",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "number",
+                            "description": "The first number"
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "The second number"
+                        }
+                    },
+                    "required": [
+                        "a",
+                        "b"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        }
+    ],
+    "should_call_tool": true
+}
+```
+
+Field descriptions:
+- messages: Evaluation input context (OpenAI-style role/content)
+- tools: Available function list (OpenAI tool definition, `type=function, function={name, parameters(JSON Schema)}`)
+- should_call_tool: Label indicating whether tool should be triggered (derived from official K2-thinking model results where `finish_reason == "tool_calls"`)
+
+```{note}
+- During evaluation, if the model returns `finish_reason == "tool_calls"`, it is considered as "model predicts tool call".
+- Parameter validity is validated using JSON Schema (name must match, parameters must be parseable as JSON and satisfy the schema).
+```
+
+### Usage
+
+```{note}
+**Using model API services** is recommended for function calling evaluation, and ensure the model supports function calling. Local model inference does not currently support function calling.
+```
+
+Method 1: Using preset dataset ([evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/dataPeview))
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    datasets=['general_fc'],  # Function calling format is fixed as 'general_fc'
+    # To explicitly specify, add dataset_args={"general_fc": {"dataset_id": "evalscope/GeneralFunctionCall-Test"}}
+)
+run_task(task_cfg=task_cfg)
+```
+
+Method 2: Using custom local dataset
+
+Example directory structure:
+```text
+fc/
+└── example.jsonl  # One sample per line, structure as described above
+```
+
+Simple example (example.jsonl, 3 lines):
+```json
+{"messages":[{"role":"system","content":"You are an assistant"},{"role":"user","content":"Please add 2 and 3"}],"tools":[{"type":"function","function":{"name":"add","description":"Add two numbers together","parameters":{"type":"object","properties":{"a":{"type":"number","description":"The first number"},"b":{"type":"number","description":"The second number"}},"required":["a","b"],"additionalProperties":false}}}],"should_call_tool":true}
+{"messages":[{"role":"system","content":"You are an assistant"},{"role":"user","content":"The weather is nice today, let's chat"}],"tools":[{"type":"function","function":{"name":"add","description":"Add two numbers together","parameters":{"type":"object","properties":{"a":{"type":"number","description":"The first number"},"b":{"type":"number","description":"The second number"}},"required":["a","b"],"additionalProperties":false}}}],"should_call_tool":false}
+{"messages":[{"role":"system","content":"You are an assistant"},{"role":"user","content":"Convert 37 degrees Celsius to Fahrenheit"}],"tools":[{"type":"function","function":{"name":"convert_temperature","description":"Convert Celsius to Fahrenheit","parameters":{"type":"object","properties":{"celsius":{"type":"number","description":"Temperature value in Celsius"}},"required":["celsius"],"additionalProperties":false}}}],"should_call_tool":true}
+```
+
+
+Execution example:
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    datasets=['general_fc'],
+    dataset_args={
+        'general_fc': {
+            "local_path": "custom_eval/text/fc",  # Custom dataset root directory
+            "subset_list": ["example"]       # Corresponds to example.jsonl
+        }
+    },
+)
+run_task(task_cfg=task_cfg)
+```
+
+### Evaluation Metrics
+
+general_fc outputs the following metrics:
+- `count_finish_reason_tool_call`: Number of samples where model predicts tool call (`finish_reason == "tool_calls"`)
+- `count_successful_tool_call`: Among samples attempting tool calls, number of samples with matching tool name and parameters passing JSON Schema validation
+- `schema_accuracy`: Among samples attempting tool calls, proportion of parameters passing validation
+- `tool_call_f1`: Binary classification F1 based on label `should_call_tool` and whether model calls tool
+
+Example output:
+```text
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| Model     | Dataset    | Metric                        | Subset   |   Num |   Score | Cat.0   |
++===========+============+===============================+==========+=======+=========+=========+
+| qwen-plus | general_fc | count_finish_reason_tool_call | default  |    10 |  3      | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | count_successful_tool_call    | default  |    10 |  2      | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | schema_accuracy               | default  |    10 |  0.6667 | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | tool_call_f1                  | default  |    10 |  0.5    | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
 ```

@@ -1,11 +1,11 @@
 # 大语言模型
 
-本框架支持选择题和问答题，两种预定义的数据集格式，使用流程如下：
+本框架支持选择题、问答题、工具调用三种预定义的数据集格式，使用流程如下：
 
 ## 选择题格式（MCQ）
 适合用户是选择题的场景，评测指标为准确率（accuracy）。
 
-### 1. 数据准备
+### 数据准备
 准备选择题格式的文件，支持CSV和JSONL两种格式，该目录结构如下：
 
 **CSV格式**
@@ -45,7 +45,7 @@ JSONL文件需要为下面的格式：
 - `A`, `B`, `C`, `D`等是可选项，最大支持10个选项
 - `answer`是正确选项
 
-### 2. 配置评测任务
+### 配置评测任务
 
 ````{note}
 默认的`prompt_template`支持四个选项，如下所示，其中`{query}`是prompt填充的位置。如果需要更少或更多选项，可以自定义`prompt_template`。
@@ -104,7 +104,7 @@ qa/
 └── example.jsonl
 ```
 
-该jsonline文件需要为下面的格式：
+该 JSONL 文件为一行一条样本，支持以下三种结构（在同一文件中请选择一种并保持一致）：
 
 ```json
 {"system": "你是一位地理学家", "query": "中国的首都是哪里？", "response": "中国的首都是北京"}
@@ -112,10 +112,17 @@ qa/
 {"messages": [{"role": "system", "content": "你是一位地理学家"}, {"role": "user", "content": "世界上最大的沙漠是哪个？"}], "response": "是撒哈拉沙漠"}
 ```
 
-其中：
-- `system`是系统prompt（可选字段）。
-- `query`是问题，或者设置 `messages`对话消息列表，包含`role`（角色）和`content`（内容），用于模拟对话场景。同时设置时，`query`字段将被忽略。
-- `response`是正确回答。对于有参考答案的问答题，这个字段必须存在；对于无参考答案的问答题，这个字段可以为空。
+字段说明与必填项：
+- 格式1（system + query [+ response]）
+  - query：必填
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
+  - system：可选
+- 格式2（query [+ response]）
+  - query：必填
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
+- 格式3（messages [+ response]）
+  - messages：必填，数组元素为 {"role": "system"|"user"|"assistant", "content": "<文本>"}；建议最后一条为用户提问
+  - response：有参考答案评测时必填；无参考答案评测时可省略或置空
 
 ### 有参考答案问答
 
@@ -289,4 +296,150 @@ run_task(task_cfg=task_cfg)
 +=======================+============+=================+==========+=======+=========+=========+
 | Qwen2.5-0.5B-Instruct | general_qa | AverageAccuracy | example  |    12 |  0.6375 | default |
 +-----------------------+------------+-----------------+----------+-------+---------+---------+
+```
+</details>
+
+## 工具调用格式（FC）
+
+适用于需要函数调用决策与参数结构校验的评测场景，用于测试模型是否能在函数调用时正确决策并传递参数。支持：
+- 预置数据集：evalscope/GeneralFunctionCall-Test
+- 自定义数据集：通过本地路径传入 JSONL 文件
+
+数据由官方 MoonshotAI [公开样本](https://github.com/MoonshotAI/K2-Vendor-Verifier)合成，包含“是否应触发工具”的标签（K2-Thinking模型作为标签来源），便于复现实验与自动化回归测试。
+
+### 数据格式
+
+数据以 JSONL 提供，每行一个样本，包含对话上下文、工具定义与是否应触发工具的标签。
+
+示例结构（每行一个 JSON 对象）：
+```json
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "你是助手"
+        },
+        {
+            "role": "user",
+            "content": "请把 2 和 3 相加"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "add",
+                "description": "将两个数字相加",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "number",
+                            "description": "第一个数字"
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "第二个数字"
+                        }
+                    },
+                    "required": [
+                        "a",
+                        "b"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        }
+    ],
+    "should_call_tool": true
+}
+```
+
+字段说明：
+- messages：评测输入上下文（OpenAI 风格 role/content）
+- tools：可用函数列表（OpenAI 工具定义，`type=function，function={name, parameters(JSON Schema)}`）
+- should_call_tool：是否应触发工具的标签（来源于官方 K2-thinking 模型结果中 `finish_reason == "tool_calls"`）
+
+```{note}
+- 评测时，模型若给出 `finish_reason == "tool_calls"` 视为“模型预测调用工具”。
+- 参数合法性使用 JSON Schema 校验（必须命名匹配、参数能解析为 JSON 并满足 schema）。
+```
+
+### 使用方法
+
+```{note}
+推荐**使用模型 API 服务**进行工具调用评测，并确保模型支持工具调用，本地模型推理暂不支持工具调用。
+```
+
+方法一：使用预置数据集（[evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/dataPeview)）
+
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    datasets=['general_fc'],  # 工具调用格式固定为 'general_fc'
+    # 如需显式指定，可加入 dataset_args={"general_fc": {"dataset_id": "evalscope/GeneralFunctionCall-Test"}}
+)
+run_task(task_cfg=task_cfg)
+```
+
+方法二：使用自定义本地数据集
+
+目录结构示例：
+```text
+fc/
+└── example.jsonl  # 每行一个样本，结构见上文
+```
+
+简单示例（example.jsonl，3 行）：
+```json
+{"messages":[{"role":"system","content":"你是助手"},{"role":"user","content":"请把 2 和 3 相加"}],"tools":[{"type":"function","function":{"name":"add","description":"将两个数字相加","parameters":{"type":"object","properties":{"a":{"type":"number","description":"第一个数字"},"b":{"type":"number","description":"第二个数字"}},"required":["a","b"],"additionalProperties":false}}}],"should_call_tool":true}
+{"messages":[{"role":"system","content":"你是助手"},{"role":"user","content":"今天天气不错，我们聊聊天"}],"tools":[{"type":"function","function":{"name":"add","description":"将两个数字相加","parameters":{"type":"object","properties":{"a":{"type":"number","description":"第一个数字"},"b":{"type":"number","description":"第二个数字"}},"required":["a","b"],"additionalProperties":false}}}],"should_call_tool":false}
+{"messages":[{"role":"system","content":"你是助手"},{"role":"user","content":"把 37 摄氏度转换为华氏度"}],"tools":[{"type":"function","function":{"name":"convert_temperature","description":"将摄氏度转换为华氏度","parameters":{"type":"object","properties":{"celsius":{"type":"number","description":"摄氏温度值"}},"required":["celsius"],"additionalProperties":false}}}],"should_call_tool":true}
+```
+
+
+运行示例：
+```python
+from evalscope import TaskConfig, run_task
+
+task_cfg = TaskConfig(
+    model='qwen-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    datasets=['general_fc'],
+    dataset_args={
+        'general_fc': {
+            "local_path": "custom_eval/text/fc",  # 自定义数据集根目录
+            "subset_list": ["example"]       # 对应 example.jsonl
+        }
+    },
+)
+run_task(task_cfg=task_cfg)
+```
+
+### 评测指标说明
+
+general_fc 输出以下指标：
+- `count_finish_reason_tool_call`：模型预测调用工具的样本数（`finish_reason == "tool_calls"`）
+- `count_successful_tool_call`：在尝试调用的样本中，工具名匹配且参数通过 JSON Schema 校验的样本数
+- `schema_accuracy`：在尝试调用的样本中，参数校验通过的比例
+- `tool_call_f1`：基于标签 `should_call_tool` 与模型是否调用工具的二分类 F1
+
+示例输出：
+```text
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| Model     | Dataset    | Metric                        | Subset   |   Num |   Score | Cat.0   |
++===========+============+===============================+==========+=======+=========+=========+
+| qwen-plus | general_fc | count_finish_reason_tool_call | default  |    10 |  3      | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | count_successful_tool_call    | default  |    10 |  2      | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | schema_accuracy               | default  |    10 |  0.6667 | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
+| qwen-plus | general_fc | tool_call_f1                  | default  |    10 |  0.5    | default |
++-----------+------------+-------------------------------+----------+-------+---------+---------+
 ```

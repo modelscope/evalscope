@@ -14,7 +14,7 @@ def parse_tool_call(id: str, function: str, arguments: str, tools: Optional[List
 
     Note that this function doesn't know about internal tool names so the caller
     should ammend the returned `ToolCall` by mapping the parsed `function` field from
-    from an internal name to an inspect tool name and fixing up the `ToolCall` object
+    an internal name to an tool name and fixing up the `ToolCall` object
     as required to reflect this change.
     """
     error: Optional[str] = None
