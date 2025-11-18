@@ -3,8 +3,7 @@ import tiktoken
 from difflib import SequenceMatcher
 from typing import List, Optional
 
-from evalscope.api.messages import ChatMessage, ChatMessageUser, ChatMessageAssistant, ChatMessageSystem
-
+from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 
 # Token count bins for MRCR metrics
 OPENAI_MRCR_BINS = [
@@ -26,22 +25,38 @@ def get_token_count(text: str, tik_enc) -> int:
 
 def get_chatml_tok_cnt(chat_messages_str: str, tik_enc) -> int:
     """Get the token count of a string in chatml format."""
-    messages = json.loads(chat_messages_str)
-    return sum(get_token_count(m["content"], tik_enc) for m in messages)
+    try:
+        messages = json.loads(chat_messages_str)
+        if not isinstance(messages, list):
+            return 0
+        return sum(get_token_count(m.get('content', ''), tik_enc) for m in messages if isinstance(m, dict))
+    except json.JSONDecodeError:
+        return 0
 
 
 def str_to_chat_messages(messages_str: str) -> List[ChatMessage]:
     """Convert a string to a list of chat messages."""
     message_mapping = {
-        "system": ChatMessageSystem,
-        "user": ChatMessageUser,
-        "assistant": ChatMessageAssistant,
+        'system': ChatMessageSystem,
+        'user': ChatMessageUser,
+        'assistant': ChatMessageAssistant,
     }
-    messages = json.loads(messages_str)
-    return [
-        message_mapping[message["role"]](content=message["content"])
-        for message in messages
-    ]
+    try:
+        messages = json.loads(messages_str)
+        if not isinstance(messages, list):
+            return []
+    except json.JSONDecodeError:
+        return []
+
+    chat_messages = []
+    for message in messages:
+        if isinstance(message, dict):
+            role = message.get('role')
+            content = message.get('content')
+            msg_cls = message_mapping.get(role)
+            if msg_cls and content is not None:
+                chat_messages.append(msg_cls(content=content))
+    return chat_messages
 
 
 def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
@@ -59,14 +74,13 @@ def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
     return 0  # fallback
 
 
-def grade(
-    response: str, answer: str, random_string_to_prepend: Optional[str]
-) -> float:
+def grade(response: str, answer: str, random_string_to_prepend: Optional[str]) -> float:
     """
     Compare response and answer.
     """
-    if not response.startswith(random_string_to_prepend):
-        return 0
-    response = response.removeprefix(random_string_to_prepend)
-    answer = answer.removeprefix(random_string_to_prepend)
+    if random_string_to_prepend:
+        if not response.startswith(random_string_to_prepend):
+            return 0.0
+        response = response.removeprefix(random_string_to_prepend)
+        answer = answer.removeprefix(random_string_to_prepend)
     return float(SequenceMatcher(None, response, answer).ratio())

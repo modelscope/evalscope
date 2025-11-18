@@ -639,7 +639,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_openai_mrcr(self):
         self._run_dataset_test('openai_mrcr')
-        
+
     def test_general_fc(self):
         """Test General Function Calling dataset."""
         dataset_args = {

@@ -9,15 +9,7 @@ from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-
-from .utils import (
-    OPENAI_MRCR_BINS,
-    get_token_count,
-    get_chatml_tok_cnt,
-    str_to_chat_messages,
-    grade,
-    bin_index_for,
-)
+from .utils import OPENAI_MRCR_BINS, bin_index_for, get_chatml_tok_cnt, get_token_count, grade, str_to_chat_messages
 
 logger = get_logger()
 
@@ -27,7 +19,9 @@ logger = get_logger()
         name='openai_mrcr',
         pretty_name='OpenAI MRCR',
         tags=[Tags.LONG_CONTEXT, Tags.RETRIEVAL],
-        description='Memory-Recall with Contextual Retrieval (MRCR). Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt and measuring whether the model can correctly extract and use them.',
+        description='Memory-Recall with Contextual Retrieval (MRCR). '
+        'Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt. '
+        'Measures whether the model can correctly extract and use them. ',
         dataset_id='openai-mirror/mrcr',
         metric_list=['mrcr_score'],
         few_shot_num=0,
@@ -35,19 +29,19 @@ logger = get_logger()
         eval_split='train',
         prompt_template='',  # Not used, we use chat messages directly
         extra_params={
-            'max_context_size': None,  # Maximum context size in tokens. Samples exceeding this will be filtered out. None = no limit
+            'max_context_size': None,  # Maximum context size in tokens. None = no limit
             'needle_count': None,  # Filter by specific needle count (2, 4, or 8). None = include all needle counts
-            'tik_enc': 'o200k_base', 
+            'tik_enc': 'o200k_base',
         }
     )
 )
 class OpenAIMRCRAdapter(DefaultDataAdapter):
     """Adapter for OpenAI MRCR benchmark.
-    
+
     This benchmark evaluates long-context retrieval and recall by placing
     needles (key information) in long prompts and testing if the model
     can extract and use them correctly.
-    
+
     The adapter automatically generates subset scores for each token count bin:
     - Overall: Average across all samples
     - 4096-8192: Samples with 4K-8K total tokens
@@ -62,11 +56,11 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         """Initialize the MRCR adapter.
-        
+
         Extra params:
-            max_context_size (int, optional): Maximum context size in tokens. 
+            max_context_size (int, optional): Maximum context size in tokens.
                 Samples exceeding this will be filtered out. Defaults to None (no limit).
-            needle_count (list[int], optional): Filter by specific needle count(s) (2, 4, and/or 8). 
+            needle_count (list[int], optional): Filter by specific needle count(s) (2, 4, and/or 8).
                 Must be a list, e.g., [2], [4], or [2, 4, 8]. Defaults to None (include all needle counts).
         """
         super().__init__(**kwargs)
@@ -79,14 +73,14 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 logger.warning('needle_count must be list; ignoring')
                 self.needle_count = None
             else:
-                bad = [n for n in self.needle_count if n not in (2,4,8)]
+                bad = [n for n in self.needle_count if n not in (2, 4, 8)]
                 if bad:
                     logger.warning(f'Invalid needle_count values {bad}; ignoring')
                     self.needle_count = None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a raw MRCR record to a Sample object.
-        
+
         Expected fields in the source record:
         - prompt (str): JSON string containing chat messages
         - answer (str): expected output
@@ -95,20 +89,20 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         - desired_msg_index (int): index of the desired message
         - total_messages (int): total number of messages
         - n_chars (int): number of characters in context
-        
+
         Args:
             record: Raw data record from the dataset
-            
+
         Returns:
             Sample object or empty list if filtered out
         """
         # Filter by needle count EARLY (before expensive parsing/tokenizing)
         if self.needle_count is not None and record.get('n_needles') not in self.needle_count:
             return []
-        input_tok_cnt = get_chatml_tok_cnt(record['prompt'], self.tik_enc)
+        input_tok_cnt = get_chatml_tok_cnt(record.get(['prompt']), self.tik_enc)
         if self.max_context_size is not None and input_tok_cnt > self.max_context_size:
             return []
-        output_tok_cnt = get_token_count(record['answer'], self.tik_enc)
+        output_tok_cnt = get_token_count(record.get(['answer']), self.tik_enc)
         total_tok_cnt = input_tok_cnt + output_tok_cnt
         bin_index = bin_index_for(total_tok_cnt)
 
@@ -123,32 +117,33 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         }
         return Sample(input=str_to_chat_messages(record['prompt']), target=record['answer'], metadata=metadata)
 
-    def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         """Calculate MRCR-specific evaluation scores.
-        
+
         This method computes the sequence ratio score using MRCR's exact
         grading logic with prefix handling, and assigns the sample to a
         token count bin for bucketed metrics.
-        
+
         Args:
             original_prediction: The original, unfiltered model prediction
             filtered_prediction: The filtered and processed prediction
             reference: The ground truth reference answer
             task_state: The complete task state for context
-            
+
         Returns:
             Score object containing the sequence ratio and bin metadata
         """
-        response = task_state.output.completion or ""
-        answer = reference
+        response = task_state.output.completion or ''
 
         # Get prefix from metadata
         prefix = task_state.metadata.get('random_string_to_prepend') if task_state.metadata else None
 
         # Calculate sequence ratio with MRCR prefix handling
-        ratio = grade(response=task_state.output.completion or '', answer=reference, random_string_to_prepend=prefix)
+        ratio = grade(response=response, answer=reference, random_string_to_prepend=prefix)
 
-        bin_index = task_state.metadata.get('bin_index', 0)
+        bin_index = task_state.metadata.get('bin_index')
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
         score.value['mrcr_score'] = ratio
         score.metadata['bin_index'] = bin_index
@@ -157,17 +152,17 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Aggregate MRCR scores by token count bins.
-        
+
         This method computes:
-        1. Overall average mrcr_score across all samples  
+        1. Overall average mrcr_score across all samples
         2. Per-bin average mrcr_score for each token count range
-        
+
         Each bin appears as a separate metric in the report (e.g., mrcr_score@4096-8192).
         Bins with no samples are automatically excluded from the results.
-        
+
         Args:
             sample_scores: List of individual sample scores
-            
+
         Returns:
             List of AggScore objects containing overall and per-bin metrics.
             Returns empty list if no valid scores are found.
@@ -186,10 +181,21 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         overall = [v for vals in bin_scores.values() for v in vals]
         if not overall:
             return []
-        agg: List[AggScore] = [AggScore(metric_name='mrcr_score', aggregation_name='overall', score=sum(overall)/len(overall), num=len(overall))]
+        agg: List[AggScore] = [
+            AggScore(
+                metric_name='mrcr_score',
+                aggregation_name='overall',
+                score=sum(overall) / len(overall),
+                num=len(overall)
+            )
+        ]
         for i, vals in bin_scores.items():
             if not vals:
                 continue
-            l,r = OPENAI_MRCR_BINS[i]
-            agg.append(AggScore(metric_name='mrcr_score', aggregation_name=f'{l}-{r}', score=sum(vals)/len(vals), num=len(vals)))
+            l, r = OPENAI_MRCR_BINS[i]
+            agg.append(
+                AggScore(
+                    metric_name='mrcr_score', aggregation_name=f'{l}-{r}', score=sum(vals) / len(vals), num=len(vals)
+                )
+            )
         return agg
