@@ -120,7 +120,10 @@ class DefaultApiPlugin(ApiPluginBase):
                                     data = json.loads(chunk)
 
                                     if choices := data.get('choices'):
-                                        content = choices[0]['delta'].get('content')
+                                        if data.get('object') == 'text_completion':
+                                            content = choices[0].get('text')
+                                        else:
+                                            content = choices[0]['delta'].get('content')
                                         # First token
                                         if ttft == 0.0:
                                             ttft = timestamp - st
