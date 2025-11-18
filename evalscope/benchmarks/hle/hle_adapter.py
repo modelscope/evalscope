@@ -142,6 +142,10 @@ class HLEAdapter(DefaultDataAdapter):
             score.value = {
                 'acc': 1.0 if accuracy_score.group(1) == 'C' else 0.0,
             }
+        else:
+            score.value = {
+                'acc': 0.0,
+            }
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
             'source': 'llm_judge',

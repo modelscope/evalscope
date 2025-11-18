@@ -143,8 +143,9 @@ class LLMJudge:
             llm_response = response.completion
             return llm_response
         except Exception as e:
-            logger.error(f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}')
-            return ''
+            error_message = f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}'
+            logger.error(error_message)
+            return f'[ERROR] {error_message}'
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None):
         if question is None:
