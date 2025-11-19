@@ -86,34 +86,43 @@ class BenchmarkMeta:
     """ Timeout for review in seconds."""
 
     extra_params: Dict = field(default_factory=dict)
-    """ Additional parameters for the benchmark."""
+    """ Additional parameters for the benchmark.
+        The structure is:
+        {
+          "param": {
+             "type": "int",
+             "description": "...",
+             "value": 10,
+             "choices": [5, 10]        # optional for enum type checks
+          },
+          ...
+        }
+    """
 
     def __post_init__(self):
         """Validate fields after initialization."""
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
 
-    def _update(self, args: dict):
-        """Update instance with provided arguments, maintaining backward compatibility."""
-        args = copy.deepcopy(args)
+    def _is_spec_entry(self, entry: Any) -> bool:
+        """Return True if entry is a spec dict (new structured form)."""
+        return isinstance(entry, dict) and ('description' in entry) and ('type' in entry) and ('value' in entry)
 
-        if args.get('local_path'):
-            self.dataset_id = args['local_path']
-            del args['local_path']
+    def _extract_value(self, entry: Any) -> Any:
+        """Extract runtime value from a spec entry or return raw value."""
+        if self._is_spec_entry(entry):
+            value = entry.get('value')
+            if entry.get('choices') and value not in entry['choices']:
+                raise ValueError(f'Value {value} not in choices {entry["choices"]} in {self.name} extra_params.')
+            return value
+        return entry
 
-        if args.get('filters'):
-            if self.filters is None:
-                self.filters = OrderedDict()
-            new_filters = OrderedDict(args['filters'])
-            # insert filters at the beginning
-            self.filters = OrderedDict(list(new_filters.items()) + list(self.filters.items()))
-            del args['filters']
-        # Update fields with validation
-        for key, value in args.items():
-            if hasattr(self, key):
-                setattr(self, key, value)  # Validate few_shot_num if it's being updated
-                if key == 'few_shot_num' and value < 0:
-                    raise ValueError('few_shot_num must be >= 0')
+    def get_extra_params(self) -> Dict:
+        """Get plain extra param dict, only param name and value."""
+        param_dict = {}
+        for key, value in self.extra_params.items():
+            param_dict[key] = self._extract_value(value)
+        return param_dict
 
     def to_dict(self) -> dict:
         """Convert to dictionary, maintaining backward compatibility."""
@@ -124,4 +133,47 @@ class BenchmarkMeta:
         cur_dict = copy.deepcopy(asdict(self))
         if 'data_adapter' in cur_dict:
             del cur_dict['data_adapter']
+
+        cur_dict['extra_params'] = self.get_extra_params()
         return cur_dict
+
+    def _update(self, args: dict):
+        """Update instance with provided arguments, maintaining backward compatibility."""
+        args = copy.deepcopy(args)
+
+        if args.get('local_path'):
+            self.dataset_id = args['local_path']
+            del args['local_path']
+
+        if args.get('filters'):
+            self._update_filters(args['filters'])
+            del args['filters']
+
+        if args.get('extra_params'):
+            self._update_extra_params(args['extra_params'])
+            del args['extra_params']
+
+        # Update fields with validation
+        for key, value in args.items():
+            if hasattr(self, key):
+                setattr(self, key, value)  # Validate few_shot_num if it's being updated
+                if key == 'few_shot_num' and value < 0:
+                    raise ValueError('few_shot_num must be >= 0')
+
+    def _update_filters(self, new_filters: dict):
+        if self.filters is None:
+            self.filters = OrderedDict()
+        new_filters = OrderedDict(new_filters)
+        # insert filters at the beginning
+        self.filters = OrderedDict(list(new_filters.items()) + list(self.filters.items()))
+
+    def _update_extra_params(self, new_params: dict):
+        for key, value in new_params.items():
+            if key in self.extra_params:
+                # Update only the 'value' field if it's a spec entry
+                if self._is_spec_entry(self.extra_params[key]):
+                    self.extra_params[key]['value'] = value
+                else:
+                    self.extra_params[key] = value
+            else:
+                raise KeyError(f'Extra param {key} not found in benchmark {self.name} extra_params.')

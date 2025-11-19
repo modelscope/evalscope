@@ -64,7 +64,14 @@ DEFAULT_EXTRACTED_DIR_NAME: str = 'lcr'
         train_split=None,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
-        extra_params={'text_dir': None}
+        extra_params={
+            'text_dir': {
+                'type': 'str | null',
+                'description':
+                'Local directory containing extracted AA-LCR text files; if null will auto-download & extract.',
+                'value': None
+            }
+        }
     )
 )
 class AALCRAdapter(DefaultDataAdapter):

@@ -41,15 +41,24 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
         system_prompt=GRADER_SYSTEM_PROMPT,
         prompt_template=GRADER_TEMPLATE,
         extra_params={
-            'models': [{
-                'name': 'qwen-plus',
-                'report_path': 'outputs/20250627_172550/reports/qwen-plus'
-            }, {
-                'name': 'qwen2.5-7b',
-                'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
-            }],
-            'baseline':
-            'qwen2.5-7b'
+            'models': {
+                'type':
+                'list[dict]',
+                'description':
+                'List of model entries with name and report_path for arena comparison.',
+                'value': [{
+                    'name': 'qwen-plus',
+                    'report_path': 'outputs/20250627_172550/reports/qwen-plus'
+                }, {
+                    'name': 'qwen2.5-7b',
+                    'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
+                }]
+            },
+            'baseline': {
+                'type': 'str',
+                'description': 'Baseline model name used for ELO and winrate comparisons.',
+                'value': 'qwen2.5-7b'
+            }
         }
     )
 )

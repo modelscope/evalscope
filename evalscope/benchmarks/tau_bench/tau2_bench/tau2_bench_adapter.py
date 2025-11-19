@@ -32,12 +32,27 @@ logger = get_logger()
         aggregation='mean_and_pass_hat_k',
         eval_split='test',
         extra_params={
-            'user_model': 'qwen-plus',
-            'api_key': 'EMPTY',
-            'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'user_model': {
+                'type': 'str',
+                'description': 'Model used to simulate the user in the environment.',
+                'value': 'qwen-plus'
+            },
+            'api_key': {
+                'type': 'str',
+                'description': 'API key for the user model backend.',
+                'value': 'EMPTY'
+            },
+            'api_base': {
+                'type': 'str',
+                'description': 'Base URL for the user model API requests.',
+                'value': 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+            },
             'generation_config': {
-                'temperature': 0.0,
-                'max_tokens': 4096,
+                'type': 'dict',
+                'description': 'Default generation config for user model simulation.',
+                'value': {
+                    'temperature': 0.0,
+                }
             }
         }
     )

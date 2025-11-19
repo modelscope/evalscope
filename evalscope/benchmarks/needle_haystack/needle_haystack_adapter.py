@@ -44,26 +44,59 @@ Don't give information outside the document or repeat your findings."""
         system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
         prompt_template=PROMPT_TEMPLATE,
         extra_params={
-            'retrieval_question':
-            'What is the best thing to do in San Francisco?',
-            'needles':
-            ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n'],
-            'context_lengths_min':
-            1000,
-            'context_lengths_max':
-            32000,
-            'context_lengths_num_intervals':
-            10,
-            'document_depth_percent_min':
-            0,
-            'document_depth_percent_max':
-            100,
-            'document_depth_percent_intervals':
-            10,
-            'tokenizer_path':
-            'Qwen/Qwen3-0.6B',
-            'show_score':
-            False,
+            'retrieval_question': {
+                'type': 'str',
+                'description': 'Question used for retrieval evaluation.',
+                'value': 'What is the best thing to do in San Francisco?'
+            },
+            'needles': {
+                'type':
+                'list[str]',
+                'description':
+                'List of factual needle strings inserted into the context.',
+                'value':
+                ['\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n']
+            },
+            'context_lengths_min': {
+                'type': 'int',
+                'description': 'Minimum context length (tokens) to generate synthetic samples.',
+                'value': 1000
+            },
+            'context_lengths_max': {
+                'type': 'int',
+                'description': 'Maximum context length (tokens) to generate synthetic samples.',
+                'value': 32000
+            },
+            'context_lengths_num_intervals': {
+                'type': 'int',
+                'description': 'Number of intervals between min and max context lengths.',
+                'value': 10
+            },
+            'document_depth_percent_min': {
+                'type': 'int',
+                'description': 'Minimum insertion depth percentage for needles.',
+                'value': 0
+            },
+            'document_depth_percent_max': {
+                'type': 'int',
+                'description': 'Maximum insertion depth percentage for needles.',
+                'value': 100
+            },
+            'document_depth_percent_intervals': {
+                'type': 'int',
+                'description': 'Number of intervals between min and max depth percentages.',
+                'value': 10
+            },
+            'tokenizer_path': {
+                'type': 'str',
+                'description': 'Tokenizer checkpoint path used for tokenization.',
+                'value': 'Qwen/Qwen3-0.6B'
+            },
+            'show_score': {
+                'type': 'bool',
+                'description': 'Render numerical scores on heatmap output images.',
+                'value': False
+            }
         }
     )
 )

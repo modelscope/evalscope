@@ -32,8 +32,16 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Extra Parameters**: 
 ```json
 {
-    "underscore_to_dot": true,
-    "is_fc_model": true
+    "underscore_to_dot": {
+        "type": "bool",
+        "description": "Convert underscores to dots in function names for evaluation.",
+        "value": true
+    },
+    "is_fc_model": {
+        "type": "bool",
+        "description": "Indicates the evaluated model natively supports function calling.",
+        "value": true
+    }
 }
 ```
 
@@ -56,9 +64,21 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Extra Parameters**: 
 ```json
 {
-    "underscore_to_dot": true,
-    "is_fc_model": true,
-    "SERPAPI_API_KEY": null
+    "underscore_to_dot": {
+        "type": "bool",
+        "description": "Convert underscores to dots in function names for evaluation.",
+        "value": true
+    },
+    "is_fc_model": {
+        "type": "bool",
+        "description": "Indicates the evaluated model natively supports function calling.",
+        "value": true
+    },
+    "SERPAPI_API_KEY": {
+        "type": "str | null",
+        "description": "SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.",
+        "value": null
+    }
 }
 ```
 
@@ -98,12 +118,27 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Extra Parameters**: 
 ```json
 {
-    "user_model": "qwen-plus",
-    "api_key": "EMPTY",
-    "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "user_model": {
+        "type": "str",
+        "description": "Model used to simulate the user in the environment.",
+        "value": "qwen-plus"
+    },
+    "api_key": {
+        "type": "str",
+        "description": "API key for the user model backend.",
+        "value": "EMPTY"
+    },
+    "api_base": {
+        "type": "str",
+        "description": "Base URL for the user model API requests.",
+        "value": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    },
     "generation_config": {
-        "temperature": 0.0,
-        "max_tokens": 4096
+        "type": "dict",
+        "description": "Default generation config for user model simulation.",
+        "value": {
+            "temperature": 0.0
+        }
     }
 }
 ```
@@ -127,12 +162,27 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Extra Parameters**: 
 ```json
 {
-    "user_model": "qwen-plus",
-    "api_key": "EMPTY",
-    "api_base": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "user_model": {
+        "type": "str",
+        "description": "Model used to simulate the user in the environment.",
+        "value": "qwen-plus"
+    },
+    "api_key": {
+        "type": "str",
+        "description": "API key for the user model backend.",
+        "value": "EMPTY"
+    },
+    "api_base": {
+        "type": "str",
+        "description": "Base URL for the user model API requests.",
+        "value": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    },
     "generation_config": {
-        "temperature": 0.0,
-        "max_tokens": 4096
+        "type": "dict",
+        "description": "Default generation config for user model simulation.",
+        "value": {
+            "temperature": 0.0
+        }
     }
 }
 ```

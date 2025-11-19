@@ -104,7 +104,11 @@
 - **额外参数**: 
 ```json
 {
-    "text_dir": null
+    "text_dir": {
+        "type": "str | null",
+        "description": "Local directory containing extracted AA-LCR text files; if null will auto-download & extract.",
+        "value": null
+    }
 }
 ```
 - **提示模板**:
@@ -951,17 +955,25 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **额外参数**: 
 ```json
 {
-    "models": [
-        {
-            "name": "qwen-plus",
-            "report_path": "outputs/20250627_172550/reports/qwen-plus"
-        },
-        {
-            "name": "qwen2.5-7b",
-            "report_path": "outputs/20250627_172817/reports/qwen2.5-7b-instruct"
-        }
-    ],
-    "baseline": "qwen2.5-7b"
+    "models": {
+        "type": "list[dict]",
+        "description": "List of model entries with name and report_path for arena comparison.",
+        "value": [
+            {
+                "name": "qwen-plus",
+                "report_path": "outputs/20250627_172550/reports/qwen-plus"
+            },
+            {
+                "name": "qwen2.5-7b",
+                "report_path": "outputs/20250627_172817/reports/qwen2.5-7b-instruct"
+            }
+        ]
+    },
+    "baseline": {
+        "type": "str",
+        "description": "Baseline model name used for ELO and winrate comparisons.",
+        "value": "qwen2.5-7b"
+    }
 }
 ```
 - **系统提示词**:
@@ -1274,7 +1286,16 @@ Text to process:
 - **额外参数**: 
 ```json
 {
-    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
+    "version": {
+        "type": "str",
+        "description": "Dataset file version, choices: ['Consensus', 'Hard', 'All'].",
+        "value": "Consensus",
+        "choices": [
+            "Consensus",
+            "Hard",
+            "All"
+        ]
+    }
 }
 ```
 - **提示模板**:
@@ -1337,7 +1358,11 @@ Answer the following multiple choice question. The entire content of your respon
 - **额外参数**: 
 ```json
 {
-    "include_multi_modal": true
+    "include_multi_modal": {
+        "type": "bool",
+        "description": "Include multi-modal (image) questions during evaluation.",
+        "value": true
+    }
 }
 ```
 - **提示模板**:
@@ -1443,9 +1468,21 @@ Read the following function signature and docstring, and fully implement the fun
 - **额外参数**: 
 ```json
 {
-    "start_date": null,
-    "end_date": null,
-    "debug": false
+    "start_date": {
+        "type": "str | null",
+        "description": "Filter problems starting from this date (YYYY-MM-DD). Null keeps all.",
+        "value": null
+    },
+    "end_date": {
+        "type": "str | null",
+        "description": "Filter problems up to this date (YYYY-MM-DD). Null keeps all.",
+        "value": null
+    },
+    "debug": {
+        "type": "bool",
+        "description": "Enable verbose debug logging and bypass certain safety checks.",
+        "value": false
+    }
 }
 ```
 - **提示模板**:
@@ -1867,7 +1904,16 @@ Answer the following multiple choice question. The entire content of your respon
 - **额外参数**: 
 ```json
 {
-    "max_turns": 3
+    "max_turns": {
+        "type": "int",
+        "description": "Maximum number of interactive turns to evaluate (1-3).",
+        "value": 3,
+        "choices": [
+            1,
+            2,
+            3
+        ]
+    }
 }
 ```
 
@@ -1948,18 +1994,58 @@ Answer the following multiple choice question. The last line of your response sh
 - **额外参数**: 
 ```json
 {
-    "retrieval_question": "What is the best thing to do in San Francisco?",
-    "needles": [
-        "\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n"
-    ],
-    "context_lengths_min": 1000,
-    "context_lengths_max": 32000,
-    "context_lengths_num_intervals": 10,
-    "document_depth_percent_min": 0,
-    "document_depth_percent_max": 100,
-    "document_depth_percent_intervals": 10,
-    "tokenizer_path": "Qwen/Qwen3-0.6B",
-    "show_score": false
+    "retrieval_question": {
+        "type": "str",
+        "description": "Question used for retrieval evaluation.",
+        "value": "What is the best thing to do in San Francisco?"
+    },
+    "needles": {
+        "type": "list[str]",
+        "description": "List of factual needle strings inserted into the context.",
+        "value": [
+            "\nThe best thing to do in San Francisco is eat a sandwich and sit in Dolores Park on a sunny day.\n"
+        ]
+    },
+    "context_lengths_min": {
+        "type": "int",
+        "description": "Minimum context length (tokens) to generate synthetic samples.",
+        "value": 1000
+    },
+    "context_lengths_max": {
+        "type": "int",
+        "description": "Maximum context length (tokens) to generate synthetic samples.",
+        "value": 32000
+    },
+    "context_lengths_num_intervals": {
+        "type": "int",
+        "description": "Number of intervals between min and max context lengths.",
+        "value": 10
+    },
+    "document_depth_percent_min": {
+        "type": "int",
+        "description": "Minimum insertion depth percentage for needles.",
+        "value": 0
+    },
+    "document_depth_percent_max": {
+        "type": "int",
+        "description": "Maximum insertion depth percentage for needles.",
+        "value": 100
+    },
+    "document_depth_percent_intervals": {
+        "type": "int",
+        "description": "Number of intervals between min and max depth percentages.",
+        "value": 10
+    },
+    "tokenizer_path": {
+        "type": "str",
+        "description": "Tokenizer checkpoint path used for tokenization.",
+        "value": "Qwen/Qwen3-0.6B"
+    },
+    "show_score": {
+        "type": "bool",
+        "description": "Render numerical scores on heatmap output images.",
+        "value": false
+    }
 }
 ```
 - **系统提示词**:
@@ -2054,9 +2140,21 @@ Text to process:
 - **额外参数**: 
 ```json
 {
-    "max_context_size": null,
-    "needle_count": null,
-    "tik_enc": "o200k_base"
+    "max_context_size": {
+        "type": "int | null",
+        "description": "Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).",
+        "value": null
+    },
+    "needle_count": {
+        "type": "list[int] | null",
+        "description": "Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.",
+        "value": null
+    },
+    "tik_enc": {
+        "type": "str",
+        "description": "tiktoken encoding name used for token counting.",
+        "value": "o200k_base"
+    }
 }
 ```
 
@@ -2369,9 +2467,21 @@ Answer the following multiple choice question. The last line of your response sh
 - **额外参数**: 
 ```json
 {
-    "build_docker_images": true,
-    "pull_remote_images_if_available": true,
-    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+    "build_docker_images": {
+        "type": "bool",
+        "description": "Build Docker images locally for each sample.",
+        "value": true
+    },
+    "pull_remote_images_if_available": {
+        "type": "bool",
+        "description": "Attempt to pull existing remote Docker images before building.",
+        "value": true
+    },
+    "inference_dataset_id": {
+        "type": "str",
+        "description": "Oracle dataset ID used to fetch inference context.",
+        "value": "princeton-nlp/SWE-bench_oracle"
+    }
 }
 ```
 - **提示模板**:
@@ -2402,9 +2512,21 @@ Answer the following multiple choice question. The last line of your response sh
 - **额外参数**: 
 ```json
 {
-    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle",
-    "build_docker_images": true,
-    "pull_remote_images_if_available": true
+    "inference_dataset_id": {
+        "type": "str",
+        "description": "Oracle dataset ID used to fetch inference context.",
+        "value": "princeton-nlp/SWE-bench_oracle"
+    },
+    "build_docker_images": {
+        "type": "bool",
+        "description": "Build Docker images locally for each sample.",
+        "value": true
+    },
+    "pull_remote_images_if_available": {
+        "type": "bool",
+        "description": "Attempt to pull existing remote Docker images before building.",
+        "value": true
+    }
 }
 ```
 - **提示模板**:
@@ -2435,9 +2557,21 @@ Answer the following multiple choice question. The last line of your response sh
 - **额外参数**: 
 ```json
 {
-    "build_docker_images": true,
-    "pull_remote_images_if_available": true,
-    "inference_dataset_id": "princeton-nlp/SWE-bench_oracle"
+    "build_docker_images": {
+        "type": "bool",
+        "description": "Build Docker images locally for each sample.",
+        "value": true
+    },
+    "pull_remote_images_if_available": {
+        "type": "bool",
+        "description": "Attempt to pull existing remote Docker images before building.",
+        "value": true
+    },
+    "inference_dataset_id": {
+        "type": "str",
+        "description": "Oracle dataset ID used to fetch inference context.",
+        "value": "princeton-nlp/SWE-bench_oracle"
+    }
 }
 ```
 - **提示模板**:
@@ -2500,7 +2634,11 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 - **额外参数**: 
 ```json
 {
-    "multiple_correct": false
+    "multiple_correct": {
+        "type": "bool",
+        "description": "Use multiple-answer format (MC2) if True; otherwise single-answer (MC1).",
+        "value": false
+    }
 }
 ```
 - **提示模板**:

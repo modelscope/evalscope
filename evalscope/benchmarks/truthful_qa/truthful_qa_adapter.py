@@ -42,7 +42,11 @@ TRUTHFUL_QA_PROMPT = (
         train_split=None,
         eval_split='validation',
         extra_params={
-            'multiple_correct': False  # Set to True if evaluating on MC2 with multiple correct answers
+            'multiple_correct': {
+                'type': 'bool',
+                'description': 'Use multiple-answer format (MC2) if True; otherwise single-answer (MC1).',
+                'value': False
+            }
         }
     )
 )

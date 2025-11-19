@@ -28,9 +28,21 @@ logger = get_logger()
         eval_split='test',
         prompt_template='{question}',
         extra_params={
-            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
-            'build_docker_images': True,
-            'pull_remote_images_if_available': True,
+            'inference_dataset_id': {
+                'type': 'str',
+                'description': 'Oracle dataset ID used to fetch inference context.',
+                'value': 'princeton-nlp/SWE-bench_oracle'
+            },
+            'build_docker_images': {
+                'type': 'bool',
+                'description': 'Build Docker images locally for each sample.',
+                'value': True
+            },
+            'pull_remote_images_if_available': {
+                'type': 'bool',
+                'description': 'Attempt to pull existing remote Docker images before building.',
+                'value': True
+            }
         }
     )
 )
@@ -155,9 +167,21 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         eval_split='test',
         prompt_template='{question}',
         extra_params={
-            'build_docker_images': True,
-            'pull_remote_images_if_available': True,
-            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+            'build_docker_images': {
+                'type': 'bool',
+                'description': 'Build Docker images locally for each sample.',
+                'value': True
+            },
+            'pull_remote_images_if_available': {
+                'type': 'bool',
+                'description': 'Attempt to pull existing remote Docker images before building.',
+                'value': True
+            },
+            'inference_dataset_id': {
+                'type': 'str',
+                'description': 'Oracle dataset ID used to fetch inference context.',
+                'value': 'princeton-nlp/SWE-bench_oracle'
+            }
         }
     )
 )
@@ -181,9 +205,21 @@ class SWEBenchVerifiedMiniAdapter(SWEBenchVerifiedAdapter):
         eval_split='test',
         prompt_template='{question}',
         extra_params={
-            'build_docker_images': True,
-            'pull_remote_images_if_available': True,
-            'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+            'build_docker_images': {
+                'type': 'bool',
+                'description': 'Build Docker images locally for each sample.',
+                'value': True
+            },
+            'pull_remote_images_if_available': {
+                'type': 'bool',
+                'description': 'Attempt to pull existing remote Docker images before building.',
+                'value': True
+            },
+            'inference_dataset_id': {
+                'type': 'str',
+                'description': 'Oracle dataset ID used to fetch inference context.',
+                'value': 'princeton-nlp/SWE-bench_oracle'
+            }
         }
     )
 )

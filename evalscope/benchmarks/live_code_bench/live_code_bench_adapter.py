@@ -30,9 +30,21 @@ logger = get_logger()
         '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
         review_timeout=6,
         extra_params={
-            'start_date': None,
-            'end_date': None,
-            'debug': False
+            'start_date': {
+                'type': 'str | null',
+                'description': 'Filter problems starting from this date (YYYY-MM-DD). Null keeps all.',
+                'value': None
+            },
+            'end_date': {
+                'type': 'str | null',
+                'description': 'Filter problems up to this date (YYYY-MM-DD). Null keeps all.',
+                'value': None
+            },
+            'debug': {
+                'type': 'bool',
+                'description': 'Enable verbose debug logging and bypass certain safety checks.',
+                'value': False
+            }
         },
     )
 )

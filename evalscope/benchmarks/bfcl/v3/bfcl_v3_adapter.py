@@ -1,5 +1,4 @@
 import json
-import re
 import traceback
 from typing import Any, Dict, List
 
@@ -61,8 +60,16 @@ BFCL_V3_TO_V4_SUBJECT_MAPPING = {
         metric_list=['acc'],
         eval_split='train',
         extra_params={
-            'underscore_to_dot': True,
-            'is_fc_model': True,
+            'underscore_to_dot': {
+                'type': 'bool',
+                'description': 'Convert underscores to dots in function names for evaluation.',
+                'value': True
+            },
+            'is_fc_model': {
+                'type': 'bool',
+                'description': 'Indicates the evaluated model natively supports function calling.',
+                'value': True
+            }
         }
     )
 )

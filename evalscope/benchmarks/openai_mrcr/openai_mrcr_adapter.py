@@ -28,9 +28,22 @@ logger = get_logger()
         eval_split='train',
         prompt_template='',  # Not used, we use chat messages directly
         extra_params={
-            'max_context_size': None,  # Maximum context size in tokens. None = no limit
-            'needle_count': None,  # Filter by specific needle count (2, 4, or 8). None = include all needle counts
-            'tik_enc': 'o200k_base',
+            'max_context_size': {
+                'type': 'int | null',
+                'description': 'Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).',
+                'value': None
+            },
+            'needle_count': {
+                'type': 'list[int] | null',
+                'description':
+                'Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.',
+                'value': None
+            },
+            'tik_enc': {
+                'type': 'str',
+                'description': 'tiktoken encoding name used for token counting.',
+                'value': 'o200k_base'
+            }
         }
     )
 )
