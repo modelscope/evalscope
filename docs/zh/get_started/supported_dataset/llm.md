@@ -63,6 +63,7 @@
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
+| `openai_mrcr` | [OpenAI MRCR](#openai-mrcr) | `LongContext`, `Retrieval` |
 | `piqa` | [PIQA](#piqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -2033,6 +2034,31 @@ Text to process:
 ```
 
 </details>
+
+---
+
+### OpenAI MRCR
+
+[返回目录](#llm评测集)
+- **数据集名称**: `openai_mrcr`
+- **数据集ID**: [openai-mirror/mrcr](https://modelscope.cn/datasets/openai-mirror/mrcr/summary)
+- **数据集介绍**:
+  > MRCR（带上下文检索的记忆召回）。通过在提示中插入2、4或8个“针”来评估长上下文中的检索与召回能力，衡量模型能否正确提取并使用这些信息。
+- **任务类别**: `LongContext`, `Retrieval`
+- **评估指标**: `mrcr_score`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "max_context_size": null,
+    "needle_count": null,
+    "tik_enc": "o200k_base"
+}
+```
 
 ---
 

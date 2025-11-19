@@ -63,6 +63,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `ontonotes5` | [OntoNotes5](#ontonotes5) | `Knowledge`, `NER` |
+| `openai_mrcr` | [OpenAI MRCR](#openai-mrcr) | `LongContext`, `Retrieval` |
 | `piqa` | [PIQA](#piqa) | `Commonsense`, `MCQ`, `Reasoning` |
 | `poly_math` | [PolyMath](#polymath) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -2033,6 +2034,31 @@ Text to process:
 ```
 
 </details>
+
+---
+
+### OpenAI MRCR
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `openai_mrcr`
+- **Dataset ID**: [openai-mirror/mrcr](https://modelscope.cn/datasets/openai-mirror/mrcr/summary)
+- **Description**:
+  > Memory-Recall with Contextual Retrieval (MRCR). Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt. Measures whether the model can correctly extract and use them. 
+- **Task Categories**: `LongContext`, `Retrieval`
+- **Evaluation Metrics**: `mrcr_score`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Extra Parameters**: 
+```json
+{
+    "max_context_size": null,
+    "needle_count": null,
+    "tik_enc": "o200k_base"
+}
+```
 
 ---
 

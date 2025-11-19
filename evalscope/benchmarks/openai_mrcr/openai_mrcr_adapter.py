@@ -1,4 +1,3 @@
-import tiktoken
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -64,10 +63,14 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 Must be a list, e.g., [2], [4], or [2, 4, 8]. Defaults to None (include all needle counts).
         """
         super().__init__(**kwargs)
-        enc_name = self.extra_params.get('tik_enc', 'o200k_base')
-        self.tik_enc = tiktoken.get_encoding(enc_name)
+        self.enc_name = self.extra_params.get('tik_enc', 'o200k_base')
         self.max_context_size = self.extra_params.get('max_context_size')
         self.needle_count = self.extra_params.get('needle_count')
+
+    def load(self):
+        import tiktoken
+
+        self.tik_enc = tiktoken.get_encoding(self.enc_name)
         if self.needle_count is not None:
             if not isinstance(self.needle_count, list):
                 logger.warning('needle_count must be list; ignoring')
@@ -77,6 +80,8 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 if bad:
                     logger.warning(f'Invalid needle_count values {bad}; ignoring')
                     self.needle_count = None
+
+        return super().load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a raw MRCR record to a Sample object.
@@ -99,10 +104,10 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         # Filter by needle count EARLY (before expensive parsing/tokenizing)
         if self.needle_count is not None and record.get('n_needles') not in self.needle_count:
             return []
-        input_tok_cnt = get_chatml_tok_cnt(record.get(['prompt']), self.tik_enc)
+        input_tok_cnt = get_chatml_tok_cnt(record.get('prompt'), self.tik_enc)
         if self.max_context_size is not None and input_tok_cnt > self.max_context_size:
             return []
-        output_tok_cnt = get_token_count(record.get(['answer']), self.tik_enc)
+        output_tok_cnt = get_token_count(record.get('answer'), self.tik_enc)
         total_tok_cnt = input_tok_cnt + output_tok_cnt
         bin_index = bin_index_for(total_tok_cnt)
 
