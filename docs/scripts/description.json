@@ -623,5 +623,10 @@
     "en": "A general function calling dataset for custom evaluation. For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).",
     "zh": "一个用于自定义评测的通用函数调用数据集。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/llm.html#fc)。",
     "updated_at": "2025-11-17T20:54:09Z"
+  },
+  "openai_mrcr": {
+    "en": "Memory-Recall with Contextual Retrieval (MRCR). Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt. Measures whether the model can correctly extract and use them.",
+    "zh": "MRCR（带上下文检索的记忆召回）。通过在提示中插入2、4或8个“针”来评估长上下文中的检索与召回能力，衡量模型能否正确提取并使用这些信息。",
+    "updated_at": "2025-11-19T16:44:43Z"
   }
 }
