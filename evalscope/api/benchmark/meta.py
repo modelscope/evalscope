@@ -93,6 +93,27 @@ class BenchmarkMeta:
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
 
+    @staticmethod
+    def _is_spec_entry(entry: Any) -> bool:
+        """Return True if entry is a spec dict (new structured form)."""
+        return isinstance(entry, dict) and ('default' in entry or 'value' in entry)
+
+    @staticmethod
+    def _extract_value(entry: Any) -> Any:
+        """Extract runtime value from a spec entry or return raw value."""
+        if BenchmarkMeta._is_spec_entry(entry):
+            if 'value' in entry:
+                return entry['value']
+            return entry.get('default')
+        return entry
+
+    def get_extra_params(self) -> Dict:
+        """Get plain extra param dict, only param name and value."""
+        param_dict = {}
+        for key, value in self.extra_params.items():
+            param_dict[key] = self._extract_value(value)
+        return param_dict
+
     def _update(self, args: dict):
         """Update instance with provided arguments, maintaining backward compatibility."""
         args = copy.deepcopy(args)

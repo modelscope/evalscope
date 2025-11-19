@@ -331,7 +331,7 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         Return the extra parameters of the benchmark.
         """
-        return self._benchmark_meta.extra_params
+        return self._benchmark_meta.get_extra_params()
 
     @property
     def seed(self) -> Optional[int]:

@@ -2,7 +2,6 @@ import os
 from collections import defaultdict
 from functools import partial
 from overrides import override
-from tqdm.auto import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
