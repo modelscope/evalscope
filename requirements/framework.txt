@@ -26,6 +26,7 @@ scikit-learn
 seaborn
 sympy
 tabulate
+tiktoken
 tqdm
 transformers>=4.33
 word2number

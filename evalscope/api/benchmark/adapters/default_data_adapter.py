@@ -305,7 +305,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         return True  # Default implementation allows all samples
 
-    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Union[Sample, List[Sample]]:
         """
         Convert a raw data record to a Sample object.
 
@@ -316,7 +316,7 @@ class DefaultDataAdapter(DataAdapter):
             record (Dict[str, Any]): Raw data record from the dataset
 
         Returns:
-            Sample: Processed sample object ready for evaluation
+            Union[Sample, List[Sample]]: Processed sample object(s) ready for evaluation
         """
         raise NotImplementedError('This method should be implemented in subclasses')
 
