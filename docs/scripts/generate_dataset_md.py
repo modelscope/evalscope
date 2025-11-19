@@ -246,7 +246,7 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
         technical_info.append(f'- **{text["review_timeout"]}**: {data_adapter.review_timeout}')
     
     # Add extra parameters
-    extra_params = data_adapter.extra_params
+    extra_params = data_adapter._benchmark_meta.extra_params
     if extra_params:
         technical_info.append(f'- **{text["extra_parameters"]}**: \n```json\n{process_dictionary(extra_params)}\n```')
 

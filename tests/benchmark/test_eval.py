@@ -364,14 +364,14 @@ class TestNativeBenchmark(TestBenchmark):
     def test_bfcl_v3(self):
         """Test BFCL dataset."""
         dataset_args = {
-            # 'subset_list': [
-            #     # 'simple',
-            #     # 'java',
-            #     # 'javascript',
-            #     # 'live_multiple',
-            #     # 'multi_turn_base',
-            #     # 'multi_turn_miss_func'
-            # ],
+            'subset_list': [
+                'simple',
+                'java',
+                'javascript',
+                # 'live_multiple',
+                # 'multi_turn_base',
+                # 'multi_turn_miss_func'
+            ],
             'extra_params': {
                 'is_fc_model': True,
                 'underscore_to_dot': True
@@ -420,15 +420,15 @@ class TestNativeBenchmark(TestBenchmark):
                 'airline',
                 'retail'
             ],
-            # 'extra_params': {
-            #     'user_model': 'qwen-plus',
-            #     'api_key': env.get('DASHSCOPE_API_KEY'),
-            #     'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-            #     'generation_config': {
-            #         'temperature': 0.0,
-            #         'stream': True
-            #     }
-            # }
+            'extra_params': {
+                'user_model': 'qwen-plus',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'generation_config': {
+                    'temperature': 0.0,
+                    'stream': True
+                }
+            }
         }
         self._run_dataset_test('tau_bench', dataset_args, limit=5, stream=True)
 

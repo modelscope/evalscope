@@ -69,7 +69,12 @@ PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF ima
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         extra_params={
-            'match_method': 'quick_match',
+            'match_method': {
+                'type': 'str',
+                'description': 'Scoring match method used for evaluation.',
+                'value': 'quick_match',
+                'choices': ['quick_match', 'simple_match', 'no_split']
+            }
         }
     )
 )

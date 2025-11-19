@@ -115,7 +115,12 @@ VERSION_FILE = {
         eval_split='test',
         prompt_template='Answer the question:\n\n{question}',
         extra_params={
-            'version': f'# File version, choose from {VERSION}, default to {VERSION[0]}',
+            'version': {
+                'type': 'str',
+                'description': f'Dataset file version, choices: {VERSION}.',
+                'value': VERSION[0],
+                'choices': VERSION
+            }
         }
     )
 )
@@ -144,10 +149,6 @@ class HealthBenchAdapter(DefaultDataAdapter):
         self.add_aggregation_name = False
         # Get version from extra parameters, default to first version if not specified
         self.version = self.extra_params.get('version', VERSION[0])
-        # Validate version parameter
-        if self.version not in VERSION:
-            logger.warning(f'Invalid version {self.version}, choose from {VERSION}, default to {VERSION[0]}')
-            self.version = VERSION[0]
         # Map version to corresponding data file
         self.version_file = VERSION_FILE[self.version]
 

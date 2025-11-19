@@ -477,7 +477,16 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **额外参数**: 
 ```json
 {
-    "dataset_format": "# choose from ['standard (4 options)', 'standard (10 options)', 'vision'], default 'standard (4 options)'"
+    "dataset_format": {
+        "type": "str",
+        "description": "Dataset format variant. Choices: ['standard (4 options)', 'standard (10 options)', 'vision'].",
+        "value": "standard (4 options)",
+        "choices": [
+            "standard (4 options)",
+            "standard (10 options)",
+            "vision"
+        ]
+    }
 }
 ```
 - **提示模板**:
@@ -588,8 +597,16 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **额外参数**: 
 ```json
 {
-    "use_image": true,
-    "use_audio": true
+    "use_image": {
+        "type": "bool",
+        "description": "Whether to provide the raw image. False uses textual alternative.",
+        "value": true
+    },
+    "use_audio": {
+        "type": "bool",
+        "description": "Whether to provide the raw audio. False uses textual alternative.",
+        "value": true
+    }
 }
 ```
 - **提示模板**:
@@ -627,7 +644,16 @@ Answer the following multiple choice question based on the image and audio conte
 - **额外参数**: 
 ```json
 {
-    "match_method": "quick_match"
+    "match_method": {
+        "type": "str",
+        "description": "Scoring match method used for evaluation.",
+        "value": "quick_match",
+        "choices": [
+            "quick_match",
+            "simple_match",
+            "no_split"
+        ]
+    }
 }
 ```
 - **提示模板**:

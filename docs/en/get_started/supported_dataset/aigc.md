@@ -49,7 +49,15 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Extra Parameters**: 
 ```json
 {
-    "language": "# language of the instruction, choose from ['en', 'cn'], default to `en`"
+    "language": {
+        "type": "str",
+        "description": "Language of the instruction. Choices: ['en', 'cn'].",
+        "value": "en",
+        "choices": [
+            "en",
+            "cn"
+        ]
+    }
 }
 ```
 

@@ -37,7 +37,14 @@ LANGUAGE_LIST = ['en', 'cn']
         few_shot_num=0,
         train_split=None,
         eval_split='train',
-        extra_params={'language': f'# language of the instruction, choose from {LANGUAGE_LIST}, default to `en`'}
+        extra_params={
+            'language': {
+                'type': 'str',
+                'description': f'Language of the instruction. Choices: {LANGUAGE_LIST}.',
+                'value': 'en',
+                'choices': LANGUAGE_LIST
+            }
+        }
     )
 )
 class GEditAdapter(ImageEditAdapter):
@@ -46,9 +53,6 @@ class GEditAdapter(ImageEditAdapter):
         super().__init__(**kwargs)
 
         self.language = self.extra_params.get('language', 'en')
-        if self.language not in LANGUAGE_LIST:
-            logger.warning(f"Invalid language '{self.language}', fallback to 'en'")
-            self.language = 'en'
         self.reformat_subset = True
         self._use_llm_judge = True
 

@@ -33,8 +33,16 @@ Answer the following multiple choice question based on the image and audio conte
         eval_split='train',
         prompt_template=MULT_CHOICE_PROMPT,
         extra_params={
-            'use_image': True,  # Whether to use image input, if False, use text alternative image content.
-            'use_audio': True,  # Whether to use audio input, if False, use text alternative audio content.
+            'use_image': {
+                'type': 'bool',
+                'description': 'Whether to provide the raw image. False uses textual alternative.',
+                'value': True
+            },
+            'use_audio': {
+                'type': 'bool',
+                'description': 'Whether to provide the raw audio. False uses textual alternative.',
+                'value': True
+            }
         }
     )
 )

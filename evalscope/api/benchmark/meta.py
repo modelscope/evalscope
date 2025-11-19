@@ -133,6 +133,8 @@ class BenchmarkMeta:
         cur_dict = copy.deepcopy(asdict(self))
         if 'data_adapter' in cur_dict:
             del cur_dict['data_adapter']
+
+        cur_dict['extra_params'] = self.get_extra_params()
         return cur_dict
 
     def _update(self, args: dict):

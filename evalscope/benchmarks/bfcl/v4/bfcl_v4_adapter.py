@@ -49,9 +49,21 @@ logger = get_logger()
         metric_list=['acc'],
         eval_split='train',
         extra_params={
-            'underscore_to_dot': True,
-            'is_fc_model': True,
-            'SERPAPI_API_KEY': None,
+            'underscore_to_dot': {
+                'type': 'bool',
+                'description': 'Convert underscores to dots in function names for evaluation.',
+                'value': True
+            },
+            'is_fc_model': {
+                'type': 'bool',
+                'description': 'Indicates the evaluated model natively supports function calling.',
+                'value': True
+            },
+            'SERPAPI_API_KEY': {
+                'type': 'str | null',
+                'description': 'SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.',
+                'value': None
+            }
         }
     )
 )

@@ -68,7 +68,12 @@ DATASET_FORMATS = ['standard (4 options)', 'standard (10 options)', 'vision']
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
         extra_params={
-            'dataset_format': f"# choose from {DATASET_FORMATS}, default 'standard (4 options)'",
+            'dataset_format': {
+                'type': 'str',
+                'description': f'Dataset format variant. Choices: {DATASET_FORMATS}.',
+                'value': 'standard (4 options)',
+                'choices': DATASET_FORMATS
+            }
         }
     )
 )
@@ -80,9 +85,6 @@ class MMMUPROAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
         self.reformat_subset = True
         self.dataset_format = self.extra_params.get('dataset_format', 'standard (4 options)')
-        if self.dataset_format not in DATASET_FORMATS:
-            logger.warning(f"Invalid dataset_format '{self.dataset_format}', fallback to 'standard (4 options)'")
-            self.dataset_format = 'standard (4 options)'
         self.default_subset = self.dataset_format
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

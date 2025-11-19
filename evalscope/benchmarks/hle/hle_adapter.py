@@ -65,7 +65,13 @@ Your judgment must focus only on if there are meaningful differences between [co
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
-        extra_params={'include_multi_modal': True}
+        extra_params={
+            'include_multi_modal': {
+                'type': 'bool',
+                'description': 'Include multi-modal (image) questions during evaluation.',
+                'value': True
+            }
+        }
     )
 )
 class HLEAdapter(DefaultDataAdapter):

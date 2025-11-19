@@ -48,7 +48,12 @@ SUBSET_LIST = [
         train_split=None,
         eval_split='train',
         extra_params={
-            'max_turns': 3,  # maximum number of turns to evaluate
+            'max_turns': {
+                'type': 'int',
+                'description': 'Maximum number of interactive turns to evaluate (1-3).',
+                'value': 3,
+                'choices': [1, 2, 3]
+            }
         }
     )
 )
@@ -71,9 +76,6 @@ class MultiIFAdapter(DefaultDataAdapter):
 
         self.reformat_subset = True
         self.max_turns = self.extra_params.get('max_turns', 3)
-        if not isinstance(self.max_turns, int) or self.max_turns < 1 or self.max_turns > 3:
-            logger.warning(f'max_turns should be an integer between 1 and 3, got {self.max_turns}, clamping to 3.')
-            self.max_turns = 3
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(
