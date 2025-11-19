@@ -420,17 +420,17 @@ class TestNativeBenchmark(TestBenchmark):
                 'airline',
                 'retail'
             ],
-            'extra_params': {
-                'user_model': 'qwen-plus',
-                'api_key': env.get('DASHSCOPE_API_KEY'),
-                'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                'generation_config': {
-                    'temperature': 0.0,
-                    'stream': True
-                }
-            }
+            # 'extra_params': {
+            #     'user_model': 'qwen-plus',
+            #     'api_key': env.get('DASHSCOPE_API_KEY'),
+            #     'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            #     'generation_config': {
+            #         'temperature': 0.0,
+            #         'stream': True
+            #     }
+            # }
         }
-        self._run_dataset_test('tau_bench', dataset_args, limit=5, repeats=2, model='qwen-plus', stream=True)
+        self._run_dataset_test('tau_bench', dataset_args, limit=5, stream=True)
 
     def test_tau2_bench(self):
         dataset_args = {
@@ -638,7 +638,12 @@ class TestNativeBenchmark(TestBenchmark):
         self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=5)
 
     def test_openai_mrcr(self):
-        self._run_dataset_test('openai_mrcr')
+        dataset_args = {
+            'extra_params': {
+                'max_context_size': 65536,
+            }
+        }
+        self._run_dataset_test('openai_mrcr', dataset_args, limit=5)
 
     def test_general_fc(self):
         """Test General Function Calling dataset."""

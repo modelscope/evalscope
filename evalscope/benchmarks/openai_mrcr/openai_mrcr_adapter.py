@@ -30,18 +30,19 @@ logger = get_logger()
         extra_params={
             'max_context_size': {
                 'type': 'int | null',
-                'description': 'Maximum context tokens; samples exceeding are skipped.',
-                'default': None
+                'description': 'Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).',
+                'value': None
             },
             'needle_count': {
                 'type': 'list[int] | null',
-                'description': 'Needle count filter (allowed: 2,4,8). None keeps all.',
-                'default': None
+                'description':
+                'Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.',
+                'value': None
             },
             'tik_enc': {
                 'type': 'str',
                 'description': 'tiktoken encoding name used for token counting.',
-                'default': 'o200k_base'
+                'value': 'o200k_base'
             }
         }
     )
