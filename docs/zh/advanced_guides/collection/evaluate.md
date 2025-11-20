@@ -1,42 +1,43 @@
-# 统一评测
-
-在得到采样数据后，可以进行统一评测。
-
-## 评测配置
-
-配置评测任务，例如：
-
+# 用你的指数统一评测
+## 评测配置（Python）
 ```python
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen2.5',
+    eval_type='openai_api',  # 推荐：OpenAI 兼容 API
     api_url='http://127.0.0.1:8801/v1',
     api_key='EMPTY',
-    eval_type=EvalType.SERVICE,
-    datasets=['data_collection'],
-    dataset_args={'data_collection': {
-        'dataset_id': 'outputs/mixed_data.jsonl'
-    }},
+    datasets=['data_collection'],  # 固定名称：混合数据集入口
+    dataset_args={'data_collection': {'dataset_id': 'outputs/rag_index.jsonl'}},  # 你的采样 JSONL（本地路径或云端 ID）
 )
 run_task(task_cfg=task_cfg)
 ```
 
-需要注意的是，其中：
-- `datasets` 中指定的数据集名称固定为 `data_collection`，表示评测混合数据集
-- `dataset_args` 中需要指定 `dataset_id`，表示评测数据集的路径，可以是本地路径，也可以是modelscope上的数据集id
+## 评测配置（CLI）
+```bash
+evalscope eval \
+  --model qwen2.5 \
+  --eval-type openai_api \
+  --api-url http://127.0.0.1:8801/v1 \
+  --api-key EMPTY \
+  --datasets data_collection \
+  --dataset-args '{"data_collection": {"dataset_id":"outputs/rag_index.jsonl"}}'
+```
 
-## 评测结果
+## 注意事项
+- `datasets` 必须为 `data_collection`，表示混合数据集入口。
+- `dataset_id` 指向你的采样 JSONL（本地或平台 ID）。
+- 输出目录结构由 `OutputsStructure` 管理。
 
-评测结果默认保存在 `outputs/` 目录下，包含4个层级的报告：
+## 评测结果与解读
+系统打印四层报告，并生成 JSON：
+- **subset_level**：每个子集平均得分与数量
+- **dataset_level**：每个数据集平均得分与数量
+- **task_level**：每个任务平均得分与数量
+- **tag_level**：每个标签平均得分与数量（Schema 名称追加到 tags）
 
-- `subset_level`：每个子集的平均得分和数量
-- `dataset_level`：每个数据集的平均得分和数量
-- `task_level`：每个任务的平均得分和数量
-- `tag_level`：每个标签的平均得分和数量，schema的名称也作为标签，放在`tags`列中
-
-例如，评测结果如下：
-
+## 示例输出
 ```text
 2024-12-30 20:03:54,582 - evalscope - INFO - subset_level Report:
 +-----------+------------------+---------------+---------------+-------+
@@ -75,3 +76,12 @@ run_task(task_cfg=task_cfg)
 |      math      |    0.0227     |  44   |
 +----------------+---------------+-------+
 ```
+
+## 从报告到最终 Index 分数
+- 读取 **dataset_level**：用归一化权重 α_i 线性加权 Σ(α_i · s_i) 得到你的 **Index**。
+- 聚焦能力：基于 **tag_level** 过滤如 `rag` 标签再加权。
+
+## 提示
+- 并发：预测 `eval_batch_size`，评审 `judge_worker_num`。
+- 复现：`use_cache` 复用生成；`rerun_review` 仅重算评分。
+

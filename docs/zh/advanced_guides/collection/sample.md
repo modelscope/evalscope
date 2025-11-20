@@ -1,11 +1,8 @@
-# 采样数据
-
-在数据混合评测中，采样数据是数据混合评测的第二步，目前支持加权采样、分层采样、均匀采样三种采样方式。
+# 采样你的指数数据
+在 EvalScope 中，**Collection** 允许你根据业务场景定义“专属指数”，通过配置数据集和权重，采样出最能代表你需求的混合数据集。以下是如何操作的详细指南。
 
 ## 数据格式
-
-采样数据格式为jsonl，每行是一个json对象，包含`index`、`prompt`、`tags`、`task_type`、`weight`、`dataset_name`、`subset_name`等属性。
-
+采样得到的混合数据集是一个 JSONL 文件，每行代表一个样本，包含以下字段：
 ```json
 {
     "index": 0,
@@ -14,16 +11,16 @@
     "task_type": "question_answering",
     "weight": 1.0,
     "dataset_name": "arc",
-    "subset_name": "ARC-Easy",
+    "subset_name": "ARC-Easy"
 }
 ```
 
-## 加权采样
+## 如何选择采样策略
+- **加权采样 (Weighted)**：按 Schema 权重抽样。资源集中到更重要能力。
+- **分层采样 (Stratified)**：按各数据集原始样本量比例，保持原分布。
+- **均匀采样 (Uniform)**：各数据集样本数相同，适合“能力对齐”对比。
 
-加权采样是根据数据集的权重进行采样，权重越大，采样数据越多。对于嵌套的schema，加权采样会根据每个schema的权重进行缩放，最终所有数据集的权重和为1。
-
-例如，整体采样100条数据，schema中有两个数据集，数据集A的权重为3，数据集B的权重为1，那么数据集A的采样数量为75条，数据集B的采样数量为25条。
-
+### 加权采样
 ```python
 from evalscope.collections import WeightedSampler
 from evalscope.utils.io_utils import dump_jsonl_data
@@ -33,28 +30,20 @@ mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/weighted_mixed_data.jsonl')
 ```
 
-## 分层采样
-
-分层采样是根据schema中每个数据集自身样本的数量进行采样，每个数据集的采样数量与自身样本数量成正比。
-
-例如，整体采样100条数据，schema中有两个数据集，数据集A有800条数据，数据集B有200条数据，那么数据集A的采样数量为80条，数据集B的采样数量为20条。
-
+### 分层采样
 ```python
 from evalscope.collections import StratifiedSampler
+from evalscope.utils.io_utils import dump_jsonl_data
 
 sampler = StratifiedSampler(schema)
 mixed_data = sampler.sample(100)
 dump_jsonl_data(mixed_data, 'outputs/stratified_mixed_data.jsonl')
 ```
 
-## 均匀采样
-
-均匀采样是根据schema中每个数据集的个数进行采样，每个数据集的采样数量相同。
-
-例如，整体采样100条数据，schema中有两个数据集，数据集A有800条数据，数据集B有200条数据，那么数据集A的采样数量为50条，数据集B的采样数量为50条。
-
+### 均匀采样
 ```python
 from evalscope.collections import UniformSampler
+from evalscope.utils.io_utils import dump_jsonl_data
 
 sampler = UniformSampler(schema)
 mixed_data = sampler.sample(100)
