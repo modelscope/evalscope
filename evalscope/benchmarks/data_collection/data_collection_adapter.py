@@ -140,98 +140,28 @@ class DataCollectionAdapter(DefaultDataAdapter):
         import pandas as pd
         from tabulate import tabulate
 
-        data = []
-        for sample_score in sample_scores:
-            collection_info = sample_score.sample_metadata[DataCollection.INFO]
-            main_score = sample_score.score.main_value
-            main_metric = sample_score.score.main_score_name
-            dataset_weight = float(collection_info.get('weight', 1.0))
+        # Build base per-sample dataframe
+        df = self._build_sample_dataframe(sample_scores)
 
-            # use main score
-            data.append(
-                dict(
-                    task_type=collection_info['task_type'],
-                    categories=tuple(collection_info['categories']),
-                    dataset_name=collection_info['dataset_name'],
-                    subset_name=collection_info['subset_name'],
-                    tags=collection_info['tags'],
-                    sample_id=sample_score.sample_id,
-                    metric=main_metric,
-                    score=main_score,
-                    # dataset-level weight propagated to each sample
-                    dataset_weight=dataset_weight,
-                    sample_weight=dataset_weight,
-                )
-            )
-
-        df = pd.DataFrame(data)
-
-        # subset_level / dataset_level: unweighted (per-sample)
-        subset_report_df = aggregate_and_sort(df, ['task_type', 'metric', 'dataset_name', 'subset_name'])
-        dataset_report_df = aggregate_and_sort(df, ['task_type', 'metric', 'dataset_name'])
-
-        # ---------- dataset-weighted task_level ----------
-        # first aggregate per dataset (unweighted mean, per-sample)
-        df_task_dataset = (
-            df.groupby(['task_type', 'metric', 'dataset_name'], as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
+        # Subset-level / dataset-level: per-sample unweighted averages
+        subset_report_df = aggregate_and_sort(
+            df_group=df,
+            group_by_cols=['task_type', 'metric', 'dataset_name', 'subset_name'],
         )
-        # then aggregate across datasets using dataset_weight
-        task_report_df = aggregate_and_sort_weighted(
-            df_task_dataset,
-            group_by_cols=['task_type', 'metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
+        dataset_report_df = aggregate_and_sort(
+            df_group=df,
+            group_by_cols=['task_type', 'metric', 'dataset_name'],
         )
 
-        # ---------- dataset-weighted tag_level ----------
-        df_exploded_tags = df.explode('tags')
-        # per (tag, metric, dataset) mean
-        df_tag_dataset = (
-            df_exploded_tags.groupby(['tags', 'metric', 'dataset_name'], as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
-        )
-        tag_report_df = aggregate_and_sort_weighted(
-            df_tag_dataset,
-            group_by_cols=['tags', 'metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
+        # Task-level: dataset-weighted aggregation
+        task_report_df = self._build_task_level_report(df)
 
-        # process multi-level categories (now dataset-weighted)
-        df_categories = df.copy()
-        max_depth = df_categories['categories'].apply(len).max()
-        for level in range(max_depth):
-            df_categories[f'category{level}'] = df_categories['categories'].apply(
-                lambda x: x[level] if len(x) > level else ''
-            )
-        # first aggregate per (category_path, metric, dataset_name)
-        category_group_cols = [f'category{level}' for level in range(max_depth)] + ['metric', 'dataset_name']
-        df_category_dataset = (
-            df_categories.groupby(category_group_cols, as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
-        )
-        # then dataset-weighted across datasets
-        category_report_df = aggregate_and_sort_weighted(
-            df_category_dataset,
-            group_by_cols=[f'category{level}' for level in range(max_depth)] + ['metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
+        # Tag-level: dataset-weighted aggregation
+        tag_report_df = self._build_tag_level_report(df)
 
-        # convert to dict format
+        # Category-level: dataset-weighted aggregation over hierarchical categories
+        category_report_df = self._build_category_level_report(df)
+
         report_dict = {
             'subset_level': subset_report_df,
             'dataset_level': dataset_report_df,
@@ -240,12 +170,122 @@ class DataCollectionAdapter(DefaultDataAdapter):
             'category_level': category_report_df,
         }
 
-        # record report
+        # Log all levels as pretty tables
         for level, data_item in report_dict.items():
             table = tabulate(data_item, headers='keys', tablefmt='pretty', showindex=False)
             logger.info(f'{level} Report:\n{table}')
 
         return df
+
+    # ---------------------------------------------------------------------
+    # Aggregation helpers
+    # ---------------------------------------------------------------------
+
+    def _build_sample_dataframe(self, sample_scores: List[SampleScore]):
+        """Convert sample scores into a flat dataframe used for all aggregations."""
+        import pandas as pd
+
+        records: List[Dict[str, Any]] = []
+        for sample_score in sample_scores:
+            collection_info = sample_score.sample_metadata[DataCollection.INFO]
+            main_score = sample_score.score.main_value
+            main_metric = sample_score.score.main_score_name
+            dataset_weight = float(collection_info.get('weight', 1.0))
+
+            # Each row represents one sample
+            records.append({
+                'task_type': collection_info['task_type'],
+                'categories': tuple(collection_info['categories']),
+                'dataset_name': collection_info['dataset_name'],
+                'subset_name': collection_info['subset_name'],
+                'tags': collection_info['tags'],
+                'sample_id': sample_score.sample_id,
+                'metric': main_metric,
+                'score': main_score,
+                'dataset_weight': dataset_weight,
+                'sample_weight': dataset_weight,
+            })
+
+        return pd.DataFrame(records)
+
+    def _build_task_level_report(self, df):
+        """Build dataset-weighted task-level report."""
+        # First aggregate per (task_type, metric, dataset_name) with unweighted per-sample mean
+        df_task_dataset = (
+            df.groupby(['task_type', 'metric', 'dataset_name'], as_index=False).agg(
+                average_score=('score', 'mean'),
+                count=('score', 'size'),
+                dataset_weight=('dataset_weight', 'first'),
+            )
+        )
+
+        # Then aggregate across datasets with dataset weights
+        task_report_df = aggregate_and_sort_weighted(
+            df_group=df_task_dataset,
+            group_by_cols=['task_type', 'metric'],
+            score_col='average_score',
+            weight_col='dataset_weight',
+            count_col='count',
+        )
+        return task_report_df
+
+    def _build_tag_level_report(self, df):
+        """Build dataset-weighted tag-level report."""
+        # Expand tag list so each tag is a row
+        df_exploded_tags = df.explode('tags')
+
+        # Aggregate per (tag, metric, dataset_name)
+        df_tag_dataset = (
+            df_exploded_tags.groupby(['tags', 'metric', 'dataset_name'], as_index=False).agg(
+                average_score=('score', 'mean'),
+                count=('score', 'size'),
+                dataset_weight=('dataset_weight', 'first'),
+            )
+        )
+
+        # Dataset-weighted aggregation across datasets
+        tag_report_df = aggregate_and_sort_weighted(
+            df_group=df_tag_dataset,
+            group_by_cols=['tags', 'metric'],
+            score_col='average_score',
+            weight_col='dataset_weight',
+            count_col='count',
+        )
+        return tag_report_df
+
+    def _build_category_level_report(self, df):
+        """Build dataset-weighted category-level report for multi-level categories."""
+        df_categories = df.copy()
+        max_depth = df_categories['categories'].apply(len).max()
+
+        # Flatten hierarchical categories into category0, category1, ...
+        for level in range(max_depth):
+            column_name = f'category{level}'
+            df_categories[column_name] = df_categories['categories'].apply(
+                lambda x, idx=level: x[idx] if len(x) > idx else ''
+            )
+
+        category_cols = [f'category{level}' for level in range(max_depth)]
+        category_group_cols = category_cols + ['metric', 'dataset_name']
+
+        # Aggregate per (category path, metric, dataset_name)
+        df_category_dataset = (
+            df_categories.groupby(category_group_cols, as_index=False).agg(
+                average_score=('score', 'mean'),
+                count=('score', 'size'),
+                dataset_weight=('dataset_weight', 'first'),
+            )
+        )
+
+        # Dataset-weighted aggregation across datasets
+        category_report_df = aggregate_and_sort_weighted(
+            df_group=df_category_dataset,
+            group_by_cols=category_cols + ['metric'],
+            score_col='average_score',
+            weight_col='dataset_weight',
+            count_col='count',
+        )
+        return category_report_df
 
     def generate_report(self, scores, model_name, output_dir, **kwargs) -> Report:
         df = scores[self.default_subset]
