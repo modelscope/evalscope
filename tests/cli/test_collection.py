@@ -5,13 +5,65 @@ import json
 import os
 import unittest
 
-from evalscope.collections import CollectionSchema, DatasetInfo, WeightedSampler
+from evalscope.collections import CollectionSchema, DatasetInfo, StratifiedSampler, UniformSampler, WeightedSampler
 from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.utils.io_utils import dump_jsonl_data
 from tests.utils import test_level_list
 
 
 class TestCollection(unittest.TestCase):
+
+    def test_create_simple_collection(self):
+        schema = CollectionSchema(name='reasoning_index', datasets=[
+            DatasetInfo(name='arc', weight=2.0, task_type='reasoning', tags=['en']),
+            DatasetInfo(name='ceval', weight=3.0, task_type='reasoning', tags=['zh'], args={'subset_list': ['logic']}),
+        ])
+        print(schema.to_dict())
+        print(schema.flatten())
+        schema.dump_json('outputs/schema_simple_test.json')
+
+    def test_generate_simple_data(self):
+        schema = CollectionSchema.from_dict(json.load(open('outputs/schema_simple_test.json', 'r')))
+        print(schema.to_dict())
+        mixed_data = WeightedSampler(schema).sample(10)
+        dump_jsonl_data(mixed_data, 'outputs/mixed_data_simple_test.jsonl')
+
+    def test_generate_simple_data_stratified(self):
+        schema = CollectionSchema.from_dict(json.load(open('outputs/schema_simple_test.json', 'r')))
+        print(schema.to_dict())
+        mixed_data = StratifiedSampler(schema).sample(10)
+        dump_jsonl_data(mixed_data, 'outputs/mixed_data_simple_stratified_test.jsonl')
+
+    def test_generate_simple_data_uniform(self):
+        schema = CollectionSchema.from_dict(json.load(open('outputs/schema_simple_test.json', 'r')))
+        print(schema.to_dict())
+        mixed_data = UniformSampler(schema).sample(10)
+        dump_jsonl_data(mixed_data, 'outputs/mixed_data_simple_uniform_test.jsonl')
+
+    def test_evaluate_simple_collection(self):
+        from evalscope import TaskConfig, run_task
+
+        task_cfg = TaskConfig(
+            model='qwen2.5-7b-instruct',
+            api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            eval_type=EvalType.SERVICE,
+            datasets=['data_collection'],
+            dataset_args={
+                'data_collection': {
+                    'local_path': 'outputs/mixed_data_simple_stratified_test.jsonl',
+                    'shuffle': True,
+                }
+            },
+            eval_batch_size=5,
+            generation_config = {
+                'temperature': 0.0,
+            },
+            use_cache='outputs/20251120_191226',
+            rerun_review=True,
+        )
+        run_task(task_cfg=task_cfg)
+
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_create_collection(self):
         schema = CollectionSchema(name='math&reasoning', datasets=[
@@ -42,12 +94,11 @@ class TestCollection(unittest.TestCase):
         mixed_data = WeightedSampler(schema).sample(100)
         dump_jsonl_data(mixed_data, 'outputs/mixed_data_test.jsonl')
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_evaluate_collection(self):
         from evalscope import TaskConfig, run_task
 
         task_cfg = TaskConfig(
-            model='qwen-plus',
+            model='qwen2.5-7b-instruct',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key=env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.SERVICE,
@@ -61,7 +112,6 @@ class TestCollection(unittest.TestCase):
             },
             eval_batch_size=5,
             generation_config = {
-                'max_tokens': 10000,
                 'temperature': 0.0,
             },
             limit=10,
