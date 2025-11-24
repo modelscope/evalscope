@@ -212,7 +212,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
             collection_info = sample_score.sample_metadata[DataCollection.INFO]
             main_score = sample_score.score.main_value
             main_metric = sample_score.score.main_score_name
-            dataset_weight = float(collection_info.get('weight', 1.0))  # now treated as subset weight
+            sample_weight = float(collection_info.get('weight', 1.0))
 
             # Each row represents one sample
             records.append({
@@ -224,8 +224,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
                 'sample_id': sample_score.sample_id,
                 'metric': main_metric,
                 'score': main_score,
-                'dataset_weight': dataset_weight,
-                'sample_weight': dataset_weight,
+                'sample_weight': sample_weight,
             })
 
         return pd.DataFrame(records)
@@ -318,7 +317,7 @@ def aggregate_and_sort(df_group, group_by_cols):
 
     # Include dataset_weight to expose subset weight
     agg_dict = {
-        'average_score': ('score', 'mean'),
+        'score': ('score', 'mean'),
         'count': ('score', 'size'),
         'weight': ('dataset_weight', 'first'),
     }
@@ -328,7 +327,7 @@ def aggregate_and_sort(df_group, group_by_cols):
         df_group = df_group.copy()
         df_group['dataset_weight'] = 1.0
     report_df: pd.DataFrame = df_group.groupby(group_by_cols).agg(**agg_dict).reset_index()
-    report_df['average_score'] = report_df['average_score'].round(4)
+    report_df['score'] = report_df['score'].round(4)
     # Sort by count desc
     report_df = report_df.sort_values(by='count', ascending=False)
     return report_df.to_dict(orient='records')
@@ -357,7 +356,7 @@ def aggregate_and_sort_weighted(
             return float(scores.mean())
         return float((scores * weights).sum() / total_weight)
 
-    def sample_count_mean(group_df: 'pd.DataFrame') -> float:
+    def micro_mean(group_df: 'pd.DataFrame') -> float:
         counts = group_df[count_col]
         scores = group_df[score_col]
         total = float(counts.sum())
@@ -365,14 +364,18 @@ def aggregate_and_sort_weighted(
             return float(scores.mean())
         return float((scores * counts).sum() / total)
 
+    def macro_mean(group_df: 'pd.DataFrame') -> float:
+        return float(group_df[score_col].mean())
+
     grouped = df_group.groupby(group_by_cols)
     rows: List[Dict[str, Any]] = []
     for keys, group_df in grouped:
         if not isinstance(keys, tuple):
             keys = (keys, )
         base: Dict[str, Any] = {col: key for col, key in zip(group_by_cols, keys)}
-        base['weighted_average_score'] = round(weighted_mean(group_df), 4)
-        base['sample_average_score'] = round(sample_count_mean(group_df), 4)
+        base['micro_avg.'] = round(micro_mean(group_df), 4)
+        base['macro_avg.'] = round(macro_mean(group_df), 4)
+        base['weighted_avg.'] = round(weighted_mean(group_df), 4)
         base['count'] = int(group_df[count_col].sum())
         rows.append(base)
 

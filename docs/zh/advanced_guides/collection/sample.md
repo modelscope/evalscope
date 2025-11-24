@@ -69,6 +69,8 @@ $$
 
 ## 前置示例 Schema
 ```python
+from evalscope.collections import CollectionSchema, DatasetInfo  
+
 schema = CollectionSchema(
     name='reasoning_index',
     datasets=[
@@ -77,7 +79,6 @@ schema = CollectionSchema(
     ],
 )
 ```
-...existing code...
 
 ### 加权采样（突出业务重要性）
 ```python
