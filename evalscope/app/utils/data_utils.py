@@ -36,7 +36,11 @@ def scan_for_report_folders(root_path):
                 continue
             datasets = []
             for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
-                datasets.append(os.path.splitext(os.path.basename(dataset_item))[0])
+                base_name = os.path.basename(dataset_item)
+                if base_name == DataCollection.REPORT_NAME:
+                    continue
+
+                datasets.append(os.path.splitext(base_name)[0])
             datasets = DATASET_TOKEN.join(datasets)
             reports.append(
                 f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}'

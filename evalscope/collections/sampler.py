@@ -29,8 +29,14 @@ class Sampler(ABC):
         raise NotImplementedError
 
     def _sample_dataset(self, dataset: DatasetInfo, count: int) -> List[DatasetEntry]:
-        all_data = []
+        all_data: List[DatasetEntry] = []
         data_dict = dataset.get_data()
+
+        # Compute overall count (total items across all subsets)
+        total_count = min(count, sum(len(subset_data) for subset_data in data_dict.values()))
+        if total_count == 0:
+            return []
+
         for subset_name, subset_data in data_dict.items():
             for sample in subset_data:
                 all_data.append(
@@ -39,13 +45,13 @@ class Sampler(ABC):
                         tags=dataset.tags,
                         categories=dataset.hierarchy,
                         task_type=dataset.task_type,
-                        weight=dataset.weight,
+                        weight=dataset.weight / float(total_count),
                         dataset_name=dataset.name,
                         subset_name=subset_name,
                     )
                 )
-        count = min(count, len(all_data))  # avoid sampling more than the dataset size
-        sampled_data = random.sample(all_data, k=count)
+
+        sampled_data = random.sample(all_data, k=total_count)
         return sampled_data
 
     def _update_index(self, all_data: List[DatasetEntry]) -> List[dict]:
@@ -109,7 +115,12 @@ class StratifiedSampler(Sampler):
     def sample(self, count: int) -> List[dict]:
         dataset_info_list = self.schema.flatten()
 
-        total_samples = sum(len(dataset.get_data()) for dataset in dataset_info_list)
+        # Precompute sample counts per dataset once to avoid repeated get_data() calls
+        per_dataset_counts = [
+            sum(len(subset_data) for subset_data in dataset.get_data().values()) for dataset in dataset_info_list
+        ]
+        total_samples = sum(per_dataset_counts)
+
         remaining_count = count
         sampled_data = []
 
@@ -117,7 +128,8 @@ class StratifiedSampler(Sampler):
             if i == len(dataset_info_list) - 1:
                 dataset_sample_count = remaining_count
             else:
-                dataset_sample_count = int((len(dataset.get_data()) / total_samples) * count)
+                ds_total = per_dataset_counts[i]
+                dataset_sample_count = int((ds_total / total_samples) * count) if total_samples > 0 else 0
                 remaining_count -= dataset_sample_count
 
             sampled_data.extend(self._sample_dataset(dataset, dataset_sample_count))
