@@ -43,6 +43,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
+| `ifbench` | [IFBench](#ifbench) | `InstructionFollowing` |
 | `ifeval` | [IFEval](#ifeval) | `InstructionFollowing` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
 | `live_code_bench` | [Live-Code-Bench](#live-code-bench) | `Coding` |
@@ -1401,6 +1402,23 @@ Read the following function signature and docstring, and fully implement the fun
 ```
 
 </details>
+
+---
+
+### IFBench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `ifbench`
+- **Dataset ID**: [allenai/IFBench_test](https://modelscope.cn/datasets/allenai/IFBench_test/summary)
+- **Description**:
+  > IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization . It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks . Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.
+- **Task Categories**: `InstructionFollowing`
+- **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
 
 ---
 
