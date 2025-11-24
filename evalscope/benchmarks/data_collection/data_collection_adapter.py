@@ -1,7 +1,7 @@
 import copy
 import os
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DataAdapter, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, LocalDataLoader, Sample
@@ -97,9 +97,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
         self.dataset_adapters: Dict[str, DataAdapter] = {}
         self.dataset_name_map = defaultdict(lambda: defaultdict(list))
 
-        # load dataset args
-        dataset_args = copy.deepcopy(self._task_config.dataset_args)
-
         # Iterate through each sample in the dataset
         dataset = self.test_dataset[self.default_subset]
         for sample in dataset:
@@ -109,12 +106,9 @@ class DataCollectionAdapter(DefaultDataAdapter):
             # create id mapping
             self.dataset_name_map[dataset_name][subset_name].append(sample.id)
 
-            # update dataset args
-            cur_dataset_args = dataset_args.get(dataset_name, {})
-
             # Initialize dataset adapter
             if dataset_name not in self.dataset_adapters:
-                config = TaskConfig(dataset_args={dataset_name: cur_dataset_args})
+                config = copy.deepcopy(self._task_config)
                 self.dataset_adapters[dataset_name] = get_benchmark(dataset_name, config=config)
 
     def _get_adapter(self, metadata: Dict[str, Any]) -> DataAdapter:
@@ -137,34 +131,21 @@ class DataCollectionAdapter(DefaultDataAdapter):
         return data_adapter.calculate_metrics(task_state)
 
     def aggregate_scores(self, sample_scores: List[SampleScore]):
-        # Build base per-sample dataframe
+        # Build sample-level dataframe (includes per-sample weight)
         df = self._build_sample_dataframe(sample_scores)
 
-        # NEW: subset-level aggregation base (atomic weighted unit)
-        df_subset = self._aggregate_subset_level(df)
-
-        # Subset-level (unchanged logic: simple per-sample mean inside each subset)
-        subset_report_df = aggregate_and_sort(
-            df_group=df,
-            group_by_cols=['task_type', 'metric', 'dataset_name', 'subset_name'],
-        )
-
-        # Dataset-level: weighted over subset means (subset weights)
-        dataset_report_df = aggregate_and_sort_weighted(
-            df_group=df_subset,
-            group_by_cols=['task_type', 'metric', 'dataset_name'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
-
-        # Task-level: weighted over all subsets
-        task_report_df = self._build_task_level_report(df_subset)
-
-        # Tag-level: weighted over subset-level tag means
+        # Compute all reports from sample-level data; macro is hierarchical where applicable
+        subset_report_df = self._group_and_compute(df, ['task_type', 'dataset_name', 'subset_name'])
+        # Only keep micro_avg. for subset level (drop macro_avg. and weighted_avg.)
+        subset_report_df = [{
+            k: v
+            for k, v in row.items()
+            if k not in ('macro_avg.', 'weighted_avg.')
+        }
+                            for row in subset_report_df]  # noqa
+        dataset_report_df = self._group_and_compute(df, ['task_type', 'dataset_name'], macro_child='subset_name')
+        task_report_df = self._group_and_compute(df, ['task_type'], macro_child='subset_name')
         tag_report_df = self._build_tag_level_report(df)
-
-        # Category-level: weighted over subset-level category means
         category_report_df = self._build_category_level_report(df)
 
         report_dict = {
@@ -175,7 +156,6 @@ class DataCollectionAdapter(DefaultDataAdapter):
             'category_level': category_report_df,
             'df': df,
         }
-
         return report_dict
 
     def generate_report(self, scores, model_name, output_dir, **kwargs) -> Report:
@@ -226,158 +206,72 @@ class DataCollectionAdapter(DefaultDataAdapter):
                 'score': main_score,
                 'sample_weight': sample_weight,
             })
-
+        # NOTE: All sample weights are assumed (as per new requirement) to sum to ~1 globally.
         return pd.DataFrame(records)
 
-    def _aggregate_subset_level(self, df):
+    def _group_and_compute(self, df, group_cols, macro_child: Optional[str] = None):
         """
-        Aggregate raw sample dataframe to subset-level (dataset + subset) units.
-        Each unit has: average_score (simple mean of samples), count (sample count), dataset_weight (subset weight).
+        Generic aggregation using per-sample weights.
+        - weighted_avg.: sum(score * sample_weight) / sum(sample_weight) (fallback to unweighted mean)
+        - micro_avg.: unweighted mean over samples in the group
+        - macro_avg.: mean of child-group micro_avg. if macro_child provided (hierarchical),
+                      otherwise equals micro_avg.
         """
-        return (
-            df.groupby(['task_type', 'metric', 'dataset_name', 'subset_name'], as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
-        )
+        import pandas as pd
 
-    def _build_task_level_report(self, df_subset):
-        """
-        Build task-level report weighted over subset units.
-        df_subset is the subset-level aggregated dataframe.
-        """
-        task_report_df = aggregate_and_sort_weighted(
-            df_group=df_subset,
-            group_by_cols=['task_type', 'metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
-        return task_report_df
+        rows = []
+        grouped = df.groupby(group_cols)
+        for keys, g in grouped:
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            base = {col: key for col, key in zip(group_cols, keys)}
+
+            scores = g['score']
+            # Use provided sample weights if present; otherwise default to 1.0
+            weights = g['sample_weight'] if 'sample_weight' in g.columns else pd.Series([1.0] * len(g), index=g.index)
+            total_w = float(weights.sum())
+
+            if total_w == 0.0:
+                weighted = float(scores.mean())
+            else:
+                weighted = float((scores * weights).sum() / total_w)
+
+            micro = float(scores.mean())
+
+            # Hierarchical macro: average of child group micro means (e.g., subsets under a dataset)
+            if macro_child and (macro_child in g.columns) and (macro_child not in group_cols):
+                child_groups = g.groupby(macro_child)
+                child_micros = [float(cg['score'].mean()) for _, cg in child_groups]
+                macro = float(pd.Series(child_micros).mean()) if child_micros else micro
+            else:
+                macro = micro
+
+            base['micro_avg.'] = round(micro, 4)
+            base['macro_avg.'] = round(macro, 4)
+            base['weighted_avg.'] = round(weighted, 4)
+            base['count'] = int(len(g))
+            rows.append(base)
+
+        rows_sorted = sorted(rows, key=lambda r: r['count'], reverse=True)
+        return rows_sorted
 
     def _build_tag_level_report(self, df):
         """
-        Build tag-level report weighted over subset units derived from exploded tags.
+        Tag-level report using per-sample weights.
+        Macro is the mean of subset-level micro averages.
         """
         df_exploded = df.explode('tags')
-        df_tag_subset = (
-            df_exploded.groupby(['tags', 'metric', 'dataset_name', 'subset_name'], as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
-        )
-        tag_report_df = aggregate_and_sort_weighted(
-            df_group=df_tag_subset,
-            group_by_cols=['tags', 'metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
-        return tag_report_df
+        return self._group_and_compute(df_exploded, ['tags'], macro_child='subset_name')
 
     def _build_category_level_report(self, df):
         """
-        Build category-level report using subset-weighted aggregation over hierarchical categories.
+        Category-level hierarchical aggregation using sample-level weights.
+        Macro is the mean of subset-level micro averages.
         """
         df_categories = df.copy()
         max_depth = df_categories['categories'].apply(len).max()
         for level in range(max_depth):
             col = f'category{level}'
             df_categories[col] = df_categories['categories'].apply(lambda x, i=level: x[i] if len(x) > i else '')
-
         category_cols = [f'category{level}' for level in range(max_depth)]
-        df_cat_subset = (
-            df_categories.groupby(category_cols + ['metric', 'dataset_name', 'subset_name'], as_index=False).agg(
-                average_score=('score', 'mean'),
-                count=('score', 'size'),
-                dataset_weight=('dataset_weight', 'first'),
-            )
-        )
-
-        category_report_df = aggregate_and_sort_weighted(
-            df_group=df_cat_subset,
-            group_by_cols=category_cols + ['metric'],
-            score_col='average_score',
-            weight_col='dataset_weight',
-            count_col='count',
-        )
-        return category_report_df
-
-
-def aggregate_and_sort(df_group, group_by_cols):
-    """
-    Subset-level aggregation (unweighted).
-    Changes:
-      - Remove weighted_average_score.
-      - Add weight column (dataset_weight per subset, first sample fallback 1.0).
-    """
-    import pandas as pd
-
-    # Include dataset_weight to expose subset weight
-    agg_dict = {
-        'score': ('score', 'mean'),
-        'count': ('score', 'size'),
-        'weight': ('dataset_weight', 'first'),
-    }
-    # Graceful fallback if dataset_weight column missing
-    missing_weight = 'dataset_weight' not in df_group.columns
-    if missing_weight:
-        df_group = df_group.copy()
-        df_group['dataset_weight'] = 1.0
-    report_df: pd.DataFrame = df_group.groupby(group_by_cols).agg(**agg_dict).reset_index()
-    report_df['score'] = report_df['score'].round(4)
-    # Sort by count desc
-    report_df = report_df.sort_values(by='count', ascending=False)
-    return report_df.to_dict(orient='records')
-
-
-def aggregate_and_sort_weighted(
-    df_group,
-    group_by_cols: List[str],
-    score_col: str,
-    weight_col: str,
-    count_col: str,
-) -> List[Dict[str, Any]]:
-    """
-    Aggregate with two means:
-      weighted_average_score: weighted by provided weights.
-      sample_average_score: weighted by sample counts (count_col).
-    Input df_group is already aggregated at subset level (atomic unit) with per-subset mean in score_col.
-    """
-    import pandas as pd
-
-    def weighted_mean(group_df: 'pd.DataFrame') -> float:
-        weights = group_df[weight_col]
-        scores = group_df[score_col]
-        total_weight = float(weights.sum())
-        if total_weight == 0.0:
-            return float(scores.mean())
-        return float((scores * weights).sum() / total_weight)
-
-    def micro_mean(group_df: 'pd.DataFrame') -> float:
-        counts = group_df[count_col]
-        scores = group_df[score_col]
-        total = float(counts.sum())
-        if total == 0.0:
-            return float(scores.mean())
-        return float((scores * counts).sum() / total)
-
-    def macro_mean(group_df: 'pd.DataFrame') -> float:
-        return float(group_df[score_col].mean())
-
-    grouped = df_group.groupby(group_by_cols)
-    rows: List[Dict[str, Any]] = []
-    for keys, group_df in grouped:
-        if not isinstance(keys, tuple):
-            keys = (keys, )
-        base: Dict[str, Any] = {col: key for col, key in zip(group_by_cols, keys)}
-        base['micro_avg.'] = round(micro_mean(group_df), 4)
-        base['macro_avg.'] = round(macro_mean(group_df), 4)
-        base['weighted_avg.'] = round(weighted_mean(group_df), 4)
-        base['count'] = int(group_df[count_col].sum())
-        rows.append(base)
-
-    rows_sorted = sorted(rows, key=lambda r: r['count'], reverse=True)
-    return rows_sorted
+        return self._group_and_compute(df_categories, category_cols, macro_child='subset_name')

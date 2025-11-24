@@ -120,3 +120,15 @@ class TestCollection(TestBenchmark):
             model='qwen2.5-7b-instruct',
             limit=10,
         )
+
+    def test_evaluate_rag_index(self):
+        self._run_dataset_test(
+            dataset_name='data_collection',
+            dataset_args={
+                'local_path': 'examples/collection/index/rag_index_sampled.jsonl',
+            },
+            model='qwen-plus',
+            limit=10,
+            use_cache='outputs/20251124_170860',
+            rerun_review=True,
+        )

@@ -45,63 +45,63 @@ evalscope eval \
 :::
 ::::
 
-## 注意事项
-- datasets 固定使用 data_collection 代表“混合数据集入口”。
-- dataset_args 中使用 local_path 指向你的 JSONL；可加 shuffle 控制顺序，默认不启用。
-- 缓存、日志、报告目录结构：outputs/<timestamp>/{logs,predictions,reviews,reports,configs}。
-- 批并发调优：eval_batch_size 控制推理批大小；评审并发由 judge_worker_num 控制。
+## 使用约定
+- datasets 固定使用 data_collection 作为混合入口。
+- dataset_args.local_path 指向混合 JSONL；可选 shuffle 控制样本遍历顺序。
+- 输出结构：outputs/<timestamp>/{logs,predictions,reviews,reports,configs}。
+- 推理并发：eval_batch_size；评审并发：judge_worker_num。
 
-## 指数加权回顾
-最终指数得分：
-$$
-\mathbf{S} = \sum_{i=1}^{n} \boldsymbol{\alpha_i}\,\mathbf{s_i}, \quad \boldsymbol{\alpha_i} = \frac{w_i}{\sum_j w_j}
-$$
-其中 $s_i$ 为单数据集得分，$w_i$ 为展开后叶子权重（采样策略不会改变定义的权重）。
+## 指标与输出
 
-## 评测结果与解读
-系统打印五层报告：
-- **subset_level**：每个子集平均得分与数量
-- **dataset_level**：每个数据集平均得分与数量
-- **task_level**：每个任务平均得分与数量
-- **tag_level**：每个标签平均得分与数量（Schema 名称追加到 tags）
-- **category_level**：按自定义类别汇总的平均得分与数量（如有配置）
+系统会在五个“观察视角”输出报告：
+1. subset_level：原始数据集中子集（如 ARC-Challenge / ARC-Easy）。
+2. dataset_level：同一数据集所有子集汇总（如 arc）。
+3. task_level：同一任务类型（如 reasoning）。
+4. tag_level：样本 tags 维度（语言、模式等；Schema 名称可并入 tags）。
+5. category_level：自定义分组（如 reasoning_index）。
 
-示例输出
+指标说明：
+- micro_avg.：逐样本加总后计算整体准确率（总正确数 / 总样本数）。样本数高的子集影响更大。
+- macro_avg.：对该层“成员”（子集）各自得分简单平均，每个成员同权，不受样本数影响。
+- weighted_avg.：按定义的叶子权重 $w_i$ 做加权（权重在采样前定义，采样过程不改变权重含义）。
+
+
+示例输出：
 ```text
-2025-11-21 17:27:32 - evalscope - INFO: subset_level Report:
-+-----------+--------+--------------+---------------+---------------+-------+
-| task_type | metric | dataset_name |  subset_name  | average_score | count |
-+-----------+--------+--------------+---------------+---------------+-------+
-| reasoning |  acc   |     arc      |   ARC-Easy    |     0.375     |   8   |
-| reasoning |  acc   |     arc      | ARC-Challenge |      0.0      |   1   |
-| reasoning |  acc   |    ceval     |     logic     |      1.0      |   1   |
-+-----------+--------+--------------+---------------+---------------+-------+
-2025-11-21 17:27:32 - evalscope - INFO: dataset_level Report:
-+-----------+--------+--------------+---------------+-------+
-| task_type | metric | dataset_name | average_score | count |
-+-----------+--------+--------------+---------------+-------+
-| reasoning |  acc   |     arc      |    0.3333     |   9   |
-| reasoning |  acc   |    ceval     |      1.0      |   1   |
-+-----------+--------+--------------+---------------+-------+
-2025-11-21 17:27:32 - evalscope - INFO: task_level Report:
-+-----------+--------+---------------+-------+
-| task_type | metric | average_score | count |
-+-----------+--------+---------------+-------+
-| reasoning |  acc   |    0.7333     |  10   |
-+-----------+--------+---------------+-------+
-2025-11-21 17:27:32 - evalscope - INFO: tag_level Report:
-+------+--------+---------------+-------+
-| tags | metric | average_score | count |
-+------+--------+---------------+-------+
-|  en  |  acc   |    0.3333     |   9   |
-|  zh  |  acc   |      1.0      |   1   |
-+------+--------+---------------+-------+
-2025-11-21 17:27:32 - evalscope - INFO: category_level Report:
-+-----------------+--------+---------------+-------+
-|    category0    | metric | average_score | count |
-+-----------------+--------+---------------+-------+
-| reasoning_index |  acc   |    0.7333     |  10   |
-+-----------------+--------+---------------+-------+
+2025-11-24 18:44:50 - evalscope - data_collection_adapter.py - generate_report - 171 - INFO: subset_level Report:
++-----------+--------------+---------------+------------+-------+
+| task_type | dataset_name |  subset_name  | micro_avg. | count |
++-----------+--------------+---------------+------------+-------+
+| reasoning |     arc      | ARC-Challenge |    0.8     |   5   |
+| reasoning |     arc      |   ARC-Easy    |    1.0     |   4   |
+| reasoning |    ceval     |     logic     |    0.0     |   1   |
++-----------+--------------+---------------+------------+-------+
+2025-11-24 18:44:50 - evalscope - data_collection_adapter.py - generate_report - 171 - INFO: dataset_level Report:
++-----------+--------------+------------+------------+---------------+-------+
+| task_type | dataset_name | micro_avg. | macro_avg. | weighted_avg. | count |
++-----------+--------------+------------+------------+---------------+-------+
+| reasoning |     arc      |   0.8889   |    0.9     |    0.8889     |   9   |
+| reasoning |    ceval     |    0.0     |    0.0     |      0.0      |   1   |
++-----------+--------------+------------+------------+---------------+-------+
+2025-11-24 18:44:50 - evalscope - data_collection_adapter.py - generate_report - 171 - INFO: task_level Report:
++-----------+------------+------------+---------------+-------+
+| task_type | micro_avg. | macro_avg. | weighted_avg. | count |
++-----------+------------+------------+---------------+-------+
+| reasoning |    0.8     |    0.6     |    0.3556     |  10   |
++-----------+------------+------------+---------------+-------+
+2025-11-24 18:44:50 - evalscope - data_collection_adapter.py - generate_report - 171 - INFO: tag_level Report:
++------+------------+------------+---------------+-------+
+| tags | micro_avg. | macro_avg. | weighted_avg. | count |
++------+------------+------------+---------------+-------+
+|  en  |   0.8889   |    0.9     |    0.8889     |   9   |
+|  zh  |    0.0     |    0.0     |      0.0      |   1   |
++------+------------+------------+---------------+-------+
+2025-11-24 18:44:50 - evalscope - data_collection_adapter.py - generate_report - 171 - INFO: category_level Report:
++-----------------+------------+------------+---------------+-------+
+|    category0    | micro_avg. | macro_avg. | weighted_avg. | count |
++-----------------+------------+------------+---------------+-------+
+| reasoning_index |    0.8     |    0.6     |    0.3556     |  10   |
++-----------------+------------+------------+---------------+-------+
 ```
 ## 常见问题
 - 指数得分不符合预期：展开 Schema 验证归一化权重，确认未使用均匀采样误解权重效果。
