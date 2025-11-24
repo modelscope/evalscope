@@ -51,6 +51,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
+| `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mit_movie_trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
 | `mit_restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
@@ -1645,6 +1646,34 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### MGSM
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mgsm`
+- **Dataset ID**: [evalscope/mgsm](https://modelscope.cn/datasets/evalscope/mgsm/summary)
+- **Description**:
+  > Multilingual Grade School Math Benchmark (MGSM) is a benchmark of grade-school math problems, proposed in the paper Language models are multilingual chain-of-thought reasoners.
+- **Task Categories**: `Math`, `MultiLingual`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 4-shot
+- **Subsets**: `bn`, `de`, `en`, `es`, `fr`, `ja`, `ru`, `sw`, `te`, `th`, `zh`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+
+
 ```
 
 </details>

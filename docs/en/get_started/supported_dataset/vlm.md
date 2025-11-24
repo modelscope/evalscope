@@ -11,11 +11,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `gsm8k_v` | [GSM8K-V](#gsm8k-v) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `micro_vqa` | [MicroVQA](#microvqa) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
@@ -239,6 +241,38 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### GSM8K-V
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `gsm8k_v`
+- **Dataset ID**: [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary)
+- **Description**:
+  > GSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically maps each GSM8K math word problem into its visual counterpart to enable a clean, within-item comparison across modalities.
+- **Task Categories**: `Math`, `MultiModal`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.
+
+When providing your final answer:
+- If the answer can be expressed as a whole number (integer), provide it as an integer
+Problem: {question}
+
+Please think step by step. After your reasoning, output your final answer on a new line starting with "FINAL ANSWER: " followed by the number only.
+
+```
+
+</details>
+
+---
+
 ### HallusionBench
 
 [Back to Top](#vlm-benchmarks)
@@ -364,6 +398,35 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+</details>
+
+---
+
+### MicroVQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `micro_vqa`
+- **Dataset ID**: [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary)
+- **Description**:
+  > MicroVQA is expert-curated benchmark for multimodal reasoning for microscopy-based scientific research
+- **Task Categories**: `Knowledge`, `MCQ`, `Medical`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
 
 </details>

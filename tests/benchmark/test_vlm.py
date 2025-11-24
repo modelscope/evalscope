@@ -302,3 +302,15 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('vstar_bench', dataset_args=dataset_args, limit=10)
+
+    def test_micro_vqa_bench(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('micro_vqa', dataset_args=dataset_args, limit=10)
+
+    def test_gsm8k_v(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('gsm8k_v', dataset_args=dataset_args, limit=10)
