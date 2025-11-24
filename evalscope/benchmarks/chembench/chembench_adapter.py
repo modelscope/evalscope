@@ -120,5 +120,5 @@ class ChemBenchAdapter(DefaultDataAdapter):
         pattern = r"\\boxed\{([^}]*)\}"
         match = re.search(pattern, prediction)
         if match:
-            return match.group(1)
+            return match.group(1).replace("\\text{", "")
         return prediction
