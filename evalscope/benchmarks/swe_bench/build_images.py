@@ -2,8 +2,8 @@ import traceback
 from typing import TYPE_CHECKING, Dict, List, Literal
 
 from evalscope.api.dataset import Dataset
-from evalscope.utils.logger import get_logger
 from evalscope.utils.function_utils import run_in_threads_with_progress
+from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from swebench.harness.test_spec.test_spec import TestSpec
