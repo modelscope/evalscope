@@ -1,23 +1,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
-from collections import defaultdict
-
 from evalscope.api.benchmark import BenchmarkMeta, WOChoiceMultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import csv_to_list, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import WOChoiceMultipleChoiceTemplate
 
+from .utils import _extract_answer
 # flake8: noqa
 
 logger = get_logger()
 
 SUBSET_LIST = [
     "mcq_knowledge",
-    "mcq_reasoning"
+    "mcq_reason",
+    "nomcq_reason"
 ]
+
+QA_TEMPLATE = """{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}."""
 
 @register_benchmark(
     BenchmarkMeta(
@@ -25,13 +25,13 @@ SUBSET_LIST = [
         pretty_name='ILReasoning',
         description='Internal dataset with multiple-choice question answering subset and free form answering subset ',
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
-        dataset_id='/home/dzj/evalscope/custom_eval/internal/Reason_Knowledge_Dataset/Dataset_v1',
+        dataset_id='/app/custom_eval/internal/Reason_Knowledge_Dataset',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
         eval_split=None,
-        prompt_template=WOChoiceMultipleChoiceTemplate.MULTIPLE_ANSWER_COT,
+        prompt_template=WOChoiceMultipleChoiceTemplate.MULTIPLE_ANSWER_COT
     )
 )
 class ILReasoningAdapter(WOChoiceMultiChoiceAdapter):
@@ -53,5 +53,24 @@ class ILReasoningAdapter(WOChoiceMultiChoiceAdapter):
         return Sample(
             input=record['question'],
             target=record['answer'],
-            metadata={'id': record.get('id', 'unknown')},
+            metadata={
+                'id': record.get('id', 'unknown'),
+                'is_mcq': record.get('is_mcq', False)
+                },
+        )
+
+    def format_prompt_template(self, sample: Sample) -> str:
+        if sample.metadata['is_mcq']:
+            return self.prompt_template.format(
+                question=sample.input
+            )
+        return QA_TEMPLATE.format(
+            question=sample.input
+        )
+    
+    def extract_answer(self, prediction, task_state):
+        return _extract_answer(
+            prediction=prediction,
+            task_state=task_state,
+            multiple_choice=self.multiple_correct
         )
