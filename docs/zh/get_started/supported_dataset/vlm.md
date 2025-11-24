@@ -11,11 +11,13 @@
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `gsm8k_v` | [GSM8K-V](#gsm8k-v) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
 | `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `micro_vqa` | [MicroVQA](#microvqa) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](#mmbench) | `Knowledge`, `MultiModal`, `QA` |
 | `mm_star` | [MMStar](#mmstar) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmmu` | [MMMU](#mmmu) | `Knowledge`, `MultiModal`, `QA` |
@@ -239,6 +241,38 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 
 ---
 
+### GSM8K-V
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `gsm8k_v`
+- **数据集ID**: [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary)
+- **数据集介绍**:
+  > GSM8K-V 是一个纯视觉的多图像数学推理基准，系统地将每个 GSM8K 数学文字题映射为其对应的视觉版本，以实现跨模态的清晰、逐项对比。
+- **任务类别**: `Math`, `MultiModal`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.
+
+When providing your final answer:
+- If the answer can be expressed as a whole number (integer), provide it as an integer
+Problem: {question}
+
+Please think step by step. After your reasoning, output your final answer on a new line starting with "FINAL ANSWER: " followed by the number only.
+
+```
+
+</details>
+
+---
+
 ### HallusionBench
 
 [返回目录](#vlm评测集)
@@ -364,6 +398,35 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 ```text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
+```
+
+</details>
+
+---
+
+### MicroVQA
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `micro_vqa`
+- **数据集ID**: [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary)
+- **数据集介绍**:
+  > MicroVQA 是一个由专家策划的、面向显微镜科学研究的多模态推理基准。
+- **任务类别**: `Knowledge`, `MCQ`, `Medical`, `MultiModal`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
 ```
 
 </details>

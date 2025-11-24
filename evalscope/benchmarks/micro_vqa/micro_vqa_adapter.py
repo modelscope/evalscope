@@ -14,12 +14,13 @@ logger = get_logger()
 
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
+
 @register_benchmark(
     BenchmarkMeta(
         name='micro_vqa',
         pretty_name='MicroVQA',
         dataset_id='evalscope/MicroVQA',
-        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
+        tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.MEDICAL],
         description=
         'MicroVQA is expert-curated benchmark for multimodal reasoning for microscopy-based scientific research',
         metric_list=['acc'],
@@ -31,7 +32,7 @@ class MicroVQAAdapter(VisionLanguageAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question: str = record.get('question', '')
 
@@ -45,7 +46,7 @@ class MicroVQAAdapter(VisionLanguageAdapter):
             for image in images:
                 image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
                 content_list.append(ContentImage(image=image_base64))
-        
+
         target = answer_character(record['correct_index'])
 
         metadata: Dict[str, Any] = {

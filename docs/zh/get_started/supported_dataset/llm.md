@@ -51,6 +51,7 @@
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
+| `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
 | `mit_movie_trivia` | [MIT-Movie-Trivia](#mit-movie-trivia) | `Knowledge`, `NER` |
 | `mit_restaurant` | [MIT-Restaurant](#mit-restaurant) | `Knowledge`, `NER` |
@@ -1645,6 +1646,34 @@ Answer the following multiple choice question. The entire content of your respon
 {question}
 
 {choices}
+```
+
+</details>
+
+---
+
+### MGSM
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mgsm`
+- **数据集ID**: [evalscope/mgsm](https://modelscope.cn/datasets/evalscope/mgsm/summary)
+- **数据集介绍**:
+  > 多语言小学数学基准（MGSM）是一个小学数学问题的基准，出自论文《语言模型是多语言思维链推理者》。
+- **任务类别**: `Math`, `MultiLingual`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 4-shot
+- **数据集子集**: `bn`, `de`, `en`, `es`, `fr`, `ja`, `ru`, `sw`, `te`, `th`, `zh`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+```text
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+
+
 ```
 
 </details>
