@@ -1,0 +1,36 @@
+{
+    "name": "rag_index",
+    "weight": 1.0,
+    "datasets": [
+        {
+            "name": "chinese_simpleqa",
+            "weight": 0.3,
+            "task_type": "knowledge",
+            "tags": [
+                "rag"
+            ],
+            "args": {},
+            "hierarchy": []
+        },
+        {
+            "name": "aa_lcr",
+            "weight": 0.3,
+            "task_type": "long_context",
+            "tags": [
+                "rag"
+            ],
+            "args": {},
+            "hierarchy": []
+        },
+        {
+            "name": "ifeval",
+            "weight": 0.4,
+            "task_type": "instruction_following",
+            "tags": [
+                "rag"
+            ],
+            "args": {},
+            "hierarchy": []
+        }
+    ]
+}
