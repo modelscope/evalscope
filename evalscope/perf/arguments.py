@@ -157,7 +157,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
     parser.add_argument('--connect-timeout', type=int, default=600, help='The network connection timeout')
     parser.add_argument('--read-timeout', type=int, default=600, help='The network read timeout')
-    parser.add_argument('--no-test-connection', action='store_false', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
+    parser.add_argument('--no-test-connection', action='store_true', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
