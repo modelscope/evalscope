@@ -51,7 +51,7 @@ class Sampler(ABC):
                     )
                 )
 
-        sampled_data = random.sample(all_data, k=count)
+        sampled_data = random.sample(all_data, k=total_count)
         return sampled_data
 
     def _update_index(self, all_data: List[DatasetEntry]) -> List[dict]:
