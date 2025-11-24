@@ -193,7 +193,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
             logger.info(f'{level} Report:\n{table}')
 
         # Save detailed report dataframe as JSON
-        with open(os.path.join(output_dir, '../../detailed_level_score.json'), 'w') as f:
+        with open(os.path.join(output_dir, DataCollection.REPORT_NAME), 'w') as f:
             json.dump(detailed_dict, f, indent=2)
 
         report = ReportGenerator.gen_collection_report(df_dict['df'], self.name, model_name)
@@ -309,19 +309,29 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
 def aggregate_and_sort(df_group, group_by_cols):
     """
-    Unweighted per-sample aggregation for subset-level.
-    Outputs both weighted_average_score and sample_average_score (identical here).
+    Subset-level aggregation (unweighted).
+    Changes:
+      - Remove weighted_average_score.
+      - Add weight column (dataset_weight per subset, first sample fallback 1.0).
     """
-    report_df = (
-        df_group.groupby(group_by_cols).agg(average_score=('score', 'mean'), count=('score', 'size')).reset_index()
-    )
+    import pandas as pd
+
+    # Include dataset_weight to expose subset weight
+    agg_dict = {
+        'average_score': ('score', 'mean'),
+        'count': ('score', 'size'),
+        'weight': ('dataset_weight', 'first'),
+    }
+    # Graceful fallback if dataset_weight column missing
+    missing_weight = 'dataset_weight' not in df_group.columns
+    if missing_weight:
+        df_group = df_group.copy()
+        df_group['dataset_weight'] = 1.0
+    report_df: pd.DataFrame = df_group.groupby(group_by_cols).agg(**agg_dict).reset_index()
     report_df['average_score'] = report_df['average_score'].round(4)
-    # Rename / duplicate metrics
-    report_df['weighted_average_score'] = report_df['average_score']
-    report_df['sample_average_score'] = report_df['average_score']
-    report_df = report_df.drop(columns=['average_score'])
-    report_df = report_df.sort_values(by='count', ascending=False).to_dict(orient='records')
-    return report_df
+    # Sort by count desc
+    report_df = report_df.sort_values(by='count', ascending=False)
+    return report_df.to_dict(orient='records')
 
 
 def aggregate_and_sort_weighted(
