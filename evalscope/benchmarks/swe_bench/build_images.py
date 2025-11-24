@@ -1,9 +1,9 @@
 import traceback
-from tqdm import tqdm
 from typing import TYPE_CHECKING, Dict, List, Literal
 
 from evalscope.api.dataset import Dataset
 from evalscope.utils.logger import get_logger
+from evalscope.utils.function_utils import run_in_threads_with_progress
 
 if TYPE_CHECKING:
     from swebench.harness.test_spec.test_spec import TestSpec
@@ -67,30 +67,42 @@ def build_images(
     # Try to pull images from Docker Hub first if requested
     if use_remote_images and len(samples_to_build_images_for) > 0:
         logger.info(f'Attempting to pull {len(samples_to_build_images_for)} SWE-BENCH images from Docker Hub')
-        successfully_pulled = []
+        successfully_pulled: List[str] = []
 
-        for sample in tqdm(samples_to_build_images_for, desc='Pulling SWE-Bench images'):
-            instance_id = sample['instance_id']
-            image_name = id_to_docker_image[instance_id]
-            # Extract just the image name without the tag
-            image_base_name = image_name.split(':')[0]
+        def _pull_image(sample) -> str:
+            """Pull a single SWE-Bench image; returns instance_id on success."""
+            instance_id: str = sample['instance_id']
+            image_name: str = id_to_docker_image[instance_id]
+            image_base_name: str = image_name.split(':')[0]
+            logger.info(f'Pulling {image_name}...')
+            for line in docker_client.api.pull(image_name, stream=True, decode=True):
+                status = line.get('status')
+                progress = line.get('progress')
+                if progress:
+                    logger.info(f'{image_name} {status} {progress}')
+                elif status:
+                    logger.info(f'{image_name} {status}')
+            docker_client.api.tag(image_name, image_base_name, 'latest')
+            logger.info(f'Successfully pulled {image_name}')
+            return instance_id
 
-            try:
-                logger.info(f'Pulling {image_name}...')
-                for line in docker_client.api.pull(image_name, stream=True, decode=True):
-                    status = line.get('status')
-                    progress = line.get('progress')
-                    if progress:
-                        logger.info(f'{status} {progress}')
-                    else:
-                        logger.info(status)
-                # Tag the pulled image with the expected name
-                docker_client.api.tag(image_name, image_base_name, 'latest')
-                successfully_pulled.append(instance_id)
-                logger.info(f'Successfully pulled {image_name}')
-            except Exception as e:
-                logger.warning(f'Failed to pull {image_name}: {e}')
+        def _on_error(sample, exc: Exception) -> None:
+            image_name = id_to_docker_image[sample['instance_id']]
+            logger.warning(f'Failed to pull {image_name}: {exc}')
 
+        def _on_result(sample, instance_id: str) -> None:
+            successfully_pulled.append(instance_id)
+
+        run_in_threads_with_progress(
+            items=samples_to_build_images_for,
+            worker=_pull_image,
+            desc='Pulling SWE-Bench images',
+            max_workers=max_workers,
+            heartbeat_sec=30,
+            on_result=_on_result,
+            on_error=_on_error,
+            filter_none_results=True,
+        )
         logger.info(f'Pulled {len(successfully_pulled)} images from Docker Hub')
 
         # Remove successfully pulled images from the build list
