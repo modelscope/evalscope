@@ -28,5 +28,5 @@ sympy
 tabulate
 tiktoken
 tqdm
-transformers>=4.33
+transformers>=4.33,!=4.57.2
 word2number
