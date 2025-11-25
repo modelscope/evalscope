@@ -1411,7 +1411,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **Dataset Name**: `ifbench`
 - **Dataset ID**: [allenai/IFBench_test](https://modelscope.cn/datasets/allenai/IFBench_test/summary)
 - **Description**:
-  > IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization . It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks . Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.
+  > IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks. Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.
 - **Task Categories**: `InstructionFollowing`
 - **Evaluation Metrics**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
 - **Aggregation Methods**: `mean`

@@ -27,6 +27,7 @@ import unicodedata
 from collections import Counter
 from spacy.cli import download
 
+from evalscope.metrics.bundled_rouge_score.rouge_scorer import check_nltk_data
 from . import instructions_util
 
 try:
@@ -208,7 +209,7 @@ class SentTypeRatioChecker(Instruction):
     def build_description(self):
         """Build the instruction description."""
         self._description_pattern = 'Maintain a 2:1 ratio of declarative to interrogative sentences.'
-        nltk.download('punkt_tab')
+        check_nltk_data('punkt_tab')
         return self._description_pattern
 
     def get_instruction_args(self):

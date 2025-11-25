@@ -18,7 +18,7 @@ logger = get_logger()
         name='ifbench',
         pretty_name='IFBench',
         description=
-        'IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization . It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks . Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.',  # noqa: E501
+        'IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks. Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.',  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING],
         dataset_id='allenai/IFBench_test',
         subset_list=['default'],
@@ -33,7 +33,7 @@ logger = get_logger()
         eval_split='train',
     )
 )
-class IFEvalAdapter(DefaultDataAdapter):
+class IFBenchAdapter(DefaultDataAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -75,7 +75,7 @@ class IFEvalAdapter(DefaultDataAdapter):
             score.main_score_name = 'prompt_level_strict'
 
         except Exception as e:
-            logger.error(f'Error calculating ifeval metrics: {e}')
+            logger.error(f'Error calculating ifbench metrics: {e}')
             score.value = {}
 
         return score

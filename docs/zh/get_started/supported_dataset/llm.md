@@ -1411,7 +1411,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集名称**: `ifbench`
 - **数据集ID**: [allenai/IFBench_test](https://modelscope.cn/datasets/allenai/IFBench_test/summary)
 - **数据集介绍**:
-  > IFBench 是由艾伦人工智能研究所（AllenAI）开发的新基准，旨在评估 AI 模型在遵循新颖、复杂且多样化的可验证指令方面的可靠性，特别强调跨领域泛化能力。它包含 58 个经过人工筛选的可验证约束，涵盖计数、格式化和用词等类别，致力于解决现有基准中存在的过拟合和数据污染问题，为精确的指令遵循能力提供严格测试。
+  > IFBench 是由 AllenAI 开发的一个新基准，旨在评估 AI 模型在遵循新颖、复杂且多样的可验证指令方面的可靠性，特别强调跨领域泛化能力。它包含 58 个手动整理的可验证约束，涵盖计数、格式化和用词等类别，致力于解决现有基准中存在的过拟合和数据污染问题，为精确遵循指令的能力提供严格测试。
 - **任务类别**: `InstructionFollowing`
 - **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
 - **聚合方法**: `mean`

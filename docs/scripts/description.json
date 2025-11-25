@@ -645,8 +645,8 @@
     "updated_at": "2025-11-24T14:37:10Z"
   },
   "ifbench": {
-    "en": "IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization . It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks . Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.",
-    "zh": "IFBench 是由艾伦人工智能研究所（AllenAI）开发的新基准，旨在评估 AI 模型在遵循新颖、复杂且多样化的可验证指令方面的可靠性，特别强调跨领域泛化能力。它包含 58 个经过人工筛选的可验证约束，涵盖计数、格式化和用词等类别，致力于解决现有基准中存在的过拟合和数据污染问题，为精确的指令遵循能力提供严格测试。",
-    "updated_at": "2025-11-24T20:33:54Z"
+    "en": "IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks. Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.",
+    "zh": "IFBench 是由 AllenAI 开发的一个新基准，旨在评估 AI 模型在遵循新颖、复杂且多样的可验证指令方面的可靠性，特别强调跨领域泛化能力。它包含 58 个手动整理的可验证约束，涵盖计数、格式化和用词等类别，致力于解决现有基准中存在的过拟合和数据污染问题，为精确遵循指令的能力提供严格测试。",
+    "updated_at": "2025-11-25T10:32:58Z"
   }
 }
