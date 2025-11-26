@@ -31,6 +31,13 @@ class TestRunCustom(unittest.TestCase):
                 'general_mcq',
                 'general_qa'
             ],
+            model_args={
+              'precision': 'torch.float16',
+            },
+            generation_config={
+                'max_tokens': 512,
+                'extra_body': {'enable_thinking': True},
+            },
             dataset_args={
                 'general_mcq': {
                     'local_path': 'custom_eval/text/mcq',  # 自定义数据集路径
@@ -46,6 +53,8 @@ class TestRunCustom(unittest.TestCase):
                     ]
                 }
             },
+            eval_batch_size=5,
+            limit=10,
         )
         res = run_task(task_cfg=task_cfg)
         print(res)
