@@ -75,7 +75,7 @@ import ast
 def parse_mixed_data(data_string):
     lines = data_string.strip().split('\\n')
     result = []
-    
+
     for line in lines:
         if line.strip():  # skip empty line
             try:
@@ -83,9 +83,9 @@ def parse_mixed_data(data_string):
                 result.append(parsed_value)
             except (ValueError, SyntaxError):
                 result.append(line.strip()) # Keep as string if parse failed
-    
+
     return result
-    
+
 # User's code
 {code}
 
