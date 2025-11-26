@@ -525,7 +525,7 @@ def download_url(url: str, save_path: str, num_retries: int = 3):
                         return
 
                 logger.info(f'Downloading {url} to {save_path} (attempt {attempt + 1}/{num_retries})...')
-                
+
                 with open(save_path, 'wb') as f, tqdm(
                     desc=os.path.basename(save_path),
                     total=total_size,
@@ -542,6 +542,6 @@ def download_url(url: str, save_path: str, num_retries: int = 3):
         except Exception as e:
             logger.warning(f'Attempt {attempt + 1} failed to download {url}: {e}')
             if attempt < num_retries - 1:
-                sleep(2 ** attempt)  # Exponential backoff
+                sleep(2**attempt)  # Exponential backoff
 
     raise RuntimeError(f'Failed to download {url} after {num_retries} attempts.')

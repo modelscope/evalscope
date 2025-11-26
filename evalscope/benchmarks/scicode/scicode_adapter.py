@@ -12,8 +12,8 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model.model_output import ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 from evalscope.utils.io_utils import download_url
+from evalscope.utils.logger import get_logger
 from .prompt_templates import (
     INITIAL_PROMPT,
     INITIAL_PROMPT_PROVIDE_BACKGROUND,
