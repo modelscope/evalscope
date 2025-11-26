@@ -218,6 +218,7 @@ class ModelScopeAPI(ModelAPI):
             choice = ChatCompletionChoice(
                 message=ChatMessageAssistant(content=response.output, model=self.model_name, source='generate'),
                 logprobs=(Logprobs(content=final_logprobs) if final_logprobs is not None else None),
+                stop_reason=response.stop_reason,
             )
             choices.append(choice)
 
@@ -331,6 +332,7 @@ class GenerateOutput:
     total_tokens: int
     logprobs: Optional[torch.Tensor]
     time: float
+    stop_reason: Optional[str] = None
 
 
 @dataclass
@@ -386,6 +388,9 @@ def process_batches() -> None:
             generator = first_input.generator
             decoder = first_input.decoder
             num_return_sequences = generator.keywords.get('num_return_sequences', 1)
+            max_new_tokens = generator.keywords.get('max_new_tokens', None)
+            # In case some callers use max_length, honor it as a fallback:
+            max_length = generator.keywords.get('max_length', None)
 
             # tokenize and move to device
             tokenized_inputs = tokenizer([item[0].input for item in inputs])
@@ -429,6 +434,22 @@ def process_batches() -> None:
                     output = outputs[output_index]
                     output_tokens = generate_ids[output_index].shape[-1] - input_tokens
                     logprobs_tensor = logprobs[output_index] if logprobs is not None else None
+
+                    # Determine stop reason:
+                    # 1) If the configured token limit was reached, treat as max_tokens.
+                    #    - Prefer max_new_tokens; fallback to max_length when provided.
+                    reached_max_tokens = False
+                    if max_new_tokens is not None:
+                        reached_max_tokens = output_tokens >= max_new_tokens
+                    elif max_length is not None:
+                        # max_length is total tokens (input + output)
+                        reached_max_tokens = (input_tokens + output_tokens) >= max_length
+
+                    if reached_max_tokens:
+                        finish_reason = 'max_tokens'
+                    else:
+                        finish_reason = 'stop'  # covers EOS or stop string criteria
+
                     # create the output
                     choices.append(
                         GenerateOutput(
@@ -438,6 +459,7 @@ def process_batches() -> None:
                             total_tokens=input_tokens + output_tokens,
                             logprobs=logprobs_tensor,
                             time=total_time,
+                            stop_reason=finish_reason,
                         )
                     )
 
