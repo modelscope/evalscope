@@ -156,7 +156,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--port', type=int, default=8877, help='The port for local inference')
     parser.add_argument('--headers', nargs='+', dest='headers', action=ParseKVAction, help='Extra HTTP headers')
     parser.add_argument('--api-key', type=str, required=False, default=None, help='The API key for authentication')
-    parser.add_argument('--connect-timeout', type=int, required=False, default=None, help='The network connection timeout')
+    parser.add_argument('--connect-timeout', type=int, required=False, default=None, help='The network connection timeout')  # noqa: E501
     parser.add_argument('--read-timeout', type=int, required=False, default=None, help='The network read timeout')
     parser.add_argument('--total-timeout', type=int, required=False, default=6 * 60 * 60, help='The total timeout for each request')  # noqa: E501
     parser.add_argument('--no-test-connection', action='store_true', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
