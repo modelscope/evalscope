@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.utils.function_utils import AsyncioLoopRunner, thread_safe
 from evalscope.utils.logger import get_logger
@@ -6,6 +6,7 @@ from evalscope.utils.logger import get_logger
 if TYPE_CHECKING:
     from ms_enclave.sandbox.manager import SandboxManager
 
+    from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
 
 logger = get_logger()
@@ -14,7 +15,8 @@ logger = get_logger()
 class SandboxMixin:
     """Sandbox mixin for sandboxed code execution."""
 
-    def __init__(self, task_config: 'TaskConfig'):
+    def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
+        self._benchmark_meta = benchmark_meta
         self._task_config = task_config
 
         self._manager: Optional['SandboxManager'] = None
@@ -22,6 +24,9 @@ class SandboxMixin:
 
         self._sandbox_id: Optional[str] = None
         """Sandbox ID."""
+
+        self._use_custom_image: bool = False
+        """Whether to use a custom sandbox image."""
 
         # Lazy init state
         self._initialized: bool = False
@@ -67,6 +72,42 @@ class SandboxMixin:
         self._initialized = True
         return True
 
+    def should_build_image(self, image: str) -> bool:
+        if not self._use_custom_image:
+            return False
+
+        from docker.client import DockerClient
+
+        docker_client = DockerClient.from_env()
+        avaliable_images = [tag for image in docker_client.images.list() for tag in image.tags]
+
+        return image not in avaliable_images
+
+    def build_docker_image(self, image: str, path: str, dockerfile: str = 'Dockerfile') -> Any:
+        from docker.client import DockerClient
+        docker_client = DockerClient.from_env()
+
+        build_logs = docker_client.images.build(path=path, dockerfile=dockerfile, tag=image, rm=True)
+        # Process and log build output
+        for log in build_logs[1]:  # build_logs[1] contains the build log generator
+            if 'stream' in log:
+                logger.info(f"{log['stream'].strip()}")
+            elif 'error' in log:
+                logger.error(f"{log['error']}")
+        return build_logs[0]  # Return the built image
+
+    def get_build_context(self):
+        """Get the build context and Dockerfile path for building the sandbox image.
+
+        Returns:
+            Tuple[str, str]: A tuple containing the build context path and the Dockerfile path.
+        """
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        dockerfile_path = os.path.join(current_dir, 'docker', 'Dockerfile')
+        build_context_path = os.path.join(current_dir, 'docker')
+        return build_context_path, dockerfile_path
+
     async def init_sandbox_manager_async(self) -> Optional['SandboxManager']:
         """Initialize the sandbox manager asynchronously."""
         if self._manager is not None:
@@ -103,13 +144,14 @@ class SandboxMixin:
 
         from ms_enclave.sandbox.model import DockerSandboxConfig, SandboxType
 
-        sandbox_config = self._task_config.sandbox_config or DockerSandboxConfig(
-            image='python:3.11-slim', tools_config={
-                'shell_executor': {},
-                'python_executor': {}
-            }
-        )
+        sandbox_config = DockerSandboxConfig.model_validate(self._benchmark_meta.sandbox_config)
         sandbox_type = self._task_config.sandbox_type or SandboxType.DOCKER
+
+        if self.should_build_image(sandbox_config.image):
+            logger.info(f'Building sandbox image: {sandbox_config.image}')
+            build_context_path, dockerfile = self.get_build_context()
+            self.build_docker_image(sandbox_config.image, path=build_context_path, dockerfile=dockerfile)
+            logger.info(f'Sandbox image built: {sandbox_config.image}')
 
         self._sandbox_id = await self._manager.create_sandbox(sandbox_type=sandbox_type, config=sandbox_config)
 
@@ -122,7 +164,10 @@ class SandboxMixin:
         """Initialize the sandbox instance."""
         return AsyncioLoopRunner.run(self.init_sandbox_async())
 
-    def execute_code_in_sandbox(self, code: str, timeout: int = 60, language: str = 'python') -> Dict[str, Any]:
+    def execute_code_in_sandbox(self,
+                                code: Union[str, List[str]],
+                                timeout: int = 60,
+                                language: str = 'python') -> Dict[str, Any]:
         """Execute code in the sandbox."""
         # Lazy, thread-safe initialization
         if not self.ensure_sandbox_ready():

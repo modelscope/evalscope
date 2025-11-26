@@ -82,6 +82,11 @@ Example usage:
     - `extract {regex}`: Extracts the portion of the model output that matches the specified regular expression.
   - `force_redownload`: Whether to force re-download the dataset. Default is `False`. Set to `True` if the downloaded dataset needs to be updated.
   - `extra_params`: Extra parameters related to the dataset. Refer to the documentation of [each dataset](./supported_dataset/index.md) for specific parameters, e.g., the `include_multi_modal` parameter for the `hle` dataset.
+  - `sandbox_config`: Configuration parameters for the Sandbox, passed as a `json` string and parsed into a dictionary. It supports the following fields:
+    - `image`: The name of the Docker image, defaulting to `python:3.11-slim`.
+    - `network_enabled`: Whether to enable networking, default is `true`.
+    - `tools_config`: Tool configuration dictionary, defaulting to an empty dictionary `{'shell_executor': {},'python_executor': {}}`, which indicates that both shell and python executors are enabled.
+
 - `--dataset-dir`: Dataset download path, default is `~/.cache/modelscope/datasets`.
 - `--dataset-hub`: Dataset source, default is `modelscope`, optional value is `huggingface`.
 - `--limit`: Max number of samples to evaluate per dataset. If not set, evaluates all data. Supports int and float. Int means the first `N` samples, float means the first `N%` samples in the dataset. For example, `0.1` means the first 10% of samples, `100` means the first 100 samples.
@@ -198,10 +203,6 @@ The LLM-as-a-Judge evaluation parameters use a judge model to determine correctn
 - `--sandbox-manager-config`: Configuration parameters for the Sandbox manager, passed as a `json` string and parsed into a dictionary. It supports the following fields:
   - `base_url`: The base URL for the Sandbox manager, defaulting to `None`, which indicates the use of a local manager. Configuring this parameter will enable the use of a remote manager.
 - `--sandbox-type`: Specifies the type of Sandbox, with a default value of `docker`.
-- `--sandbox-config`: Configuration parameters for the Sandbox, passed as a `json` string and parsed into a dictionary. It supports the following fields:
-  - `image`: The name of the Docker image, defaulting to `python:3.11-slim`.
-  - `network_enabled`: Whether to enable networking, default is `true`.
-  - `tools_config`: Tool configuration dictionary, defaulting to an empty dictionary `{'shell_executor': {},'python_executor': {}}`, which indicates that both shell and python executors are enabled.
 
 ## Other Parameters
 

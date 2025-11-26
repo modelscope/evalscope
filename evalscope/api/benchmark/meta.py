@@ -86,7 +86,7 @@ class BenchmarkMeta:
     """ Timeout for review in seconds."""
 
     extra_params: Dict = field(default_factory=dict)
-    """ Additional parameters for the benchmark.
+    """Additional parameters for the benchmark.
         The structure is:
         {
           "param": {
@@ -98,6 +98,9 @@ class BenchmarkMeta:
           ...
         }
     """
+
+    sandbox_config: Optional[Dict[str, Any]] = field(default_factory=dict)
+    """Configuration for sandboxed code execution environments. """
 
     def __post_init__(self):
         """Validate fields after initialization."""

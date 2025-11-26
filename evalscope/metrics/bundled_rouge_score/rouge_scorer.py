@@ -41,6 +41,7 @@ from rouge_score import scoring, tokenizers
 from six.moves import map, range
 
 from evalscope.utils import get_logger
+from evalscope.utils.io_utils import download_url
 
 logger = get_logger()
 
@@ -62,13 +63,13 @@ def check_nltk_data() -> None:
                 return False
 
         if not has_resource('punkt_tab'):
-            logger.warning(f'NLTK download for punkt_tab failed, trying mirror: {e}')
+            logger.warning('NLTK download for punkt_tab failed, trying mirror.')
             nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data/tokenizers')
             os.makedirs(nltk_dir, exist_ok=True)
             punkt_zip = os.path.join(nltk_dir, 'punkt_tab.zip')
             punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
 
-            os.system(f'wget --timeout=10 --tries=3 -O {punkt_zip} {punkt_tab_url}')
+            download_url(punkt_tab_url, punkt_zip)
             os.system(f'unzip -o {punkt_zip} -d {nltk_dir}')
     except Exception as e:
         logger.error(f'NLTK data setup failed: {e}')

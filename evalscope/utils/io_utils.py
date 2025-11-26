@@ -496,3 +496,52 @@ def compress_image_to_limit(image_bytes: bytes, max_bytes: int = 10_000_000) -> 
         )
 
     return out, 'jpeg'
+
+
+def download_url(url: str, save_path: str, num_retries: int = 3):
+    """
+    Download a file from a URL to a local path with retries.
+
+    Args:
+        url (str): The URL to download from.
+        save_path (str): The local file path to save the downloaded file.
+        num_retries (int): Number of times to retry on failure.
+    """
+    import requests
+    from time import sleep
+    from tqdm import tqdm
+
+    save_path = os.path.abspath(save_path)
+
+    for attempt in range(num_retries):
+        try:
+            with requests.get(url, stream=True, timeout=30) as response:
+                response.raise_for_status()
+                total_size = int(response.headers.get('content-length', 0))
+
+                if os.path.exists(save_path):
+                    if total_size > 0 and os.path.getsize(save_path) == total_size:
+                        logger.info(f'File {save_path} already exists and is complete. Skipping download.')
+                        return
+
+                logger.info(f'Downloading {url} to {save_path} (attempt {attempt + 1}/{num_retries})...')
+
+                with open(save_path, 'wb') as f, tqdm(
+                    desc=os.path.basename(save_path),
+                    total=total_size,
+                    unit='iB',
+                    unit_scale=True,
+                    unit_divisor=1024,
+                ) as bar:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            size = f.write(chunk)
+                            bar.update(size)
+            logger.info(f'Downloaded {url} to {save_path}')
+            return
+        except Exception as e:
+            logger.warning(f'Attempt {attempt + 1} failed to download {url}: {e}')
+            if attempt < num_retries - 1:
+                sleep(2**attempt)  # Exponential backoff
+
+    raise RuntimeError(f'Failed to download {url} after {num_retries} attempts.')

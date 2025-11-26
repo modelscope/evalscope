@@ -7,6 +7,7 @@ from evalscope.metrics import LLMJudge
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
+    from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
 
 logger = get_logger()
@@ -17,14 +18,17 @@ class LLMJudgeMixin:
     Mixin class for LLM Judge functionality.
     """
 
-    def __init__(self, task_config: 'TaskConfig'):
+    def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
+        self._benchmark_meta = benchmark_meta
         self._task_config = task_config
+
         self._use_llm_judge = False
         """Whether to use LLM as a judge"""
 
         self._llm_judge: Optional[LLMJudge] = None
+        """LLM judge instance"""
 
-        super().__init__(task_config=task_config)
+        super().__init__(benchmark_meta=benchmark_meta, task_config=task_config)
 
     @property
     def llm_judge(self) -> Optional[LLMJudge]:

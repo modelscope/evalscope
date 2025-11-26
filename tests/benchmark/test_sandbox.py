@@ -3,8 +3,6 @@ from dotenv import dotenv_values
 
 env = dotenv_values('.env')
 
-import unittest
-
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
@@ -79,3 +77,13 @@ class TestCodeBenchmark(TestBenchmark):
         }
         sandbox_manager_config = {'base_url': 'http://localhost:8000'}
         self._run_dataset_test('live_code_bench', limit=20, dataset_args=dataset_args, sandbox_manager_config=sandbox_manager_config, use_cache='outputs/20250918_200232_2', rerun_review=True)
+
+    def test_scicode(self):
+        """Test SciCode dataset."""
+        dataset_args = {
+            'extra_params': {
+                'provide_background': False
+            }
+        }
+
+        self._run_dataset_test('scicode', dataset_args, repeats=2, limit=3, stream=True, rerun_review=True)

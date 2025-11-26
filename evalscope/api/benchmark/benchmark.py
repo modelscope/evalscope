@@ -29,7 +29,8 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
-        super().__init__(task_config=task_config)
+
+        super().__init__(benchmark_meta=benchmark_meta, task_config=task_config)
 
         self.reformat_subset = False
         """Whether to reformat the subset data with subset key"""
@@ -267,6 +268,13 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         return self._benchmark_meta.system_prompt
 
+    @system_prompt.setter
+    def system_prompt(self, value: str):
+        """
+        Set the system prompt of the benchmark.
+        """
+        self._benchmark_meta.system_prompt = value
+
     @property
     def query_template(self) -> Optional[str]:
         """
@@ -395,6 +403,20 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         Set the timeout for the review process.
         """
         self._benchmark_meta.review_timeout = value
+
+    @property
+    def sandbox_config(self) -> Dict[str, Any]:
+        """
+        Return the sandbox configuration for the benchmark.
+        """
+        return self._benchmark_meta.sandbox_config
+
+    @sandbox_config.setter
+    def sandbox_config(self, value: Dict[str, Any]):
+        """
+        Set the sandbox configuration for the benchmark.
+        """
+        self._benchmark_meta.sandbox_config = value
 
     @contextlib.contextmanager
     def _temporary_attribute(self, attr_name: str, new_value):

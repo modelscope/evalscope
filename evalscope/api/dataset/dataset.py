@@ -10,7 +10,7 @@ from evalscope.api.tool import ToolInfo
 
 
 class Sample(BaseModel):
-    r"""Sample for an evaluation task."""
+    """Sample for an evaluation task."""
 
     input: Union[str, List[ChatMessage]]
     """The input to be submitted to the model."""
