@@ -19,7 +19,7 @@
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](#coinflip) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
-| `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `competition_math` | [Competition-MATH](#competition-math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
 | `cross_ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
@@ -551,7 +551,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ---
 
-### MATH
+### Competition-MATH
 
 [返回目录](#llm评测集)
 - **数据集名称**: `competition_math`
@@ -2410,7 +2410,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `scicode`
 - **数据集ID**: [evalscope/SciCode](https://modelscope.cn/datasets/evalscope/SciCode/summary)
 - **数据集介绍**:
-  > SciCode 是一个具有挑战性的基准，旨在评估语言模型（LMs）在解决真实科学研究问题时的代码生成能力。它涵盖物理学、数学、材料科学、生物学和化学5个领域共16个子领域。与以往基于考试式问答对的基准不同，SciCode 源自真实的科研问题，其题目自然地分解为多个子问题，每个子问题均涉及知识回忆、推理和代码生成。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
+  > SciCode 是一个具有挑战性的基准，旨在评估语言模型（LMs）在解决真实科学研究问题时的代码生成能力。它涵盖了物理学、数学、材料科学、生物学和化学五大领域中的16个子领域。与以往基于考试式问答对的基准不同，SciCode 源自真实的科研问题，其题目自然地分解为多个子问题，每个子问题均涉及知识回忆、推理和代码生成。**执行时需使用沙箱环境以安全运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
 - **评估指标**: `main_problem_pass_rate`, `subproblem_pass_rate`
 - **聚合方法**: `mean`

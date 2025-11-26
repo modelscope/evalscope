@@ -36,7 +36,7 @@ logger = get_logger()
         'that consist of exam-like question-answer pairs, SciCode is converted from real research '
         'problems. SciCode problems naturally factorize into multiple subproblems, each involving '
         'knowledge recall, reasoning, and code synthesis. '
-        '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
+        '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='evalscope/SciCode',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
         eval_split='test',

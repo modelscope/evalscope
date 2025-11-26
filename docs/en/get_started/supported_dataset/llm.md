@@ -19,7 +19,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `cmmlu` | [C-MMLU](#c-mmlu) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](#coinflip) | `Reasoning`, `Yes/No` |
 | `commonsense_qa` | [CommonsenseQA](#commonsenseqa) | `Commonsense`, `MCQ`, `Reasoning` |
-| `competition_math` | [MATH](#math) | `Math`, `Reasoning` |
+| `competition_math` | [Competition-MATH](#competition-math) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](#conll2003) | `Knowledge`, `NER` |
 | `copious` | [Copious](#copious) | `Knowledge`, `NER` |
 | `cross_ner` | [CrossNER](#crossner) | `Knowledge`, `NER` |
@@ -551,7 +551,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ---
 
-### MATH
+### Competition-MATH
 
 [Back to Top](#llm-benchmarks)
 - **Dataset Name**: `competition_math`
@@ -2410,7 +2410,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `scicode`
 - **Dataset ID**: [evalscope/SciCode](https://modelscope.cn/datasets/evalscope/SciCode/summary)
 - **Description**:
-  > SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+  > SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `main_problem_pass_rate`, `subproblem_pass_rate`
 - **Aggregation Methods**: `mean`
