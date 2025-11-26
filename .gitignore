@@ -157,3 +157,4 @@ swift.test*
 evalscope/backend/rag_eval/ragas/prompts/chinese
 logs
 .gradio
+*.h5

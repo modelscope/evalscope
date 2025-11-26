@@ -1,0 +1,4 @@
+numpy
+scipy
+sympy
+h5py

@@ -267,6 +267,13 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         return self._benchmark_meta.system_prompt
 
+    @system_prompt.setter
+    def system_prompt(self, value: str):
+        """
+        Set the system prompt of the benchmark.
+        """
+        self._benchmark_meta.system_prompt = value
+
     @property
     def query_template(self) -> Optional[str]:
         """

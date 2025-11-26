@@ -79,3 +79,19 @@ class TestCodeBenchmark(TestBenchmark):
         }
         sandbox_manager_config = {'base_url': 'http://localhost:8000'}
         self._run_dataset_test('live_code_bench', limit=20, dataset_args=dataset_args, sandbox_manager_config=sandbox_manager_config, use_cache='outputs/20250918_200232_2', rerun_review=True)
+
+    def test_scicode(self):
+        """Test SciCode dataset."""
+        dataset_args = {
+            'extra_params': {
+                'provide_background': False
+            }
+        }
+        # TODO: sandbox_config move to benchmark meta
+        self._run_dataset_test('scicode', dataset_args, limit=5, stream=True, use_cache='outputs/20251125_204548', rerun_review=True,
+                               sandbox_config={
+                                   'image':'scicode-benchmark:latest', 
+                                   'tools_config': {
+                                        'shell_executor': {},
+                                        'python_executor': {}
+                                    }})
