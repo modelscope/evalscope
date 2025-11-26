@@ -78,7 +78,14 @@ class ModelScopeAPI(ModelAPI):
         self.device = device_map or get_device()
 
         # torch dtype
-        DTYPE_MAP = {'float16': torch.float16, 'float32': torch.float32, 'bfloat16': torch.bfloat16, 'auto': 'auto'}
+        DTYPE_MAP = {
+            'torch.float16': torch.float16,
+            'torch.bfloat16': torch.bfloat16,
+            'torch.half': torch.half,
+            'torch.float32': torch.float32,
+            'torch.float64': torch.float64,
+            'auto': 'auto'
+        }
 
         if isinstance(torch_dtype, str) and torch_dtype != 'auto':
             torch_dtype = DTYPE_MAP.get(torch_dtype, torch.float32)
@@ -158,6 +165,16 @@ class ModelScopeAPI(ModelAPI):
             stopping_criteria = [StopStringCriteria(self.tokenizer, config.stop_seqs)]
             kwargs['stopping_criteria'] = stopping_criteria
 
+        # Handle extra_body parameters
+        if config.extra_body:
+            # Extract known parameters that should be passed to chat template
+            self.enable_thinking = config.extra_body.get('enable_thinking', self.enable_thinking)
+
+            # Pass through other extra_body parameters to generator if they're valid
+            for key, value in config.extra_body.items():
+                if key not in ['enable_thinking'] and key not in kwargs:
+                    kwargs[key] = value
+
         kwargs['return_dict_in_generate'] = True
         generator = functools.partial(self.model.generate, **kwargs)
 
@@ -231,12 +248,18 @@ class ModelScopeAPI(ModelAPI):
         ms_messages = message_content_to_string(ms_messages)
         # apply chat template
         if self.tokenizer.chat_template is not None:
+            template_kwargs = {
+                'add_generation_prompt': True,
+                'tokenize': False,
+            }
+            if len(tools_list) > 0:
+                template_kwargs['tools'] = tools_list
+            if self.enable_thinking is not None:
+                template_kwargs['enable_thinking'] = self.enable_thinking
+
             chat = self.tokenizer.apply_chat_template(
                 ms_messages,
-                add_generation_prompt=True,
-                tokenize=False,
-                tools=tools_list if len(tools_list) > 0 else None,
-                enable_thinking=self.enable_thinking,  # not all models use this, check if it is supported
+                **template_kwargs,
             )
         else:
             chat = ''
