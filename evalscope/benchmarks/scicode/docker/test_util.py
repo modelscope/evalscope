@@ -14,16 +14,13 @@
 # Modifications have been made by xantheocracy, 2025.
 # Original source: https://github.com/scicode-bench/SciCode/blob/main/src/scicode/compare/cmp.py
 
-from typing import Any
-
 import numpy as np
 import scipy.sparse  # type: ignore
 import sympy  # type: ignore
+from typing import Any
 
 
-def are_dicts_close(
-    dict1: dict[Any, Any], dict2: dict[Any, Any], atol: float = 1e-8, rtol: float = 1e-5
-) -> bool:
+def are_dicts_close(dict1: dict[Any, Any], dict2: dict[Any, Any], atol: float = 1e-8, rtol: float = 1e-5) -> bool:
     dict1 = process_symbol_in_dict(dict1)
     dict2 = process_symbol_in_dict(dict2)
     # Check if both dictionaries have the same keys
@@ -72,9 +69,7 @@ def process_symbol_in_dict(dict: dict[Any, Any]) -> dict[Any, Any]:
     return new_dict
 
 
-def are_csc_matrix_close(
-    matrix1: scipy.sparse.csr_matrix | scipy.sparse.csc_matrix, matrix2: Any
-) -> bool:
+def are_csc_matrix_close(matrix1: scipy.sparse.csr_matrix | scipy.sparse.csc_matrix, matrix2: Any) -> bool:
     dense1 = matrix1.toarray()
     dense2 = matrix2.toarray()
     return np.allclose(dense1, dense2)

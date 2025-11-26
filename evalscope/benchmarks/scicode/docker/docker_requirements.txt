@@ -1,4 +1,4 @@
+h5py
 numpy
 scipy
 sympy
-h5py

@@ -30,6 +30,13 @@ logger = get_logger()
         prompt_template=
         'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',
         review_timeout=4,
+        sandbox_config={
+            'image': 'python:3.11-slim',
+            'tools_config': {
+                'shell_executor': {},
+                'python_executor': {}
+            }
+        },
     )
 )
 class HumanevalAdapter(DefaultDataAdapter):

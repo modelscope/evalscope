@@ -3,8 +3,6 @@ from dotenv import dotenv_values
 
 env = dotenv_values('.env')
 
-import unittest
-
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
@@ -87,11 +85,5 @@ class TestCodeBenchmark(TestBenchmark):
                 'provide_background': False
             }
         }
-        # TODO: sandbox_config move to benchmark meta
-        self._run_dataset_test('scicode', dataset_args, limit=5, stream=True, use_cache='outputs/20251125_204548', rerun_review=True,
-                               sandbox_config={
-                                   'image':'scicode-benchmark:latest', 
-                                   'tools_config': {
-                                        'shell_executor': {},
-                                        'python_executor': {}
-                                    }})
+
+        self._run_dataset_test('scicode', dataset_args, repeats=2, limit=3, stream=True, rerun_review=True)

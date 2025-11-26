@@ -14,16 +14,13 @@
 # Modifications have been made by xantheocracy, 2024.
 # Original source: https://github.com/scicode-bench/SciCode/blob/main/src/scicode/parse/parse.py
 
-from typing import Any, TypeAlias
-
 import scipy  # type: ignore
 from h5py import Dataset, File, Group  # type: ignore
+from typing import Any, TypeAlias
 
-H5PY_FILE = "/workspace/test_data.h5"
+H5PY_FILE = '/workspace/test_data.h5'
 
-SparseMatrix: TypeAlias = (
-    scipy.sparse.coo_matrix | scipy.sparse.bsr_matrix | scipy.sparse.csr_matrix
-)
+SparseMatrix: TypeAlias = (scipy.sparse.coo_matrix | scipy.sparse.bsr_matrix | scipy.sparse.csr_matrix)
 
 
 def process_hdf5_list(group: Group) -> list[Any]:
@@ -37,9 +34,9 @@ def process_hdf5_dict(group: Group) -> dict[str | float, Any]:
     dict = {}
     for key, obj in group.items():
         if isinstance(obj, Group):
-            dict[key] = process_hdf5_sparse_matrix(obj["sparse_matrix"])
+            dict[key] = process_hdf5_sparse_matrix(obj['sparse_matrix'])
         elif isinstance(obj[()], bytes):
-            dict[key] = obj[()].decode("utf-8", errors="strict")
+            dict[key] = obj[()].decode('utf-8', errors='strict')
         else:
             try:
                 tmp = float(key)
@@ -50,44 +47,40 @@ def process_hdf5_dict(group: Group) -> dict[str | float, Any]:
 
 
 def process_hdf5_sparse_matrix(group: Group) -> SparseMatrix:
-    data = group["data"][()]
-    shape = tuple(group["shape"][()])
-    if "row" in group and "col" in group:
-        row = group["row"][()]
-        col = group["col"][()]
+    data = group['data'][()]
+    shape = tuple(group['shape'][()])
+    if 'row' in group and 'col' in group:
+        row = group['row'][()]
+        col = group['col'][()]
         return scipy.sparse.coo_matrix((data, (row, col)), shape=shape)
-    elif "blocksize" in group:
-        indices = group["indices"][()]
-        indptr = group["indptr"][()]
-        blocksize = tuple(group["blocksize"][()])
-        return scipy.sparse.bsr_matrix(
-            (data, indices, indptr), shape=shape, blocksize=blocksize
-        )
+    elif 'blocksize' in group:
+        indices = group['indices'][()]
+        indptr = group['indptr'][()]
+        blocksize = tuple(group['blocksize'][()])
+        return scipy.sparse.bsr_matrix((data, indices, indptr), shape=shape, blocksize=blocksize)
     else:
-        indices = group["indices"][()]
-        indptr = group["indptr"][()]
+        indices = group['indices'][()]
+        indptr = group['indptr'][()]
         return scipy.sparse.csr_matrix((data, indices, indptr), shape=shape)
 
 
-def process_hdf5_datagroup(
-    group: Group,
-) -> list[Any] | dict[str | float, Any] | SparseMatrix:
+def process_hdf5_datagroup(group: Group, ) -> list[Any] | dict[str | float, Any] | SparseMatrix:
     assert len(group) > 0
     for key in group.keys():
-        if key == "list":
+        if key == 'list':
             return process_hdf5_list(group[key])
-        if key == "sparse_matrix":
+        if key == 'sparse_matrix':
             return process_hdf5_sparse_matrix(group[key])
         else:
             return process_hdf5_dict(group)
-    raise ValueError("No valid key found in the group to process")
+    raise ValueError('No valid key found in the group to process')
 
 
 def process_hdf5_to_tuple(step_id: str, test_num: int) -> list[Any]:
     data_lst: list[Any] = []
-    with File(H5PY_FILE, "r") as f:
+    with File(H5PY_FILE, 'r') as f:
         for test_id in range(test_num):
-            group_path = f"{step_id}/test{test_id + 1}"
+            group_path = f'{step_id}/test{test_id + 1}'
             if isinstance(f[group_path], Group):
                 group = f[group_path]  # test1, test2, test3
                 num_keys = [key for key in group.keys()]
@@ -95,9 +88,7 @@ def process_hdf5_to_tuple(step_id: str, test_num: int) -> list[Any]:
                     subgroup = group[num_keys[0]]
                     if isinstance(subgroup, Dataset):
                         if isinstance(subgroup[()], bytes):
-                            data_lst.append(
-                                subgroup[()].decode("utf-8", errors="strict")
-                            )
+                            data_lst.append(subgroup[()].decode('utf-8', errors='strict'))
                         else:
                             data_lst.append(subgroup[()])
                     elif isinstance(subgroup, Group):
@@ -108,14 +99,12 @@ def process_hdf5_to_tuple(step_id: str, test_num: int) -> list[Any]:
                         subgroup = group[key]
                         if isinstance(subgroup, Dataset):
                             if isinstance(subgroup[()], bytes):
-                                var_lst.append(
-                                    subgroup[()].decode("utf-8", errors="strict")
-                                )
+                                var_lst.append(subgroup[()].decode('utf-8', errors='strict'))
                             else:
                                 var_lst.append(subgroup[()])
                         elif isinstance(subgroup, Group):
                             var_lst.append(process_hdf5_datagroup(subgroup))
                     data_lst.append(tuple(var_lst))
             else:
-                raise FileNotFoundError(f"Path {group_path} not found in the file.")
+                raise FileNotFoundError(f'Path {group_path} not found in the file.')
     return data_lst

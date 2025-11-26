@@ -57,13 +57,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -86,13 +86,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -115,12 +115,12 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format:
 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
-```
+````
 
 </details>
 
@@ -143,13 +143,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -172,13 +172,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 {question}
 
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
 
-```
+````
 
 </details>
 
@@ -201,14 +201,14 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
 {choices}
 
-```
+````
 
 </details>
 
@@ -231,11 +231,11 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
-```
+````
 
 </details>
 
@@ -258,7 +258,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are an expert at solving mathematical word problems. Please solve the following problem step by step, showing your reasoning.
 
 When providing your final answer:
@@ -267,7 +267,7 @@ Problem: {question}
 
 Please think step by step. After your reasoning, output your final answer on a new line starting with "FINAL ANSWER: " followed by the number only.
 
-```
+````
 
 </details>
 
@@ -290,10 +290,10 @@ Please think step by step. After your reasoning, output your final answer on a n
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please answer YES or NO without an explanation.
-```
+````
 
 </details>
 
@@ -316,11 +316,11 @@ Please answer YES or NO without an explanation.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
-```
+````
 
 </details>
 
@@ -343,10 +343,10 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -369,10 +369,10 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
-```
+````
 
 </details>
 
@@ -395,10 +395,10 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}} without units.
-```
+````
 
 </details>
 
@@ -421,13 +421,13 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -450,13 +450,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -479,14 +479,14 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question.
 The last line of your response should be of the following format:
 'ANSWER: $LETTER' (without quotes)
 where LETTER is one of A,B,C,D. Think step by step before answering.
 
 {question}
-```
+````
 
 </details>
 
@@ -509,7 +509,7 @@ where LETTER is one of A,B,C,D. Think step by step before answering.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
@@ -517,7 +517,7 @@ Solve the following problem step by step. The last line of your response should 
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
 
-```
+````
 
 </details>
 
@@ -555,13 +555,13 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -584,9 +584,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -609,9 +609,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -634,10 +634,10 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -675,13 +675,13 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -722,7 +722,7 @@ Answer the following multiple choice question based on the image and audio conte
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
  You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
 
     1. Text Processing:
@@ -748,7 +748,7 @@ Answer the following multiple choice question based on the image and audio conte
 
     Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.
 
-```
+````
 
 </details>
 
@@ -771,10 +771,10 @@ Answer the following multiple choice question based on the image and audio conte
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please answer YES or NO without an explanation.
-```
+````
 
 </details>
 
@@ -797,13 +797,13 @@ Please answer YES or NO without an explanation.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
 {question}
 
 Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
-```
+````
 
 </details>
 
@@ -826,13 +826,13 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -855,13 +855,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -884,11 +884,11 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the question:
 
 {question}
-```
+````
 
 </details>
 
@@ -911,13 +911,13 @@ Answer the question:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
 
 {question}
 
-```
+````
 
 </details>
 
@@ -940,13 +940,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
 
 {question}
 
-```
+````
 
 </details>
 
@@ -969,7 +969,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 
 
@@ -977,6 +977,6 @@ Answer the following multiple choice question. The last line of your response sh
 Let's think step by step and give the final answer in curly braces,
 like this: {{final answer}}"
 
-```
+````
 
 </details>

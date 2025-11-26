@@ -72,6 +72,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
+| `scicode` | [SciCode](#scicode) | `Coding` |
 | `sciq` | [SciQ](#sciq) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](#siqa) | `Commonsense`, `MCQ`, `Reasoning` |
@@ -116,7 +117,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 BEGIN INPUT DOCUMENTS
 
@@ -132,7 +133,7 @@ START QUESTION
 
 END QUESTION
 
-```
+````
 
 </details>
 
@@ -155,10 +156,10 @@ END QUESTION
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -181,14 +182,14 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 Solve the following math problem step by step. Put your answer inside \boxed{{}}.
 
 {question}
 
 Remember to put your answer inside \boxed{{}}.
-```
+````
 
 </details>
 
@@ -211,9 +212,9 @@ Remember to put your answer inside \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -236,10 +237,10 @@ Remember to put your answer inside \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -262,13 +263,13 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -291,9 +292,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -316,11 +317,11 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Q: {question}
 A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
 
-```
+````
 
 </details>
 
@@ -343,13 +344,13 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -372,7 +373,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -395,7 +396,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -418,14 +419,14 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
 
 问题：{question}
 选项：
 {choices}
 
-```
+````
 
 </details>
 
@@ -448,11 +449,11 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 请回答问题：
 
 {question}
-```
+````
 
 </details>
 
@@ -475,14 +476,14 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
 {choices}
 
-```
+````
 
 </details>
 
@@ -505,7 +506,7 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 
 Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
@@ -515,7 +516,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 
 Reasoning:
 
-```
+````
 
 </details>
 
@@ -538,13 +539,13 @@ Reasoning:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -567,13 +568,13 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Problem:
 {question}
 
 Please reason step by step, and put your final answer within \boxed{{}}.
 
-```
+````
 
 </details>
 
@@ -596,7 +597,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -619,7 +620,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -642,7 +643,7 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -665,7 +666,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -688,7 +689,7 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -711,7 +712,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -751,7 +752,7 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Please read the following text and answer the question below.
 
 <text>
@@ -761,7 +762,7 @@ Please read the following text and answer the question below.
 {question}
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
-```
+````
 
 </details>
 
@@ -784,9 +785,9 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -809,9 +810,9 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -834,14 +835,14 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Tell me the best option in the following options which represents the underlying narrative of the text?
 The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -864,13 +865,13 @@ The entire content of your response should be of the following format: 'ANSWER: 
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.
 
 Please provide your response in English, with a clear and comprehensive explanation of the narrative.
 
 Text: {text}
-```
+````
 
 </details>
 
@@ -893,7 +894,7 @@ Text: {text}
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You will be asked to read a passage and answer a question. {drop_examples}
 # Your Task
 
@@ -901,7 +902,7 @@ You will be asked to read a passage and answer a question. {drop_examples}
 {query}
 
 Think step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.
-```
+````
 
 </details>
 
@@ -924,7 +925,7 @@ Think step by step, then write a line of the form "Answer: $ANSWER" at the end o
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Please read the following text and answer the question below.
 
 <text>
@@ -934,7 +935,7 @@ Please read the following text and answer the question below.
 {question}
 
 Format your response as follows: "Therefore, the answer is (insert answer here)".
-```
+````
 
 </details>
 
@@ -981,7 +982,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 - **System Prompt**:
 <details><summary>View</summary>
 
-```text
+````text
 Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.
 
 Begin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.
@@ -1001,13 +1002,13 @@ After providing your explanation, you must output only one of the following choi
 5. Assistant B is significantly better: [[B>>A]]
 
 Example output: "My final verdict is tie: [[A=B]]".
-```
+````
 
 </details>
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 <|User Prompt|>
 {question}
 
@@ -1018,7 +1019,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 <|The Start of Assistant B's Answer|>
 {answer_2}
 <|The End of Assistant B's Answer|>
-```
+````
 
 </details>
 
@@ -1041,14 +1042,14 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
 
 问题：{question}
 选项：
 {choices}
 
-```
+````
 
 </details>
 
@@ -1071,10 +1072,10 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 请回答问题
 {question}
-```
+````
 
 </details>
 
@@ -1097,7 +1098,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -1120,7 +1121,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -1143,13 +1144,13 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1172,7 +1173,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Solve the following math problem step by step. The last line of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
 
 Example:
@@ -1194,7 +1195,7 @@ question:
 
 Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}" (without quotes), where $ANSWER is replaced by the actual answer to the problem.
 
-```
+````
 
 </details>
 
@@ -1217,9 +1218,9 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -1242,7 +1243,7 @@ Remember to put your answer on its own line at the end in the form "\boxed{{\tex
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -1265,7 +1266,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -1303,11 +1304,11 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the question:
 
 {question}
-```
+````
 
 </details>
 
@@ -1330,13 +1331,13 @@ Answer the question:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1370,9 +1371,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -1393,13 +1394,23 @@ Answer the following multiple choice question. The entire content of your respon
 - **Subsets**: `openai_humaneval`
 
 - **Review Timeout (seconds)**: 4
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
 {question}
-```
+````
 
 </details>
 
@@ -1456,14 +1467,14 @@ Read the following function signature and docstring, and fully implement the fun
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
 {choices}
 
-```
+````
 
 </details>
 
@@ -1504,17 +1515,27 @@ Read the following function signature and docstring, and fully implement the fun
     }
 }
 ```
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 ### Question:
 {question_content}
 
 {format_prompt} ### Answer: (use the provided format with backticks)
 
 
-```
+````
 
 </details>
 
@@ -1537,13 +1558,13 @@ Read the following function signature and docstring, and fully implement the fun
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1566,7 +1587,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：
 
 题目：在船舶主推进动力装置中，传动轴系在运转中承受以下复杂的应力和负荷，但不包括______。
@@ -1580,7 +1601,7 @@ D. 扭应力
  {question}
 选项：
 {choices}
-```
+````
 
 </details>
 
@@ -1603,10 +1624,10 @@ D. 扭应力
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -1629,13 +1650,13 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1658,13 +1679,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1687,12 +1708,12 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 
 
-```
+````
 
 </details>
 
@@ -1715,10 +1736,10 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
-```
+````
 
 </details>
 
@@ -1741,7 +1762,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -1764,7 +1785,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -1787,7 +1808,7 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -1810,7 +1831,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -1833,13 +1854,13 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1862,7 +1883,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 Question:
@@ -1870,7 +1891,7 @@ Question:
 Options:
 {choices}
 
-```
+````
 
 </details>
 
@@ -1893,13 +1914,13 @@ Options:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1922,13 +1943,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -1983,13 +2004,13 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2012,13 +2033,13 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2098,15 +2119,15 @@ Answer the following multiple choice question. The last line of your response sh
 - **System Prompt**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a helpful AI bot that answers questions for a user. Keep your response short and direct
-```
+````
 
 </details>
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Please read the following text and answer the question below.
 
 <text>
@@ -2118,7 +2139,7 @@ Please read the following text and answer the question below.
 </question>
 
 Don't give information outside the document or repeat your findings.
-```
+````
 
 </details>
 
@@ -2141,7 +2162,7 @@ Don't give information outside the document or repeat your findings.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -2164,7 +2185,7 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>
 
@@ -2224,13 +2245,13 @@ Text to process:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2253,9 +2274,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -2278,7 +2299,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
 
 [Math Problem]
@@ -2293,7 +2314,7 @@ Your task is to review and critique the solution paragraph by paragraph. Once yo
 
 Please put your final answer (i.e., the index) in oxed{{}}.
 
-```
+````
 
 </details>
 
@@ -2316,10 +2337,10 @@ Please put your final answer (i.e., the index) in oxed{{}}.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
 Please answer YES or NO or MAYBE without an explanation.
-```
+````
 
 </details>
 
@@ -2342,13 +2363,13 @@ Please answer YES or NO or MAYBE without an explanation.
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2371,13 +2392,110 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
+````
+
+</details>
+
+---
+
+### SciCode
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `scicode`
+- **Dataset ID**: [evalscope/SciCode](https://modelscope.cn/datasets/evalscope/SciCode/summary)
+- **Description**:
+  > SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `main_problem_pass_rate`, `subproblem_pass_rate`
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Review Timeout (seconds)**: 300
+- **Extra Parameters**: 
+```json
+{
+    "provide_background": {
+        "type": "bool",
+        "value": false,
+        "description": "Include scientific background information written by scientists for the problem in the model's prompt."
+    }
+}
 ```
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "scicode-benchmark:latest",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **System Prompt**:
+<details><summary>View</summary>
+
+````text
+
+PROBLEM DESCRIPTION:
+You will be provided with a description of a scientific problem. You will solve these problems by solving a sequence of *subproblems*. The solution to each subproblem may be implemented using your solutions to earlier subproblems. Each subproblem should be solved by providing a Python function that meets the specifications provided.
+
+For each subproblem, you will be provided with the following
+ 1. a description of the subproblem
+ 2. a function header, which you must use in your solution implementation
+ 3. a return line, which you must use in your solution implementation
+
+You must only use the following dependencies to implement your solution:
+{required_dependencies}
+
+You MUST NOT import these dependencies anywhere in the code you generate.
+
+For each subproblem provided you must solve it as follows:
+ 1. Generate scientific background required for the next step, in a comment
+ 2. Implement a function to solve the problem provided, using the provided header and return line
+
+The response must be formatted as ```python```
+
+````
+
+</details>
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+
+Implement code to solve the following subproblem, using the description, function header, and return line provided.
+
+Remember that you may use functions that you generated previously as solutions to previous subproblems to implement your answer.
+
+Remember that you MUST NOT include code to import dependencies.
+
+Remember to ensure your response is in the format of ```python``` and includes necessary background as a comment at the top.
+
+SUBPROBLEM DESCRIPTION:
+{step_description_prompt}
+
+FUNCTION HEADER:
+{function_header}
+
+RETURN LINE:
+{return_line}
+
+Example:
+```python
+# Background: [Here, insert the necessary scientific knowledge required for the next step.]
+
+[Insert the Python code here based on the provided function header and dependencies.]
+```
+
+````
 
 </details>
 
@@ -2400,13 +2518,13 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2429,11 +2547,11 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the question:
 
 {question}
-```
+````
 
 </details>
 
@@ -2456,13 +2574,13 @@ Answer the question:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2485,13 +2603,13 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2534,9 +2652,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -2579,9 +2697,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -2624,9 +2742,9 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 {question}
-```
+````
 
 </details>
 
@@ -2649,7 +2767,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Read the content and answer the following question.
 
 Content: {content}
@@ -2658,7 +2776,7 @@ Question: {question}
 
 Keep your The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
 
-```
+````
 
 </details>
 
@@ -2691,13 +2809,13 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2720,13 +2838,13 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
 
 {question}
 
 {choices}
-```
+````
 
 </details>
 
@@ -2749,12 +2867,12 @@ Answer the following multiple choice question. The entire content of your respon
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 Translate the following {source_language} sentence into {target_language}:
 
 {source_language}: {source_text}
 {target_language}:
-```
+````
 
 </details>
 
@@ -2777,7 +2895,7 @@ Translate the following {source_language} sentence into {target_language}:
 - **Prompt Template**:
 <details><summary>View</summary>
 
-```text
+````text
 You are a named entity recognition system that identifies the following entity types:
 {entities}
 
@@ -2800,6 +2918,6 @@ INSTRUCTIONS:
 Text to process:
 {text}
 
-```
+````
 
 </details>

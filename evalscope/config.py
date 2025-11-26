@@ -136,9 +136,6 @@ class TaskConfig(BaseArgument):
     sandbox_manager_config: Optional[Dict] = field(default_factory=dict)
     """Configuration for the sandbox manager. Default is local manager. If url is provided, it will use remote manager."""
 
-    sandbox_config: Optional[Dict] = field(default_factory=dict)
-    """Configuration for sandboxed code execution environments."""
-
     evalscope_version: Optional[str] = evalscope_version
     """EvalScope version used for the evaluation."""
 

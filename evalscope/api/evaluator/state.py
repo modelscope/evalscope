@@ -246,6 +246,14 @@ class TaskState:
         self._messages = messages
 
     @property
+    def messages_markdown(self) -> str:
+        """Get the messages as markdown.
+
+        For multi-modal content, images will be represented in markdown format.
+        """
+        return messages_to_markdown(self._messages)
+
+    @property
     def output(self) -> ModelOutput:
         """
         The 'final' model output once we've completed all solving.
