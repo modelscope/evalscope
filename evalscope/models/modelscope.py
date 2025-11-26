@@ -79,10 +79,15 @@ class ModelScopeAPI(ModelAPI):
 
         # torch dtype
         DTYPE_MAP = {
+            'float16': torch.float16,
             'torch.float16': torch.float16,
+            'bfloat16': torch.bfloat16,
             'torch.bfloat16': torch.bfloat16,
+            'half': torch.half,
             'torch.half': torch.half,
+            'float32': torch.float32,
             'torch.float32': torch.float32,
+            'float64': torch.float64,
             'torch.float64': torch.float64,
             'auto': 'auto'
         }
