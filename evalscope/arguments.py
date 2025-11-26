@@ -91,7 +91,6 @@ def add_argument(parser: argparse.ArgumentParser):
     # Sandbox-related arguments
     parser.add_argument('--use-sandbox', action='store_true', default=False, help='Whether to use sandbox for model evaluation.')  # noqa: E501
     parser.add_argument('--sandbox-type', type=str, default='docker', help='The sandbox type to use.')  # noqa: E501
-    parser.add_argument('--sandbox-config', type=json.loads, default='{}', help='The sandbox config, should be a json string.')  # noqa: E501
     parser.add_argument('--sandbox-manager-config', type=json.loads, default='{}', help='The sandbox manager config, should be a json string.')  # noqa: E501
     # yapf: enable
 
