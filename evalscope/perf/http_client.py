@@ -38,12 +38,9 @@ class AioHttpClient:
             force_close=False,
             ssl=('https://' in self.url),
         )
-        
 
         client_timeout = aiohttp.ClientTimeout(
-            total=self.total_timeout,
-            connect=self.connect_timeout,
-            sock_read=self.read_timeout
+            total=self.total_timeout, connect=self.connect_timeout, sock_read=self.read_timeout
         )
 
         self.client = aiohttp.ClientSession(
