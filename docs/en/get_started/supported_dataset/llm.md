@@ -2413,7 +2413,7 @@ Answer the following multiple choice question. The last line of your response sh
   > SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `main_problem_pass_rate`, `subproblem_pass_rate`
-- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
 - **Subsets**: `default`

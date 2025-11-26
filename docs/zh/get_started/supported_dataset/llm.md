@@ -2413,7 +2413,7 @@ Answer the following multiple choice question. The last line of your response sh
   > SciCode 是一个具有挑战性的基准，旨在评估语言模型（LMs）在解决真实科学研究问题时的代码生成能力。它涵盖物理学、数学、材料科学、生物学和化学5个领域共16个子领域。与以往基于考试式问答对的基准不同，SciCode 源自真实的科研问题，其题目自然地分解为多个子问题，每个子问题均涉及知识回忆、推理和代码生成。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
 - **评估指标**: `main_problem_pass_rate`, `subproblem_pass_rate`
-- **聚合方法**: `mean_and_pass_at_k`
+- **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
 - **数据集子集**: `default`

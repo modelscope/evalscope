@@ -13,6 +13,7 @@ from evalscope.api.model.model_output import ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.io_utils import download_url
 from .prompt_templates import (
     INITIAL_PROMPT,
     INITIAL_PROMPT_PROVIDE_BACKGROUND,
@@ -38,7 +39,6 @@ logger = get_logger()
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='evalscope/SciCode',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
-        aggregation='mean_and_pass_at_k',
         eval_split='test',
         review_timeout=300,
         prompt_template=INITIAL_PROMPT,
@@ -80,10 +80,8 @@ class SciCodeAdapter(DefaultDataAdapter):
         Download the test data if it does not exist.
         """
         test_data_path = self.docker_path / 'test_data.h5'
-        if not test_data_path.exists():
-            data_url = 'https://modelscope.cn/datasets/evalscope/SciCode/resolve/master/test_data.h5'
-            logger.info(f'Downloading test data for SciCode benchmark from {data_url}...')
-            os.system(f'wget --tries=3 -O {test_data_path} {data_url}')
+        data_url = 'https://modelscope.cn/datasets/evalscope/SciCode/resolve/master/test_data.h5'
+        download_url(data_url, str(test_data_path))
         return super().load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
