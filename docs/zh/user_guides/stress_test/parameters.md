@@ -18,8 +18,9 @@
 - `--debug` 输出调试信息。
 
 ## 网络配置
-- `--connect-timeout` 网络连接超时，默认为600s。
-- `--read-timeout` 网络读取超时，默认为600s。
+- `--total-timeout` 每个请求的总超时时间，单位秒，默认为6 * 60 * 60 = 6小时。
+- `--connect-timeout` 网络连接超时，单位秒，默认为None。
+- `--read-timeout` 网络读取超时，单位秒，默认为None。
 - `--headers` 额外的HTTP头，格式为`key1=value1 key2=value2`。该头将用于每个查询。
 - `--no-test-connection` 不发送连接测试，直接开始压测，默认为False。
 
