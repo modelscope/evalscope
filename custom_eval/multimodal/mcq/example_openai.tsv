@@ -1,6 +1,0 @@
-messages	answer
-[{"role": "user", "content": [{"type": "text", "text": "What animal is this?\nA. Dog\nB. Cat\nC. Tiger\nD. Elephant"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	A
-[{"role": "user", "content": [{"type": "text", "text": "What building is this?\nA. School\nB. Hospital\nC. Park\nD. Museum"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}]	D
-[{"role": "user", "content": [{"type": "text", "text": "Which city's skyline is this?\nA. New York\nB. Tokyo\nC. Shanghai\nD. Paris"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tokyo.jpg"}}]}]	B
-[{"role": "user", "content": [{"type": "text", "text": "What is the brand of this car?\nA. BMW\nB. Audi\nC. Tesla\nD. Mercedes"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tesla.jpg"}}]}]	C
-[{"role": "user", "content": [{"type": "text", "text": "What is the person in the picture doing?\nA. Running\nB. Swimming\nC. Reading\nD. Singing"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/running.jpg"}}]}]	A

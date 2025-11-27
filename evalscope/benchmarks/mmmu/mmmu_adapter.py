@@ -82,7 +82,7 @@ class MMMUAdapter(VisionLanguageAdapter):
     """
     example1:{
         'question': '<image 1> illustrate a walk and a cycle. We can easily represent walking as?'
-        'options': "['A. a line', 'B. a curve', 'C. a plane', 'D. a surface']",
+        'options': "['a line', 'a curve', 'a plane', 'a surface']",
         'image_1': {'bytes': b'...'},
         'question_type': 'multiple-choice',
     }

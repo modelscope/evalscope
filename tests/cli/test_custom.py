@@ -33,6 +33,17 @@ class TestRunCustom(TestBenchmark):
                 'max_tokens': 4096,
             },
             'ignore_errors': False,
+            'judge_model_args': {
+                'model_id': 'qwen-plus',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'generation_config': {
+                    'temperature': 0.0,
+                    'max_tokens': 4096
+                },
+            },
+            'judge_worker_num': 5,
+            'judge_strategy': JudgeStrategy.LLM,
         }
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
@@ -97,28 +108,6 @@ class TestRunCustom(TestBenchmark):
             },
             model='qwen2.5-7b-instruct',
             limit=10,
-            judge_model_args={
-                'model_id': 'qwen2.5-7b-instruct',
-                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                'api_key': env.get('DASHSCOPE_API_KEY'),
-                'generation_config': {
-                    'temperature': 0.0,
-                    'max_tokens': 4096
-                },
-                'score_type': 'numeric',
-                'prompt_template': """Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
-Begin your evaluation by providing a short explanation. Be as objective as possible.
-After providing your explanation, you must rate the response on a scale of 0 (worst) to 100 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[5]]\"
-
-[Question]
-{question}
-
-[Response]
-{pred}
-"""
-            },
-            judge_worker_num=5,
-            judge_strategy=JudgeStrategy.LLM,
         )
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
@@ -198,15 +187,14 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 
     @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
     def test_run_general_vmcq(self):
-        """Test general_vmcq adapter with OpenAI-compatible message format for multimodal MCQ."""
+        """Test general_vmcq adapter with non-OpenAI MCQ format (MMMU-style)."""
         self._run_dataset_test(
             dataset_name='general_vmcq',
             dataset_args={
                 'local_path': 'custom_eval/multimodal/mcq',
-                'subset_list': ['example_openai'],
+                'subset_list': ['example'],
             },
-            model='Qwen/Qwen2-VL-2B-Instruct',
-            model_args={'precision': 'torch.float16'},
+            model='qwen-vl-plus',
             generation_config={'max_tokens': 512},
             eval_batch_size=2,
             limit=5,

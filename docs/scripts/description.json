@@ -653,5 +653,15 @@
     "en": "SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
     "zh": "SciCode 是一个具有挑战性的基准，旨在评估语言模型（LMs）在解决真实科学研究问题时的代码生成能力。它涵盖了物理学、数学、材料科学、生物学和化学五大领域中的16个子领域。与以往基于考试式问答对的基准不同，SciCode 源自真实的科研问题，其题目自然地分解为多个子问题，每个子问题均涉及知识回忆、推理和代码生成。**执行时需使用沙箱环境以安全运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
     "updated_at": "2025-11-26T16:23:41Z"
+  },
+  "general_vmcq": {
+    "en": "A general visual multiple-choice question answering dataset for custom multimodal evaluation. Format similar to MMMU, not OpenAI message format. Images are plain strings (local/remote path or base64 data URL). For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).",
+    "zh": "一个用于自定义多模态评估的通用视觉多选问答数据集。格式类似MMMU，非OpenAI消息格式。图像为普通字符串（本地/远程路径或base64数据URL）。有关如何使用此基准的详细说明，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/vlm.html)。",
+    "updated_at": "2025-11-27T20:50:38Z"
+  },
+  "general_vqa": {
+    "en": "A general visual question answering dataset for custom multimodal evaluation. Supports OpenAI-compatible message format with images (local paths or base64). For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).",
+    "zh": "一个用于自定义多模态评估的通用视觉问答数据集。支持兼容 OpenAI 的消息格式（包含图像，支持本地路径或 base64 编码）。详细说明请参见[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/vlm.html)。",
+    "updated_at": "2025-11-27T20:50:38Z"
   }
 }

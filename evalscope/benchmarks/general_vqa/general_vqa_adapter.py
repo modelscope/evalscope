@@ -21,7 +21,7 @@ logger = get_logger()
         pretty_name='General-VQA',
         description='A general visual question answering dataset for custom multimodal evaluation. '
         'Supports OpenAI-compatible message format with images (local paths or base64). '
-        'For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html#general-vqa).',  # noqa: E501
+        'For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).',  # noqa: E501
         tags=[Tags.QA, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vqa',
         metric_list=['BLEU', 'Rouge'],
