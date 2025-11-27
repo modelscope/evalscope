@@ -93,10 +93,7 @@ class MathVisionAdapter(VisionLanguageAdapter):
                     - content_list (list): A list of content elements (text and images).
                     - answers_list (list): A list of possible answers (for multiple-choice questions).
         """
-
-        # Replace <image1>, <image2> ... to [image1], [image2], ... from question text
-        question = re.sub(r'<image(\d+)>', r'[image\1]', record['question']).strip()
-
+        question: str = record['question']
         if question_type == 'multi_choice':
             answers_list = record['options']
             input_text = prompt(question=question, choices=answers_list, template=MULT_CHOICE_PROMPT)

@@ -1,15 +1,13 @@
 # flake8: noqa: E501
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import parse_answers
 
 logger = get_logger()
 
@@ -39,7 +37,7 @@ SUBSET_LIST = [
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class VisuLogicAdapter(VisionLanguageAdapter):
+class VisuLogicAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -69,7 +67,3 @@ class VisuLogicAdapter(VisionLanguageAdapter):
             subset_key=record['tag'],
             metadata=metadata,
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))
