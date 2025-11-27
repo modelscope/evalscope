@@ -1,16 +1,262 @@
 # 多模态大模型
 
-本框架支持多模态选择题和问答题，两种预定义的数据集格式，使用流程如下：
+本框架支持两种自定义多模态评测方式：
 
-````{note}
-自定义数据集的评测需要使用`VLMEvalKit`，需要安装额外依赖：
-```shell
+1. **通用格式（推荐）**：使用 OpenAI 兼容的消息格式，支持多模态内容（文本、图片等）
+2. **Legacy 格式**：基于 VLMEvalKit 后端的传统格式
+
+## 通用多模态格式（推荐）
+
+### 简介
+
+通用格式使用 OpenAI 兼容的消息结构，提供了更灵活和标准化的多模态评测方案。支持：
+
+- **标准化格式**：遵循 OpenAI Chat Completion API 的消息格式
+- **灵活的多模态输入**：支持文本、图片（本地路径或 base64 编码）
+- **多种数据格式**：支持 TSV 和 JSONL 两种文件格式
+- **无需额外依赖**：使用 EvalScope 原生评测引擎，无需安装 VLMEvalKit
+
+### 通用问答题格式（General-VQA）
+
+#### 1. 数据准备
+
+准备符合 OpenAI 消息格式的数据文件，支持 **JSONL** 或 **TSV** 格式：
+
+**JSONL 格式示例** (`example_openai.jsonl`):
+```json
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}], "answer": "Dog"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}], "answer": "Museum"}
+```
+
+**TSV 格式示例** (`example_openai.tsv`):
+```tsv
+messages	answer
+[{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	Dog
+[{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}]	Museum
+```
+
+**字段说明**：
+- `messages`: OpenAI 格式的消息数组，支持：
+  - 文本内容：`{"type": "text", "text": "问题文本"}`
+  - 图片 URL：`{"type": "image_url", "image_url": {"url": "路径或base64"}}`
+  - 系统消息：`{"role": "system", "content": "系统提示"}`
+- `answer`: 参考答案（可选，用于计算 BLEU 和 Rouge 分数）
+
+**支持的图片格式**：
+- 本地路径：`"url": "custom_eval/multimodal/images/dog.jpg"`
+- HTTP URL：`"url": "https://example.com/image.jpg"`
+- Base64 编码：`"url": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."`
+
+#### 2. 配置评测任务
+
+使用 Python API 或 CLI 进行评测：
+
+**Python API**:
+```python
+from evalscope.run import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2-VL-2B-Instruct',
+    datasets=['general_vqa'],
+    dataset_args={
+        'general_vqa': {
+            'local_path': 'custom_eval/multimodal/vqa',  # 数据集目录
+            'subset_list': ['example_openai'],  # 文件名（不含扩展名）
+        }
+    },
+    limit=10,  # 可选：限制评测样本数
+)
+
+result = run_task(task_cfg=task_cfg)
+print(result)
+```
+
+**CLI**:
+```bash
+evalscope eval \
+    --model Qwen/Qwen2-VL-2B-Instruct \
+    --datasets general_vqa \
+    --dataset-args '{"general_vqa": {"local_path": "custom_eval/multimodal/vqa", "subset_list": ["example_openai"]}}' \
+    --limit 10
+```
+
+#### 3. 评测结果
+
+评测将输出 BLEU 和 Rouge 指标：
+```text
+----------  -------
+Rouge-L-P   0.85
+Rouge-L-R   0.82
+Rouge-L-F   0.83
+BLEU-1      0.75
+BLEU-2      0.68
+BLEU-3      0.62
+BLEU-4      0.58
+----------  -------
+```
+
+### 通用选择题格式（General-VMCQ）
+
+#### 1. 数据准备
+
+多选题数据格式类似，但需要在问题文本中包含选项：
+
+**JSONL 格式示例** (`example_openai.jsonl`):
+```json
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What animal is this?\nA. Dog\nB. Cat\nC. Tiger\nD. Elephant"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}], "answer": "A"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What building is this?\nA. School\nB. Hospital\nC. Park\nD. Museum"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}], "answer": "D"}
+```
+
+**TSV 格式示例** (`example_openai.tsv`):
+```tsv
+messages	answer
+[{"role": "user", "content": [{"type": "text", "text": "What animal is this?\nA. Dog\nB. Cat\nC. Tiger\nD. Elephant"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	A
+[{"role": "user", "content": [{"type": "text", "text": "What building is this?\nA. School\nB. Hospital\nC. Park\nD. Museum"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}]	D
+```
+
+**字段说明**：
+- `messages`: 包含问题和选项的完整文本，以及图片
+- `answer`: 正确答案的选项字母（如 "A", "B", "AB" 等）
+
+#### 2. 配置评测任务
+
+**Python API**:
+```python
+from evalscope.run import run_task
+from evalscope.config import TaskConfig
+
+task_cfg = TaskConfig(
+    model='Qwen/Qwen2-VL-2B-Instruct',
+    datasets=['general_vmcq'],
+    dataset_args={
+        'general_vmcq': {
+            'local_path': 'custom_eval/multimodal/mcq',
+            'subset_list': ['example_openai'],
+        }
+    },
+    limit=10,
+)
+
+result = run_task(task_cfg=task_cfg)
+print(result)
+```
+
+**CLI**:
+```bash
+evalscope eval \
+    --model Qwen/Qwen2-VL-2B-Instruct \
+    --datasets general_vmcq \
+    --dataset-args '{"general_vmcq": {"local_path": "custom_eval/multimodal/mcq", "subset_list": ["example_openai"]}}' \
+    --limit 10
+```
+
+#### 3. 评测结果
+
+评测将输出准确率指标：
+```text
+------  ----
+acc     0.80
+------  ----
+```
+
+### 高级用法
+
+#### 多图片输入
+
+支持在一个问题中使用多张图片：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Compare these two images:"},
+        {"type": "image_url", "image_url": {"url": "image1.jpg"}},
+        {"type": "text", "text": "and"},
+        {"type": "image_url", "image_url": {"url": "image2.jpg"}},
+        {"type": "text", "text": "What are the differences?"}
+      ]
+    }
+  ],
+  "answer": "The main differences are..."
+}
+```
+
+#### 系统提示
+
+可以添加系统消息来设置评测上下文：
+
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are a medical AI assistant."},
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Analyze this X-ray:"},
+        {"type": "image_url", "image_url": {"url": "xray.jpg", "detail": "high"}}
+      ]
+    }
+  ],
+  "answer": "The X-ray shows..."
+}
+```
+
+#### Base64 图片
+
+支持直接使用 base64 编码的图片：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What's in this image?"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
+          }
+        }
+      ]
+    }
+  ],
+  "answer": "A beautiful landscape"
+}
+```
+
+---
+
+## Legacy 格式（基于 VLMEvalKit）
+
+````{warning}
+以下格式为 Legacy 版本，推荐使用上述的**通用多模态格式**。
+
+Legacy 格式需要额外依赖 VLMEvalKit：
+```bash
 pip install evalscope[vlmeval]
 ```
 参考：[使用VLMEvalKit评测后端](../../user_guides/backend/vlmevalkit_backend.md)
 ````
 
-## 选择题格式（MCQ）
+---
+
+## Legacy 格式（基于 VLMEvalKit）
+
+````{warning}
+以下格式为 Legacy 版本，推荐使用上述的**通用多模态格式**。
+
+Legacy 格式需要额外依赖 VLMEvalKit：
+```bash
+pip install evalscope[vlmeval]
+```
+参考：[使用VLMEvalKit评测后端](../../user_guides/backend/vlmevalkit_backend.md)
+````
+
+## Legacy 选择题格式（MCQ）
 
 ### 1. 数据准备
 评测指标为准确率（accuracy），需要定义如下格式的tsv文件（使用`\t`分割）：
@@ -78,7 +324,7 @@ Vehicles    1.0
 ----------  ----
 ```
 
-## 自定义问答题格式（VQA）
+## Legacy 自定义问答题格式（VQA）
 
 ### 1. 数据准备
 
