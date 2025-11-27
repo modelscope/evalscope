@@ -46,7 +46,7 @@ Answer:  43
         train_split=None,
         eval_split='validation',
         prompt_template=
-        'You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.',  # noqa: E501
+        'You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.',  # noqa: E501
     )
 )
 class DROPAdapter(DefaultDataAdapter):

@@ -17,10 +17,10 @@ SUBSET_LIST = ['default']
 OPEN_PROMPT = (
     'Read the picture and solve the following problem step by step.'
     'The last line of your response should be of the form'
-    ' "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.\n\n'
+    ' "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.\n\n'
     '{question}\n\n'
     'Remember to put your answer on its own line at the end in the form'
-    ' "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem,'
+    ' "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem,'
     ' and you do not need to use a \\boxed command.'
 )
 

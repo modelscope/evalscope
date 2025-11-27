@@ -24,7 +24,7 @@ FILL_IN_BLANK_PROMPT = """逐步解决以下填空问题。这包括多个问题
 
 {question}
 
-记住在最后单独一行写上你的答案，格式为"答案(X): $ANSWER_X"（不含引号），其中$ANSWER_X是对应X号问题(QUESTION-X)的答案。
+记住在最后单独一行写上你的答案，格式为"答案(X): [ANSWER_X]"（不含引号），其中[ANSWER_X]是对应X号问题(QUESTION-X)的答案。
 """  # noqa: E501
 
 MULTI_CHOICE_TYPE = 'multiple-choice'

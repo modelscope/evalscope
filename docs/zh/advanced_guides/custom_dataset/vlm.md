@@ -44,7 +44,7 @@ messages	answer
 
 **支持的图片格式**：
 - 本地路径：`"url": "custom_eval/multimodal/images/dog.jpg"`
-- HTTP URL：`"url": "https://example.com/image.jpg"`
+- HTTP URL：`"url": "https://example.com/image.jpg"`（需模型服务侧支持）
 - Base64 编码：`"url": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."`
 
 #### 2. 配置评测任务

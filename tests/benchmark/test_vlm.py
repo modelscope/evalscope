@@ -47,7 +47,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list':[
                 'Accounting',
-                'Agriculture',
+                'Math',
                 # 'Architecture_and_Engineering'
             ]
         }
@@ -63,7 +63,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list':[
                 'Accounting',
-                # 'Agriculture',
+                'Agriculture',
             ],
             'extra_params': {
                 'dataset_format': 'standard (4 options)',  # 'standard (4 options)', 'standard (10 options)', 'vision'

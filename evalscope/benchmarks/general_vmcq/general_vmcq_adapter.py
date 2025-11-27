@@ -33,17 +33,17 @@ logger = get_logger()
 class GeneralVMCQAdapter(MultiChoiceAdapter):
     """
     General VMCQ (Visual Multiple Choice Question) Adapter for custom multimodal evaluation.
-    
+
     This adapter supports OpenAI-compatible message format for multimodal inputs:
     - TSV format: Tab-separated file with 'messages' and 'answer' columns
     - JSONL format: JSON lines with 'messages' and 'answer' fields
-    
+
     The 'messages' field should be a JSON string (in TSV) or object (in JSONL)
     following OpenAI chat completion format with support for:
     - Text content: {"type": "text", "text": "..."}
     - Image URLs: {"type": "image_url", "image_url": {"url": "path/to/image.jpg"}}
     - Base64 images: {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
-    
+
     The messages should contain the question text with choices already formatted (e.g., "A. Option1\\nB. Option2").
     The 'answer' field should contain the correct choice letter(s) (e.g., "A", "B", "AB").
     """

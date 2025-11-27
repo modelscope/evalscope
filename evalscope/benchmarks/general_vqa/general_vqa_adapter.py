@@ -34,11 +34,11 @@ logger = get_logger()
 class GeneralVQAAdapter(VisionLanguageAdapter):
     """
     General VQA Adapter for custom multimodal evaluation.
-    
+
     This adapter supports OpenAI-compatible message format for multimodal inputs:
     - TSV format: Tab-separated file with 'messages' and 'answer' columns
     - JSONL format: JSON lines with 'messages' and 'answer' fields
-    
+
     The 'messages' field should be a JSON string (in TSV) or object (in JSONL)
     following OpenAI chat completion format with support for:
     - Text content: {"type": "text", "text": "..."}

@@ -15,7 +15,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers
 logger = get_logger()
 
 MULT_CHOICE_PROMPT = """
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.
 
 {question}
 """

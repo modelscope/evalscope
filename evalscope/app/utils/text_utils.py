@@ -29,44 +29,25 @@ def convert_html_tags(text: str) -> str:
     if not isinstance(text, str) or not text:
         return text if isinstance(text, str) else str(text)
 
-    protected_tags = ('code', 'audio', 'image')
+    # Step 1: Protect blocks like <code ...>...</code>, <audio ...>...</audio>, <image ...>...</image>
+    protected_pattern = r'<(code|audio|image)\b[^>]*>.*?</\1\s*>'
+    placeholders = []
 
-    # Protect blocks like <code ...>...</code> (with attributes), similar for audio/image
-    protected_block_re = re.compile(
-        rf'<(?P<tag>{"|".join(protected_tags)})\b[^>]*>.*?</(?P=tag)\s*>',
-        flags=re.IGNORECASE | re.DOTALL,
-    )
-
-    placeholders: List[str] = []
-
-    def _store_block(match: re.Match) -> str:
-        # Replace the protected block with a placeholder, then restore later
+    def replace_with_placeholder(match: re.Match) -> str:
         placeholders.append(match.group(0))
-        return f'__PROTECTED_BLOCK_{len(placeholders) - 1}__'
+        return f'__PROTECTED_{len(placeholders) - 1}__'
 
-    working = protected_block_re.sub(_store_block, text)
+    working = re.sub(protected_pattern, replace_with_placeholder, text, flags=re.IGNORECASE | re.DOTALL)
 
-    # Convert closing tags: </tag> -> [/tag]
-    working = re.sub(
-        r'</\s*(?P<name>[a-zA-Z][\w-]*)\s*>',
-        lambda m: f'[/{"".join(m.group("name")).lower()}]',
-        working,
-    )
+    # Step 2: Convert closing tags </tag> -> [/tag]
+    working = re.sub(r'</\s*([a-zA-Z][\w-]*)\s*>', lambda m: f'[/{m.group(1).lower()}]', working)
 
-    # Convert opening/self-closing tags: <tag ...> or <tag .../> -> [tag]
-    # Skip protected tag names entirely
-    def _open_tag_sub(match: re.Match) -> str:
-        name = match.group('name').lower()
-        if name in protected_tags:
-            return match.group(0)
-        return f'[{name}]'
+    # Step 3: Convert opening/self-closing tags <tag ...> -> [tag]
+    working = re.sub(r'<\s*([a-zA-Z][\w-]*)(?:\s[^>]*)?\s*/?>', lambda m: f'[{m.group(1).lower()}]', working)
 
-    open_tag_re = re.compile(r'<\s*(?P<name>[a-zA-Z][\w-]*)\b[^>]*?/?>')
-    working = open_tag_re.sub(_open_tag_sub, working)
-
-    # Restore protected blocks
+    # Step 4: Restore protected blocks
     for i, original in enumerate(placeholders):
-        working = working.replace(f'__PROTECTED_BLOCK_{i}__', original)
+        working = working.replace(f'__PROTECTED_{i}__', original)
 
     return working
 

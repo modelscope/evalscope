@@ -18,11 +18,11 @@ DESCRIPTION = (
 )  # noqa: E501
 
 PROMPT_TEMPLATE = """
-Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer YES or NO to the problem.
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer YES or NO to the problem.
 
 Reasoning:
 """  # noqa: E501

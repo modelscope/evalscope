@@ -56,7 +56,7 @@ SUBSET_LIST = MULTIPLE_CHOICE_LIST + FREE_FORM_LIST
 
 PROMPT_TEMPLATE = """
 Q: {question}
-A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
+A: Let's think step by step. Put your final answer in the format of "So the answer is [ANSWER]" (without quotes and markdown) where [ANSWER] is the answer to the problem.
 """.lstrip()  # noqa: E501
 
 FEWSHOT_TEMPLATE = """
