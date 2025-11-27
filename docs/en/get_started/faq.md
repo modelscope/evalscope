@@ -47,14 +47,19 @@ We recommend updating to the latest `main` branch code when encountering issues.
 
 ### Evaluation Configuration & Parameters
 
-**Q: How to perform pass@k evaluation or generate multiple answers per sample?**
+**Q: How to conduct pass@k evaluation or generate multiple answers for a single sample?**
 
-**A:** Set the `n` parameter in `generation_config`. The value of `n` represents the number of answers generated per sample. The framework will automatically calculate metrics like `pass@k`.
-Reference documentation: [Generation Config](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2), [QwQ Evaluation Practice](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5).
+**A:** The `pass@k` metric supports all datasets with `mean` as the aggregation method. Specific setup instructions:
+1. Set `repeats=k` in `TaskConfig`
+2. Set in `dataset_args`:
+`'<dataset_name>': {'aggregation': 'mean_and_pass_at_k'}`
+1. When running the evaluation, each sample will be repeated `k` times, and all `pass@n, 1<=n<=k` metrics will be calculated.
 
-**Q: How to remove "thinking process" from model outputs (like `<think>...</think>`)?**
+For details, please [refer to](https://github.com/modelscope/evalscope/pull/964) the examples provided. Additionally, `mean_and_vote_at_k` and `mean_and_pass_hat_k` aggregation methods are also supported.
 
-**A:** Use the `--dataset-args` parameter to add `filters` for specific datasets. For example, to remove content before `</think>` when evaluating ifeval dataset:
+**Q: How to remove the "thinking process" (such as `<think>...</think>`) from model outputs?**
+
+**A:** For `evalscope >= v1.0` versions, the `<think>...</think>` is automatically handled by default. If you need custom handling, use the `--dataset-args` parameter to add `filters` for specific datasets. For example, to remove content before `</think>` when evaluating ifeval dataset:
 ```shell
 --dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
 ```
@@ -147,9 +152,7 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 
 **Q: How to evaluate multimodal models (like Qwen-VL, Gemma3)?**
 
-**A:**
-- **Language capability evaluation**: For evaluation on text datasets (like MMLU), we recommend deploying multimodal models as API services using frameworks like vLLM, then evaluating through API. Direct local loading of multimodal models for pure text evaluation may not be fully supported.
-- **Multimodal capability evaluation**: For evaluation on multimodal datasets (like MMBench), you need to use the VLMEvalKit backend. Please refer to [VLMEvalKit Backend Documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmeval).
+**A:** We recommend deploying multimodal models as API services using frameworks like vLLM, then evaluating through API. Direct local loading of multimodal models for pure text evaluation may not be fully supported.
 
 **Q: Error when evaluating `embeddings` models via API service: `dimensions is currently not supported`?**
 
@@ -242,7 +245,7 @@ Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.
 **Q: I used EvalScope in my work - how should I cite it?**
 
 **A:** Thank you very much! You can use the following BibTeX format to cite our work:
-```
+```bibtex
 @misc{evalscope_2024,
     title={{EvalScope}: Evaluation Framework for Large Models},
     author={ModelScope Team},
