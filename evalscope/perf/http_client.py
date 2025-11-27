@@ -22,6 +22,7 @@ class AioHttpClient:
     ):
         self.url = args.url
         self.headers = {'user-agent': 'modelscope_bench', **(args.headers or {})}
+        self.total_timeout = args.total_timeout
         self.read_timeout = args.read_timeout
         self.connect_timeout = args.connect_timeout
         self.api_plugin = api_plugin
@@ -38,10 +39,14 @@ class AioHttpClient:
             ssl=('https://' in self.url),
         )
 
+        client_timeout = aiohttp.ClientTimeout(
+            total=self.total_timeout, connect=self.connect_timeout, sock_read=self.read_timeout
+        )
+
         self.client = aiohttp.ClientSession(
             connector=connector,
             trust_env=True,
-            timeout=aiohttp.ClientTimeout(connect=self.connect_timeout, sock_read=self.read_timeout),
+            timeout=client_timeout,
             trace_configs=[self._create_trace_config()] if args.debug else []
         )
 
@@ -72,7 +77,7 @@ class AioHttpClient:
             return output
         except asyncio.TimeoutError as e:
             logger.error(
-                f'TimeoutError: connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
+                f'TimeoutError: total_timeout: {self.total_timeout}, connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
             return BenchmarkData(success=False, error=str(e))
         except (aiohttp.ClientConnectorError, Exception) as e:
@@ -122,7 +127,7 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
 
     while True:
         try:
-            output = await asyncio.wait_for(attempt_connection(), timeout=args.connect_timeout)
+            output = await attempt_connection()
             if output.success:
                 logger.info('Test connection successful.')
                 return True
@@ -130,7 +135,7 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
         except Exception as e:
             logger.warning(f'Retrying... <{e}>')
 
-        if time.perf_counter() - start_time >= args.connect_timeout:
+        if time.perf_counter() - start_time >= args.total_timeout:
             logger.error('Overall connection attempt timed out.')
             return False
 

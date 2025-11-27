@@ -74,6 +74,11 @@
     - `extract {regex}`: 提取模型输出结果中指定正则表达式匹配的部分。
   - `force_redownload`: 是否强制重新下载数据集，默认为`False`，若下载的数据集需要更新，请设置为`True`。
   - `extra_params`: 数据集相关的额外参数，具体参数参考[各个数据集](./supported_dataset/index.md)的说明，例如`hle`数据集的`include_multi_modal`参数。
+  - `sandbox_config`: 当前评测基准的Sandbox配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
+    - `image`: Docker镜像名称，默认为`python:3.11-slim`。
+    - `network_enabled`: 是否启用网络，默认为`true`。
+    - `tools_config`: 工具配置字典，默认为空字典`{'shell_executor': {},'python_executor': {}}`，表示启用shell和python执行器。
+
 - `--dataset-dir`: 数据集下载路径，默认为`~/.cache/modelscope/datasets`
 - `--dataset-hub`: 数据集下载源，默认为`modelscope`，可选`huggingface`
 - `--limit`: 每个数据集最大评测数据量，不填写则默认为全部评测，可用于快速验证。支持int和float类型，int表示评测数据集的前`N`条数据，float表示评测数据集的前`N%`条数据。例如`0.1`表示评测数据集的前10%的数据，`100`表示评测数据集的前100条数据。
@@ -188,10 +193,6 @@ LLM-as-a-Judge评测参数，使用裁判模型来判断正误，包括以下参
 - `--sandbox-manager-config`: Sandbox管理器配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
   - `base_url`: Sandbox管理器的基础URL，默认为`None`，表示使用本地管理器，配置该参数将使用远程管理器。
 - `--sandbox-type`: Sandbox类型，默认为`docker`。
-- `--sandbox-config`: Sandbox配置参数，以`json`字符串格式传入，将解析为字典，支持如下字段：
-  - `image`: Docker镜像名称，默认为`python:3.11-slim`。
-  - `network_enabled`: 是否启用网络，默认为`true`。
-  - `tools_config`: 工具配置字典，默认为空字典`{'shell_executor': {},'python_executor': {}}`，表示启用shell和python执行器。
 
 ## 其他参数
 

@@ -31,7 +31,7 @@ Here are some examples of how to solve similar problems:
 @register_benchmark(
     BenchmarkMeta(
         name='competition_math',
-        pretty_name='MATH',
+        pretty_name='Competition-MATH',
         tags=[Tags.MATH, Tags.REASONING],
         description=
         'The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.',

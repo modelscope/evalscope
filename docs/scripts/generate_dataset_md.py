@@ -78,6 +78,10 @@ def get_dataset_detail_locale_dict(category: str):
             'zh': '额外参数',
             'en': 'Extra Parameters'
         },
+        'sandbox_config': {
+            'zh': '沙箱配置',
+            'en': 'Sandbox Configuration'
+        },
         'system_prompt': {
             'zh': '系统提示词',
             'en': 'System Prompt'
@@ -151,7 +155,8 @@ def process_dictionary(data: dict) -> str:
     Args:
         data (dict): 要格式化的字典
     """
-    return json.dumps(data, ensure_ascii=False, indent=4)
+    json_str = json.dumps(data, ensure_ascii=False, indent=4)
+    return f'```json\n{json_str}\n```'
 
 def format_description(description: str) -> str:
     """
@@ -248,13 +253,17 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
     # Add extra parameters
     extra_params = data_adapter._benchmark_meta.extra_params
     if extra_params:
-        technical_info.append(f'- **{text["extra_parameters"]}**: \n```json\n{process_dictionary(extra_params)}\n```')
+        technical_info.append(f'- **{text["extra_parameters"]}**: \n{process_dictionary(extra_params)}')
+
+    sandbox_config = data_adapter.sandbox_config
+    if sandbox_config:
+        technical_info.append(f'- **{text["sandbox_config"]}**: \n{process_dictionary(sandbox_config)}')
 
     # Add prompt templates
     if data_adapter.system_prompt:
-        technical_info.append(f'- **{text["system_prompt"]}**:\n<details><summary>View</summary>\n\n```text\n{data_adapter.system_prompt}\n```\n\n</details>')
+        technical_info.append(f'- **{text["system_prompt"]}**:\n<details><summary>View</summary>\n\n````text\n{data_adapter.system_prompt}\n````\n\n</details>')
     if data_adapter.prompt_template:
-        technical_info.append(f'- **{text["prompt_template"]}**:\n<details><summary>View</summary>\n\n```text\n{data_adapter.prompt_template}\n```\n\n</details>')
+        technical_info.append(f'- **{text["prompt_template"]}**:\n<details><summary>View</summary>\n\n````text\n{data_adapter.prompt_template}\n````\n\n</details>')
 
     return '\n'.join(details + [''] + technical_info + [''])
 

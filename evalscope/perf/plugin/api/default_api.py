@@ -47,7 +47,7 @@ class StreamedResponseHandler:
         # if self.buffer is not empty, check if it is a complete message
         # by removing data: prefix and check if it is a valid JSON
         if self.buffer.startswith('data: '):
-            message_content = self.buffer.removeprefix('data: ').strip()
+            message_content = self.buffer.removeprefix('data:').strip()
             if message_content == '[DONE]':
                 messages.append(self.buffer.strip())
                 self.buffer = ''
@@ -113,7 +113,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                 if message.startswith(':'):
                                     continue
 
-                                chunk = message.removeprefix('data: ')
+                                chunk = message.removeprefix('data:').strip()
 
                                 if chunk != '[DONE]':
                                     timestamp = time.perf_counter()

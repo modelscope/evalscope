@@ -94,6 +94,7 @@ class EvalBackend:
 class DataCollection:
     NAME = 'data_collection'
     INFO = 'collection_info'
+    REPORT_NAME = 'collection_detailed_report.json'
 
 
 class JudgeStrategy:

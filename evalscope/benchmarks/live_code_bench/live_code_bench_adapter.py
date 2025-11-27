@@ -46,6 +46,13 @@ logger = get_logger()
                 'value': False
             }
         },
+        sandbox_config={
+            'image': 'python:3.11-slim',
+            'tools_config': {
+                'shell_executor': {},
+                'python_executor': {}
+            }
+        },
     )
 )
 class LiveCodeBenchAdapter(DefaultDataAdapter):

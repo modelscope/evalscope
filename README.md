@@ -68,6 +68,7 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 >
 > Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
 
+- 🔥 **[2025.11.26]** Added support for OpenAI-MRCR, GSM8K-V, MGSM, MicroVQA, IFBench, SciCode benchmarks.
 - 🔥 **[2025.11.18]** Added support for custom Function-Call (tool invocation) datasets to test whether models can timely and correctly call tools. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#function-calling-format-fc).
 - 🔥 **[2025.11.14]** Added support for SWE-bench_Verified, SWE-bench_Lite, SWE-bench_Verified_mini code evaluation benchmarks. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html).
 - 🔥 **[2025.11.12]** Added `pass@k`, `vote@k`, `pass^k` and other metric aggregation methods; added support for multimodal evaluation benchmarks such as A_OKVQA, CMMU, ScienceQA, V*Bench.

@@ -68,6 +68,23 @@ def _evaluate_call_based_in_sandbox(
             test_code = f"""
 import json
 import sys
+from typing import TYPE_CHECKING, Dict, List, Tuple, Set, Sequence, Mapping
+import ast
+
+#Convert multi-type string to list with original data type
+def parse_mixed_data(data_string):
+    lines = data_string.strip().split('\\n')
+    result = []
+
+    for line in lines:
+        if line.strip():  # skip empty line
+            try:
+                parsed_value = ast.literal_eval(line.strip())
+                result.append(parsed_value)
+            except (ValueError, SyntaxError):
+                result.append(line.strip()) # Keep as string if parse failed
+
+    return result
 
 # User's code
 {code}
@@ -86,14 +103,19 @@ try:
         method = {fn_name}
 
     # Parse input if it's JSON string
+    parse_multi_type = False
     if isinstance(test_input, str):
         try:
-            test_input = json.loads(test_input)
+            if test_input.find("\\n") > -1:
+                test_input = parse_mixed_data(test_input)
+                parse_multi_type = True
+            else:
+                test_input = json.loads(test_input)
         except:
             pass  # Keep as string if not valid JSON
 
     # Call the method
-    if isinstance(test_input, list):
+    if parse_multi_type:
         result = method(*test_input)
     else:
         result = method(test_input)

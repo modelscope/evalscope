@@ -564,7 +564,10 @@ class DefaultDataAdapter(DataAdapter):
             'TaskState must be completed before calculating metrics.'
 
         # Extract the raw prediction from the model output
-        prediction = task_state.output.completion
+        if task_state.output is None:
+            prediction = ''
+        else:
+            prediction = task_state.output.completion
 
         # Apply filtering and answer extraction
         filtered_prediction = self.filter_prediction(prediction, task_state)

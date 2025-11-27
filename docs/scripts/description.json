@@ -628,5 +628,30 @@
     "en": "Memory-Recall with Contextual Retrieval (MRCR). Evaluates retrieval and recall in long contexts by placing 2, 4 or 8 needles in the prompt. Measures whether the model can correctly extract and use them.",
     "zh": "MRCR（带上下文检索的记忆召回）。通过在提示中插入2、4或8个“针”来评估长上下文中的检索与召回能力，衡量模型能否正确提取并使用这些信息。",
     "updated_at": "2025-11-19T16:44:43Z"
+  },
+  "mgsm": {
+    "en": "Multilingual Grade School Math Benchmark (MGSM) is a benchmark of grade-school math problems, proposed in the paper Language models are multilingual chain-of-thought reasoners.",
+    "zh": "多语言小学数学基准（MGSM）是一个小学数学问题的基准，出自论文《语言模型是多语言思维链推理者》。",
+    "updated_at": "2025-11-24T14:37:10Z"
+  },
+  "micro_vqa": {
+    "en": "MicroVQA is expert-curated benchmark for multimodal reasoning for microscopy-based scientific research",
+    "zh": "MicroVQA 是一个由专家策划的、面向显微镜科学研究的多模态推理基准。",
+    "updated_at": "2025-11-24T14:37:10Z"
+  },
+  "gsm8k_v": {
+    "en": "GSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically maps each GSM8K math word problem into its visual counterpart to enable a clean, within-item comparison across modalities.",
+    "zh": "GSM8K-V 是一个纯视觉的多图像数学推理基准，系统地将每个 GSM8K 数学文字题映射为其对应的视觉版本，以实现跨模态的清晰、逐项对比。",
+    "updated_at": "2025-11-24T14:37:10Z"
+  },
+  "ifbench": {
+    "en": "IFBench is a new benchmark designed to evaluate how reliably AI models follow novel, challenging, and diverse verifiable instructions, with a strong focus on out-of-domain generalization. It comprises 58 manually curated verifiable constraints across categories such as counting, formatting, and word usage, aiming to address overfitting and data contamination issues present in existing benchmarks. Developed by AllenAI, IFBench serves as a rigorous test for precise instruction-following capabilities.",
+    "zh": "IFBench 是由 AllenAI 开发的一个新基准，旨在评估 AI 模型在遵循新颖、复杂且多样的可验证指令方面的可靠性，特别强调跨领域泛化能力。它包含 58 个手动整理的可验证约束，涵盖计数、格式化和用词等类别，致力于解决现有基准中存在的过拟合和数据污染问题，为精确遵循指令的能力提供严格测试。",
+    "updated_at": "2025-11-25T10:32:58Z"
+  },
+  "scicode": {
+    "en": "SciCode is a challenging benchmark designed to evaluate the capabilities of language models (LMs) in generating code for solving realistic scientific research problems. It has a diverse coverage of 16 subdomains from 5 domains: Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks that consist of exam-like question-answer pairs, SciCode is converted from real research problems. SciCode problems naturally factorize into multiple subproblems, each involving knowledge recall, reasoning, and code synthesis. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "SciCode 是一个具有挑战性的基准，旨在评估语言模型（LMs）在解决真实科学研究问题时的代码生成能力。它涵盖了物理学、数学、材料科学、生物学和化学五大领域中的16个子领域。与以往基于考试式问答对的基准不同，SciCode 源自真实的科研问题，其题目自然地分解为多个子问题，每个子问题均涉及知识回忆、推理和代码生成。**执行时需使用沙箱环境以安全运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-11-26T16:23:41Z"
   }
 }
