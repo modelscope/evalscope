@@ -1,4 +1,4 @@
 question	options	answer	image_1	image_2	image_3	image_4
 Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	custom_eval/multimodal/images/dog.jpg	custom_eval/multimodal/images/AMNH.jpg	custom_eval/multimodal/images/tesla.jpg	custom_eval/multimodal/images/tokyo.jpg
-<image 1> What building is this?	["School", "Hospital", "Park", "Museum"]	D	custom_eval/multimodal/images/AMNH.jpg			
-<image 1> Which city's skyline is this?	["New York", "Tokyo", "Shanghai", "Paris"]	B	custom_eval/multimodal/images/tokyo.jpg			
+<image 1> What building is this?	["School", "Hospital", "Park", "Museum"]	D	custom_eval/multimodal/images/AMNH.jpg
+<image 1> Which city's skyline is this?	["New York", "Tokyo", "Shanghai", "Paris"]	B	custom_eval/multimodal/images/tokyo.jpg

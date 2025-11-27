@@ -5,7 +5,7 @@ import json
 import re
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter, MultiChoiceAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
@@ -16,13 +16,13 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers,
 logger = get_logger()
 
 
-
 @register_benchmark(
     BenchmarkMeta(
         name='general_vmcq',
         pretty_name='General-VMCQ',
         description='A general visual multiple-choice question answering dataset for custom multimodal evaluation. '
-        'Format similar to MMMU, not OpenAI message format. Images are plain strings (local/remote path or base64 data URL). '
+        'Format similar to MMMU, not OpenAI message format. Images are plain strings '
+        '(local/remote path or base64 data URL). '
         'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).',  # noqa: E501
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vmcq',
@@ -48,7 +48,7 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
     - Images are plain strings: base64 data URL or local/remote path. Do not wrap in {"url": ...} and do not use 'bytes'.
     - 'options' is a list (JSON array) of strings; do NOT include "A.", "B." prefixes.
     - 'answer' is the correct letter (e.g., 'A').
-    """
+    """  # noqa: E501
 
     MAX_IMAGES: int = 100
 
@@ -60,7 +60,7 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         content_list, answers_list = self.create_content_and_answers_list(record)
-        
+
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             choices=answers_list,
@@ -81,8 +81,8 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         # Prepare image map
         image_map: Dict[int, str] = {}
         for i in range(GeneralVMCQAdapter.MAX_IMAGES):
-            image_map[i+1] = record.get(f'image_{i+1}')
-            
+            image_map[i + 1] = record.get(f'image_{i+1}')
+
         raw_options = record.get('options')
         answers_list: List[str]
         if isinstance(raw_options, list):
