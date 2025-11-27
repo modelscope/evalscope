@@ -65,7 +65,7 @@
   - `shuffle`: 是否在评测前打乱数据，默认为`False`。
   - `shuffle_choices`: 是否在评测前打乱选项顺序，默认为`False`，仅多选题数据集支持。
   - `metric_list`: 评测数据集的指标列表，指定后使用给定的指标评测，目前默认支持`acc`，其他计算的指标可在数据集列表中查看。
-  - `aggregation`: 评测结果的聚合方式，默认为`mean`，还可选:
+  - `aggregation`: 评测结果的聚合方式，默认为`mean`。对于聚合方法为`mean`的数据，还可切换为以下几种聚合方法：
     - `mean_and_pass_at_k`: 计算平均值和`pass_at_k`，需指定`repeats=k`，自动计算同一样例k次的至少有一次通过的概率。例如`humaneval`数据集可指定`repeats=5`，将计算模型在同一样例5次生成结果中的通过率。
     - `mean_and_vote_at_k`: 计算平均值和`vote_at_k`，需指定`repeats=k`，自动计算同一样例k次的投票结果，从而计算最终结果。
     - `mean_and_pass_hat_k`: 计算平均值和`pass_hat_k`，需指定`repeats=k`，自动计算同一样例k次全部通过的概率。例如`tau2_bench`数据集可指定`repeats=3`，将计算模型在同一样例3次生成结果中的通过率。

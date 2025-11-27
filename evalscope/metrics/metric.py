@@ -373,68 +373,6 @@ class ClippedMean(Mean):
         return clipped_values
 
 
-@register_aggregation(name='pass_at_k')
-class PassAtK(Aggregator):
-
-    def __init__(self, k: int = 1):
-        self.k = k
-        self.name = f'pass_at_{k}'
-
-    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Aggregate scores by computing the pass@k for each metric using group_id.
-
-        Args:
-            scores: List of sample scores to aggregate
-
-        Returns:
-            List of aggregated scores with pass@k values
-        """
-        if not scores:
-            return []
-
-        # Group scores by metric name and group_id
-        metric_groups = defaultdict(lambda: defaultdict(list))
-
-        for score in scores:
-            group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
-
-            for metric_name, value in score.score.value.items():
-                metric_groups[metric_name][group_id].append(float(value))
-
-        # Calculate pass@k for each metric
-        aggregated_scores = []
-        for metric_name, groups in metric_groups.items():
-            if not groups:
-                continue
-
-            # Calculate pass@k for each group (problem)
-            num_samples = []
-            num_correct = []
-            all_sample_ids = []
-
-            for group_id, group_values in groups.items():
-                num_samples.append(len(group_values))
-                num_correct.append(sum(group_values))  # count how many passed in this group
-                all_sample_ids.extend([f'{group_id}_{i}' for i in range(len(group_values))])
-
-            if num_samples:
-                # Use the calculate_pass_at_k function from metrics
-                pass_at_k_values = calculate_pass_at_k(num_samples, num_correct, self.k)
-                overall_pass_at_k = float(np.mean(pass_at_k_values))
-
-                aggregated_scores.append(
-                    AggScore(
-                        score=overall_pass_at_k,
-                        metric_name=f'pass@{self.k}',
-                        aggregation_name='',
-                        num=len(scores),
-                        ids=all_sample_ids
-                    )
-                )
-
-        return aggregated_scores
-
-
 @register_aggregation(name='mean_and_pass_at_k')
 class MeanPassAtK(Aggregator):
 
@@ -442,14 +380,14 @@ class MeanPassAtK(Aggregator):
         self.name = 'mean_and_pass_at_k'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Add per-metric pass@k (computed via calculate_pass_at_k) to each sample, then mean-aggregate.
+        """Add per-metric pass@n for all n <= k to each sample, then mean-aggregate.
 
         For each metric:
         - Group scores by group_id
         - Collect binary correctness values
         - Infer k as (total samples / number of groups) assuming uniform repetitions
-        - Compute per-group pass@k via calculate_pass_at_k
-        - Annotate each sample with metric_pass@k for its group
+        - Compute per-group pass@n for all n from 1 to k via calculate_pass_at_k
+        - Annotate each sample with metric_pass@n for its group (for all n)
         Finally run Mean() over the augmented metric set.
         """
         if not scores:
@@ -483,17 +421,19 @@ class MeanPassAtK(Aggregator):
                 num_samples.append(len(vals))
                 num_correct.append(int(sum(vals)))
 
-            # Compute per-group pass@k
-            pass_at_k_list = calculate_pass_at_k(num_samples, num_correct, k)
-            # Map back: group_id -> pass@k value
-            pass_at_k_map = {gid: float(v) for gid, v in zip(group_order, pass_at_k_list)}
+            # Compute per-group pass@n for all n from 1 to k
+            pass_at_n_maps = {}
+            for n in range(1, k + 1):
+                pass_at_n_list = calculate_pass_at_k(num_samples, num_correct, n)
+                pass_at_n_maps[n] = {gid: float(v) for gid, v in zip(group_order, pass_at_n_list)}
 
-            # Annotate each sample with its group's pass@k
+            # Annotate each sample with its group's pass@n for all n
             for s in scores:
                 group_id = getattr(s, 'group_id', s.sample_id)
-                s.score.value[f'{metric_name}_pass@{k}'] = pass_at_k_map[group_id]
+                for n in range(1, k + 1):
+                    s.score.value[f'{metric_name}_pass@{n}'] = pass_at_n_maps[n][group_id]
 
-        # Delegate mean aggregation over original + injected pass@k metrics
+        # Delegate mean aggregation over original + injected pass@n metrics
         m = Mean()
         return m(scores)
 
@@ -502,52 +442,84 @@ class MeanPassAtK(Aggregator):
 class MeanVoteAtK(Aggregator):
 
     def __init__(self):
-
         self.name = 'mean_and_vote_at_k'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Aggregate scores by computing the vote@k for each metric using group_id.
+        """Aggregate scores by computing vote@n for all n <= k for each metric using group_id.
+
+        Vote@n selects the most frequent prediction among first n samples, then checks if
+        that prediction is correct. This ensures vote@n has proper monotonicity properties.
+
+        Note: vote@n computes accuracy per unique problem (one score per group_id), while
+        mean_acc averages over all samples (including repeats). Therefore, vote@n can be
+        higher or lower than mean_acc depending on sample ordering and repeat distribution.
+
+        For each metric:
+        - Group scores by group_id, preserving order
+        - For each n from 1 to k, find most frequent prediction among first n samples
+        - Check if most frequent prediction was ever marked correct (score=1.0) in those samples
+        - Assign 1.0 if correct, 0.0 otherwise
 
         Args:
             scores: List of sample scores to aggregate
 
         Returns:
-            List of aggregated scores with vote@k values
+            List of aggregated scores with vote@n values for all n <= k
         """
         if not scores:
             return []
 
+        # Freeze metric names before augmenting values
         metrics = list(scores[0].score.value.keys())
 
-        # Calculate vote@k for all metrics
         for metric_name in metrics:
-
-            # Count of occurrences for each answer in each group_id
-            answer_groups = defaultdict(lambda: defaultdict(int))
-            # Score for each answer in each group_id
-            scores_groups = defaultdict(lambda: defaultdict(float))
-            # Score of the most frequently occurring answer
-            final_scores_groups = defaultdict(float)
-            # Count different answers for this metric
-            for score in scores:
-                group_id = getattr(score, 'group_id', score.sample_id)  # fallback to sample_id if no group_id
-                answer_prediction = getattr(score.score, 'extracted_prediction', None)
-                answer_groups[group_id][answer_prediction] += 1
-                scores_groups[group_id][answer_prediction] = score.score.value[metric_name]
-            # Calculate the repetition count k for each problem
-            k = int(len(scores) / len(answer_groups))
-
-            # Use the score of the most frequently occurring answer as the group's score
-            for group_id in answer_groups:
-                final_scores_groups[group_id] = scores_groups[group_id][
-                    max(answer_groups[group_id], key=answer_groups[group_id].get)]
-
-            # Add the corresponding vote@k for the metric to each score's value
+            # Group samples by group_id, preserving order
+            # Store: (prediction, correctness_score)
+            group_samples: Dict[str, List[tuple]] = defaultdict(list)
             for score in scores:
                 group_id = getattr(score, 'group_id', score.sample_id)
-                score.score.value.update({f'{metric_name}_vote@{k}': final_scores_groups[group_id]})
+                prediction = getattr(score.score, 'extracted_prediction', None)
+                correctness = score.score.value[metric_name]
+                group_samples[group_id].append((prediction, correctness))
 
-        # Calculate the mean value for all metrics and their corresponding vote@k
+            if not group_samples:
+                continue
+
+            # Calculate k as the repetition count
+            k = int(len(scores) / len(group_samples)) if len(group_samples) > 0 else 1
+            if k <= 0:
+                k = 1
+
+            # Compute vote@n for all n from 1 to k for each group
+            vote_at_n_maps: Dict[int, Dict[str, float]] = {}
+            for n in range(1, k + 1):
+                vote_at_n_maps[n] = {}
+                for group_id, samples in group_samples.items():
+                    # Consider only first n samples for this group
+                    n_samples = samples[:n]
+
+                    # Count prediction frequencies
+                    prediction_counts = defaultdict(int)
+                    for prediction, _ in n_samples:
+                        prediction_counts[prediction] += 1
+
+                    # Select most frequent prediction (ties broken by first occurrence)
+                    most_frequent_pred = max(prediction_counts, key=prediction_counts.get)
+
+                    # Check if this prediction was ever correct in the first n samples
+                    is_correct = any(
+                        pred == most_frequent_pred and correctness == 1.0 for pred, correctness in n_samples
+                    )
+
+                    vote_at_n_maps[n][group_id] = 1.0 if is_correct else 0.0
+
+            # Annotate each sample with its group's vote@n for all n
+            for score in scores:
+                group_id = getattr(score, 'group_id', score.sample_id)
+                for n in range(1, k + 1):
+                    score.score.value[f'{metric_name}_vote@{n}'] = vote_at_n_maps[n][group_id]
+
+        # Calculate the mean value for all metrics and their corresponding vote@n
         m = Mean()
         return m(scores)
 
@@ -559,14 +531,14 @@ class MeanPassHatK(Aggregator):
         self.name = 'mean_and_pass_hat_k'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Add per-metric pass^k using calculate_pass_hat_k, then mean-aggregate.
+        """Add per-metric pass^n for all n <= k using calculate_pass_hat_k, then mean-aggregate.
 
         For each metric:
         - Group scores by group_id
         - Collect binary correctness values
         - Infer k as approximate repeats and clamp to min attempts across groups
-        - Compute per-group pass^k via calculate_pass_hat_k
-        - Annotate each sample with metric_pass^{k} for its group
+        - Compute per-group pass^n for all n from 1 to k via calculate_pass_hat_k
+        - Annotate each sample with metric_pass^{n} for its group (for all n)
         Finally run Mean() over the augmented metric set.
         """
         if not scores:
@@ -586,26 +558,26 @@ class MeanPassHatK(Aggregator):
             if not group_values:
                 continue
 
-            # Infer repeats and clamp to the smallest group size to satisfy k <= n
+            # Infer repeats and clamp to the smallest group size to satisfy n <= min_n
             approx_k = int(len(scores) / len(group_values)) if len(group_values) > 0 else 1
             min_n = min(len(vals) for vals in group_values.values())
             k = max(1, min(approx_k, min_n))
 
-            # Compute per-group pass^k
-            pass_hat_k_map: Dict[str, float] = {}
-            for gid, vals in group_values.items():
-                n = len(vals)
-                c = int(sum(vals))
-                # calculate_pass_hat_k requires k <= n; ensured by clamping above
-                pass_hat_k_map[gid] = float(calculate_pass_hat_k(n, c, k))
+            # Compute per-group pass^n for all n from 1 to k
+            pass_hat_n_maps: Dict[int, Dict[str, float]] = {}
+            for n in range(1, k + 1):
+                pass_hat_n_maps[n] = {}
+                for gid, vals in group_values.items():
+                    total = len(vals)
+                    correct = int(sum(vals))
+                    pass_hat_n_maps[n][gid] = float(calculate_pass_hat_k(total, correct, n))
 
-            # Annotate each sample with its group's pass^k
-            suffix = f'pass^{k}'
-            injected_key = f'{metric_name}_{suffix}'
+            # Annotate each sample with its group's pass^n for all n
             for s in scores:
                 group_id = getattr(s, 'group_id', s.sample_id)
-                s.score.value[injected_key] = pass_hat_k_map[group_id]
+                for n in range(1, k + 1):
+                    s.score.value[f'{metric_name}_pass^{n}'] = pass_hat_n_maps[n][group_id]
 
-        # Mean aggregate over original + injected pass^k metrics
+        # Mean aggregate over original + injected pass^n metrics
         m = Mean()
         return m(scores)
