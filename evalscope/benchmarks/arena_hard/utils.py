@@ -172,7 +172,7 @@ def predict_win_rate(elo_ratings, SCALE=400, BASE=10, INIT_RATING=1000):
             wins[a][b] = ea
             wins[b][a] = 1 - ea
 
-    data = {a: [wins[a][b] if a != b else np.NAN for b in names] for a in names}
+    data = {a: [wins[a][b] if a != b else np.nan for b in names] for a in names}
 
     df = pd.DataFrame(data, index=names)
     df.index.name = 'model_a'
