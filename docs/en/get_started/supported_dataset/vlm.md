@@ -9,6 +9,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `cmmmu` | [CMMMU](#cmmmu) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `general_vmcq` | [General-VMCQ](#general-vmcq) | `Custom`, `MCQ`, `MultiModal` |
@@ -183,6 +184,23 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 ````
 
 </details>
+
+---
+
+### CMMMU
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `cmmmu`
+- **Dataset ID**: [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary)
+- **Description**:
+  > CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
+- **Task Categories**: `Chinese`, `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `临床医学`, `会计`, `公共卫生`, `农业`, `制药`, `化学`, `历史`, `地理`, `基础医学`, `建筑学`, `心理学`, `数学`, `文献学`, `机械工程`, `材料`, `物理`, `生物`, `电子学`, `社会学`, `管理`, `经济`, `能源和电力`, `艺术`, `艺术理论`, `营销`, `计算机科学`, `设计`, `诊断学与实验室医学`, `金融`, `音乐`
+
 
 ---
 

@@ -663,5 +663,10 @@
     "en": "A general visual question answering dataset for custom multimodal evaluation. Supports OpenAI-compatible message format with images (local paths or base64). For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).",
     "zh": "一个用于自定义多模态评估的通用视觉问答数据集。支持兼容 OpenAI 的消息格式（包含图像，支持本地路径或 base64 编码）。详细说明请参见[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/vlm.html)。",
     "updated_at": "2025-11-27T20:50:38Z"
+  },
+  "cmmmu": {
+    "en": "CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.",
+    "zh": "CMMMU 包含从大学考试、测验和教科书中人工收集的多模态问题，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，与其姊妹数据集 MMMU 类似。这些问题覆盖30个学科，包含图表、示意图、地图、表格、乐谱和化学结构等39种高度异构的图像类型。",
+    "updated_at": "2025-11-28T13:37:35Z"
   }
 }
