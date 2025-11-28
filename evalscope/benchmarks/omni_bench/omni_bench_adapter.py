@@ -13,7 +13,7 @@ from evalscope.utils.multi_choices import prompt
 logger = get_logger()
 
 MULT_CHOICE_PROMPT = r"""
-Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 

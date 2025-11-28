@@ -1,5 +1,5 @@
 # flake8: noqa
-FEW_SHOT_SAMPLES = """Answer the following multiple choice question. There is only one correct answer. The last line of your response should be in the format 'ANSWER: $LETTER' (without quotes), where LETTER is one of A, B, C, D, E, F, G, H, I, or J.
+FEW_SHOT_SAMPLES = """Answer the following multiple choice question. There is only one correct answer. The last line of your response should be in the format 'ANSWER: [LETTER]' (without quotes), where [LETTER] is one of A, B, C, D, E, F, G, H, I, or J.
 
 Question:
 A refracting telescope consists of two converging lenses separated by 100 cm. The eye-piece lens has a focal length of 20 cm. The angular magnification of the telescope is

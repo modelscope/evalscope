@@ -20,7 +20,7 @@ Content: {content}
 
 Question: {question}
 
-Keep your The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Keep your The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 """.lstrip()  # noqa: E501
 
 

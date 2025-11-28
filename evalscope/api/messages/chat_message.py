@@ -1,3 +1,4 @@
+import os
 import uuid
 from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
@@ -221,15 +222,21 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
                     content_parts.append(content_item.text)
                 elif isinstance(content_item, ContentImage):
                     # Use markdown image syntax
-                    image_base64 = content_item.image
-                    if max_length and len(image_base64) > max_length:
-                        image_base64 = image_base64[:max_length]
-                    content_parts.append(f'![image]({image_base64})')
+                    image_base64_or_url = content_item.image
+                    if os.path.isfile(image_base64_or_url):
+                        image_base64_or_url = os.path.abspath(image_base64_or_url)
+                        # If it's a file, convert to a markdown image with a gradio-compatible path
+                        content_parts.append(f'![image](gradio_api/file={image_base64_or_url})')
+                    else:
+                        # If it's not a file, assume it's a base64 string
+                        if max_length and len(image_base64_or_url) > max_length:
+                            image_base64_or_url = image_base64_or_url[:max_length]
+                        content_parts.append(f'![image]({image_base64_or_url})')
                 elif isinstance(content_item, ContentAudio):
-                    audio_base64 = content_item.audio
-                    if max_length and len(audio_base64) > max_length:
-                        audio_base64 = audio_base64[:max_length]
-                    content_parts.append(f"<audio controls src='{audio_base64}'></audio>")
+                    audio_base64_or_url = content_item.audio
+                    if max_length and len(audio_base64_or_url) > max_length:
+                        audio_base64_or_url = audio_base64_or_url[:max_length]
+                    content_parts.append(f"<audio controls src='{audio_base64_or_url}'></audio>")
                 elif isinstance(content_item, ContentReasoning):
                     content_parts.append(f'**Reasoning:** {content_item.reasoning}')
 

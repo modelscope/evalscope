@@ -14,7 +14,7 @@ logger = get_logger()
 
 MULT_CHOICE_PROMPT = r"""
 Answer the following multiple choice question. The last line of your response should be of the following format:
-'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 """.strip()

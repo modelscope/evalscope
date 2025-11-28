@@ -66,7 +66,7 @@ SUBJECT_MAPPING = {
 }
 
 # Based on the prompt template for Chinese evaluation
-USER_PROMPT_TEMPLATE = """以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
+USER_PROMPT_TEMPLATE = """以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 A、B、C、D 中的一个。
 
 问题：{question}
 选项：

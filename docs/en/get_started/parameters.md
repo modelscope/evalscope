@@ -73,7 +73,7 @@ Example usage:
   - `shuffle`: Indicates whether to randomize the data before evaluation, with the default setting being `False`.
   - `shuffle_choices`: Specifies whether to rearrange the order of choices before evaluation, defaulting to `False`. This option is only applicable to multiple-choice datasets.
 - `metric_list`: The metric list for the evaluation dataset. When specified, the given metrics will be used for evaluation. Currently, `acc` is supported by default. Other computed metrics can be found in the dataset list.
-  - `aggregation`: The aggregation method for evaluation results. Default is `mean`. Other options include:
+  - `aggregation`: The aggregation method for evaluation results. Default is `mean`. For datasets those use `mean`, other options include:
     - `mean_and_pass_at_k`: Calculates the mean and `pass_at_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing at least once across k attempts for the same example. For instance, the `humaneval` dataset can specify `repeats=5` to calculate the pass rate among 5 generated results for the same example.
     - `mean_and_vote_at_k`: Calculates the mean and `vote_at_k`. Requires specifying `repeats=k`, which automatically calculates the voting result across k attempts for the same example to determine the final result.
     - `mean_and_pass_hat_k`: Calculates the mean and `pass_hat_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing all k attempts for the same example. For instance, the `tau2_bench` dataset can specify `repeats=3` to calculate the pass rate among 3 generated results for the same example.

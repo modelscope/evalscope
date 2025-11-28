@@ -264,7 +264,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -319,7 +319,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ````text
 Q: {question}
-A: Let's think step by step. Put your final answer in the format of "So the answer is $ANSWER" (without quotes and markdown) where $ANSWER is the answer to the problem.
+A: Let's think step by step. Put your final answer in the format of "So the answer is [ANSWER]" (without quotes and markdown) where [ANSWER] is the answer to the problem.
 
 ````
 
@@ -345,7 +345,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -420,7 +420,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 A、B、C、D 中的一个。
+以下是中国关于{subject}的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 A、B、C、D 中的一个。
 
 问题：{question}
 选项：
@@ -477,7 +477,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
@@ -508,11 +508,11 @@ Text to process:
 
 ````text
 
-Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer YES or NO to the problem.
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer YES or NO to the problem.
 
 Reasoning:
 
@@ -540,7 +540,7 @@ Reasoning:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -837,7 +837,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 ````text
 Tell me the best option in the following options which represents the underlying narrative of the text?
-The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -901,7 +901,7 @@ You will be asked to read a passage and answer a question. {drop_examples}
 ---
 {query}
 
-Think step by step, then write a line of the form "Answer: $ANSWER" at the end of your response.
+Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.
 ````
 
 </details>
@@ -1043,7 +1043,7 @@ Example output: "My final verdict is tie: [[A=B]]".
 <details><summary>View</summary>
 
 ````text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
+回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
 
 问题：{question}
 选项：
@@ -1145,7 +1145,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -1174,27 +1174,8 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Solve the following math problem step by step. The last line of your response should display the answer enclosed within \boxed{{\text{{$ANSWER}}}}.
-
-Example:
-
-Let's solve the problem step by step.
-
-Problem: Eliza's rate per hour for the first 40 hours she works each week is $10. She also receives an overtime pay of 1.2 times her regular hourly rate. If Eliza worked for 45 hours this week, how much are her earnings for this week?
-
-Step 1: Calculate Eliza's earnings for the first 40 hours. Eliza's hourly rate is $10, so her earnings for the first 40 hours are $10/hour x 40 hours = $400.
-Step 2: Calculate Eliza's overtime pay rate. Eliza's overtime pay rate is 1.2 times her regular hourly rate, so her overtime pay rate is $10/hour x 1.2 = $12/hour.
-Step 3: Calculate Eliza's earnings for the overtime hours. Eliza worked for 45 hours, so her overtime hours are 45 hours - 40 hours = 5 hours. Her earnings for the overtime hours are $12/hour x 5 hours = $60.
-Step 4: Calculate Eliza's total earnings for the week. Eliza's total earnings for the week are her earnings for the first 40 hours plus her earnings for the overtime hours, which is $400 + $60 = $460.
-
-Answer:
-\boxed{{\text{{460}}}}
-
-question:
 {question}
-
-Remember to put your answer on its own line at the end in the form "\boxed{{\text{{$ANSWER}}}}" (without quotes), where $ANSWER is replaced by the actual answer to the problem.
-
+Please reason step by step, and put your final answer within \boxed{{}}.
 ````
 
 </details>
@@ -1332,7 +1313,7 @@ Answer the question:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -1468,7 +1449,7 @@ Read the following function signature and docstring, and fully implement the fun
 <details><summary>View</summary>
 
 ````text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
@@ -1559,7 +1540,7 @@ Read the following function signature and docstring, and fully implement the fun
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -1651,7 +1632,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -1680,7 +1661,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -1855,7 +1836,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -1884,7 +1865,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 Question:
 {question}
@@ -1915,7 +1896,7 @@ Options:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -1944,7 +1925,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2005,7 +1986,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2034,7 +2015,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -2246,7 +2227,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2364,7 +2345,7 @@ Please answer YES or NO or MAYBE without an explanation.
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2393,7 +2374,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -2519,7 +2500,7 @@ Example:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2575,7 +2556,7 @@ Answer the question:
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2604,7 +2585,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -2774,7 +2755,7 @@ Content: {content}
 
 Question: {question}
 
-Keep your The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Keep your The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 ````
 
@@ -2810,7 +2791,7 @@ Keep your The last line of your response should be of the form "ANSWER: $ANSWER"
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -2839,7 +2820,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 

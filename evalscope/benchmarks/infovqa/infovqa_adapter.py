@@ -14,7 +14,7 @@ logger = get_logger()
 
 PROMPT = """Answer the question according to the image using a single word or phrase.
 {question}
-The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question."""  # noqa: E501
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the question."""  # noqa: E501
 
 
 @register_benchmark(

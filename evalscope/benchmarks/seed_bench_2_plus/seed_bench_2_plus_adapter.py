@@ -2,7 +2,7 @@
 import re
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -10,7 +10,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
 
 logger = get_logger()
 
@@ -33,7 +33,7 @@ SUBSET_LIST = ['chart', 'web', 'map']
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class SeedBench2PlusAdapter(VisionLanguageAdapter):
+class SeedBench2PlusAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -66,7 +66,3 @@ class SeedBench2PlusAdapter(VisionLanguageAdapter):
             subset_key=record['question_image_type'],
             metadata=metadata,
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))

@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 
-from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -47,7 +47,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             'subset_list':[
                 'Accounting',
-                'Agriculture',
+                'Math',
                 # 'Architecture_and_Engineering'
             ]
         }
@@ -240,7 +240,7 @@ class TestVLMBenchmark(TestBenchmark):
             ],
             'shuffle': True,
         }
-        self._run_dataset_test('math_vision', dataset_args=dataset_args, limit=20, use_cache='outputs/20251017_153210', rerun_review=True)
+        self._run_dataset_test('math_vision', dataset_args=dataset_args, limit=5)
 
     def test_math_verse(self):
         dataset_args = {

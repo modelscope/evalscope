@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -28,7 +28,7 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class ScienceQAAdapter(VisionLanguageAdapter):
+class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,7 +66,3 @@ class ScienceQAAdapter(VisionLanguageAdapter):
             target=target,
             metadata=metadata,
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))

@@ -1,0 +1,6 @@
+messages	answer
+[{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	Dog
+[{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}]	Museum
+[{"role": "user", "content": [{"type": "text", "text": "Which city's skyline is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tokyo.jpg"}}]}]	Tokyo
+[{"role": "user", "content": [{"type": "text", "text": "What is the brand of this car?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tesla.jpg"}}]}]	Tesla
+[{"role": "user", "content": [{"type": "text", "text": "What is the person in the picture doing?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/running.jpg"}}]}]	Running

@@ -1,0 +1,3 @@
+{"question": "Which image shows a dog?", "options": ["<image 1>", "<image 2>", "<image 3>", "<image 4>"], "image_1": "custom_eval/multimodal/images/dog.jpg", "image_2": "custom_eval/multimodal/images/AMNH.jpg", "image_3": "custom_eval/multimodal/images/tesla.jpg", "image_4": "custom_eval/multimodal/images/tokyo.jpg", "answer": "A"}
+{"question": "<image 1> What building is this?", "options": ["School", "Hospital", "Park", "Museum"], "image_1": "custom_eval/multimodal/images/AMNH.jpg", "answer": "D"}
+{"question": "<image 1> Which city's skyline is this?", "options": ["New York", "Tokyo", "Shanghai", "Paris"], "image_1": "custom_eval/multimodal/images/tokyo.jpg", "answer": "B"}
