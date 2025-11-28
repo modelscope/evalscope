@@ -2,16 +2,15 @@
 
 import ast
 import json
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, prompt
 
 logger = get_logger()
 
@@ -99,26 +98,5 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         else:
             raise ValueError('Unsupported options format; expected list or JSON string of list')
         full_text = prompt(question=record['question'], choices=answers_list, template=self.prompt_template)
-        content_list = GeneralVMCQAdapter._parse_text_with_images(full_text, image_map)
+        content_list = self._parse_text_with_images(full_text, image_map)
         return content_list, answers_list
-
-    @staticmethod
-    def _parse_text_with_images(text: str, image_map: Dict[int, str]) -> List[Content]:
-        content_list: List[Content] = []
-        # <image_1> or <image 1>
-        pattern = r'<image[_ ](\d+)>'
-        last_end = 0
-        for match in re.finditer(pattern, text):
-            if match.start() > last_end:
-                text_segment = text[last_end:match.start()]
-                if text_segment.strip():
-                    content_list.append(ContentText(text=text_segment))
-            image_num = int(match.group(1))
-            if image_num in image_map:
-                content_list.append(ContentImage(image=image_map[image_num]))
-            last_end = match.end()
-        if last_end < len(text):
-            remaining_text = text[last_end:]
-            if remaining_text.strip():
-                content_list.append(ContentText(text=remaining_text))
-        return content_list

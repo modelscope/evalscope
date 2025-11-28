@@ -175,6 +175,7 @@ You can specify a judge model through the `judge_model` parameter to generate re
 ```python
 from evalscope.run import run_task
 from evalscope.constants import EvalType, JudgeStrategy
+import os
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2-VL-2B-Instruct',
@@ -189,7 +190,7 @@ task_cfg = TaskConfig(
     judge_model_args={
         'model_id': 'qwen-plus', # Does not need to be a multimodal model
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
+        'api_key': os.environ.get('DASHSCOPE_API_KEY'),
         'generation_config': {
             'temperature': 0.0,
             'max_tokens': 4096

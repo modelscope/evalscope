@@ -5,14 +5,12 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
-
-# flake8: noqa
 
 logger = get_logger()
 
@@ -58,7 +56,7 @@ Solve the following problem step by step. The last line of your response should 
 
 Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.
 
-"""
+"""  # noqa: E501
 
 MULTI_CHOICE_TYPE = 'multiple-choice'
 OPEN_TYPE = 'open'
@@ -101,7 +99,7 @@ class MMMUAdapter(VisionLanguageAdapter):
         'image_1': {'bytes': b'...'},
         'question_type': 'open',
     }
-    """
+    """  # noqa: E501
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +107,7 @@ class MMMUAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question_type = record['question_type']
-        content_list, answers_list = MMMUAdapter.create_content_and_answers_list(record)
+        content_list, answers_list = self.create_content_and_answers_list(record)
 
         metadata = {
             'id': record['id'],
@@ -150,8 +148,7 @@ class MMMUAdapter(VisionLanguageAdapter):
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 
-    @staticmethod
-    def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
+    def create_content_and_answers_list(self, record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
         Create a list of content elements and a list of answers from a record.
         Images are inserted at their <image x> placeholder positions in the text.
@@ -181,51 +178,11 @@ class MMMUAdapter(VisionLanguageAdapter):
             full_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
 
             # Parse and replace image placeholders
-            content_list = MMMUAdapter._parse_text_with_images(full_text, image_map)
+            content_list = self._parse_text_with_images(full_text, image_map)
 
         else:  # OPEN_TYPE
             answers_list: List[str] = []
             full_text = OPEN_PROMPT.format(question=record['question'])
-            content_list = MMMUAdapter._parse_text_with_images(full_text, image_map)
+            content_list = self._parse_text_with_images(full_text, image_map)
 
         return content_list, answers_list
-
-    @staticmethod
-    def _parse_text_with_images(text: str, image_map: Dict[int, str]) -> List[Content]:
-        """
-        Parse text and replace <image x> placeholders with actual images.
-
-        Args:
-            text (str): Text containing <image x> placeholders
-            image_map (dict): Mapping from image number to base64 encoded image
-
-        Returns:
-            list: List of Content objects (text and images interleaved)
-        """
-        content_list: List[Content] = []
-
-        # Pattern to match <image x> where x is a number
-        pattern = r'<image (\d+)>'
-        last_end = 0
-
-        for match in re.finditer(pattern, text):
-            # Add text before the image placeholder
-            if match.start() > last_end:
-                text_segment = text[last_end:match.start()]
-                if text_segment.strip():
-                    content_list.append(ContentText(text=text_segment))
-
-            # Add the image
-            image_num = int(match.group(1))
-            if image_num in image_map:
-                content_list.append(ContentImage(image=image_map[image_num]))
-
-            last_end = match.end()
-
-        # Add remaining text after last image
-        if last_end < len(text):
-            remaining_text = text[last_end:]
-            if remaining_text.strip():
-                content_list.append(ContentText(text=remaining_text))
-
-        return content_list
