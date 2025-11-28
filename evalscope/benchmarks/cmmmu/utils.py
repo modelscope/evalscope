@@ -251,14 +251,3 @@ def get_multi_choice_info(options):
         all_choices.append(chr(ord(start_chr) + i))
 
     return index2ans, all_choices
-
-
-def calculate_ins_level_acc(results):
-    correct_sum = 0
-    entries_sum = 0
-    for cat_results in results.values():
-        correct_sum += cat_results['correct_num']
-        entries_sum += cat_results['entries_num']
-    if entries_sum == 0:
-        return 0
-    return correct_sum / entries_sum

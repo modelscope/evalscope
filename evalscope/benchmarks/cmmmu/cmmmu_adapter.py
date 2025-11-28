@@ -1,5 +1,3 @@
-import ast
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -156,9 +154,7 @@ class CMMMUAdapter(VisionLanguageAdapter):
             record (dict): The record containing question, images, and options.
 
         Returns:
-            tuple: A tuple containing:
-                - content_list (list): A list of content elements (text and images).
-                - answers_list (list): A list of possible answers (for multiple-choice questions).
+            List[Content]: A list of content elements (text and images).
         """
         question = record['question']
         task_instructions = PROMPT['task_instructions']

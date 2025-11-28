@@ -60,7 +60,7 @@ class TestVLMBenchmark(TestBenchmark):
             #     '数学',
             # ]
         }
-        self._run_dataset_test('cmmmu', dataset_args=dataset_args, limit=5, use_cache='outputs/20251128_130645', rerun_review=True)
+        self._run_dataset_test('cmmmu', dataset_args=dataset_args, limit=5, rerun_review=True)
 
 
     def test_math_vista(self):
