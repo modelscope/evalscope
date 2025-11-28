@@ -9,6 +9,7 @@
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `cmmmu` | [CMMMU](#cmmmu) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
 | `general_vmcq` | [General-VMCQ](#general-vmcq) | `Custom`, `MCQ`, `MultiModal` |
@@ -183,6 +184,23 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 ````
 
 </details>
+
+---
+
+### CMMMU
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `cmmmu`
+- **数据集ID**: [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary)
+- **数据集介绍**:
+  > CMMMU 包含从大学考试、测验和教科书中人工收集的多模态问题，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，与其姊妹数据集 MMMU 类似。这些问题覆盖30个学科，包含图表、示意图、地图、表格、乐谱和化学结构等39种高度异构的图像类型。
+- **任务类别**: `Chinese`, `Knowledge`, `MultiModal`, `QA`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `临床医学`, `会计`, `公共卫生`, `农业`, `制药`, `化学`, `历史`, `地理`, `基础医学`, `建筑学`, `心理学`, `数学`, `文献学`, `机械工程`, `材料`, `物理`, `生物`, `电子学`, `社会学`, `管理`, `经济`, `能源和电力`, `艺术`, `艺术理论`, `营销`, `计算机科学`, `设计`, `诊断学与实验室医学`, `金融`, `音乐`
+
 
 ---
 
