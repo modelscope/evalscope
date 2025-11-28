@@ -213,7 +213,7 @@ result = run_task(task_cfg=task_cfg)
 
 ## 通用选择题格式（General-VMCQ）
 
-### 1. 数据准备（非 OpenAI 消息格式）
+### 1. 数据准备
 
 General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>`；`options` 为 Python 列表字符串，选项可为文本或图片占位符。
 

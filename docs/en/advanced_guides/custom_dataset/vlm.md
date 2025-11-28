@@ -213,7 +213,7 @@ Evaluation will output accuracy metrics (output metrics are more intuitive than 
 
 ## General-VMCQ Format
 
-### 1. Data Preparation (Non-OpenAI Message Format)
+### 1. Data Preparation
 
 General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>`; `options` is a Python list string, options can be text or image placeholders.
 
