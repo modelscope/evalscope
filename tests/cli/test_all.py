@@ -45,16 +45,16 @@ datasets=[
     'chinese_simpleqa',
     'alpaca_eval',
     'arena_hard',
-    'maritime_bench',
-    'drop',
-    'winogrande',
-    'tool_bench',
-    'frames',
-    'docmath',
-    'needle_haystack',
-    'bfcl_v3',
-    'hle',
-    'tau_bench',
+    # 'maritime_bench',
+    # 'drop',
+    # 'winogrande',
+    # 'tool_bench',
+    # 'frames',
+    # 'docmath',
+    # 'needle_haystack',
+    # 'bfcl_v3',
+    # 'hle',
+    # 'tau_bench',
 ]
 
 # Reverse the datasets list to ensure the order is from most recent to oldest
@@ -186,7 +186,7 @@ class TestRun(unittest.TestCase):
             eval_type=EvalType.SERVICE,
             datasets=[
                 'mmmu',
-                # 'math_vista',
+                'math_vista',
             ],
             dataset_args={
                 'mmmu': {
