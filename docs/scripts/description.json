@@ -668,5 +668,10 @@
     "en": "CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.",
     "zh": "CMMMU 包含从大学考试、测验和教科书中人工收集的多模态问题，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，与其姊妹数据集 MMMU 类似。这些问题覆盖30个学科，包含图表、示意图、地图、表格、乐谱和化学结构等39种高度异构的图像类型。",
     "updated_at": "2025-11-28T13:37:35Z"
+  },
+  "zebralogicbench": {
+    "en": "ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).",
+    "zh": "",
+    "updated_at": "2025-12-02T20:12:47Z"
   }
 }

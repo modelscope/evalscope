@@ -85,6 +85,7 @@
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
 | `wmt24pp` | [WMT2024++](#wmt2024) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
+| `zebralogicbench` | [ZebraLogicBench](#zebralogicbench) | `Reasoning` |
 
 ---
 
@@ -2898,6 +2899,74 @@ INSTRUCTIONS:
 
 Text to process:
 {text}
+
+````
+
+</details>
+
+---
+
+### ZebraLogicBench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `zebralogicbench`
+- **数据集ID**: [allenai/ZebraLogicBench-private](https://modelscope.cn/datasets/allenai/ZebraLogicBench-private/summary)
+- **数据集介绍**:
+  > ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).
+- **任务类别**: `Reasoning`
+- **评估指标**: 
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `grid_mode`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+# Example Puzzle 
+
+There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:
+ - Each person has a unique name: `Peter`, `Eric`, `Arnold`.
+ - Each person has a unique favorite drink: `tea`, `water`, `milk`
+
+## Clues for the Example Puzzle
+
+1. Peter is in the second house.
+2. Arnold is directly left of the one who only drinks water.
+3. The one who only drinks water is directly left of the person who likes milk.
+
+## Answer to the Example Puzzle
+
+{{
+    "reasoning": "Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.",
+    "solution": {{
+        "House 1": {{
+            "Name": "Arnold",
+            "Drink": "tea"
+        }},
+        "House 2": {{
+            "Name": "Peter",
+            "Drink": "water"
+        }},
+        "House 3": {{
+            "Name": "Eric",
+            "Drink": "milk"
+        }}
+    }}
+}}
+
+# Puzzle to Solve 
+
+{question}
+
+
+# Instruction
+
+Now please solve the above puzzle. Present your reasoning and solution in the following json format:
+
+{json_template}
+
 
 ````
 
