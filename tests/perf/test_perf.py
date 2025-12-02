@@ -232,7 +232,7 @@ class TestPerf(unittest.TestCase):
         run_perf_benchmark(task_cfg1)
         run_perf_benchmark(task_cfg2)
 
-    def test_perf_visulizer_swanlab(self):
+    def test_perf_visualizer_swanlab(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=1,
