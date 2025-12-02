@@ -141,7 +141,7 @@ def init_clearml(args: Arguments) -> None:
 
     # Initialize ClearML Task
     task = Task.init(
-        project_name=project_name, task_name=task_name, task_type=Task.TaskTypes.service, output_uri=args.outputs_dir
+        project_name=project_name, task_name=task_name, task_type=Task.TaskTypes.testing, output_uri=args.outputs_dir
     )
 
     # Connect configuration parameters
