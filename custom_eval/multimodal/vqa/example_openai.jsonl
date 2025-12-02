@@ -1,0 +1,5 @@
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}], "answer": "Dog"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}], "answer": "Museum"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "Which city's skyline is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tokyo.jpg"}}]}], "answer": "Tokyo"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What is the brand of this car?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/tesla.jpg"}}]}], "answer": "Tesla"}
+{"messages": [{"role": "user", "content": [{"type": "text", "text": "What is the person in the picture doing?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/running.jpg"}}]}], "answer": "Running"}

@@ -11,7 +11,7 @@ FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar question
 """.lstrip()
 
 SINGLE_ANSWER_TEMPLATE = r"""
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
@@ -19,7 +19,7 @@ Answer the following multiple choice question. The entire content of your respon
 """.strip()
 
 SINGLE_ANSWER_TEMPLATE_COT = r"""
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -27,7 +27,7 @@ Answer the following multiple choice question. The last line of your response sh
 """.strip()
 
 MULTIPLE_ANSWER_TEMPLATE = r"""
-Answer the following multiple choice question where multiple answers may be correct. The entire content of your response should be of the following format: 'ANSWER: $LETTERS' (without quotes) where LETTERS is one or more of {letters}.
+Answer the following multiple choice question where multiple answers may be correct. The entire content of your response should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTERS] is one or more of {letters}.
 
 {question}
 
@@ -35,7 +35,7 @@ Answer the following multiple choice question where multiple answers may be corr
 """.strip()
 
 MULTIPLE_ANSWER_TEMPLATE_COT = r"""
-Answer the following multiple choice question where multiple answers may be correct. The last line of your response should be of the following format: 'ANSWER: $LETTERS' (without quotes) where LETTERS is one or more of {letters}. Think step by step before answering.
+Answer the following multiple choice question where multiple answers may be correct. The last line of your response should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTERS] is one or more of {letters}. Think step by step before answering.
 
 {question}
 
@@ -48,27 +48,27 @@ CHINESE_FEW_SHOT_TEMPLATE = r"""以下是一些示例问题：
 
 """.lstrip()
 
-CHINESE_SINGLE_ANSWER_TEMPLATE = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。
+CHINESE_SINGLE_ANSWER_TEMPLATE = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
 
 问题：{question}
 选项：
 {choices}
 """.lstrip()
 
-CHINESE_SINGLE_ANSWER_TEMPLATE_COT = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+CHINESE_SINGLE_ANSWER_TEMPLATE_COT = r"""回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
 {choices}
 """.lstrip()
 
-CHINESE_MULTIPLE_ANSWER_TEMPLATE = r"""回答下面的多项选择题，请选出其中的所有正确答案。你的回答的全部内容应该是这样的格式："答案：LETTERS"（不带引号），其中 LETTERS 是 {letters} 中的一个或多个。
+CHINESE_MULTIPLE_ANSWER_TEMPLATE = r"""回答下面的多项选择题，请选出其中的所有正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTERS]"（不带引号），其中 [LETTERS] 是 {letters} 中的一个或多个。
 问题：{question}
 选项：
 {choices}
 """.lstrip()
 
-CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT = r"""回答下面的多项选择题，请选出其中的所有正确答案。你的回答的最后一行应该是这样的格式："答案：LETTERS"（不带引号），其中 LETTERS 是 {letters} 中的一个或多个。请在回答前进行一步步思考。
+CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT = r"""回答下面的多项选择题，请选出其中的所有正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTERS]"（不带引号），其中 [LETTERS] 是 {letters} 中的一个或多个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
@@ -82,13 +82,16 @@ def unshuffle_choices(choices: Choices) -> Choices:
     return Choices(sorted(choices, key=lambda choice: choice.original_position))
 
 
-def answer_options(choices: Choices) -> str:
+def answer_options(choices: Union[Choices, List[str]]) -> str:
     r"""
     Returns the `choices` formatted as a multiple choice question, e.g.:
 
     ["choice 1", "choice 2", "choice 3"] ->
         "A) choice 1\nB) choice 2\nC) choice 3"
     """
+    if isinstance(choices, list):
+        choices = Choices(choices)
+
     indexes = list(range(len(choices)))
 
     return '\n'.join([f'{answer_character(i)}) {choices[j].value}' for i, j in enumerate(indexes)])

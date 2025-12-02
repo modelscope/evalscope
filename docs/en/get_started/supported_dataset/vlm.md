@@ -9,8 +9,11 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `blink` | [BLINK](#blink) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](#ccbench) | `Knowledge`, `MCQ`, `MultiModal` |
 | `chartqa` | [ChartQA](#chartqa) | `Knowledge`, `MultiModal`, `QA` |
+| `cmmmu` | [CMMMU](#cmmmu) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `general_vmcq` | [General-VMCQ](#general-vmcq) | `Custom`, `MCQ`, `MultiModal` |
+| `general_vqa` | [General-VQA](#general-vqa) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](#gsm8k-v) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
@@ -58,7 +61,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -87,7 +90,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -117,7 +120,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ````text
 Answer the following multiple choice question. The last line of your response should be of the following format:
-'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 ````
@@ -144,7 +147,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -176,11 +179,28 @@ Answer the following multiple choice question. The last line of your response sh
 
 {question}
 
-The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the a single word answer to the problem.
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the a single word answer to the problem.
 
 ````
 
 </details>
+
+---
+
+### CMMMU
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `cmmmu`
+- **Dataset ID**: [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary)
+- **Description**:
+  > CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.
+- **Task Categories**: `Chinese`, `Knowledge`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `临床医学`, `会计`, `公共卫生`, `农业`, `制药`, `化学`, `历史`, `地理`, `基础医学`, `建筑学`, `心理学`, `数学`, `文献学`, `机械工程`, `材料`, `物理`, `生物`, `电子学`, `社会学`, `管理`, `经济`, `能源和电力`, `艺术`, `艺术理论`, `营销`, `计算机科学`, `设计`, `诊断学与实验室医学`, `金融`, `音乐`
+
 
 ---
 
@@ -202,7 +222,7 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 <details><summary>View</summary>
 
 ````text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：LETTER"（不带引号），其中 LETTER 是 {letters} 中的一个。请在回答前进行一步步思考。
+回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
 
 问题：{question}
 选项：
@@ -234,10 +254,56 @@ The last line of your response should be of the form "ANSWER: $ANSWER" (without 
 ````text
 Answer the question according to the image using a single word or phrase.
 {question}
-The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the question.
 ````
 
 </details>
+
+---
+
+### General-VMCQ
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `general_vmcq`
+- **Dataset ID**: general_vmcq
+- **Description**:
+  > A general visual multiple-choice question answering dataset for custom multimodal evaluation. Format similar to MMMU, not OpenAI message format. Images are plain strings (local/remote path or base64 data URL). For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).
+- **Task Categories**: `Custom`, `MCQ`, `MultiModal`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
+
+{question}
+
+{choices}
+````
+
+</details>
+
+---
+
+### General-VQA
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `general_vqa`
+- **Dataset ID**: general_vqa
+- **Description**:
+  > A general visual question answering dataset for custom multimodal evaluation. Supports OpenAI-compatible message format with images (local paths or base64). For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).
+- **Task Categories**: `Custom`, `MultiModal`, `QA`
+- **Evaluation Metrics**: `BLEU`, `Rouge`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
 
 ---
 
@@ -319,7 +385,7 @@ Please answer YES or NO without an explanation.
 ````text
 Answer the question according to the image using a single word or phrase.
 {question}
-The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the question.
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the question.
 ````
 
 </details>
@@ -422,7 +488,7 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -451,7 +517,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -482,8 +548,8 @@ Answer the following multiple choice question. The last line of your response sh
 ````text
 Answer the following multiple choice question.
 The last line of your response should be of the following format:
-'ANSWER: $LETTER' (without quotes)
-where LETTER is one of A,B,C,D. Think step by step before answering.
+'ANSWER: [LETTER]' (without quotes)
+where [LETTER] is one of A,B,C,D. Think step by step before answering.
 
 {question}
 ````
@@ -511,11 +577,12 @@ where LETTER is one of A,B,C,D. Think step by step before answering.
 
 ````text
 
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \boxed command.
+
 
 ````
 
@@ -556,7 +623,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -676,7 +743,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -798,11 +865,11 @@ Please answer YES or NO without an explanation.
 <details><summary>View</summary>
 
 ````text
-Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Read the picture and solve the following problem step by step.The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \boxed command.
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \boxed command.
 ````
 
 </details>
@@ -827,7 +894,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: $ANS
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -856,7 +923,7 @@ Answer the following multiple choice question. The last line of your response sh
 <details><summary>View</summary>
 
 ````text
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -913,7 +980,7 @@ Answer the question:
 
 ````text
 
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.
 
 {question}
 
@@ -942,7 +1009,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ````text
 
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.
 
 {question}
 

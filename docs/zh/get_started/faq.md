@@ -50,12 +50,17 @@
 
 **Q: 如何进行 pass@k 评测或一个样本生成多个答案？**
 
-**A:** 在 `generation_config` 中设置 `n` 参数即可。`n` 的值表示每个样本生成答案的数量。框架会自动计算 `pass@k` 等指标。
-参考文档：[Generation Config](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#id2)、[QwQ 评测实践](https://evalscope.readthedocs.io/zh-cn/latest/best_practice/eval_qwq.html#id5)。
+**A:** `pass@k`指标支持所有聚合方法为`mean`的数据集。具体设置方法：
+1. 在`TaskConfig`中设置`repeats=k`
+2. 在`dataset_args`中设置
+`'<dataset_name>': {'aggregation': 'mean_and_pass_at_k'}`
+3. 运行评测时，每个样本会重复`k`次，并计算所有`pass@n, 1<=n<=k`指标。
+
+具体可[参考](https://github.com/modelscope/evalscope/pull/964) 里面的例子。除此之外，还支持`mean_and_vote_at_k`, `mean_and_pass_hat_k`聚合方法。
 
 **Q: 如何移除模型输出中的“思考过程”（如 `<think>...</think>`）？**
 
-**A:** 使用 `--dataset-args` 参数为特定数据集添加 `filters`。例如，移除 ifeval 数据集评测时 `</think>` 之前的内容：
+**A:** 对于`evalscope >= v1.0 `版本，默认自动处理`<think>...</think>`。如果需要自定义处理，可以使用 `--dataset-args` 参数为特定数据集添加 `filters`。例如，移除 ifeval 数据集评测时 `</think>` 之前的内容：
 ```shell
 --dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
 ```
@@ -116,7 +121,7 @@ task_config = TaskConfig(
 
 **A:** 数学问题的答案格式复杂，规则解析难以覆盖所有情况。建议使用 LLM 作为辅助裁判来提升准确率：
 ```python
-# 在 TaskConfig 或 DataAdapter 中设置
+# 在 TaskConfig 中设置
 judge_strategy=JudgeStrategy.LLM_RECALL,
 judge_model_args={
     'model_id': 'qwen2.5-72b-instruct',
@@ -148,9 +153,8 @@ judge_model_args={
 
 **Q: 如何评测多模态模型（如 Qwen-VL, Gemma3）？**
 
-**A:**
-- **语言能力评测**：对于在文本数据集（如 MMLU）上的评测，建议使用 vLLM 等框架将多模态模型部署为 API 服务，然后通过 API 方式进行评测。直接本地加载多模态模型进行纯文本评测可能支持不完善。
-- **多模态能力评测**：对于在多模态数据集（如 MMBench）上的评测，需要使用 VLMEvalKit 后端。具体请参考[VLMEvalKit 后端文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/backend/vlmevalkit_backend.html#vlmeval)。
+**A:** 建议使用 vLLM 等框架将多模态模型部署为 API 服务，然后通过 API 方式进行评测。直接本地加载多模态模型进行评测不支持。
+
 
 **Q: 使用 API 服务评测 `embeddings` 模型时报错 `dimensions is currently not supported`？**
 
@@ -243,7 +247,7 @@ judge_model_args={
 **Q: 我在我的工作中使用了 EvalScope，该如何引用它？**
 
 **A:** 非常感谢！您可以使用下面的 BibTeX 格式来引用我们的工作：
-```
+```bibtex
 @misc{evalscope_2024,
     title={{EvalScope}: Evaluation Framework for Large Models},
     author={ModelScope Team},

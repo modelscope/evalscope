@@ -467,7 +467,7 @@ def content_from_openai(
     elif content['type'] == 'reasoning':  # type: ignore[comparison-overlap]
         return [ContentReasoning(reasoning=content['reasoning'])]
     elif content['type'] == 'image_url':
-        return [ContentImage(image=content['image_url']['url'], detail=content['image_url']['detail'])]
+        return [ContentImage(image=content['image_url']['url'], detail=content['image_url'].get('detail', 'auto'))]
     elif content['type'] == 'input_audio':
         return [ContentAudio(
             audio=content['input_audio']['data'],

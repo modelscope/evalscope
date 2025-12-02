@@ -29,8 +29,6 @@ class TestNativeBenchmark(TestBenchmark):
             'generation_config': {
                 'max_tokens': 4096,
                 'temperature': 0.7,
-                'seed': 42,
-                'top_k': 1,
                 'parallel_tool_calls': True
             },
             'judge_strategy': JudgeStrategy.AUTO,
@@ -61,9 +59,11 @@ class TestNativeBenchmark(TestBenchmark):
         """Test GSM8K math reasoning dataset with Pass@k metric."""
         dataset_args = {
             'few_shot_num': 0,
-            'aggregation': 'mean_and_pass_at_k',
+            # 'aggregation': 'mean_and_pass_hat_k',
+            # 'aggregation': 'mean_and_pass_at_k',
+            'aggregation': 'mean_and_vote_at_k',
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, repeats=3)
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=10, repeats=5, model='qwen2.5-0.5b-instruct')
 
     def test_mgsm(self):
         dataset_args = {

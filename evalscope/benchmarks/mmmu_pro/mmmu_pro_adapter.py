@@ -48,7 +48,7 @@ SUBSET_LIST = [
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
 VISION_PROMPT = r"""
-Answer the following multiple choice question in image. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}. Think step by step before answering.
+Answer the following multiple choice question in image. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 """.strip()  # noqa: E501
 
@@ -108,14 +108,19 @@ class MMMUPROAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             if image:
                 content_list.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
         else:
-            input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-            content_list: List[Content] = [ContentText(text=input_text)]
-
+            # Prepare image map
+            image_map: Dict[int, str] = {}
             for i in range(MMMUPROAdapter.MAX_IMAGES):
                 image = record.get(f'image_{i+1}')
                 if image:
                     image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-                    content_list.append(ContentImage(image=image_base64))
+                    image_map[i + 1] = image_base64
+
+            # Build prompt text
+            input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
+
+            # Parse and replace image placeholders
+            content_list = self._parse_text_with_images(input_text, image_map)
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],

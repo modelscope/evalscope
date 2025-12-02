@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -8,14 +8,14 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers
+from evalscope.utils.multi_choices import parse_answers
 
 # flake8: noqa
 
 logger = get_logger()
 
 MULT_CHOICE_PROMPT = """
-Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of A, B, C, D. Think step by step before answering.
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A, B, C, D. Think step by step before answering.
 
 {question}
 """
@@ -34,7 +34,7 @@ Answer the following multiple choice question. The last line of your response sh
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class VstarBenchAdapter(VisionLanguageAdapter):
+class VstarBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -63,7 +63,3 @@ class VstarBenchAdapter(VisionLanguageAdapter):
             target=target,
             metadata=metadata,
         )
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        answers = parse_answers(task_state)
-        return ''.join(sorted(list(answers)))

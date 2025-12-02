@@ -31,7 +31,7 @@ Classify the given text into one or more of the following categories: inversion,
 - misdirection: This technique leads the listener down an expected path before a final twist reveals a different, often more literal or absurd, ending.
 
 Answer the following multiple choice question where multiple answers may be correct.
-The entire content of your response should be of the following format: 'ANSWER: $LETTERS' (without quotes) where LETTERS is one or more of {letters}.
+The entire content of your response should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of {letters}.
 
 {question}
 

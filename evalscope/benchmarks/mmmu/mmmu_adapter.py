@@ -5,14 +5,12 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
-
-# flake8: noqa
 
 logger = get_logger()
 
@@ -52,12 +50,13 @@ SUBSET_LIST = [
 MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 
 OPEN_PROMPT = """
-Solve the following problem step by step. The last line of your response should be of the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem.
+Solve the following problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-Remember to put your answer on its own line at the end in the form "ANSWER: $ANSWER" (without quotes) where $ANSWER is the answer to the problem, and you do not need to use a \\boxed command.
-"""
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.
+
+"""  # noqa: E501
 
 MULTI_CHOICE_TYPE = 'multiple-choice'
 OPEN_TYPE = 'open'
@@ -78,6 +77,29 @@ OPEN_TYPE = 'open'
     )
 )
 class MMMUAdapter(VisionLanguageAdapter):
+    """
+    example1:{
+        'question': '<image 1> illustrate a walk and a cycle. We can easily represent walking as?'
+        'options': "['a line', 'a curve', 'a plane', 'a surface']",
+        'image_1': {'bytes': b'...'},
+        'question_type': 'multiple-choice',
+    }
+    example2:{
+        'question': 'Select the correct tuning of Violin.',
+        'options': "[<image 1>, <image 2>, <image 3>, <image 4>]",
+        'image_1': {'bytes': b'...'},
+        'image_2': {'bytes': b'...'},
+        'image_3': {'bytes': b'...'},
+        'image_4': {'bytes': b'...'},
+        'question_type': 'multiple-choice',
+    }
+    example3:{
+        'question': 'Each of seven students has chosen three courses from ten options, and must sit an exam for each of his or her three choices. Two students sitting the same exam must do so at the same time, but no student can sit more than one exam in the same day. The table of choices is given in <image 1>. Find the smallest number of days required to schedule the exams. Return only the number of days.',
+        'options': '[]',
+        'image_1': {'bytes': b'...'},
+        'question_type': 'open',
+    }
+    """  # noqa: E501
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):
@@ -85,7 +107,7 @@ class MMMUAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question_type = record['question_type']
-        content_list, answers_list = MMMUAdapter.create_content_and_answers_list(record)
+        content_list, answers_list = self.create_content_and_answers_list(record)
 
         metadata = {
             'id': record['id'],
@@ -126,14 +148,13 @@ class MMMUAdapter(VisionLanguageAdapter):
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 
-    @staticmethod
-    def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
+    def create_content_and_answers_list(self, record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
         Create a list of content elements and a list of answers from a record.
+        Images are inserted at their <image x> placeholder positions in the text.
 
         Args:
             record (dict): The record containing question, images, and options.
-
 
         Returns:
             tuple: A tuple containing:
@@ -142,18 +163,26 @@ class MMMUAdapter(VisionLanguageAdapter):
         """
         question_type = record['question_type']
 
-        if question_type == MULTI_CHOICE_TYPE:
-            answers_list: List[str] = ast.literal_eval(record['options'])
-            input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
-            content_list: List[Content] = [ContentText(text=input_text)]
-        else:
-            answers_list: List[str] = []
-            content_list: List[Content] = [ContentText(text=OPEN_PROMPT.format(question=record['question']))]
-
+        # Prepare image map
+        image_map: Dict[int, str] = {}
         for i in range(MMMUAdapter.MAX_IMAGES):
-            image = record[f'image_{i+1}']
+            image = record.get(f'image_{i+1}')
             if image:
                 image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-                content_list.append(ContentImage(image=image_base64))
+                image_map[i + 1] = image_base64
+
+        if question_type == MULTI_CHOICE_TYPE:
+            answers_list: List[str] = ast.literal_eval(record['options'])
+
+            # Build prompt text
+            full_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
+
+            # Parse and replace image placeholders
+            content_list = self._parse_text_with_images(full_text, image_map)
+
+        else:  # OPEN_TYPE
+            answers_list: List[str] = []
+            full_text = OPEN_PROMPT.format(question=record['question'])
+            content_list = self._parse_text_with_images(full_text, image_map)
 
         return content_list, answers_list

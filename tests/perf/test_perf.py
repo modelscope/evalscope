@@ -232,5 +232,43 @@ class TestPerf(unittest.TestCase):
         run_perf_benchmark(task_cfg1)
         run_perf_benchmark(task_cfg2)
 
+    def test_perf_visualizer_swanlab(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=1,
+            number=2,
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            min_tokens=512,
+            max_tokens=512,
+            stream=True,
+            visualizer='swanlab',
+            extra_args={'ignore_eos': True}
+        )
+
+        run_perf_benchmark(task_cfg)
+
+    def test_perf_visualizer_clearml(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='qwen-plus',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai',
+            dataset='openqa',
+            min_tokens=512,
+            max_tokens=512,
+            stream=True,
+            visualizer='clearml',
+            extra_args={'ignore_eos': True}
+        )
+
+        run_perf_benchmark(task_cfg)
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

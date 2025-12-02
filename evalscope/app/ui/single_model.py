@@ -203,7 +203,7 @@ def create_single_model_tab(sidebar: 'SidebarComponents', lang: str):
         row = filtered_df.iloc[start]
 
         # Process the data for display
-        input_md = row['Input'] + '\n\n' + process_model_prediction(row['Metadata'])
+        input_md = process_model_prediction(row['Input']) + '\n\n' + process_model_prediction(row['Metadata'])
         generated_md = convert_markdown_image(row['Generated'])
         gold_md = convert_markdown_image(row['Gold'])
         pred_md = process_model_prediction(row['Pred'])

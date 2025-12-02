@@ -11,7 +11,7 @@ DESCRIPTION = (
 
 PROMPT_TEMPLATE = r"""
 Tell me the best option in the following options which represents the underlying narrative of the text?
-The entire content of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of {letters}.
+The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 
 {question}
 
