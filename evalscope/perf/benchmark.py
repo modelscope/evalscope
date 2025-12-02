@@ -10,9 +10,10 @@ from evalscope.utils.logger import get_logger
 from .arguments import Arguments
 from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
-from .utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from .utils.benchmark_util import BenchmarkMetrics
 from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
 from .utils.handler import add_signal_handlers, exception_handler
+from .utils.log_utils import maybe_log_to_visualizer
 
 if TYPE_CHECKING:
     from .plugin import ApiPluginBase, DatasetPluginBase
@@ -118,12 +119,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
                 message = metrics.create_message()
 
-                if args.wandb_api_key:
-                    import wandb
-                    wandb.log(message)
-                if args.swanlab_api_key:
-                    import swanlab
-                    swanlab.log(message)
+                maybe_log_to_visualizer(args, message)
 
                 if int(metrics.n_total_queries) % args.log_every_n_query == 0:
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
