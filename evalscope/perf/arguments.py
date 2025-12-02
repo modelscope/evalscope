@@ -180,7 +180,7 @@ def add_argument(parser: argparse.ArgumentParser):
                         choices=[VisualizerType.WANDB, VisualizerType.SWANLAB, VisualizerType.CLEARML, None], help='The visualizer to use, default None')  # noqa: E501
     parser.add_argument('--wandb-api-key', type=str, default=None, help='The wandb API key')
     parser.add_argument('--swanlab-api-key', type=str, default=None, help='The swanlab API key')
-    parser.add_argument('--name', type=str, help='The wandb/swanlab db result name and result db name')
+    parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
 
     # Prompt settings
     parser.add_argument('--max-prompt-length', type=int, default=sys.maxsize, help='Maximum input prompt length')

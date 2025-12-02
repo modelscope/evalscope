@@ -251,7 +251,7 @@ class TestPerf(unittest.TestCase):
 
         run_perf_benchmark(task_cfg)
 
-    def test_perf_visulizer_clearml(self):
+    def test_perf_visualizer_clearml(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
