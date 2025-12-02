@@ -188,7 +188,23 @@ evalscope perf \
   --debug
 ```
 
-## 使用SwanLab记录测试结果
+## 可视化测试结果
+
+### 使用WandB
+请使用如下命令安装wandb:
+```bash
+pip install wandb
+```
+启动测试前添加如下参数:
+```bash
+--visualizer wandb
+--name 'name_of_wandb_log'
+```
+
+![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
+
+
+### 使用SwanLab
 
 请使用如下命令安装SwanLab:
 ```bash
@@ -197,11 +213,34 @@ pip install swanlab
 
 启动测试前添加如下参数:
 ```bash
+# 可使用 SWANLAB_PROJ_NAME 环境变量指定项目名称
 --visualizer swanlab
 --name 'name_of_swanlab_log'
 ```  
 
 ![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+
+### 使用ClearML
+请使用如下命令安装ClearML:
+```bash
+pip install clearml
+```
+
+初始化ClearML服务器:
+```bash
+clearml-init
+```
+
+启动测试前添加如下参数:
+```bash
+# 可使用 CLEARML_PROJECT_NAME 环境变量指定项目名称
+--visualizer clearml
+--name 'name_of_clearml_task'
+```
+
+![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
+
 
 ## 调试请求
 使用 `--debug` 选项，我们将输出请求和响应，输出示例如下：

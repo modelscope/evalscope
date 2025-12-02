@@ -147,3 +147,9 @@ class Tags:
 class FileConstants:
     IMAGE_PATH = 'image_path'
     ID = 'id'
+
+
+class VisualizerType:
+    WANDB = 'wandb'
+    SWANLAB = 'swanlab'
+    CLEARML = 'clearml'

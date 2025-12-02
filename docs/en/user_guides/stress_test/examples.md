@@ -186,35 +186,58 @@ evalscope perf \
   --debug
 ```
 
-## Using wandb to Record Test Results
+## Visualizing Test Results
 
-Please install wandb:
+### Using WandB
+Please install wandb using the following command:
 ```bash
 pip install wandb
 ```
-
-When starting, add the following parameters:
+Add the following parameters before starting the test:
 ```bash
 --visualizer wandb
 --name 'name_of_wandb_log'
-```  
+```
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-## Using swanlab to Record Test Results
 
-Please install swanlab:
+### Using SwanLab
+
+Please install SwanLab using the following command:
 ```bash
 pip install swanlab
 ```
 
-When starting, add the following parameters:
+Add the following parameters before starting the test:
 ```bash
+# You can use the SWANLAB_PROJ_NAME environment variable to specify the project name
 --visualizer swanlab
 --name 'name_of_swanlab_log'
-```
+```  
 
 ![swanlab sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/swanlab.png)
+
+
+### Using ClearML
+Please install ClearML using the following command:
+```bash
+pip install clearml
+```
+
+Initialize the ClearML server:
+```bash
+clearml-init
+```
+
+Add the following parameters before starting the test:
+```bash
+# You can use the CLEARML_PROJECT_NAME environment variable to specify the project name
+--visualizer clearml
+--name 'name_of_clearml_task'
+```
+
+![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
 
 
 ## Debugging Requests
