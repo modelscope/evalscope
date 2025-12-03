@@ -19,8 +19,12 @@ Note: This file is bundled with the evalscope package to ensure it's available
 in both development (pip install -e .) and production (pip install .) installations.
 """
 
-import re
 import math
+import re
+
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def parse_answers(text, REVISE):
@@ -136,8 +140,8 @@ def calculate_score_fullscale(reference, user):
                 emotions_dict[emotion.lower()] = True
 
     if len(emotions_dict) != 4:
-        print('! Error: emotions did not match reference')
-        print(user)
+        logger.error('! Error: emotions did not match reference')
+        logger.error(f'{user}')
         return None
 
     difference_tally = 0  # Accumulated difference from reference answer
@@ -155,7 +159,7 @@ def calculate_score_fullscale(reference, user):
                     # S-shaped scaling function
                     # Formula visualization: https://www.desmos.com/calculator
                     # 6.5 * 1 / (1 + e^(-1.2 * (x - 4)))
-                    scaled_difference = 6.5 * (1 / (1 + math.e ** (-1.2 * (d-4))))
+                    scaled_difference = 6.5 * (1 / (1 + math.e**(-1.2 * (d - 4))))
                 else:
                     scaled_difference = d
                 difference_tally += scaled_difference
@@ -188,8 +192,8 @@ def calculate_score(reference, user):
     """
     # First check if emotions match the reference answer
     if len(user.items()) != 4:
-        print('! Error: 4 emotions were not returned')
-        print(user)
+        logger.error('! Error: 4 emotions were not returned')
+        logger.error(f'{user}')
         return None
 
     emotions_dict = {}
@@ -199,15 +203,15 @@ def calculate_score(reference, user):
                 emotions_dict[emotion] = True
 
     if len(emotions_dict) != 4:
-        print('! Error: emotions did not match reference')
-        print(user)
+        logger.error('! Error: emotions did not match reference')
+        logger.error(f'{user}')
         return None
 
     # Normalize the user's scores so that they sum to 10
     total_user_score = sum(float(score) for score in user.values())
     if total_user_score <= 0:
-        print('Error: total of scores must be > 0')
-        print(user)
+        logger.error('Error: total of scores must be > 0')
+        logger.error(f'{user}')
         return None
     user = {emotion: float(score) / total_user_score * 10 for emotion, score in user.items()}
 
@@ -242,7 +246,7 @@ def validate_answer_format(user_answers, reference_emotions):
     """
     # Check if there are exactly 4 emotions
     if len(user_answers) != 4:
-        return False, f"Expected 4 emotions, got {len(user_answers)}"
+        return False, f'Expected 4 emotions, got {len(user_answers)}'
 
     # Check if emotions match the reference
     user_emotions = set(e.lower() for e in user_answers.keys())
@@ -251,11 +255,11 @@ def validate_answer_format(user_answers, reference_emotions):
     if user_emotions != ref_emotions:
         missing = ref_emotions - user_emotions
         extra = user_emotions - ref_emotions
-        error_msg = ""
+        error_msg = ''
         if missing:
-            error_msg += f"Missing emotions: {missing}. "
+            error_msg += f'Missing emotions: {missing}. '
         if extra:
-            error_msg += f"Extra emotions: {extra}."
+            error_msg += f'Extra emotions: {extra}.'
         return False, error_msg
 
     # Check if scores are valid numbers
@@ -263,11 +267,11 @@ def validate_answer_format(user_answers, reference_emotions):
         for emotion, score in user_answers.items():
             score_float = float(score)
             if score_float < 0 or score_float > 10:
-                return False, f"Score for {emotion} out of range (0-10): {score_float}"
+                return False, f'Score for {emotion} out of range (0-10): {score_float}'
     except ValueError:
-        return False, f"Invalid score format: {user_answers}"
+        return False, f'Invalid score format: {user_answers}'
 
-    return True, ""
+    return True, ''
 
 
 # Scoring system documentation
