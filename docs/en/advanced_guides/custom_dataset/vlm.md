@@ -227,7 +227,7 @@ evalscope eval \
   --judge-strategy llm
 ```
 
-输出结果将包含准确率指标：
+Evaluation will output accuracy metrics:
 ```text
 +--------------+-------------+----------+----------------+-------+---------+---------+
 | Model        | Dataset     | Metric   | Subset         |   Num |   Score | Cat.0   |
