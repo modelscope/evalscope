@@ -66,7 +66,7 @@ class TaskConfig(BaseArgument):
     """Configuration parameters for text/image generation."""
 
     # Evaluation-related arguments
-    eval_type: str = None
+    eval_type: Optional[str] = None
     """Type of evaluation: checkpoint, service, or mock."""
 
     eval_backend: str = EvalBackend.NATIVE
