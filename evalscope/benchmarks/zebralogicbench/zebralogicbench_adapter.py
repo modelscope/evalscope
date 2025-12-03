@@ -12,7 +12,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 # 定义提示模板
-"""
+PROMPT_TEMPLATE = """
 # Example Puzzle
 
 There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. \
@@ -145,7 +145,7 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
                 except json.JSONDecodeError:
                     pass
 
-            return None
+            return ''
 
         res = extract_last_complete_json(prediction)
         return res
@@ -179,7 +179,7 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         # metadata = task_state.metadata
         try:
             # Process results using the existing ifeval utility
-            if filtered_prediction is None:
+            if not filtered_prediction:
                 results = {}
             else:
                 results = process_results(filtered_prediction, reference)

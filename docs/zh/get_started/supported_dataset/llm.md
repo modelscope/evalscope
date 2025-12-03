@@ -2938,7 +2938,7 @@ Text to process:
 - **数据集名称**: `zebralogicbench`
 - **数据集ID**: [allenai/ZebraLogicBench-private](https://modelscope.cn/datasets/allenai/ZebraLogicBench-private/summary)
 - **数据集介绍**:
-  > ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).
+  > ZebraLogic，一个用于评估大语言模型在源自约束满足问题（CSP）的逻辑网格谜题上推理性能的综合评测框架。
 - **任务类别**: `Reasoning`
 - **评估指标**: `avg_reason_lens`, `cell_acc`, `easy_puzzle_acc`, `hard_puzzle_acc`, `large_puzzle_acc`, `medium_puzzle_acc`, `no_answer_num`, `puzzle_acc`, `small_puzzle_acc`, `xl_puzzle_acc`
 - **聚合方法**: `mean`
