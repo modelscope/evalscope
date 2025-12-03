@@ -145,7 +145,7 @@ def predict(model: Model, sample: Sample, adapter_instance) -> ModelOutput:
     res = run_task(
         domain=domain,
         task=task,
-        agent='llm_agent_gt',
+        agent='llm_agent',
         user='user_simulator',
         llm_agent='agent',
         llm_user='user',
