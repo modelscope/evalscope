@@ -108,7 +108,7 @@
 ```
 
 ## 评测参数
-- `--eval-type`: 评测类型，根据模型推理方式选择，默认为`llm_ckpt`：
+- `--eval-type`: 评测类型，根据模型推理方式选择，默认为None，会自动判断：
   - `llm_ckpt`：本地模型推理，默认从modelscope下载模型，并用transformers进行推理。
   - `openai_api`：在线模型服务推理，支持任意与OpenAI API兼容的服务。
   - `text2image`：本地文本转图像模型推理，默认从modelscope下载模型，并用diffusers的Pipeline进行推理。

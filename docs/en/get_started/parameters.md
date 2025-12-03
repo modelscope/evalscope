@@ -117,7 +117,7 @@ Example usage:
 
 ## Evaluation Parameters
 
-- `--eval-type`: Evaluation type, choose based on model inference method, default is `llm_ckpt`:
+- `--eval-type`: Evaluation type, choose based on model inference method, default is None (will be auto-detected):
   - `llm_ckpt`: Local model inference; downloads the model from ModelScope and uses Transformers for inference.
   - `openai_api`: Online model service inference; supports any OpenAI API-compatible service.
   - `text2image`: Local text-to-image model inference; downloads the model from ModelScope and uses Diffusers pipeline for inference.
