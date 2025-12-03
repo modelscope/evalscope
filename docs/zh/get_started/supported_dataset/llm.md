@@ -2914,7 +2914,7 @@ Text to process:
 - **数据集介绍**:
   > ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).
 - **任务类别**: `Reasoning`
-- **评估指标**: 
+- **评估指标**: `avg_reason_lens`, `cell_acc`, `easy_puzzle_acc`, `hard_puzzle_acc`, `large_puzzle_acc`, `medium_puzzle_acc`, `no_answer_num`, `puzzle_acc`, `small_puzzle_acc`, `xl_puzzle_acc`
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -2924,7 +2924,7 @@ Text to process:
 <details><summary>View</summary>
 
 ````text
-# Example Puzzle 
+# Example Puzzle
 
 There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:
  - Each person has a unique name: `Peter`, `Eric`, `Arnold`.
@@ -2956,7 +2956,7 @@ There are 3 houses, numbered 1 to 3 from left to right, as seen from across the 
     }}
 }}
 
-# Puzzle to Solve 
+# Puzzle to Solve
 
 {question}
 

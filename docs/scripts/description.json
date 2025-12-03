@@ -672,6 +672,6 @@
   "zebralogicbench": {
     "en": "ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).",
     "zh": "",
-    "updated_at": "2025-12-02T20:12:47Z"
+    "updated_at": "2025-12-03T11:41:26Z"
   }
 }
