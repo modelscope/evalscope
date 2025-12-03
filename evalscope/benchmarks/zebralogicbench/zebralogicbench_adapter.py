@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -88,10 +88,10 @@ Now please solve the above puzzle. Present your reasoning and solution in the fo
 class ZebraLogicBenchAdapter(DefaultDataAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert one dataset record to the Sample format used by evaluator."""
         puzzle = record['puzzle']
         solution = json.dumps(record['solution'])
         created_at = record['created_at']
-
         return Sample(input=puzzle, target=solution, metadata={'created_at': created_at})
 
     def format_prompt_template(self, sample: Sample) -> str:
@@ -100,12 +100,6 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
 
         This method applies the prompt template to format the input text
         for models when no few-shot examples are used.
-
-        Args:
-            sample (Sample): The sample object containing the prompt data
-
-        Returns:
-            str: The formatted prompt ready for model input
         """
         target = json.loads(sample.target)
         num_houses = len(target['rows'])
@@ -117,88 +111,60 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         json_str = json.dumps(json_template, indent=4)
         return self.prompt_template.format(question=sample.input, json_template=json_str)
 
-    def extract_answer(self, prediction: str, task_state: TaskState):
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        """Extract the last complete JSON object from model output; return empty string if not found."""
 
-        def extract_last_complete_json(s):
-            # Stack to keep track of opening and closing braces
-            stack = []
-            last_json_start = None
-            last_json_str = None
+        def extract_last_complete_json(s: str) -> str:
+            stack: List[int] = []
+            last_json_start: int | None = None
+            last_json_str: str | None = None
 
             for i, char in enumerate(s):
                 if char == '{':
-                    stack.append(i)
-                    if last_json_start is None:
+                    if not stack:
                         last_json_start = i
+                    stack.append(i)
                 elif char == '}':
                     if stack:
-                        _ = stack.pop()
-                        if not stack:
-                            # Complete JSON object found
-                            last_json_str = s[last_json_start:i + 1]
+                        stack.pop()
+                        if not stack and last_json_start is not None:
+                            # Found a complete JSON object
+                            candidate = s[last_json_start:i + 1]
+                            last_json_str = candidate
                             last_json_start = None
 
-            # Load the last JSON object
             if last_json_str:
                 try:
+                    # Normalize JSON to a compact string
                     return json.dumps(json.loads(last_json_str))
                 except json.JSONDecodeError:
-                    pass
-
+                    return ''
             return ''
 
-        res = extract_last_complete_json(prediction)
-        return res
+        return extract_last_complete_json(prediction)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        """
-        Calculate evaluation scores by comparing prediction with reference.
-
-        This method computes scores using all configured metrics and creates
-        a comprehensive Score object with detailed evaluation results.
-
-        Args:
-            original_prediction (str): The original, unfiltered model prediction
-            filtered_prediction (str): The filtered and processed prediction
-            reference (str): The ground truth reference answer
-            task_state (TaskState): The complete task state for context
-
-        Returns:
-            Score: Object containing all calculated metric scores and metadata
-        """
-        # Initialize the score object with prediction details
-
+        """Compute ZebraLogicBench per-sample scores using provided utils."""
         from evalscope.benchmarks.zebralogicbench.utils import process_results
 
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # metadata = task_state.metadata
         try:
-            # Process results using the existing ifeval utility
-            if not filtered_prediction:
-                results = {}
-            else:
-                results = process_results(filtered_prediction, reference)
+            results: Dict[str,
+                          float] = {} if not filtered_prediction else process_results(filtered_prediction, reference)
             score.value.update(results)
-
-            # Set main score name
             score.main_score_name = 'puzzle_acc'
-
         except Exception as e:
             logger.error(f'Error calculating zebralogicbench metrics: {e}')
             score.value = {}
-
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
-        """
-        Aggregate metrics across all samples using seqeval.
-        """
-
+        """Aggregate metrics across all samples."""
         total_puzzle_num = len(sample_scores)
         total_cell_num = sum(ss.score.value.get('Cell Num', 0.0) for ss in sample_scores)
         no_answer_num = sum(ss.score.value.get('No answer', 0.0) for ss in sample_scores)
@@ -211,34 +177,45 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         total_large_puzzle_num = sum(ss.score.value.get('Large Puzzle Num', 0.0) for ss in sample_scores)
         total_xl_puzzle_num = sum(ss.score.value.get('XL Puzzle Num', 0.0) for ss in sample_scores)
 
-        puzzle_acc = sum(
-            ss.score.value.get('Solved Puzzle', 0.0) for ss in sample_scores
-        ) / total_puzzle_num if total_puzzle_num > 0 else 0.0
-        cell_acc = sum(
-            ss.score.value.get('Solved Cell', 0.0) for ss in sample_scores
-        ) / total_cell_num if total_cell_num > 0 else 0.0
+        puzzle_acc = (
+            sum(ss.score.value.get('Solved Puzzle', 0.0)
+                for ss in sample_scores) / total_puzzle_num if total_puzzle_num > 0 else 0.0
+        )
+        cell_acc = (
+            sum(ss.score.value.get('Solved Cell', 0.0)
+                for ss in sample_scores) / total_cell_num if total_cell_num > 0 else 0.0
+        )
 
-        easy_puzzle_acc = sum(
-            ss.score.value.get('Solved Easy Puzzle', 0.0) for ss in sample_scores
-        ) / total_easy_puzzle_num if total_easy_puzzle_num > 0 else 0.0
-        hard_puzzle_acc = sum(
-            ss.score.value.get('Solved Hard Puzzle', 0.0) for ss in sample_scores
-        ) / total_hard_puzzle_num if total_hard_puzzle_num > 0 else 0.0
+        easy_puzzle_acc = (
+            sum(ss.score.value.get('Solved Easy Puzzle', 0.0)
+                for ss in sample_scores) / total_easy_puzzle_num if total_easy_puzzle_num > 0 else 0.0
+        )
+        hard_puzzle_acc = (
+            sum(ss.score.value.get('Solved Hard Puzzle', 0.0)
+                for ss in sample_scores) / total_hard_puzzle_num if total_hard_puzzle_num > 0 else 0.0
+        )
 
-        small_puzzle_acc = sum(
-            ss.score.value.get('Solved Small Puzzle', 0.0) for ss in sample_scores
-        ) / total_small_puzzle_num if total_small_puzzle_num > 0 else 0.0
-        medium_puzzle_acc = sum(
-            ss.score.value.get('Solved Medium Puzzle', 0.0) for ss in sample_scores
-        ) / total_medium_puzzle_num if total_medium_puzzle_num > 0 else 0.0
-        large_puzzle_acc = sum(
-            ss.score.value.get('Solved Large Puzzle', 0.0) for ss in sample_scores
-        ) / total_large_puzzle_num if total_large_puzzle_num > 0 else 0.0
-        xl_puzzle_acc = sum(
-            ss.score.value.get('Solved XL Puzzle', 0.0) for ss in sample_scores
-        ) / total_xl_puzzle_num if total_xl_puzzle_num > 0 else 0.0
+        small_puzzle_acc = (
+            sum(ss.score.value.get('Solved Small Puzzle', 0.0)
+                for ss in sample_scores) / total_small_puzzle_num if total_small_puzzle_num > 0 else 0.0
+        )
+        medium_puzzle_acc = (
+            sum(ss.score.value.get('Solved Medium Puzzle', 0.0)
+                for ss in sample_scores) / total_medium_puzzle_num if total_medium_puzzle_num > 0 else 0.0
+        )
+        large_puzzle_acc = (
+            sum(ss.score.value.get('Solved Large Puzzle', 0.0)
+                for ss in sample_scores) / total_large_puzzle_num if total_large_puzzle_num > 0 else 0.0
+        )
+        xl_puzzle_acc = (
+            sum(ss.score.value.get('Solved XL Puzzle', 0.0)
+                for ss in sample_scores) / total_xl_puzzle_num if total_xl_puzzle_num > 0 else 0.0
+        )
 
-        avg_reason_lens = sum(ss.score.value.get('Reason Lens', 0.0) for ss in sample_scores) / total_puzzle_num
+        avg_reason_lens = (
+            sum(ss.score.value.get('Reason Lens', 0.0)
+                for ss in sample_scores) / total_puzzle_num if total_puzzle_num > 0 else 0.0
+        )
 
         agg_scores = [
             AggScore(metric_name='puzzle_acc', score=puzzle_acc, num=total_puzzle_num, metadata={'type': 'puzzle_acc'}),
@@ -289,5 +266,4 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
                 metric_name='no_answer_num', score=no_answer_num, num=no_answer_num, metadata={'type': 'no_answer_num'}
             )
         ]
-
         return agg_scores
