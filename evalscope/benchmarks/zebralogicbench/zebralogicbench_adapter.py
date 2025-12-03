@@ -12,10 +12,12 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 # 定义提示模板
-PROMPT_TEMPLATE = """
+"""
 # Example Puzzle
 
-There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:
+There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. \
+Each house is occupied by a different person. \
+Each house has a unique attribute for each of the following characteristics:
  - Each person has a unique name: `Peter`, `Eric`, `Arnold`.
  - Each person has a unique favorite drink: `tea`, `water`, `milk`
 
@@ -28,7 +30,11 @@ There are 3 houses, numbered 1 to 3 from left to right, as seen from across the 
 ## Answer to the Example Puzzle
 
 {{
-    "reasoning": "Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.",
+    "reasoning": "Given Clue 1, we know Peter is in House 2. According to Clue 2, \
+Arnold is directly left of the one who only drinks water. \
+The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. \
+Thus, Peter drinks water, and Eric lives in House 3. \
+Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.",
     "solution": {{
         "House 1": {{
             "Name": "Arnold",
@@ -66,8 +72,9 @@ Now please solve the above puzzle. Present your reasoning and solution in the fo
         pretty_name='ZebraLogicBench',
         dataset_id='allenai/ZebraLogicBench-private',
         tags=[Tags.REASONING],
-        description=
-        'ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).',
+        description='ZebraLogic, a comprehensive evaluation framework for '
+        'assessing LLM reasoning performance on logic grid puzzles '
+        'derived from constraint satisfaction problems (CSPs).',
         subset_list=['grid_mode'],
         few_shot_num=0,
         eval_split='test',
