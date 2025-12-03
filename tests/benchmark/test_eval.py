@@ -680,6 +680,13 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('eq_bench', dataset_args, limit=10)
 
+    def test_zebralogicbench(self):
+        """Test ZebraLogicBench dataset."""
+        dataset_args = {
+
+        }
+        self._run_dataset_test('zebralogicbench', dataset_args, limit=5)
+
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
     # Run all tests: python -m unittest test_eval.TestBenchmark
