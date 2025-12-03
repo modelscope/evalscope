@@ -30,6 +30,7 @@
 | `drivel_selection` | [DrivelologyNarrativeSelection](#drivelologynarrativeselection) | `MCQ` |
 | `drivel_writing` | [DrivelologyNarrativeWriting](#drivelologynarrativewriting) | `Knowledge`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
+| `eq_bench` | [EQ-Bench](#eq-bench) | `InstructionFollowing` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
@@ -903,6 +904,31 @@ You will be asked to read a passage and answer a question. {drop_examples}
 {query}
 
 Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.
+````
+
+</details>
+
+---
+
+### EQ-Bench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `eq_bench`
+- **数据集ID**: [evalscope/EQ-Bench](https://modelscope.cn/datasets/evalscope/EQ-Bench/summary)
+- **数据集介绍**:
+  > EQ-Bench 是一个用于评估语言模型在情感智能任务上表现的基准，通过评定可能情绪反应的强度来衡量模型预测对话中人物情绪反应的能力。[论文](https://arxiv.org/abs/2312.06281) | [主页](https://eqbench.com/)
+- **任务类别**: `InstructionFollowing`
+- **评估指标**: `eq_bench_score`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+{question}
 ````
 
 </details>

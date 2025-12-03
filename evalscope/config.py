@@ -66,7 +66,7 @@ class TaskConfig(BaseArgument):
     """Configuration parameters for text/image generation."""
 
     # Evaluation-related arguments
-    eval_type: str = EvalType.CHECKPOINT
+    eval_type: Optional[str] = None
     """Type of evaluation: checkpoint, service, or mock."""
 
     eval_backend: str = EvalBackend.NATIVE
@@ -152,8 +152,19 @@ class TaskConfig(BaseArgument):
     def __init_model_and_id(self):
         # Set model to DummyCustomModel if not provided
         if self.model is None:
+            logger.info('No model is provided, using DummyCustomModel for testing.')
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
+
+        # Set eval_type to SERVICE if api_url is provided
+        if self.api_url is not None and self.eval_type is None:
+            logger.info('api_url is provided, setting eval_type to SERVICE.')
+            self.eval_type = EvalType.SERVICE
+
+        # Set eval_type to CHECKPOINT if model is a string path and eval_type is not set
+        if self.model and self.eval_type is None:
+            logger.info('No eval_type is provided, setting eval_type to CHECKPOINT.')
+            self.eval_type = EvalType.CHECKPOINT
 
         # Set model_id if not provided
         if not self.model_id:

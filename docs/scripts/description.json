@@ -673,5 +673,9 @@
     "en": "ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).",
     "zh": "",
     "updated_at": "2025-12-03T11:41:26Z"
+  "eq_bench": {
+    "en": "EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict the likely emotional responses of characters in dialogues by rating the intensity of possible emotional responses. [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)",
+    "zh": "EQ-Bench 是一个用于评估语言模型在情感智能任务上表现的基准，通过评定可能情绪反应的强度来衡量模型预测对话中人物情绪反应的能力。[论文](https://arxiv.org/abs/2312.06281) | [主页](https://eqbench.com/)",
+    "updated_at": "2025-12-03T15:14:58Z"
   }
 }
