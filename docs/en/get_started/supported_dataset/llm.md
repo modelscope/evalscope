@@ -30,6 +30,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `drivel_selection` | [DrivelologyNarrativeSelection](#drivelologynarrativeselection) | `MCQ` |
 | `drivel_writing` | [DrivelologyNarrativeWriting](#drivelologynarrativewriting) | `Knowledge`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
+| `eq_bench` | [EQ-Bench](#eq-bench) | `InstructionFollowing` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
@@ -85,6 +86,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `winogrande` | [Winogrande](#winogrande) | `MCQ`, `Reasoning` |
 | `wmt24pp` | [WMT2024++](#wmt2024) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](#wnut2017) | `Knowledge`, `NER` |
+| `zebralogicbench` | [ZebraLogicBench](#zebralogicbench) | `Reasoning` |
 
 ---
 
@@ -902,6 +904,31 @@ You will be asked to read a passage and answer a question. {drop_examples}
 {query}
 
 Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.
+````
+
+</details>
+
+---
+
+### EQ-Bench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `eq_bench`
+- **Dataset ID**: [evalscope/EQ-Bench](https://modelscope.cn/datasets/evalscope/EQ-Bench/summary)
+- **Description**:
+  > EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict the likely emotional responses of characters in dialogues by rating the intensity of possible emotional responses. [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
+- **Task Categories**: `InstructionFollowing`
+- **Evaluation Metrics**: `eq_bench_score`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+{question}
 ````
 
 </details>
@@ -2898,6 +2925,74 @@ INSTRUCTIONS:
 
 Text to process:
 {text}
+
+````
+
+</details>
+
+---
+
+### ZebraLogicBench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `zebralogicbench`
+- **Dataset ID**: [allenai/ZebraLogicBench-private](https://modelscope.cn/datasets/allenai/ZebraLogicBench-private/summary)
+- **Description**:
+  > ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).
+- **Task Categories**: `Reasoning`
+- **Evaluation Metrics**: `avg_reason_lens`, `cell_acc`, `easy_puzzle_acc`, `hard_puzzle_acc`, `large_puzzle_acc`, `medium_puzzle_acc`, `no_answer_num`, `puzzle_acc`, `small_puzzle_acc`, `xl_puzzle_acc`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `grid_mode`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+# Example Puzzle
+
+There are 3 houses, numbered 1 to 3 from left to right, as seen from across the street. Each house is occupied by a different person. Each house has a unique attribute for each of the following characteristics:
+ - Each person has a unique name: `Peter`, `Eric`, `Arnold`.
+ - Each person has a unique favorite drink: `tea`, `water`, `milk`
+
+## Clues for the Example Puzzle
+
+1. Peter is in the second house.
+2. Arnold is directly left of the one who only drinks water.
+3. The one who only drinks water is directly left of the person who likes milk.
+
+## Answer to the Example Puzzle
+
+{{
+    "reasoning": "Given Clue 1, we know Peter is in House 2. According to Clue 2, Arnold is directly left of the one who only drinks water. The person in House 3 cannot be on the left of anyone, so Arnold must be in House 1. Thus, Peter drinks water, and Eric lives in House 3. Then, according to Clue 3, Eric drinks milk. Therefore, Arnold drinks tea.",
+    "solution": {{
+        "House 1": {{
+            "Name": "Arnold",
+            "Drink": "tea"
+        }},
+        "House 2": {{
+            "Name": "Peter",
+            "Drink": "water"
+        }},
+        "House 3": {{
+            "Name": "Eric",
+            "Drink": "milk"
+        }}
+    }}
+}}
+
+# Puzzle to Solve
+
+{question}
+
+
+# Instruction
+
+Now please solve the above puzzle. Present your reasoning and solution in the following json format:
+
+{json_template}
+
 
 ````
 

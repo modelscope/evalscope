@@ -668,5 +668,15 @@
     "en": "CMMMU includes manually collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering, like its companion, MMMU. These questions span 30 subjects and comprise 39 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.",
     "zh": "CMMMU 包含从大学考试、测验和教科书中人工收集的多模态问题，涵盖艺术与设计、商业、科学、健康与医学、人文与社会科学、技术与工程六大核心学科，与其姊妹数据集 MMMU 类似。这些问题覆盖30个学科，包含图表、示意图、地图、表格、乐谱和化学结构等39种高度异构的图像类型。",
     "updated_at": "2025-11-28T13:37:35Z"
+  },
+  "zebralogicbench": {
+    "en": "ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs).",
+    "zh": "ZebraLogic，一个用于评估大语言模型在源自约束满足问题（CSP）的逻辑网格谜题上推理性能的综合评测框架。",
+    "updated_at": "2025-12-03T15:45:18Z"
+  },
+  "eq_bench": {
+    "en": "EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict the likely emotional responses of characters in dialogues by rating the intensity of possible emotional responses. [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)",
+    "zh": "EQ-Bench 是一个用于评估语言模型在情感智能任务上表现的基准，通过评定可能情绪反应的强度来衡量模型预测对话中人物情绪反应的能力。[论文](https://arxiv.org/abs/2312.06281) | [主页](https://eqbench.com/)",
+    "updated_at": "2025-12-03T15:14:58Z"
   }
 }
