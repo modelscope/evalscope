@@ -158,3 +158,24 @@ evalscope/backend/rag_eval/ragas/prompts/chinese
 logs
 .gradio
 *.h5
+
+# Personal development files and directories
+CLAUDE.md
+HMMT25_IMPLEMENTATION_PLAN.md
+Tool/
+docs/zh/learn/
+read_hmmt25_content.py
+evalscope/benchmarks/hmmt25/ref/
+
+# Example scripts and optimization guides
+examples/OPTIMIZATION_GUIDE_5090.md
+examples/PARAMETER_ADJUSTMENT_GUIDE.md
+examples/SGLANG_OPTIMIZATION_ANALYSIS.md
+examples/check_hmmt25_warnings.md
+examples/example_eval_hmmt25.py
+examples/example_eval_hmmt25_5090.py
+examples/example_eval_hmmt25_5090_optimized.py
+examples/example_eval_hmmt25_gemini.py
+examples/example_eval_hmmt25_o3.py
+examples/api_test/
+tools/
