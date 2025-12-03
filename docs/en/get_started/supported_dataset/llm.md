@@ -30,6 +30,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `drivel_selection` | [DrivelologyNarrativeSelection](#drivelologynarrativeselection) | `MCQ` |
 | `drivel_writing` | [DrivelologyNarrativeWriting](#drivelologynarrativewriting) | `Knowledge`, `Reasoning` |
 | `drop` | [DROP](#drop) | `Reasoning` |
+| `eq_bench` | [EQ-Bench](#eq-bench) | `InstructionFollowing` |
 | `frames` | [FRAMES](#frames) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](#generalarena) | `Arena`, `Custom` |
 | `general_mcq` | [General-MCQ](#general-mcq) | `Custom`, `MCQ` |
@@ -902,6 +903,31 @@ You will be asked to read a passage and answer a question. {drop_examples}
 {query}
 
 Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.
+````
+
+</details>
+
+---
+
+### EQ-Bench
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `eq_bench`
+- **Dataset ID**: [evalscope/EQ-Bench](https://modelscope.cn/datasets/evalscope/EQ-Bench/summary)
+- **Description**:
+  > EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict the likely emotional responses of characters in dialogues by rating the intensity of possible emotional responses. [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
+- **Task Categories**: `InstructionFollowing`
+- **Evaluation Metrics**: `eq_bench_score`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+{question}
 ````
 
 </details>
