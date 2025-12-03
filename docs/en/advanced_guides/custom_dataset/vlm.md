@@ -110,9 +110,13 @@ Evaluate using Python API or CLI:
 ```python
 from evalscope.run import run_task
 from evalscope.config import TaskConfig
+from os import environ as env
 
 task_cfg = TaskConfig(
-    model='Qwen/Qwen2-VL-2B-Instruct',
+    model='qwen-vl-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
     datasets=['general_vqa'],
     dataset_args={
         'general_vqa': {
@@ -129,7 +133,10 @@ result = run_task(task_cfg=task_cfg)
 **CLI**:
 ```bash
 evalscope eval \
-    --model Qwen/Qwen2-VL-2B-Instruct \
+    --model qwen-vl-plus \
+    --api-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
+    --api-key "$DASHSCOPE_API_KEY" \
+    --eval-type openai_api \
     --datasets general_vqa \
     --dataset-args '{"general_vqa": {"local_path": "custom_eval/multimodal/vqa", "subset_list": ["example_openai"]}}' \
     --limit 5
@@ -175,10 +182,13 @@ You can specify a judge model through the `judge_model` parameter to generate re
 ```python
 from evalscope.run import run_task
 from evalscope.constants import EvalType, JudgeStrategy
-import os
+from os import environ as env
 
 task_cfg = TaskConfig(
-    model='Qwen/Qwen2-VL-2B-Instruct',
+    model='qwen-vl-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
     datasets=['general_vqa'],
     dataset_args={
         'general_vqa': {
@@ -188,9 +198,9 @@ task_cfg = TaskConfig(
     },
     limit=5,
     judge_model_args={
-        'model_id': 'qwen-plus', # Does not need to be a multimodal model
+        'model_id': 'qwen-plus',  # Does not need to be a multimodal model
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.environ.get('DASHSCOPE_API_KEY'),
+        'api_key': env.get('DASHSCOPE_API_KEY'),
         'generation_config': {
             'temperature': 0.0,
             'max_tokens': 4096
@@ -202,7 +212,22 @@ task_cfg = TaskConfig(
 result = run_task(task_cfg=task_cfg)
 ```
 
-Evaluation will output accuracy metrics (output metrics are more intuitive than ROUGE and BLEU):
+**CLI** (equivalent):
+```bash
+evalscope eval \
+  --model qwen-vl-plus \
+  --api-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
+  --api-key "$DASHSCOPE_API_KEY" \
+  --eval-type openai_api \
+  --datasets general_vqa \
+  --dataset-args '{"general_vqa": {"local_path": "custom_eval/multimodal/vqa", "subset_list": ["example_openai"]}}' \
+  --limit 5 \
+  --judge-model-args '{"model_id": "qwen-plus", "api_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key": "$DASHSCOPE_API_KEY", "generation_config": {"temperature": 0.0, "max_tokens": 4096}}' \
+  --judge-worker-num 5 \
+  --judge-strategy llm
+```
+
+Evaluation will output accuracy metrics:
 ```text
 +--------------+-------------+----------+----------------+-------+---------+---------+
 | Model        | Dataset     | Metric   | Subset         |   Num |   Score | Cat.0   |
@@ -248,9 +273,13 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 ```python
 from evalscope.run import run_task
 from evalscope.config import TaskConfig
+from os import environ as env
 
 task_cfg = TaskConfig(
-    model='Qwen/Qwen2-VL-2B-Instruct',
+    model='qwen-vl-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=env.get('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
     datasets=['general_vmcq'],
     dataset_args={
         'general_vmcq': {
@@ -268,7 +297,10 @@ print(result)
 **CLI**:
 ```bash
 evalscope eval \
-    --model Qwen/Qwen2-VL-2B-Instruct \
+    --model qwen-vl-plus \
+    --api-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
+    --api-key "$DASHSCOPE_API_KEY" \
+    --eval-type openai_api \
     --datasets general_vmcq \
     --dataset-args '{"general_vmcq": {"local_path": "custom_eval/multimodal/mcq", "subset_list": ["example"]}}' \
     --limit 10
