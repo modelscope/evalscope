@@ -170,9 +170,13 @@ POST /api/v1/perf
 {
   "status": "success",
   "message": "Performance test completed",
-  "metrics": {"...": "..."},
-  "percentiles": {"...": "..."},
-  "output_dir": "/path/to/outputs"
+  "output_dir": "/path/to/outputs",
+  "results": {
+    "parallel_10_number_100": {
+      "metrics": {"...": "..."},
+      "percentiles": {"...": "..."}
+    }
+  }
 }
 ```
 
@@ -262,7 +266,7 @@ print(perf_response.json())
 ## 注意事项
 
 1. **仅支持OpenAI API兼容模型**: 此服务专为OpenAI API兼容的模型设计
-2. **异步处理**: 评测和压测任务可能需要较长时间，建议设置合适的HTTP超时时间
+2. **长时间运行的任务**: 评测和压测任务可能需要较长时间，建议客户端设置合适的HTTP超时时间，因为API调用是同步的，会阻塞直到任务完成。
 3. **输出目录**: 评测结果会保存在配置的`work_dir`中，默认为`outputs/`
 4. **错误处理**: 服务会返回详细的错误信息和堆栈跟踪(在debug模式下)
 5. **资源管理**: 压测时注意并发数设置，避免过载服务器

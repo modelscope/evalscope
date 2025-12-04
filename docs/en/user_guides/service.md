@@ -170,9 +170,13 @@ POST /api/v1/perf
 {
   "status": "success",
   "message": "Performance test completed",
-  "metrics": {"...": "..."},
-  "percentiles": {"...": "..."},
-  "output_dir": "/path/to/outputs"
+  "output_dir": "/path/to/outputs",
+  "results": {
+    "parallel_10_number_100": {
+      "metrics": {"...": "..."},
+      "percentiles": {"...": "..."}
+    }
+  }
 }
 ```
 
@@ -262,7 +266,7 @@ print(perf_response.json())
 ## Important Notes
 
 1. **OpenAI API-Compatible Models Only**: This service is designed specifically for OpenAI API-compatible models
-2. **Asynchronous Processing**: Evaluation and performance testing tasks may take considerable time, recommend setting appropriate HTTP timeout values
+2. **Long-Running Tasks**: Evaluation and performance testing tasks may take considerable time. We recommend setting appropriate HTTP timeout values on the client side, as the API calls are synchronous and will block until completion.
 3. **Output Directory**: Evaluation results are saved in the configured `work_dir`, default is `outputs/`
 4. **Error Handling**: The service returns detailed error messages and stack traces (in debug mode)
 5. **Resource Management**: Pay attention to concurrency settings during stress testing to avoid server overload
