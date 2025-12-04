@@ -5,7 +5,7 @@ Example script demonstrating the EvalScope Flask service usage.
 
 Environment setup:
     1. Install dependencies:
-       pip install evalscope[perf]
+       pip install evalscope[service]
 
     2. Set API key (choose one method):
        - Environment variable: export DASHSCOPE_API_KEY=your-api-key
@@ -15,7 +15,7 @@ Environment setup:
        evalscope service --host 0.0.0.0 --port 9000
 
     4. Run this example:
-       python evalscope/service/example_client.py
+       python examples/service/example_client.py
 """
 import requests
 import time

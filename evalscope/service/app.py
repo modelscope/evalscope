@@ -59,17 +59,12 @@ def run_evaluation():
         if 'datasets' not in data:
             return jsonify({'error': 'datasets is required'}), 400
 
-        # Force eval_type to openai_api for service
-        if 'api_url' in data:
-            data['eval_type'] = EvalType.SERVICE
-        elif 'eval_type' not in data:
-            data['eval_type'] = EvalType.SERVICE
+        # This service only supports OpenAI API compatible models, so eval_type is always 'service'.
+        data['eval_type'] = EvalType.SERVICE
 
-        # Validate eval_type is SERVICE
-        if data.get('eval_type') not in [EvalType.SERVICE, 'openai_api', 'service']:
-            return jsonify({
-                'error': 'This service only supports OpenAI API compatible models. Please provide api_url.'
-            }), 400
+        # Validate that api_url is provided for service-based evaluation
+        if 'api_url' not in data:
+            return jsonify({'error': 'api_url is required for service-based evaluation'}), 400
 
         # Create TaskConfig
         task_config = TaskConfig.from_dict(data)
