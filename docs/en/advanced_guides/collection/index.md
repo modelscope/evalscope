@@ -109,7 +109,7 @@ After evaluation, you can use:
 
 
 :::{toctree}
-:maxdepth: 2
+:maxdepth: 1
 
 schema.md
 sample.md

@@ -52,15 +52,16 @@ advanced_guides/add_benchmark.md
 
 :::{toctree}
 :hidden:
-:caption: 🧰 第三方工具
-third_party/swe_bench.md
-third_party/tau_bench.md
-third_party/tau2_bench.md
-third_party/bfcl_v3.md
-third_party/bfcl_v4.md
-third_party/needle_haystack.md
-third_party/toolbench.md
-third_party/longwriter.md
+:caption: 🧰 扩展评测基准
+
+third_party/index.md
+:::
+
+:::{toctree}
+:hidden:
+:caption: 📖 最佳实践
+
+best_practice/index.md
 :::
 
 :::{toctree}
@@ -68,24 +69,6 @@ third_party/longwriter.md
 :caption: 🧪 基准测试结果
 experiments/benchmark/index.md
 experiments/speed_benchmark/index.md
-:::
-
-:::{toctree}
-:hidden:
-:caption: 📖 最佳实践
-best_practice/qwen3_omni.md
-best_practice/qwen3_vl.md
-best_practice/qwen3_next.md
-best_practice/gpt_oss.md
-best_practice/qwen3_coder.md
-best_practice/t2i_eval.md
-best_practice/qwen3.md
-best_practice/eval_qwq.md
-best_practice/iquiz.md
-best_practice/think_eval.md
-best_practice/deepseek_r1_distill.md
-best_practice/llm_full_stack.md
-best_practice/swift_integration.md
 :::
 
 :::{toctree}
