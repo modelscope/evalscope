@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any, Optional
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from evalscope.config import TaskConfig
     from evalscope.api.model import Model
+    from evalscope.config import TaskConfig
 
 logger = get_logger()
 
