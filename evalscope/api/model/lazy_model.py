@@ -64,7 +64,7 @@ class LazyModel:
         if not object.__getattribute__(self, '_is_loaded'):
             logger.info('Loading model for prediction...')
 
-            from evalscope.api.model import get_model_with_task_config
+            from evalscope.api.model.model import get_model_with_task_config
 
             task_config = object.__getattribute__(self, '_task_config')
             model = get_model_with_task_config(task_config=task_config)
@@ -154,8 +154,8 @@ class LazyModel:
         """
         return {
             'task_config': object.__getattribute__(self, '_task_config'),
-            'model': object.__getattribute__(self, '_model'),
-            'is_loaded': object.__getattribute__(self, '_is_loaded'),
+            'model': None,
+            'is_loaded': False,
         }
 
     def __setstate__(self, state: dict) -> None:
@@ -166,5 +166,5 @@ class LazyModel:
             state: Dictionary containing the state to restore.
         """
         object.__setattr__(self, '_task_config', state['task_config'])
-        object.__setattr__(self, '_model', state['model'])
-        object.__setattr__(self, '_is_loaded', state['is_loaded'])
+        object.__setattr__(self, '_model', None)
+        object.__setattr__(self, '_is_loaded', False)
