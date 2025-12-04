@@ -229,7 +229,7 @@ class Report:
 
             prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
             judge_llm = LLMJudge(**judge_llm_config)
-            response = judge_llm(prompt)
+            response = judge_llm.judge(prompt)
         except Exception as e:
             logger.error(f'Error generating analysis: {e}')
             response = 'N/A'
