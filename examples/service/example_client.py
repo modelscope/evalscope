@@ -101,7 +101,7 @@ def test_evaluation(base_url, model_api_url, api_key='EMPTY'):
         return False
 
 
-def test_performance(base_url, model_api_url, api_key='EMPTY'):
+def test_performance_multi(base_url, model_api_url, api_key='EMPTY'):
     """Test the performance test endpoint."""
     print('\n=== Testing Performance Benchmark ===')
 
@@ -110,8 +110,8 @@ def test_performance(base_url, model_api_url, api_key='EMPTY'):
         'url': f'{model_api_url}/chat/completions',
         'api': 'openai',
         'api_key': api_key,
-        'number': 10,
-        'parallel': 2,
+        'number': [1, 2],
+        'parallel': [1, 2],
         'dataset': 'openqa',
         'max_tokens': 128,
         'temperature': 0.0,
@@ -129,6 +129,54 @@ def test_performance(base_url, model_api_url, api_key='EMPTY'):
         )
         print(f'Status Code: {response.status_code}')
         result = response.json()
+        print(f'Result: {result}')
+
+        if response.status_code == 200:
+            print(f"Status: {result['status']}")
+            print(f"Message: {result['message']}")
+            print(f"Output Dir: {result['output_dir']}")
+            if 'metrics' in result:
+                print(f"Metrics: {result['metrics']}")
+            return True
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            return False
+    except requests.Timeout:
+        print('Request timed out')
+        return False
+    except Exception as e:
+        print(f'Exception: {str(e)}')
+        return False
+
+def test_performance_single(base_url, model_api_url, api_key='EMPTY'):
+    """Test the performance test endpoint with single run."""
+    print('\n=== Testing Performance Benchmark (Single Run) ===')
+
+    perf_request = {
+        'model': 'qwen-plus',
+        'url': f'{model_api_url}/chat/completions',
+        'api': 'openai',
+        'api_key': api_key,
+        'number': 1,
+        'parallel': 1,
+        'dataset': 'openqa',
+        'max_tokens': 128,
+        'temperature': 0.0,
+        'stream': True,
+        'debug': True
+    }
+
+    print(f'Request: {perf_request}')
+
+    try:
+        response = requests.post(
+            f'{base_url}/api/v1/perf',
+            json=perf_request,
+            timeout=300  # 5 minutes timeout
+        )
+        print(f'Status Code: {response.status_code}')
+        result = response.json()
+        print(f'Result: {result}')
 
         if response.status_code == 200:
             print(f"Status: {result['status']}")
@@ -176,7 +224,8 @@ def main():
     print('Using DashScope API at:', MODEL_API_URL)
     print('=' * 60)
     # test_evaluation(SERVICE_URL, MODEL_API_URL, API_KEY)
-    test_performance(SERVICE_URL, MODEL_API_URL, API_KEY)
+    test_performance_multi(SERVICE_URL, MODEL_API_URL, API_KEY)
+    test_performance_single(SERVICE_URL, MODEL_API_URL, API_KEY)
 
     print('\n=== Test Complete ===')
 

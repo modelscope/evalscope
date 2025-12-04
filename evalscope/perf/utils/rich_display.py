@@ -3,10 +3,10 @@
 import numpy as np
 from rich.console import Console
 from rich.panel import Panel
-from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
+from evalscope.perf.arguments import Arguments
 from evalscope.utils.logger import get_logger
 from .benchmark_util import Metrics
 from .db_util import PercentileMetrics
@@ -19,6 +19,15 @@ def analyze_results(all_results):
     summary = []
     total_tokens = 0
     total_time = 0
+
+    # Handle both old list format and new dict format
+    if isinstance(all_results, dict):
+        # New format: {parallel_x_number_x: {metrics: ..., percentiles: ...}}
+        results_list = []
+        for key, value in all_results.items():
+            if 'metrics' in value and 'percentiles' in value:
+                results_list.append((value['metrics'], value['percentiles']))
+        all_results = results_list
 
     for result in all_results:
         total_metrics = result[0]
@@ -72,7 +81,7 @@ def analyze_results(all_results):
     return summary, total_tokens, total_time
 
 
-def print_summary(all_results, model_name):
+def print_summary(all_results, args: Arguments):
     """Print test results summary"""
     summary, total_tokens, total_time = analyze_results(all_results)
 
@@ -91,10 +100,12 @@ def print_summary(all_results, model_name):
     basic_info.add_column('Name', style='cyan', width=25)
     basic_info.add_column('Value', style='green', width=35)
 
-    basic_info.add_row('Model', model_name)
+    basic_info.add_row('Model', args.model_id)
+    basic_info.add_row('Test Dataset', args.dataset)
     basic_info.add_row('Total Generated', f'{total_tokens:,} tokens')
     basic_info.add_row('Total Test Time', f'{total_time:.2f} seconds')
     basic_info.add_row('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec')
+    basic_info.add_row('Output Path', args.outputs_dir)
 
     console.print('\nBasic Information:')
     console.print(basic_info)

@@ -176,9 +176,9 @@ class TestPerf(unittest.TestCase):
             seed=None,
             extra_args={'ignore_eos': True}
         )
-        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
-        print(metrics_result)
-        print(percentile_result)
+        result = run_perf_benchmark(task_cfg)
+        print(task_cfg.outputs_dir)
+        print(result)
 
 
     def test_run_perf_random_vl(self):

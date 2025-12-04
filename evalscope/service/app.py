@@ -142,23 +142,13 @@ def run_performance_test():
         # Run performance test
         result = run_perf_benchmark(perf_args)
 
-        # Format result for JSON response
-        if isinstance(result, tuple):
-            metrics_result, percentile_result = result
-            response_data = {
-                'status': 'success',
-                'message': 'Performance test completed',
-                'metrics': metrics_result,
-                'percentiles': percentile_result,
-                'output_dir': perf_args.outputs_dir
-            }
-        else:
-            response_data = {
-                'status': 'success',
-                'message': 'Performance test completed',
-                'result': result,
-                'output_dir': perf_args.outputs_dir
-            }
+        # Build response with unified format
+        response_data = {
+            'status': 'success',
+            'message': 'Performance test completed',
+            'output_dir': perf_args.outputs_dir,
+            'results': result
+        }
 
         return jsonify(response_data)
 
