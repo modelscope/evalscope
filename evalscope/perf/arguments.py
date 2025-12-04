@@ -126,7 +126,7 @@ class Arguments(BaseArgument):
     @contextmanager
     def output_context(self, path: str):
         """
-        Context manager for temporarily setting self.outputs_dir.
+        Context manager for temporarily setting outputs_dir.
 
         Args:
             path: Path to set as outputs_dir

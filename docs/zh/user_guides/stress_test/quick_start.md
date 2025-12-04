@@ -93,6 +93,12 @@ results = run_perf_benchmark(task_cfg)
 
 ![multi_perf](./images/multi_perf.png)
 
+```{note}
+- 图中压测报告是针对多个并发数的压测结果汇总，方便用户对比不同并发数下的模型性能表现。单个并发数不会生成该汇总报告。
+- 该报告会保存在`outputs/<timestamp>/<model>/performance_summary.txt`中，用户可以根据需要查看。
+- 下表中的各项指标解释请参考后续的“指标说明”部分，结果会保存在`outputs/<timestamp>/<model>/benchmark.log`。
+```
+
 此外，每个并发数的测试结果会单独输出，包含了每个并发数下的请求数量、成功请求数量、失败请求数量、平均延迟时间、平均每token延迟时间等指标。
 
 ```text
@@ -181,7 +187,7 @@ Percentile results:
 
 ## 可视化测试结果
 
-### 使用Wandb进行可视化测试结果
+### 使用Wandb
 
 请先安装wandb，并获取对应的[API Key](https://wandb.ai/settings)：
 ```bash
@@ -199,7 +205,7 @@ pip install wandb
 
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
-### 使用SwanLab进行可视化测试结果
+### 使用SwanLab
 
 请先安装SwanLab，并获取对应的[API Key](https://swanlab.cn/space/~/settings)
 
@@ -231,3 +237,24 @@ pip install 'swanlab[dashboard]'
 ```
 
 并通过`swanlab watch <日志路径>`打开本地可视化看板。
+
+### 使用ClearML
+请使用如下命令安装ClearML:
+```bash
+pip install clearml
+```
+
+初始化ClearML服务器:
+```bash
+clearml-init
+```
+
+启动测试前添加如下参数:
+```bash
+# 可使用 CLEARML_PROJECT_NAME 环境变量指定项目名称
+--visualizer clearml
+--name 'name_of_clearml_task'
+```
+
+![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
+

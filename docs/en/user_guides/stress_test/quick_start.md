@@ -93,6 +93,12 @@ The output test report summary is shown in the image below, including basic info
 
 ![multi_perf](./images/multi_perf.png)
 
+```{note}
+- The stress test report in the diagram is a summary of test results across multiple concurrency levels, allowing users to compare model performance under different concurrency settings. No summary report is generated for a single concurrency level.
+- This report will be saved in `outputs/<timestamp>/<model>/performance_summary.txt`, which users can view as needed.
+- For explanations of the metrics in the table below, please refer to the "Metric Descriptions" section that follows. Results will be saved in `outputs/<timestamp>/<model>/benchmark.log`.
+```
+
 Additionally, the test results for each concurrency level are output separately, including metrics such as the number of requests, successful requests, failed requests, average latency, and average latency per token for each concurrency level.
 
 ```text
@@ -182,7 +188,7 @@ Percentile results:
 
 ## Visualizing Test Results
 
-### Visualizing with WandB
+### Using WandB
 
 First, install wandb and obtain the corresponding [API Key](https://wandb.ai/settings):
 ```bash
@@ -201,7 +207,7 @@ For example:
 ![wandb sample](https://modelscope.oss-cn-beijing.aliyuncs.com/resource/wandb_sample.png)
 
 
-### Visualizing Test Results with SwanLab
+### Using SwanLab
 
 First, install SwanLab and obtain the corresponding [API Key](https://swanlab.cn/space/~/settings):
 ```bash
@@ -231,3 +237,24 @@ and set the following parameters instead:
 ```
 
 Then, use `swanlab watch <log_path>` to launch the local visualization dashboard.
+
+### Using ClearML
+Please install ClearML using the following command:
+```bash
+pip install clearml
+```
+
+Initialize the ClearML server:
+```bash
+clearml-init
+```
+
+Add the following parameters before starting the test:
+```bash
+# You can use the CLEARML_PROJECT_NAME environment variable to specify the project name
+--visualizer clearml
+--name 'name_of_clearml_task'
+```
+
+![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
+
