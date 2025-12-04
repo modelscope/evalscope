@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+# Copyright (c) Alibaba, Inc. and its affiliates.
+"""
+Example script demonstrating the EvalScope Flask service usage.
+
+Environment setup:
+    1. Install dependencies:
+       pip install evalscope[perf]
+
+    2. Set API key (choose one method):
+       - Environment variable: export DASHSCOPE_API_KEY=your-api-key
+       - Or create .env file with: DASHSCOPE_API_KEY=your-api-key
+
+    3. Start the service (in another terminal):
+       evalscope service --host 0.0.0.0 --port 9000
+
+    4. Run this example:
+       python evalscope/service/example_client.py
+"""
+import requests
+import time
+from dotenv import dotenv_values, load_dotenv
+
+load_dotenv('.env')
+
+env = dotenv_values('.env')
+
+
+def test_health_check(base_url):
+    """Test the health check endpoint."""
+    print('\n=== Testing Health Check ===')
+    response = requests.get(f'{base_url}/health')
+    print(f'Status Code: {response.status_code}')
+    print(f'Response: {response.json()}')
+    return response.status_code == 200
+
+
+def test_get_eval_params(base_url):
+    """Test getting evaluation parameters."""
+    print('\n=== Getting Evaluation Parameters ===')
+    response = requests.get(f'{base_url}/api/v1/eval/params')
+    print(f'Status Code: {response.status_code}')
+    data = response.json()
+    print(f"Required params: {list(data['required'].keys())}")
+    print(f"Example: {data['example']}")
+    return response.status_code == 200
+
+
+def test_get_perf_params(base_url):
+    """Test getting performance test parameters."""
+    print('\n=== Getting Performance Test Parameters ===')
+    response = requests.get(f'{base_url}/api/v1/perf/params')
+    print(f'Status Code: {response.status_code}')
+    data = response.json()
+    print(f"Required params: {list(data['required'].keys())}")
+    print(f"Example: {data['example']}")
+    return response.status_code == 200
+
+
+def test_evaluation(base_url, model_api_url, api_key='EMPTY'):
+    """Test the evaluation endpoint."""
+    print('\n=== Testing Evaluation ===')
+
+    eval_request = {
+        'model': 'qwen-plus',
+        'api_url': model_api_url,
+        'api_key': api_key,
+        'datasets': ['gsm8k'],
+        'limit': 5,
+        'generation_config': {
+            'temperature': 0.0,
+            'max_tokens': 512
+        },
+        'debug': True
+    }
+
+    print(f'Request: {eval_request}')
+
+    try:
+        response = requests.post(
+            f'{base_url}/api/v1/eval',
+            json=eval_request,
+            timeout=300  # 5 minutes timeout
+        )
+        print(f'Status Code: {response.status_code}')
+        result = response.json()
+
+        if response.status_code == 200:
+            print(f"Status: {result['status']}")
+            print(f"Message: {result['message']}")
+            print(f"Output Dir: {result['output_dir']}")
+            return True
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            return False
+    except requests.Timeout:
+        print('Request timed out')
+        return False
+    except Exception as e:
+        print(f'Exception: {str(e)}')
+        return False
+
+
+def test_performance(base_url, model_api_url, api_key='EMPTY'):
+    """Test the performance test endpoint."""
+    print('\n=== Testing Performance Benchmark ===')
+
+    perf_request = {
+        'model': 'qwen-plus',
+        'url': f'{model_api_url}/chat/completions',
+        'api': 'openai',
+        'api_key': api_key,
+        'number': 10,
+        'parallel': 2,
+        'dataset': 'openqa',
+        'max_tokens': 128,
+        'temperature': 0.0,
+        'stream': True,
+        'debug': True
+    }
+
+    print(f'Request: {perf_request}')
+
+    try:
+        response = requests.post(
+            f'{base_url}/api/v1/perf',
+            json=perf_request,
+            timeout=300  # 5 minutes timeout
+        )
+        print(f'Status Code: {response.status_code}')
+        result = response.json()
+
+        if response.status_code == 200:
+            print(f"Status: {result['status']}")
+            print(f"Message: {result['message']}")
+            print(f"Output Dir: {result['output_dir']}")
+            if 'metrics' in result:
+                print(f"Metrics: {result['metrics']}")
+            return True
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            return False
+    except requests.Timeout:
+        print('Request timed out')
+        return False
+    except Exception as e:
+        print(f'Exception: {str(e)}')
+        return False
+
+
+def main():
+    """Main test function."""
+    # Configuration
+    SERVICE_URL = 'http://localhost:9000'
+    MODEL_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+    API_KEY = env.get('DASHSCOPE_API_KEY', 'EMPTY')
+
+    print('=== EvalScope Service Test ===')
+    print(f'Service URL: {SERVICE_URL}')
+    print(f'Model API URL: {MODEL_API_URL}')
+
+    # Test health check
+    if not test_health_check(SERVICE_URL):
+        print('Health check failed!')
+        return
+
+    # Test parameter endpoints
+    test_get_eval_params(SERVICE_URL)
+    test_get_perf_params(SERVICE_URL)
+
+    # Wait a bit
+    time.sleep(1)
+
+    print('\n' + '=' * 60)
+    print('Make sure the EvalScope service is running at:', SERVICE_URL)
+    print('Using DashScope API at:', MODEL_API_URL)
+    print('=' * 60)
+    # test_evaluation(SERVICE_URL, MODEL_API_URL, API_KEY)
+    test_performance(SERVICE_URL, MODEL_API_URL, API_KEY)
+
+    print('\n=== Test Complete ===')
+
+
+if __name__ == '__main__':
+    main()

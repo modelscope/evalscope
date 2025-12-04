@@ -141,10 +141,6 @@ async def connect_test(args: Arguments, api_plugin) -> bool:
 
 @exception_handler
 async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
-    if platform.system() != 'Windows':
-        loop = asyncio.get_running_loop()
-        add_signal_handlers(loop)
-
     api_plugin_class = ApiRegistry.get_class(args.api)
     api_plugin = api_plugin_class(args)
 

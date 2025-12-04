@@ -35,8 +35,12 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     loop = asyncio.new_event_loop()
-    if platform.system() != 'Windows':
-        add_signal_handlers(loop)
+    # Only add signal handlers in main thread
+    if platform.system() != 'Windows' and threading.current_thread() is threading.main_thread():
+        try:
+            add_signal_handlers(loop)
+        except ValueError as e:
+            logger.warning(f'Cannot add signal handlers (running in non-main thread): {e}')
 
     return loop.run_until_complete(benchmark(args))
 

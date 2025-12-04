@@ -49,6 +49,7 @@ perf        = {file = ["requirements/perf.txt"]}
 app         = {file = ["requirements/app.txt"]}
 aigc        = {file = ["requirements/aigc.txt"]}
 sandbox     = {file = ["requirements/sandbox.txt"]}
+service     = {file = ["requirements/service.txt"]}
 dev         = {file = ["requirements/dev.txt"]}
 docs        = {file = ["requirements/docs.txt"]}
 all = {file = [
@@ -57,5 +58,6 @@ all = {file = [
   "requirements/rag.txt",
   "requirements/perf.txt",
   "requirements/app.txt",
-  "requirements/aigc.txt"
+  "requirements/aigc.txt",
+  "requirements/service.txt"
 ]}
