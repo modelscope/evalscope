@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
@@ -121,6 +122,24 @@ class Arguments(BaseArgument):
             self.queue_size_multiplier = 1
         if self.in_flight_task_multiplier <= 0:
             self.in_flight_task_multiplier = 1
+
+    @contextmanager
+    def output_context(self, path: str):
+        """
+        Context manager for temporarily setting outputs_dir.
+
+        Args:
+            path: Path to set as outputs_dir
+
+        Yields:
+            The path that was set
+        """
+        original_path = self.outputs_dir
+        try:
+            self.outputs_dir = path
+            yield path
+        finally:
+            self.outputs_dir = original_path
 
 
 class ParseKVAction(argparse.Action):

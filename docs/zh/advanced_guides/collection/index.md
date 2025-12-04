@@ -109,7 +109,7 @@ EvalScope 的 **Collection** 就是为此设计的：
 
 
 :::{toctree}
-:maxdepth: 2
+:maxdepth: 1
 
 schema.md
 sample.md
