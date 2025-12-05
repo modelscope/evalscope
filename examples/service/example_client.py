@@ -148,6 +148,7 @@ def test_performance_multi(base_url, model_api_url, api_key='EMPTY'):
         print(f'Exception: {str(e)}')
         return False
 
+
 def test_performance_single(base_url, model_api_url, api_key='EMPTY'):
     """Test the performance test endpoint with single run."""
     print('\n=== Testing Performance Benchmark (Single Run) ===')
@@ -196,6 +197,80 @@ def test_performance_single(base_url, model_api_url, api_key='EMPTY'):
         return False
 
 
+def print_curl_examples(base_url, model_api_url, api_key):
+    """Print curl command examples for all endpoints."""
+    print('\n' + '=' * 60)
+    print('=== cURL Command Examples ===')
+    print('=' * 60)
+
+    # Health check
+    print('\n# 1. Health Check')
+    print(f"curl -X GET '{base_url}/health'")
+
+    # Get eval params
+    print('\n# 2. Get Evaluation Parameters')
+    print(f"curl -X GET '{base_url}/api/v1/eval/params'")
+
+    # Get perf params
+    print('\n# 3. Get Performance Test Parameters')
+    print(f"curl -X GET '{base_url}/api/v1/perf/params'")
+
+    # Evaluation
+    print('\n# 4. Run Evaluation')
+    print(f"""curl -X POST '{base_url}/api/v1/eval' \\
+  -H 'Content-Type: application/json' \\
+  -d '{{
+    "model": "qwen-plus",
+    "api_url": "{model_api_url}",
+    "api_key": "{api_key}",
+    "datasets": ["gsm8k"],
+    "limit": 5,
+    "generation_config": {{
+      "temperature": 0.0,
+      "max_tokens": 512
+    }},
+    "debug": true
+  }}'""")
+
+    # Performance test (multi)
+    print('\n# 5. Run Performance Benchmark (Multiple Runs)')
+    print(f"""curl -X POST '{base_url}/api/v1/perf' \\
+  -H 'Content-Type: application/json' \\
+  -d '{{
+    "model": "qwen-plus",
+    "url": "{model_api_url}/chat/completions",
+    "api": "openai",
+    "api_key": "{api_key}",
+    "number": [1, 2],
+    "parallel": [1, 2],
+    "dataset": "openqa",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "stream": true,
+    "debug": true
+  }}'""")
+
+    # Performance test (single)
+    print('\n# 6. Run Performance Benchmark (Single Run)')
+    print(f"""curl -X POST '{base_url}/api/v1/perf' \\
+  -H 'Content-Type: application/json' \\
+  -d '{{
+    "model": "qwen-plus",
+    "url": "{model_api_url}/chat/completions",
+    "api": "openai",
+    "api_key": "{api_key}",
+    "number": 1,
+    "parallel": 1,
+    "dataset": "openqa",
+    "max_tokens": 128,
+    "temperature": 0.0,
+    "stream": true,
+    "debug": true
+  }}'""")
+
+    print('\n' + '=' * 60 + '\n')
+
+
 def main():
     """Main test function."""
     # Configuration
@@ -206,6 +281,9 @@ def main():
     print('=== EvalScope Service Test ===')
     print(f'Service URL: {SERVICE_URL}')
     print(f'Model API URL: {MODEL_API_URL}')
+
+    # Print curl examples first
+    print_curl_examples(SERVICE_URL, MODEL_API_URL, API_KEY)
 
     # Test health check
     if not test_health_check(SERVICE_URL):
@@ -224,8 +302,8 @@ def main():
     print('Using DashScope API at:', MODEL_API_URL)
     print('=' * 60)
     # test_evaluation(SERVICE_URL, MODEL_API_URL, API_KEY)
-    test_performance_multi(SERVICE_URL, MODEL_API_URL, API_KEY)
-    test_performance_single(SERVICE_URL, MODEL_API_URL, API_KEY)
+    # test_performance_multi(SERVICE_URL, MODEL_API_URL, API_KEY)
+    # test_performance_single(SERVICE_URL, MODEL_API_URL, API_KEY)
 
     print('\n=== Test Complete ===')
 

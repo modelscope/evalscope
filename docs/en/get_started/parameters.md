@@ -4,94 +4,104 @@ Run `evalscope eval --help` to get the full list of parameters.
 
 ## Model Parameters
 
-- `--model`: The name of the model to be evaluated.
-  - Specify the model's `id` on [ModelScope](https://modelscope.cn/) to download the model automatically, e.g. [Qwen/Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct/summary).
-  - Specify a local path to load the model from, e.g. `/path/to/model`.
-  - For evaluating a model API service, specify the model id corresponding to the service, e.g. `Qwen2.5-0.5B-Instruct`.
-- `--model-id`: Alias for the evaluated model, used in reports. Defaults to the last part of `model`, e.g. for `Qwen/Qwen2.5-0.5B-Instruct`, the `model-id` is `Qwen2.5-0.5B-Instruct`.
-- `--api-url`: The model API endpoint, default is `None`; supports local or remote OpenAI API format endpoints, e.g. `http://127.0.0.1:8000/v1`.
-- `--api-key`: The model API endpoint key, default is `EMPTY`.
-- `--model-args`: Model loading parameters, either as comma-separated `key=value` pairs, or as a JSON string which will be parsed as a dictionary. Default parameters:
-  - `revision`: Model revision, default is `master`.
-  - `precision`: Model precision, default is `torch.float16`.
-  - `device_map`: Device allocation for the model, default is `auto`.
-- `--model-task`: Model task type, default is `text_generation`, optional values are `text_generation`, `image_generation`.
-- `--chat-template`: Model inference template, default is `None` (uses transformers’ `apply_chat_template`); you can pass a Jinja template string to customize the inference template.
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--model` | `str` | Name of the model to be evaluated<br>• ModelScope model ID (e.g., `Qwen/Qwen2.5-0.5B-Instruct`)<br>• Local model path (e.g., `/path/to/model`)<br>• Model ID for API service (e.g., `Qwen2.5-0.5B-Instruct`) | - |
+| `--model-id` | `str` | Alias for the evaluated model, used in reports | Last part of `model` |
+| `--api-url` | `str` | Model API endpoint, supports OpenAI-compatible format<br>Example: `http://127.0.0.1:8000/v1` | `None` |
+| `--api-key` | `str` | Model API endpoint key | `EMPTY` |
+| `--model-args` | `str` | Model loading parameters, comma-separated `key=value` or JSON string<br>• `revision`: Model revision<br>• `precision`: Model precision<br>• `device_map`: Device allocation | `revision=master`<br>`precision=torch.float16`<br>`device_map=auto` |
+| `--model-task` | `str` | Model task type | `text_generation`<br>(Options: `image_generation`) |
+| `--chat-template` | `str` | Model inference template, supports Jinja template string | `None` (uses transformers default) |
+
+**Example:**
+```bash
+# key=value format
+--model-args revision=master,precision=torch.float16,device_map=auto
+
+# JSON string format
+--model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}'
+```
 
 ## Model Inference Parameters
 
-- `--generation-config`: Generation parameters, either as comma-separated `key=value` pairs, or as a JSON string (parsed as a dictionary):
-  - `timeout`: Optional integer, request timeout (seconds).
-  - `stream`: Optional boolean, whether to return responses in streaming mode (depends on the model).
-  - `max_tokens`: Optional integer, the maximum number of tokens generated (depends on the model).
-  - `top_p`: Optional float, nucleus sampling; the model only considers tokens accounting for top_p probability mass.
-  - `temperature`: Optional float, sampling temperature (0~2); higher means more randomness, lower means more deterministic output.
-  - `frequency_penalty`: Optional float (-2.0~2.0); positive values penalize repeated tokens to reduce repetition. Supported by OpenAI, Google, Grok, Groq, vLLM, SGLang.
-  - `presence_penalty`: Optional float (-2.0~2.0); positive values penalize already appeared tokens to encourage new topics. Supported by OpenAI, Google, Grok, Groq, vLLM, SGLang.
-  - `logit_bias`: Optional dict mapping token ids to bias values (-100~100), e.g. `"42=10,43=-10"`. Supported by OpenAI, Grok, vLLM.
-  - `seed`: Optional integer, random seed. Supported by OpenAI, Google, Mistral, Groq, HuggingFace, vLLM.
-  - `do_sample`: Optional boolean, whether to use sampling strategy (otherwise greedy decoding). Supported by Transformers models.
-  - `top_k`: Optional integer, sample next token from the top_k most likely candidates. Supported by Anthropic, Google, HuggingFace, vLLM, SGLang.
-  - `logprobs`: Optional boolean, whether to return log probabilities for output tokens. Supported by OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang.
-  - `top_logprobs`: Optional integer (0~20), return the top top_logprobs tokens and their probabilities for each position. Supported by OpenAI, Grok, HuggingFace, vLLM, SGLang.
-  - `parallel_tool_calls`: Optional boolean, whether to support parallel tool calls (default True). Supported by OpenAI, Groq.
-  - `max_tool_output`: Optional integer, maximum bytes for tool output. Default is 16*1024.
-  - `cache_prompt`: Optional "auto", boolean, or None; whether to cache prompt prefix. Default is "auto", enabled when using tools. Supported by Anthropic.
-  - `reasoning_effort`: Optional enum (`'low'`, `'medium'`, `'high'`), restricts reasoning effort, default `'medium'`. Supported by OpenAI o1 models.
-  - `reasoning_tokens`: Optional integer, max tokens for reasoning. Supported by Anthropic Claude models.
-  - `reasoning_summary`: Optional enum (`'concise'`, `'detailed'`, `'auto'`); whether to provide a summary of reasoning steps. `'auto'` uses the most detailed summary available. Supported by OpenAI reasoning models.
-  - `reasoning_history`: Optional enum (`'none'`, `'all'`, `'last'`, `'auto'`); whether reasoning content is included in chat message history.
-  - `response_schema`: Optional ResponseSchema object, request returns formatted according to JSONSchema (output still requires validation). Supported by OpenAI, Google, Mistral.
-  - `extra_body`: Optional dict, extra request body for OpenAI-compatible services.
-  - `extra_query`: Optional dict, extra query parameters for OpenAI-compatible services.
-  - `extra_headers`: Optional dict, extra headers for OpenAI-compatible services.
-  - `height`: Optional integer, for image generation models, specifies image height.
-  - `width`: Optional integer, for image generation models, specifies image width.
-  - `num_inference_steps`: Optional integer, for image models, number of inference steps.
-  - `guidance_scale`: Optional float, for image models, guidance scale.
+The `--generation-config` parameter supports the following options (comma-separated `key=value` or JSON string):
 
-Example usage:
+| Parameter | Type | Description | Supported Backends |
+|-----------|------|-------------|--------------------|
+| `timeout` | `int` | Request timeout (seconds) | All |
+| `stream` | `bool` | Whether to return responses in streaming mode | All |
+| `max_tokens` | `int` | Maximum number of tokens generated | All |
+| `top_p` | `float` | Nucleus sampling; only considers tokens accounting for top_p probability mass | All |
+| `temperature` | `float` | Sampling temperature, range 0~2; higher means more randomness | All |
+| `frequency_penalty` | `float` | Range -2.0~2.0; positive values penalize repeated tokens | OpenAI, Google, Grok, Groq, vLLM, SGLang |
+| `presence_penalty` | `float` | Range -2.0~2.0; positive values penalize already appeared tokens | OpenAI, Google, Grok, Groq, vLLM, SGLang |
+| `logit_bias` | `dict` | Mapping of token IDs to bias values (-100~100)<br>Example: `"42=10,43=-10"` | OpenAI, Grok, vLLM |
+| `seed` | `int` | Random seed | OpenAI, Google, Mistral, Groq, HuggingFace, vLLM |
+| `do_sample` | `bool` | Whether to use sampling strategy (otherwise greedy decoding) | Transformers |
+| `top_k` | `int` | Sample next token from the top_k most likely candidates | Anthropic, Google, HuggingFace, vLLM, SGLang |
+| `logprobs` | `bool` | Whether to return log probabilities for output tokens | OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang |
+| `top_logprobs` | `int` | Return the top N tokens and their probabilities (range 0~20) | OpenAI, Grok, HuggingFace, vLLM, SGLang |
+| `parallel_tool_calls` | `bool` | Whether to support parallel tool calls | OpenAI, Groq |
+| `max_tool_output` | `int` | Maximum bytes for tool output | All (default 16*1024) |
+| `extra_body` | `dict` | Extra request body for OpenAI-compatible services | OpenAI-compatible services |
+| `extra_query` | `dict` | Extra query parameters for OpenAI-compatible services | OpenAI-compatible services |
+| `extra_headers` | `dict` | Extra headers for OpenAI-compatible services | OpenAI-compatible services |
+| `height` | `int` | For image generation models, specifies image height | Image generation models |
+| `width` | `int` | For image generation models, specifies image width | Image generation models |
+| `num_inference_steps` | `int` | For image models, number of inference steps | Image generation models |
+| `guidance_scale` | `float` | For image models, guidance scale | Image generation models |
+
+**Example:**
 ```bash
-# Pass as key=value form
---model-args revision=master,precision=torch.float16,device_map=auto
+# key=value format
 --generation-config do_sample=true,temperature=0.5
-# Or pass as JSON string for more complex parameters
---model-args '{"revision": "master", "precision": "torch.float16", "device_map": "auto"}'
---generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking": false}}'
+
+# JSON string format (supports more complex parameters)
+--generation-config '{"do_sample":true,"temperature":0.5,"chat_template_kwargs":{"enable_thinking":false}}'
 ```
 
 ## Dataset Parameters
 
-- `--datasets`: Dataset name(s), supports multiple datasets separated by spaces. Datasets will be automatically downloaded from ModelScope. Supported datasets are listed at [Dataset List](./supported_dataset/llm.md).
-- `--dataset-args`: Evaluation dataset settings, passed as a JSON string and parsed into a dictionary. Must correspond to values in `--datasets`:
-  - `dataset_id` (or `local_path`): Specify local path for the dataset; if set, data will be loaded locally.
-  - `prompt_template`: Prompt template for the evaluation dataset; will be used to generate prompts. For example, `gsm8k`’s template is `Question: {query}\nLet's think step by step\nAnswer:` and the dataset question will be filled in the `query` field.
-  - `system_prompt`: System prompt for the evaluation dataset.
-  - `subset_list`: List of dataset subsets; only data from specified subsets will be used.
-  - `few_shot_num`: Number of few-shot samples.
-  - `few_shot_random`: Whether to sample few-shot data randomly (default `False`).
-  - `shuffle`: Indicates whether to randomize the data before evaluation, with the default setting being `False`.
-  - `shuffle_choices`: Specifies whether to rearrange the order of choices before evaluation, defaulting to `False`. This option is only applicable to multiple-choice datasets.
-- `metric_list`: The metric list for the evaluation dataset. When specified, the given metrics will be used for evaluation. Currently, `acc` is supported by default. Other computed metrics can be found in the dataset list.
-  - `aggregation`: The aggregation method for evaluation results. Default is `mean`. For datasets those use `mean`, other options include:
-    - `mean_and_pass_at_k`: Calculates the mean and `pass_at_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing at least once across k attempts for the same example. For instance, the `humaneval` dataset can specify `repeats=5` to calculate the pass rate among 5 generated results for the same example.
-    - `mean_and_vote_at_k`: Calculates the mean and `vote_at_k`. Requires specifying `repeats=k`, which automatically calculates the voting result across k attempts for the same example to determine the final result.
-    - `mean_and_pass_hat_k`: Calculates the mean and `pass_hat_k`. Requires specifying `repeats=k`, which automatically calculates the probability of passing all k attempts for the same example. For instance, the `tau2_bench` dataset can specify `repeats=3` to calculate the pass rate among 3 generated results for the same example.
-  - `filters`: Filters for the evaluation dataset. When specified, the given filters will be used to filter evaluation results and can be used to process the output of inference models. Currently supported filters include:
-    - `remove_until {string}`: Removes the portion before the specified string in the model output. For example, the `ifeval` dataset can specify `{"remove_until": "</think>"}` to filter out the portion before `</think>` in the model output, preventing it from affecting scoring.
-    - `extract {regex}`: Extracts the portion of the model output that matches the specified regular expression.
-  - `force_redownload`: Whether to force re-download the dataset. Default is `False`. Set to `True` if the downloaded dataset needs to be updated.
-  - `extra_params`: Extra parameters related to the dataset. Refer to the documentation of [each dataset](./supported_dataset/index.md) for specific parameters, e.g., the `include_multi_modal` parameter for the `hle` dataset.
-  - `sandbox_config`: Configuration parameters for the Sandbox, passed as a `json` string and parsed into a dictionary. It supports the following fields:
-    - `image`: The name of the Docker image, defaulting to `python:3.11-slim`.
-    - `network_enabled`: Whether to enable networking, default is `true`.
-    - `tools_config`: Tool configuration dictionary, defaulting to an empty dictionary `{'shell_executor': {},'python_executor': {}}`, which indicates that both shell and python executors are enabled.
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--datasets` | `list[str]` | Dataset name list, space-separated<br>Refer to [Dataset List](./supported_dataset/llm.md) | - |
+| `--dataset-dir` | `str` | Dataset download path | `~/.cache/modelscope/datasets` |
+| `--dataset-hub` | `str` | Dataset source | `modelscope`<br>(Options: `huggingface`) |
+| `--limit` | `int`/`float` | Maximum samples to evaluate per dataset<br>• int: First N samples<br>• float: First N% of samples<br>Example: `100` or `0.1` | `None` (evaluate all) |
+| `--dataset-args` | `str` | Dataset configuration parameters (JSON string), see table below | `{}` |
 
-- `--dataset-dir`: Dataset download path, default is `~/.cache/modelscope/datasets`.
-- `--dataset-hub`: Dataset source, default is `modelscope`, optional value is `huggingface`.
-- `--limit`: Max number of samples to evaluate per dataset. If not set, evaluates all data. Supports int and float. Int means the first `N` samples, float means the first `N%` samples in the dataset. For example, `0.1` means the first 10% of samples, `100` means the first 100 samples.
+### dataset-args Configuration Options
 
-Example usage:
+`--dataset-args` is a JSON string; each dataset can be configured with the following parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `dataset_id` | `str` | ModelScope dataset ID or local path |
+| `review_timeout` | `float` | Timeout for evaluation samples (seconds), recommended for code tasks |
+| `prompt_template` | `str` | Prompt template, example: `Question: {query}\nAnswer:` |
+| `system_prompt` | `str` | System prompt |
+| `subset_list` | `list[str]` | List of dataset subsets to evaluate |
+| `few_shot_num` | `int` | Number of few-shot examples |
+| `few_shot_random` | `bool` | Whether to randomly sample few-shot data |
+| `shuffle` | `bool` | Whether to shuffle the data |
+| `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only) |
+| `metric_list` | `list[str]` | Metric list, default supports `acc` |
+| `aggregation` | `str` | Aggregation method: `mean` (default), `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` |
+| `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
+| `force_redownload` | `bool` | Whether to force re-download the dataset |
+| `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md) |
+| `sandbox_config` | `dict` | Sandbox configuration (see Sandbox Parameters below) |
+
+**sandbox_config Options:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `image` | `str` | Docker image name | `python:3.11-slim` |
+| `network_enabled` | `bool` | Whether to enable networking | `true` |
+| `tools_config` | `dict` | Tool configuration dictionary | `{'shell_executor': {}, 'python_executor': {}}` |
+
+**Example:**
 ```bash
 --datasets gsm8k arc ifeval hle \
 --dataset-args '{
@@ -117,114 +127,121 @@ Example usage:
 
 ## Evaluation Parameters
 
-- `--eval-type`: Evaluation type, choose based on model inference method, default is None (will be auto-detected):
-  - `llm_ckpt`: Local model inference; downloads the model from ModelScope and uses Transformers for inference.
-  - `openai_api`: Online model service inference; supports any OpenAI API-compatible service.
-  - `text2image`: Local text-to-image model inference; downloads the model from ModelScope and uses Diffusers pipeline for inference.
-  - `mock_llm`: Simulated LLM inference, for function verification.
-- `--eval-batch-size`: Evaluation batch size, default is `1`; for `eval-type=service`, this means concurrent evaluation requests, default is `8`.
-- `--eval-backend`: Evaluation backend, optional values are `Native`, `OpenCompass`, `VLMEvalKit`, `RAGEval`, `ThirdParty`; default is `Native`.
-  - `OpenCompass` for LLM evaluation
-  - `VLMEvalKit` for multimodal model evaluation
-  - `RAGEval` for RAG pipeline, embedding, reranker, CLIP model evaluation
-    ```{seealso}
-    Refer to the [other backend usage guide](../user_guides/backend/index.md)
-    ```
-  - `ThirdParty` for other special tasks, e.g. [ToolBench](../third_party/toolbench.md), [LongBench](../third_party/longwriter.md)
-- `--eval-config`: Required when using non-`Native` evaluation backend
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible API service<br>• `text2image`: Text-to-image model (diffusers)<br>• `mock_llm`: Simulated inference (for verification) | `None` (auto-detect) |
+| `--eval-batch-size` | `int` | Evaluation batch size<br>For `eval-type=service`, means concurrent requests | `1` (service mode: `8`) |
+| `--eval-backend` | `str` | Evaluation backend<br>• `Native`: Default backend<br>• `OpenCompass`: LLM evaluation<br>• `VLMEvalKit`: Multimodal model evaluation<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP evaluation<br>• `ThirdParty`: Special task evaluation | `Native` |
+| `--eval-config` | `str` | Configuration file path for non-Native backends | - |
+
+```{seealso}
+Refer to the [other backend usage guide](../user_guides/backend/index.md)
+```
 
 ## Judge Parameters
 
-The LLM-as-a-Judge evaluation parameters use a judge model to determine correctness, including the following parameters:
+LLM-as-a-Judge evaluation parameters using a judge model to determine correctness:
 
-- `--judge-strategy`: The strategy for using the judge model, options include:
-  - `auto`: The default strategy, which decides whether to use the judge model based on the dataset requirements
-  - `llm`: Always use the judge model
-  - `rule`: Do not use the judge model, use rule-based judgment instead
-  - `llm_recall`: First use rule-based judgment, and if it fails, then use the judge model
-- `--judge-worker-num`: The concurrency number for the judge model, default is `1`
-- `--judge-model-args`: Sets the parameters for the judge model, passed in as a `json` string and parsed as a dictionary, supporting the following fields:
-  - `api_key`: The API endpoint key for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_SDK_TOKEN`, with a default value of `EMPTY`.
-  - `api_url`: The API endpoint for the model. If not set, it will be retrieved from the environment variable `MODELSCOPE_API_BASE`, with a default value of `https://api-inference.modelscope.cn/v1/`.
-  - `model_id`: The model ID. If not set, it will be retrieved from the environment variable `MODELSCOPE_JUDGE_LLM`, with a default value of `Qwen/Qwen3-235B-A22B`.
-    ```{seealso}
-    For more information on ModelScope's model inference services, please refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro).
-    ```
-  - `system_prompt`: System prompt for evaluating the dataset
-  - `prompt_template`: Prompt template for evaluating the dataset
-  - `generation_config`: Model generation parameters, same as the `--generation-config` parameter.
-  - `score_type`: Preset model scoring method, options include:
-    - `pattern`: (Default option) Directly judge whether the model output matches the reference answer, suitable for evaluations with reference answers.
-      <details><summary>Default prompt_template</summary>
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--judge-strategy` | `str` | Judge model strategy<br>• `auto`: Automatically decide based on dataset requirements<br>• `llm`: Always use judge model<br>• `rule`: Use rule-based judgment only<br>• `llm_recall`: Use judge model after rule-based judgment fails | `auto` |
+| `--judge-worker-num` | `int` | Judge model concurrency | `1` |
+| `--judge-model-args` | `str` | Judge model configuration (JSON string), see table below | - |
+| `--analysis-report` | `bool` | Whether to generate analysis report (language auto-detected) | `false` |
 
-      ```text
-      Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
+### judge-model-args Configuration Options
 
-      [Question]
-      {question}
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `api_key` | `str` | API key | Read from `MODELSCOPE_SDK_TOKEN`, default `EMPTY` |
+| `api_url` | `str` | API endpoint | Read from `MODELSCOPE_API_BASE`,<br>default `https://api-inference.modelscope.cn/v1/` |
+| `model_id` | `str` | Model ID | Read from `MODELSCOPE_JUDGE_LLM`,<br>default `Qwen/Qwen3-235B-A22B` |
+| `system_prompt` | `str` | System prompt | - |
+| `prompt_template` | `str` | Prompt template | Auto-selected based on `score_type` |
+| `generation_config` | `dict` | Generation parameters (same as `--generation-config`) | - |
+| `score_type` | `str` | Scoring method<br>• `pattern`: Judge if answer matches reference<br>• `numeric`: Score without reference (0-1) | `pattern` |
+| `score_pattern` | `str` | Regex to parse output | `pattern` mode: `(A\|B)`<br>`numeric` mode: `\[\[(\d+(?:\.\d+)?)\]\]` |
+| `score_mapping` | `dict` | Score mapping for `pattern` mode | `{'A': 1.0, 'B': 0.0}` |
 
-      [Reference Answer]
-      {gold}
+```{seealso}
+For more information on ModelScope model inference services, refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro)
+```
 
-      [Predicted Answer]
-      {pred}
+<details><summary>pattern Mode Default Prompt Template</summary>
 
-      Evaluate the model's answer based on correctness compared to the reference answer.
-      Grade the predicted answer of this new question as one of:
-      A: CORRECT
-      B: INCORRECT
+```text
+Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
 
-      Just return the letters "A" or "B", with no text around it.
-      ```
-      </details>
-    - `numeric`: Judge the model output score under prompt conditions, suitable for evaluations without reference answers.
-      <details><summary>Default prompt_template</summary>
+[Question]
+{question}
 
-      ```text
-      Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+[Reference Answer]
+{gold}
 
-      Begin your evaluation by providing a short explanation. Be as objective as possible.
+[Predicted Answer]
+{pred}
 
-      After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[0.5]]\"
+Evaluate the model's answer based on correctness compared to the reference answer.
+Grade the predicted answer of this new question as one of:
+A: CORRECT
+B: INCORRECT
 
-      [Question]
-      {question}
+Just return the letters "A" or "B", with no text around it.
+```
+</details>
 
-      [Response]
-      {pred}
-      ```
-      </details>
-  - `score_pattern`: Regular expression for parsing model output, default for `pattern` mode is `(A|B)`; default for `numeric` mode is `\[\[(\d+(?:\.\d+)?)\]\]`, used to extract model scoring results.
-  - `score_mapping`: Score mapping dictionary for `pattern` mode, default is `{'A': 1.0, 'B': 0.0}`
-- `--analysis-report`: Whether to generate an analysis report, default is `false`; if this parameter is set, an analysis report will be generated using the judge model, including analysis interpretation and suggestions for the model evaluation results. The report output language will be automatically determined based on `locale.getlocale()`.
+<details><summary>numeric Mode Default Prompt Template</summary>
+
+```text
+Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
+
+Begin your evaluation by providing a short explanation. Be as objective as possible.
+
+After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: "[[rating]]", for example: "Rating: [[0.5]]"
+
+[Question]
+{question}
+
+[Response]
+{pred}
+```
+</details>
 
 ## Sandbox Parameters
-- `--use-sandbox`: Determines whether to utilize a Sandbox for model evaluation, defaulting to `false`. If this parameter is set, [ms-enclave](https://github.com/modelscope/ms-enclave) will be activated to isolate the code execution environment, enhancing security. This is currently effective only for code evaluation tasks such as `humaneval`.
-- `--sandbox-manager-config`: Configuration parameters for the Sandbox manager, passed as a `json` string and parsed into a dictionary. It supports the following fields:
-  - `base_url`: The base URL for the Sandbox manager, defaulting to `None`, which indicates the use of a local manager. Configuring this parameter will enable the use of a remote manager.
-- `--sandbox-type`: Specifies the type of Sandbox, with a default value of `docker`.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--use-sandbox` | `bool` | Whether to use [ms-enclave](https://github.com/modelscope/ms-enclave) to isolate code execution environment<br>Currently only effective for code evaluation tasks (e.g., `humaneval`) | `false` |
+| `--sandbox-manager-config` | `str` | Sandbox manager configuration (JSON string)<br>• `base_url`: Manager URL (default `None` for local manager) | `{}` |
+| `--sandbox-type` | `str` | Sandbox type | `docker` |
 
 ## Other Parameters
 
-- `--work-dir`: Model evaluation output path, default is `./outputs/{timestamp}`, folder structure example is as follows:
-  ```text
-  .
-  ├── configs
-  │   └── task_config_b6f42c.yaml
-  ├── logs
-  │   └── eval_log.log
-  ├── predictions
-  │   └── Qwen2.5-0.5B-Instruct
-  │       └── general_qa_example.jsonl
-  ├── reports
-  │   └── Qwen2.5-0.5B-Instruct
-  │       └── general_qa.json
-  └── reviews
-      └── Qwen2.5-0.5B-Instruct
-          └── general_qa_example.jsonl
-  ```
-- `--use-cache`: Path to use for local caching, default is `None`. If a specific path is provided (e.g. `outputs/20241210_194434`), the model inference results and evaluation results in that path will be reused; if inference is incomplete, it will continue from where it left off, and then proceed to evaluation.
-- `--rerun-review`: Boolean value. Set to True if you want to reuse the model inference results and only rerun the evaluation. Default is False; if evaluation results exist locally, evaluation will be skipped.
-- `--seed`: Random seed, default is `42`.
-- `--debug`: Whether to enable debug mode, default is `false`.
-- `--ignore-errors`: Whether to ignore errors during model generation, default is `false`.
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--work-dir` | `str` | Evaluation output path (see directory structure below) | `./outputs/{timestamp}` |
+| `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
+| `--rerun-review` | `bool` | Only rerun evaluation (reuses inference results) | `false` |
+| `--seed` | `int` | Random seed | `42` |
+| `--debug` | `bool` | Whether to enable debug mode | `false` |
+| `--ignore-errors` | `bool` | Whether to ignore errors during generation | `false` |
+| `--dry-run` | `bool` | Dry run to check parameters without executing inference | `false` |
+
+### work-dir Directory Structure Example
+
+```text
+./outputs/{timestamp}/
+├── configs/
+│   └── task_config_b6f42c.yaml      # Task configuration
+├── logs/
+│   └── eval_log.log                 # Evaluation log
+├── predictions/
+│   └── {model_id}/
+│       └── {dataset}.jsonl          # Model inference results
+├── reports/
+│   └── {model_id}/
+│       └── {dataset}.json           # Evaluation report
+└── reviews/
+    └── {model_id}/
+        └── {dataset}.jsonl          # Evaluation result details
+```
