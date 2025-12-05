@@ -1,87 +1,114 @@
-# Parameter Description
+# Parameter
 
-Execute `evalscope perf --help` to get a full parameter description:
+Execute `evalscope perf --help` to get a full parameter description.
 
 ## Basic Settings
-- `--model`: Name of the test model.
-- `--url` specifies the API address, supporting two types of endpoints: `/chat/completion` and `/completion`.
-- `--name`: Name for the wandb/swanlab database result and result database, default is `{model_name}_{current_time}`, optional.
-- `--api`: Specify the service API, currently supports [openai|local|local_vllm].
-  - Select `openai` to use the API supporting OpenAI, requiring the `--url` parameter.
-  - Select `local` to use local files as models and perform inference using transformers. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
-  - Select `local_vllm` to use local files as models and start the vllm inference service. `--model` should be the model file path or model_id, which will be automatically downloaded from modelscope, e.g., `Qwen/Qwen2.5-0.5B-Instruct`.
-  - You can also use a custom API, refer to [Custom API Guide](./custom.md).
-- `--port`: The port for the local inference service, defaulting to 8877. This is only applicable to `local` and `local_vllm`.
-- `--attn-implementation`: Attention implementation method, default is None, optional [flash_attention_2|eager|sdpa], only effective when `api` is `local`.
-- `--api-key`: API key, optional.
-- `--debug`: Output debug information.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--model` | `str` | Name or path of the test model | - |
+| `--url` | `str` | API address, supporting `/chat/completion` and `/completion` endpoints | - |
+| `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
+| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible API (requires `--url`)<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
+| `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
+| `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
+| `--api-key` | `str` | API key | `None` |
+| `--debug` | `bool` | Whether to output debug information | `False` |
 
 ## Network Configuration
-- `--total-timeout`: Total timeout for each request, in seconds, default is 6 * 60 * 60 = 6 hours.
-- `--connect-timeout`: Network connection timeout, in seconds, default is None.
-- `--read-timeout`: Network read timeout, in seconds, default is None.
-- `--headers`: Additional HTTP headers, formatted as `key1=value1 key2=value2`. This header will be used for each query.
-- `--no-test-connection`: Do not send a connection test, start the stress test directly, default is False.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--total-timeout` | `int` | Total timeout for each request (seconds) | `21600` (6 hours) |
+| `--connect-timeout` | `int` | Network connection timeout (seconds) | `None` |
+| `--read-timeout` | `int` | Network read timeout (seconds) | `None` |
+| `--headers` | `str` | Additional HTTP headers<br>Format: `key1=value1 key2=value2`<br>Will be used for each query | - |
+| `--no-test-connection` | `bool` | Do not send connection test, start stress test directly | `False` |
 
 ## Request Control
-- `--parallel` specifies the number of concurrent requests, and you can input multiple values separated by spaces; the default is 1.
-- `--number` indicates the total number of requests to be sent, and you can input multiple values separated by spaces (must correspond one-to-one with `parallel`); the default is 1000.
-- `--rate` defines the number of requests generated per second (without sending them), with a default of -1, meaning all requests are generated at time 0 with no interval; otherwise, a Poisson process is used to generate request intervals.
-  ```{tip}
-  In the implementation of this tool, request generation and sending are separate:
-  The `--rate` parameter controls the number of requests generated per second, which are placed in a request queue.
-  The `--parallel` parameter controls the number of workers sending requests, with each worker retrieving requests from the queue and sending them, only proceeding to the next request after receiving a response to the previous one.
-  ```
-- `--log-every-n-query`: Log every n queries, default is 10.
-- `--stream` uses SSE (Server-Sent Events) stream output, default is True. Note: Setting `--stream` is necessary to measure the Time to First Token (TTFT) metric; setting `--no-stream` will disable streaming output.
-- `--sleep-interval`: The sleep time between each performance test, in seconds, default is 5 seconds. This parameter can help avoid overloading the server.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--parallel` | `list[int]` | Number of concurrent requests<br>Can input multiple values separated by spaces | `1` |
+| `--number` | `list[int]` | Total number of requests to be sent<br>Can input multiple values (must correspond one-to-one with `parallel`) | `1000` |
+| `--rate` | `float` | Number of requests generated per second<br>• `-1`: All requests generated at time 0 with no interval<br>• Other values: Use Poisson process to generate request intervals | `-1` |
+| `--log-every-n-query` | `int` | Log every N queries | `10` |
+| `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
+| `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
+
+```{tip}
+In the implementation of this tool, request generation and sending are separate:
+- The `--rate` parameter controls the number of requests generated per second, which are placed in a request queue
+- The `--parallel` parameter controls the number of workers sending requests, with each worker retrieving requests from the queue and sending them, only proceeding to the next request after receiving a response to the previous one
+```
 
 ## Prompt Settings
-- `--max-prompt-length`: The maximum input prompt length, default is `131072`. Prompts exceeding this length will be discarded.
-- `--min-prompt-length`: The minimum input prompt length, default is 0. Prompts shorter than this will be discarded.
-- `--prefix-length`: The length of the prompt prefix, default is 0. This is only effective for the `random` dataset.
-- `--prompt`: Specifies the request prompt, which can be a string or a local file. This has higher priority than `dataset`. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./prompt.txt`.
-- `--query-template`: Specifies the query template, which can be a `JSON` string or a local file. When using a local file, specify the file path with `@/path/to/file`, e.g., `@./query_template.json`.
-- `--apply-chat-template` determines whether to apply the chat template, default is None. It will automatically choose based on whether the URL suffix is `chat/completion`.
-- `--image-width`  The image width for the random VL dataset. Default is 224.
-- `--image-height`  The image height for the random VL dataset. Default is 224.
-- `--image-format`  The image format for the random VL dataset. Default is 'RGB'.
-- `--image-num`  The number of images for the random VL dataset. Default is 1.
-- `--image-patch-size` Patch size for the image, only used for local image token calculation, default is 28.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--max-prompt-length` | `int` | Maximum input prompt length<br>Prompts exceeding this length will be discarded | `131072` |
+| `--min-prompt-length` | `int` | Minimum input prompt length<br>Prompts shorter than this will be discarded | `0` |
+| `--prefix-length` | `int` | Length of the prompt prefix<br>Only effective for `random` dataset | `0` |
+| `--prompt` | `str` | Specify request prompt<br>String or local file (specify via `@/path/to/file`)<br>Higher priority than `dataset`<br>Example: `@./prompt.txt` | - |
+| `--query-template` | `str` | Specify query template<br>JSON string or local file (specify via `@/path/to/file`)<br>Example: `@./query_template.json` | - |
+| `--apply-chat-template` | `bool` | Whether to apply chat template | `None` (automatically determined based on URL suffix) |
+| `--image-width` | `int` | Image width for random VL dataset | `224` |
+| `--image-height` | `int` | Image height for random VL dataset | `224` |
+| `--image-format` | `str` | Image format for random VL dataset | `RGB` |
+| `--image-num` | `int` | Number of images for random VL dataset | `1` |
+| `--image-patch-size` | `int` | Patch size for the image<br>Only used for local image token calculation | `28` |
 
 ## Dataset Configuration
-- `--dataset` supports the following dataset modes:
-  - **`openqa`**: Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope. Prompts are relatively short, usually under 100 tokens. If `dataset_path` is specified, the `question` field in your jsonl file will be used as the prompt.
-  - **`longalpaca`**: Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope. Prompts are much longer, generally over 6000 tokens. If `dataset_path` is specified, the `instruction` field in your jsonl file will be used as the prompt.
-  - **`line_by_line`**: Requires `dataset_path`. Each line in the txt file is used as a separate prompt.
-  - **`flickr8k`**: Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope. Builds image-text inputs; this dataset is large and suitable for evaluating multimodal models. `dataset_path` is not supported.
-  - **`kontext_bench`**: Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope. Builds image-text inputs; this dataset is smaller (about 1,000 samples), making it suitable for quick evaluation of multimodal models. `dataset_path` is not supported.
-  - **`random`**: Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. `tokenizer-path` is required. [Usage example](./examples.md#using-the-random-dataset).
-  - **`random_vl`**: Randomly generates both image and text inputs. Based on `random`, with additional image-related parameters (`image-width`, `image-height`, `image-format`, `image-num`). [Usage example](./examples.md#using-the-random-multimodal-dataset).
-  - **`custom`**: Custom dataset parser. See the [Custom Dataset Guide](custom.md/#custom-dataset).
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--dataset` | `str` | Dataset mode, see table below for details | - |
+| `--dataset-path` | `str` | Dataset file path<br>Used in conjunction with dataset | - |
+
+### Dataset Mode Description
+
+| Mode | Description | Supports dataset-path |
+|------|-------------|----------------------|
+| `openqa` | Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope<br>Prompts are relatively short (usually <100 tokens)<br>Uses `question` field from jsonl file when `dataset_path` is specified | ✓ |
+| `longalpaca` | Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope<br>Prompts are much longer (generally >6000 tokens)<br>Uses `instruction` field from jsonl file when `dataset_path` is specified | ✓ |
+| `line_by_line` | Each line in txt file is used as a separate prompt<br>**Requires `dataset_path`** | ✓ (Required) |
+| `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models | ✗ |
+| `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models | ✗ |
+| `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#using-the-random-dataset) | ✗ |
+| `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#using-the-random-multimodal-dataset) | ✗ |
+| `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 
 ## Model Settings
-- `--tokenizer-path`: Optional. Specifies the tokenizer weights path, used to calculate the number of tokens in the input and output, usually located in the same directory as the model weights.
-- `--frequency-penalty`: The frequency_penalty value.
-- `--logprobs`: Logarithmic probabilities.
-- `--max-tokens`: The maximum number of tokens that can be generated.
-- `--min-tokens`: The minimum number of tokens to generate. Not all model services support this parameter; please check the corresponding API documentation. For `vLLM>=0.8.1` versions, you need to additionally set `--extra-args '{"ignore_eos": true}'`.
-- `--n-choices`: The number of completion choices to generate.
-- `--seed`: The random seed, default is None.
-- `--stop`: Tokens that stop the generation.
-- `--stop-token-ids`: Sets the IDs of tokens that stop the generation.
-- `--temperature`: Sampling temperature, default is 0.0
-- `--top-p`: Top-p sampling.
-- `--top-k`: Top-k sampling.
-- `--extra-args`: Additional parameters to be passed in the request body, formatted as a JSON string. For example: `'{"ignore_eos": true}'`.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--tokenizer-path` | `str` | Tokenizer weights path<br>Used to calculate the number of tokens in input and output<br>Usually located in the same directory as model weights | `None` |
+| `--frequency-penalty` | `float` | frequency_penalty value | - |
+| `--logprobs` | `bool` | Whether to return logarithmic probabilities | - |
+| `--max-tokens` | `int` | Maximum number of tokens that can be generated | - |
+| `--min-tokens` | `int` | Minimum number of tokens to generate<br>Note: Not all model services support this parameter<br>For `vLLM>=0.8.1`, you need to additionally set<br>`--extra-args '{"ignore_eos": true}'` | - |
+| `--n-choices` | `int` | Number of completion choices to generate | - |
+| `--seed` | `int` | Random seed | `None` |
+| `--stop` | `str` | Tokens that stop the generation | - |
+| `--stop-token-ids` | `list[int]` | IDs of tokens that stop the generation | - |
+| `--temperature` | `float` | Sampling temperature | `0` |
+| `--top-p` | `float` | Top-p sampling | - |
+| `--top-k` | `int` | Top-k sampling | - |
+| `--extra-args` | `str` | Additional parameters to be passed in the request body<br>JSON string format<br>Example: `'{"ignore_eos": true}'` | - |
 
 ## Data Storage
-- `--visualizer`: The visualizer to use, if set, metrics will be saved to the specified visualizer, can be `wandb`, `swanlab`, `clearml`, default None.
-- `--wandb-api-key`: wandb API key to use for logging metrics to wandb. Deprecated, please use `--visualizer wandb` instead.
-- `--swanlab-api-key`: swanlab API key to use for logging metrics to swanlab. Deprecated, please use `--visualizer swanlab` instead.
-- `--outputs-dir` specifies the output file path, with a default value of `./outputs`.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--visualizer` | `str` | Visualizer to use<br>Options: `wandb`, `swanlab`, `clearml`<br>If set, metrics will be saved to the specified visualizer | `None` |
+| `--wandb-api-key` | `str` | wandb API key for logging metrics to wandb<br>**Deprecated**, please use `--visualizer wandb` instead | - |
+| `--swanlab-api-key` | `str` | swanlab API key for logging metrics to swanlab<br>**Deprecated**, please use `--visualizer swanlab` instead | - |
+| `--outputs-dir` | `str` | Output file path | `./outputs` |
 
 ## Other Parameters
-- `--db-commit-interval` specifies the number of rows buffered before writing results to the SQLite database, default is 1000.
-- `--queue-size-multiplier` sets the maximum size of the request queue, calculated as `parallel * multiplier`, default is 5.
-- `--in-flight-task-multiplier` sets the maximum number of in-flight tasks, calculated as `parallel * multiplier`, default is 2.
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--db-commit-interval` | `int` | Number of rows buffered before writing results to SQLite database | `1000` |
+| `--queue-size-multiplier` | `int` | Maximum size of the request queue<br>Calculated as: `parallel * multiplier` | `5` |
+| `--in-flight-task-multiplier` | `int` | Maximum number of in-flight tasks<br>Calculated as: `parallel * multiplier` | `2` |
