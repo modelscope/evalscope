@@ -91,6 +91,9 @@ class TaskConfig(BaseArgument):
     work_dir: str = DEFAULT_WORK_DIR
     """Working directory for storing evaluation results and temporary files."""
 
+    no_timestamp: bool = False
+    """Do not add timestamp to the work_dir to avoid overwriting previous results."""
+
     # Debug and runtime mode arguments
     ignore_errors: bool = False
     """Whether to continue evaluation when encountering errors."""

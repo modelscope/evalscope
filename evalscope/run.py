@@ -53,7 +53,7 @@ def setup_work_directory(task_cfg: TaskConfig, run_time: str):
     if task_cfg.use_cache:
         task_cfg.work_dir = task_cfg.use_cache
         logger.info(f'Set resume from {task_cfg.work_dir}')
-    elif are_paths_same(task_cfg.work_dir, DEFAULT_WORK_DIR):
+    elif not task_cfg.no_timestamp:
         task_cfg.work_dir = os.path.join(task_cfg.work_dir, run_time)
 
     outputs = OutputsStructure(outputs_dir=task_cfg.work_dir)
