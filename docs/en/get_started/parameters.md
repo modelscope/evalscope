@@ -220,7 +220,7 @@ After providing your explanation, you must rate the response on a scale of 0 (wo
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--work-dir` | `str` | Evaluation output path (see directory structure below) | `./outputs` |
-| `--no-timestamp` | `bool` | Do not add timestamp to work_dir to avoid overwriting previous results | `false` |
+| `--no-timestamp` | `bool` | Do not add timestamp to work_dir | `false` |
 | `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
 | `--rerun-review` | `bool` | Only rerun evaluation (reuses inference results) | `false` |
 | `--seed` | `int` | Random seed | `42` |
