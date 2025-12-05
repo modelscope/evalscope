@@ -10,7 +10,7 @@ from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_me
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.function_utils import retry_context
+from evalscope.utils.function_utils import retry_call
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -248,16 +248,21 @@ class HealthBenchAdapter(DefaultDataAdapter):
             grader_prompt = GRADER_TEMPLATE.replace('<<conversation>>',
                                                     convo_str).replace('<<rubric_item>>', str(rubric_item))
             messages = [ChatMessageUser(content=grader_prompt)]
-            # Retry logic for robust evaluation
-            with retry_context(retries=3, sleep_interval=1):
+
+            def judge_func():
                 grading_response = self.llm_judge.judge(messages=messages)
                 grading_response_dict = parse_json_to_dict(grading_response)
                 # Validate response format and extract boolean criteria_met field
-                if 'criteria_met' in grading_response_dict and isinstance(grading_response_dict['criteria_met'], bool):
-                    grading_response_list.append(grading_response_dict)
-                else:
+                if 'criteria_met' not in grading_response_dict or not isinstance(
+                    grading_response_dict['criteria_met'], bool
+                ):
                     logger.warning('Grading failed due to bad JSON output, retrying...')
                     raise ValueError('Grading failed due to bad JSON output')
+                return grading_response_dict
+
+            # Retry logic for robust evaluation
+            grading_result = retry_call(judge_func, retries=3, sleep_interval=1)
+            grading_response_list.append(grading_result)
 
         # Calculate final scores and explanations
         overall_score = calculate_score(rubric_items, grading_response_list)  # Overall weighted score

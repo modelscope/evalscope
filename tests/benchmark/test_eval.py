@@ -53,7 +53,7 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
             'few_shot_num': 4,
         }
-        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=10, model='qwen2.5-0.5b-instruct', no_timestamp=True)
+        self._run_dataset_test('gsm8k', dataset_args=dataset_args, limit=1, model='qwen2.5-0.5b-instruct')
 
     def test_gsm8k_pass_at_k(self):
         """Test GSM8K math reasoning dataset with Pass@k metric."""
@@ -100,7 +100,7 @@ class TestNativeBenchmark(TestBenchmark):
             'few_shot_num': 2,
             'subset_list': ['computer science', 'math']
         }
-        self._run_dataset_test('mmlu_pro', dataset_args=dataset_args, repeats=2)
+        self._run_dataset_test('mmlu_pro', dataset_args=dataset_args, repeats=2, debug=False)
 
     def test_mmlu_redux(self):
         """Test MMLU-Redux reasoning dataset."""

@@ -92,13 +92,14 @@ class DefaultEvaluator(Evaluator):
             Report: The complete evaluation report containing all metrics and results.
         """
         # Load the dataset and evaluate each subset
-        logger.info(f'Start evaluating benchmark: {self.benchmark_name}')
+        logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
         dataset_dict = self.benchmark.load_dataset()
         agg_score_dict = defaultdict(list)
 
         # Process each subset (e.g., test, validation) independently
-        logger.info('Evaluating all subsets of the dataset...')
-        for subset, dataset in dataset_dict.items():
+        subset_list = list(dataset_dict.keys())
+        logger.info(f'Start evaluating {len(dataset_dict)} subsets of the {self.benchmark_name}: {subset_list}')
+        for subset, dataset in tqdm(dataset_dict.items(), desc=f'Evaluating [{self.benchmark_name}]', unit='subset'):
             if len(dataset) == 0:
                 logger.info(f'No samples found in subset: {subset}, skipping.')
                 continue

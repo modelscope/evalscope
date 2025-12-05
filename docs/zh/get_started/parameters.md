@@ -30,14 +30,16 @@
 | 参数 | 类型 | 说明 | 支持的后端 |
 |------|------|------|------------|
 | `timeout` | `int` | 请求超时时间（秒） | 所有 |
+| `retries` | `int` | 重试次数，默认为5 | OpenAI兼容 |
+| `retry_interval` | `int` | 重试间隔时间（秒），默认10 | OpenAI兼容 |
 | `stream` | `bool` | 是否流式返回响应 | 所有 |
 | `max_tokens` | `int` | 最大生成token数量 | 所有 |
 | `top_p` | `float` | Nucleus采样，考虑概率质量为top_p的token | 所有 |
 | `temperature` | `float` | 采样温度，范围0~2，越高越随机 | 所有 |
-| `frequency_penalty` | `float` | 范围-2.0~2.0，正值惩罚重复token | OpenAI, Google, Grok, Groq, vLLM, SGLang |
-| `presence_penalty` | `float` | 范围-2.0~2.0，正值惩罚已出现token | OpenAI, Google, Grok, Groq, vLLM, SGLang |
-| `logit_bias` | `dict` | token id到偏置值的映射（-100~100）<br>示例：`"42=10,43=-10"` | OpenAI, Grok, vLLM |
-| `seed` | `int` | 随机种子 | OpenAI, Google, Mistral, Groq, HuggingFace, vLLM |
+| `frequency_penalty` | `float` | 范围-2.0~2.0，正值惩罚重复token | OpenAI兼容 |
+| `presence_penalty` | `float` | 范围-2.0~2.0，正值惩罚已出现token | OpenAI兼容 |
+| `logit_bias` | `dict` | token id到偏置值的映射（-100~100）<br>示例：`"42=10,43=-10"` | OpenAI兼容 |
+| `seed` | `int` | 随机种子 | OpenAI兼容 |
 | `do_sample` | `bool` | 是否采用采样策略（否则贪婪解码） | Transformers |
 | `top_k` | `int` | 从top_k最可能的词中采样 | Anthropic, Google, HuggingFace, vLLM, SGLang |
 | `logprobs` | `bool` | 是否返回输出token的对数概率 | OpenAI, Grok, TogetherAI, HuggingFace, llama-cpp-python, vLLM, SGLang |
