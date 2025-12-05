@@ -2,7 +2,6 @@ import asyncio
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
-from contextlib import contextmanager
 from functools import wraps
 from tqdm import tqdm
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, TypeVar, Union
@@ -68,43 +67,50 @@ def run_once(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def retry_func(retries=3, sleep_interval=0):
-    """A decorator that retries a function call up to `retries` times if an exception occurs."""
+def retry_wrapper(retries=3, sleep_interval=0):
+    """
+    Decorator that retries a function call up to `retries` times if an exception occurs.
+
+    Args:
+        retries: Maximum number of retry attempts (default: 3)
+        sleep_interval: Seconds to wait between retries (default: 0)
+
+    Returns:
+        Decorated function that implements retry logic with logging
+    """
 
     def decorator(func):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            last_exception = None
             for attempt in range(retries):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    last_exception = e
-                    if sleep_interval > 0:
-                        time.sleep(sleep_interval)
-            raise last_exception
+                    if attempt < retries - 1:
+                        if sleep_interval > 0:
+                            logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
+                            time.sleep(sleep_interval)
+                    else:
+                        raise
 
         return wrapper
 
     return decorator
 
 
-@contextmanager
-def retry_context(retries=3, sleep_interval=0):
-    """A context manager that retries the code block up to `retries` times if an exception occurs."""
-    last_exception = None
+def retry_call(func, *args, retries=3, sleep_interval=0, **kwargs):
+    """Function that retries a function call up to `retries` times if an exception occurs."""
     for attempt in range(retries):
         try:
-            yield
-            return  # If no exception, exit successfully
+            return func(*args, **kwargs)
         except Exception as e:
-            last_exception = e
-            if sleep_interval > 0:
-                time.sleep(sleep_interval)
-            if attempt == retries - 1:  # Last attempt
-                break
-    raise last_exception
+            if attempt < retries - 1:
+                if sleep_interval > 0:
+                    logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
+                    time.sleep(sleep_interval)
+            else:
+                raise
 
 
 class AsyncioLoopRunner:

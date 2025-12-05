@@ -30,6 +30,12 @@ class GenerateConfig(BaseModel):
     timeout: Optional[int] = Field(default=None)
     """Request timeout (in seconds)."""
 
+    retries: Optional[int] = Field(default=5)
+    """Number of retries for the request. Only supported by OpenAI compatible models."""
+
+    retry_interval: Optional[int] = Field(default=10)
+    """Retry interval between retries (in seconds). Only supported by OpenAI compatible models."""
+
     batch_size: Optional[int] = Field(default=None)
     """Maximum number of concurrent connections to Model API (default is model specific) or batch size for generation."""
 

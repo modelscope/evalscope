@@ -9,6 +9,7 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
+from evalscope.utils.function_utils import retry_call
 from .utils.openai import (
     chat_choices_from_openai,
     collect_stream_response,
@@ -89,7 +90,12 @@ class OpenAICompatibleAPI(ModelAPI):
 
         try:
             # generate completion and save response for model call
-            completion = self.client.chat.completions.create(**request)
+            completion = retry_call(
+                self.client.chat.completions.create,
+                retries=config.retries,
+                sleep_interval=config.retry_interval,
+                **request
+            )
             # handle streaming response
             if not isinstance(completion, ChatCompletion):
                 completion = collect_stream_response(completion)

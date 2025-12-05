@@ -8,6 +8,7 @@ which is useful when predictions are cached and model loading can be avoided.
 
 from typing import TYPE_CHECKING, Any, Optional
 
+from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -51,6 +52,7 @@ class LazyModel:
         object.__setattr__(self, '_model', None)
         object.__setattr__(self, '_is_loaded', False)
 
+    @thread_safe
     def _ensure_loaded(self) -> 'Model':
         """
         Ensure the model is loaded, loading it if necessary.

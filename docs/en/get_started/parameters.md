@@ -30,12 +30,14 @@ The `--generation-config` parameter supports the following options (comma-separa
 | Parameter | Type | Description | Supported Backends |
 |-----------|------|-------------|--------------------|
 | `timeout` | `int` | Request timeout (seconds) | All |
+| `retries` | `int` | Number of retries, default is 5. | OpenAI-compatible |
+| `retry_interval` | `int` | Retry interval (seconds), default is 10. | OpenAI-compatible |
 | `stream` | `bool` | Whether to return responses in streaming mode | All |
 | `max_tokens` | `int` | Maximum number of tokens generated | All |
 | `top_p` | `float` | Nucleus sampling; only considers tokens accounting for top_p probability mass | All |
 | `temperature` | `float` | Sampling temperature, range 0~2; higher means more randomness | All |
-| `frequency_penalty` | `float` | Range -2.0~2.0; positive values penalize repeated tokens | OpenAI, Google, Grok, Groq, vLLM, SGLang |
-| `presence_penalty` | `float` | Range -2.0~2.0; positive values penalize already appeared tokens | OpenAI, Google, Grok, Groq, vLLM, SGLang |
+| `frequency_penalty` | `float` | Range -2.0~2.0; positive values penalize repeated tokens | OpenAI-compatible |
+| `presence_penalty` | `float` | Range -2.0~2.0; positive values penalize already appeared tokens | OpenAI-compatible |
 | `logit_bias` | `dict` | Mapping of token IDs to bias values (-100~100)<br>Example: `"42=10,43=-10"` | OpenAI, Grok, vLLM |
 | `seed` | `int` | Random seed | OpenAI, Google, Mistral, Groq, HuggingFace, vLLM |
 | `do_sample` | `bool` | Whether to use sampling strategy (otherwise greedy decoding) | Transformers |
