@@ -99,7 +99,7 @@ def retry_wrapper(retries=3, sleep_interval=0):
     return decorator
 
 
-def retry_call(func, retries=3, sleep_interval=0, *args, **kwargs):
+def retry_call(func, *args, retries=3, sleep_interval=0, **kwargs):
     """Function that retries a function call up to `retries` times if an exception occurs."""
     for attempt in range(retries):
         try:
