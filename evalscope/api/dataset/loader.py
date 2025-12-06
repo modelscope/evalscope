@@ -38,6 +38,7 @@ class DataLoader(ABC):
         repeats: int = 1,
         trust_remote: bool = True,
         force_redownload: bool = False,
+        dataset_dir: Optional[str] = None,
         **kwargs
     ):
         self.data_id_or_path = data_id_or_path
@@ -55,6 +56,7 @@ class DataLoader(ABC):
         self.repeats = repeats
         self.trust_remote = trust_remote
         self.force_redownload = force_redownload
+        self.dataset_dir = dataset_dir
         self.kwargs = kwargs
 
     @abstractmethod
@@ -81,7 +83,10 @@ class RemoteDataLoader(DataLoader):
         data_to_sample = record_to_sample_fn(self.sample_fields)
         # generate a unique cache dir for this dataset
         dataset_hash = gen_hash(f'{path}{self.split}{self.subset}{self.version}{self.kwargs}')
-        datasets_cache_dir = os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, 'datasets')
+        if self.dataset_dir:
+            datasets_cache_dir = os.path.join(self.dataset_dir, 'datasets')
+        else:
+            datasets_cache_dir = os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, 'datasets')
         dataset_cache_dir = os.path.join(datasets_cache_dir, f'{safe_filename(path)}-{dataset_hash}')
         # force re-download: remove local cache if requested
         if self.force_redownload and os.path.exists(dataset_cache_dir):

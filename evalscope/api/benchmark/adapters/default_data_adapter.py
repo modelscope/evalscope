@@ -257,6 +257,7 @@ class DefaultDataAdapter(DataAdapter):
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
             force_redownload=self.force_redownload,  # Force redownload if enabled
+            dataset_dir=self.dataset_dir,  # Dataset directory
         )
         dataset = loader.load()
         return dataset
@@ -289,6 +290,7 @@ class DefaultDataAdapter(DataAdapter):
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             data_source=self.dataset_hub,  # Data source configuration
             force_redownload=self.force_redownload,  # Force redownload if enabled
+            dataset_dir=self.dataset_dir,  # Dataset directory
         )
         dataset = loader.load()
         return dataset
