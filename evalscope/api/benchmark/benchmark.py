@@ -349,6 +349,13 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         return self._task_config.seed
 
     @property
+    def dataset_dir(self) -> str:
+        """
+        Return the dataset directory for the benchmark.
+        """
+        return self._task_config.dataset_dir
+
+    @property
     def shuffle(self) -> bool:
         """
         Return whether to shuffle the dataset before evaluation.
