@@ -18,7 +18,7 @@ logger = get_logger()
 OPEN_PROMPT = """
 {question}
 
-The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the a single word answer to the problem.
+The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the a single word answer or number to the problem.
 """
 
 

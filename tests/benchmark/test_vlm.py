@@ -150,7 +150,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('chartqa', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('chartqa', dataset_args=dataset_args, limit=20, model='qwen2.5-vl-72b-instruct')
 
     def test_blink(self):
         dataset_args = {
