@@ -71,6 +71,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `--dataset-dir` | `str` | Dataset download path | `~/.cache/modelscope/datasets` |
 | `--dataset-hub` | `str` | Dataset source | `modelscope`<br>(Options: `huggingface`) |
 | `--limit` | `int`/`float` | Maximum samples to evaluate per dataset<br>• int: First N samples<br>• float: First N% of samples<br>Example: `100` or `0.1` | `None` (evaluate all) |
+| `--repeats` | `int` | Number of times to repeat inference on the same sample | `1` |
 | `--dataset-args` | `str` | Dataset configuration parameters (JSON string), see table below | `{}` |
 
 ### dataset-args Configuration Options
@@ -89,7 +90,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `shuffle` | `bool` | Whether to shuffle the data |
 | `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only) |
 | `metric_list` | `list[str]` | Metric list, default supports `acc` |
-| `aggregation` | `str` | Aggregation method: `mean` (default), `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` |
+| `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`).<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`) |
 | `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
 | `force_redownload` | `bool` | Whether to force re-download the dataset |
 | `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md) |

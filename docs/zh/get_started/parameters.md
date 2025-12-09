@@ -71,6 +71,7 @@
 | `--dataset-dir` | `str` | 数据集下载路径 | `~/.cache/modelscope/datasets` |
 | `--dataset-hub` | `str` | 数据集下载源 | `modelscope`<br>（可选：`huggingface`） |
 | `--limit` | `int`/`float` | 每个数据集最大评测数据量<br>• int：评测前N条数据<br>• float：评测前N%数据<br>示例：`100`或`0.1` | `None`（全部评测） |
+| `--repeats` | `int` | 重复推理一个样例多次 | `1` |
 | `--dataset-args` | `str` | 数据集配置参数（JSON字符串），详见下表 | `{}` |
 
 ### dataset-args 配置项
@@ -89,7 +90,7 @@
 | `shuffle` | `bool` | 是否打乱数据 |
 | `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
 | `metric_list` | `list[str]` | 指标列表，默认支持`acc` |
-| `aggregation` | `str` | 聚合方式：`mean`（默认）、`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k` |
+| `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
 | `force_redownload` | `bool` | 是否强制重新下载数据集 |
 | `extra_params` | `dict` | 数据集相关额外参数，参考[各数据集说明](./supported_dataset/index.md) |
