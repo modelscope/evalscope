@@ -12,11 +12,13 @@
 | `cmmmu` | [CMMMU](#cmmmu) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `fleurs` | [FLEURS](#fleurs) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](#general-vmcq) | `Custom`, `MCQ`, `MultiModal` |
 | `general_vqa` | [General-VQA](#general-vqa) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](#gsm8k-v) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
+| `librispeech` | [LibriSpeech](#librispeech) | `Audio`, `SpeechRecognition` |
 | `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -261,6 +263,31 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 ---
 
+### FLEURS
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `fleurs`
+- **数据集ID**: [lmms-lab/fleurs](https://modelscope.cn/datasets/lmms-lab/fleurs/summary)
+- **数据集介绍**:
+  > FLEURS 是一个包含 102 种语言的多语言基准，用于评估语音识别、口语理解和语音翻译。
+- **任务类别**: `Audio`, `MultiLingual`, `SpeechRecognition`
+- **评估指标**: `wer`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `cmn_hans_cn`, `en_us`, `yue_hant_hk`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
+````
+
+</details>
+
+---
+
 ### General-VMCQ
 
 [返回目录](#vlm评测集)
@@ -386,6 +413,31 @@ Please answer YES or NO without an explanation.
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the question.
+````
+
+</details>
+
+---
+
+### LibriSpeech
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `librispeech`
+- **数据集ID**: [lmms-lab/Librispeech-concat](https://modelscope.cn/datasets/lmms-lab/Librispeech-concat/summary)
+- **数据集介绍**:
+  > LibriSpeech 是一个包含 1000 小时有声读物英语朗读的语料库，广泛用于自动语音识别系统的基准测试。
+- **任务类别**: `Audio`, `SpeechRecognition`
+- **评估指标**: `wer`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
 ````
 
 </details>

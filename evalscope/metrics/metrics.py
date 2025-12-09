@@ -2,6 +2,7 @@
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
 
+import editdistance
 import itertools
 import math
 import numpy as np
@@ -490,17 +491,9 @@ def calculate_pass_hat_k(num_trials: int, success_count: int, k: int) -> float:
     return math.comb(success_count, k) / math.comb(num_trials, k)
 
 
-def levenshtein_distance(s1, s2):
-    if len(s1) > len(s2):
-        s1, s2 = s2, s1
+def levenshtein_distance(s1: Union[str, List[str]], s2: Union[str, List[str]]) -> int:
+    """Compute Levenshtein distance using the editdistance library.
 
-    distances = range(len(s1) + 1)
-    for i2, c2 in enumerate(s2):
-        distances_ = [i2 + 1]
-        for i1, c1 in enumerate(s1):
-            if c1 == c2:
-                distances_.append(distances[i1])
-            else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-        distances = distances_
-    return distances[-1]
+    Supports both strings and token sequences (lists).
+    """
+    return editdistance.eval(s1, s2)

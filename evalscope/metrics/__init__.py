@@ -17,6 +17,7 @@ if TYPE_CHECKING:
         weighted_mean,
     )
     from .rouge_metric import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
+    from .text_normalizer import BasicTextNormalizer, ChineseTextNormalizer, EnglishTextNormalizer
 
 else:
     _import_structure = {
@@ -47,7 +48,12 @@ else:
             'extract_answer',
             'math_equal',
             'strip_answer_string',
-        ]
+        ],
+        'text_normalizer': [
+            'BasicTextNormalizer',
+            'EnglishTextNormalizer',
+            'ChineseTextNormalizer',
+        ],
     }
 
     import sys

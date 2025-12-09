@@ -2,6 +2,7 @@ colorlog
 datasets==3.6.0
 docstring_parser
 dotenv
+editdistance
 jieba
 jsonlines
 jsonschema
@@ -9,6 +10,7 @@ langdetect
 latex2sympy2_extended[antlr4_9_3]
 matplotlib
 modelscope[framework]>=1.27
+more_itertools
 nltk>=3.9
 openai
 overrides
@@ -30,3 +32,4 @@ tiktoken
 tqdm
 transformers>=4.33,!=4.57.2
 word2number
+zhconv

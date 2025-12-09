@@ -1,5 +1,4 @@
 import json
-import numpy as np
 import os
 from collections import defaultdict
 from typing import Dict, List
@@ -150,6 +149,18 @@ class ANLS(Metric):
                     question_result = 0.0
             res.append(question_result)
         return res
+
+
+@register_metric(name='wer')
+class WER(Metric):
+
+    def __init__(self, language: str = 'English'):
+        self.language = language
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        from .text_normalizer.wer import wer
+
+        return [wer([ref], [pred], self.language) for pred, ref in zip(predictions, references)]
 
 
 @register_metric(name='bertscore')
