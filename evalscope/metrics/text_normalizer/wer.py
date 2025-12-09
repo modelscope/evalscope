@@ -82,8 +82,7 @@ class EvaluationTokenizer(object):
         self.lowercase = lowercase
         self.punctuation_removal = punctuation_removal
         self.character_tokenization = character_tokenization
-        self.tokenizer = TOKENIZERS[tokenizer_type]
-        # self.tokenizer = tokenizer_none
+        self.tokenizer = TOKENIZERS[tokenizer_type]()
 
     @classmethod
     def remove_punctuation(cls, sent: str):
@@ -91,7 +90,7 @@ class EvaluationTokenizer(object):
         return cls.SPACE.join(t for t in sent.split(cls.SPACE) if not all(unicodedata.category(c)[0] == 'P' for c in t))
 
     def tokenize(self, sent: str):
-        tokenized = self.tokenizer()(sent)
+        tokenized = self.tokenizer(sent)
 
         if self.punctuation_removal:
             tokenized = self.remove_punctuation(tokenized)
