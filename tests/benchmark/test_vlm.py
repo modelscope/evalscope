@@ -324,3 +324,13 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('gsm8k_v', dataset_args=dataset_args, limit=10)
+
+    def test_fleurs(self):
+        dataset_args = {
+            'subset_list': [
+                'cmn_hans_cn',
+                'en_us',
+                'yue_hant_hk',
+            ]
+        }
+        self._run_dataset_test('fleurs', dataset_args=dataset_args, limit=10, model='qwen-omni-turbo')

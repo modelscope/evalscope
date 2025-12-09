@@ -86,8 +86,8 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
         self.match_method = self.extra_params.get('match_method', 'quick_match')
 
         check_import(
-            module_name=['apted', 'distance', 'editdistance', 'Levenshtein', 'lxml', 'bs4'],
-            package=['apted', 'distance', 'editdistance', 'Levenshtein', 'lxml', 'BeautifulSoup4'],
+            module_name=['apted', 'distance', 'Levenshtein', 'lxml', 'bs4'],
+            package=['apted', 'distance', 'Levenshtein', 'lxml', 'BeautifulSoup4'],
             raise_error=True,
             feature_name='OmniDocBench'
         )

@@ -142,6 +142,7 @@ class Tags:
     AGENT = 'Agent'
     MT = 'MachineTranslation'
     GROUNDING = 'Grounding'
+    SPEECH_RECOGNITION = 'SpeechRecognition'
 
 
 class FileConstants:
