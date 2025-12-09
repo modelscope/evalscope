@@ -40,7 +40,6 @@ class LibriSpeechAdapter(VisionLanguageAdapter):
             target=record['transcript'],
             metadata={
                 'audio_id': record['audio_id'],
-                'transcript': record['transcript'],
                 'audio_duration': record['audio_duration'],
             }
         )

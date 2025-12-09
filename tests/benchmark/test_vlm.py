@@ -339,4 +339,4 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('librispeech', dataset_args=dataset_args, limit=20, model='qwen3-omni-flash', use_cache='outputs/20251209_134949', ignore_errors=True, rerun_review=True)
+        self._run_dataset_test('librispeech', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash', ignore_errors=True, rerun_review=True)
