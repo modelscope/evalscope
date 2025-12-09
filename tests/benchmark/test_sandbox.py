@@ -87,3 +87,10 @@ class TestCodeBenchmark(TestBenchmark):
         }
 
         self._run_dataset_test('scicode', dataset_args, repeats=2, limit=3, stream=True, rerun_review=True)
+
+    def test_mbpp(self):
+        """Test MBPP dataset."""
+        dataset_args = {
+            # 'metric_list': ['Pass@1']
+        }
+        self._run_dataset_test('mbpp', dataset_args, limit=20)
