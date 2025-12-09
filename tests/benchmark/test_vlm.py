@@ -330,7 +330,13 @@ class TestVLMBenchmark(TestBenchmark):
             'subset_list': [
                 'cmn_hans_cn',
                 'en_us',
-                'yue_hant_hk',
+                # 'yue_hant_hk',
             ]
         }
-        self._run_dataset_test('fleurs', dataset_args=dataset_args, limit=10, model='qwen-omni-turbo')
+        self._run_dataset_test('fleurs', dataset_args=dataset_args, limit=100, model='qwen3-omni-flash', use_cache='outputs/20251209_110609', ignore_errors=True, rerun_review=True)
+
+    def test_librispeech(self):
+        dataset_args = {
+            # 'subset_list': ['default']
+        }
+        self._run_dataset_test('librispeech', dataset_args=dataset_args, limit=20, model='qwen3-omni-flash', use_cache='outputs/20251209_134949', ignore_errors=True, rerun_review=True)

@@ -12,11 +12,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `cmmmu` | [CMMMU](#cmmmu) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
 | `cmmu` | [CMMU](#cmmu) | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
 | `docvqa` | [DocVQA](#docvqa) | `Knowledge`, `MultiModal`, `QA` |
+| `fleurs` | [FLEURS](#fleurs) | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | `general_vmcq` | [General-VMCQ](#general-vmcq) | `Custom`, `MCQ`, `MultiModal` |
 | `general_vqa` | [General-VQA](#general-vqa) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](#gsm8k-v) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](#hallusionbench) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `infovqa` | [InfoVQA](#infovqa) | `Knowledge`, `MultiModal`, `QA` |
+| `librispeech` | [LibriSpeech](#librispeech) | `Audio`, `SpeechRecognition` |
 | `math_verse` | [MathVerse](#mathverse) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](#mathvision) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](#mathvista) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -261,6 +263,31 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 ---
 
+### FLEURS
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `fleurs`
+- **Dataset ID**: [lmms-lab/fleurs](https://modelscope.cn/datasets/lmms-lab/fleurs/summary)
+- **Description**:
+  > FLEURS is a massively multilingual benchmark with 102 languages for evaluating ASR, spoken language understanding, and speech translation
+- **Task Categories**: `Audio`, `MultiLingual`, `SpeechRecognition`
+- **Evaluation Metrics**: `wer`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `cmn_hans_cn`, `en_us`, `yue_hant_hk`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
+````
+
+</details>
+
+---
+
 ### General-VMCQ
 
 [Back to Top](#vlm-benchmarks)
@@ -386,6 +413,31 @@ Please answer YES or NO without an explanation.
 Answer the question according to the image using a single word or phrase.
 {question}
 The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the question.
+````
+
+</details>
+
+---
+
+### LibriSpeech
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `librispeech`
+- **Dataset ID**: [lmms-lab/Librispeech-concat](https://modelscope.cn/datasets/lmms-lab/Librispeech-concat/summary)
+- **Description**:
+  > LibriSpeech is a 1,000-hour corpus of read-English speech from audiobooks, widely used to benchmark automatic speech recognition systems.
+- **Task Categories**: `Audio`, `SpeechRecognition`
+- **Evaluation Metrics**: `wer`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
 ````
 
 </details>

@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from collections import OrderedDict
-from typing import Any, Dict
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentAudio, ContentText
@@ -126,7 +125,7 @@ FLEURS_LANG_TO_ID = OrderedDict([
         name='fleurs',
         pretty_name='FLEURS',
         dataset_id='lmms-lab/fleurs',
-        tags=[Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
+        tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
         description=
         'FLEURS is a massively multilingual benchmark with 102 languages for evaluating ASR, spoken language understanding, and speech translation',  # noqa: E501
         subset_list=['cmn_hans_cn', 'en_us', 'yue_hant_hk'],
@@ -135,7 +134,7 @@ FLEURS_LANG_TO_ID = OrderedDict([
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
-class FLEURSAdapter(DefaultDataAdapter):
+class FLEURSAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -151,7 +150,6 @@ class FLEURSAdapter(DefaultDataAdapter):
             metadata={
                 'id': record['id'],
                 'num_samples': record['num_samples'],
-                'transcription': record['transcription'],
                 'raw_transcription': record['raw_transcription'],
                 'language': record['language'],
                 'gender': record['gender'],
@@ -164,10 +162,9 @@ class FLEURSAdapter(DefaultDataAdapter):
         from evalscope.metrics.text_normalizer.wer import normalize_text, wer
 
         language = task_state.metadata['lang_id']
-        transcription = task_state.metadata['transcription']
 
         normalized_prediction = normalize_text(original_prediction, language)
-        normalized_reference = normalize_text(transcription, language)
+        normalized_reference = normalize_text(reference, language)
         score = Score(
             extracted_prediction=normalized_prediction,
             prediction=original_prediction,

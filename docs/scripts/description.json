@@ -678,5 +678,15 @@
     "en": "EQ-Bench is a benchmark for evaluating language models on emotional intelligence tasks. It assesses the ability to predict the likely emotional responses of characters in dialogues by rating the intensity of possible emotional responses. [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)",
     "zh": "EQ-Bench 是一个用于评估语言模型在情感智能任务上表现的基准，通过评定可能情绪反应的强度来衡量模型预测对话中人物情绪反应的能力。[论文](https://arxiv.org/abs/2312.06281) | [主页](https://eqbench.com/)",
     "updated_at": "2025-12-03T15:14:58Z"
+  },
+  "librispeech": {
+    "en": "LibriSpeech is a 1,000-hour corpus of read-English speech from audiobooks, widely used to benchmark automatic speech recognition systems.",
+    "zh": "LibriSpeech 是一个包含 1000 小时有声读物英语朗读的语料库，广泛用于自动语音识别系统的基准测试。",
+    "updated_at": "2025-12-09T14:01:34Z"
+  },
+  "fleurs": {
+    "en": "FLEURS is a massively multilingual benchmark with 102 languages for evaluating ASR, spoken language understanding, and speech translation",
+    "zh": "FLEURS 是一个包含 102 种语言的多语言基准，用于评估语音识别、口语理解和语音翻译。",
+    "updated_at": "2025-12-09T14:01:34Z"
   }
 }
