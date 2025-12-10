@@ -1,0 +1,261 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
+import re
+from typing import Any, Dict, List, Tuple
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
+from evalscope.utils.code_utils import (
+    END_TOKENS,
+    IMPORT_HELPER,
+    default_extract_helper,
+    extract_code_from_freeform_completion,
+)
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='multiple_mbpp',
+        pretty_name='MultiPL-E MBPP',
+        tags=[Tags.CODING],
+        description='This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested.',
+        dataset_id='evalscope/MultiPL-E',
+        subset_list=[
+            'mbpp-cpp',
+            'mbpp-ts',
+            'mbpp-sh',
+            'mbpp-cs',
+            'mbpp-go',
+            'mbpp-java',
+            'mbpp-lua',
+            'mbpp-js',
+            'mbpp-php',
+            'mbpp-pl',
+            'mbpp-rkt',
+            'mbpp-r',
+            'mbpp-rs',
+            'mbpp-scala',
+            'mbpp-swift',
+            'mbpp-rb',
+            'mbpp-d',
+            'mbpp-jl',
+        ],
+        aggregation='mean_and_pass_at_k',
+        eval_split='test',
+        prompt_template='{prompt}',
+        review_timeout=20,
+        sandbox_config={
+            'image': 'volcengine/sandbox-fusion:server-20250609',
+            'tools_config': {
+                'shell_executor': {},
+                'python_executor': {},
+                'multi_code_executor': {}  # Multi-language code executor
+            }
+        },
+    )
+)
+class MultiPLEMBPPAdapter(DefaultDataAdapter):
+    """
+    MultiPL-E MBPP adapter using the new data processing framework.
+    Assumptions:
+    - Each subset is a single language suite.
+    - Records contain: 'prompt', 'tests', optional 'stop_tokens', 'language', and id: 'task_id' or 'name'.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """Convert a data record to a Sample object."""
+        return Sample(
+            input=record['prompt'],
+            target='',
+            metadata={
+                'tests': record['tests'],
+                'stop_tokens': record.get('stop_tokens', []),
+                'task_id': record.get('name', record.get('task_id')),
+                'language': record.get('language'),
+                'doctests': record.get('doctests', ''),
+            }
+        )
+
+    def format_prompt_template(self, sample: Sample) -> str:
+        """
+        Freeform SFT prompt:
+        - Fence the given prompt with the language derived from metadata.language ("mbpp-<lang>").
+        - Add a short instruction requesting full code without a Main entrypoint.
+        """
+        extract_lang, _ = self._normalize_languages(sample.metadata.get('language'))
+        instruction = (
+            'Please complete the above code according to the requirements in the docstring. '
+            'Write the complete code and wrap it in markdown fenced code. The code should not contain `Main` function.'
+        )
+        return f'```{extract_lang}\n{sample.input}\n```\n\n{instruction}'
+
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        """SFT extraction: extract fenced code, stop at language end tokens, remove entrypoints, append tests."""
+        extract_lang, _ = self._normalize_languages(task_state.metadata.get('language'))
+
+        # Choose extraction strategy per language
+        use_func_extractor_langs = {'typescript', 'go', 'perl', 'racket', 'lua', 'julia', 'd', 'js', 'php', 'r', 'ruby'}
+        if extract_lang in use_func_extractor_langs:
+            code = default_extract_helper(prediction, extract_lang)
+        else:
+            code, _ = extract_code_from_freeform_completion(prediction, extract_lang, first_block_only=True)
+
+        code = self._trim_by_stop_tokens(code, task_state.metadata.get('stop_tokens', []))
+        code = self._stop_after_end_token(code, extract_lang)
+        code = self._remove_main(code, extract_lang)
+
+        full_code = f'{code}\n{task_state.metadata.get("tests", "")}'
+        if extract_lang == 'java':
+            full_code = full_code.replace('class Problem', 'class Main')
+        return full_code
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Run code in sandbox and return pass/fail."""
+        if not self.use_sandbox:
+            raise RuntimeError(
+                'MultiPL-E MBPP requires sandboxed code execution for safety. Enable use_sandbox in TaskConfig.'
+            )
+
+        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
+        _, run_language = self._normalize_languages(task_state.metadata.get('language'))
+
+        res = self.execute_code_in_sandbox(
+            code=filtered_prediction,
+            timeout=self.review_timeout,
+            language=run_language,
+        )
+        passed = res.get('status') == 'success'
+        score.value = {'acc': passed}
+        score.metadata = {
+            'task_id': task_state.metadata.get('task_id'),
+            'timeout': self.review_timeout,
+            'execution_result': res,
+            'run_language': run_language,
+        }
+        score.main_score_name = 'acc'
+        return score
+
+    # Helpers
+
+    @staticmethod
+    def _normalize_languages(raw_language: Any) -> Tuple[str, str]:
+        """
+        Parse metadata.language (expected "mbpp-<lang>") and normalize to:
+        - extract_lang: language key for code fencing/extraction and END_TOKENS
+        - run_lang: sandbox-supported runtime key
+        Falls back conservatively and logs warnings on unknown languages.
+        """
+        if not isinstance(raw_language, str) or not raw_language:
+            logger.warning('Missing metadata.language; defaulting to cpp.')
+            base = 'cpp'
+        else:
+            # Accept either "mbpp-<lang>" or "<lang>"
+            base = raw_language.lower()
+            if base.startswith('mbpp-'):
+                base = base[len('mbpp-'):]
+        # Normalize for extraction (code fences and end tokens)
+        extract_map = {
+            'ts': 'typescript',
+            'js': 'js',
+            'rkt': 'racket',
+            'rb': 'ruby',
+            'rs': 'rust',
+            'jl': 'julia',
+            'sh': 'bash',
+            'd': 'd',
+        }
+        extract_lang = extract_map.get(base, base)
+
+        # Map to sandbox runtime keys
+        run_map = {
+            'python': 'python',
+            'cpp': 'cpp',
+            'go': 'go_test',  # prefer test runner
+            'java': 'java',
+            'js': 'nodejs',
+            'ts': 'ts',
+            'rust': 'rust',
+            'php': 'php',
+            'bash': 'bash',
+            'lua': 'lua',
+            'r': 'r',
+            'perl': 'perl',
+            'd': 'd_ut',
+            'ruby': 'ruby',
+            'scala': 'scala',
+            'julia': 'julia',
+            'kotlin': 'kotlin_script',
+            'verilog': 'verilog',
+            'lean': 'lean',
+            'swift': 'swift',
+            'racket': 'racket',
+            # aliases from mbpp naming to sandbox keys
+            'sh': 'bash',
+            'rs': 'rust',
+            'rb': 'ruby',
+            'jl': 'julia',
+            'rkt': 'racket',
+            'jsnode': 'nodejs',  # safety alias, not expected
+            'typescript': 'ts',
+        }
+        run_lang = run_map.get(base)
+        if run_lang is None:
+            # Try extraction name in case base was alias like 'typescript'
+            run_lang = run_map.get(extract_lang)
+        if run_lang is None:
+            logger.warning(f'Unsupported language "{base}" for sandbox; defaulting to cpp.')
+            run_lang = 'cpp'
+
+        return extract_lang, run_lang
+
+    @classmethod
+    def _trim_by_stop_tokens(cls, s: str, stop_tokens: List[str]) -> str:
+        if not stop_tokens:
+            return s
+        for st in stop_tokens:
+            if not st:
+                continue
+            if st.startswith('re:'):
+                pattern = re.compile(st[3:].strip())
+                match = pattern.search(s)
+                if match:
+                    s = s[:match.start()]
+            else:
+                index = s.find(st)
+                if index != -1:
+                    s = s[:index]
+        return s
+
+    @classmethod
+    def _stop_after_end_token(cls, s: str, language: str) -> str:
+        tokens = cls.END_TOKENS.get(language, [])
+        for et in tokens:
+            index = s.find(et)
+            if index != -1:
+                return s[:index] + et
+        return s
+
+    @classmethod
+    def _remove_main(cls, code: str, language: str) -> str:
+        main_tokens: List[str] = []
+        if language == 'd':
+            main_tokens = ['void main']
+        elif language == 'csharp':
+            main_tokens = ['public static void Main']
+        for token in main_tokens:
+            index = code.find(token)
+            if index != -1:
+                return code[:index]
+        return code

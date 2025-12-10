@@ -7,12 +7,94 @@ from typing import List, Literal, Optional, Tuple
 from evalscope.utils.logger import get_logger
 
 Language = Literal['python', 'cpp', 'nodejs', 'go', 'go_test', 'java', 'php', 'csharp', 'bash', 'typescript', 'sql',
-                   'rust', 'cuda', 'lua', 'R', 'perl', 'D_ut', 'ruby', 'scala', 'julia', 'pytest', 'junit',
+                   'rust', 'cuda', 'lua', 'r', 'perl', 'd_ut', 'ruby', 'scala', 'julia', 'pytest', 'junit',
                    'kotlin_script', 'jest', 'verilog', 'python_gpu', 'lean', 'swift', 'racket']
 
 NullableLang = Language | Literal['']
 
 logger = get_logger()
+
+IMPORT_HELPER = {
+    'python': [
+        'import math',
+        'import re',
+        'import sys',
+        'import copy',
+        'import datetime',
+        'import itertools',
+        'import collections',
+        'import heapq',
+        'import statistics',
+        'import functools',
+        'import hashlib',
+        'import numpy',
+        'import numpy as np',
+        'import string',
+        'from typing import *',
+        'from collections import *',
+    ],
+    'cpp': [
+        'using namespace std;',
+        '#include<optional>',
+        '#include<cassert>',
+        '#include<stdlib.h>',
+        '#include<algorithm>',
+        '#include<cmath>',
+        '#include<math.h>',
+        '#include<numeric>',
+        '#include<stdio.h>',
+        '#include<vector>',
+        '#include<set>',
+        '#include<map>',
+        '#include<queue>',
+        '#include<stack>',
+        '#include<list>',
+        '#include<deque>',
+        '#include<boost/any.hpp>',
+        '#include<string>',
+        '#include<climits>',
+        '#include<cstring>',
+        '#include<iostream>',
+        '#include<sstream>',
+        '#include<fstream>',
+    ],
+    'java': [
+        'import java.util.*;',
+        'import java.lang.reflect.*;',
+        'import org.javatuples.*;',
+        'import java.security.*;',
+        'import java.math.*;',
+        'import java.io.*;',
+        'import java.util.stream.*;',
+    ],
+    'csharp': [
+        'using System;',
+        'using System.Numerics;',
+        'using System.Diagnostics;',
+        'using System.Collections.Generic;',
+        'using System.Linq;',
+        'using System.Text;',
+        'using System.Security.Cryptography;',
+        'using System.Collections.Generic;',
+    ],
+    'go': ["import (\"fmt\")"],
+    'd': ['import std.array;', 'import std.algorithm;']
+}
+
+END_TOKENS = {
+    'julia': ['\nend'],
+    'lua': ['\nend'],
+    'ruby': ['\nend'],
+    'cpp': ['\n}'],
+    'csharp': ['\n}'],
+    'typescript': ['\n}'],
+    'perl': ['\n}'],
+    'r': ['\n}'],
+    'd': ['\n}'],
+    'go': ['\n}'],
+    'js': ['\n}'],
+    'php': ['\n}'],
+}
 
 
 class ExtractedType(Enum):
@@ -54,12 +136,12 @@ language_to_aliases = {
     'typescript': ['typescript'],
     'rust': ['rust', 'Rust', 'rs'],
     'sql': ['sql', 'SQL', 'Sql'],
-    'D': ['D', 'd'],
+    'd': ['D', 'd'],
     'julia': ['julia', 'Julia', 'jl'],
     'lua': ['lua', 'Lua'],
     'php': ['php', 'PHP'],
     'perl': ['perl', 'Perl', 'PERL'],
-    'R': ['R', 'r'],
+    'r': ['R', 'r'],
     'ruby': ['ruby', 'Ruby'],
     'scala': ['scala', 'Scala'],
     'kotlin': ['kotlin', 'Kotlin'],
@@ -222,6 +304,7 @@ def extract_code_from_freeform_completion(
         - inner_function_only(bool): used for language like c#, java, etc.
 
     Returns: (code, extracted_type)
+
     """
     completion_bk = completion  # backup the input
     extracted_type = ExtractedType.Empty  # initialize to empty case

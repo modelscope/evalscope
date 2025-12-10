@@ -186,12 +186,9 @@ class SandboxMixin:
                 parameters = {'command': code, 'timeout': timeout}
                 result = await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
             else:
-                logger.warning(f"Unsupported language: {language}. Supported languages are 'python' and 'shell'.")
-                result = ToolResult(
-                    status=ExecutionStatus.ERROR,
-                    tool_name='code_executor',
-                    output=f"Unsupported language: {language}. Supported languages are 'python' and 'shell'."
-                )
+                tool_name = 'multi_code_executor'
+                parameters = {'code': code, 'language': language, 'compile_timeout': 30, 'run_timeout': timeout}
+                result = await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
             return result
 
         # Execute in background loop via class-level runner
