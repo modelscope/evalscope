@@ -150,16 +150,18 @@ LANGUAGE_BY_CODE = {
         ),
         subset_list=LANGUAGE_PAIRS,
         eval_split='test',
-        metric_list={
-            'bleu': {},
+        metric_list=[{
+            'bleu': {}
+        }, {
             'bert_score': {
                 'model_id_or_path': 'AI-ModelScope/xlm-roberta-large',
                 'model_type': 'xlm-roberta-large'
-            },
+            }
+        }, {
             'comet': {
                 'model_id_or_path': 'evalscope/wmt22-comet-da',
             }
-        },
+        }],
         few_shot_num=0,
         prompt_template=PROMPT_TEMPLATE,
     )
@@ -172,7 +174,8 @@ class WMT24PPAdapter(DefaultDataAdapter):
         self.reformat_subset = True
         self.use_batch_scoring = True  # Enable batch scoring
 
-        if 'comet' in self.metric_list:
+        # Replace dict-style check with list[dict]-aware check
+        if self.has_metric('comet'):
             check_import('comet', 'unbabel-comet', raise_error=True, feature_name='COMETScore Metric')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -222,7 +225,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
         )
 
         # ---- BLEU ----
-        if 'bleu' in self.metric_list:
+        if self.has_metric('bleu'):
             try:
                 from evalscope.metrics import bleu_ngram_one_sample
 
@@ -250,7 +253,7 @@ class WMT24PPAdapter(DefaultDataAdapter):
             scores.append(score)
 
         # ---- BLEU (per-sample within batch) ----
-        if 'bleu' in self.metric_list:
+        if self.has_metric('bleu'):
             try:
                 from evalscope.metrics import bleu_ngram_one_sample
 
@@ -261,11 +264,11 @@ class WMT24PPAdapter(DefaultDataAdapter):
                 logger.warning(f'[WMT24PPAdapter] BLEU batch calculation failed: {e}')
 
         # ---- BERTScore ----
-        if 'bert_score' in self.metric_list:
+        if self.has_metric('bert_score'):
             try:
                 from evalscope.metrics.metric import BertScore
 
-                score_args = self.metric_list.get('bert_score', {})
+                score_args = self.get_metric_args('bert_score')
                 bert_scorer = BertScore(**score_args)
                 bert_score_f1 = bert_scorer.apply(filtered_predictions, references)
                 for i in range(len(scores)):
@@ -274,11 +277,11 @@ class WMT24PPAdapter(DefaultDataAdapter):
                 logger.warning(f'[WMT24PPAdapter] BERTScore batch calculation failed: {e}')
 
         # ---- COMET ----
-        if 'comet' in self.metric_list:
+        if self.has_metric('comet'):
             try:
                 from evalscope.metrics.metric import COMETScore
 
-                score_args = self.metric_list.get('comet', {})
+                score_args = self.get_metric_args('comet')
                 comet_scorer = COMETScore(**score_args)
                 data = [{
                     'src': st.metadata.get('source_text'),

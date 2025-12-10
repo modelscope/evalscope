@@ -58,13 +58,14 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['narrative-writing-english'],
-        metric_list={
+        metric_list=[{
             'bert_score': {
                 'model_id_or_path': 'AI-ModelScope/roberta-large',
                 'model_type': 'roberta-large'
-            },
+            }
+        }, {
             'gpt_score': {}
-        },
+        }],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -106,7 +107,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         """
         from evalscope.metrics.metric import BertScore
 
-        score_args = self.metric_list.get('bert_score', {})
+        score_args = self.get_metric_args('bert_score')
         bert_scorer = BertScore(**score_args)
         bert_score_f1 = bert_scorer.apply(filtered_predictions, references)
         scores = []
