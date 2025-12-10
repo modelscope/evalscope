@@ -94,3 +94,29 @@ class TestCodeBenchmark(TestBenchmark):
             # 'metric_list': ['Pass@1']
         }
         self._run_dataset_test('mbpp', dataset_args, limit=20)
+
+    def test_multiple_mbpp(self):
+        """Test MultiPL-E MBPP dataset."""
+        dataset_args = {
+            'subset_list': [
+                # 'mbpp-cpp',
+                'mbpp-ts',
+                # 'mbpp-sh',
+                # 'mbpp-cs',
+                # 'mbpp-go',
+                # 'mbpp-java',
+                # 'mbpp-lua',
+                # 'mbpp-js',
+                # 'mbpp-php',
+                # 'mbpp-pl',
+                # 'mbpp-rkt',
+                # 'mbpp-r',
+                # 'mbpp-rs',
+                # 'mbpp-scala',
+                # 'mbpp-swift',
+                # 'mbpp-rb',
+                # 'mbpp-d',
+                # 'mbpp-jl',
+        ],
+        }
+        self._run_dataset_test('multiple_mbpp', dataset_args, limit=1, use_cache='outputs/20251210_150606', rerun_review=True)

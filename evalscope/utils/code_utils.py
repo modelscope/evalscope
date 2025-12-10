@@ -1,4 +1,11 @@
-# Copy from https://github.com/bytedance/SandboxFusion/blob/main/sandbox/utils/extraction.py
+"""Utilities for extracting and post-processing code blocks from free-form LLM completions.
+
+This module provides:
+- Fenced and heuristic code block extraction with language detection.
+- Normalization helpers to remove entry points or wrap/trim code for specific languages.
+- Support for custom extraction logic via exec-safe context.
+"""
+
 import re
 from enum import Enum
 from pydantic import BaseModel
@@ -9,12 +16,15 @@ from evalscope.utils.logger import get_logger
 Language = Literal['python', 'cpp', 'nodejs', 'go', 'go_test', 'java', 'php', 'csharp', 'bash', 'typescript', 'sql',
                    'rust', 'cuda', 'lua', 'r', 'perl', 'd_ut', 'ruby', 'scala', 'julia', 'pytest', 'junit',
                    'kotlin_script', 'jest', 'verilog', 'python_gpu', 'lean', 'swift', 'racket']
+# Language identifiers supported by extraction/postprocessing utilities.
 
 NullableLang = Language | Literal['']
 
 logger = get_logger()
 
 IMPORT_HELPER = {
+    # Common imports per language to aid snippet compilation in sandbox contexts.
+    # Note: Not automatically injected; used by callers where needed.
     'python': [
         'import math',
         'import re',
@@ -82,6 +92,7 @@ IMPORT_HELPER = {
 }
 
 END_TOKENS = {
+    # End tokens used by some languages to heuristically detect block boundaries.
     'julia': ['\nend'],
     'lua': ['\nend'],
     'ruby': ['\nend'],
@@ -158,6 +169,15 @@ aliases_to_language_tiled = {v: k for k, vs in language_to_aliases.items() for v
 
 # code extraction
 def extract_fenced_code(completion: str) -> List[CodeBlock]:
+    """Extract complete fenced code blocks from a completion.
+
+    A fenced block is delimited by triple backticks with an optional language tag:
+    ```lang
+    code
+    ```
+
+    Returns a list of CodeBlock ordered by appearance with priority=30.
+    """
     code_matches = re.findall(fenced_code_block_pattern, completion)
     results = []
     for m in code_matches:
@@ -167,6 +187,12 @@ def extract_fenced_code(completion: str) -> List[CodeBlock]:
 
 
 def adjust_code_block(code_blocks: List[CodeBlock], language: str) -> List[CodeBlock]:
+    """Fix language tag placement issues and adjust blocks to the target language.
+
+    Some models place the language alias as the first line inside the fence rather than in the fence tag.
+    If a block has empty language and its first line matches an alias for `language`, the alias line is removed
+    and the block's language is set to `language`.
+    """
     if language == '' or language not in language_to_aliases:
         return code_blocks
     ret = []
@@ -183,6 +209,10 @@ def adjust_code_block(code_blocks: List[CodeBlock], language: str) -> List[CodeB
 
 
 def extract_incomplete_fenced_code(completion: str) -> List[CodeBlock]:
+    """Extract incomplete fenced code blocks that start with ``` but do not close.
+
+    Useful for handling truncated outputs. Returns CodeBlock with priority=20.
+    """
     code_matches = re.findall(incomplete_fenced_code_block_pattern, completion)
     results = []
     for m in code_matches:
@@ -192,13 +222,22 @@ def extract_incomplete_fenced_code(completion: str) -> List[CodeBlock]:
 
 
 def extract_heuristic_code(completion: str, language: NullableLang = '') -> List[CodeBlock]:
+    """Extract code via simple heuristics when fenced blocks are missing.
+
+    Currently supports:
+    - python: detect function/class definitions and bodies.
+    - sql: detect SELECT/CTE queries.
+    - bash: return non-empty lines as a single block.
+
+    Returns language-specific CodeBlock with priority=10 or an empty list.
+    """
 
     def extract_py(text):
         code = '\n'.join([line for line in text.split('\n') if line.strip() != '']) + '\n'
 
         pattern_py = '(?:^(?:import|from|#)[^\n]+\n)*' \
             '^(?:def|class) [^\n]+\n' \
-            r'(?:\s+[^\n]+\n)+'  # 函数/类实现
+            r'(?:\s+[^\n]+\n)+'  # class or function body
         matches = re.findall(pattern_py, code, re.M)
         return matches
 
@@ -224,6 +263,16 @@ def extract_heuristic_code(completion: str, language: NullableLang = '') -> List
 
 
 def extract_custom_code(completion: str, custom_logic: str) -> List[CodeBlock]:
+    """Run custom extraction logic provided as a Python string.
+
+    The execution context includes:
+    - CodeBlock class
+    - completion (str)
+    - submit_code_blocks(cb_list) to append CodeBlock instances
+    - extract_fenced_code, extract_heuristic_code helpers
+
+    Note: The caller is responsible for the safety of `custom_logic`.
+    """
     blocks = []
 
     def submit(cbs):
@@ -244,18 +293,30 @@ def extract_custom_code(completion: str, custom_logic: str) -> List[CodeBlock]:
 
 
 def filter_language(blocks: List[CodeBlock], language: NullableLang) -> List[CodeBlock]:
+    """Filter CodeBlock list by exact language match."""
     return [b for b in blocks if b.language == language]
 
 
 def trim_code_entrypoint(completion: str, language: NullableLang = ''):
+    """Trim common entry points like main functions for some languages.
+
+    Implement or remove if redundant with postprocess_completion/remove_entripoints.
+    """
     ...
 
 
 def default_extract_helper(completion: str, language: NullableLang = '', custom_extract_logic: Optional[str] = None):
-    '''
-    by default, find all the fenced code blocks and add heuristic blocks if first one fails
-    use the first block with target language, and fallback to the first any language block
-    '''
+    """Default strategy to obtain one code string from a completion.
+
+    Order of extraction:
+    1) Fenced code blocks
+    2) Language-specific heuristics
+    3) Incomplete fenced blocks
+    4) Optional custom logic
+
+    Selection rule:
+    - Choose blocks with max priority; prefer target `language` if available; otherwise take the first.
+    """
     code_blocks = extract_fenced_code(completion)
     code_blocks += extract_heuristic_code(completion, language)
     code_blocks += extract_incomplete_fenced_code(completion)
@@ -274,6 +335,14 @@ def default_extract_helper(completion: str, language: NullableLang = '', custom_
 
 
 def remove_entripoints(code, language: NullableLang = ''):
+    """Remove typical entry points to keep only reusable logic.
+
+    Examples:
+    - python: strip `if __name__ == "__main__": ...`
+    - cpp: strip `int main()`
+    - go: remove `package main`
+    - strip sections starting at `# Example usage`
+    """
     if language == 'python':
         if 'if __name__ == \"__main__\":' in code:
             next_line = code.index('if __name__ == \"__main__\":')
@@ -372,6 +441,19 @@ def extract_code_from_freeform_completion(
 
 
 def postprocess_completion(completion: str, language: str, no_removal: bool, completion_bk: str, **kwargs) -> str:
+    """Normalize a code snippet after extraction.
+
+    Behavior:
+    - python: trim __main__, optionally remove bare asserts
+    - java: wrap into class Solution when needed; strip main; prepend imports from declaration
+    - go: optionally remove `package main`; strip main()
+    - scala/verilog: extract useful inner blocks
+    - csharp/kotlin: optionally extract inner function or remove main
+
+    Flags:
+    - inner_function_only: if True, trim to the body of the first matching function signature
+    - no_removal: if True (go), do not remove package declarations
+    """
     # Make the expectation explicit: only act when the caller opts in
     inner_function_only = kwargs.get('inner_function_only') is True
 
@@ -461,6 +543,12 @@ def postprocess_completion(completion: str, language: str, no_removal: bool, com
 
 
 def trim_till_first_function(code, language):
+    """Return code trimmed from the beginning up to the end of the first function.
+
+    Supported languages: python, go(golang), typescript.
+    - For bracketed languages, counts brackets to determine function end.
+    - For Python, uses indentation levels to detect body end.
+    """
     # Regex patterns to find the start of a function
     if language == 'python':
         pattern = r'\bdef\s+\w+\s*\((?:[^()]|\n)*\)\s*->?\s*[\w\[\],\s]*:'

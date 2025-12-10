@@ -57,7 +57,9 @@ logger = get_logger()
                 'shell_executor': {},
                 'python_executor': {},
                 'multi_code_executor': {}  # Multi-language code executor
-            }
+            },
+            'memory_limit': '2g',
+            'cpu_limit': '2.0',
         },
     )
 )
@@ -107,16 +109,26 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
         use_func_extractor_langs = {'typescript', 'go', 'perl', 'racket', 'lua', 'julia', 'd', 'js', 'php', 'r', 'ruby'}
         if extract_lang in use_func_extractor_langs:
             code = default_extract_helper(prediction, extract_lang)
+            code = self._remove_main(code, extract_lang)
         else:
-            code, _ = extract_code_from_freeform_completion(prediction, extract_lang, first_block_only=True)
+            code, _ = extract_code_from_freeform_completion(code, extract_lang, first_block_only=True)
+            code = self._trim_by_stop_tokens(code, task_state.metadata.get('stop_tokens', []))
+            code = self._remove_main(code, extract_lang)
+        
+        # Prepend import helpers
+        # import_helper = IMPORT_HELPER.get(extract_lang, [])
+        # full_code = '\n'.join(import_helper) + '\n' + code
 
-        code = self._trim_by_stop_tokens(code, task_state.metadata.get('stop_tokens', []))
-        code = self._stop_after_end_token(code, extract_lang)
-        code = self._remove_main(code, extract_lang)
+        # Language-specific post-processing (e.g., consolidate Go packages/imports)
+        full_code = self._postprocess_full_code(code, extract_lang)
 
-        full_code = f'{code}\n{task_state.metadata.get("tests", "")}'
+        # Append dataset tests
+        full_code = f'{full_code}\n{task_state.metadata.get("tests", "")}'
+
+        # Java runner expects Main
         if extract_lang == 'java':
             full_code = full_code.replace('class Problem', 'class Main')
+
         return full_code
 
     def match_score(
@@ -150,21 +162,14 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
     # Helpers
 
     @staticmethod
-    def _normalize_languages(raw_language: Any) -> Tuple[str, str]:
+    def _normalize_languages(base: str) -> Tuple[str, str]:
         """
         Parse metadata.language (expected "mbpp-<lang>") and normalize to:
         - extract_lang: language key for code fencing/extraction and END_TOKENS
         - run_lang: sandbox-supported runtime key
         Falls back conservatively and logs warnings on unknown languages.
         """
-        if not isinstance(raw_language, str) or not raw_language:
-            logger.warning('Missing metadata.language; defaulting to cpp.')
-            base = 'cpp'
-        else:
-            # Accept either "mbpp-<lang>" or "<lang>"
-            base = raw_language.lower()
-            if base.startswith('mbpp-'):
-                base = base[len('mbpp-'):]
+
         # Normalize for extraction (code fences and end tokens)
         extract_map = {
             'ts': 'typescript',
@@ -201,22 +206,15 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
             'lean': 'lean',
             'swift': 'swift',
             'racket': 'racket',
-            # aliases from mbpp naming to sandbox keys
             'sh': 'bash',
             'rs': 'rust',
             'rb': 'ruby',
             'jl': 'julia',
             'rkt': 'racket',
-            'jsnode': 'nodejs',  # safety alias, not expected
+            'jsnode': 'nodejs',
             'typescript': 'ts',
         }
         run_lang = run_map.get(base)
-        if run_lang is None:
-            # Try extraction name in case base was alias like 'typescript'
-            run_lang = run_map.get(extract_lang)
-        if run_lang is None:
-            logger.warning(f'Unsupported language "{base}" for sandbox; defaulting to cpp.')
-            run_lang = 'cpp'
 
         return extract_lang, run_lang
 
@@ -240,7 +238,7 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
 
     @classmethod
     def _stop_after_end_token(cls, s: str, language: str) -> str:
-        tokens = cls.END_TOKENS.get(language, [])
+        tokens = END_TOKENS.get(language, [])
         for et in tokens:
             index = s.find(et)
             if index != -1:
@@ -258,4 +256,39 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
             index = code.find(token)
             if index != -1:
                 return code[:index]
+        return code
+
+    @staticmethod
+    def _postprocess_full_code(code: str, language: str) -> str:
+        """
+        Post-process the constructed full code for language-specific adjustments.
+
+        - go: consolidate packages and imports into a single header, then place code body.
+        """
+        if language == 'go':
+            # Collect all package declarations
+            packages = set(re.findall(r'package\s+(\w+)', code))
+            # Strip package lines from body
+            code_body = re.sub(r'package\s+\w+\s*', '', code)
+
+            # Collect imports: single and multi-form
+            single_imports = re.findall(r'import\s+(".*?")', code_body)
+            multi_block = re.findall(r'import\s*\((.*?)\)', code_body, flags=re.DOTALL)
+            multi_imports: List[str] = []
+            for blk in multi_block:
+                multi_imports.extend([ln.strip() for ln in blk.split('\n') if ln.strip()])
+
+            imports = {imp for imp in (single_imports + multi_imports) if imp}
+            # Strip import lines from body
+            code_body = re.sub(r'import\s+(".*?")', '', code_body)
+            code_body = re.sub(r'import\s*\((.*?)\)', '', code_body, flags=re.DOTALL)
+
+            # Rebuild header: packages + imports
+            pkg_hdr = '\n'.join(f'package {p}' for p in packages) if packages else ''
+            imp_hdr = '\n'.join(f'import {imp}' for imp in sorted(imports))
+            hdr = '\n\n'.join([s for s in [pkg_hdr, imp_hdr] if s])
+
+            # Final code layout
+            code = f'{hdr}\n\n{code_body}'.strip()
+
         return code
