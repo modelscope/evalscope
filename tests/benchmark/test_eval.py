@@ -476,6 +476,12 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('multi_if', dataset_args, limit=5)
 
+    def test_multi_if_load(self):
+        dataset_args = {
+            # 'subset_list': ['English', 'Chinese'],
+        }
+        self._run_dataset_load_test('multi_if', dataset_args)
+
     def test_healthbench(self):
         dataset_args = {
             'subset_list': ['health_data_tasks'],
@@ -616,7 +622,7 @@ class TestNativeBenchmark(TestBenchmark):
             'subset_list': ['en-zh_cn'],
             'few_shot_num': 0,
         }
-        self._run_dataset_test('wmt24pp', dataset_args, limit=10, use_cache='outputs/20251106_153525', rerun_review=True)
+        self._run_dataset_test('wmt24pp', dataset_args, limit=10)
 
     def test_swe_bench_verified(self):
         """Test SWE-bench-verified dataset."""

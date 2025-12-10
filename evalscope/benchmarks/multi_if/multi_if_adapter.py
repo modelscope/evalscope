@@ -93,6 +93,8 @@ class MultiIFAdapter(DefaultDataAdapter):
         history = []
         step_record = {}
         for step in range(1, self.max_turns + 1):
+            if not record.get(f'turn_{step}_prompt'):
+                break
             current_prompt = json.loads(record[f'turn_{step}_prompt'])
             history.append(ChatMessageUser(content=current_prompt['content']))
             # Generate model output
