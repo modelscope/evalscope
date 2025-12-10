@@ -2,7 +2,7 @@
 
 """
 1. Installation
-EvalScope: pip install mteb
+EvalScope: pip install "mteb<2"
 
 2. Run eval task
 """

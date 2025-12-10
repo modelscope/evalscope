@@ -49,7 +49,7 @@
 
 ```{seealso}
 - [CMTEB支持的数据集](https://github.com/FlagOpen/FlagEmbedding/blob/master/research/C_MTEB/README.md) 
-- [MTEB支持的数据集](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
+- [MTEB支持的数据集](https://embeddings-benchmark.github.io/mteb/overview/)
 ```
 
 ## 环境准备

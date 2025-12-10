@@ -54,7 +54,7 @@ For retrieval tasks, a sample of 100,000 candidates (including the ground truth)
 ## Environment Setup
 Install dependencies
 ```bash
-pip install mteb
+pip install "mteb<2"
 ```
 
 ## Configure Evaluation Parameters

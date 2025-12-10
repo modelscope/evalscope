@@ -39,5 +39,5 @@ For retrieval tasks, a sample of 100,000 candidates (including the ground truth)
 
 ## MTEB Evaluation Dataset
 ```{seealso}
-See also: [MTEB Related Tasks](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
+See also: [MTEB Related Tasks](https://embeddings-benchmark.github.io/mteb/overview/)
 ```

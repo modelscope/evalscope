@@ -39,5 +39,5 @@
 
 ### MTEB 评测数据集
 ```{seealso}
-参考：[MTEB相关任务](https://github.com/embeddings-benchmark/mteb/blob/main/docs/tasks.md)
+参考：[MTEB相关任务](https://embeddings-benchmark.github.io/mteb/overview/)
 ```
