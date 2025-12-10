@@ -18,11 +18,11 @@ def create_app_ui(args: argparse.Namespace):
     lang = args.lang
     locale_dict = get_app_locale(lang)
 
-    with gr.Blocks(title='Evalscope Dashboard') as demo:
+    with gr.Blocks(title="Evalscope Dashboard") as demo:
         gr.HTML(f'<h1 style="text-align: left;">{locale_dict["title"]} (v{__version__})</h1>')
         with gr.Row():
             with gr.Column(scale=0, min_width=35):
-                toggle_btn = gr.Button('<')
+                toggle_btn = gr.Button("<")
             with gr.Column(scale=1):
                 gr.HTML(f'<h3 style="text-align: left;">{locale_dict["star_beggar"]}</h3>')
 
@@ -97,7 +97,7 @@ def create_app_ui(args: argparse.Namespace):
         )
         def update_displays(reports_dropdown):
             if not reports_dropdown:
-                gr.Warning(locale_dict['note'], duration=3)
+                gr.Warning(locale_dict["note"], duration=3)
                 return gr.skip()
 
             return (
@@ -108,7 +108,7 @@ def create_app_ui(args: argparse.Namespace):
         @toggle_btn.click(inputs=[sidebar_visible], outputs=[sidebar_column, sidebar_visible, toggle_btn])
         def toggle_sidebar(visible):
             new_visible = not visible
-            text = '<' if new_visible else '>'
+            text = "<" if new_visible else ">"
             return gr.update(visible=new_visible), new_visible, gr.update(value=text)
 
     return demo
