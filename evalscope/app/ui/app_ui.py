@@ -19,12 +19,12 @@ def create_app_ui(args: argparse.Namespace):
     locale_dict = get_app_locale(lang)
 
     with gr.Blocks(title="Evalscope Dashboard") as demo:
-        gr.HTML(f"<h1 style=\"text-align: left;\">{locale_dict['title']} (v{__version__})</h1>")
+        gr.HTML("<h1 style=\"text-align: left;\">%s (v%s)</h1>" % (locale_dict["title"], __version__))
         with gr.Row():
             with gr.Column(scale=0, min_width=35):
                 toggle_btn = gr.Button("<")
             with gr.Column(scale=1):
-                gr.HTML(f"<h3 style=\"text-align: left;\">{locale_dict['star_beggar']}</h3>")
+                gr.HTML(f"<h3 style=\"text-align: left;\">%s</h3>" % (locale_dict["star_beggar"]))
 
         with gr.Row():
             with gr.Column(scale=1) as sidebar_column:
