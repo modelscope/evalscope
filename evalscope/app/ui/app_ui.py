@@ -48,13 +48,13 @@ def create_app_ui(args: argparse.Namespace):
             URL format: ?reports=report1;report2;report3
             """
             if request:
-                query_params = getattr(request, 'query_params', {})
-                reports_param = query_params.get('reports', '')
+                query_params = getattr(request, "query_params", {})
+                reports_param = query_params.get("reports", "")
                 logger.debug(f"reports_param from url: {reports_param}")
 
                 if reports_param:
                     # Parse comma-separated report names
-                    selected_reports = [r.strip() for r in reports_param.split(';') if r.strip()]
+                    selected_reports = [r.strip() for r in reports_param.split(";") if r.strip()]
                     logger.debug(f"selected_reports: {selected_reports}")
 
                     # Get available reports from the outputs directory
@@ -65,12 +65,12 @@ def create_app_ui(args: argparse.Namespace):
                     available_folders_set = set(available_folders)
                     prefix_map = {}
                     for folder in available_folders:
-                        prefix = folder.split('::')[0]
+                        prefix = folder.split("::")[0]
                         prefix_map.setdefault(prefix, []).append(folder)
 
                     valid_reports = []
                     for selected in selected_reports:
-                        if '::' in selected:
+                        if "::" in selected:
                             # Exact match
                             if selected in available_folders_set:
                                 valid_reports.append(selected)
