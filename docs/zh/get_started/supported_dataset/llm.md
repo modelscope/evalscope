@@ -52,6 +52,7 @@
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
+| `mbpp` | [MBPP](#mbpp) | `Coding` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
@@ -858,7 +859,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
 - **数据集介绍**:
   > Drivelology，一种独特的语言现象，表现为“有深度的 nonsense”——语法上连贯，但在语用上充满悖论、情感强烈或具有修辞性颠覆意味的言语。
 - **任务类别**: `Knowledge`, `Reasoning`
-- **评估指标**: `bert_score`, `gpt_score`
+- **评估指标**: `{'bert_score': {'model_id_or_path': 'AI-ModelScope/roberta-large', 'model_type': 'roberta-large'}}`, `{'gpt_score': {}}`
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
@@ -1664,6 +1665,44 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+````
+
+</details>
+
+---
+
+### MBPP
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mbpp`
+- **数据集ID**: [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary)
+- **数据集介绍**:
+  > MBPP（基础Python问题数据集）：该基准包含约1,000个众包的Python编程问题，旨在供初级程序员解决，涵盖编程基础、标准库功能等内容。每个问题包括任务描述、代码解答和3个自动化测试用例。**执行时需使用沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
+- **任务类别**: `Coding`
+- **评估指标**: 
+- **聚合方法**: `mean_and_pass_at_k`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 3-shot
+- **数据集子集**: `full`
+
+- **评测超时时间（秒）**: 20
+- **沙箱配置**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
+
+{tests}
 ````
 
 </details>
@@ -2600,7 +2639,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `super_gpqa`
 - **数据集ID**: [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary)
 - **数据集介绍**:
-  > SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型在不同领域的泛化能力。它包含来自 50 多个领域的 10 万多个问题，每个问题有 10 个选项。
+  > SuperGPQA 是一个大规模的多项选择题问答数据集，旨在评估模型在不同领域的泛化能力。它包含来自 50 多个领域的 26,000 多道题目，每道题有 10 个选项。
 - **任务类别**: `Knowledge`, `MCQ`
 - **评估指标**: `acc`
 - **聚合方法**: `mean`
@@ -2866,7 +2905,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集介绍**:
   > WMT2024新闻翻译基准，支持多种语言对，每个子集代表一个特定的翻译方向。
 - **任务类别**: `MachineTranslation`, `MultiLingual`
-- **评估指标**: `bert_score`, `bleu`, `comet`
+- **评估指标**: `{'bert_score': {'model_id_or_path': 'AI-ModelScope/xlm-roberta-large', 'model_type': 'xlm-roberta-large'}}`, `{'bleu': {}}`, `{'comet': {'model_id_or_path': 'evalscope/wmt22-comet-da'}}`
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

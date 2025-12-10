@@ -817,7 +817,7 @@ Answer the following multiple choice question based on the image and audio conte
   > - Rich Annotations: Contains location information for 15 block-level (text paragraphs, titles, tables, etc., over 20k in total) and 4 span-level (text lines, inline formulas, superscripts/subscripts, etc., over 80k in total) document elements, as well as recognition results for each element region (text annotations, LaTeX formula annotations, tables with both LaTeX and HTML annotations). OmniDocBench also provides reading order annotations for document components. Additionally, it includes various attribute labels at page and block levels, with 5 page attribute labels, 3 text attribute labels and 6 table attribute labels.
   > **The evaluation in EvalScope implements the `end2end` and `quick_match` methods from the official [OmniDocBench-v1.5 repository](https://github.com/opendatalab/OmniDocBench).**
 - **Task Categories**: `Knowledge`, `MultiModal`, `QA`
-- **Evaluation Metrics**: `display_formula`, `reading_order`, `table`, `text_block`
+- **Evaluation Metrics**: `{'display_formula': {'metric': ['Edit_dist']}}`, `{'reading_order': {'metric': ['Edit_dist']}}`, `{'table': {'metric': ['TEDS', 'Edit_dist']}}`, `{'text_block': {'metric': ['Edit_dist', 'BLEU', 'METEOR']}}`
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
