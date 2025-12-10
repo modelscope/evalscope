@@ -48,7 +48,7 @@ def create_app_ui(args: argparse.Namespace):
             URL format: ?reports=report1;report2;report3
             """
             if request:
-                query_params = dict(getattr(request, 'query_params', {}))
+                query_params = getattr(request, 'query_params', {})
                 reports_param = query_params.get('reports', '')
                 logger.debug(f"reports_param from url: {reports_param}")
 
