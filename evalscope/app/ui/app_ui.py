@@ -61,28 +61,22 @@ def create_app_ui(args: argparse.Namespace):
                     available_folders = scan_for_report_folders(args.outputs)
                     logger.debug(f"available_folders: {available_folders}")
 
-                    # Filter to only include valid reports
-                    # If selected_report contains ::, do exact match; otherwise do prefix match
-                    def find_matching_folders(selected_report, available_folders):
-                        matching = []
-
-                        if '::' in selected_report:
-                            # Exact match: selected_report contains ::
-                            if selected_report in available_folders:
-                                matching.append(selected_report)
-                        else:
-                            # Prefix match: match folders with same prefix before ::
-                            selected_prefix = selected_report
-                            for folder in available_folders:
-                                folder_prefix = folder.split('::')[0]
-                                if folder_prefix == selected_prefix:
-                                    matching.append(folder)
-
-                        return matching
+                    # Filter to only include valid reports by pre-building a prefix map for efficiency.
+                    available_folders_set = set(available_folders)
+                    prefix_map = {}
+                    for folder in available_folders:
+                        prefix = folder.split('::')[0]
+                        prefix_map.setdefault(prefix, []).append(folder)
 
                     valid_reports = []
                     for selected in selected_reports:
-                        valid_reports.extend(find_matching_folders(selected, available_folders))
+                        if '::' in selected:
+                            # Exact match
+                            if selected in available_folders_set:
+                                valid_reports.append(selected)
+                        else:
+                            # Prefix match
+                            valid_reports.extend(prefix_map.get(selected, []))
                     # Remove duplicates and maintain the original order
                     valid_reports = list(dict.fromkeys(valid_reports))
                     logger.debug(f"valid_reports: {valid_reports}")
