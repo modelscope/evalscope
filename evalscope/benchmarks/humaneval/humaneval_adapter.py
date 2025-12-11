@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# flake8: noqa: E501
+
 import re
 from typing import Any, Dict
 
@@ -20,15 +20,18 @@ logger = get_logger()
         name='humaneval',
         pretty_name='HumanEval',
         tags=[Tags.CODING],
-        description=
-        'HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. '
+        description='HumanEval is a benchmark for evaluating the ability of code '
+        'generation models to write Python functions based on given '
+        'specifications. It consists of programming tasks with a '
+        'defined input-output behavior. '
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='opencompass/humaneval',
         subset_list=['openai_humaneval'],
+        metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template=
-        'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',
+        'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',  # noqa: E501
         review_timeout=4,
         sandbox_config={
             'image': 'python:3.11-slim',

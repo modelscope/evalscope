@@ -261,6 +261,7 @@ def run_in_threads_with_progress(
                     finally:
                         # Always advance progress for completed futures (success or failure).
                         pbar.update(1)
+                        pbar.refresh()
 
                 # Continue polling remaining futures.
                 pending = not_done

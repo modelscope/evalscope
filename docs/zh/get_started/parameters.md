@@ -89,11 +89,11 @@
 | `few_shot_random` | `bool` | 是否随机采样few-shot数据 |
 | `shuffle` | `bool` | 是否打乱数据 |
 | `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
-| `metric_list` | `list[str]` | 指标列表，默认支持`acc` |
+| `metric_list` | `list[str\|dict]` | 指标列表，默认支持`acc` |
 | `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
 | `force_redownload` | `bool` | 是否强制重新下载数据集 |
-| `extra_params` | `dict` | 数据集相关额外参数，参考[各数据集说明](./supported_dataset/index.md) |
+| `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定 |
 | `sandbox_config` | `dict` | Sandbox配置（详见下方Sandbox参数） |
 
 **sandbox_config 配置项：**

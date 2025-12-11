@@ -52,6 +52,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `maritime_bench` | [MaritimeBench](#maritimebench) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
+| `mbpp` | [MBPP](#mbpp) | `Coding` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
@@ -62,6 +63,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
+| `multiple_mbpp` | [MultiPL-E MBPP](#multipl-e-mbpp) | `Coding` |
 | `music_trivia` | [MusicTrivia](#musictrivia) | `Knowledge`, `MCQ` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
@@ -858,7 +860,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
 - **Description**:
   > Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
 - **Task Categories**: `Knowledge`, `Reasoning`
-- **Evaluation Metrics**: `bert_score`, `gpt_score`
+- **Evaluation Metrics**: `{'bert_score': {'model_id_or_path': 'AI-ModelScope/roberta-large', 'model_type': 'roberta-large'}}`, `{'gpt_score': {}}`
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
@@ -1395,7 +1397,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Description**:
   > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -1496,7 +1498,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **Description**:
   > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -1664,6 +1666,44 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+````
+
+</details>
+
+---
+
+### MBPP
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mbpp`
+- **Dataset ID**: [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary)
+- **Description**:
+  > MBPP (Mostly Basic Python Problems Dataset): The benchmark consists of around 1,000 crowd-sourced Python programming problems, designed to be solvable by entry level programmers, covering programming fundamentals, standard library functionality, and so on. Each problem consists of a task description, code solution and 3 automated test cases.**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 3-shot
+- **Subsets**: `full`
+
+- **Review Timeout (seconds)**: 20
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
+
+{tests}
 ````
 
 </details>
@@ -1992,6 +2032,45 @@ Answer the following multiple choice question. The entire content of your respon
     }
 }
 ```
+
+---
+
+### MultiPL-E MBPP
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `multiple_mbpp`
+- **Dataset ID**: [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary)
+- **Description**:
+  > This multilingual MBPP was from MultiPL-E. 18 languages were implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `mbpp-cpp`, `mbpp-cs`, `mbpp-d`, `mbpp-go`, `mbpp-java`, `mbpp-jl`, `mbpp-js`, `mbpp-lua`, `mbpp-php`, `mbpp-pl`, `mbpp-r`, `mbpp-rb`, `mbpp-rkt`, `mbpp-rs`, `mbpp-scala`, `mbpp-sh`, `mbpp-swift`, `mbpp-ts`
+
+- **Review Timeout (seconds)**: 30
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "volcengine/sandbox-fusion:server-20250609",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {},
+        "multi_code_executor": {}
+    },
+    "memory_limit": "4g",
+    "cpu_limit": "4.0"
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+{prompt}
+````
+
+</details>
 
 ---
 
@@ -2600,7 +2679,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Dataset Name**: `super_gpqa`
 - **Dataset ID**: [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary)
 - **Description**:
-  > SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.
+  > SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 26,000+ questions from 50+ fields, with each question having 10 options.
 - **Task Categories**: `Knowledge`, `MCQ`
 - **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean`
@@ -2866,7 +2945,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Description**:
   > WMT2024 news translation benchmark supporting multiple language pairs. Each subset represents a specific translation direction
 - **Task Categories**: `MachineTranslation`, `MultiLingual`
-- **Evaluation Metrics**: `bert_score`, `bleu`, `comet`
+- **Evaluation Metrics**: `{'bert_score': {'model_id_or_path': 'AI-ModelScope/xlm-roberta-large', 'model_type': 'xlm-roberta-large'}}`, `{'bleu': {}}`, `{'comet': {'model_id_or_path': 'evalscope/wmt22-comet-da'}}`
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot

@@ -817,7 +817,7 @@ Answer the following multiple choice question based on the image and audio conte
   > - **丰富的标注信息**：包含 15 类块级元素（如文本段落、标题、表格等，共超过 2 万个）和 4 类跨行级元素（如文本行、行内公式、上下标等，共超过 8 万个）的位置信息，以及各元素区域的识别结果（文本标注、LaTeX 公式标注、同时支持 LaTeX 和 HTML 的表格标注）。OmniDocBench 还提供了文档组件的阅读顺序标注。此外，包含页面和块级别的多种属性标签，分别为 5 种页面属性、3 种文本属性和 6 种表格属性。  
   > **EvalScope 中的评测实现了官方 [OmniDocBench-v1.5 仓库](https://github.com/opendatalab/OmniDocBench) 提供的 `end2end` 和 `quick_match` 方法。**
 - **任务类别**: `Knowledge`, `MultiModal`, `QA`
-- **评估指标**: `display_formula`, `reading_order`, `table`, `text_block`
+- **评估指标**: `{'display_formula': {'metric': ['Edit_dist']}}`, `{'reading_order': {'metric': ['Edit_dist']}}`, `{'table': {'metric': ['TEDS', 'Edit_dist']}}`, `{'text_block': {'metric': ['Edit_dist', 'BLEU', 'METEOR']}}`
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

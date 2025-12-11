@@ -174,6 +174,8 @@ class SandboxMixin:
             logger.warning('Sandbox is not initialized.')
             return {'error': 'Sandbox is not initialized.'}
 
+        import asyncio
+        import concurrent.futures as cf
         from ms_enclave.sandbox.model import ExecutionStatus, ToolResult
 
         async def _execute_async():
@@ -186,17 +188,29 @@ class SandboxMixin:
                 parameters = {'command': code, 'timeout': timeout}
                 result = await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
             else:
-                logger.warning(f"Unsupported language: {language}. Supported languages are 'python' and 'shell'.")
-                result = ToolResult(
-                    status=ExecutionStatus.ERROR,
-                    tool_name='code_executor',
-                    output=f"Unsupported language: {language}. Supported languages are 'python' and 'shell'."
-                )
+                tool_name = 'multi_code_executor'
+                parameters = {'code': code, 'language': language, 'run_timeout': timeout}
+                result = await self._manager.execute_tool(self._sandbox_id, tool_name, parameters)
             return result
 
         # Execute in background loop via class-level runner
-        result = AsyncioLoopRunner.run(_execute_async(), timeout=timeout + 10)
-        return result.model_dump(exclude_none=True)
+        try:
+            result = AsyncioLoopRunner.run(_execute_async(), timeout=timeout + 10)
+            return result.model_dump(exclude_none=True)
+        except (TimeoutError, asyncio.TimeoutError, cf.TimeoutError) as e:
+            logger.error(f'Code execution in sandbox timed out: {e!r}')
+            return {
+                'status': ExecutionStatus.TIMEOUT,
+                'error': 'Code execution timed out.',
+                'metadata': {
+                    'code': code,
+                    'language': language
+                }
+            }
+        except Exception as e:
+            # Avoid surfacing unexpected exceptions to callers
+            logger.exception(f'Code execution in sandbox failed: {e!r}')
+            return {'status': ExecutionStatus.ERROR, 'error': str(e), 'metadata': {'code': code, 'language': language}}
 
     def sandbox_finalize(self, *args, **kwargs):
         """Finalize the sandbox manager."""

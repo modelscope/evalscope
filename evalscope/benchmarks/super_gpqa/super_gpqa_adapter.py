@@ -94,7 +94,7 @@ SUBSET_MAPPING = {
         pretty_name='SuperGPQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=
-        'SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 100,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
+        'SuperGPQA is a large-scale multiple-choice question answering dataset, designed to evaluate the generalization ability of models across different fields. It contains 26,000+ questions from 50+ fields, with each question having 10 options.',  # noqa: E501
         dataset_id='m-a-p/SuperGPQA',
         subset_list=list(SUBSET_MAPPING.keys()),
         metric_list=['acc'],

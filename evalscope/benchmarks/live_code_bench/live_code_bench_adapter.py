@@ -24,6 +24,7 @@ logger = get_logger()
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',
         dataset_id='AI-ModelScope/code_generation_lite',
         subset_list=['release_latest'],
+        metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template=

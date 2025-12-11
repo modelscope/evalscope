@@ -459,6 +459,16 @@ class DefaultDataAdapter(DataAdapter):
     # METRIC CALCULATION METHODS
     # ##########################
 
+    def has_metric(self, name: str) -> bool:
+        return any(name in d for d in (self.metric_list or []))
+
+    def get_metric_args(self, name: str) -> Dict[str, Any]:
+        for d in (self.metric_list or []):
+            if name in d:
+                cfg = d.get(name, {})
+                return cfg if isinstance(cfg, dict) else {}
+        return {}
+
     def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
         """
         Filter and prepare the model prediction for metric calculation.
