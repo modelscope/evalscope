@@ -277,7 +277,7 @@ def extract_custom_code(completion: str, custom_logic: str) -> List[CodeBlock]:
 
     def submit(cbs):
         for cb in cbs:
-            assert isinstance(cb, CodeBlock), 'extrace code type must be class CodeBlock'
+            assert isinstance(cb, CodeBlock), 'extracted code type must be class CodeBlock'
             blocks.append(cb)
 
     context = {
@@ -377,7 +377,7 @@ def extract_code_from_freeform_completion(
         first_block_idx = first_un_block_idx if first_sp_block_idx == -1 else first_sp_block_idx
         if first_block_idx != -1:
             code_blocks = code_blocks[:first_block_idx + 1]
-            code_blocks = code_blocks[:first_block_idx + 1]
+
         logger.debug(f'select first code block for fewshot task: {code_blocks}')
 
     # drop the blocks which the language tag different with target programming language
@@ -473,9 +473,9 @@ def extract_code_from_freeform_completion_v2(
 
     Since == autoeval-v5
 
-    - 修改了 python 去除 main 执行部分的逻辑
+    - Modified the logic for removing python main execution part
 
-    - 适配 llama3 不正常的 Code block 格式
+    - Adapted to llama3's abnormal Code block format
     """
     completion_bk = completion  # backup the input
     extracted_type = ExtractedType.Empty  # initialize to empty case
@@ -493,7 +493,7 @@ def extract_code_from_freeform_completion_v2(
         first_block_idx = first_un_block_idx if first_sp_block_idx == -1 else first_sp_block_idx
         if first_block_idx != -1:
             code_blocks = code_blocks[:first_block_idx + 1]
-            code_blocks = code_blocks[:first_block_idx + 1]
+
         logger.debug(f'select first code block for fewshot task: {code_blocks}')
 
     # drop the blocks which the language tag different with target programming language
@@ -590,7 +590,7 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
                 if 'import' in line:
                     completion = line + '\n' + completion
     elif language == 'go':
-        # 一般来说移除 `package main` 语句，部分数据集不要做移除，例如 mbxp
+        # Generally remove the `package main` statement, but some datasets should not remove it, such as mbxp
         if not no_removal:
             completion = completion.replace('package main', '')
 
@@ -600,13 +600,13 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
         if body is not None:
             completion = completion[:body[0]] + completion[body[1]:]
     elif language == 'scala':
-        # 提取出包裹在 object X { ... } 中的部分，一般来说是个函数
+        # Extract the part wrapped in object X { ... }, generally it's a function
         pat = r'object\s+\w+(\s+extends\s+\w+)?\s*\n*\{(.*)\}'
         r = re.findall(pat, completion, re.DOTALL | re.MULTILINE)
         if r:
             completion = r[0][1]
     elif language == 'verilog':
-        # 提取出在 module X (X, X); .... endmodule 中分号到endmodule之间的内容，包括endmodule
+        # Extract the content between the semicolon and endmodule in module X (X, X); ... endmodule, including endmodule
         pat = r'module\s+\w+\s+\((.*?)\);(.*?)endmodule'
         r = re.findall(pat, completion, re.DOTALL | re.MULTILINE)
         if r:
@@ -615,7 +615,7 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
             # if we cannot extract any code block, return the unacted input
             completion = completion_bk
     elif language == 'csharp':
-        # 提取 class 内 function body 部分
+        # Extract function body part inside class
         if inner_function_only:
             pattern = r'(public|private|protected|internal)\s+(static\s+)(.*?)\((.*?)\)\s*{'
             body = find_inner_function_body(pattern, completion)

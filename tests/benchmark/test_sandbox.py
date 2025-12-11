@@ -95,7 +95,7 @@ class TestCodeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('mbpp', dataset_args, limit=20, debug=False)
 
-    def test_multiple_mbpp(self):
+    def test_multipl_e_mbpp(self):
         """Test MultiPL-E MBPP dataset."""
         dataset_args = {
             'subset_list': [
