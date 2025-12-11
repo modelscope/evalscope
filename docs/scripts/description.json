@@ -693,5 +693,10 @@
     "en": "MBPP (Mostly Basic Python Problems Dataset): The benchmark consists of around 1,000 crowd-sourced Python programming problems, designed to be solvable by entry level programmers, covering programming fundamentals, standard library functionality, and so on. Each problem consists of a task description, code solution and 3 automated test cases.**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
     "zh": "MBPP（基础Python问题数据集）：该基准包含约1,000个众包的Python编程问题，旨在供初级程序员解决，涵盖编程基础、标准库功能等内容。每个问题包括任务描述、代码解答和3个自动化测试用例。**执行时需使用沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
     "updated_at": "2025-12-10T11:19:58Z"
+  },
+  "multiple_mbpp": {
+    "en": "This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "此多语言 MBPP 来自 MultiPL-E，已实现并测试了 18 种语言。**执行时需要沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-12-11T10:45:07Z"
   }
 }

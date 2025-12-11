@@ -25,7 +25,8 @@ logger = get_logger()
         name='multiple_mbpp',
         pretty_name='MultiPL-E MBPP',
         tags=[Tags.CODING],
-        description='This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested.',
+        description='This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested. '
+        '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='evalscope/MultiPL-E',
         subset_list=[
             'mbpp-cpp',

@@ -63,6 +63,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
+| `multiple_mbpp` | [MultiPL-E MBPP](#multipl-e-mbpp) | `Coding` |
 | `music_trivia` | [MusicTrivia](#musictrivia) | `Knowledge`, `MCQ` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
@@ -2031,6 +2032,45 @@ Answer the following multiple choice question. The entire content of your respon
     }
 }
 ```
+
+---
+
+### MultiPL-E MBPP
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `multiple_mbpp`
+- **Dataset ID**: [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary)
+- **Description**:
+  > This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: 
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `mbpp-cpp`, `mbpp-cs`, `mbpp-d`, `mbpp-go`, `mbpp-java`, `mbpp-jl`, `mbpp-js`, `mbpp-lua`, `mbpp-php`, `mbpp-pl`, `mbpp-r`, `mbpp-rb`, `mbpp-rkt`, `mbpp-rs`, `mbpp-scala`, `mbpp-sh`, `mbpp-swift`, `mbpp-ts`
+
+- **Review Timeout (seconds)**: 30
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "volcengine/sandbox-fusion:server-20250609",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {},
+        "multi_code_executor": {}
+    },
+    "memory_limit": "4g",
+    "cpu_limit": "4.0"
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+{prompt}
+````
+
+</details>
 
 ---
 
