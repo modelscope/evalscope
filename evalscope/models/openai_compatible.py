@@ -1,6 +1,7 @@
 import os
 from openai import APIStatusError, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
 from openai._types import NOT_GIVEN
+from openai.types import Completion
 from openai.types.chat import ChatCompletion
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -11,13 +12,17 @@ from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
 from .utils.openai import (
     chat_choices_from_openai,
+    collect_completion_stream_response,
     collect_stream_response,
+    completion_choices_from_openai,
     model_output_from_openai,
+    model_output_from_openai_completion,
     openai_chat_messages,
     openai_chat_tool_choice,
     openai_chat_tools,
     openai_completion_params,
     openai_handle_bad_request,
+    openai_prompt_from_messages,
 )
 
 logger = get_logger()
@@ -50,7 +55,7 @@ class OpenAICompatibleAPI(ModelAPI):
         assert self.base_url, f'Base URL for {model_name} not found'
 
         # remove trailing slash from base_url
-        self.base_url = self.base_url.rstrip('/').removesuffix('/chat/completions')
+        self.base_url = self.base_url.rstrip('/').removesuffix('/chat/completions').removesuffix('/completions')
 
         # create http client
         self.client = OpenAI(
@@ -142,3 +147,53 @@ class OpenAICompatibleAPI(ModelAPI):
     def handle_bad_request(self, ex: APIStatusError) -> Union[ModelOutput, Exception]:
         """Hook for subclasses to do bad request handling"""
         return openai_handle_bad_request(self.model_name, ex)
+
+
+class OpenAIBaseModelAPI(OpenAICompatibleAPI):
+    """OpenAI compatible API that targets the completions endpoint."""
+
+    def generate(
+        self,
+        input: List[ChatMessage],
+        tools: List[ToolInfo],
+        tool_choice: ToolChoice,
+        config: GenerateConfig,
+    ) -> ModelOutput:
+        completion_params = self.completion_params(
+            config=config,
+            tools=False,
+        )
+
+        request = dict(
+            prompt=openai_prompt_from_messages(input),
+            **completion_params,
+        )
+
+        self.validate_completion_request_params(request)
+
+        try:
+            completion = self.client.completions.create(**request)
+            # handle streaming response
+            if not isinstance(completion, Completion):
+                completion = collect_completion_stream_response(completion)
+            response = completion.model_dump()
+            self.on_response(response)
+
+            choices = completion_choices_from_openai(completion)
+            return model_output_from_openai_completion(completion, choices)
+
+        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+            return self.handle_bad_request(ex)
+
+    def validate_completion_request_params(self, params: Dict[str, Any]):
+        """Validate request params for completions endpoint."""
+        if not hasattr(self, '_valid_completion_params'):
+            self._valid_completion_params = get_supported_params(self.client.completions.create)
+
+        extra_body = params.get('extra_body', {})
+        for key in list(params.keys()):
+            if key not in self._valid_completion_params:
+                extra_body[key] = params.pop(key)
+
+        if extra_body:
+            params['extra_body'] = extra_body

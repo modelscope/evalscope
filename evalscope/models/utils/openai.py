@@ -4,6 +4,14 @@ import re
 from collections import defaultdict
 from copy import copy
 from openai import APIStatusError, OpenAIError
+from openai.types import Completion
+
+# Compatibility shim: CompletionChoice location differs across openai versions
+try:
+    from openai.types.completion import Choice as CompletionChoice  # type: ignore
+except ImportError:  # pragma: no cover
+    from openai.types.completion_choice import CompletionChoice  # type: ignore
+
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionAssistantMessageParam,
@@ -155,6 +163,16 @@ def openai_chat_messages(
     system_role: Literal['user', 'system', 'developer'] = 'system',
 ) -> List[ChatCompletionMessageParam]:
     return [openai_chat_message(message, system_role) for message in messages]
+
+
+def openai_prompt_from_messages(messages: List[ChatMessage]) -> str:
+    """Flatten chat messages into a simple text prompt for completions API."""
+    parts: List[str] = []
+    for message in messages:
+        role = getattr(message, 'role', 'user')
+        parts.append(f'{role}: {message.text}')
+    parts.append('assistant:')
+    return '\n'.join(parts)
 
 
 def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
@@ -505,6 +523,40 @@ def chat_message_assistant_from_openai(
     )
 
 
+def completion_choices_from_openai(response: Completion) -> List[ChatCompletionChoice]:
+    choices = list(response.choices)
+    choices.sort(key=lambda c: c.index)
+    return [
+        ChatCompletionChoice(
+            message=ChatMessageAssistant(content=(choice.text or ''), model=response.model, source='generate'),
+            stop_reason=as_stop_reason(choice.finish_reason),
+            logprobs=None,
+        ) for choice in choices
+    ]
+
+
+def model_output_from_openai_completion(
+    completion: Completion,
+    choices: List[ChatCompletionChoice],
+) -> ModelOutput:
+    return ModelOutput(
+        model=completion.model,
+        choices=choices,
+        usage=(
+            ModelUsage(
+                input_tokens=completion.usage.prompt_tokens,
+                output_tokens=completion.usage.completion_tokens,
+                input_tokens_cache_read=(
+                    completion.usage.prompt_tokens_details.cached_tokens
+                    if completion.usage.prompt_tokens_details is not None else None
+                ),
+                reasoning_tokens=None,
+                total_tokens=completion.usage.total_tokens,
+            ) if completion.usage else None
+        ),
+    )
+
+
 def model_output_from_openai(
     completion: ChatCompletion,
     choices: list[ChatCompletionChoice],
@@ -614,6 +666,42 @@ def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValu
         re.sub(internal_pattern, '', content, flags=re.DOTALL).strip(),
         json.loads(base64.b64decode(internal_match.group(1)).decode('utf-8')),
     ) if internal_match else (content, None))
+
+
+def collect_completion_stream_response(response_stream: List[Completion]) -> Completion:
+    collected_choices = defaultdict(str)
+    finish_reasons = {}
+    last_chunk: Optional[Completion] = None
+
+    for chunk in response_stream:
+        last_chunk = chunk
+        for choice in chunk.choices:
+            collected_choices[choice.index] += getattr(choice, 'text', '') or ''
+            if choice.finish_reason:
+                finish_reasons[choice.index] = choice.finish_reason
+
+    if last_chunk is None:
+        raise ValueError('Empty completion stream')
+
+    choices: List[CompletionChoice] = []
+    for index, text in collected_choices.items():
+        choices.append(
+            CompletionChoice(
+                finish_reason=finish_reasons.get(index, 'stop'),
+                index=index,
+                logprobs=None,
+                text=text,
+            )
+        )
+
+    return Completion(
+        id=last_chunk.id,
+        choices=choices,
+        created=last_chunk.created,
+        model=last_chunk.model,
+        object=getattr(last_chunk, 'object', 'completion'),
+        usage=getattr(last_chunk, 'usage', None),
+    )
 
 
 def collect_stream_response(response_stream: List[ChatCompletionChunk]) -> ChatCompletion:

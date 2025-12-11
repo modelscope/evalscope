@@ -195,9 +195,10 @@ class TaskConfig(BaseArgument):
                         'temperature': 1.0,
                         'n': 1,
                     }
-                elif self.eval_type == EvalType.SERVICE:
+                elif self.eval_type in (EvalType.SERVICE, EvalType.BASE_MODEL):
                     self.generation_config = {
                         'temperature': 0.0,
+                        'max_tokens': 512,
                     }
         if isinstance(self.generation_config, dict):
             self.generation_config = GenerateConfig.model_validate(self.generation_config)
