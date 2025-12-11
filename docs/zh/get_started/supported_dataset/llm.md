@@ -1397,7 +1397,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集介绍**:
   > HumanEval 是一个基准测试，用于评估代码生成模型根据给定规范编写 Python 函数的能力。它包含一系列具有明确定义输入输出行为的编程任务。**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: 
+- **评估指标**: `acc`
 - **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -1498,7 +1498,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **数据集介绍**:
   > Live Code Bench 是一个用于评估代码生成模型在真实编程任务中表现的基准测试，包含多种编程题目及测试用例，用以衡量模型生成正确且高效代码的能力。**默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: 
+- **评估指标**: `acc`
 - **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
@@ -1680,7 +1680,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集介绍**:
   > MBPP（基础Python问题数据集）：该基准包含约1,000个众包的Python编程问题，旨在供初级程序员解决，涵盖编程基础、标准库功能等内容。每个问题包括任务描述、代码解答和3个自动化测试用例。**执行时需使用沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: 
+- **评估指标**: `acc`
 - **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 3-shot
@@ -2041,9 +2041,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **数据集名称**: `multiple_mbpp`
 - **数据集ID**: [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary)
 - **数据集介绍**:
-  > 此多语言 MBPP 来自 MultiPL-E，已实现并测试了 18 种语言。**执行时需要沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
+  > 此多语言 MBPP 来自 MultiPL-E，已实现并测试了 18 种语言。**执行时需要沙箱环境以安全运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**
 - **任务类别**: `Coding`
-- **评估指标**: 
+- **评估指标**: `acc`
 - **聚合方法**: `mean_and_pass_at_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

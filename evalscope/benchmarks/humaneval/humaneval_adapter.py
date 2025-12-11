@@ -27,6 +27,7 @@ logger = get_logger()
         '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='opencompass/humaneval',
         subset_list=['openai_humaneval'],
+        metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template=

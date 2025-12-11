@@ -174,9 +174,9 @@ class SandboxMixin:
             logger.warning('Sandbox is not initialized.')
             return {'error': 'Sandbox is not initialized.'}
 
-        from ms_enclave.sandbox.model import ExecutionStatus, ToolResult
         import asyncio
         import concurrent.futures as cf
+        from ms_enclave.sandbox.model import ExecutionStatus, ToolResult
 
         async def _execute_async():
             if language.lower() == 'python':
@@ -202,16 +202,15 @@ class SandboxMixin:
             return {
                 'status': ExecutionStatus.TIMEOUT,
                 'error': 'Code execution timed out.',
-                'metadata': {'code': code, 'language': language}
+                'metadata': {
+                    'code': code,
+                    'language': language
+                }
             }
         except Exception as e:
             # Avoid surfacing unexpected exceptions to callers
             logger.exception(f'Code execution in sandbox failed: {e!r}')
-            return {
-                'status': ExecutionStatus.ERROR,
-                'error': str(e),
-                'metadata': {'code': code, 'language': language}
-            }
+            return {'status': ExecutionStatus.ERROR, 'error': str(e), 'metadata': {'code': code, 'language': language}}
 
     def sandbox_finalize(self, *args, **kwargs):
         """Finalize the sandbox manager."""

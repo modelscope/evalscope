@@ -38,6 +38,7 @@ PROMPT = """You are an expert Python programmer, and here is your task: {questio
         '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
         dataset_id='google-research-datasets/mbpp',
         subset_list=['full'],
+        metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         train_split='prompt',
         eval_split='test',

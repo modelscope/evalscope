@@ -695,8 +695,8 @@
     "updated_at": "2025-12-10T11:19:58Z"
   },
   "multiple_mbpp": {
-    "en": "This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
-    "zh": "此多语言 MBPP 来自 MultiPL-E，已实现并测试了 18 种语言。**执行时需要沙箱环境以安全地运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
-    "updated_at": "2025-12-11T10:45:07Z"
+    "en": "This multilingual MBPP was from MultiPL-E. 18 languages were implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+    "zh": "此多语言 MBPP 来自 MultiPL-E，已实现并测试了 18 种语言。**执行时需要沙箱环境以安全运行和评估生成的代码，请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详情。**",
+    "updated_at": "2025-12-11T11:09:50Z"
   }
 }

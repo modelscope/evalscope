@@ -1397,7 +1397,7 @@ Answer the following multiple choice question. The entire content of your respon
 - **Description**:
   > HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -1498,7 +1498,7 @@ Read the following function signature and docstring, and fully implement the fun
 - **Description**:
   > Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model's ability to generate correct and efficient code solutions. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
@@ -1680,7 +1680,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Description**:
   > MBPP (Mostly Basic Python Problems Dataset): The benchmark consists of around 1,000 crowd-sourced Python programming problems, designed to be solvable by entry level programmers, covering programming fundamentals, standard library functionality, and so on. Each problem consists of a task description, code solution and 3 automated test cases.**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 3-shot
@@ -2041,9 +2041,9 @@ Answer the following multiple choice question. The entire content of your respon
 - **Dataset Name**: `multiple_mbpp`
 - **Dataset ID**: [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary)
 - **Description**:
-  > This multilingual MBPP was from MultiPL-E. 18 languages was implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+  > This multilingual MBPP was from MultiPL-E. 18 languages were implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
 - **Task Categories**: `Coding`
-- **Evaluation Metrics**: 
+- **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean_and_pass_at_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
