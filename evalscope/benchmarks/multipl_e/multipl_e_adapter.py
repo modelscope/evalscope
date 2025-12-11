@@ -50,7 +50,7 @@ logger = get_logger()
         aggregation='mean_and_pass_at_k',
         eval_split='test',
         prompt_template='{prompt}',
-        review_timeout=20,
+        review_timeout=30,
         sandbox_config={
             'image': 'volcengine/sandbox-fusion:server-20250609',
             'tools_config': {
@@ -58,8 +58,8 @@ logger = get_logger()
                 'python_executor': {},
                 'multi_code_executor': {}  # Multi-language code executor
             },
-            'memory_limit': '2g',
-            'cpu_limit': '2.0',
+            'memory_limit': '4g',
+            'cpu_limit': '4.0',
         },
     )
 )
@@ -111,10 +111,10 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
             code = default_extract_helper(prediction, extract_lang)
             code = self._remove_main(code, extract_lang)
         else:
-            code, _ = extract_code_from_freeform_completion(code, extract_lang, first_block_only=True)
+            code, _ = extract_code_from_freeform_completion(prediction, extract_lang, first_block_only=True)
             code = self._trim_by_stop_tokens(code, task_state.metadata.get('stop_tokens', []))
             code = self._remove_main(code, extract_lang)
-        
+
         # Prepend import helpers
         # import_helper = IMPORT_HELPER.get(extract_lang, [])
         # full_code = '\n'.join(import_helper) + '\n' + code
@@ -180,32 +180,20 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
             'jl': 'julia',
             'sh': 'bash',
             'd': 'd',
+            'go_test.go': 'go',
+            'pl': 'perl',
         }
         extract_lang = extract_map.get(base, base)
 
         # Map to sandbox runtime keys
         run_map = {
-            'python': 'python',
-            'cpp': 'cpp',
             'go': 'go_test',  # prefer test runner
-            'java': 'java',
+            'go_test.go': 'go_test',
+            'cs': 'csharp',
             'js': 'nodejs',
-            'ts': 'ts',
-            'rust': 'rust',
-            'php': 'php',
-            'bash': 'bash',
-            'lua': 'lua',
-            'r': 'r',
-            'perl': 'perl',
             'd': 'd_ut',
-            'ruby': 'ruby',
-            'scala': 'scala',
-            'julia': 'julia',
             'kotlin': 'kotlin_script',
             'verilog': 'verilog',
-            'lean': 'lean',
-            'swift': 'swift',
-            'racket': 'racket',
             'sh': 'bash',
             'rs': 'rust',
             'rb': 'ruby',
@@ -213,8 +201,9 @@ class MultiPLEMBPPAdapter(DefaultDataAdapter):
             'rkt': 'racket',
             'jsnode': 'nodejs',
             'typescript': 'ts',
+            'pl': 'perl',
         }
-        run_lang = run_map.get(base)
+        run_lang = run_map.get(base, base)
 
         return extract_lang, run_lang
 

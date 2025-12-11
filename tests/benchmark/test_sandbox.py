@@ -93,30 +93,30 @@ class TestCodeBenchmark(TestBenchmark):
         dataset_args = {
             # 'metric_list': ['Pass@1']
         }
-        self._run_dataset_test('mbpp', dataset_args, limit=20)
+        self._run_dataset_test('mbpp', dataset_args, limit=20, debug=False)
 
     def test_multiple_mbpp(self):
         """Test MultiPL-E MBPP dataset."""
         dataset_args = {
             'subset_list': [
-                # 'mbpp-cpp',
-                'mbpp-ts',
-                # 'mbpp-sh',
-                # 'mbpp-cs',
-                # 'mbpp-go',
-                # 'mbpp-java',
-                # 'mbpp-lua',
-                # 'mbpp-js',
-                # 'mbpp-php',
-                # 'mbpp-pl',
-                # 'mbpp-rkt',
-                # 'mbpp-r',
-                # 'mbpp-rs',
-                # 'mbpp-scala',
-                # 'mbpp-swift',
-                # 'mbpp-rb',
-                # 'mbpp-d',
-                # 'mbpp-jl',
+                'mbpp-cpp', # ok
+                'mbpp-ts', # ok
+                'mbpp-sh', # ok
+                # 'mbpp-cs', # need x86_64 docker image
+                'mbpp-go', # ok
+                'mbpp-java', # ok
+                'mbpp-lua', # ok
+                'mbpp-js', # ok
+                'mbpp-php', # ok
+                'mbpp-pl', # ok
+                'mbpp-rkt', # ok
+                'mbpp-r', # ok
+                'mbpp-rs', # ok
+                'mbpp-scala', # ok
+                'mbpp-swift', # ok
+                'mbpp-rb', # ok
+                'mbpp-d', # ok
+                'mbpp-jl', # ok
         ],
         }
-        self._run_dataset_test('multiple_mbpp', dataset_args, limit=1, use_cache='outputs/20251210_150606', rerun_review=True)
+        self._run_dataset_test('multiple_mbpp', dataset_args, limit=10, use_cache='outputs/20251210_150606', rerun_review=True, debug=False, judge_worker_num=1)

@@ -360,7 +360,104 @@ def remove_entripoints(code, language: NullableLang = ''):
     return code
 
 
+# compatible function for evals/evals/elsuite/utils/coding_evaluation/utils_coding/extract_code_from_freeform_completion
 def extract_code_from_freeform_completion(
+    completion: str, language: NullableLang = '', first_block_only=False, **kwargs
+) -> Tuple[str, str]:
+    """ Returns: (code, extracted_type)
+    """
+    extracted_type = ExtractedType.Empty  # initialize to empty case
+
+    # step1. match the complete fenced block
+    code_blocks = extract_fenced_code(completion)
+
+    if kwargs.get('is_fewshot_task') is True:
+        first_sp_block_idx = next((i for i, block in enumerate(code_blocks) if block.language == language), -1)
+        first_un_block_idx = next((i for i, block in enumerate(code_blocks) if block.language == ''), -1)
+        first_block_idx = first_un_block_idx if first_sp_block_idx == -1 else first_sp_block_idx
+        if first_block_idx != -1:
+            code_blocks = code_blocks[:first_block_idx + 1]
+            code_blocks = code_blocks[:first_block_idx + 1]
+        logger.debug(f'select first code block for fewshot task: {code_blocks}')
+
+    # drop the blocks which the language tag different with target programming language
+    if kwargs.get('exactly_match') is True and language:
+        other_tag = set(sum([v for k, v in language_to_aliases.items() if k != language], []))
+        code_blocks = [b for b in code_blocks if b.language not in other_tag]
+
+    if code_blocks:
+        extracted_type = ExtractedType.Fenced
+
+    # step2. if no complete fenced block found, then match the incomplete fenced block
+    if len(code_blocks) == 0:
+        code_blocks = extract_incomplete_fenced_code(completion)
+        if code_blocks:
+            extracted_type = ExtractedType.IncompleteFenced
+
+    # step3. if no incomplete fenced block found, try heuristic method to extract code
+    if len(code_blocks) == 0:
+        code_blocks = extract_heuristic_code(completion, language)
+        if code_blocks:
+            extracted_type = ExtractedType.Heuristic
+
+    if kwargs.get('code_block_idx') is not None:
+        try:
+            completion = code_blocks[kwargs['code_block_idx']].code.replace('\r', '')
+        except Exception:
+            completion = ''
+    elif first_block_only:
+        if code_blocks:
+            completion = code_blocks[0].code.replace('\r', '')
+        else:
+            completion = ''
+    else:
+        completion = '\n\n'.join([b.code for b in code_blocks]).replace('\r', '')
+
+    if language == 'python':
+
+        if kwargs.get('remove_asserts') is True:
+            # remove assert statements
+            lines = []
+            for line in completion.split('\n'):
+                if line.startswith('assert '):
+                    continue
+                else:
+                    lines.append(line)
+            completion = '\n'.join(lines)
+
+        if 'if __name__ == \"__main__\":' in completion:
+            next_line = completion.index('if __name__ == \"__main__\":')
+            completion = completion[:next_line].strip()
+    elif language == 'cpp':
+        if 'int main()' in completion:
+            next_line = completion.index('int main()')
+            completion = completion[:next_line].strip()
+    elif language == 'java':
+        # Add class Solution before signature
+        if 'public class Main {\n' in completion:
+            completion = completion.replace('public class Main {\n', 'class Solution {\n')
+            completion = completion.replace('public static void main(String[] args)', '')
+        if 'class Solution' not in completion:
+            for line in completion.split('\n'):
+                if kwargs.get('entry_point') and kwargs.get('entry_point') in line:
+                    completion = completion.replace(line, 'class Solution {\n' + line)
+                    completion += '\n}'
+                    break
+        # Add import statements
+        for line in kwargs.get('declaration', '').split('\n'):
+            if 'import' in line:
+                completion = line + '\n' + completion
+    elif language == 'go':
+        # Remove package main
+        completion = completion.replace('package main', '')
+    if '# Example usage' in completion:
+        next_line = completion.index('# Example usage')
+        completion = completion[:next_line].strip()
+
+    return (completion, extracted_type.value)
+
+
+def extract_code_from_freeform_completion_v2(
     completion: str,
     language: NullableLang = '',
     first_block_only=False,
@@ -374,6 +471,11 @@ def extract_code_from_freeform_completion(
 
     Returns: (code, extracted_type)
 
+    Since == autoeval-v5
+
+    - 修改了 python 去除 main 执行部分的逻辑
+
+    - 适配 llama3 不正常的 Code block 格式
     """
     completion_bk = completion  # backup the input
     extracted_type = ExtractedType.Empty  # initialize to empty case
@@ -417,8 +519,7 @@ def extract_code_from_freeform_completion(
     if kwargs.get('code_block_idx') is not None:
         try:
             completion = code_blocks[kwargs['code_block_idx']].code.replace('\r', '')
-        except (IndexError, KeyError):
-            # Index out of range or missing key; fallback to empty completion
+        except Exception:
             completion = ''
     elif first_block_only:
         if code_blocks:
@@ -428,10 +529,9 @@ def extract_code_from_freeform_completion(
     else:
         completion = '\n\n'.join([b.code for b in code_blocks]).replace('\r', '')
 
-    # Respect unit-test flag explicitly to avoid accidental truthiness
     is_ut = kwargs.get('is_ut') is True
     if not is_ut:
-        completion = postprocess_completion(completion, language, no_removal, completion_bk, **kwargs)
+        completion = postprocess_completion_v2(completion, language, no_removal, completion_bk, **kwargs)
 
     if '# Example usage' in completion:
         next_line = completion.index('# Example usage')
@@ -440,21 +540,7 @@ def extract_code_from_freeform_completion(
     return (completion, extracted_type.value)
 
 
-def postprocess_completion(completion: str, language: str, no_removal: bool, completion_bk: str, **kwargs) -> str:
-    """Normalize a code snippet after extraction.
-
-    Behavior:
-    - python: trim __main__, optionally remove bare asserts
-    - java: wrap into class Solution when needed; strip main; prepend imports from declaration
-    - go: optionally remove `package main`; strip main()
-    - scala/verilog: extract useful inner blocks
-    - csharp/kotlin: optionally extract inner function or remove main
-
-    Flags:
-    - inner_function_only: if True, trim to the body of the first matching function signature
-    - no_removal: if True (go), do not remove package declarations
-    """
-    # Make the expectation explicit: only act when the caller opts in
+def postprocess_completion_v2(completion: str, language: str, no_removal: bool, completion_bk: str, **kwargs) -> str:
     inner_function_only = kwargs.get('inner_function_only') is True
 
     if language == 'python':
@@ -476,8 +562,9 @@ def postprocess_completion(completion: str, language: str, no_removal: bool, com
             completion = '\n'.join(lines)
 
     elif language in ['cpp', 'c']:
-        # Do nothing for C/C++
-        pass
+        if 'int main()' in completion:
+            next_line = completion.index('int main()')
+            completion = completion[:next_line].strip()
     elif language == 'java':
         if inner_function_only:
             pattern = r'(public|private|protected)\s+(static\s+)(.*?)\((.*?)\)\s*{'
@@ -503,7 +590,7 @@ def postprocess_completion(completion: str, language: str, no_removal: bool, com
                 if 'import' in line:
                     completion = line + '\n' + completion
     elif language == 'go':
-        # In most datasets remove `package main`, but allow turning off via no_removal
+        # 一般来说移除 `package main` 语句，部分数据集不要做移除，例如 mbxp
         if not no_removal:
             completion = completion.replace('package main', '')
 
@@ -528,6 +615,7 @@ def postprocess_completion(completion: str, language: str, no_removal: bool, com
             # if we cannot extract any code block, return the unacted input
             completion = completion_bk
     elif language == 'csharp':
+        # 提取 class 内 function body 部分
         if inner_function_only:
             pattern = r'(public|private|protected|internal)\s+(static\s+)(.*?)\((.*?)\)\s*{'
             body = find_inner_function_body(pattern, completion)
@@ -543,12 +631,6 @@ def postprocess_completion(completion: str, language: str, no_removal: bool, com
 
 
 def trim_till_first_function(code, language):
-    """Return code trimmed from the beginning up to the end of the first function.
-
-    Supported languages: python, go(golang), typescript.
-    - For bracketed languages, counts brackets to determine function end.
-    - For Python, uses indentation levels to detect body end.
-    """
     # Regex patterns to find the start of a function
     if language == 'python':
         pattern = r'\bdef\s+\w+\s*\((?:[^()]|\n)*\)\s*->?\s*[\w\[\],\s]*:'
@@ -635,12 +717,11 @@ def find_inner_function_body(signature_pattern: str, completion: str) -> Optiona
     Used for language like: c#, java, etc.
 
     Args:
-        signature_pattern (str): Function signature regex pattern.
-            It must include the left curly bracket to locate the start position.
+    signature_pattern (str): Function signature pattern, includes the left curly brackets,
+        used to find the starting position of function.
 
     Returns:
-        Optional[Tuple[int, int]]: The function body indices [start, end) if exists,
-        otherwise None.
+    Tuple[int, int] or None: The function body indices if exists, otherwise None.
     """
     matches = re.search(signature_pattern, completion, re.DOTALL | re.MULTILINE)
     if matches is None:
@@ -657,5 +738,4 @@ def find_inner_function_body(signature_pattern: str, completion: str) -> Optiona
             break
     if idx is None or brackets_count != 0:
         return None
-    # body = completion[matches.start():idx + 1]
     return (matches.start(), idx + 1)
