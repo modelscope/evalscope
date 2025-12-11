@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   vllm-service:
-    build: 
-      context: .
-      dockerfile: dockerfiles/Dockerfile_vllm
-    # image: deploy-vllm-service:latest
+    # build: 
+    #   context: .
+    #   dockerfile: dockerfiles/Dockerfile_vllm
+    image: deploy-vllm-service:latest
     container_name: vllm-service
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -16,6 +16,7 @@ services:
       - VLLM_DTYPE=${VLLM_DTYPE}
       - VLLM_MAX_MODEL_LEN=${VLLM_MAX_MODEL_LEN}
       - VLLM_TENSOR_PARALLEL_SIZE=${VLLM_TENSOR_PARALLEL_SIZE}
+      - VLLM_DATA_PARALLEL_SIZE=${VLLM_DATA_PARALLEL_SIZE}
       - VLLM_GPU_MEMORY_UTILIZATION=${VLLM_GPU_MEMORY_UTILIZATION}
     volumes:
       - /data/pretrained_models:/data/pretrained_models
@@ -24,7 +25,7 @@ services:
     networks:
       - eval-network
     devices:
-      - "nvidia.com/gpu=all"
+      - "nvidia.com/gpu=1"
 
   eval-service:
     build:
@@ -36,11 +37,12 @@ services:
       - EVAL_MODEL_NAME=${MODEL_NAME}
       - EVAL_API_URL=${EVAL_API_URL}
       - EVAL_API_KEY=${EVAL_API_KEY}
+      - EVAL_BATCH_SIZE=${EVAL_BATCH_SIZE}
       - EVAL_DATASETS=${EVAL_DATASETS}
       - EVAL_TYPE=${EVAL_TYPE}
       - EVAL_LIMIT=${EVAL_LIMIT}
-      - EVAL_MAX_TOKENS=${EVAL_MAX_TOKENS}
-      - VLLM_PORT=${VLLM_PORT}
+      - EVAL_GENERATION_CONFIG=${EVAL_GENERATION_CONFIG}
+      - EVAL_DATASET_ARGS=${EVAL_DATASET_ARGS}
     networks:
       - eval-network
 

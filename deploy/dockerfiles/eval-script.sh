@@ -16,12 +16,13 @@ done
 
 echo "start evaluation..."
 
-GENERATION_CONFIG="{\"max_tokens\": ${EVAL_MAX_TOKENS}}"
-
 evalscope eval \
  --model "${EVAL_MODEL_NAME}" \
  --api-url "${EVAL_API_URL}/v1" \
  --api-key "${EVAL_API_KEY}" \
  --datasets "${EVAL_DATASETS}" \
  --eval-type "${EVAL_TYPE}" \
- --generation-config "${GENERATION_CONFIG}"
+ --generation-config "${EVAL_GENERATION_CONFIG}" \
+ --eval-batch-size "${EVAL_BATCH_SIZE}" \
+ --limit "${EVAL_LIMIT}" \
+ --dataset-args "${EVAL_DATASET_ARGS}"

@@ -1,6 +1,9 @@
 import re
+from math import isclose
 from word2number import w2n
 
+from evalscope.api.metric import Metric
+from evalscope.api.registry import register_metric
 from evalscope.utils.multi_choices import answer_character, _fallback_parse_answer
 
 def _fix_fracs(string):
@@ -361,7 +364,7 @@ def extract_multi_choice_answer(prediction: str, multiple_correct: bool=True) ->
     if match is None:
         fallback_answer = _fallback_parse_answer(prediction)
         if fallback_answer:
-            return ''.join(sorted(list(fallback_answer)))
+            return ','.join(sorted(list(fallback_answer)))
 
     if match is None:
         return ""
@@ -385,22 +388,22 @@ def extract_multi_choice_answer(prediction: str, multiple_correct: bool=True) ->
         split_comma = set(matched.split(','))
         if split_comma.issubset(allowed_options):
             answers = split_comma
-            return ''.join(sorted(list(answers)))
+            return ','.join(sorted(list(answers)))
 
         split_nothing = set(matched)
         if split_nothing.issubset(allowed_options):
             answers = split_nothing
-            return ''.join(sorted(list(answers)))
+            return ','.join(sorted(list(answers)))
 
     else:
         # Match must contain a single letter in the allowed choices
         if matched in allowed_options:
             answers = {matched}
-            return ''.join(sorted(list(answers)))
+            return ','.join(sorted(list(answers)))
 
     return ""
 
-def find_box(pred_str: str):
+def find_box(pred_str: str) -> str:
     ans = pred_str.split("boxed")[-1]
     if not ans:
         return ""
@@ -422,10 +425,81 @@ def find_box(pred_str: str):
         a = ans.split("$")[0].strip()
     return a
 
-def _extract_answer(prediction, task_state, multiple_choice: bool):
+def _extract_answer(prediction, task_state=None, multiple_choice: bool=False):
     if not prediction or not isinstance(prediction, str):
-        return str(prediction)
+        return str(prediction).strip()
     if "boxed" in prediction:
         return find_box(prediction)
     return extract_multi_choice_answer(prediction, multiple_choice)
-        
+
+def parse_digits(num):
+    num = re.sub(',', '', str(num))
+    try:
+        return float(num)
+    except Exception:
+        if num.endswith('%'):
+            num = num[:-1]
+            if num.endswith('\\'):
+                num = num[:-1]
+            try:
+                return float(num) / 100
+            except Exception:
+                pass
+    return None
+
+
+def is_digit(num):
+    # paired with parse_digits
+    return parse_digits(num) is not None
+
+def math_equal(
+    prediction,
+    reference,
+    include_percentage: bool = True,
+    is_close: bool = True,
+    timeout: bool = False,
+    rel_tol: float = 1e-2,
+) -> bool:
+    if prediction is None or reference is None:
+        return False
+    if str(prediction.strip().lower()) == str(reference.strip().lower()):
+        return True
+    try:
+        if is_digit(prediction) and is_digit(reference):
+            prediction = parse_digits(prediction)
+            reference = parse_digits(reference)
+            # number questions
+            if include_percentage:
+                gt_result = [reference / 100, reference, reference * 100]
+            else:
+                gt_result = [reference]
+            for item in gt_result:
+                try:
+                    if is_close:
+                        if isclose(prediction, item, rel_tol=rel_tol):
+                            return True
+                    else:
+                        if item == prediction:
+                            return True
+                except Exception:
+                    continue
+            return False
+    except Exception:
+        pass
+
+    return False
+
+@register_metric(name='internal_numeric_acc')
+class NumericAcc(Metric):
+
+    def apply(self, predictions, references):
+        # from evalscope.metrics.math_parser import extract_answer, math_equal, strip_answer_string
+
+        results = []
+        for prediction, reference in zip(predictions, references):
+            # print(f"pred: {prediction}, reference: {reference}")
+            pred_answer = prediction
+            ref_answer = reference
+            results.append(float(math_equal(pred_answer, ref_answer)))
+
+        return results
