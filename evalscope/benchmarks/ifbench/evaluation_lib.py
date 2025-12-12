@@ -16,9 +16,9 @@
 
 import collections
 import dataclasses
-import json
 from typing import Dict, Optional, Sequence, Union
 
+from evalscope.utils.function_utils import thread_safe
 from . import instructions_registry
 
 
@@ -170,6 +170,7 @@ def print_report(outputs):
         print(f'{instruction_id} {accuracy}')
 
 
+@thread_safe
 def process_results(doc, results):
     inp = InputExample(
         key=doc['key'],

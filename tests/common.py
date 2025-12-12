@@ -67,7 +67,7 @@ class TestBenchmark(TestCase):
         task_cfg = TaskConfig(**config)
         run_task(task_cfg=task_cfg)
 
-    def _run_dataset_load_test(self, dataset_name, dataset_args=None):
+    def _run_dataset_load_test(self, dataset_name, dataset_args=None, **config_overrides):
         """Helper method to test dataset loading."""
 
-        self._run_dataset_test(dataset_name, dataset_args, use_mock=True, limit=None)
+        self._run_dataset_test(dataset_name, dataset_args, use_mock=True, limit=None, **config_overrides)

@@ -327,6 +327,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test IFEval dataset."""
         self._run_dataset_test('ifeval')
 
+    def test_ifeval_load(self):
+        """Test IFEval dataset loading."""
+        self._run_dataset_load_test('ifeval')
+
     def test_hle(self):
         """Test HLE dataset."""
         dataset_args = {
@@ -679,6 +683,12 @@ class TestNativeBenchmark(TestBenchmark):
         dataset_args = {
         }
         self._run_dataset_test('ifbench', dataset_args, limit=30, use_cache='outputs/20251124_200641')
+
+    def test_ifbench_load(self):
+        """Test IFBench dataset loading."""
+        dataset_args = {
+        }
+        self._run_dataset_load_test('ifbench', dataset_args, debug=False, judge_worker_num=5)
 
     def test_eq_bench(self):
         """Test EQ-Bench dataset."""
