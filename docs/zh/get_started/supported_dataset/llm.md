@@ -63,6 +63,7 @@
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
 | `mri_mcqa` | [MRI-MCQA](#mri-mcqa) | `Knowledge`, `MCQ`, `Medical` |
 | `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
+| `multiple_humaneval` | [MultiPL-E HumanEval](#multipl-e-humaneval) | `Coding` |
 | `multiple_mbpp` | [MultiPL-E MBPP](#multipl-e-mbpp) | `Coding` |
 | `music_trivia` | [MusicTrivia](#musictrivia) | `Knowledge`, `MCQ` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
@@ -2035,6 +2036,45 @@ Answer the following multiple choice question. The entire content of your respon
 
 ---
 
+### MultiPL-E HumanEval
+
+[返回目录](#llm评测集)
+- **数据集名称**: `multiple_humaneval`
+- **数据集ID**: [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary)
+- **数据集介绍**:
+  > 该多语言 HumanEval 来自 MultiPL-E，已实现并测试了 18 种语言。**执行和评估生成代码需要沙箱环境，更多详情请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。**
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean_and_pass_at_k`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `humaneval-cpp`, `humaneval-cs`, `humaneval-d`, `humaneval-go`, `humaneval-java`, `humaneval-jl`, `humaneval-js`, `humaneval-lua`, `humaneval-php`, `humaneval-pl`, `humaneval-r`, `humaneval-rb`, `humaneval-rkt`, `humaneval-rs`, `humaneval-scala`, `humaneval-sh`, `humaneval-swift`, `humaneval-ts`
+
+- **评测超时时间（秒）**: 30
+- **沙箱配置**: 
+```json
+{
+    "image": "volcengine/sandbox-fusion:server-20250609",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {},
+        "multi_code_executor": {}
+    },
+    "memory_limit": "2g",
+    "cpu_limit": "2.0"
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+{prompt}
+````
+
+</details>
+
+---
+
 ### MultiPL-E MBPP
 
 [返回目录](#llm评测集)
@@ -2059,8 +2099,8 @@ Answer the following multiple choice question. The entire content of your respon
         "python_executor": {},
         "multi_code_executor": {}
     },
-    "memory_limit": "4g",
-    "cpu_limit": "4.0"
+    "memory_limit": "2g",
+    "cpu_limit": "2.0"
 }
 ```
 - **提示模板**:

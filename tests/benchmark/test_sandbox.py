@@ -119,4 +119,30 @@ class TestCodeBenchmark(TestBenchmark):
                 'mbpp-jl', # ok
         ],
         }
-        self._run_dataset_test('multiple_mbpp', dataset_args, limit=10, use_cache='outputs/20251210_150606', rerun_review=True, debug=False, judge_worker_num=1)
+        self._run_dataset_test('multiple_mbpp', dataset_args, limit=10, use_cache='outputs/20251210_150606', rerun_review=True, debug=False, judge_worker_num=2)
+
+    def test_multipl_e_humaneval(self):
+        """Test MultiPL-E HumanEval dataset."""
+        dataset_args = {
+            'subset_list': [
+                'humaneval-cpp', # ok
+                'humaneval-ts', # ok
+                'humaneval-sh', # ok
+                'humaneval-cs', # need x86_64 docker image
+                'humaneval-go', # ok
+                'humaneval-java', # ok
+                'humaneval-lua', # ok
+                'humaneval-js', # ok
+                'humaneval-php', # ok
+                'humaneval-pl', # ok
+                'humaneval-rkt', # ok
+                'humaneval-r', # ok
+                'humaneval-rs', # ok
+                'humaneval-scala', # ok
+                'humaneval-swift', # ok
+                'humaneval-rb', # ok
+                'humaneval-d', # ok
+                'humaneval-jl', # ok
+        ],
+        }
+        self._run_dataset_test('multiple_humaneval', dataset_args, limit=10, use_cache='outputs/20251212_102548', rerun_review=True, debug=False, judge_worker_num=2)
