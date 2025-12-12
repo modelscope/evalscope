@@ -7,6 +7,11 @@ The following introduces two different sandbox usage methods:
 - Local usage: Set up the sandbox environment on a local machine and conduct evaluation locally, requiring Docker support on the local machine;
 - Remote usage: Set up the sandbox environment on a remote server and conduct evaluation through API interfaces, requiring Docker support on the remote machine.
 
+```{tip}
+- The default **sandbox environment configuration** for datasets can be viewed in the dataset configuration, such as [HumanEval](../get_started/supported_dataset/llm.md#humaneval).
+- The **number of sandbox worker processes** needs to be adjusted according to the resource situation of the local machine. It is recommended to set it to no more than half of the local CPU cores. For example, if the local machine has 8 CPU cores, it is recommended to set it to 4. Especially for multi-language images (`volcengine/sandbox-fusion`), which consume more resources, it is recommended to appropriately reduce the number of worker processes.
+```
+
 ## 1. Local Usage
 
 Use Docker to set up a sandbox environment on a local machine and conduct evaluation locally, requiring Docker support on the local machine.
