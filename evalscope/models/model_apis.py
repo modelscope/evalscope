@@ -26,6 +26,13 @@ def server() -> type[ModelAPI]:
     return OpenAICompatibleAPI
 
 
+@register_model_api(name='base_model')
+def base_model() -> type[ModelAPI]:
+    from .openai_compatible import OpenAIBaseModelAPI
+
+    return OpenAIBaseModelAPI
+
+
 @register_model_api(name='llm_ckpt')
 def llm_ckpt() -> type[ModelAPI]:
     check_import('torch', package='torch', raise_error=True, feature_name='llm_ckpt')
