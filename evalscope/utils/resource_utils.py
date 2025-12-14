@@ -15,7 +15,8 @@ def check_nltk_data(name: str) -> None:
     Ensure required NLTK resources (such as tokenizers, corpora, and taggers) are available using NLTK's own lookup.
     Uses nltk.data.find to check for resource availability and attempts to download missing resources via NLTK.
     For certain resources (e.g., 'punkt_tab'), falls back to downloading from an external mirror if unavailable from NLTK.
-    """
+    """  # noqa: E501
+
     def has_resource(name: str) -> bool:
         try:
             nltk.data.find(name)
