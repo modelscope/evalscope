@@ -27,7 +27,7 @@ import unicodedata
 from collections import Counter
 from spacy.cli import download
 
-from evalscope.metrics.bundled_rouge_score.rouge_scorer import check_nltk_data
+from evalscope.utils.resource_utils import check_nltk_data
 from . import instructions_util
 
 try:

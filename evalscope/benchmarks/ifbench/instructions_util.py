@@ -18,7 +18,7 @@ import nltk
 import random
 import re
 
-from evalscope.metrics.bundled_rouge_score.rouge_scorer import check_nltk_data
+from evalscope.utils.resource_utils import check_nltk_data
 
 WORD_LIST = [
     'western',
