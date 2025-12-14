@@ -209,7 +209,7 @@ class SentTypeRatioChecker(Instruction):
     def build_description(self):
         """Build the instruction description."""
         self._description_pattern = 'Maintain a 2:1 ratio of declarative to interrogative sentences.'
-        check_nltk_data('punkt_tab')
+        check_nltk_data()
         return self._description_pattern
 
     def get_instruction_args(self):
