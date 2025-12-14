@@ -11,10 +11,9 @@ logger = get_logger()
 @lru_cache
 def check_nltk_data(name: str) -> None:
     """
-    Ensure required NLTK tokenizer data is available using NLTK's own lookup.
-    Prefer nltk.data.find to check availability rather than filesystem paths.
-    Falls back to downloading via NLTK; if punkt_tab is unavailable from NLTK,
-    download it from the OSS mirror as a last resort.
+    Ensure required NLTK resources (such as tokenizers, corpora, and taggers) are available using NLTK's own lookup.
+    Uses nltk.data.find to check for resource availability and attempts to download missing resources via NLTK.
+    For certain resources (e.g., 'punkt_tab'), falls back to downloading from an external mirror if unavailable from NLTK.
     """
     try:
 
