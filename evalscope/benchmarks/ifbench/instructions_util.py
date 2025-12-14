@@ -14,10 +14,11 @@
 # limitations under the License.
 """Utility library of instructions."""
 
-import functools
 import nltk
 import random
 import re
+
+from evalscope.utils.resource_utils import check_nltk_data
 
 WORD_LIST = [
     'western',
@@ -1547,16 +1548,7 @@ WORD_LIST = [
     'apartment',
 ]  # pylint: disable=line-too-long
 
-
-def download_nltk_resources():
-    """Download 'punkt' if not already installed"""
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt')
-
-
-download_nltk_resources()
+check_nltk_data('punkt_tab')
 
 _ALPHABETS = '([A-Za-z])'
 _PREFIXES = '(Mr|St|Mrs|Ms|Dr)[.]'
@@ -1627,14 +1619,9 @@ def count_words(text):
     return num_words
 
 
-@functools.lru_cache(maxsize=None)
-def _get_sentence_tokenizer():
-    return nltk.data.load('nltk:tokenizers/punkt/english.pickle')
-
-
 def count_stopwords(text):
     """Counts the number of stopwords."""
-    nltk.download('stopwords')
+    check_nltk_data('stopwords')
     stopwords = nltk.corpus.stopwords.words('english')
     tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+')
     tokens = tokenizer.tokenize(text)

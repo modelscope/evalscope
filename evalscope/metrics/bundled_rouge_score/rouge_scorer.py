@@ -33,7 +33,6 @@ from __future__ import absolute_import, division, print_function
 import collections
 import nltk
 import numpy as np
-import os
 import re
 import six
 from absl import logging
@@ -41,38 +40,9 @@ from rouge_score import scoring, tokenizers
 from six.moves import map, range
 
 from evalscope.utils import get_logger
-from evalscope.utils.io_utils import download_url
+from evalscope.utils.resource_utils import check_nltk_data
 
 logger = get_logger()
-
-
-def check_nltk_data() -> None:
-    """
-    Ensure required NLTK tokenizer data is available using NLTK's own lookup.
-    Prefer nltk.data.find to check availability rather than filesystem paths.
-    Falls back to downloading via NLTK; if punkt_tab is unavailable from NLTK,
-    download it from the OSS mirror as a last resort.
-    """
-    try:
-
-        def has_resource(name: str) -> bool:
-            try:
-                nltk.data.find(f'tokenizers/{name}')
-                return True
-            except LookupError:
-                return False
-
-        if not has_resource('punkt_tab'):
-            logger.warning('NLTK download for punkt_tab failed, trying mirror.')
-            nltk_dir = os.path.join(os.path.expanduser('~'), 'nltk_data/tokenizers')
-            os.makedirs(nltk_dir, exist_ok=True)
-            punkt_zip = os.path.join(nltk_dir, 'punkt_tab.zip')
-            punkt_tab_url = 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip'
-
-            download_url(punkt_tab_url, punkt_zip)
-            os.system(f'unzip -o {punkt_zip} -d {nltk_dir}')
-    except Exception as e:
-        logger.error(f'NLTK data setup failed: {e}')
 
 
 class RougeScorer(scoring.BaseScorer):
@@ -102,7 +72,7 @@ class RougeScorer(scoring.BaseScorer):
         if tokenizer:
             self._tokenizer = tokenizer
         else:
-            check_nltk_data()
+            check_nltk_data('punkt_tab')
             self._tokenizer = tokenizers.DefaultTokenizer(use_stemmer)
             logging.info('Using default tokenizer.')
 
