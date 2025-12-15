@@ -27,6 +27,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `EvalMuse`
 
 
@@ -44,6 +45,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: Yes
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `train`
 - **Subsets**: `background_change`, `color_alter`, `material_alter`, `motion_change`, `ps_human`, `style_change`, `subject-add`, `subject-remove`, `subject-replace`, `text_change`, `tone_transfer`
 
 - **Extra Parameters**: 
@@ -75,6 +77,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `GenAI-Bench-1600`
 
 
@@ -92,6 +95,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `default`
 
 
@@ -109,6 +113,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `HPDv2`
 
 
@@ -126,5 +131,6 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name to jum
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `TIFA-160`
 

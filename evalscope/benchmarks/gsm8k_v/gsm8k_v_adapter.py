@@ -19,7 +19,7 @@ When providing your final answer:
 - If the answer can be expressed as a whole number (integer), provide it as an integer
 Problem: {question}
 
-Please think step by step. After your reasoning, output your final answer on a new line starting with "FINAL ANSWER: " followed by the number only.
+Please think step by step. After your reasoning, put your final answer within \\boxed{{}} with the number only.
 """.lstrip()  # noqa: E501
 
 

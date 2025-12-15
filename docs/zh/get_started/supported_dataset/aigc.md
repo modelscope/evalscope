@@ -27,6 +27,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `EvalMuse`
 
 
@@ -44,6 +45,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `background_change`, `color_alter`, `material_alter`, `motion_change`, `ps_human`, `style_change`, `subject-add`, `subject-remove`, `subject-replace`, `text_change`, `tone_transfer`
 
 - **额外参数**: 
@@ -75,6 +77,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `GenAI-Bench-1600`
 
 
@@ -92,6 +95,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 
@@ -109,6 +113,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `HPDv2`
 
 
@@ -126,5 +131,6 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `TIFA-160`
 

@@ -91,7 +91,8 @@ class LLMJudge:
                 'JUDGE_PROMPT_TEMPLATE', DEFAULT_NUMERIC_SCORE_TEMPLATE
             )
         elif self.score_type == JudgeScoreType.PATTERN:
-            self.score_pattern = score_pattern or r'(A|B)'
+            # Anchor to only accept a standalone A or B (avoid false positives)
+            self.score_pattern = score_pattern or r'^\s*([AB])\s*$'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
         else:
             raise ValueError(f"Invalid score_type: {self.score_type}. Must be 'pattern' or 'numeric'.")
@@ -180,32 +181,42 @@ class LLMJudge:
         elif self.score_type == JudgeScoreType.PATTERN:
             return self._extract_pattern_score(response)
 
-    def _extract_numeric_score(self, response: str) -> Optional[float]:
+    def _extract_numeric_score(self, response: str) -> float:
         """extract numeric score from the response using the score_pattern"""
-        match = re.search(self.score_pattern, response)
+        # Find all numeric tokens like [[0.5]] and take the last one (most decisive)
+        matches = list(re.finditer(self.score_pattern, response))
+        if not matches:
+            logger.warning(f"No match found for pattern '{self.score_pattern}' in response: {response}")
+            return 0.0
 
-        if match:
-            # try to convert each captured group to float
+        # iterate from last to first to pick the final rating
+        for match in reversed(matches):
+            # prefer captured groups
             for group in match.groups():
-                if group is not None:
-                    try:
-                        return float(group)
-                    except (ValueError, TypeError):
-                        continue
-
-            # if not found in groups, try the whole match
+                if group is None:
+                    continue
+                try:
+                    val = float(group)
+                    # clamp to [0, 1] per instruction
+                    return max(0.0, min(1.0, val))
+                except (ValueError, TypeError):
+                    continue
+            # fallback: try entire match if groups fail
             try:
-                return float(match.group(0))
+                val = float(match.group(0))
+                return max(0.0, min(1.0, val))
             except (ValueError, TypeError):
-                logger.warning(f'Failed to convert any extracted value to float from: {match.group(0)}')
+                continue
 
-        return None
+        logger.warning(f'Failed to convert extracted values to float in response: {response}')
+        return 0.0
 
     def _extract_pattern_score(self, response: str) -> float:
         """use the score_pattern to extract categorical scores"""
-        match = re.search(self.score_pattern, response)
+        # strict standalone A/B matching using MULTILINE to handle simple outputs
+        match = re.search(self.score_pattern, response, re.MULTILINE)
         if match:
-            answer = match.group(0)
+            answer = match.group(1) if match.lastindex else match.group(0).strip()
             return self.score_mapping.get(answer, 0.0)
         else:
             logger.warning(f"No match found for pattern '{self.score_pattern}' in response: {response}")

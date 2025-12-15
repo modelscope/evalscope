@@ -57,6 +57,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `validation`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -86,6 +87,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -115,6 +117,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `val`
 - **数据集子集**: `Art_Style`, `Counting`, `Forensic_Detection`, `Functional_Correspondence`, `IQ_Test`, `Jigsaw`, `Multi-view_Reasoning`, `Object_Localization`, `Relative_Depth`, `Relative_Reflectance`, `Semantic_Correspondence`, `Spatial_Relation`, `Visual_Correspondence`, `Visual_Similarity`
 
 - **提示模板**:
@@ -143,6 +146,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `cc`
 
 - **提示模板**:
@@ -172,6 +176,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `augmented_test`, `human_test`
 
 - **提示模板**:
@@ -201,6 +206,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `val`
 - **数据集子集**: `临床医学`, `会计`, `公共卫生`, `农业`, `制药`, `化学`, `历史`, `地理`, `基础医学`, `建筑学`, `心理学`, `数学`, `文献学`, `机械工程`, `材料`, `物理`, `生物`, `电子学`, `社会学`, `管理`, `经济`, `能源和电力`, `艺术`, `艺术理论`, `营销`, `计算机科学`, `设计`, `诊断学与实验室医学`, `金融`, `音乐`
 
 
@@ -218,6 +224,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `val`
 - **数据集子集**: `biology`, `chemistry`, `geography`, `history`, `math`, `physics`, `politics`
 
 - **提示模板**:
@@ -248,6 +255,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `validation`
 - **数据集子集**: `DocVQA`
 
 - **提示模板**:
@@ -275,6 +283,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `cmn_hans_cn`, `en_us`, `yue_hant_hk`
 
 - **提示模板**:
@@ -300,6 +309,7 @@ Please recognize the speech and only output the recognized content:
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `val`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -329,6 +339,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 
@@ -346,6 +357,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -358,7 +370,7 @@ When providing your final answer:
 - If the answer can be expressed as a whole number (integer), provide it as an integer
 Problem: {question}
 
-Please think step by step. After your reasoning, output your final answer on a new line starting with "FINAL ANSWER: " followed by the number only.
+Please think step by step. After your reasoning, put your final answer within \boxed{{}} with the number only.
 
 ````
 
@@ -378,6 +390,7 @@ Please think step by step. After your reasoning, output your final answer on a n
 - **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `image`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -404,6 +417,7 @@ Please answer YES or NO without an explanation.
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `validation`
 - **数据集子集**: `InfographicVQA`
 
 - **提示模板**:
@@ -431,6 +445,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test_clean`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -456,6 +471,7 @@ Please recognize the speech and only output the recognized content:
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `testmini`
 - **数据集子集**: `Text Dominant`, `Text Lite`, `Vision Dominant`, `Vision Intensive`, `Vision Only`
 
 - **提示模板**:
@@ -482,6 +498,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `level 1`, `level 2`, `level 3`, `level 4`, `level 5`
 
 - **提示模板**:
@@ -508,6 +525,7 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `testmini`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -534,6 +552,7 @@ Please reason step by step, and put your final answer within \boxed{{}} without 
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -563,6 +582,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `dev`
 - **数据集子集**: `cn`, `en`
 
 - **提示模板**:
@@ -592,6 +612,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `val`
 - **数据集子集**: `coarse perception`, `fine-grained perception`, `instance reasoning`, `logical reasoning`, `math`, `science & technology`
 
 - **提示模板**:
@@ -622,6 +643,7 @@ where [LETTER] is one of A,B,C,D. Think step by step before answering.
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `validation`
 - **数据集子集**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
 
 - **提示模板**:
@@ -654,6 +676,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: [ANS
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `Accounting`, `Agriculture`, `Architecture_and_Engineering`, `Art_Theory`, `Art`, `Basic_Medical_Science`, `Biology`, `Chemistry`, `Clinical_Medicine`, `Computer_Science`, `Design`, `Diagnostics_and_Laboratory_Medicine`, `Economics`, `Electronics`, `Energy_and_Power`, `Finance`, `Geography`, `History`, `Literature`, `Manage`, `Marketing`, `Materials`, `Math`, `Mechanical_Engineering`, `Music`, `Pharmacy`, `Physics`, `Psychology`, `Public_Health`, `Sociology`
 
 - **额外参数**: 
@@ -698,6 +721,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `Artistic Text Recognition`, `Digit String Recognition`, `Doc-oriented VQA`, `Handwriting Recognition`, `Handwritten Mathematical Expression Recognition`, `Irregular Text Recognition`, `Key Information Extraction`, `Non-Semantic Text Recognition`, `Regular Text Recognition`, `Scene Text-centric VQA`
 
 - **提示模板**:
@@ -723,6 +747,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `APP agent en`, `ASCII art classification en`, `VQA with position en`, `chart parsing en`, `cognition VQA cn`, `cognition VQA en`, `diagram QA en`, `document classification en`, `document parsing cn`, `document parsing en`, `fine-grained text recognition en`, `formula recognition cn`, `formula recognition en`, `full-page OCR cn`, `full-page OCR en`, `handwritten answer extraction cn`, `key information extraction cn`, `key information extraction en`, `key information mapping en`, `math QA en`, `reasoning VQA cn`, `reasoning VQA en`, `science QA en`, `table parsing cn`, `table parsing en`, `text counting en`, `text grounding en`, `text recognition en`, `text spotting en`, `text translation cn`
 
 - **提示模板**:
@@ -748,6 +773,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `OE_MM_maths_en_COMP`, `OE_MM_maths_zh_CEE`, `OE_MM_maths_zh_COMP`, `OE_MM_physics_en_COMP`, `OE_MM_physics_zh_CEE`, `OE_TO_maths_en_COMP`, `OE_TO_maths_zh_CEE`, `OE_TO_maths_zh_COMP`, `OE_TO_physics_en_COMP`, `OE_TO_physics_zh_CEE`, `TP_MM_maths_en_COMP`, `TP_MM_maths_zh_CEE`, `TP_MM_maths_zh_COMP`, `TP_MM_physics_en_COMP`, `TP_TO_maths_en_COMP`, `TP_TO_maths_zh_CEE`, `TP_TO_maths_zh_COMP`, `TP_TO_physics_en_COMP`
 
 - **提示模板**:
@@ -774,6 +800,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `default`
 
 - **额外参数**: 
@@ -821,6 +848,7 @@ Answer the following multiple choice question based on the image and audio conte
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `default`
 
 - **额外参数**: 
@@ -911,6 +939,7 @@ Please answer YES or NO without an explanation.
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -940,6 +969,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: [ANS
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -969,6 +999,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `chart`, `map`, `web`
 
 - **提示模板**:
@@ -998,6 +1029,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -1025,6 +1057,7 @@ Answer the question:
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `Attribute Reasoning`, `Other`, `Positional Reasoning`, `Quantitative Reasoning`, `Spatial Reasoning`, `Stylistic Reasoning`
 
 - **提示模板**:
@@ -1054,6 +1087,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 - **提示模板**:
@@ -1083,6 +1117,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 是
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `zerobench`
 - **数据集子集**: `default`
 
 - **提示模板**:
