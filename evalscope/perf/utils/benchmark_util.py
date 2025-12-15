@@ -114,8 +114,8 @@ class BenchmarkMetrics:
         else:
             self.n_failed_queries += 1
 
-        self.calculate_averages()
         self.update_total_time(benchmark_data)
+        self.calculate_averages()
 
     def update_total_time(self, benchmark_data: BenchmarkData):
         # Use the earliest start_time seen so far
