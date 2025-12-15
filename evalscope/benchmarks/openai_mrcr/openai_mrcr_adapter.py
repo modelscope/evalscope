@@ -48,6 +48,11 @@ logger = get_logger()
                 'type': 'str',
                 'description': 'tiktoken encoding name used for token counting.',
                 'value': 'o200k_base'
+            },
+            'prefix_filter': {
+                'type': 'str | null',
+                'description': 'Regex pattern to filter answers. Defaults to None (no filtering).',
+                'value': None
             }
         }
     )
@@ -87,6 +92,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         self.max_context_size = self.extra_params.get('max_context_size')
         self.needle_count = self.extra_params.get('needle_count')
         self.min_context_size = self.extra_params.get('min_context_size')
+        self.prefix_filter = self.extra_params.get('prefix_filter', '\r\n ')
 
     def load(self):
         import tiktoken
@@ -138,7 +144,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         input_tok_cnt = get_chatml_tok_cnt(record.get('prompt'), self.tik_enc)
         if self.max_context_size is not None and input_tok_cnt > self.max_context_size:
             return []
-        if self.min_context_size is not None and total_tok_cnt <= self.min_context_size:
+        if self.min_context_size is not None and input_tok_cnt <= self.min_context_size:
             return []
         output_tok_cnt = get_token_count(record.get('answer'), self.tik_enc)
         total_tok_cnt = input_tok_cnt + output_tok_cnt
@@ -159,7 +165,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
     def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
         """Strip stray newlines that some models emit before the MRCR prefix."""
         filtered = super().filter_prediction(prediction, task_state)
-        return filtered.lstrip('\r\n ')
+        return filtered.lstrip(self.prefix_filter)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
