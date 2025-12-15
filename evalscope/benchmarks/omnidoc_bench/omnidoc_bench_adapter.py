@@ -1,4 +1,5 @@
 import ast
+import json
 import numpy as np
 from typing import Any, Dict, List
 
@@ -104,9 +105,7 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
         content_list: List[Content] = [ContentText(text=self.prompt_template)]
         content_list.append(ContentImage(image=f'data:image/png;base64,{record["image"]}'))
 
-        return Sample(
-            input=[ChatMessageUser(content=content_list)], target='', metadata=ast.literal_eval(record['answer'])
-        )
+        return Sample(input=[ChatMessageUser(content=content_list)], target='', metadata=json.loads(record['answer']))
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         # Dummy implementation to comply with the interface

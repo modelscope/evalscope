@@ -1041,12 +1041,10 @@ def match_gt2pred_no_split(gt_items, pred_items, line_type, img_name):
 
 
 import copy
-import evaluate
 
 # from rapidfuzz.distance import Levenshtein
 import Levenshtein
 import numpy as np
-import pdb
 from collections import Counter, defaultdict
 from Levenshtein import distance as Levenshtein_distance
 from scipy.optimize import linear_sum_assignment

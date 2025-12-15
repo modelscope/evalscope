@@ -271,6 +271,9 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)
 
+    def test_omni_doc_bench_load(self):
+        self._run_dataset_load_test('omni_doc_bench')
+
     def test_seed_bench_2_plus_bench(self):
         dataset_args = {
             # 'subset_list': ['default']
