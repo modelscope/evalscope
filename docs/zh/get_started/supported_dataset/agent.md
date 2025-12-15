@@ -27,6 +27,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `irrelevance`, `java`, `javascript`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple`
 
 - **额外参数**: 
@@ -59,6 +60,7 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
 - **数据集子集**: `irrelevance`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `memory_kv`, `memory_rec_sum`, `memory_vector`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple_java`, `simple_javascript`, `simple_python`, `web_search_base`, `web_search_no_snippet`
 
 - **额外参数**: 
@@ -96,6 +98,7 @@
 - **聚合方法**: `f1`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `default`
 
 
@@ -113,6 +116,7 @@
 - **聚合方法**: `mean_and_pass_hat_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `airline`, `retail`, `telecom`
 
 - **额外参数**: 
@@ -157,6 +161,7 @@
 - **聚合方法**: `mean_and_pass_hat_k`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `airline`, `retail`
 
 - **额外参数**: 
@@ -201,5 +206,6 @@
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
 - **数据集子集**: `in_domain`, `out_of_domain`
 

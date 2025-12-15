@@ -191,6 +191,9 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('ocr_bench', dataset_args=dataset_args, limit=10)
 
+    def test_ocr_bench_load(self):
+        self._run_dataset_load_test('ocr_bench')
+
     def test_ocr_bench_v2(self):
         dataset_args = {
             'subset_list': [
@@ -226,6 +229,9 @@ class TestVLMBenchmark(TestBenchmark):
         }
         self._run_dataset_test('ocr_bench_v2', dataset_args=dataset_args, limit=1)
 
+    def test_ocr_bench_v2_load(self):
+        self._run_dataset_load_test('ocr_bench_v2')
+
     def test_hallusion_bench(self):
         dataset_args = {
             # 'subset_list': ['default']
@@ -257,7 +263,7 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
             'shuffle': True,
         }
-        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=5, use_cache='outputs/20251017_161352', rerun_review=True)
+        self._run_dataset_test('math_verse', dataset_args=dataset_args, limit=10)
 
     def test_simple_vqa(self):
         dataset_args = {
@@ -326,7 +332,7 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {
             # 'subset_list': ['default']
         }
-        self._run_dataset_test('gsm8k_v', dataset_args=dataset_args, limit=10)
+        self._run_dataset_test('gsm8k_v', dataset_args=dataset_args, limit=20)
 
     def test_fleurs(self):
         dataset_args = {

@@ -27,6 +27,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `train`
 - **Subsets**: `irrelevance`, `java`, `javascript`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple`
 
 - **Extra Parameters**: 
@@ -59,6 +60,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `train`
 - **Subsets**: `irrelevance`, `live_irrelevance`, `live_multiple`, `live_parallel_multiple`, `live_parallel`, `live_relevance`, `live_simple`, `memory_kv`, `memory_rec_sum`, `memory_vector`, `multi_turn_base`, `multi_turn_long_context`, `multi_turn_miss_func`, `multi_turn_miss_param`, `multiple`, `parallel_multiple`, `parallel`, `simple_java`, `simple_javascript`, `simple_python`, `web_search_base`, `web_search_no_snippet`
 
 - **Extra Parameters**: 
@@ -96,6 +98,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `f1`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `default`
 
 
@@ -113,6 +116,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `mean_and_pass_hat_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `airline`, `retail`, `telecom`
 
 - **Extra Parameters**: 
@@ -157,6 +161,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `mean_and_pass_hat_k`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `airline`, `retail`
 
 - **Extra Parameters**: 
@@ -201,5 +206,6 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name to ju
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
 - **Subsets**: `in_domain`, `out_of_domain`
 

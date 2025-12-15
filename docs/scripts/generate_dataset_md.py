@@ -66,6 +66,10 @@ def get_dataset_detail_locale_dict(category: str):
             'zh': '数据集子集',
             'en': 'Subsets'
         },
+        'eval_split': {
+            'zh': '评测数据集划分',
+            'en': 'Evaluation Split'
+        },
         'supported_output_formats': {
             'zh': '支持输出格式',
             'en': 'Supported Output Formats'
@@ -242,6 +246,8 @@ def generate_dataset_markdown(data_adapter: DataAdapter, category: str, lang: st
     ]
     
     # Add dataset subsets
+    if data_adapter.eval_split:
+        details.append(f'- **{text["eval_split"]}**: {wrap_key_words(data_adapter.eval_split)}')
     if data_adapter.subset_list:
         details.append(f'- **{text["subsets"]}**: {wrap_key_words(data_adapter.subset_list)}')
 

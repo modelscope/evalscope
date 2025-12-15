@@ -12,7 +12,7 @@
 | `--api-key` | `str` | 模型API端点密钥 | `EMPTY` |
 | `--model-args` | `str` | 模型加载参数，逗号分隔的`key=value`或JSON字符串<br>• `revision`: 模型版本<br>• `precision`: 模型精度<br>• `device_map`: 设备分配 | `revision=master`<br>`precision=torch.float16`<br>`device_map=auto` |
 | `--model-task` | `str` | 模型任务类型 | `text_generation`<br>（可选：`image_generation`） |
-| `--chat-template` | `str` | 模型推理模板，支持Jinja模板字符串 | `None`（使用transformers默认） |
+| `--chat-template` | `str` | 模型推理模板，支持Jinja模板字符串（仅本地推理支持该参数） | `None`（使用transformers默认） |
 
 **示例：**
 ```bash

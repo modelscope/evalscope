@@ -46,7 +46,7 @@ class TestRunCustom(TestBenchmark):
             'judge_strategy': JudgeStrategy.LLM,
         }
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_custom_task_mcq(self):
         """Test custom MCQ dataset with local checkpoint."""
         self._run_dataset_test(
@@ -66,7 +66,7 @@ class TestRunCustom(TestBenchmark):
             limit=10,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_custom_task_qa(self):
         """Test custom QA dataset with local checkpoint."""
         self._run_dataset_test(
@@ -85,7 +85,7 @@ class TestRunCustom(TestBenchmark):
             limit=10,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_local_dataset(self):
         """Test trivia_qa with local dataset."""
         self._run_dataset_test(
@@ -97,7 +97,7 @@ class TestRunCustom(TestBenchmark):
             limit=5,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_general_no_answer(self):
         """Test general_qa without reference answers using LLM judge."""
         self._run_dataset_test(
@@ -110,7 +110,29 @@ class TestRunCustom(TestBenchmark):
             limit=10,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+    def test_run_general_no_answer_with_judge(self):
+        self._run_dataset_test(
+            dataset_name='general_qa',
+            dataset_args={
+                'dataset_id': 'custom_eval/text/qa',
+                'subset_list': ['arena'],
+            },
+            model='qwen2.5-7b-instruct',
+            limit=10,
+            judge_model_args={
+                'model_id': 'qwen2.5-72b-instruct',
+                'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'api_key': env.get('DASHSCOPE_API_KEY'),
+                'generation_config': {
+                    'temperature': 0.0,
+                    'max_tokens': 4096
+                },
+                'score_type': 'numeric',
+            },
+            judge_worker_num=5,
+            judge_strategy=JudgeStrategy.LLM,
+        )
+
     def test_run_general_with_answer(self):
         """Test general_qa with reference answers using LLM recall judge."""
         self._run_dataset_test(
@@ -132,11 +154,10 @@ class TestRunCustom(TestBenchmark):
                 'score_type': 'pattern',
             },
             judge_worker_num=1,
-            judge_strategy=JudgeStrategy.LLM_RECALL,
-            use_cache='outputs/20250818_170420'
+            judge_strategy=JudgeStrategy.LLM,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_general_arena(self):
         """Test general_arena for model comparison."""
         self._run_dataset_test(
@@ -170,7 +191,7 @@ class TestRunCustom(TestBenchmark):
             judge_worker_num=5,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_general_vqa(self):
         """Test general_vqa adapter with OpenAI-compatible message format for multimodal QA."""
         self._run_dataset_test(
@@ -185,7 +206,7 @@ class TestRunCustom(TestBenchmark):
             limit=5,
         )
 
-    @unittest.skipUnless(0 in test_level_list(), 'skip test in current test level')
+
     def test_run_general_vmcq(self):
         """Test general_vmcq adapter with non-OpenAI MCQ format (MMMU-style)."""
         self._run_dataset_test(
