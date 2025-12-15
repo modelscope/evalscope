@@ -158,106 +158,6 @@ def run_performance_test():
         return jsonify({'status': 'error', 'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
-@app.route('/api/v1/eval/params', methods=['GET'])
-def get_eval_params():
-    """Get available parameters for evaluation endpoint."""
-    params_info = {
-        'required': {
-            'model': 'str - Model name or identifier',
-            'datasets': 'List[str] - List of dataset names to evaluate'
-        },
-        'optional': {
-            'model_id': 'str - Unique identifier for the model',
-            'model_args': 'Dict - Additional model initialization arguments',
-            'api_url': 'str - API endpoint URL (required for OpenAI API models)',
-            'api_key': 'str - API authentication key (default: "EMPTY")',
-            'eval_type': 'str - Evaluation type (auto-set to "service" when api_url provided)',
-            'dataset_args': 'Dict - Additional dataset loading arguments',
-            'dataset_dir': 'str - Directory for cached datasets',
-            'limit': 'int|float - Max samples to evaluate (int=count, float=fraction)',
-            'eval_batch_size': 'int - Batch size for evaluation (default: 1)',
-            'generation_config': {
-                'temperature': 'float - Sampling temperature (default: 0.0)',
-                'max_tokens': 'int - Maximum tokens to generate (default: 2048)',
-                'top_p': 'float - Nucleus sampling parameter',
-                'top_k': 'int - Top-k sampling parameter',
-                'stream': 'bool - Whether to use streaming',
-                'timeout': 'float - Request timeout in seconds'
-            },
-            'repeats': 'int - Number of times to repeat dataset items (default: 1)',
-            'use_cache': 'str - Path to cached results to reuse',
-            'work_dir': 'str - Working directory for outputs',
-            'debug': 'bool - Enable debug mode (default: false)',
-            'seed': 'int - Random seed (default: 42)',
-            'judge_strategy': 'str - LLM judge strategy (auto/single/pairwise)',
-            'judge_worker_num': 'int - Number of judge workers (default: 1)',
-            'judge_model_args': 'Dict - Judge model configuration'
-        },
-        'example': {
-            'model': 'qwen-plus',
-            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-            'api_key': 'your-api-key',
-            'datasets': ['gsm8k', 'mmlu'],
-            'limit': 10,
-            'generation_config': {
-                'temperature': 0.0,
-                'max_tokens': 2048
-            }
-        }
-    }
-    return jsonify(params_info)
-
-
-@app.route('/api/v1/perf/params', methods=['GET'])
-def get_perf_params():
-    """Get available parameters for performance test endpoint."""
-    params_info = {
-        'required': {
-            'model': 'str - Model name or identifier',
-            'url': 'str - API endpoint URL'
-        },
-        'optional': {
-            'api': 'str - API type (openai/dashscope/anthropic/gemini, default: "openai")',
-            'api_key': 'str - API authentication key',
-            'number': 'int|List[int] - Number of requests (default: 1000)',
-            'parallel': 'int|List[int] - Number of parallel requests (default: 1)',
-            'rate': 'int - Requests per second limit (default: -1, no limit)',
-            'dataset': 'str - Dataset to use (default: "openqa")',
-            'dataset_path': 'str - Path to custom dataset file',
-            'max_tokens': 'int - Maximum tokens to generate (default: 2048)',
-            'temperature': 'float - Sampling temperature (default: 0.0)',
-            'top_p': 'float - Nucleus sampling parameter',
-            'top_k': 'int - Top-k sampling parameter',
-            'stream': 'bool - Whether to use streaming (default: true)',
-            'max_prompt_length': 'int - Maximum prompt length',
-            'min_prompt_length': 'int - Minimum prompt length (default: 0)',
-            'prompt': 'str - Custom prompt text',
-            'query_template': 'str - Template for query formatting',
-            'connect_timeout': 'int - Connection timeout in seconds',
-            'read_timeout': 'int - Read timeout in seconds',
-            'total_timeout': 'int - Total timeout in seconds (default: 21600)',
-            'debug': 'bool - Enable debug mode (default: false)',
-            'log_every_n_query': 'int - Log frequency (default: 10)',
-            'outputs_dir': 'str - Output directory (default: "outputs")',
-            'seed': 'int - Random seed',
-            'visualizer': 'str - Visualizer to use (wandb/swanlab/clearml)',
-            'name': 'str - Run name for visualizer and output'
-        },
-        'example': {
-            'model': 'qwen-plus',
-            'url': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-            'api': 'openai',
-            'api_key': 'your-api-key',
-            'number': 100,
-            'parallel': 10,
-            'dataset': 'openqa',
-            'max_tokens': 2048,
-            'temperature': 0.0
-        }
-    }
-    return jsonify(params_info)
-
-
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
@@ -266,9 +166,7 @@ def not_found(error):
         'available_endpoints': {
             'GET /health': 'Health check',
             'POST /api/v1/eval': 'Run model evaluation',
-            'POST /api/v1/perf': 'Run performance test',
-            'GET /api/v1/eval/params': 'Get evaluation parameters info',
-            'GET /api/v1/perf/params': 'Get performance test parameters info'
+            'POST /api/v1/perf': 'Run performance test'
         }
     }), 404
 
@@ -294,8 +192,7 @@ def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False):
     logger.info('  GET  /health - Health check')
     logger.info('  POST /api/v1/eval - Run model evaluation')
     logger.info('  POST /api/v1/perf - Run performance test')
-    logger.info('  GET  /api/v1/eval/params - Get evaluation parameters')
-    logger.info('  GET  /api/v1/perf/params - Get performance parameters')
+    logger.info('Refer to docs for parameters: https://evalscope.readthedocs.io/en/latest/user_guides/service.html')
 
     app.run(host=host, port=port, debug=debug)
 
