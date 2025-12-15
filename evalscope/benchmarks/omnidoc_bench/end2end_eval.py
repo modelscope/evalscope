@@ -1,7 +1,6 @@
 # flake8: noqa
 import numpy as np
 import os
-import sys
 from collections import defaultdict
 from typing import Dict, List
 
@@ -182,8 +181,6 @@ class End2EndEvaluator():
         return matched_samples_all
 
     def process_get_matched_elements(self, sample, pred_content, img_name):
-        from func_timeout import FunctionTimedOut, func_timeout
-
         from .utils import match_gt2pred_no_split, match_gt2pred_quick, match_gt2pred_simple, md_tex_filter
 
         if self.match_method == 'simple_match':  # add match choice
@@ -214,14 +211,11 @@ class End2EndEvaluator():
         if text_all:
             gt_text_list = self.get_sorted_text_list(text_all)
             try:
-                plain_text_match_s = func_timeout(
-                    30, match_gt2pred, args=(gt_text_list, pred_dataset['text_all'], 'text', img_name)
-                )
-            except FunctionTimedOut as e:
-                logger.warning(f'Time out for plain text match of {img_name}, match_gt2pred_simple will be used.')
+                plain_text_match_s = match_gt2pred(gt_text_list, pred_dataset['text_all'], 'text', img_name)
+            except Exception as e:
+                logger.warning(f'Error for plain text match of {img_name}, match_gt2pred_simple will be used.')
                 plain_text_match_s = match_gt2pred_simple(gt_text_list, pred_dataset['text_all'], 'text', img_name)
                 logger.error(str(e))
-                raise e
 
             if not plain_text_match_s:
                 logger.warning(f'No text match of {img_name}. The plain text match will be empty.')
