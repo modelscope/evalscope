@@ -73,13 +73,13 @@ def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
     return 0  # fallback
 
 
-def grade(response: str, answer: str, random_string_to_prepend: Optional[str]) -> float:
+def grade(prediction: str, reference: str, random_string_to_prepend: Optional[str]) -> float:
     """
-    Compare response and answer.
+    Compare prediction and reference.
     """
     if random_string_to_prepend:
-        if not response.startswith(random_string_to_prepend):
+        if not prediction.startswith(random_string_to_prepend):
             return 0.0
-        response = response.removeprefix(random_string_to_prepend)
-        answer = answer.removeprefix(random_string_to_prepend)
-    return float(SequenceMatcher(None, response, answer).ratio())
+        prediction = prediction.removeprefix(random_string_to_prepend)
+        reference = reference.removeprefix(random_string_to_prepend)
+    return float(SequenceMatcher(None, prediction, reference).ratio())
