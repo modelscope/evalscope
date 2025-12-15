@@ -178,7 +178,7 @@ class SandboxMixin:
             else:
                 tool_name = 'multi_code_executor'
                 parameters = {'code': code, 'language': language, 'run_timeout': timeout}
-            result = await self._manager.execute_tool_in_pool(tool_name, parameters, timeout=timeout + 10)
+            result = await self._manager.execute_tool_in_pool(tool_name, parameters)
             return result
 
         # Execute in background loop via class-level runner

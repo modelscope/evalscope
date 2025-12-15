@@ -14,9 +14,8 @@ The Flask service encapsulates EvalScope's core evaluation (eval) and stress tes
 
 ## Features
 
-- **Model Evaluation** (`/api/v1/eval`): Support evaluation of OpenAI API-compatible models
-- **Performance Testing** (`/api/v1/perf`): Support performance benchmarking of OpenAI API-compatible models
-- **Parameter Query**: Provide parameter description endpoints
+- **Model Evaluation** (`/api/v1/eval`): Support evaluation of OpenAI API-compatible models, request parameters refer to [documentation](../get_started/parameters.md)
+- **Performance Testing** (`/api/v1/perf`): Support performance benchmarking of OpenAI API-compatible models, request parameters refer to [documentation](./stress_test/parameters.md)
 
 ## Environment Setup
 
@@ -118,6 +117,10 @@ POST /api/v1/eval
 - `debug`: Debug mode
 - `seed`: Random seed (default: 42)
 
+```{seealso}
+For detailed parameter descriptions, refer to: [Evaluation Parameter Documentation](../get_started/parameters.md)
+```
+
 **Response Example:**
 ```json
 {
@@ -165,6 +168,10 @@ POST /api/v1/perf
 - `stream`: Whether to use streaming output (default: true)
 - `debug`: Debug mode
 
+```{seealso}
+For detailed parameter descriptions, refer to: [Performance Parameter Documentation](./stress_test/parameters.md)
+```
+
 **Response Example:**
 ```json
 {
@@ -179,22 +186,6 @@ POST /api/v1/perf
   }
 }
 ```
-
-### 4. Get Evaluation Parameter Description
-
-```bash
-GET /api/v1/eval/params
-```
-
-Returns descriptions of all parameters supported by the evaluation endpoint.
-
-### 5. Get Performance Test Parameter Description
-
-```bash
-GET /api/v1/perf/params
-```
-
-Returns descriptions of all parameters supported by the performance test endpoint.
 
 ## Usage Examples
 
