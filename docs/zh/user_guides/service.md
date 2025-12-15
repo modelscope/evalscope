@@ -170,7 +170,7 @@ POST /api/v1/perf
 - `debug`: 调试模式
 
 ```{seealso}
-具体参数说明请参考：[评测参数文档](./stress_test/parameters.md)
+具体参数说明请参考：[性能压测参数文档](./stress_test/parameters.md)
 ```
 
 **响应示例:**
