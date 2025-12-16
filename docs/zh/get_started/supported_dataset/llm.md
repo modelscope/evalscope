@@ -2405,6 +2405,11 @@ Text to process:
         "description": "Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).",
         "value": null
     },
+    "min_context_size": {
+        "type": "int | null",
+        "description": "Minimum context tokens; samples below are skipped. Defaults to None (no limit).",
+        "value": null
+    },
     "needle_count": {
         "type": "list[int] | null",
         "description": "Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.",
@@ -2414,6 +2419,11 @@ Text to process:
         "type": "str",
         "description": "tiktoken encoding name used for token counting.",
         "value": "o200k_base"
+    },
+    "prefix_filter": {
+        "type": "str | null",
+        "description": "Regex pattern to filter answers. Defaults to None (no filtering).",
+        "value": null
     }
 }
 ```
