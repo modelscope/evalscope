@@ -33,6 +33,11 @@ logger = get_logger()
                 'description': 'Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).',
                 'value': None
             },
+            'min_context_size': {
+                'type': 'int | null',
+                'description': 'Minimum context tokens; samples below are skipped. Defaults to None (no limit).',
+                'value': None
+            },
             'needle_count': {
                 'type': 'list[int] | null',
                 'description':
@@ -43,6 +48,11 @@ logger = get_logger()
                 'type': 'str',
                 'description': 'tiktoken encoding name used for token counting.',
                 'value': 'o200k_base'
+            },
+            'prefix_filter': {
+                'type': 'str | null',
+                'description': 'Regex pattern to filter answers. Defaults to None (no filtering).',
+                'value': None
             }
         }
     )
@@ -74,11 +84,15 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 Samples exceeding this will be filtered out. Defaults to None (no limit).
             needle_count (list[int], optional): Filter by specific needle count(s) (2, 4, and/or 8).
                 Must be a list, e.g., [2], [4], or [2, 4, 8]. Defaults to None (include all needle counts).
+            min_context_size (int, optional): Keep only samples whose
+                total token count is strictly greater than this value.
         """
         super().__init__(**kwargs)
         self.enc_name = self.extra_params.get('tik_enc', 'o200k_base')
         self.max_context_size = self.extra_params.get('max_context_size')
         self.needle_count = self.extra_params.get('needle_count')
+        self.min_context_size = self.extra_params.get('min_context_size')
+        self.prefix_filter = self.extra_params.get('prefix_filter', '\r\n ')
 
     def load(self):
         import tiktoken
@@ -93,6 +107,16 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 if bad:
                     logger.warning(f'Invalid needle_count values {bad}; ignoring')
                     self.needle_count = None
+
+        if self.max_context_size is not None:
+            if not isinstance(self.max_context_size, int) or self.max_context_size < 0:
+                logger.warning('max_context_size must be a non-negative integer; ignoring')
+                self.max_context_size = None
+
+        if self.min_context_size is not None:
+            if not isinstance(self.min_context_size, int) or self.min_context_size < 0:
+                logger.warning('min_context_size must be a non-negative integer; ignoring')
+                self.min_context_size = None
 
         return super().load()
 
@@ -120,8 +144,11 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         input_tok_cnt = get_chatml_tok_cnt(record.get('prompt'), self.tik_enc)
         if self.max_context_size is not None and input_tok_cnt > self.max_context_size:
             return []
+        if self.min_context_size is not None and input_tok_cnt <= self.min_context_size:
+            return []
         output_tok_cnt = get_token_count(record.get('answer'), self.tik_enc)
         total_tok_cnt = input_tok_cnt + output_tok_cnt
+
         bin_index = bin_index_for(total_tok_cnt)
 
         metadata = {
@@ -134,6 +161,11 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
             'bin_index': bin_index,
         }
         return Sample(input=str_to_chat_messages(record['prompt']), target=record['answer'], metadata=metadata)
+
+    def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
+        """Strip stray newlines that some models emit before the MRCR prefix."""
+        filtered = super().filter_prediction(prediction, task_state)
+        return filtered.lstrip(self.prefix_filter)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
@@ -153,13 +185,10 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         Returns:
             Score object containing the sequence ratio and bin metadata
         """
-        response = task_state.output.completion or ''
-
-        # Get prefix from metadata
         prefix = task_state.metadata.get('random_string_to_prepend') if task_state.metadata else None
 
         # Calculate sequence ratio with MRCR prefix handling
-        ratio = grade(response=response, answer=reference, random_string_to_prepend=prefix)
+        ratio = grade(prediction=filtered_prediction, reference=reference, random_string_to_prepend=prefix)
 
         bin_index = task_state.metadata.get('bin_index')
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
