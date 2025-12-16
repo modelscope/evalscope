@@ -276,7 +276,7 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
             # "force_redownload": True,
         }
-        self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=50, model='qwen3-vl-235b-a22b-instruct', use_cache='outputs/20251216_114006', ignore_errors=True, rerun_review=True)
+        self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)
 
     def test_omni_doc_bench_load(self):
         self._run_dataset_load_test('omni_doc_bench')
