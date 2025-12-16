@@ -20,7 +20,7 @@ class Arguments(BaseArgument):
     """Model identifier."""
 
     attn_implementation: Optional[str] = None
-    """Attention implementaion, only for local inference."""
+    """Attention implementation, only for local inference."""
 
     api: str = 'openai'
     """API to be used (default: 'openai')."""

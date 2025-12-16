@@ -33,7 +33,9 @@ class TqdmLogging(tqdm):
 
     def check_log(self):
         """Check if logging is needed based on time interval."""
-        if self.custom_logger and self.log_interval and (time.time() - self.last_log_time >= self.log_interval):
+        if self.custom_logger and self.log_interval is not None and (
+            time.time() - self.last_log_time >= self.log_interval
+        ):
             self._log_status()
             self.last_log_time = time.time()
 

@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, TypeVar, Union
 
-from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.logger import get_logger
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
