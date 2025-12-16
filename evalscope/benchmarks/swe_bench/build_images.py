@@ -34,7 +34,7 @@ def build_images(
     from swebench.harness.docker_build import build_instance_images  # type: ignore
     from swebench.harness.test_spec.test_spec import make_test_spec  # type: ignore
 
-    extra_build_instance_images_kwargs = {'tag': LATEST}
+    extra_build_instance_images_kwargs = {'tag': LATEST, 'env_image_tag': LATEST}
 
     # Code copied from the swe_bench repository
     docker_client = DockerClient.from_env()

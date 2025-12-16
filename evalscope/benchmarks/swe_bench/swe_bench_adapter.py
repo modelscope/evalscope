@@ -1,5 +1,4 @@
 import json
-from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
@@ -42,6 +41,12 @@ logger = get_logger()
                 'type': 'bool',
                 'description': 'Attempt to pull existing remote Docker images before building.',
                 'value': True
+            },
+            'force_arch': {
+                'type': 'str',
+                'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
+                'value': '',
+                'choices': ['', 'arm64', 'x86_64']
             }
         }
     )
@@ -56,6 +61,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
+        self.force_arch: str = self.extra_params.get('force_arch', '')
 
     def load(self):
         logger.info(f'Loading oracle dataset: {self.inference_dataset_id}')
@@ -104,6 +110,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
                 force_rebuild=False,
                 max_workers=4,
                 use_remote_images=self.pull_remote_images_if_available,
+                force_arch=self.force_arch,
             )
 
             # Replace docker_image_from_id function with authoritative source
@@ -181,6 +188,12 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
                 'type': 'str',
                 'description': 'Oracle dataset ID used to fetch inference context.',
                 'value': 'princeton-nlp/SWE-bench_oracle'
+            },
+            'force_arch': {
+                'type': 'str',
+                'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
+                'value': '',
+                'choices': ['', 'arm64', 'x86_64']
             }
         }
     )
@@ -219,6 +232,12 @@ class SWEBenchVerifiedMiniAdapter(SWEBenchVerifiedAdapter):
                 'type': 'str',
                 'description': 'Oracle dataset ID used to fetch inference context.',
                 'value': 'princeton-nlp/SWE-bench_oracle'
+            },
+            'force_arch': {
+                'type': 'str',
+                'description': 'Optionally force the docker images to be pulled/built for a specific architecture.',
+                'value': '',
+                'choices': ['', 'arm64', 'x86_64']
             }
         }
     )

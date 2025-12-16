@@ -2850,6 +2850,16 @@ Answer the following multiple choice question. The last line of your response sh
         "type": "str",
         "description": "Oracle dataset ID used to fetch inference context.",
         "value": "princeton-nlp/SWE-bench_oracle"
+    },
+    "force_arch": {
+        "type": "str",
+        "description": "Optionally force the docker images to be pulled/built for a specific architecture.",
+        "value": "",
+        "choices": [
+            "",
+            "arm64",
+            "x86_64"
+        ]
     }
 }
 ```
@@ -2896,6 +2906,16 @@ Answer the following multiple choice question. The last line of your response sh
         "type": "bool",
         "description": "Attempt to pull existing remote Docker images before building.",
         "value": true
+    },
+    "force_arch": {
+        "type": "str",
+        "description": "Optionally force the docker images to be pulled/built for a specific architecture.",
+        "value": "",
+        "choices": [
+            "",
+            "arm64",
+            "x86_64"
+        ]
     }
 }
 ```
@@ -2942,6 +2962,16 @@ Answer the following multiple choice question. The last line of your response sh
         "type": "str",
         "description": "Oracle dataset ID used to fetch inference context.",
         "value": "princeton-nlp/SWE-bench_oracle"
+    },
+    "force_arch": {
+        "type": "str",
+        "description": "Optionally force the docker images to be pulled/built for a specific architecture.",
+        "value": "",
+        "choices": [
+            "",
+            "arm64",
+            "x86_64"
+        ]
     }
 }
 ```

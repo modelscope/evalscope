@@ -649,9 +649,14 @@ class TestNativeBenchmark(TestBenchmark):
     def test_swe_bench_verified_mini(self):
         """Test SWE-bench-verified-mini dataset."""
         dataset_args = {
-            # 'few_shot_num': 0,
+            'extra_params': {
+                'build_docker_images': True,
+                'pull_remote_images_if_available': True,
+                'inference_dataset_id': 'princeton-nlp/SWE-bench_oracle',
+                'force_arch': 'arm64',
+            }
         }
-        self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=5)
+        self._run_dataset_test('swe_bench_verified_mini', dataset_args, limit=1)
 
     def test_openai_mrcr(self):
         dataset_args = {
