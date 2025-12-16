@@ -324,20 +324,24 @@ class End2EndEvaluator():
                     save_dict[category_type + '_' + metric + '_EN'] = np.nan
                     save_dict[category_type + '_' + metric + '_CH'] = np.nan
 
-            if metric == 'Edit_dist':
-                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
-                    category_type]['page']:
-                    en_overall.append(result_all[category_type]['page'][metric].get('language: english', np.nan))
-                    ch_overall.append(
-                        result_all[category_type]['page'][metric].get('language: simplified_chinese', np.nan)
-                    )
-                else:
-                    en_overall.append(np.nan)
-                    ch_overall.append(np.nan)
+        # Calculate overall scores
+        # We use 1 - Edit_dist for text/formula/order (converting error to score)
+        # We use TEDS for tables (already a score)
+        overall_metric_cfg = [('text_block', 'Edit_dist', True), ('display_formula', 'Edit_dist', True),
+                              ('table', 'TEDS', False), ('reading_order', 'Edit_dist', True)]
 
-        en_overall_filtered = [x for x in en_overall if not np.isnan(x)]
-        ch_overall_filtered = [x for x in ch_overall if not np.isnan(x)]
-        save_dict['overall_EN'] = sum(en_overall_filtered) / len(en_overall_filtered) if en_overall_filtered else np.nan
-        save_dict['overall_CH'] = sum(ch_overall_filtered) / len(ch_overall_filtered) if ch_overall_filtered else np.nan
+        for category_type, metric, is_error in overall_metric_cfg:
+            if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
+                category_type]['page']:
+                val_en = result_all[category_type]['page'][metric].get('language: english', np.nan)
+                val_ch = result_all[category_type]['page'][metric].get('language: simplified_chinese', np.nan)
+
+                if not np.isnan(val_en):
+                    en_overall.append(1 - val_en if is_error else val_en)
+                if not np.isnan(val_ch):
+                    ch_overall.append(1 - val_ch if is_error else val_ch)
+
+        save_dict['overall_EN'] = sum(en_overall) / len(en_overall) if en_overall else np.nan
+        save_dict['overall_CH'] = sum(ch_overall) / len(ch_overall) if ch_overall else np.nan
 
         return save_dict

@@ -24,7 +24,7 @@ class TestVLMBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 2048,
+                'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
                 'parallel_tool_calls': True
@@ -274,6 +274,7 @@ class TestVLMBenchmark(TestBenchmark):
     def test_omni_doc_bench(self):
         dataset_args = {
             # 'subset_list': ['default']
+            # "force_redownload": True,
         }
         self._run_dataset_test('omni_doc_bench', dataset_args=dataset_args, limit=10)
 
