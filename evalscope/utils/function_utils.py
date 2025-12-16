@@ -3,10 +3,10 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from tqdm import tqdm
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, TypeVar, Union
 
 from evalscope.utils.logger import get_logger
+from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
 logger = get_logger()
 
@@ -170,7 +170,7 @@ def run_in_threads_with_progress(
     *,
     desc: str,
     max_workers: int,
-    heartbeat_sec: int,
+    log_interval: Optional[int] = None,
     on_result: Optional[Callable[[T, R], None]] = None,
     on_error: Optional[Callable[[T, Exception], None]] = None,
     filter_none_results: bool = False,
@@ -232,15 +232,22 @@ def run_in_threads_with_progress(
         future_to_index = {executor.submit(worker, item): index for index, item in indexed_items}
 
         # Progress bar reflects total number of submitted tasks; updated per finished future.
-        with tqdm(total=len(indexed_items), desc=desc, mininterval=1, dynamic_ncols=True) as pbar:
+        with tqdm(
+            total=len(indexed_items),
+            desc=desc,
+            mininterval=1,
+            dynamic_ncols=True,
+            logger=logger,
+            log_interval=log_interval
+        ) as pbar:
             # Track unfinished futures and poll with a timeout to enable heartbeat logs.
             pending = set(future_to_index.keys())
             while pending:
                 # Wait with timeout to detect stalls and emit heartbeats proactively.
-                done, not_done = wait(pending, timeout=heartbeat_sec)
+                done, not_done = wait(pending, timeout=1)
                 if not done:
                     # Heartbeat when nothing has completed within the window.
-                    logger.info(f'{desc} still processing... pending={len(not_done)}')
+                    pbar.check_log()
                     continue
 
                 # Consume completed futures.

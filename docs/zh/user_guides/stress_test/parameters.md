@@ -104,6 +104,7 @@
 | `--wandb-api-key` | `str` | wandb API密钥<br>**已废弃**，请使用`--visualizer wandb` | - |
 | `--swanlab-api-key` | `str` | swanlab API密钥<br>**已废弃**，请使用`--visualizer swanlab` | - |
 | `--outputs-dir` | `str` | 输出文件路径 | `./outputs` |
+| `--no-timestamp` | `bool` | 输出目录不包含时间戳 | `False` |
 
 ## 其他参数
 

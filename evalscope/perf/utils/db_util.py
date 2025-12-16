@@ -112,8 +112,11 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
 
 
 def get_output_path(args: Arguments) -> str:
-    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_path = os.path.join(args.outputs_dir, current_time, f'{args.name or args.model_id}')
+    if args.no_timestamp:
+        output_path = os.path.join(args.outputs_dir, f'{args.name or args.model_id}')
+    else:
+        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_path = os.path.join(args.outputs_dir, current_time, f'{args.name or args.model_id}')
     # Filter illegal characters
     output_path = re.sub(r'[<>:"|?*]', '_', output_path)
     if not os.path.exists(output_path):

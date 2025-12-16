@@ -35,28 +35,6 @@ def test_health_check(base_url):
     return response.status_code == 200
 
 
-def test_get_eval_params(base_url):
-    """Test getting evaluation parameters."""
-    print('\n=== Getting Evaluation Parameters ===')
-    response = requests.get(f'{base_url}/api/v1/eval/params')
-    print(f'Status Code: {response.status_code}')
-    data = response.json()
-    print(f"Required params: {list(data['required'].keys())}")
-    print(f"Example: {data['example']}")
-    return response.status_code == 200
-
-
-def test_get_perf_params(base_url):
-    """Test getting performance test parameters."""
-    print('\n=== Getting Performance Test Parameters ===')
-    response = requests.get(f'{base_url}/api/v1/perf/params')
-    print(f'Status Code: {response.status_code}')
-    data = response.json()
-    print(f"Required params: {list(data['required'].keys())}")
-    print(f"Example: {data['example']}")
-    return response.status_code == 200
-
-
 def test_evaluation(base_url, model_api_url, api_key='EMPTY'):
     """Test the evaluation endpoint."""
     print('\n=== Testing Evaluation ===')
@@ -71,7 +49,9 @@ def test_evaluation(base_url, model_api_url, api_key='EMPTY'):
             'temperature': 0.0,
             'max_tokens': 512
         },
-        'debug': True
+        'debug': True,
+        'work_dir': 'outputs/eval_test',
+        'no_timestamp': True
     }
 
     print(f'Request: {eval_request}')
@@ -164,7 +144,9 @@ def test_performance_single(base_url, model_api_url, api_key='EMPTY'):
         'max_tokens': 128,
         'temperature': 0.0,
         'stream': True,
-        'debug': True
+        'debug': True,
+        'outputs_dir': 'outputs/perf_single_run',
+        'no_timestamp': True
     }
 
     print(f'Request: {perf_request}')
@@ -207,16 +189,8 @@ def print_curl_examples(base_url, model_api_url, api_key):
     print('\n# 1. Health Check')
     print(f"curl -X GET '{base_url}/health'")
 
-    # Get eval params
-    print('\n# 2. Get Evaluation Parameters')
-    print(f"curl -X GET '{base_url}/api/v1/eval/params'")
-
-    # Get perf params
-    print('\n# 3. Get Performance Test Parameters')
-    print(f"curl -X GET '{base_url}/api/v1/perf/params'")
-
     # Evaluation
-    print('\n# 4. Run Evaluation')
+    print('\n# 2. Run Evaluation')
     print(f"""curl -X POST '{base_url}/api/v1/eval' \\
   -H 'Content-Type: application/json' \\
   -d '{{
@@ -233,7 +207,7 @@ def print_curl_examples(base_url, model_api_url, api_key):
   }}'""")
 
     # Performance test (multi)
-    print('\n# 5. Run Performance Benchmark (Multiple Runs)')
+    print('\n# 3. Run Performance Benchmark (Multiple Runs)')
     print(f"""curl -X POST '{base_url}/api/v1/perf' \\
   -H 'Content-Type: application/json' \\
   -d '{{
@@ -251,7 +225,7 @@ def print_curl_examples(base_url, model_api_url, api_key):
   }}'""")
 
     # Performance test (single)
-    print('\n# 6. Run Performance Benchmark (Single Run)')
+    print('\n# 4. Run Performance Benchmark (Single Run)')
     print(f"""curl -X POST '{base_url}/api/v1/perf' \\
   -H 'Content-Type: application/json' \\
   -d '{{
@@ -290,10 +264,6 @@ def main():
         print('Health check failed!')
         return
 
-    # Test parameter endpoints
-    test_get_eval_params(SERVICE_URL)
-    test_get_perf_params(SERVICE_URL)
-
     # Wait a bit
     time.sleep(1)
 
@@ -301,9 +271,9 @@ def main():
     print('Make sure the EvalScope service is running at:', SERVICE_URL)
     print('Using DashScope API at:', MODEL_API_URL)
     print('=' * 60)
-    # test_evaluation(SERVICE_URL, MODEL_API_URL, API_KEY)
+    test_evaluation(SERVICE_URL, MODEL_API_URL, API_KEY)
     # test_performance_multi(SERVICE_URL, MODEL_API_URL, API_KEY)
-    # test_performance_single(SERVICE_URL, MODEL_API_URL, API_KEY)
+    test_performance_single(SERVICE_URL, MODEL_API_URL, API_KEY)
 
     print('\n=== Test Complete ===')
 
