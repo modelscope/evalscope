@@ -197,7 +197,6 @@ class DefaultEvaluator(Evaluator):
             worker,
             desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
             max_workers=self.task_config.eval_batch_size,
-            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
             filter_none_results=True,
@@ -278,7 +277,6 @@ class DefaultEvaluator(Evaluator):
             worker,
             desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
             max_workers=self.task_config.judge_worker_num,
-            heartbeat_sec=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
             # Do not persist interim results when batch scoring is enabled
             on_result=None if self.benchmark.use_batch_scoring else on_result,

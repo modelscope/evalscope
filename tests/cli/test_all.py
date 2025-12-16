@@ -7,10 +7,9 @@ import os
 import unittest
 
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.constants import EvalType, JudgeStrategy
 from evalscope.run import run_task
 from evalscope.utils.logger import get_logger
-from tests.utils import test_level_list
 
 os.environ['EVALSCOPE_LOG_LEVEL'] = 'DEBUG'
 
@@ -24,7 +23,7 @@ datasets=[
     'musr',
     'process_bench',
     'race',
-    'trivia_qa',
+    # 'trivia_qa',
     'cmmlu',
     'humaneval',
     'gsm8k',
@@ -45,16 +44,16 @@ datasets=[
     'chinese_simpleqa',
     'alpaca_eval',
     'arena_hard',
-    # 'maritime_bench',
-    # 'drop',
-    # 'winogrande',
-    # 'tool_bench',
-    # 'frames',
-    # 'docmath',
-    # 'needle_haystack',
-    # 'bfcl_v3',
-    # 'hle',
-    # 'tau_bench',
+    'maritime_bench',
+    'drop',
+    'winogrande',
+    'tool_bench',
+    'frames',
+    'docmath',
+    'needle_haystack',
+    'bfcl_v3',
+    'hle',
+    'tau_bench',
 ]
 
 # Reverse the datasets list to ensure the order is from most recent to oldest

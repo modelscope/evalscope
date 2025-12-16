@@ -13,77 +13,179 @@ from evalscope.utils import BaseArgument
 @dataclass
 class Arguments(BaseArgument):
     # Model and API
-    model: str  # Model name or path
-    model_id: Optional[str] = None  # Model identifier
-    attn_implementation: Optional[str] = None  # Attention implementaion, only for local inference
-    api: str = 'openai'  # API to be used (default: 'openai')
-    tokenizer_path: Optional[str] = None  # Path to the tokenizer
-    port: int = 8877  # Port number for the local API server
+    model: str
+    """Model name or path."""
+
+    model_id: Optional[str] = None
+    """Model identifier."""
+
+    attn_implementation: Optional[str] = None
+    """Attention implementaion, only for local inference."""
+
+    api: str = 'openai'
+    """API to be used (default: 'openai')."""
+
+    tokenizer_path: Optional[str] = None
+    """Path to the tokenizer."""
+
+    port: int = 8877
+    """Port number for the local API server."""
 
     # Connection settings
-    url: str = 'http://127.0.0.1:8877/v1/chat/completions'  # URL for the API connection
-    headers: Dict[str, Any] = field(default_factory=dict)  # Custom headers
-    connect_timeout: Optional[int] = None  # Connection timeout in seconds
-    read_timeout: Optional[int] = None  # Read timeout in seconds
-    total_timeout: Optional[int] = 6 * 60 * 60  # Total timeout in seconds
+    url: str = 'http://127.0.0.1:8877/v1/chat/completions'
+    """URL for the API connection."""
+
+    headers: Dict[str, Any] = field(default_factory=dict)
+    """Custom headers."""
+
+    connect_timeout: Optional[int] = None
+    """Connection timeout in seconds."""
+
+    read_timeout: Optional[int] = None
+    """Read timeout in seconds."""
+
+    total_timeout: Optional[int] = 6 * 60 * 60
+    """Total timeout in seconds."""
+
     api_key: Optional[str] = None
-    no_test_connection: bool = False  # Test the connection before starting the benchmark
+    """The API key for authentication."""
+
+    no_test_connection: bool = False
+    """Test the connection before starting the benchmark."""
 
     # Performance and parallelism
-    number: Union[int, List[int]] = 1000  # Number of requests to be made
-    parallel: Union[int, List[int]] = 1  # Number of parallel requests
-    rate: int = -1  # Rate limit for requests (default: -1, no limit)
-    sleep_interval: int = 5  # Sleep interval between performance runs, in seconds
+    number: Union[int, List[int]] = 1000
+    """Number of requests to be made."""
+
+    parallel: Union[int, List[int]] = 1
+    """Number of parallel requests."""
+
+    rate: int = -1
+    """Rate limit for requests (default: -1, no limit)."""
+
+    sleep_interval: int = 5
+    """Sleep interval between performance runs, in seconds."""
 
     # Tuning knobs
-    db_commit_interval: int = 1000  # Number of rows buffered before committing to the DB
-    queue_size_multiplier: int = 5  # Maxsize for queue = parallel * this multiplier
-    in_flight_task_multiplier: int = 2  # Max scheduled tasks = parallel * this multiplier
+    db_commit_interval: int = 1000
+    """Number of rows buffered before committing to the DB."""
+
+    queue_size_multiplier: int = 5
+    """Maxsize for queue = parallel * this multiplier."""
+
+    in_flight_task_multiplier: int = 2
+    """Max scheduled tasks = parallel * this multiplier."""
 
     # Logging and debugging
-    log_every_n_query: int = 10  # Log every N queries
-    debug: bool = False  # Debug mode
-    visualizer: Optional[str] = None  # Visualizer for logging, supports 'swanlab' or 'wandb'
-    wandb_api_key: Optional[str] = None  # Will be deprecated in the future
-    swanlab_api_key: Optional[str] = None  # Will be deprecated in the future
-    name: Optional[str] = None  # Name for the run
+    log_every_n_query: int = 10
+    """Log every N queries."""
+
+    debug: bool = False
+    """Debug mode."""
+
+    visualizer: Optional[str] = None
+    """Visualizer for logging, supports 'swanlab' or 'wandb'."""
+
+    wandb_api_key: Optional[str] = None
+    """Will be deprecated in the future."""
+
+    swanlab_api_key: Optional[str] = None
+    """Will be deprecated in the future."""
+
+    name: Optional[str] = None
+    """Name for the run."""
 
     # Output settings
     outputs_dir: str = DEFAULT_WORK_DIR
+    """Output directory."""
+
+    no_timestamp: bool = False
+    """Whether to disable timestamp in output directory."""
 
     # Prompt settings
-    max_prompt_length: int = 131072  # Maximum length of the prompt
-    min_prompt_length: int = 0  # Minimum length of the prompt
-    prefix_length: int = 0  # Length of the prefix, only for random dataset
-    prompt: Optional[str] = None  # The prompt text
-    query_template: Optional[str] = None  # Template for the query
-    apply_chat_template: Optional[bool] = None  # Whether to apply chat template
+    max_prompt_length: int = 131072
+    """Maximum length of the prompt."""
+
+    min_prompt_length: int = 0
+    """Minimum length of the prompt."""
+
+    prefix_length: int = 0
+    """Length of the prefix, only for random dataset."""
+
+    prompt: Optional[str] = None
+    """The prompt text."""
+
+    query_template: Optional[str] = None
+    """Template for the query."""
+
+    apply_chat_template: Optional[bool] = None
+    """Whether to apply chat template."""
+
     # random vl settings
-    image_width: int = 224  # Width of the image for random VL dataset
-    image_height: int = 224  # Height of the image for random VL dataset
-    image_format: str = 'RGB'  # Image format for random VL dataset
-    image_num: int = 1  # Number of images for random VL dataset
-    image_patch_size: int = 28  # Patch size for image tokenizer, only for local image token calculation
+    image_width: int = 224
+    """Width of the image for random VL dataset."""
+
+    image_height: int = 224
+    """Height of the image for random VL dataset."""
+
+    image_format: str = 'RGB'
+    """Image format for random VL dataset."""
+
+    image_num: int = 1
+    """Number of images for random VL dataset."""
+
+    image_patch_size: int = 28
+    """Patch size for image tokenizer, only for local image token calculation."""
 
     # Dataset settings
-    dataset: str = 'openqa'  # Dataset type (default: 'line_by_line')
-    dataset_path: Optional[str] = None  # Path to the dataset
+    dataset: str = 'openqa'
+    """Dataset type (default: 'line_by_line')."""
+
+    dataset_path: Optional[str] = None
+    """Path to the dataset."""
 
     # Response settings
-    frequency_penalty: Optional[float] = None  # Frequency penalty for the response
-    repetition_penalty: Optional[float] = None  # Repetition penalty for the response
-    logprobs: Optional[bool] = None  # Whether to log probabilities
-    max_tokens: Optional[int] = 2048  # Maximum number of tokens in the response
-    min_tokens: Optional[int] = None  # Minimum number of tokens in the response
-    n_choices: Optional[int] = None  # Number of response choices
-    seed: Optional[int] = None  # Random seed for reproducibility
-    stop: Optional[List[str]] = None  # Stop sequences for the response
-    stop_token_ids: Optional[List[str]] = None  # Stop token IDs for the response
-    stream: Optional[bool] = True  # Whether to stream the response
-    temperature: float = 0.0  # Temperature setting for the response
-    top_p: Optional[float] = None  # Top-p (nucleus) sampling setting for the response
-    top_k: Optional[int] = None  # Top-k sampling setting for the response
-    extra_args: Optional[Dict[str, Any]] = None  # Extra arguments
+    frequency_penalty: Optional[float] = None
+    """Frequency penalty for the response."""
+
+    repetition_penalty: Optional[float] = None
+    """Repetition penalty for the response."""
+
+    logprobs: Optional[bool] = None
+    """Whether to log probabilities."""
+
+    max_tokens: Optional[int] = 2048
+    """Maximum number of tokens in the response."""
+
+    min_tokens: Optional[int] = None
+    """Minimum number of tokens in the response."""
+
+    n_choices: Optional[int] = None
+    """Number of response choices."""
+
+    seed: Optional[int] = None
+    """Random seed for reproducibility."""
+
+    stop: Optional[List[str]] = None
+    """Stop sequences for the response."""
+
+    stop_token_ids: Optional[List[str]] = None
+    """Stop token IDs for the response."""
+
+    stream: Optional[bool] = True
+    """Whether to stream the response."""
+
+    temperature: float = 0.0
+    """Temperature setting for the response."""
+
+    top_p: Optional[float] = None
+    """Top-p (nucleus) sampling setting for the response."""
+
+    top_k: Optional[int] = None
+    """Top-k sampling setting for the response."""
+
+    extra_args: Optional[Dict[str, Any]] = None
+    """Extra arguments."""
 
     def __post_init__(self):
         # Set the default headers
@@ -218,6 +320,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     # Output settings
     parser.add_argument('--outputs-dir', help='Outputs dir.', default='outputs')
+    parser.add_argument('--no-timestamp', action='store_true', default=False, help='Do not add timestamp to output directory')  # noqa: E501
 
     # Dataset settings
     parser.add_argument('--dataset', type=str, default='openqa', help='Specify the dataset')

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import numpy as np
-import platform
 import sqlite3
 from tqdm import tqdm
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
@@ -12,11 +11,11 @@ from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
 from .utils.benchmark_util import BenchmarkMetrics
 from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
-from .utils.handler import add_signal_handlers, exception_handler
+from .utils.handler import exception_handler
 from .utils.log_utils import maybe_log_to_visualizer
 
 if TYPE_CHECKING:
-    from .plugin import ApiPluginBase, DatasetPluginBase
+    from .plugin import ApiPluginBase
 
 logger = get_logger()
 
