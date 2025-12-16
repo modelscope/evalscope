@@ -2,7 +2,7 @@ import random
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 from tqdm import tqdm
-from typing import List, Optional
+from typing import List
 
 from evalscope.collections.schema import CollectionSchema, DatasetInfo
 
