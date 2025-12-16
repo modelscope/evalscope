@@ -98,7 +98,7 @@ def build_images(
             worker=_pull_image,
             desc='Pulling SWE-Bench images',
             max_workers=max_workers,
-            heartbeat_sec=30,
+            log_interval=30,
             on_result=_on_result,
             on_error=_on_error,
             filter_none_results=True,

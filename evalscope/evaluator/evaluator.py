@@ -10,16 +10,16 @@ and report generation.
 import os
 import traceback
 from collections import defaultdict
-from tqdm import tqdm
 from typing import TYPE_CHECKING, Callable, Dict, List
 
-from evalscope.api.dataset import Dataset, DatasetDict, Sample
+from evalscope.api.dataset import Dataset, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.report import Report, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
+from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -99,7 +99,9 @@ class DefaultEvaluator(Evaluator):
         # Process each subset (e.g., test, validation) independently
         subset_list = list(dataset_dict.keys())
         logger.info(f'Start evaluating {len(dataset_dict)} subsets of the {self.benchmark_name}: {subset_list}')
-        for subset, dataset in tqdm(dataset_dict.items(), desc=f'Evaluating [{self.benchmark_name}]', unit='subset'):
+        for subset, dataset in tqdm(
+            dataset_dict.items(), desc=f'Evaluating [{self.benchmark_name}]', unit='subset', logger=logger
+        ):
             if len(dataset) == 0:
                 logger.info(f'No samples found in subset: {subset}, skipping.')
                 continue
@@ -197,6 +199,7 @@ class DefaultEvaluator(Evaluator):
             worker,
             desc=f'Predicting[{self.benchmark_name}@{subset}]: ',
             max_workers=self.task_config.eval_batch_size,
+            log_interval=HEARTBEAT_INTERVAL_SEC,
             on_result=on_result,
             on_error=on_error,
             filter_none_results=True,
@@ -277,6 +280,7 @@ class DefaultEvaluator(Evaluator):
             worker,
             desc=f'Reviewing[{self.benchmark_name}@{subset}]: ',
             max_workers=self.task_config.judge_worker_num,
+            log_interval=HEARTBEAT_INTERVAL_SEC,
             on_error=on_error,
             # Do not persist interim results when batch scoring is enabled
             on_result=None if self.benchmark.use_batch_scoring else on_result,
@@ -321,7 +325,7 @@ class DefaultEvaluator(Evaluator):
         all_reviewed_scores = []
         total = len(task_states)
         batch_size = self.task_config.judge_worker_num
-        with tqdm(total=total, desc='Scoring (batch)', unit='sample') as pbar:
+        with tqdm(total=total, desc='Scoring (batch)', unit='sample', logger=logger) as pbar:
             for start in range(0, total, batch_size):
                 # Process batch
                 end = min(start + batch_size, total)
