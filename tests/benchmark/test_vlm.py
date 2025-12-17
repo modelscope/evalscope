@@ -237,7 +237,10 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
             'shuffle': True,
         }
-        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=20)
+        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=50, model='qwen3-vl-30b-a3b-instruct', ignore_errors=True)
+
+    def test_hallusion_bench_load(self):
+        self._run_dataset_load_test('hallusion_bench')
 
     def test_pope(self):
         dataset_args = {
