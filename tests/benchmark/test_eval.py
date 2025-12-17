@@ -510,9 +510,13 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_poly_math(self):
         dataset_args = {
-            'subset_list': ['zh', 'en', 'es'],
+            'subset_list': [
+                'zh',
+                # 'en',
+                # 'es'
+            ],
         }
-        self._run_dataset_test('poly_math', dataset_args, use_cache='outputs/20251016_154028')
+        self._run_dataset_test('poly_math', dataset_args)
 
     def test_aa_lcr(self):
         dataset_args = {

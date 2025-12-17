@@ -41,7 +41,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
             content_list.append(ContentImage(image=image_base64))
-        answer = 'NO' if str(record.get('answer', '0')) == '1' else 'YES'
+        answer = 'NO' if record['gt_answer'] == '0' else 'YES'
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=answer,
@@ -52,6 +52,8 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                 'set_id': record.get('set_id'),
                 'figure_id': record.get('figure_id'),
                 'question_id': record.get('question_id'),
+                'gt_answer': record.get('gt_answer'),
+                'gt_answer_details': record.get('gt_answer_details'),
             }
         )
 
