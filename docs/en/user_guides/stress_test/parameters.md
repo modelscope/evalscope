@@ -41,6 +41,20 @@ In the implementation of this tool, request generation and sending are separate:
 - The `--rate` parameter controls the number of requests generated per second, which are placed in a request queue
 - The `--parallel` parameter controls the number of workers sending requests, with each worker retrieving requests from the queue and sending them, only proceeding to the next request after receiving a response to the previous one
 ```
+## SLA Settings
+
+| Parameter | Type | Description | Default |
+|------|------|------|--------|
+| `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
+| `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
+| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Example: `'[{"p99_latency": "<=2"}]'` | `None` |
+| `--sla-upper-bound` | `int` | Maximum concurrency/rate limit for auto-tuning | `65536` |
+| `--sla-lower-bound` | `int` | Minimum concurrency/rate limit for auto-tuning | `1` |
+| `--sla-num-runs` | `int` | Number of runs per concurrency level (average taken) | `3` |
+
+```{seealso}
+For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./sla_auto_tune.md).
+```
 
 ## Prompt Settings
 

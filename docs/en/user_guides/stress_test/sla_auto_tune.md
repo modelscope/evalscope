@@ -1,51 +1,51 @@
-# SLA 自动调优
+# SLA Auto-Tuning
 
-SLA (Service Level Agreement) 自动调优功能允许用户定义服务质量指标（如延迟、吞吐量），工具将自动调整请求压力（并发数或请求速率），寻找服务能够满足这些指标的最大压力值。
+The SLA (Service Level Agreement) auto-tuning feature allows users to define service quality metrics (such as latency and throughput), and the tool will automatically adjust request pressure (concurrency or request rate) to find the maximum pressure value that the service can sustain while meeting these metrics.
 
-## 功能特性
+## Features
 
-- **自动探测**：通过二分查找算法，自动寻找满足 SLA 约束的最大并发数 (`parallel`) 或请求速率 (`rate`)。
-- **多指标支持**：支持端到端延迟（Latency）、首字延迟（TTFT）、单字输出延迟（TPOT）以及请求吞吐量（RPS）、token吞吐量（TPS）等指标。
-- **灵活约束**：支持设置上限（如 `p99_latency <= 2s`）或寻找极值（如 `tps: max`）。
-- **结果稳定**：每个测试点默认运行多次取平均值，减少网络波动干扰。
+- **Automatic Detection**: Uses binary search algorithm to automatically find the maximum concurrency (`parallel`) or request rate (`rate`) that satisfies SLA constraints.
+- **Multi-Metric Support**: Supports end-to-end latency (Latency), time to first token (TTFT), time per output token (TPOT), as well as request throughput (RPS) and token throughput (TPS).
+- **Flexible Constraints**: Supports setting upper limits (e.g., `p99_latency <= 2s`) or finding extremes (e.g., `tps: max`).
+- **Stable Results**: Each test point runs multiple times by default and takes the average to reduce network fluctuation interference.
 
-## 参数说明
+## Parameter Description
 
-详见 [参数说明](./parameters.md#sla设置)。
+See [Parameter Description](./parameters.md#sla-settings) for details.
 
-主要参数：
-- `--sla-auto-tune`: 开启自动调优。
-- `--sla-variable`: 调整变量，`parallel` 或 `rate`。
-- `--sla-params`: 定义 SLA 规则。
+Main parameters:
+- `--sla-auto-tune`: Enable auto-tuning.
+- `--sla-variable`: Adjustment variable, `parallel` or `rate`.
+- `--sla-params`: Define SLA rules.
 
-## 支持的指标与操作符
+## Supported Metrics and Operators
 
-| 指标类别 | 指标名称 | 说明 | 支持操作符 |
+| Metric Category | Metric Name | Description | Supported Operators |
 |----------|----------|------|------------|
-| **延迟类** | `avg_latency` | 平均请求延迟 | `<=`, `<`, `min` |
-| | `p99_latency` | 99% 分位请求延迟 | `<=`, `<`, `min` |
-| | `avg_ttft` | 平均首字延迟 (Time To First Token) | `<=`, `<`, `min` |
-| | `p99_ttft` | 99% 分位首字延迟 | `<=`, `<`, `min` |
-| | `avg_tpot` | 平均单字生成延迟 (Time Per Output Token) | `<=`, `<`, `min` |
-| | `p99_tpot` | 99% 分位单字生成延迟 | `<=`, `<`, `min` |
-| **吞吐类** | `rps` | 请求吞吐量 (Requests Per Second) | `>=`, `>`, `max` |
-| | `tps` | Token 吞吐量 (Tokens Per Second) | `>=`, `>`, `max` |
+| **Latency** | `avg_latency` | Average request latency | `<=`, `<`, `min` |
+| | `p99_latency` | 99th percentile request latency | `<=`, `<`, `min` |
+| | `avg_ttft` | Average time to first token | `<=`, `<`, `min` |
+| | `p99_ttft` | 99th percentile time to first token | `<=`, `<`, `min` |
+| | `avg_tpot` | Average time per output token | `<=`, `<`, `min` |
+| | `p99_tpot` | 99th percentile time per output token | `<=`, `<`, `min` |
+| **Throughput** | `rps` | Requests per second | `>=`, `>`, `max` |
+| | `tps` | Tokens per second | `>=`, `>`, `max` |
 
-## 工作流程
+## Workflow
 
-1. **基准测试**：以用户指定的初始 `parallel` 或 `rate` 开始测试（建议设置为较小值，如 1 或 2）。
-2. **边界探测**：
-   - 如果当前指标满足 SLA，将压力翻倍，直到首次违反 SLA 或达到 `--sla-max-concurrency`。
-   - 如果初始指标即违反 SLA，将压力减半，寻找满足条件的下界。
-3. **二分查找**：在确定的边界窗口内进行二分查找，精确锁定“刚好不违约”的最大压力值。
-4. **结果确认**：每个测试点会运行 `--sla-num-runs` 次（默认 3 次），取平均值进行判断。
-5. **报告输出**：测试结束后，输出调优过程摘要及最终结果。
+1. **Baseline Test**: Start testing with the user-specified initial `parallel` or `rate` (recommended to set a small value, such as 1 or 2).
+2. **Boundary Detection**:
+   - If current metrics meet SLA, double the pressure until SLA is first violated or `--sla-max-concurrency` is reached.
+   - If initial metrics violate SLA, halve the pressure to find a lower bound that satisfies conditions.
+3. **Binary Search**: Perform binary search within the determined boundary window to precisely lock in the maximum pressure value that "just doesn't violate" SLA.
+4. **Result Confirmation**: Each test point runs `--sla-num-runs` times (default 3), taking the average for judgment.
+5. **Report Output**: After testing, output a summary of the tuning process and final results.
 
-> **注意**：如果测试过程中请求成功率（Success Rate）低于 100%，该测试点将被视为失败（违反 SLA）。
+> **Note**: If the request success rate during testing is below 100%, that test point will be considered failed (violating SLA).
 
-## 使用示例
+## Usage Examples
 
-### 1. 寻找满足 P99 Latency <= 2s 的最大并发数
+### 1. Find Maximum Concurrency Meeting P99 Latency <= 2s
 
 ```bash
 evalscope perf \
@@ -91,7 +91,7 @@ Performance Recommendations:
 +--------------------+------------+-----------------+---------------------+
 ```
 
-### 2. 寻找 TPS 最大的并发数
+### 2. Find Concurrency with Maximum TPS
 
 ```bash
 evalscope perf \
@@ -110,7 +110,7 @@ evalscope perf \
  --parallel 4
 ```
 
-输出示例：
+Example output:
 ```text
                                     Detailed Performance Metrics                                    
 ┏━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┓
@@ -148,7 +148,7 @@ Performance Recommendations:
 +------------+------------+-----------------+---------------------+
 ```
 
-### 3. 寻找特定范围满足 TTFT < 0.05s, TTFT < 0.01s 的最大请求速率
+### 3. Find Maximum Request Rate Meeting TTFT < 0.05s and TTFT < 0.01s in Specific Range
 
 ```bash
 evalscope perf \
@@ -170,7 +170,7 @@ evalscope perf \
  --sla-upper-bound 40
 ```
 
-输出示例：
+Example output:
 ```text
                                     Detailed Performance Metrics                                    
 ┏━━━━━━┳━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓

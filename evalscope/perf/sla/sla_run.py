@@ -133,6 +133,7 @@ class SLAAutoTuner:
 
         sla_params = parse_sla_params(self.args.sla_params)
         logger.info(f'Starting SLA Auto-tune for {self.sla_variable}')
+        logger.info(f'SLA Range: [{self.lower_bound}, {self.upper_bound}]')
         logger.info(f'SLA Params: {self.args.sla_params}')
 
         # Flatten SLA criteria to check each metric independently
@@ -141,6 +142,9 @@ class SLAAutoTuner:
         current_val = self.args.parallel if self.sla_variable == 'parallel' else self.args.rate
         if isinstance(current_val, list):
             current_val = current_val[0]
+
+        # Ensure current_val is within bounds
+        current_val = max(self.lower_bound, min(current_val, self.upper_bound))
 
         for criteria in target_criteria_list:
             logger.info(f'Auto-tuning for criteria: {criteria}')
@@ -285,38 +289,40 @@ class SLAAutoTuner:
 
         if passed:
             logger.info('Initial run passed. Finding upper bound...')
-            upper = start_val * 2
-            while True:
+            upper = min(start_val * 2, self.upper_bound)
+            while upper <= self.upper_bound:
                 logger.info(f'Testing upper bound: {upper}')
                 if not check(upper):
                     logger.info(f'Found upper bound violation at {upper}')
                     break
                 lower = upper
-                upper *= 2
-                if upper > self.upper_bound:
-                    logger.warning(f'Upper bound exceeded safety limit ({self.upper_bound}). Stopping.')
+                if upper == self.upper_bound:
+                    logger.info(f'Reached upper bound limit: {self.upper_bound}')
                     break
+                upper = min(upper * 2, self.upper_bound)
         else:
             logger.info('Initial run failed. Finding lower bound...')
             upper = start_val
-            lower = start_val // 2
+            lower = max(start_val // 2, self.lower_bound)
             found_valid = False
-            while lower >= 1:
+            while lower >= self.lower_bound:
                 logger.info(f'Testing lower bound: {lower}')
                 if check(lower):
                     logger.info(f'Found valid lower bound at {lower}')
                     found_valid = True
                     break
                 upper = lower
-                lower //= 2
+                if lower == self.lower_bound:
+                    break
+                lower = max(lower // 2, self.lower_bound)
 
             if not found_valid:
-                logger.warning(f'Even {self.sla_variable}=1 failed SLA for {criteria}.')
+                logger.warning(f'Even {self.sla_variable}={self.lower_bound} failed SLA for {criteria}.')
                 self.sla_results_table.append({
                     'Criteria': ', '.join([f'{k} {v}' for k, v in criteria.items()]),
                     'Variable': self.sla_variable,
                     'Max Satisfied': 'None',
-                    'Note': 'Failed at min value'
+                    'Note': f'Failed at lower bound ({self.lower_bound})'
                 })
                 return
 
