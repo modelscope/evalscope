@@ -67,28 +67,32 @@ evalscope perf \
 
 ```text
                                     Detailed Performance Metrics                                    
-┏━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┓
-┃      ┃      ┃      Avg ┃      P99 ┃    Gen. ┃      Avg ┃     P99 ┃      Avg ┃     P99 ┃   Success┃
-┃Conc. ┃  RPS ┃  Lat.(s) ┃  Lat.(s) ┃  toks/s ┃  TTFT(s) ┃ TTFT(s) ┃  TPOT(s) ┃ TPOT(s) ┃      Rate┃
-┡━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━┩
-│  1.0 │ 0.36 │    2.765 │    2.781 │  370.27 │    0.027 │   0.029 │    0.003 │   0.003 │    100.0%│
-│  2.0 │ 0.67 │    2.964 │    2.991 │  689.13 │    0.033 │   0.038 │    0.003 │   0.003 │    100.0%│
-└──────┴──────┴──────────┴──────────┴─────────┴──────────┴─────────┴──────────┴─────────┴──────────┘
+┏━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+┃      ┃      ┃      ┃     Avg ┃     P99 ┃     Avg ┃     P99 ┃     Avg ┃    P99 ┃    Gen. ┃ Success┃
+┃Conc. ┃ Rate ┃  RPS ┃ Lat.(s) ┃ Lat.(s) ┃ TTFT(s) ┃ TTFT(s) ┃ TPOT(s) ┃ TPOT(… ┃  toks/s ┃    Rate┃
+┡━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+│    2 │  INF │ 2.19 │   0.928 │   1.413 │   0.030 │   0.038 │   0.003 │  0.003 │  640.20 │  100.0%│
+│    4 │  INF │ 7.18 │   0.783 │   1.635 │   0.033 │   0.050 │   0.003 │  0.004 │ 1013.67 │  100.0%│
+│    5 │  INF │ 6.39 │   0.743 │   1.657 │   0.038 │   0.061 │   0.003 │  0.004 │ 1210.93 │  100.0%│
+│    6 │  INF │ 3.86 │   0.893 │   3.001 │   0.039 │   0.064 │   0.003 │  0.004 │ 1095.79 │  100.0%│
+│    8 │  INF │ 4.03 │   1.286 │   3.181 │   0.044 │   0.081 │   0.003 │  0.004 │ 1615.33 │  100.0%│
+└──────┴──────┴──────┴─────────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┴────────┘
 
 
                Best Performance Configuration               
- Highest RPS         Concurrency 2.0 (0.67 req/sec)         
- Lowest Latency      Concurrency 1.0 (2.765 seconds)        
+ Highest RPS         Concurrency 2 (INF req/sec)            
+ Lowest Latency      Concurrency 2 (2.19 seconds)           
 
 Performance Recommendations:
-• The system seems not to have reached its performance bottleneck, try higher concurrency
-2025-12-18 15:11:02 - evalscope - INFO: Performance summary saved to: outputs/20251218_150933/Qwen2.5-0.5B-Instruct/performance_summary.txt
-2025-12-18 15:11:02 - evalscope - INFO: SLA Auto-tune Summary:
-+--------------------+------------+-----------------+---------------------+
-| Criteria           | Variable   | Max Satisfied   | Note                |
-+====================+============+=================+=====================+
-| p99_latency <= 2.0 | parallel   | None            | Failed at min value |
-+--------------------+------------+-----------------+---------------------+
+• Consider lowering concurrency, current load may be too high
+• Success rate is low at high concurrency, check system resources or reduce concurrency
+2025-12-18 16:32:39 - evalscope - INFO: Performance summary saved to: outputs/20251218_163037/Qwen2.5-0.5B-Instruct/performance_summary.txt
+2025-12-18 16:32:39 - evalscope - INFO: SLA Auto-tune Summary:
++--------------------+------------+-----------------+-----------+
+| Criteria           | Variable   |   Max Satisfied | Note      |
++====================+============+=================+===========+
+| p99_latency <= 2.0 | parallel   |               5 | Satisfied |
++--------------------+------------+-----------------+-----------+
 ```
 
 ### 2. 寻找 TPS 最大的并发数
