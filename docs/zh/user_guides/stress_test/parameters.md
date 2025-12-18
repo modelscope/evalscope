@@ -42,6 +42,21 @@
 - `--parallel`参数控制发送请求的worker数量，worker从请求队列获取请求并发送，且在上一请求回复后才发送下一请求
 ```
 
+## SLA设置
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `--sla-auto-tune` | `bool` | 是否启用SLA自动调优模式 | `False` |
+| `--sla-variable` | `str` | 自动调优的变量<br>可选：`parallel`（并发数）、`rate`（请求速率） | `parallel` |
+| `--sla-params` | `str` | SLA约束条件<br>JSON字符串<br>支持指标：`avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>支持操作符：`<=`, `<`, `min` (延时类); `>=`, `>`, `max` (吞吐类)<br>示例：`'[{"p99_latency": "<=2"}]'` | `None` |
+| `--sla-upper-bound` | `int` | 自动调优时的最大并发数/速率限制 | `65536` |
+| `--sla-lower-bound` | `int` | 自动调优时的最小并发数/速率限制 | `1` |
+| `--sla-num-runs` | `int` | 每个并发级别的运行次数（取平均值） | `3` |
+
+```{seealso}
+SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
+```
+
 ## Prompt设置
 
 | 参数 | 类型 | 说明 | 默认值 |

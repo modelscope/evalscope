@@ -10,6 +10,7 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
+from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
 from .utils.local_server import start_app
@@ -99,6 +100,10 @@ def run_perf_benchmark(args):
     output_path = get_output_path(args)
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
     args.outputs_dir = output_path
+
+    if args.sla_auto_tune:
+        results = run_sla_auto_tune(args, run_one_benchmark)
+        return results
 
     # Initialize visualizer
     init_visualizer(args)

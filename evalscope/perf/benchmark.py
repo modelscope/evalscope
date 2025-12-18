@@ -91,7 +91,7 @@ async def send_request(
 
 @exception_handler
 async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: Arguments, api_plugin: 'ApiPluginBase'):
-    metrics = BenchmarkMetrics(concurrency=args.parallel)
+    metrics = BenchmarkMetrics(concurrency=args.parallel, rate=args.rate)
     result_db_path = get_result_db_path(args)
 
     # Stream inserts to DB to avoid accumulating all results in memory
