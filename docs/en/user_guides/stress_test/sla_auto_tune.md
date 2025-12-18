@@ -35,7 +35,7 @@ Main parameters:
 
 1. **Baseline Test**: Start testing with the user-specified initial `parallel` or `rate` (recommended to set a small value, such as 1 or 2).
 2. **Boundary Detection**:
-   - If current metrics meet SLA, double the pressure until SLA is first violated or `--sla-max-concurrency` is reached.
+   - If current metrics meet SLA, double the pressure until SLA is first violated or `--sla-upper-bound` is reached.
    - If initial metrics violate SLA, halve the pressure to find a lower bound that satisfies conditions.
 3. **Binary Search**: Perform binary search within the determined boundary window to precisely lock in the maximum pressure value that "just doesn't violate" SLA.
 4. **Result Confirmation**: Each test point runs `--sla-num-runs` times (default 3), taking the average for judgment.
