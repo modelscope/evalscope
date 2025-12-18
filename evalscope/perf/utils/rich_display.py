@@ -87,6 +87,9 @@ def analyze_results(all_results):
         logger.warning('Error: No valid test result data')
         return [], 0, 0
 
+    # Sort summary by concurrency in descending order
+    summary.sort(key=lambda x: x[0])
+
     return summary, total_tokens, total_time
 
 

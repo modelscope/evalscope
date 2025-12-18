@@ -285,3 +285,53 @@ def speed_benchmark_result(result_db_path: str):
     # Write results to JSON file
     result_path = os.path.dirname(result_db_path)
     write_json_file(data, os.path.join(result_path, 'speed_benchmark.json'))
+
+
+def average_results(results_list: List[Dict]):
+    if not results_list:
+        return {}
+
+    avg_res = {'metrics': {}, 'percentiles': {}}
+
+    # Metrics
+    metric_keys = results_list[0]['metrics'].keys()
+    for k in metric_keys:
+        vals = [r['metrics'].get(k, 0) for r in results_list]
+        vals = [v for v in vals if isinstance(v, (int, float))]
+        if vals:
+            avg_res['metrics'][k] = sum(vals) / len(vals)
+
+    # Percentiles
+    if results_list[0].get('percentiles'):
+        perc_keys = results_list[0]['percentiles'].keys()
+        for k in perc_keys:
+            # Skip averaging for the labels list, just copy it
+            if k == PercentileMetrics.PERCENTILES:
+                avg_res['percentiles'][k] = results_list[0]['percentiles'][k]
+                continue
+
+            lists = [r['percentiles'][k] for r in results_list]
+            avg_list = []
+            if lists and lists[0]:
+                length = len(lists[0])
+                for i in range(length):
+                    # Extract i-th percentile from all runs
+                    col_vals = []
+                    for l in lists:  # noqa: E741
+                        if i < len(l) and isinstance(l[i], (int, float)):
+                            col_vals.append(l[i])
+
+                    if col_vals:
+                        val = sum(col_vals) / len(col_vals)
+                        avg_list.append(val)
+                    else:
+                        avg_list.append(0)  # Use 0 for N/A to maintain list structure
+            avg_res['percentiles'][k] = avg_list
+
+    # Copy other keys like 'percentiles_keys' if they exist
+    if 'percentiles' in results_list[0]:
+        for k, v in results_list[0]['percentiles'].items():
+            if k not in avg_res['percentiles']:
+                avg_res['percentiles'][k] = v
+
+    return avg_res

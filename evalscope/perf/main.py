@@ -15,6 +15,7 @@ from .utils.handler import add_signal_handlers
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
 from .utils.rich_display import print_summary
+from .utils.sla_util import run_sla_auto_tune
 
 logger = get_logger()
 
@@ -99,6 +100,10 @@ def run_perf_benchmark(args):
     output_path = get_output_path(args)
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
     args.outputs_dir = output_path
+
+    if args.sla_auto_tune:
+        results = run_sla_auto_tune(args, run_one_benchmark)
+        return results
 
     # Initialize visualizer
     init_visualizer(args)
