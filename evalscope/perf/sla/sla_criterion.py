@@ -114,5 +114,4 @@ def create_criterion(value_str: str) -> SLACriterionBase:
                 val = float(value_str[len(op_key):])
                 return SLA_CRITERIA[op_key](val)
             except ValueError:
-                continue
-    raise ValueError(f'Invalid operator in SLA param: {value_str}')
+                raise ValueError(f'Invalid target value in SLA param: {value_str}')

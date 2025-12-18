@@ -168,18 +168,18 @@ def print_summary(all_results, args: Arguments):
 
         # Calculate and display best performance configuration
         try:
-            best_rps_idx = np.argmax([float(row[1]) if row[1] != 'N/A' else -1 for row in summary])
-            best_latency_idx = np.argmin([float(row[2]) if row[2] != 'N/A' else float('inf') for row in summary])
+            best_rps_idx = np.argmax([float(row[2]) if row[2] != 'N/A' else -1 for row in summary])
+            best_latency_idx = np.argmin([float(row[3]) if row[3] != 'N/A' else float('inf') for row in summary])
 
             perf_info = Table(title='Best Performance Configuration', show_header=False, box=None, width=60)
             perf_info.add_column('Metric', style='cyan', width=20)
             perf_info.add_column('Value', style='green', width=40)
 
             perf_info.add_row(
-                'Highest RPS', f'Concurrency {summary[best_rps_idx][0]} ({summary[best_rps_idx][1]} req/sec)'
+                'Highest RPS', f'Concurrency {summary[best_rps_idx][0]} ({summary[best_rps_idx][2]} req/sec)'
             )
             perf_info.add_row(
-                'Lowest Latency', f'Concurrency {summary[best_latency_idx][0]} ({summary[best_latency_idx][2]} seconds)'
+                'Lowest Latency', f'Concurrency {summary[best_latency_idx][0]} ({summary[best_latency_idx][3]} seconds)'
             )
 
             _print_to_both(console, file_console, '\n')
@@ -196,7 +196,7 @@ def print_summary(all_results, args: Arguments):
             else:
                 recommendations.append(f'Optimal concurrency range is around {summary[best_rps_idx][0]}')
 
-            success_rate = float(summary[-1][6][:-1])
+            success_rate = float(summary[-1][10][:-1])
             if success_rate < 95:
                 recommendations.append(
                     'Success rate is low at high concurrency, check system resources or reduce concurrency'
