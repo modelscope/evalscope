@@ -7,6 +7,7 @@ A stress testing tool for large language models that can be customized to suppor
 quick_start.md
 parameters.md
 examples.md
+sla_auto_tune.md
 speed_benchmark.md
 vs_vllm_bench.md
 custom.md
