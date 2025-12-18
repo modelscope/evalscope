@@ -10,12 +10,12 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from .arguments import Arguments, parse_args
 from .benchmark import benchmark
+from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
 from .utils.handler import add_signal_handlers
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
 from .utils.rich_display import print_summary
-from .utils.sla_util import run_sla_auto_tune
 
 logger = get_logger()
 

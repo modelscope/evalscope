@@ -44,6 +44,7 @@ def analyze_results(all_results):
         percentiles = percentile_metrics[PercentileMetrics.PERCENTILES]
         try:
             concurrency = total_metrics.get(Metrics.NUMBER_OF_CONCURRENCY, 0)
+            rate = total_metrics.get(Metrics.REQUEST_RATE, 0)
             rps = total_metrics.get(Metrics.REQUEST_THROUGHPUT, 0)
             avg_latency = total_metrics.get(Metrics.AVERAGE_LATENCY, 0)
             p99_latency = percentile_metrics.get(PercentileMetrics.LATENCY)[percentiles.index('99%')]
@@ -62,16 +63,17 @@ def analyze_results(all_results):
                 continue
 
             summary.append([
-                concurrency,
+                str(int(concurrency)),
+                str(int(rate)) if rate != -1 else 'INF',
                 f'{rps:.2f}' if rps is not None else 'N/A',
                 f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
                 f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
-                f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
                 f'{avg_ttft:.3f}' if avg_ttft is not None else 'N/A',
-                f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
                 f'{p99_ttft:.3f}' if p99_ttft is not None else 'N/A',
                 f'{avg_tpot:.3f}' if avg_tpot is not None else 'N/A',
                 f'{p99_tpot:.3f}' if p99_tpot is not None else 'N/A',
+                f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
+                f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
             ])
 
             total_tokens += total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
@@ -87,8 +89,8 @@ def analyze_results(all_results):
         logger.warning('Error: No valid test result data')
         return [], 0, 0
 
-    # Sort summary by concurrency in descending order
-    summary.sort(key=lambda x: x[0])
+    # Sort summary by concurrency and rate
+    summary.sort(key=lambda x: (int(x[0]), int(x[1]) if x[1] != 'INF' else float('inf')))
 
     return summary, total_tokens, total_time
 
@@ -132,42 +134,30 @@ def print_summary(all_results, args: Arguments):
             show_header=True,
             header_style='bold cyan',
             border_style='blue',
-            width=100,
             pad_edge=False,
-            min_width=60,
+            expand=False,
         )
 
         # Add columns
         table.add_column('Conc.', justify='right', style='cyan')
+        table.add_column('Rate', justify='right')
         table.add_column('RPS', justify='right')
         table.add_column('Avg Lat.(s)', justify='right')
         table.add_column('P99 Lat.(s)', justify='right')
-        table.add_column('Gen. toks/s', justify='right')
         table.add_column('Avg TTFT(s)', justify='right')
         table.add_column('P99 TTFT(s)', justify='right')
         table.add_column('Avg TPOT(s)', justify='right')
         table.add_column('P99 TPOT(s)', justify='right')
+        table.add_column('Gen. toks/s', justify='right')
         table.add_column('Success Rate', justify='right', style='green')
 
         # Add data rows
         for row in summary:
             try:
-                success_rate = float(row[6].rstrip('%'))
+                success_rate = float(row[-1].rstrip('%'))
                 row_style = 'green' if success_rate >= 95 else 'yellow' if success_rate >= 80 else 'red'
 
-                table.add_row(
-                    str(row[0]),
-                    f'{float(row[1]):.2f}',
-                    f'{float(row[2]):.3f}',
-                    f'{float(row[3]):.3f}',
-                    f'{float(row[4]):.2f}',
-                    f'{float(row[5]):.3f}',
-                    f'{float(row[7]):.3f}',
-                    f'{float(row[8]):.3f}',
-                    f'{float(row[9]):.3f}',
-                    row[6],
-                    style=row_style
-                )
+                table.add_row(*row, style=row_style)
             except ValueError as e:
                 error_msg = f'Warning: Error processing row data: {str(e)}'
                 _print_to_both(console, file_console, error_msg, style='bold red')

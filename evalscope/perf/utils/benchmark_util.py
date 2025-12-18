@@ -56,6 +56,7 @@ class BenchmarkData:
 class Metrics:
     TIME_TAKEN_FOR_TESTS = 'Time taken for tests (s)'
     NUMBER_OF_CONCURRENCY = 'Number of concurrency'
+    REQUEST_RATE = 'Request rate (req/s)'
     TOTAL_REQUESTS = 'Total requests'
     SUCCEED_REQUESTS = 'Succeed requests'
     FAILED_REQUESTS = 'Failed requests'
@@ -73,6 +74,7 @@ class Metrics:
 @dataclass
 class BenchmarkMetrics:
     concurrency: int = 0
+    rate: int = 0
     n_succeed_queries: int = 0
     n_failed_queries: int = 0
     total_first_chunk_latency: float = 0.0
@@ -158,6 +160,7 @@ class BenchmarkMetrics:
         message = {
             Metrics.TIME_TAKEN_FOR_TESTS: round(self.total_time, default_ndigits),
             Metrics.NUMBER_OF_CONCURRENCY: self.concurrency,
+            Metrics.REQUEST_RATE: self.rate,
             Metrics.TOTAL_REQUESTS: int(self.n_total_queries),
             Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
             Metrics.FAILED_REQUESTS: self.n_failed_queries,

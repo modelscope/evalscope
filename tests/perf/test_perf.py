@@ -287,12 +287,13 @@ class TestPerf(unittest.TestCase):
             sla_auto_tune=True,
             sla_variable='parallel',
             sla_params=[{'p99_latency': '<=8'}],
+            sla_num_runs=1,
             extra_args={'ignore_eos': True}
         )
 
         run_perf_benchmark(task_cfg)
 
-    def test_perf_sla_auto_tune_gt_than(self):
+    def test_perf_sla_auto_tune_max(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=32,
@@ -308,7 +309,8 @@ class TestPerf(unittest.TestCase):
             tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
             sla_auto_tune=True,
             sla_variable='parallel',
-            sla_params=[{'tps': '>=10000'}],
+            sla_params=[{'tps': 'max'}],
+            sla_num_runs=1,
             extra_args={'ignore_eos': True}
         )
 
