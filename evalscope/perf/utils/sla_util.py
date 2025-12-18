@@ -3,6 +3,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from tabulate import tabulate
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from evalscope.perf.arguments import Arguments
@@ -220,6 +221,7 @@ def run_sla_auto_tune(args: Arguments, runner: Callable[[Arguments, Optional[str
         current_val = current_val[0]
 
     results_cache = {}
+    sla_results_table = []
 
     def save_summary_json(cache):
         formatted = {}
@@ -315,6 +317,12 @@ def run_sla_auto_tune(args: Arguments, runner: Callable[[Arguments, Optional[str
 
             if not found_valid:
                 logger.warning(f'Even {sla_variable}=1 failed SLA for {criteria}. Cannot decrease further.')
+                sla_results_table.append({
+                    'Criteria': str(criteria),
+                    'Variable': sla_variable,
+                    'Max Satisfied': 'None',
+                    'Note': 'Failed at min value'
+                })
                 continue
 
         logger.info(f'Binary search in [{lower_bound}, {upper_bound}]')
@@ -340,7 +348,18 @@ def run_sla_auto_tune(args: Arguments, runner: Callable[[Arguments, Optional[str
                 right = mid - 1
 
         logger.info(f'SLA Auto-tune finished for {criteria}. Max {sla_variable} satisfying SLA: {best_val}')
+        sla_results_table.append({
+            'Criteria': str(criteria),
+            'Variable': sla_variable,
+            'Max Satisfied': best_val,
+            'Note': 'Satisfied'
+        })
 
     results = save_summary_json(results_cache)
     print_summary(results, args)
+
+    if sla_results_table:
+        print('\nSLA Auto-tune Summary:')
+        print(tabulate(sla_results_table, headers='keys', tablefmt='grid'))
+
     return results
