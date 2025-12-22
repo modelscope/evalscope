@@ -8,7 +8,7 @@ from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
     BenchmarkMeta(
         name='conll2003',
         pretty_name='CoNLL2003',
-        dataset_id='evalscope/conll2003',
+        dataset_id='extraordinarylab/conll2003',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description='The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part '
         'of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as '
