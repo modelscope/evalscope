@@ -213,7 +213,7 @@ def create_interface():
                 service_url_input = gr.Textbox(
                     label='EvalScope 服务URL', value=DEFAULT_SERVICE_URL, scale=3, info='EvalScope后端服务的访问地址'
                 )
-                poll_interval_input = gr.Number(label='日志轮询间隔 (秒)', value=5, minimum=2, scale=1, info='获取任务日志的间隔时间')
+                poll_interval_input = gr.Number(label='日志轮询间隔 (秒)', value=5, minimum=5, scale=1, info='获取任务日志的间隔时间')
 
             with gr.Row():
                 common_model_name = gr.Textbox(

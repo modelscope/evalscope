@@ -34,6 +34,8 @@ def convert_eval_args_to_config(**kwargs) -> dict:
 
     if 'limit' in kwargs and kwargs['limit'] is not None:
         kwargs['limit'] = int(kwargs['limit'])
+        if kwargs['limit'] <= 0:
+            kwargs['limit'] = None  # Treat non-positive limit as no limit
 
     for key in ['eval_batch_size', 'repeats']:
         if key in kwargs and kwargs[key] is not None:
