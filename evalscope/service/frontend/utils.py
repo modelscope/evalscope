@@ -26,8 +26,8 @@ def convert_eval_args_to_config(**kwargs) -> dict:
     if 'dataset_args' in kwargs and isinstance(kwargs['dataset_args'], str):
         try:
             kwargs['dataset_args'] = json.loads(kwargs['dataset_args'])
-        except Exception:
-            kwargs['dataset_args'] = {}
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in 'dataset_args': {e}")
 
     if 'limit' in kwargs and kwargs['limit'] is not None:
         kwargs['limit'] = int(kwargs['limit'])
