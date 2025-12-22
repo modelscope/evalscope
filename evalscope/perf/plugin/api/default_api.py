@@ -33,6 +33,10 @@ class StreamedResponseHandler:
             # Bad bytes: drop them and reset decoder state to avoid corruption
             self.decoder.reset()
             chunk_str = chunk_bytes.decode('utf-8', errors='ignore')
+        # Normalize CRLF (common in SSE implementations) to LF so downstream
+        # splitting on "\n\n" works consistently.
+        if "\r\n" in chunk_str:
+            chunk_str = chunk_str.replace("\r\n", "\n")
         self.buffer += chunk_str
 
         messages = []
@@ -46,7 +50,7 @@ class StreamedResponseHandler:
 
         # if self.buffer is not empty, check if it is a complete message
         # by removing data: prefix and check if it is a valid JSON
-        if self.buffer.startswith('data: '):
+        if self.buffer.startswith('data:'):
             message_content = self.buffer.removeprefix('data:').strip()
             if message_content == '[DONE]':
                 messages.append(self.buffer.strip())
