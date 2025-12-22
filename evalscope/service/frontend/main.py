@@ -1,224 +1,65 @@
-import asyncio
 import gradio as gr
-import json
 import os
-from async_client import AsyncEvalClient
-from dataclasses import fields
-from typing import AsyncGenerator, Optional, Tuple
+from typing import AsyncGenerator, Tuple
+from utils import convert_eval_args_to_config, convert_perf_args_to_config, submit_and_poll
 
-from evalscope.config import TaskConfig
-from evalscope.perf.arguments import Arguments as PerfArguments
-
-# Default configuration
 DEFAULT_SERVICE_URL = os.getenv('EVALSCOPE_SERVICE_URL', 'http://127.0.0.1:9000')
 VALID_EVAL_BENCHMARKS = ['gsm8k', 'mmlu', 'cmmlu', 'ceval', 'arc', 'math_500', 'aime24', 'aime25']
 
 
-def convert_eval_args_to_config(**kwargs) -> dict:
-    """Helper to convert UI arguments to eval task configuration dicts."""
-    gen_config = {}
-    gen_keys = ['temperature', 'max_tokens', 'top_p', 'top_k']
-    for key in gen_keys:
-        if key in kwargs and kwargs[key] is not None:
-            val = kwargs.pop(key)
-            if key in ['max_tokens', 'top_k']:
-                val = int(val)
-            gen_config[key] = val
-
-    if 'datasets' in kwargs:
-        if isinstance(kwargs['datasets'], str):
-            kwargs['datasets'] = [d.strip() for d in kwargs['datasets'].split(',') if d.strip()]
-
-    if 'dataset_args' in kwargs and isinstance(kwargs['dataset_args'], str):
-        try:
-            kwargs['dataset_args'] = json.loads(kwargs['dataset_args'])
-        except Exception:
-            kwargs['dataset_args'] = {}
-
-    if 'limit' in kwargs and kwargs['limit'] is not None:
-        kwargs['limit'] = int(kwargs['limit'])
-
-    for key in ['eval_batch_size', 'repeats']:
-        if key in kwargs and kwargs[key] is not None:
-            kwargs[key] = int(kwargs[key])
-
-    valid_keys = {f.name for f in fields(TaskConfig)}
-    payload = {k: v for k, v in kwargs.items() if k in valid_keys}
-    payload['generation_config'] = gen_config
-    return payload
-
-
-def convert_perf_args_to_config(**kwargs) -> dict:
-    """Helper to convert UI arguments to perf task configuration dicts."""
-    int_fields = [
-        'rate', 'max_tokens', 'min_tokens', 'max_prompt_length', 'min_prompt_length', 'top_k', 'connect_timeout',
-        'read_timeout'
-    ]
-    for key in int_fields:
-        if key in kwargs and kwargs[key] is not None:
-            kwargs[key] = int(kwargs[key])
-
-    for key in ['parallel', 'number']:
-        if key in kwargs and kwargs[key] is not None:
-            val = kwargs[key]
-            if isinstance(val, str):
-                kwargs[key] = [int(x.strip()) for x in val.split(',') if x.strip()]
-            elif isinstance(val, (int, float)):
-                kwargs[key] = [int(val)]
-
-    valid_keys = {f.name for f in fields(PerfArguments)}
-    payload = {k: v for k, v in kwargs.items() if k in valid_keys}
-    return payload
-
-
-async def submit_and_poll(
-    service_url: str,
-    task_type: str,
-    payload: dict,
-    poll_interval: int,
-    progress: Optional[gr.Progress] = None
-) -> AsyncGenerator[str, None]:
-    """
-    Generic function to submit task and poll logs.
-    """
-
-    if poll_interval < 5:
-        poll_interval = 5  # Minimum 5 seconds interval
-
-    logs = []
-
-    if progress is not None:
-        progress(0, desc='🚀 Submitting Task...')
-
-    try:
-        async with AsyncEvalClient(service_url) as client:
-            # 1. Submit Task
-            msg = f'Submitting {task_type} task to {service_url}...\n'
-            logs.append(msg)
-            yield ''.join(logs)
-
-            try:
-                if task_type == 'eval':
-                    resp = await client.submit_eval_task(payload)
-                else:
-                    resp = await client.submit_perf_task(payload)
-            except Exception as e:
-                logs.append(f'❌ Error submitting task: {str(e)}\n')
-                yield ''.join(logs)
-                return
-
-            request_id = resp.get('request_id')
-            logs.append(f'✅ Task submitted successfully. Request ID: {request_id}\n')
-            logs.append('Waiting for logs...\n')
-            yield ''.join(logs)
-
-            # 2. Poll Logs
-            current_line = 0
-            finish_marker = '*** [EvalScope Service] Task finished at'
-
-            loop_count = 0
-            while True:
-                loop_count += 1
-
-                # --- Progress Bar Animation ---
-                if progress is not None:
-                    steps = 20
-                    step_time = poll_interval / steps
-                    for i in range(steps):
-                        pct = (i + 1) / steps
-                        remaining = poll_interval - (i * step_time)
-                        progress(pct, desc=f'⏳ Polling in {remaining:.1f}s (Cycle {loop_count})')
-                        await asyncio.sleep(step_time)
-
-                    progress(None, desc='🔄 Fetching new logs...')
-                else:
-                    await asyncio.sleep(poll_interval)
-
-                # Fetch logs
-                try:
-                    new_content = await client.get_task_log(request_id, current_line, task_type)
-                except Exception as fetch_err:
-                    logs.append(f'\n[Warning] Fetch log failed: {fetch_err}')
-                    yield ''.join(logs)
-                    continue
-
-                if new_content:
-                    logs.append(new_content)
-                    current_line += new_content.count('\n')
-                    yield ''.join(logs)
-
-                    if finish_marker in new_content:
-                        logs.append('\n🏁 Task Completed.')
-                        if progress is not None:
-                            progress(1.0, desc='✅ Task Completed')
-                        yield ''.join(logs)
-                        break
-
-                yield ''.join(logs)
-
-    except Exception as e:
-        logs.append(f'\n❌ An error occurred: {str(e)}')
-        yield ''.join(logs)
-
-
-def create_eval_interface(service_url_input, poll_interval_input):
-    """Creates the content for the Evaluation Tab"""
+def create_eval_interface(service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key):
+    """Create the content for the evaluation task interface"""
     with gr.Row():
         # --- Left Column: Configuration (Scale 2) ---
         with gr.Column(scale=2, variant='panel'):
-            gr.Markdown('### 🛠️ 评估配置 (Eval Config)')
+            gr.Markdown('### 🛠️ 评估配置')
 
-            with gr.Group():
-                gr.Markdown('#### 模型设置')
-                eval_model = gr.Textbox(label='测试模型名称', value='qwen-plus', placeholder='e.g., qwen-max')
-                eval_api_url = gr.Textbox(
-                    label='API URL', value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
-                )
-                eval_api_key = gr.Textbox(label='API Key', value=os.getenv('DASHSCOPE_API_KEY', ''), type='password')
-
-            with gr.Group():
-                gr.Markdown('#### 任务设置')
+            with gr.Accordion('评估设置', open=True):
                 eval_datasets = gr.Dropdown(
                     label='数据集',
                     choices=VALID_EVAL_BENCHMARKS,
                     value=['gsm8k'],
                     multiselect=True,
-                    allow_custom_value=True
+                    allow_custom_value=True,
+                    info='选择或输入用于评估的数据集名称，支持多选或自定义输入（逗号分隔）'
                 )
-                # 垂直堆叠
-                eval_limit = gr.Number(label='限制数量', value=5, precision=0)
-                eval_batch_size = gr.Number(label='批大小', value=1, precision=0)
+                eval_limit = gr.Number(label='限制数量', value=5, precision=0, info='每个数据集的任务数量限制，-1表示不限制')
+                eval_batch_size = gr.Number(label='批大小', value=1, precision=0, info='每次模型请求的批处理大小')
 
             with gr.Accordion('更多参数', open=False):
-                # 垂直堆叠
-                eval_repeats = gr.Number(label='重复次数', value=1, precision=0)
-                eval_timeout = gr.Number(label='超时时间(秒)', value=3600)
-                eval_stream = gr.Checkbox(label='流式输出', value=True)
+                eval_repeats = gr.Number(label='重复次数', value=1, precision=0, info='重复运行评估的次数')
+                eval_timeout = gr.Number(label='超时时间 (秒)', value=3600, info='任务运行的最大超时时间')
+                eval_stream = gr.Checkbox(label='流式输出', value=True, info='是否以流式方式获取模型响应')
 
-                # 垂直堆叠生成参数
-                eval_temp = gr.Slider(label='Temperature', minimum=0.0, maximum=1.0, value=0.0)
-                eval_top_p = gr.Slider(label='Top P', minimum=0.0, maximum=1.0, value=1.0)
-                eval_max_tokens = gr.Number(label='Max Tokens', value=1024, precision=0)
-                eval_top_k = gr.Number(label='Top K', value=50, precision=0)
+                gr.Markdown('#### 模型生成参数')
+                eval_temp = gr.Slider(
+                    label='Temperature (随机性)', minimum=0.0, maximum=1.0, value=0.0, info='生成文本的随机性，值越大越随机'
+                )
+                eval_top_p = gr.Slider(
+                    label='Top P (核采样)', minimum=0.0, maximum=1.0, value=1.0, info='核采样参数，只考虑累积概率达到P的词'
+                )
+                eval_max_tokens = gr.Number(label='Max Tokens (最大生成)', value=1024, precision=0, info='模型生成文本的最大长度')
+                eval_top_k = gr.Number(label='Top K (Top K 采样)', value=50, precision=0, info='Top K 采样参数，只考虑概率最高的K个词')
 
-                dataset_args = gr.Code(label='Dataset Args (JSON)', language='json', value='{}', lines=2, max_lines=10)
+                dataset_args = gr.Code(label='数据集参数 (JSON)', language='json', value='{}', lines=2, max_lines=10)
 
-            btn_eval = gr.Button('🚀 开始评估 (Start Eval)', variant='primary', size='lg')
+            btn_eval = gr.Button('🚀 开始评估', variant='primary', size='lg')
 
-        # --- Right Column: Logs (Scale 3) ---
+        # --- Right Column: Logs and Progress (Scale 3) ---
         with gr.Column(scale=3):
-            gr.Markdown('### 📝 运行日志 (Logs)')
+            gr.Markdown('### 运行状态与日志')
+            eval_progress_status = gr.Markdown('当前状态: 准备就绪', label='评估任务状态')
             eval_logs = gr.Code(
-                label='Console Output', language='shell', interactive=False, lines=30, elem_classes=['log-panel']
+                label='控制台输出', language='shell', interactive=False, lines=30, elem_classes=['log-panel'], max_lines=30
             )
 
-    # Logic
+    # Logic handling function
     async def run_eval_wrapper(
-        url,
+        service_url,
         interval,
-        model,
-        api_url,
-        api_key,
+        model,  # Get from common model name
+        api_url,  # Get from common API URL
+        api_key,  # Get from common API Key
         datasets,
         limit,
         batch_size,
@@ -230,8 +71,7 @@ def create_eval_interface(service_url_input, poll_interval_input):
         max_tokens,
         top_k,
         ds_args,
-        progress=gr.Progress()
-    ):
+    ) -> AsyncGenerator[Tuple[str, str], None]:
         payload = convert_eval_args_to_config(
             model=model,
             api_url=api_url,
@@ -248,76 +88,79 @@ def create_eval_interface(service_url_input, poll_interval_input):
             top_k=top_k,
             dataset_args=ds_args
         )
-        async for log in submit_and_poll(url, 'eval', payload, interval, progress):
-            yield log
+        async for log_content, progress_status_text in submit_and_poll(service_url, 'eval', payload, interval):
+            yield log_content, progress_status_text
 
     btn_eval.click(
         run_eval_wrapper,
         inputs=[
-            service_url_input, poll_interval_input, eval_model, eval_api_url, eval_api_key, eval_datasets, eval_limit,
-            eval_batch_size, eval_repeats, eval_timeout, eval_stream, eval_temp, eval_top_p, eval_max_tokens,
-            eval_top_k, dataset_args
+            service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key, eval_datasets,
+            eval_limit, eval_batch_size, eval_repeats, eval_timeout, eval_stream, eval_temp, eval_top_p,
+            eval_max_tokens, eval_top_k, dataset_args
         ],
-        outputs=[eval_logs]
+        outputs=[eval_logs, eval_progress_status]
     )
 
 
-def create_perf_interface(service_url_input, poll_interval_input):
-    """Creates the content for the Performance Tab"""
+def create_perf_interface(service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key):
+    """Create the content for the performance testing interface"""
     with gr.Row():
         # --- Left Column: Configuration (Scale 2) ---
         with gr.Column(scale=2, variant='panel'):
-            gr.Markdown('### ⚡ 性能测试配置 (Perf Config)')
+            gr.Markdown('### ⚡ 性能测试配置')
 
-            with gr.Group():
-                gr.Markdown('#### 模型设置')
-                perf_model = gr.Textbox(label='测试模型名称', value='qwen-plus')
-                perf_api_url = gr.Textbox(
-                    label='API URL',
-                    value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-                    lines=2
+            with gr.Accordion('压测设置', open=True):
+                perf_api_type = gr.Dropdown(
+                    label='API类型', choices=['openai'], value='openai', info='指定API接口类型，目前支持OpenAI兼容接口'
                 )
-                perf_api_key = gr.Textbox(label='API Key', value=os.getenv('DASHSCOPE_API_KEY', ''), type='password')
-                perf_api_type = gr.Dropdown(label='API类型', choices=['openai'], value='openai')
+                perf_parallel = gr.Textbox(
+                    label='并发数 (逗号分隔)', value='1', placeholder='例如: 1,2,4', info='逗号分隔的并发用户数列表，可定义多个并发等级'
+                )
+                perf_number = gr.Textbox(
+                    label='总请求数 (逗号分隔)', value='10', placeholder='例如: 10,20', info='逗号分隔的总请求数列表，对应每个并发等级的总请求数'
+                )
+                perf_rate = gr.Number(label='速率限制 (请求/秒)', value=-1, precision=0, info='-1 表示不限制每秒请求数')
 
-            with gr.Group():
-                gr.Markdown('#### 压测设置')
-                perf_parallel = gr.Textbox(label='并发数', value='1', placeholder='e.g. 1,2,4')
-                perf_number = gr.Textbox(label='总请求数', value='10', placeholder='e.g. 10,20')
-                perf_rate = gr.Number(label='速率限制 (req/s)', value=-1, precision=0, info='-1 表示不限制')
+            with gr.Accordion('模型生成参数', open=False):
+                perf_max_tokens = gr.Number(label='Max Tokens (最大生成)', value=2048, precision=0, info='模型生成文本的最大长度')
+                perf_min_tokens = gr.Number(label='Min Tokens (最小生成)', value=0, precision=0, info='模型生成文本的最小长度')
 
-                perf_max_tokens = gr.Number(label='Max Tokens', value=2048, precision=0)
-                perf_min_tokens = gr.Number(label='Min Tokens', value=0, precision=0)
+                perf_temp = gr.Slider(
+                    label='Temperature (随机性)', minimum=0.0, maximum=1.0, value=0.0, info='生成文本的随机性，值越大越随机'
+                )
+                perf_top_p = gr.Slider(
+                    label='Top P (核采样)', minimum=0.0, maximum=1.0, value=1.0, info='核采样参数，只考虑累积概率达到P的词'
+                )
 
-                perf_temp = gr.Slider(label='Temp', minimum=0.0, maximum=1.0, value=0.0)
-                perf_top_p = gr.Slider(label='Top P', minimum=0.0, maximum=1.0, value=1.0)
+            with gr.Accordion('数据集设置', open=False):
+                perf_dataset = gr.Dropdown(
+                    label='测试数据集', choices=['openqa', 'line_by_line', 'random'], value='openqa', info='用于性能测试的数据集类型'
+                )
 
-                perf_freq_penalty = gr.Number(label='Freq Penalty', value=0.0)
-                perf_rep_penalty = gr.Number(label='Rep Penalty', value=0.0)
+                perf_max_prompt = gr.Number(
+                    label='Max Prompt Len (最大Prompt长度)', value=1024, precision=0, info='生成Prompt的最大长度'
+                )
+                perf_min_prompt = gr.Number(
+                    label='Min Prompt Len (最小Prompt长度)', value=0, precision=0, info='生成Prompt的最小长度'
+                )
 
-                gr.Markdown('#### 数据集设置')
-                perf_dataset = gr.Dropdown(label='测试数据集', choices=['openqa', 'line_by_line', 'random'], value='openqa')
+            btn_perf = gr.Button('⚡ 开始性能测试', variant='primary', size='lg')
 
-                # 垂直堆叠
-                perf_max_prompt = gr.Number(label='Max Prompt Len', value=1024, precision=0)
-                perf_min_prompt = gr.Number(label='Min Prompt Len', value=0, precision=0)
-
-            btn_perf = gr.Button('⚡ 开始性能测试 (Start Perf)', variant='primary', size='lg')
-
-        # --- Right Column: Logs (Scale 3) ---
+        # --- Right Column: Logs and Progress (Scale 3) ---
         with gr.Column(scale=3):
-            gr.Markdown('### 📝 运行日志 (Logs)')
+            gr.Markdown('### 运行状态与日志')
+            perf_progress_status = gr.Markdown('当前状态: 准备就绪', label='性能测试任务状态')
             perf_logs = gr.Code(
-                label='Console Output', language='shell', interactive=False, lines=30, elem_classes=['log-panel']
+                label='控制台输出', language='shell', interactive=False, lines=30, elem_classes=['log-panel'], max_lines=30
             )
 
-    # Logic
+    # Logic handling function
     async def run_perf_wrapper(
         service_url,
         interval,
-        model,
-        url,
-        api_key,
+        model,  # Get from common model name
+        url,  # Get from common API URL
+        api_key,  # Get from common API Key
         api_type,
         parallel,
         number,
@@ -326,13 +169,10 @@ def create_perf_interface(service_url_input, poll_interval_input):
         min_tokens,
         temp,
         top_p,
-        freq_p,
-        rep_p,
         dataset,
         max_pl,
         min_pl,
-        progress=gr.Progress()
-    ):
+    ) -> AsyncGenerator[Tuple[str, str], None]:
         payload = convert_perf_args_to_config(
             model=model,
             url=url,
@@ -345,41 +185,64 @@ def create_perf_interface(service_url_input, poll_interval_input):
             min_tokens=min_tokens,
             temperature=temp,
             top_p=top_p,
-            frequency_penalty=freq_p,
-            repetition_penalty=rep_p,
             dataset=dataset,
             max_prompt_length=max_pl,
             min_prompt_length=min_pl
         )
-        async for log in submit_and_poll(service_url, 'perf', payload, interval, progress):
-            yield log
+        async for log_content, progress_status_text in submit_and_poll(service_url, 'perf', payload, interval):
+            yield log_content, progress_status_text
 
     btn_perf.click(
         run_perf_wrapper,
         inputs=[
-            service_url_input, poll_interval_input, perf_model, perf_api_url, perf_api_key, perf_api_type,
+            service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key, perf_api_type,
             perf_parallel, perf_number, perf_rate, perf_max_tokens, perf_min_tokens, perf_temp, perf_top_p,
-            perf_freq_penalty, perf_rep_penalty, perf_dataset, perf_max_prompt, perf_min_prompt
+            perf_dataset, perf_max_prompt, perf_min_prompt
         ],
-        outputs=[perf_logs]
+        outputs=[perf_logs, perf_progress_status]
     )
 
 
 def create_interface():
     with gr.Blocks(title='EvalScope Dashboard', theme=gr.themes.Soft()) as demo:
-        gr.Markdown('# 🚀 EvalScope Service Dashboard')
+        gr.Markdown('# 🚀 EvalScope 服务面板')
 
         # Global Service Settings (Top Bar)
-        with gr.Row(variant='panel'):
-            service_url_input = gr.Textbox(label='EvalScope Service URL', value=DEFAULT_SERVICE_URL, scale=3)
-            poll_interval_input = gr.Number(label='Poll Interval (s)', value=5, minimum=2, scale=1)
+        with gr.Accordion('全局设置', open=True):
+            with gr.Row():
+                service_url_input = gr.Textbox(
+                    label='EvalScope 服务URL', value=DEFAULT_SERVICE_URL, scale=3, info='EvalScope后端服务的访问地址'
+                )
+                poll_interval_input = gr.Number(label='日志轮询间隔 (秒)', value=5, minimum=2, scale=1, info='获取任务日志的间隔时间')
+
+            with gr.Row():
+                common_model_name = gr.Textbox(
+                    label='模型名称', value='qwen-plus', placeholder='例如: qwen-max, gpt-4', scale=1, info='用于评估或性能测试的模型名称'
+                )
+                common_api_url = gr.Textbox(
+                    label='模型API URL',
+                    value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+                    scale=2,
+                    info='模型API的请求地址'
+                )
+                common_api_key = gr.Textbox(
+                    label='模型API Key',
+                    value=os.getenv('DASHSCOPE_API_KEY', ''),
+                    type='password',
+                    scale=1,
+                    info='访问模型API所需的密钥'
+                )
 
         with gr.Tabs():
-            with gr.TabItem('模型评估 (Evaluation)'):
-                create_eval_interface(service_url_input, poll_interval_input)
+            with gr.TabItem('模型评估'):
+                create_eval_interface(
+                    service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key
+                )
 
-            with gr.TabItem('性能测试 (Performance)'):
-                create_perf_interface(service_url_input, poll_interval_input)
+            with gr.TabItem('性能测试'):
+                create_perf_interface(
+                    service_url_input, poll_interval_input, common_model_name, common_api_url, common_api_key
+                )
 
     return demo
 
