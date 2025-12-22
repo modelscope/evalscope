@@ -75,9 +75,14 @@ async def submit_and_poll(
     Generic function to submit a task and poll for logs, returning log content and progress status text independently.
     """
 
-    if poll_interval < 5:
-        poll_interval = 5  # Minimum poll interval is 5 seconds
+    # Clamp poll_interval to a reasonable range to avoid excessively frequent or infrequent polling.
+    MIN_POLL_INTERVAL_SECONDS = 5
+    MAX_POLL_INTERVAL_SECONDS = 3600  # 1 hour upper bound to prevent unreasonably long sleeps
 
+    if poll_interval < MIN_POLL_INTERVAL_SECONDS:
+        poll_interval = MIN_POLL_INTERVAL_SECONDS
+    elif poll_interval > MAX_POLL_INTERVAL_SECONDS:
+        poll_interval = MAX_POLL_INTERVAL_SECONDS
     logs = []
     current_progress_status = '当前状态: 准备就绪'
 
