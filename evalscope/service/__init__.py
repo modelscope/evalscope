@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """EvalScope Flask Service."""
 
-from .app import app, create_app, run_service
+from .app import create_app, run_service
 
-__all__ = ['app', 'create_app', 'run_service']
+__all__ = ['create_app', 'run_service']
