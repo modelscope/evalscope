@@ -7,6 +7,9 @@ from typing import AsyncGenerator, Optional, Tuple
 from evalscope.config import TaskConfig
 from evalscope.perf.arguments import Arguments as PerfArguments
 
+MIN_POLL_INTERVAL_SECONDS = 5
+MAX_POLL_INTERVAL_SECONDS = 3600  # 1 hour upper bound to prevent unreasonably long sleeps
+
 
 def convert_eval_args_to_config(**kwargs) -> dict:
     """Helper function to convert UI arguments to evaluation task configuration dictionary."""
@@ -76,8 +79,6 @@ async def submit_and_poll(
     """
 
     # Clamp poll_interval to a reasonable range to avoid excessively frequent or infrequent polling.
-    MIN_POLL_INTERVAL_SECONDS = 5
-    MAX_POLL_INTERVAL_SECONDS = 3600  # 1 hour upper bound to prevent unreasonably long sleeps
 
     if poll_interval < MIN_POLL_INTERVAL_SECONDS:
         poll_interval = MIN_POLL_INTERVAL_SECONDS
@@ -104,14 +105,14 @@ async def submit_and_poll(
                     resp = await client.submit_perf_task(payload)
             except Exception as e:
                 logs.append(f'❌ 提交任务失败: {str(e)}\n')
-                current_progress_status = f"❌ 任务提交失败: {str(e)}"
+                current_progress_status = f'❌ 任务提交失败: {str(e)}'
                 yield ''.join(logs), current_progress_status
                 return
 
             request_id = resp.get('request_id')
             logs.append(f'✅ 任务提交成功。请求ID: {request_id}\n')
             logs.append('等待日志输出...\n')
-            current_progress_status = f"✅ 任务提交成功，请求ID: {request_id}。正在等待日志..."
+            current_progress_status = f'✅ 任务提交成功，请求ID: {request_id}。正在等待日志...'
             yield ''.join(logs), current_progress_status
 
             # 2. Poll logs

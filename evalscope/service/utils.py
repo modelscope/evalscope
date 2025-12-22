@@ -1,3 +1,4 @@
+import itertools
 import multiprocessing
 import os
 import traceback
