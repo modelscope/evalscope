@@ -147,25 +147,22 @@ async def submit_and_poll(service_url: str, task_type: str, payload: dict,
         yield ''.join(logs), f'❌ Exception: {str(e)}'
 
 
-def create_eval_tab(service_url_input, poll_interval_input):
+def create_eval_tab(service_url_input, poll_interval_input, global_model, global_api_url, global_api_key):
+    """
+    Eval Tab: Uses global model/url/key inputs.
+    """
     with gr.Tab('模型评估 (Evaluation)'):
+        # Specific configurations for Eval
         with gr.Row():
-            with gr.Column():
-                eval_model = gr.Textbox(label='模型名称', value='qwen-plus', info='被评估的模型名称或路径')
-                eval_datasets = gr.Dropdown(
-                    label='数据集',
-                    choices=VALID_EVAL_BENCHMARKS,
-                    value=['gsm8k'],
-                    multiselect=True,
-                    allow_custom_value=True,
-                    info='选择评估数据集'
-                )
-                eval_limit = gr.Number(label='限制数量', value=5, info='评估样本数量限制')
-            with gr.Column():
-                eval_api_url = gr.Textbox(
-                    label='API地址', value='https://dashscope.aliyuncs.com/compatible-mode/v1', info='模型服务的API地址'
-                )
-                eval_api_key = gr.Textbox(label='API密钥', type='password', info='模型服务的API密钥')
+            eval_datasets = gr.Dropdown(
+                label='数据集',
+                choices=VALID_EVAL_BENCHMARKS,
+                value=['gsm8k'],
+                multiselect=True,
+                allow_custom_value=True,
+                info='选择评估数据集'
+            )
+            eval_limit = gr.Number(label='限制数量', value=5, info='评估样本数量限制')
 
         with gr.Accordion('高级配置', open=False):
             with gr.Row():
@@ -212,26 +209,36 @@ def create_eval_tab(service_url_input, poll_interval_input):
         btn_eval.click(
             run_eval_wrapper,
             inputs=[
-                service_url_input, eval_model, eval_datasets, eval_limit, dataset_args, eval_api_url, eval_api_key,
-                eval_batch_size, eval_repeats, eval_timeout, eval_stream, eval_temp, eval_max_tokens, eval_top_p,
-                eval_top_k, poll_interval_input
+                service_url_input,
+                global_model,  # Shared Input
+                eval_datasets,
+                eval_limit,
+                dataset_args,
+                global_api_url,  # Shared Input
+                global_api_key,  # Shared Input
+                eval_batch_size,
+                eval_repeats,
+                eval_timeout,
+                eval_stream,
+                eval_temp,
+                eval_max_tokens,
+                eval_top_p,
+                eval_top_k,
+                poll_interval_input
             ],
             outputs=[eval_logs, eval_status]
         )
 
 
-def create_perf_tab(service_url_input, poll_interval_input):
+def create_perf_tab(service_url_input, poll_interval_input, global_model, global_api_url, global_api_key):
+    """
+    Perf Tab: Uses global model/url/key inputs.
+    """
     with gr.Tab('性能测试 (Performance Test)'):
+        # Specific configurations for Perf
         with gr.Row():
             with gr.Column():
-                perf_model = gr.Textbox(label='模型名称', value='qwen-plus', info='测试模型名称')
-                perf_url = gr.Textbox(
-                    label='目标URL',
-                    value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-                    info='测试目标的URL地址'
-                )
                 perf_api = gr.Dropdown(label='API类型', choices=['openai'], value='openai', info='API接口类型')
-                perf_api_key = gr.Textbox(label='API密钥', value=None, type='password', info='API密钥')
             with gr.Column():
                 perf_parallel = gr.Textbox(label='并发数', value='1', info='并发请求数量 (支持列表，逗号分隔)')
                 perf_number = gr.Textbox(label='总请求数', value='10', info='总共发送的请求数量 (支持列表，逗号分隔)')
@@ -267,7 +274,7 @@ def create_perf_tab(service_url_input, poll_interval_input):
         ):
             payload = convert_perf_args_to_config(
                 model=model,
-                url=url,
+                url=url,  # Mapped from global_api_url
                 api=api,
                 api_key=api_key,
                 parallel=parallel,
@@ -290,9 +297,25 @@ def create_perf_tab(service_url_input, poll_interval_input):
         btn_perf.click(
             run_perf_wrapper,
             inputs=[
-                service_url_input, perf_model, perf_url, perf_api, perf_api_key, perf_parallel, perf_number, perf_rate,
-                perf_max_tokens, perf_min_tokens, perf_temp, perf_top_p, perf_top_k, perf_freq_penalty,
-                perf_rep_penalty, perf_dataset, perf_max_prompt_len, perf_min_prompt_len, poll_interval_input
+                service_url_input,
+                global_model,  # Shared Input
+                global_api_url,  # Shared Input (Passed as 'url' to payload)
+                perf_api,
+                global_api_key,  # Shared Input
+                perf_parallel,
+                perf_number,
+                perf_rate,
+                perf_max_tokens,
+                perf_min_tokens,
+                perf_temp,
+                perf_top_p,
+                perf_top_k,
+                perf_freq_penalty,
+                perf_rep_penalty,
+                perf_dataset,
+                perf_max_prompt_len,
+                perf_min_prompt_len,
+                poll_interval_input
             ],
             outputs=[perf_logs, perf_status]
         )
@@ -302,13 +325,31 @@ def create_interface():
     with gr.Blocks(title='EvalScope Service Dashboard', theme=gr.themes.Soft()) as demo:
         gr.Markdown('# 🚀 EvalScope Service Dashboard')
 
+        # === 1. EvalScope Service Configuration ===
         with gr.Row():
-            service_url_input = gr.Textbox(label='服务地址', value=DEFAULT_SERVICE_URL, info='EvalScope服务的地址')
-            poll_interval_input = gr.Number(label='轮询间隔(秒)', value=5, minimum=5, info='日志轮询间隔时间')
+            service_url_input = gr.Textbox(
+                label='服务地址 (EvalScope Service)', value=DEFAULT_SERVICE_URL, info='EvalScope服务的地址'
+            )
+            poll_interval_input = gr.Number(label='日志轮询间隔(秒)', value=5, minimum=5, info='日志轮询间隔时间')
 
+        # === 2. Global Model Configuration (Shared by Eval & Perf) ===
+        gr.Markdown('### 🌍 通用模型配置 (Common Model Config)')
+        with gr.Row(variant='panel'):
+            global_model = gr.Textbox(label='测试模型名称', value='qwen-plus', info='被评估/测试的模型名称 (model_id)')
+            global_api_url = gr.Textbox(
+                label='API URL',
+                value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+                info='OpenAI兼容接口地址'
+            )
+            global_api_key = gr.Textbox(
+                label='API Key', value=os.getenv('DASHSCOPE_API_KEY', ''), type='password', info='模型服务的API密钥'
+            )
+
+        # === 3. Task Tabs ===
         with gr.Tabs():
-            create_eval_tab(service_url_input, poll_interval_input)
-            create_perf_tab(service_url_input, poll_interval_input)
+            # Pass the global inputs down to the tabs
+            create_eval_tab(service_url_input, poll_interval_input, global_model, global_api_url, global_api_key)
+            create_perf_tab(service_url_input, poll_interval_input, global_model, global_api_url, global_api_key)
 
     return demo
 
