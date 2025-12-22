@@ -133,7 +133,7 @@ def get_log_content(request_id: str, sub_path: str, start_line: int = 0):
 
     with open(log_file, 'r', encoding='utf-8') as f:
         if start_line > 0:
-            for _ in range(start_line):
-                f.readline()
-        content = f.read()
+            content = ''.join(itertools.islice(f, start_line, None))
+        else:
+            content = f.read()
     return content
