@@ -24,11 +24,23 @@ class AsyncEvalClient:
     async def submit_eval_task(self, payload: Dict[str, Any]) -> Dict[str, str]:
         """
         Submit asynchronous evaluation task.
+        """
+        return await self.submit_task('eval', payload)
+
+    async def submit_perf_task(self, payload: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Submit asynchronous performance task.
+        """
+        return await self.submit_task('perf', payload)
+
+    async def submit_task(self, task_type: str, payload: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Submit asynchronous task (eval or perf).
 
         Returns:
             Dictionary containing request_id and other headers.
         """
-        url = f'{self.base_url}/api/v1/eval'
+        url = f'{self.base_url}/api/v1/{task_type}'
         headers = {'Content-Type': 'application/json', 'X-Fc-Invocation-Type': 'Async'}
 
         print(f'[Submit Task] Sending request to: {url}')
@@ -52,6 +64,13 @@ class AsyncEvalClient:
                 print(f'[Submit Task] Task ID: {task_id}')
 
                 return {'request_id': request_id, 'task_id': task_id, 'headers': response_headers}
+            elif response.status == 200:
+                # Handle synchronous response (e.g. local server)
+                resp_json = await response.json()
+                request_id = resp_json.get('request_id')
+                print('[Submit Task] Task completed synchronously.')
+                print(f'[Submit Task] Request ID: {request_id}')
+                return {'request_id': request_id, 'headers': response_headers, 'status': 'finished'}
             else:
                 error_text = await response.text()
                 raise Exception(f'Task submission failed: {response.status}, {error_text}')
