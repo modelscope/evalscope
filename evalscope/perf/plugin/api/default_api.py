@@ -35,9 +35,7 @@ class StreamedResponseHandler:
             chunk_str = chunk_bytes.decode('utf-8', errors='ignore')
         # Normalize CRLF (common in SSE implementations) to LF so downstream
         # splitting on "\n\n" works consistently.
-        if "\r\n" in chunk_str:
-            chunk_str = chunk_str.replace("\r\n", "\n")
-        self.buffer += chunk_str
+        self.buffer += chunk_str.replace("\r\n", "\n")
 
         messages = []
 
