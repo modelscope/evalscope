@@ -218,21 +218,36 @@ class COMETScore(SingletonMetric):
         return [round(score, 6) for score in scores]
 
 
-@register_metric(name='semscore')
+@register_metric(name='cer')
+class CER(Metric):
+
+    def __init__(self, language: str = 'English'):
+        self.language = language
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        from jiwer import cer as jiwer_cer
+
+        from evalscope.metrics.text_normalizer.wer import normalize_text
+
+        language = 'en'
+
+        return [
+            jiwer_cer(normalize_text(ref, language), normalize_text(pred, language))
+            for pred, ref in zip(predictions, references)
+        ]
+
+
+@register_metric(name='sem_score')
 class SemScore(SingletonMetric):
 
-    def _init_once(self, model_id_or_path: str = 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli', **kwargs):
+    def _init_once(self, **kwargs):
         """SemScore metric.
-
-        Args:
-            model_id_or_path (str, optional): The model ID on modelscope or path to the pre-trained model.
-                Defaults to 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'.
         """
         check_import('bert_score', 'bert-score', raise_error=True, feature_name='SemScore Metric')
         check_import('torch', 'torch', raise_error=True, feature_name='SemScore Metric')
 
         from .sem_score.scorer import SemScorer
-        self.scorer = SemScorer(model_id_or_path=model_id_or_path, batch_size=1024, **kwargs)
+        self.scorer = SemScorer(batch_size=1024, **kwargs)
 
     def apply(self, predictions: List[str], references: List[str]) -> List[float]:
         scores = self.scorer.score_all(predictions, references)
