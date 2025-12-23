@@ -47,10 +47,35 @@ class TorgoAdapter(VisionLanguageAdapter):
         self.reformat_subset = True
         self.use_batch_scoring = True
 
+        self.jiwer_cer = None
+        self.jiwer_wer = None
+        self.normalize_text = None
+        self.sem_scorer = None
+
         if self.has_metric('cer') or self.has_metric('wer'):
             check_import('jiwer', 'jiwer', raise_error=True, feature_name='CER/WER Metric')
+            try:
+                if self.has_metric('cer'):
+                    from jiwer import cer as jiwer_cer
+                    self.jiwer_cer = jiwer_cer
+
+                if self.has_metric('wer'):
+                    from jiwer import wer as jiwer_wer
+                    self.jiwer_wer = jiwer_wer
+
+                from evalscope.metrics.text_normalizer.wer import normalize_text
+                self.normalize_text = normalize_text
+            except Exception as e:
+                logger.warning(f'[TorgoAdapter] Failed to import jiwer components: {e}')
+
         if self.has_metric('sem_score'):
             check_import('jellyfish', 'jellyfish', raise_error=True, feature_name='SemScore Metric')
+            try:
+                from evalscope.metrics.metric import SemScore
+                score_args = self.get_metric_args('sem_score')
+                self.sem_scorer = SemScore(**score_args)
+            except Exception as e:
+                logger.warning(f'[TorgoAdapter] Failed to initialize SemScore: {e}')
 
     def record_to_sample(self, record) -> Sample:
         content_list = [ContentText(text=self.prompt_template)]
@@ -87,42 +112,34 @@ class TorgoAdapter(VisionLanguageAdapter):
             scores.append(score)
 
         # ---- CER (per-sample within batch) ----
-        if self.has_metric('cer'):
+        if self.has_metric('cer') and self.jiwer_cer and self.normalize_text:
             try:
-                from jiwer import cer as jiwer_cer
-
-                from evalscope.metrics.text_normalizer.wer import normalize_text
-
                 for i in range(len(scores)):
-                    normalized_prediction = normalize_text(filtered_predictions[i], language)
-                    normalized_reference = normalize_text(references[i], language)
-                    cer_results = jiwer_cer(normalized_reference, normalized_prediction)
+                    normalized_prediction = self.normalize_text(filtered_predictions[i], language)
+                    normalized_reference = self.normalize_text(references[i], language)
+                    cer_results = self.jiwer_cer(normalized_reference, normalized_prediction)
                     scores[i].value.update(cer_results)
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] CER batch calculation failed: {e}')
 
         # ---- WER (per-sample within batch) ----
-        if self.has_metric('wer'):
+        if self.has_metric('wer') and self.jiwer_wer and self.normalize_text:
             try:
-                from jiwer import wer as jiwer_wer
-
                 for i in range(len(scores)):
-                    normalized_prediction = normalize_text(filtered_predictions[i], language)
-                    normalized_reference = normalize_text(references[i], language)
-                    wer_results = jiwer_wer(normalized_reference, normalized_prediction)
+                    normalized_prediction = self.normalize_text(filtered_predictions[i], language)
+                    normalized_reference = self.normalize_text(references[i], language)
+                    wer_results = self.jiwer_wer(normalized_reference, normalized_prediction)
                     scores[i].value.update(wer_results)
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] WER batch calculation failed: {e}')
 
         # ---- SemScore ----
-        if self.has_metric('sem_score'):
+        if self.has_metric('sem_score') and self.sem_scorer:
             try:
-                from evalscope.metrics.metric import SemScore
-
-                score_args = self.get_metric_args('sem_score')
-                sem_scorer = SemScore(**score_args)
-                sem_score = sem_scorer.apply(filtered_predictions, references)
+                sem_score = self.sem_scorer.apply(filtered_predictions, references)
                 for i in range(len(scores)):
                     scores[i].value.update({'sem_score': sem_score[i]})
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] SemScore batch calculation failed: {e}')
+
+        return scores
