@@ -37,6 +37,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name to jump
 | `science_qa` | [ScienceQA](#scienceqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
+| `torgo` | [TORGO](#torgo) | `Audio`, `SpeechRecognition` |
 | `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vstar_bench` | [V*Bench](#vbench) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
@@ -1039,6 +1040,32 @@ Answer the following multiple choice question. The last line of your response sh
 Answer the question:
 
 {question}
+````
+
+</details>
+
+---
+
+### TORGO
+
+[Back to Top](#vlm-benchmarks)
+- **Dataset Name**: `torgo`
+- **Dataset ID**: [extraordinarylab/torgo](https://modelscope.cn/datasets/extraordinarylab/torgo/summary)
+- **Description**:
+  > The TORGO database of dysarthric articulation consists of aligned acoustics and measured 3D articulatory features from speakers with either cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).
+- **Task Categories**: `Audio`, `SpeechRecognition`
+- **Evaluation Metrics**: `{'cer': {}}`, `{'sem_score': {'model_id_or_path': 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'}}`, `{'wer': {}}`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
+- **Subsets**: `mild`, `moderate`, `severe`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
 ````
 
 </details>
