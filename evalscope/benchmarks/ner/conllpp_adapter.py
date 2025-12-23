@@ -3,16 +3,19 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
+DESCRIPTION = (
+    'The CoNLL++ dataset is a corrected and cleaner version of the '
+    'test set from the widely-used CoNLL2003 NER benchmark.'
+)  # noqa: E501
+
 
 @register_benchmark(
     BenchmarkMeta(
-        name='conll2003',
-        pretty_name='CoNLL2003',
-        dataset_id='extraordinarylab/conll2003',
+        name='conllpp',
+        pretty_name='CoNLL++',
+        dataset_id='extraordinarylab/conllpp',
         tags=[Tags.KNOWLEDGE, Tags.NER],
-        description='The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part '
-        'of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as '
-        'people, organizations, places, and various names.',
+        description=DESCRIPTION,
         few_shot_num=5,
         train_split='train',
         eval_split='test',
@@ -21,19 +24,13 @@ from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )
 )
-class CoNLL2003Adapter(NERAdapter):
-    """
-    Adapter for the CoNLL2003 Named Entity Recognition dataset.
-
-    This adapter inherits the NER functionality from NERAdapter and
-    configures it specifically for the CoNLL2003 dataset's entity types.
-    """
+class CoNLLPPAdapter(NERAdapter):
 
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)
 
-        # Define CoNLL2003-specific entity mappings
+        # Define CoNLLPP-specific entity mappings
         self.entity_type_map = {'PER': 'person', 'ORG': 'organization', 'LOC': 'location', 'MISC': 'miscellaneous'}
 
         # Add descriptions for each entity type
