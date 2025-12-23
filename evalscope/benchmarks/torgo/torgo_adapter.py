@@ -28,15 +28,7 @@ logger = get_logger()
         eval_split='test',
         subset_list=['mild', 'moderate', 'severe'],
         few_shot_num=0,
-        metric_list=[{
-            'cer': {}
-        }, {
-            'wer': {}
-        }, {
-            'sem_score': {
-                'model_id_or_path': 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'
-            }
-        }],
+        metric_list=['cer', 'wer', 'sem_score'],
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -45,6 +37,8 @@ class TorgoAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
+        self.add_overall_metric = False
+        self.add_aggregation_name = False
         self.use_batch_scoring = True
 
         self.jiwer_cer = None
@@ -72,8 +66,7 @@ class TorgoAdapter(VisionLanguageAdapter):
             check_import('jellyfish', 'jellyfish', raise_error=True, feature_name='SemScore Metric')
             try:
                 from evalscope.metrics.metric import SemScore
-                score_args = self.get_metric_args('sem_score')
-                self.sem_scorer = SemScore(**score_args)
+                self.sem_scorer = SemScore()
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] Failed to initialize SemScore: {e}')
 
@@ -87,10 +80,28 @@ class TorgoAdapter(VisionLanguageAdapter):
             target=record['transcript'],
             subset_key=record['intelligibility'],
             metadata={
+                'transcript': record['transcript'],
                 'intelligibility': record['intelligibility'],
                 'duration': record['duration'],
             }
         )
+
+    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        from evalscope.metrics.text_normalizer.wer import normalize_text
+
+        language = 'en'
+
+        normalized_prediction = normalize_text(original_prediction, language)
+        normalized_reference = normalize_text(reference, language)
+        score = Score(
+            extracted_prediction=normalized_prediction,
+            prediction=original_prediction,
+        )
+
+        cer_score = self.jiwer_cer(normalized_reference, normalized_prediction)
+        wer_score = self.jiwer_wer(normalized_reference, normalized_prediction)
+        score.value = {'cer': cer_score, 'wer': wer_score}
+        return score
 
     def batch_match_score(
         self,
@@ -100,8 +111,6 @@ class TorgoAdapter(VisionLanguageAdapter):
         task_states: List[TaskState],
     ) -> List[Score]:
         """Compute batched ASR metrics (CER, WER, SemScore)."""
-        language = 'en'
-
         scores: List[Score] = []
         for i in range(len(original_predictions)):
             score = Score(
@@ -110,28 +119,6 @@ class TorgoAdapter(VisionLanguageAdapter):
                 value={},
             )
             scores.append(score)
-
-        # ---- CER (per-sample within batch) ----
-        if self.has_metric('cer') and self.jiwer_cer and self.normalize_text:
-            try:
-                for i in range(len(scores)):
-                    normalized_prediction = self.normalize_text(filtered_predictions[i], language)
-                    normalized_reference = self.normalize_text(references[i], language)
-                    cer_results = self.jiwer_cer(normalized_reference, normalized_prediction)
-                    scores[i].value.update(cer_results)
-            except Exception as e:
-                logger.warning(f'[TorgoAdapter] CER batch calculation failed: {e}')
-
-        # ---- WER (per-sample within batch) ----
-        if self.has_metric('wer') and self.jiwer_wer and self.normalize_text:
-            try:
-                for i in range(len(scores)):
-                    normalized_prediction = self.normalize_text(filtered_predictions[i], language)
-                    normalized_reference = self.normalize_text(references[i], language)
-                    wer_results = self.jiwer_wer(normalized_reference, normalized_prediction)
-                    scores[i].value.update(wer_results)
-            except Exception as e:
-                logger.warning(f'[TorgoAdapter] WER batch calculation failed: {e}')
 
         # ---- SemScore ----
         if self.has_metric('sem_score') and self.sem_scorer:
