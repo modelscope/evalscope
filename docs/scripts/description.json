@@ -763,5 +763,10 @@
     "en": "The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.",
     "zh": "BC4CHEMD（BioCreative IV CHEMDNER）数据集包含10,000篇PubMed摘要，由专家手动标注了84,355个化学实体提及，用于化学命名实体识别。",
     "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "torgo": {
+    "en": "The TORGO database of dysarthric articulation consists of aligned acoustics and measured 3D articulatory features from speakers with either cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).",
+    "zh": "TORGO发音障碍数据库包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的语音声学信号与测量的3D发音特征对齐的数据。",
+    "updated_at": "2025-12-23T19:25:15Z"
   }
 }
