@@ -127,6 +127,8 @@ class SemScorer:
                 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli',
                 num_labels=3,
             )
+        else:
+            raise ValueError(f"Unsupported model type for SemScorer: {self.model_type}")
 
         model.eval()
         model = model.to(self.device)
@@ -151,9 +153,9 @@ class SemScorer:
             truncation=True
         )
 
-        input_ids = torch.Tensor(tokenized_input['input_ids']).long().unsqueeze(0).to(self.device)
-        token_type_ids = torch.Tensor(tokenized_input['token_type_ids']).long().unsqueeze(0).to(self.device)
-        attention_mask = torch.Tensor(tokenized_input['attention_mask']).long().unsqueeze(0).to(self.device)
+        input_ids = torch.tensor(tokenized_input['input_ids']).long().unsqueeze(0).to(self.device)
+        token_type_ids = torch.tensor(tokenized_input['token_type_ids']).long().unsqueeze(0).to(self.device)
+        attention_mask = torch.tensor(tokenized_input['attention_mask']).long().unsqueeze(0).to(self.device)
 
         return input_ids, token_type_ids, attention_mask
 

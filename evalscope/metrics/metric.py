@@ -221,7 +221,7 @@ class COMETScore(SingletonMetric):
 @register_metric(name='cer')
 class CER(Metric):
 
-    def __init__(self, language: str = 'English'):
+    def __init__(self, language: str = 'en'):
         self.language = language
 
     def apply(self, predictions: List[str], references: List[str]) -> List[float]:
@@ -229,10 +229,8 @@ class CER(Metric):
 
         from evalscope.metrics.text_normalizer.wer import normalize_text
 
-        language = 'en'
-
         return [
-            jiwer_cer(normalize_text(ref, language), normalize_text(pred, language))
+            jiwer_cer(normalize_text(ref, self.language), normalize_text(pred, self.language))
             for pred, ref in zip(predictions, references)
         ]
 
