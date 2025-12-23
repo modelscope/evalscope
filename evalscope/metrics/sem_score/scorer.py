@@ -47,7 +47,7 @@ class SemScorer:
 
     def __init__(
         self,
-        model='R',
+        model_type='roberta',
         batch_size=32,
         device=None,
         direction='avg',
@@ -62,7 +62,7 @@ class SemScorer:
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = batch_size
         self.cross_lingual = cross_lingual
-        self.model_type = model
+        self.model_type = model_type
         self.direction = direction
 
         self.nli_weight = float(nli_weight)
@@ -83,10 +83,12 @@ class SemScorer:
         """
         Load pretrained NLI model and tokenizer.
         """
-        if self.model_type == 'R':
+        if self.model_type == 'roberta':
             model_name = self.model_id_or_path
-            tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False, cache_dir='.cache')
-            model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=3, cache_dir='.cache')
+            tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False, cache_dir=self.cache_dir)
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_name, num_labels=3, cache_dir=self.cache_dir
+            )
 
         model.eval()
         model.to(self.device)
@@ -161,15 +163,18 @@ class SemScorer:
         """
         # BERTScore
         bert_scores = calculate_bert_score(references, hypotheses, self.device).tolist()
-        bert_scores = self._min_max_normalize(bert_scores, [-0.1180, 1])
+        BERT_SCORE_BOUNDS = [-0.1180, 1]
+        bert_scores = self._min_max_normalize(bert_scores, BERT_SCORE_BOUNDS)
 
         # Phonetic similarity
         phonetic_scores = [calculate_phonetic_similarity(ref, hyp) for ref, hyp in zip(references, hypotheses)]
-        phonetic_scores = self._min_max_normalize(phonetic_scores, [0.5, 1])
+        PHONETIC_SCORE_BOUNDS = [0.5, 1]
+        phonetic_scores = self._min_max_normalize(phonetic_scores, PHONETIC_SCORE_BOUNDS)
 
         # NLI
         nli_scores = self.score_nli(references, hypotheses)
-        nli_scores = self._min_max_normalize(nli_scores, [0.0028752246871590614, 0.9661698341369629])
+        NLI_SCORE_BOUNDS = [0.0028752246871590614, 0.9661698341369629]
+        nli_scores = self._min_max_normalize(nli_scores, NLI_SCORE_BOUNDS)
 
         # Weighted sum
         combined_scores = [
