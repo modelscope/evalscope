@@ -86,6 +86,7 @@
 | `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
+| `refcoco` | [RefCOCO](#refcoco) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
 | `scicode` | [SciCode](#scicode) | `Coding` |
 | `sciq` | [SciQ](#sciq) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -2987,7 +2988,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
+The following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
 
 [Math Problem]
 
@@ -3091,6 +3092,38 @@ Answer the following multiple choice question. The last line of your response sh
 ````
 
 </details>
+
+---
+
+### RefCOCO
+
+[返回目录](#llm评测集)
+- **数据集名称**: `refcoco`
+- **数据集ID**: [lmms-lab/RefCOCO](https://modelscope.cn/datasets/lmms-lab/RefCOCO/summary)
+- **数据集介绍**:
+  > RefCOCO 数据集包含图像、目标边界框和自由形式的自然语言指代表达，用于训练和评估指代表达理解（REC）模型。该数据集通过在 Amazon Mechanical Turk 上收集对 MSCOCO 图像中目标对象的唯一描述生成，并由其他标注者点击对应目标以验证表达准确性。
+- **任务类别**: `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal`
+- **评估指标**: `ACC@0.1`, `ACC@0.3`, `ACC@0.5`, `ACC@0.7`, `ACC@0.9`, `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `CIDEr`, `Center_ACC`, `IoU`, `METEOR`, `ROUGE_L`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `testA`, `testB`, `test`, `val`
+
+- **额外参数**: 
+```json
+{
+    "eval_mode": {
+        "type": "str",
+        "description": "Control the evaluation mode used by RefCOCO. bbox: image caption task, visualize the original image with bounding box; seg: image caption task, visualize the original image with segmentation; bbox_rec: grounding task, recognize bounding box coordinates.",
+        "value": "bbox",
+        "choices": [
+            "bbox",
+            "seg",
+            "bbox_rec"
+        ]
+    }
+}
+```
 
 ---
 

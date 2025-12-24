@@ -75,7 +75,7 @@ def bbox_rec_score_result(results_list, doc):
 
     union_area = box1_area + box2_area - intersection_area
 
-    iou = intersection_area / union_area
+    iou = intersection_area / union_area if union_area > 0 else 0.0
 
     score_json['IoU'] = iou
     score_json['ACC@0.1'] = (iou >= 0.1)

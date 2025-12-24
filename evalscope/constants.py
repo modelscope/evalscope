@@ -144,6 +144,7 @@ class Tags:
     GROUNDING = 'Grounding'
     SPEECH_RECOGNITION = 'SpeechRecognition'
     AUDIO = 'Audio'
+    IMAGE_CAPTIONING = 'ImageCaptioning'
 
 
 class FileConstants:
