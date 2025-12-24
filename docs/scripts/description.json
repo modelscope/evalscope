@@ -763,5 +763,15 @@
     "en": "The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.",
     "zh": "BC4CHEMD（BioCreative IV CHEMDNER）数据集包含10,000篇PubMed摘要，由专家手动标注了84,355个化学实体提及，用于化学命名实体识别。",
     "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "torgo": {
+    "en": "The TORGO database of dysarthric articulation consists of aligned acoustics and measured 3D articulatory features from speakers with either cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).",
+    "zh": "TORGO发音障碍数据库包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的语音声学信号与测量的3D发音特征对齐的数据。",
+    "updated_at": "2025-12-23T19:25:15Z"
+  },
+  "refcoco": {
+    "en": "The RefCOCO dataset is a collection of images, object bounding boxes, and free-form natural-language referring expressions intended for training and evaluating models on the task of Referring Expression Comprehension (REC). It was created by collecting expressions on Amazon Mechanical Turk that uniquely describe a target object inside a MSCOCO image, and then asking other Turkers to click on the corresponding object.",
+    "zh": "RefCOCO 数据集包含图像、目标边界框和自由形式的自然语言指代表达，用于训练和评估指代表达理解（REC）模型。该数据集通过在 Amazon Mechanical Turk 上收集对 MSCOCO 图像中目标对象的唯一描述生成，并由其他标注者点击对应目标以验证表达准确性。",
+    "updated_at": "2025-12-24T15:36:20Z"
   }
 }

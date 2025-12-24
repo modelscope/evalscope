@@ -13,7 +13,7 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-CRITIQUE_TEMPLATE = """CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
+CRITIQUE_TEMPLATE = """The following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
 
 [Math Problem]
 

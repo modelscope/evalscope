@@ -86,6 +86,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `pubmedqa` | [PubMedQA](#pubmedqa) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](#qasc) | `Knowledge`, `MCQ` |
 | `race` | [RACE](#race) | `MCQ`, `Reasoning` |
+| `refcoco` | [RefCOCO](#refcoco) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
 | `scicode` | [SciCode](#scicode) | `Coding` |
 | `sciq` | [SciQ](#sciq) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `simple_qa` | [SimpleQA](#simpleqa) | `Knowledge`, `QA` |
@@ -2987,7 +2988,7 @@ Answer the following multiple choice question. The entire content of your respon
 <details><summary>View</summary>
 
 ````text
-CThe following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
+The following is a math problem and a solution (split into paragraphs, enclosed with tags and indexed from 0):
 
 [Math Problem]
 
@@ -3091,6 +3092,38 @@ Answer the following multiple choice question. The last line of your response sh
 ````
 
 </details>
+
+---
+
+### RefCOCO
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `refcoco`
+- **Dataset ID**: [lmms-lab/RefCOCO](https://modelscope.cn/datasets/lmms-lab/RefCOCO/summary)
+- **Description**:
+  > The RefCOCO dataset is a collection of images, object bounding boxes, and free-form natural-language referring expressions intended for training and evaluating models on the task of Referring Expression Comprehension (REC). It was created by collecting expressions on Amazon Mechanical Turk that uniquely describe a target object inside a MSCOCO image, and then asking other Turkers to click on the corresponding object.
+- **Task Categories**: `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal`
+- **Evaluation Metrics**: `ACC@0.1`, `ACC@0.3`, `ACC@0.5`, `ACC@0.7`, `ACC@0.9`, `Bleu_1`, `Bleu_2`, `Bleu_3`, `Bleu_4`, `CIDEr`, `Center_ACC`, `IoU`, `METEOR`, `ROUGE_L`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Subsets**: `testA`, `testB`, `test`, `val`
+
+- **Extra Parameters**: 
+```json
+{
+    "eval_mode": {
+        "type": "str",
+        "description": "Control the evaluation mode used by RefCOCO. bbox: image caption task, visualize the original image with bounding box; seg: image caption task, visualize the original image with segmentation; bbox_rec: grounding task, recognize bounding box coordinates.",
+        "value": "bbox",
+        "choices": [
+            "bbox",
+            "seg",
+            "bbox_rec"
+        ]
+    }
+}
+```
 
 ---
 

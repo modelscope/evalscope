@@ -37,6 +37,7 @@
 | `science_qa` | [ScienceQA](#scienceqa) | `Knowledge`, `MCQ`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](#seed-bench-2-plus) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](#simplevqa) | `MultiModal`, `QA`, `Reasoning` |
+| `torgo` | [TORGO](#torgo) | `Audio`, `SpeechRecognition` |
 | `visulogic` | [VisuLogic](#visulogic) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vstar_bench` | [V*Bench](#vbench) | `Grounding`, `MCQ`, `MultiModal` |
 | `zerobench` | [ZeroBench](#zerobench) | `Knowledge`, `MultiModal`, `QA` |
@@ -1039,6 +1040,32 @@ Answer the following multiple choice question. The last line of your response sh
 Answer the question:
 
 {question}
+````
+
+</details>
+
+---
+
+### TORGO
+
+[返回目录](#vlm评测集)
+- **数据集名称**: `torgo`
+- **数据集ID**: [extraordinarylab/torgo](https://modelscope.cn/datasets/extraordinarylab/torgo/summary)
+- **数据集介绍**:
+  > TORGO发音障碍数据库包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的语音声学信号与测量的3D发音特征对齐的数据。
+- **任务类别**: `Audio`, `SpeechRecognition`
+- **评估指标**: `{'cer': {}}`, `{'sem_score': {'model_id_or_path': 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'}}`, `{'wer': {}}`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
+- **数据集子集**: `mild`, `moderate`, `severe`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+Please recognize the speech and only output the recognized content:
 ````
 
 </details>
