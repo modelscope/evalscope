@@ -187,13 +187,19 @@ class LocalDataLoader(DataLoader):
         path = self.data_id_or_path
         data_to_sample = record_to_sample_fn(self.sample_fields)
         dataset = []
-
-        # Check for JSONL or CSV files in the specified path
-        for ext, loader in [
+        supported_format = [
             ('.jsonl', jsonl_to_list),
             ('.csv', csv_to_list),
             ('.tsv', tsv_to_list),
-        ]:
+        ]
+
+        dataset_found = False
+
+        # Check for JSONL or CSV files in the specified path
+        for ext, loader in supported_format:
+            if dataset_found:
+                break
+
             # Check if the file exists with the given extension
             if os.path.isfile(path) and path.endswith(ext):
                 file_paths = [path]
@@ -206,7 +212,23 @@ class LocalDataLoader(DataLoader):
             for file_path in file_paths:
                 if os.path.exists(file_path):
                     dataset = loader(file_path)
-                    break  # Stop checking other extensions once a file is found
+                    if dataset:
+                        dataset_found = True
+                    break
+
+        # Fallback: if no file found, try to find the first supported file in the directory
+        if not dataset_found and os.path.isdir(path):
+            for ext, loader in supported_format:
+                if dataset_found:
+                    break
+                for file in os.listdir(path):
+                    if file.endswith(ext):
+                        file_path = os.path.join(path, file)
+                        logger.warning(f'No specific dataset file found, loading the first found file: {file_path}')
+                        dataset = loader(file_path)
+                        if dataset:
+                            dataset_found = True
+                        break
 
         # shuffle if requested
         if self.shuffle:
