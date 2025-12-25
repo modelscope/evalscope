@@ -71,6 +71,7 @@ class EvalType:
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     SERVICE = 'openai_api'  # model service
+    BASE_MODEL = 'base_model'  # base model service using completions endpoint
     TEXT2IMAGE = 'text2image'  # image generation service
     IMAGE_EDITING = 'image_editing'  # image editing service
 
