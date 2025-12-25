@@ -146,3 +146,9 @@ class TestCodeBenchmark(TestBenchmark):
         ],
         }
         self._run_dataset_test('multiple_humaneval', dataset_args, limit=10, use_cache='outputs/20251212_102548', rerun_review=True, debug=False, judge_worker_num=2)
+
+    def test_terminal_bench_v2(self):
+        """Test Terminal-Bench v2 dataset."""
+        dataset_args = {
+        }
+        self._run_dataset_test('terminal_bench_v2', dataset_args, limit=1, use_sandbox=False)
