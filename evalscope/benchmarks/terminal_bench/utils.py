@@ -1,3 +1,4 @@
+import asyncio
 from harbor.llms.base import BaseLLM, LLMResponse, UsageInfo
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
@@ -19,11 +20,17 @@ class HarborLLM(BaseModel, BaseLLM):
     def model(self):
         return self._model
 
-    def call(self, prompt, **kwargs):
+    async def call(self, prompt, **kwargs):
         message_history = kwargs.get('message_history', [])
         messages = message_history + [{'role': 'user', 'content': prompt}]
 
-        completion = self._model.generate(input=[dict_to_chat_message(msg) for msg in messages])
+        # Run the blocking generate call in a separate thread
+        loop = asyncio.get_running_loop()
+        completion = await loop.run_in_executor(
+            None, lambda: self._model.generate(input=[dict_to_chat_message(msg) for msg in messages])
+        )
+
+        # Process the completion to extract content and usage
         oa_choices = openai_chat_choices(completion.choices, include_reasoning=False)
         choice = oa_choices[0]
         msg = choice.message
@@ -32,9 +39,10 @@ class HarborLLM(BaseModel, BaseLLM):
         return LLMResponse(
             content=msg.content,
             usage=UsageInfo(
-                prompt_tokens=usage.get('prompt_tokens', 0),
-                completion_tokens=usage.get('completion_tokens', 0),
-                cache_tokens=usage.get('cache_tokens', 0),
+                prompt_tokens=usage.get('input_tokens', 0),
+                completion_tokens=usage.get('output_tokens', 0),
+                cache_tokens=usage.get('input_tokens_cache_read', 0),
+                cost_usd=usage.get('cost_usd', 0.0)
             )
         )
 

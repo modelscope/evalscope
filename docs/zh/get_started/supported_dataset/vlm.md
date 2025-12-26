@@ -1054,7 +1054,7 @@ Answer the question:
 - **数据集介绍**:
   > TORGO发音障碍数据库包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的语音声学信号与测量的3D发音特征对齐的数据。
 - **任务类别**: `Audio`, `SpeechRecognition`
-- **评估指标**: `{'cer': {}}`, `{'sem_score': {'model_id_or_path': 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'}}`, `{'wer': {}}`
+- **评估指标**: `cer`, `sem_score`, `wer`
 - **聚合方法**: `mean`
 - **是否需要LLM Judge**: 否
 - **默认提示方式**: 0-shot

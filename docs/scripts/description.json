@@ -773,5 +773,10 @@
     "en": "The RefCOCO dataset is a collection of images, object bounding boxes, and free-form natural-language referring expressions intended for training and evaluating models on the task of Referring Expression Comprehension (REC). It was created by collecting expressions on Amazon Mechanical Turk that uniquely describe a target object inside a MSCOCO image, and then asking other Turkers to click on the corresponding object.",
     "zh": "RefCOCO 数据集包含图像、目标边界框和自由形式的自然语言指代表达，用于训练和评估指代表达理解（REC）模型。该数据集通过在 Amazon Mechanical Turk 上收集对 MSCOCO 图像中目标对象的唯一描述生成，并由其他标注者点击对应目标以验证表达准确性。",
     "updated_at": "2025-12-24T15:36:20Z"
+  },
+  "terminal_bench_v2": {
+    "en": "TTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)",
+    "zh": "TTerminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等场景；每个任务经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)",
+    "updated_at": "2025-12-26T10:49:54Z"
   }
 }

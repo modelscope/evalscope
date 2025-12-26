@@ -1,6 +1,5 @@
 import asyncio
 import os
-import traceback
 from pathlib import Path
 from uuid import uuid4
 
@@ -27,7 +26,7 @@ logger = get_logger()
         'isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier '
         'models to prove they can act, not just answer. '
         'Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)',
+        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)',
         dataset_id='https://github.com/laude-institute/terminal-bench-2.git',
         metric_list=['acc'],
         eval_split='test',
@@ -39,6 +38,18 @@ logger = get_logger()
                 'value': 'docker',
                 'choices': ['docker', 'daytona', 'e2b', 'modal']
             },
+            'agent_name': {
+                'type':
+                'str',
+                'description':
+                'Agent type to be used in Harbor.',
+                'value':
+                'terminus-2',
+                'choices': [
+                    'oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode',
+                    'mini-swe-agent'
+                ],
+            }
         }
     )
 )
@@ -49,6 +60,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
 
         check_import('harbor', package='harbor==0.1.28', raise_error=True, feature_name=self.pretty_name)
         self.environment_type = self.extra_params.get('environment_type', 'docker')
+        self.agent_name = self.extra_params.get('agent_name', 'terminus_2')
 
     def load(self):
         from harbor.dataset.client import DatasetClient
@@ -96,7 +108,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
         environment_config = EnvironmentConfig(type=self.environment_type, )
 
         agent_config = AgentConfig(
-            name=AgentName.TERMINUS_2,
+            name=self.agent_name,
             model_name=model.name,
             kwargs={
                 # Parser configuration
@@ -134,12 +146,10 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
             result = asyncio.run(orchestrator.run())
         except Exception as e:
             if hasattr(e, 'exceptions'):
-                logger.warning('\n!!! Capture Exception Group !!!')
                 for i, sub_exc in enumerate(e.exceptions):
                     logger.warning(f"--- Sub-exception {i + 1} ---")
                     logger.warning(sub_exc)
             else:
-                logger.warning('\n!!! Capture Exception !!!')
                 logger.warning(e)
             raise e
         result_dict = result[0].model_dump(mode='json')
@@ -149,3 +159,13 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
             model=model.name,
             content=result_dict['trial_uri'],
         )
+
+    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        result = task_state.metadata.get('result', {})
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+            value={'acc': result.get('verifier_result', {}).get('rewards', {}).get('reward', 0)},
+            metadata=result,
+        )
+        return score

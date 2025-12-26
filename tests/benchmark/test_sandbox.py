@@ -23,7 +23,7 @@ class TestCodeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 4096,
+                'max_tokens': 12000,
                 'temperature': 0.0,
                 'seed': 42,
                 'parallel_tool_calls': True
@@ -150,5 +150,8 @@ class TestCodeBenchmark(TestBenchmark):
     def test_terminal_bench_v2(self):
         """Test Terminal-Bench v2 dataset."""
         dataset_args = {
+            'extra_params': {
+                'agent_name': 'oracle',
+            },
         }
         self._run_dataset_test('terminal_bench_v2', dataset_args, limit=1, use_sandbox=False)

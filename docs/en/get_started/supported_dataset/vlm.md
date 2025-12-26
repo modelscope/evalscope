@@ -1054,7 +1054,7 @@ Answer the question:
 - **Description**:
   > The TORGO database of dysarthric articulation consists of aligned acoustics and measured 3D articulatory features from speakers with either cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).
 - **Task Categories**: `Audio`, `SpeechRecognition`
-- **Evaluation Metrics**: `{'cer': {}}`, `{'sem_score': {'model_id_or_path': 'ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli'}}`, `{'wer': {}}`
+- **Evaluation Metrics**: `cer`, `sem_score`, `wer`
 - **Aggregation Methods**: `mean`
 - **Requires LLM Judge**: No
 - **Default Shots**: 0-shot
