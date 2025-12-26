@@ -88,7 +88,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
         )
         client = DatasetClient()
 
-        logger.info(f"Downloading dataset for {self.pretty_name}...")
+        logger.info(f'Downloading dataset for {self.pretty_name}...')
         _ = client.download_dataset_from_config(config)
         task_config = config.get_task_configs()
 
@@ -160,7 +160,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
         except Exception as e:
             if hasattr(e, 'exceptions'):
                 for i, sub_exc in enumerate(e.exceptions):
-                    logger.warning(f"--- Sub-exception {i + 1} ---")
+                    logger.warning(f'--- Sub-exception {i + 1} ---')
                     logger.warning(sub_exc)
             else:
                 logger.warning(e)
