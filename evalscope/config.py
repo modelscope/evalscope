@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
 import copy
+import json
 import os
 from argparse import Namespace
 from dataclasses import dataclass, field
@@ -19,11 +20,37 @@ from evalscope.constants import (
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.import_utils import check_import
-from evalscope.utils.io_utils import dict_to_yaml, gen_hash, safe_filename
+from evalscope.utils.io_utils import dict_to_yaml, gen_hash, json_to_dict, safe_filename, yaml_to_dict
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as evalscope_version
 
 logger = get_logger()
+
+# Default configurations
+DEFAULT_IMAGE_GEN_CONFIG = {
+    'height': 1024,
+    'width': 1024,
+    'num_inference_steps': 50,
+    'guidance_scale': 9.0,
+}
+
+DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG = {
+    'max_tokens': 2048,
+    'do_sample': False,
+    'top_k': 50,
+    'top_p': 1.0,
+    'temperature': 1.0,
+    'n': 1,
+}
+
+DEFAULT_TEXT_GEN_SERVICE_CONFIG = {
+    'temperature': 0.0,
+}
+
+DEFAULT_MODEL_ARGS_CHECKPOINT = {
+    'revision': 'master',
+    'precision': 'torch.float16',
+}
 
 
 @dataclass
@@ -146,6 +173,7 @@ class TaskConfig(BaseArgument):
         self.__init_model_and_id()
 
         self.__init_eval_data_config()
+        self.__init_eval_config()
 
         # Set default generation_config and model_args
         self.__init_default_generation_config()
@@ -171,14 +199,16 @@ class TaskConfig(BaseArgument):
 
         # Set model_id if not provided
         if not self.model_id:
-            if isinstance(self.model, str):
-                self.model_id = safe_filename(os.path.basename(self.model))
-            elif isinstance(self.model, Model):
-                self.model_id = safe_filename(self.model.name)
-            elif isinstance(self.model, ModelAPI):
-                self.model_id = safe_filename(self.model.model_name)
-            else:
-                self.model_id = 'dummy_model'
+            self.model_id = self._infer_model_id()
+
+    def _infer_model_id(self) -> str:
+        if isinstance(self.model, str):
+            return safe_filename(os.path.basename(self.model))
+        elif isinstance(self.model, Model):
+            return safe_filename(self.model.name)
+        elif isinstance(self.model, ModelAPI):
+            return safe_filename(self.model.model_name)
+        return 'dummy_model'
 
     def __init_eval_data_config(self):
         # Post process limit
@@ -186,40 +216,36 @@ class TaskConfig(BaseArgument):
             self.limit = parse_int_or_float(self.limit)
 
     def __init_default_generation_config(self):
+        # 1. Set defaults if empty
         if not self.generation_config:
-            if self.model_task == ModelTask.IMAGE_GENERATION:
-                self.generation_config = {
-                    'height': 1024,
-                    'width': 1024,
-                    'num_inference_steps': 50,
-                    'guidance_scale': 9.0,
-                }
-                if self.eval_batch_size != 1:
-                    logger.warning(
-                        'For image generation task, we only support eval_batch_size=1 for now, changed to 1.'
-                    )
-                    self.eval_batch_size = 1
-            elif self.model_task == ModelTask.TEXT_GENERATION:
-                if self.eval_type == EvalType.CHECKPOINT:
-                    self.generation_config = {
-                        'max_tokens': 2048,
-                        'do_sample': False,
-                        'top_k': 50,
-                        'top_p': 1.0,
-                        'temperature': 1.0,
-                        'n': 1,
-                    }
-                elif self.eval_type == EvalType.SERVICE:
-                    self.generation_config = {
-                        'temperature': 0.0,
-                    }
+            self.generation_config = self._get_default_generation_config()
+
+        # 2. Validate/Convert to GenerateConfig object
         if isinstance(self.generation_config, dict):
             self.generation_config = GenerateConfig.model_validate(self.generation_config)
 
-        # Set eval_batch_size to generation_config.batch_size
+        # 3. Sync batch size
         self.generation_config.batch_size = self.eval_batch_size
 
-        # Set default values for generation_config
+        # 4. Handle deprecations
+        self._handle_generation_config_deprecations()
+
+    def _get_default_generation_config(self) -> Dict:
+        if self.model_task == ModelTask.IMAGE_GENERATION:
+            if self.eval_batch_size != 1:
+                logger.warning('For image generation task, we only support eval_batch_size=1 for now, changed to 1.')
+                self.eval_batch_size = 1
+            return DEFAULT_IMAGE_GEN_CONFIG.copy()
+
+        elif self.model_task == ModelTask.TEXT_GENERATION:
+            if self.eval_type == EvalType.CHECKPOINT:
+                return DEFAULT_TEXT_GEN_CHECKPOINT_CONFIG.copy()
+            elif self.eval_type == EvalType.SERVICE:
+                return DEFAULT_TEXT_GEN_SERVICE_CONFIG.copy()
+
+        return {}
+
+    def _handle_generation_config_deprecations(self):
         if self.timeout is not None:
             deprecated_warning(
                 logger,
@@ -245,12 +271,8 @@ class TaskConfig(BaseArgument):
     def __init_default_model_args(self):
         if self.model_args:
             return
-        if self.model_task == ModelTask.TEXT_GENERATION:
-            if self.eval_type == EvalType.CHECKPOINT:
-                self.model_args = {
-                    'revision': 'master',
-                    'precision': 'torch.float16',
-                }
+        if self.model_task == ModelTask.TEXT_GENERATION and self.eval_type == EvalType.CHECKPOINT:
+            self.model_args = DEFAULT_MODEL_ARGS_CHECKPOINT.copy()
 
     def __init_default_sandbox_config(self):
         if not self.use_sandbox:
@@ -259,6 +281,25 @@ class TaskConfig(BaseArgument):
 
         if not self.sandbox_type:
             self.sandbox_type = 'docker'
+
+    def __init_eval_config(self):
+        if not self.eval_config:
+            return
+        if isinstance(self.eval_config, dict):
+            return
+        if isinstance(self.eval_config, str):
+            extension = os.path.splitext(self.eval_config)[-1]
+            if extension in ['.yaml', '.yml']:
+                self.eval_config = yaml_to_dict(self.eval_config)
+            elif extension == '.json':
+                self.eval_config = json_to_dict(self.eval_config)
+            else:
+                try:
+                    self.eval_config = json.loads(self.eval_config)
+                except Exception as e:
+                    raise ValueError('eval_config string is not a valid json string or file path.') from e
+        else:
+            raise ValueError('eval_config should be a dict or a file path string.')
 
     def update(self, other: Union['TaskConfig', dict]):
         if isinstance(other, TaskConfig):
@@ -276,17 +317,23 @@ class TaskConfig(BaseArgument):
 
     def to_dict(self):
         result = copy.copy(self.__dict__)
-        del result['api_key']  # Do not expose api_key in the config
-        # Only deepcopy judge_model_args if it exists
-        result['judge_model_args'] = copy.deepcopy(self.judge_model_args)
-        if 'api_key' in result.get('judge_model_args', {}):
-            del result['judge_model_args']['api_key']  # Do not expose api_key in judge_model_args
 
+        # Remove sensitive info
+        result.pop('api_key', None)
+
+        # Handle nested sensitive info in judge_model_args
+        if self.judge_model_args:
+            result['judge_model_args'] = copy.deepcopy(self.judge_model_args)
+            result['judge_model_args'].pop('api_key', None)
+
+        # Serialize Model objects
         if isinstance(self.model, (Model, ModelAPI)):
             result['model'] = self.model.__class__.__name__
 
+        # Serialize GenerateConfig
         if isinstance(self.generation_config, GenerateConfig):
             result['generation_config'] = self.generation_config.model_dump(exclude_unset=True)
+
         return result
 
 
