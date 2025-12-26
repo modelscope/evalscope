@@ -3518,7 +3518,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **数据集名称**: `terminal_bench_v2`
 - **数据集ID**: [terminal-bench-2.git](https://github.com/laude-institute/terminal-bench-2.git)
 - **数据集介绍**:
-  > TTerminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等场景；每个任务经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
+  > Terminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等任务；每个任务均经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
 - **任务类别**: `Coding`
 - **评估指标**: `acc`
 - **聚合方法**: `mean`
@@ -3540,6 +3540,31 @@ Answer the following multiple choice question. The last line of your response sh
             "e2b",
             "modal"
         ]
+    },
+    "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor.",
+        "value": "terminus-2",
+        "choices": [
+            "oracle",
+            "terminus-2",
+            "claude-code",
+            "codex",
+            "qwen-coder",
+            "openhands",
+            "opencode",
+            "mini-swe-agent"
+        ]
+    },
+    "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+    },
+    "max_turns": {
+        "type": "int",
+        "description": "Maximum number of turns for the agent to complete the task.",
+        "value": 200
     }
 }
 ```

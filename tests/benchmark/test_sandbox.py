@@ -26,7 +26,8 @@ class TestCodeBenchmark(TestBenchmark):
                 'max_tokens': 12000,
                 'temperature': 0.0,
                 'seed': 42,
-                'parallel_tool_calls': True
+                'parallel_tool_calls': True,
+                'stream': True,
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
@@ -151,7 +152,8 @@ class TestCodeBenchmark(TestBenchmark):
         """Test Terminal-Bench v2 dataset."""
         dataset_args = {
             'extra_params': {
-                'agent_name': 'oracle',
+                # 'agent_name': 'oracle',
+                'timeout_multiplier': 3
             },
         }
-        self._run_dataset_test('terminal_bench_v2', dataset_args, limit=1, use_sandbox=False)
+        self._run_dataset_test('terminal_bench_v2', dataset_args, limit=5, use_sandbox=False, rerun_review=True, model='qwen3-coder-plus', eval_batch_size=2)

@@ -775,8 +775,8 @@
     "updated_at": "2025-12-24T15:36:20Z"
   },
   "terminal_bench_v2": {
-    "en": "TTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)",
-    "zh": "TTerminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等场景；每个任务经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)",
-    "updated_at": "2025-12-26T10:49:54Z"
+    "en": "Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)",
+    "zh": "Terminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等任务；每个任务均经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)",
+    "updated_at": "2025-12-26T13:38:37Z"
   }
 }

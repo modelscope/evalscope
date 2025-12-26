@@ -7,6 +7,7 @@ Before using these benchmarks, please follow the instructions in each benchmark'
 :::{toctree}
 :maxdepth: 1
 
+terminal_bench.md
 swe_bench.md
 tau_bench.md
 tau2_bench.md

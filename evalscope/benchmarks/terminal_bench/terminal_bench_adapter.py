@@ -21,7 +21,7 @@ logger = get_logger()
         name='terminal_bench_v2',
         pretty_name='Terminal-Bench-2.0',
         tags=[Tags.CODING],
-        description='TTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, '
+        description='Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, '
         'multi-step terminal tasks—ranging from compiling and debugging to system administration—within '
         'isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier '
         'models to prove they can act, not just answer. '
@@ -49,7 +49,17 @@ logger = get_logger()
                     'oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode',
                     'mini-swe-agent'
                 ],
-            }
+            },
+            'timeout_multiplier': {
+                'type': 'float',
+                'description': 'Timeout multiplier. If timeout errors occur, consider increasing this value.',
+                'value': 1.0,
+            },
+            'max_turns': {
+                'type': 'int',
+                'description': 'Maximum number of turns for the agent to complete the task.',
+                'value': 200,
+            },
         }
     )
 )
@@ -60,7 +70,9 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
 
         check_import('harbor', package='harbor==0.1.28', raise_error=True, feature_name=self.pretty_name)
         self.environment_type = self.extra_params.get('environment_type', 'docker')
-        self.agent_name = self.extra_params.get('agent_name', 'terminus_2')
+        self.agent_name = self.extra_params.get('agent_name', 'terminus-2')
+        self.timeout_multiplier = self.extra_params.get('timeout_multiplier', 1.0)
+        self.max_turns = self.extra_params.get('max_turns', 200)
 
     def load(self):
         from harbor.dataset.client import DatasetClient
@@ -104,7 +116,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
 
         from .utils import HarborLLM
 
-        harbar_llm = HarborLLM(model=model)
+        harbor_llm = HarborLLM(model=model)
         environment_config = EnvironmentConfig(type=self.environment_type, )
 
         agent_config = AgentConfig(
@@ -114,9 +126,9 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
                 # Parser configuration
                 'parser_name': 'json',  # "json" or "xml" (default: "json")
                 # model
-                'llm': harbar_llm,
+                'llm': harbor_llm,
                 # Episode/turn limits
-                'max_turns': 100,  # Maximum number of episodes (default: 1000000)
+                'max_turns': self.max_turns,  # Maximum number of episodes (default: 1000000)
                 # Summarization configuration
                 'enable_summarize': True,  # Enable context summarization (default: True)
                 'proactive_summarization_threshold': 8000,  # Free tokens threshold for summarization (default: 8000)
@@ -132,6 +144,7 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
             trials_dir=Path(self.output_dir) / 'trials',
             agent=agent_config,
             environment=environment_config,
+            timeout_multiplier=self.timeout_multiplier,
             job_id=uuid4(),
         )
 
@@ -162,10 +175,14 @@ class TerminalBenchV2Adapter(DefaultDataAdapter):
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
         result = task_state.metadata.get('result', {})
+        try:
+            reward = result.get('verifier_result', {}).get('rewards', {}).get('reward', 0)
+        except Exception:
+            reward = 0
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
-            value={'acc': result.get('verifier_result', {}).get('rewards', {}).get('reward', 0)},
+            value={'acc': reward},
             metadata=result,
         )
         return score

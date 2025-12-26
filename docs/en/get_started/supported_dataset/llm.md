@@ -3518,7 +3518,7 @@ Answer the following multiple choice question. The last line of your response sh
 - **Dataset Name**: `terminal_bench_v2`
 - **Dataset ID**: [terminal-bench-2.git](https://github.com/laude-institute/terminal-bench-2.git)
 - **Description**:
-  > TTerminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
+  > Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
 - **Task Categories**: `Coding`
 - **Evaluation Metrics**: `acc`
 - **Aggregation Methods**: `mean`
@@ -3540,6 +3540,31 @@ Answer the following multiple choice question. The last line of your response sh
             "e2b",
             "modal"
         ]
+    },
+    "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor.",
+        "value": "terminus-2",
+        "choices": [
+            "oracle",
+            "terminus-2",
+            "claude-code",
+            "codex",
+            "qwen-coder",
+            "openhands",
+            "opencode",
+            "mini-swe-agent"
+        ]
+    },
+    "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+    },
+    "max_turns": {
+        "type": "int",
+        "description": "Maximum number of turns for the agent to complete the task.",
+        "value": 200
     }
 }
 ```
