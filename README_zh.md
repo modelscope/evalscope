@@ -68,7 +68,8 @@ EvalScope 是由[魔搭社区](https://modelscope.cn/)打造的一款功能强�
 >
 > 版本 1.0 对评测框架进行了重大重构，在 `evalscope/api` 下建立了全新的、更模块化且易扩展的 API 层。主要改进包括：为基准、样本和结果引入了标准化数据模型；对基准和指标等组件采用注册表式设计；并重写了核心评测器以协同新架构。现有的基准已迁移到这一 API，实现更加简洁、一致且易于维护。
 
-- 🔥 **[2025.12.16]** 支持SLA自动调优模型API服务，自动测试模型服务在特定时延、TTFT、吞吐量下的最高并发，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/sla_auto_tune.html)
+- 🔥 **[2025.12.26]** 支持Terminal-Bench-2.0，用于评估 AI Agent在 89 个真实世界的多步骤终端任务上的表现，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
+- 🔥 **[2025.12.18]** 支持SLA自动调优模型API服务，自动测试模型服务在特定时延、TTFT、吞吐量下的最高并发，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/sla_auto_tune.html)
 - 🔥 **[2025.12.16]** 支持Fleurs、LibriSpeech等音频评测基准；支持MultiplE、MBPP等多语言代码评测基准。
 - 🔥 **[2025.12.02]** 支持自定义多模态VQA评测，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/vlm.html) ；支持模型服务压测在 ClearML 上可视化，参考[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/examples.html#clearml)。
 - 🔥 **[2025.11.26]** 新增支持 OpenAI-MRCR、GSM8K-V、MGSM、MicroVQA、IFBench、SciCode 评测基准。
