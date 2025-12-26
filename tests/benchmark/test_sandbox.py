@@ -23,10 +23,11 @@ class TestCodeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 4096,
+                'max_tokens': 12000,
                 'temperature': 0.0,
                 'seed': 42,
-                'parallel_tool_calls': True
+                'parallel_tool_calls': True,
+                'stream': True,
             },
             'judge_strategy': JudgeStrategy.AUTO,
             'judge_worker_num': 5,
@@ -146,3 +147,13 @@ class TestCodeBenchmark(TestBenchmark):
         ],
         }
         self._run_dataset_test('multiple_humaneval', dataset_args, limit=10, use_cache='outputs/20251212_102548', rerun_review=True, debug=False, judge_worker_num=2)
+
+    def test_terminal_bench_v2(self):
+        """Test Terminal-Bench v2 dataset."""
+        dataset_args = {
+            'extra_params': {
+                # 'agent_name': 'oracle',
+                'timeout_multiplier': 3
+            },
+        }
+        self._run_dataset_test('terminal_bench_v2', dataset_args, limit=5, use_sandbox=False, rerun_review=True, model='qwen3-coder-plus', eval_batch_size=2)

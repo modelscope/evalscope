@@ -95,6 +95,7 @@
 | `swe_bench_lite` | [SWE-bench_Lite](#swe-bench_lite) | `Coding` |
 | `swe_bench_verified` | [SWE-bench_Verified](#swe-bench_verified) | `Coding` |
 | `swe_bench_verified_mini` | [SWE-bench_Verified_mini](#swe-bench_verified_mini) | `Coding` |
+| `terminal_bench_v2` | [Terminal-Bench-2.0](#terminal-bench-20) | `Coding` |
 | `trivia_qa` | [TriviaQA](#triviaqa) | `QA`, `ReadingComprehension` |
 | `truthful_qa` | [TruthfulQA](#truthfulqa) | `Knowledge` |
 | `tweebank_ner` | [TweeBankNER](#tweebankner) | `Knowledge`, `NER` |
@@ -3497,6 +3498,73 @@ Answer the following multiple choice question. The last line of your response sh
             "arm64",
             "x86_64"
         ]
+    }
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+{question}
+````
+
+</details>
+
+---
+
+### Terminal-Bench-2.0
+
+[返回目录](#llm评测集)
+- **数据集名称**: `terminal_bench_v2`
+- **数据集ID**: [terminal-bench-2.git](https://github.com/laude-institute/terminal-bench-2.git)
+- **数据集介绍**:
+  > Terminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等任务；每个任务均经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
+- **数据集子集**: `default`
+
+- **额外参数**: 
+```json
+{
+    "environment_type": {
+        "type": "str",
+        "description": "Environment type for running the benchmark.",
+        "value": "docker",
+        "choices": [
+            "docker",
+            "daytona",
+            "e2b",
+            "modal"
+        ]
+    },
+    "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor.",
+        "value": "terminus-2",
+        "choices": [
+            "oracle",
+            "terminus-2",
+            "claude-code",
+            "codex",
+            "qwen-coder",
+            "openhands",
+            "opencode",
+            "mini-swe-agent"
+        ]
+    },
+    "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+    },
+    "max_turns": {
+        "type": "int",
+        "description": "Maximum number of turns for the agent to complete the task.",
+        "value": 200
     }
 }
 ```
