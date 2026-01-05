@@ -17,7 +17,7 @@ class TestVLMBenchmark(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'qwen-vl-plus',
+            'model': 'qwen3-vl-235b-a22b-instruct',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.SERVICE,
@@ -237,7 +237,10 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
             'shuffle': True,
         }
-        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=20)
+        self._run_dataset_test('hallusion_bench', dataset_args=dataset_args, limit=50, model='qwen3-vl-30b-a3b-instruct', ignore_errors=True)
+
+    def test_hallusion_bench_load(self):
+        self._run_dataset_load_test('hallusion_bench')
 
     def test_pope(self):
         dataset_args = {
@@ -350,3 +353,40 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
         }
         self._run_dataset_test('librispeech', dataset_args=dataset_args, limit=5, model='qwen3-omni-flash', ignore_errors=True, rerun_review=True)
+
+    def test_refcoco_load(self):
+        dataset_args = {
+            'subset_list': ['testA'],
+            'extra_params': {
+                'eval_mode': 'bbox_rec'
+            }
+        }
+        self._run_dataset_load_test('refcoco', dataset_args=dataset_args)
+
+    def test_refcoco_bbox(self):
+        dataset_args = {
+            'subset_list': ['testA'],
+            'extra_params': {
+                'eval_mode': 'bbox'
+            }
+        }
+        self._run_dataset_test('refcoco', dataset_args=dataset_args, limit=5)
+
+    def test_refcoco_seg(self):
+        dataset_args = {
+            'shuffle': True,
+            'subset_list': ['testA'],
+            'extra_params': {
+                'eval_mode': 'seg',
+            }
+        }
+        self._run_dataset_test('refcoco', dataset_args=dataset_args, limit=10)
+
+    def test_refcoco_bbox_rec(self):
+        dataset_args = {
+            'subset_list': ['testA'],
+            'extra_params': {
+                'eval_mode': 'bbox_rec'
+            }
+        }
+        self._run_dataset_test('refcoco', dataset_args=dataset_args, limit=10)

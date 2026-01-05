@@ -270,5 +270,51 @@ class TestPerf(unittest.TestCase):
 
         run_perf_benchmark(task_cfg)
 
+    def test_perf_sla_auto_tune_less_than(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=32,
+            number=32,
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/completions',
+            api='openai',
+            dataset='random',
+            min_tokens=1024,
+            max_tokens=1024,
+            max_prompt_length=1024,
+            min_prompt_length=1024,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            sla_auto_tune=True,
+            sla_variable='parallel',
+            sla_params=[{'p99_latency': '<=8'}],
+            sla_num_runs=1,
+            extra_args={'ignore_eos': True}
+        )
+
+        run_perf_benchmark(task_cfg)
+
+    def test_perf_sla_auto_tune_max(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=32,
+            number=32,
+            model='Qwen2.5-0.5B-Instruct',
+            url='http://127.0.0.1:8801/v1/completions',
+            api='openai',
+            dataset='random',
+            min_tokens=1024,
+            max_tokens=1024,
+            max_prompt_length=1024,
+            min_prompt_length=1024,
+            tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct',
+            sla_auto_tune=True,
+            sla_variable='parallel',
+            sla_params=[{'tps': 'max'}],
+            sla_num_runs=1,
+            extra_args={'ignore_eos': True}
+        )
+
+        run_perf_benchmark(task_cfg)
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

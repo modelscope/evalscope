@@ -66,6 +66,25 @@ class Arguments(BaseArgument):
     sleep_interval: int = 5
     """Sleep interval between performance runs, in seconds."""
 
+    # SLA Auto-tuning
+    sla_auto_tune: bool = False
+    """Enable SLA auto-tuning."""
+
+    sla_variable: str = 'parallel'
+    """Variable to tune: 'parallel' or 'rate'."""
+
+    sla_params: Optional[List[Dict[str, Any]]] = None
+    """SLA constraints in JSON format."""
+
+    sla_num_runs: int = 3
+    """Number of runs to average for each configuration in SLA auto-tuning."""
+
+    sla_upper_bound: int = 65536
+    """Upper bound limit for SLA auto-tuning."""
+
+    sla_lower_bound: int = 1
+    """Lower bound limit for SLA auto-tuning."""
+
     # Tuning knobs
     db_commit_interval: int = 1000
     """Number of rows buffered before committing to the DB."""
@@ -288,6 +307,14 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
+
+    # SLA Auto-tuning
+    parser.add_argument('--sla-auto-tune', action='store_true', default=False, help='Enable SLA auto-tuning')
+    parser.add_argument('--sla-variable', type=str, default='parallel', choices=['parallel', 'rate'], help='The variable to tune, can be parallel or rate')  # noqa: E501
+    parser.add_argument('--sla-params', type=json.loads, default=None, help='SLA constraints in JSON format')
+    parser.add_argument('--sla-num-runs', type=int, default=3, help='Number of runs to average for each configuration in SLA auto-tuning')  # noqa: E501
+    parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Maximum concurrency limit for SLA auto-tuning')  # noqa: E501
+    parser.add_argument('--sla-lower-bound', type=int, default=1, help='Minimum concurrency limit for SLA auto-tuning')  # noqa: E501
 
     # Tuning knobs
     parser.add_argument('--db-commit-interval', type=int, default=1000, help='Rows buffered before SQLite commit')

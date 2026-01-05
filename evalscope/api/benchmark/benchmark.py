@@ -425,6 +425,13 @@ class DataAdapter(LLMJudgeMixin, SandboxMixin, ABC):
         """
         self._benchmark_meta.sandbox_config = value
 
+    @property
+    def output_dir(self) -> str:
+        """
+        Return the output directory for the benchmark.
+        """
+        return self._task_config.work_dir if self._task_config else './outputs'
+
     @contextlib.contextmanager
     def _temporary_attribute(self, attr_name: str, new_value):
         """

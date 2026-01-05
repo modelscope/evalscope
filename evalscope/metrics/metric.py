@@ -218,6 +218,40 @@ class COMETScore(SingletonMetric):
         return [round(score, 6) for score in scores]
 
 
+@register_metric(name='cer')
+class CER(Metric):
+
+    def __init__(self, language: str = 'en'):
+        self.language = language
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        from jiwer import cer as jiwer_cer
+
+        from evalscope.metrics.text_normalizer.wer import normalize_text
+
+        return [
+            jiwer_cer(normalize_text(ref, self.language), normalize_text(pred, self.language))
+            for pred, ref in zip(predictions, references)
+        ]
+
+
+@register_metric(name='sem_score')
+class SemScore(SingletonMetric):
+
+    def _init_once(self, **kwargs):
+        """SemScore metric.
+        """
+        check_import('bert_score', 'bert-score', raise_error=True, feature_name='SemScore Metric')
+        check_import('torch', 'torch', raise_error=True, feature_name='SemScore Metric')
+
+        from .sem_score.scorer import SemScorer
+        self.scorer = SemScorer(batch_size=1024, **kwargs)
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        scores = self.scorer.score_all(predictions, references)
+        return [round(score, 6) for score in scores]
+
+
 # ##################
 # T2I Metrics ######
 # ##################

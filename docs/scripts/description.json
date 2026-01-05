@@ -703,5 +703,80 @@
     "en": "This multilingual HumanEval was from MultiPL-E. 18 languages were implemented and tested. **Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
     "zh": "该多语言 HumanEval 来自 MultiPL-E，已实现并测试了 18 种语言。**执行和评估生成代码需要沙箱环境，更多详情请参考[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。**",
     "updated_at": "2025-12-12T11:24:21Z"
+  },
+  "multi_nerd": {
+    "en": "MultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grained Named Entity Recognition, automatically generated from Wikipedia and Wikinews, covering 10 languages and 15 distinct entity categories.",
+    "zh": "MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识别数据集，基于 Wikipedia 和 Wikinews 自动生成，涵盖 10 种语言和 15 种不同实体类别。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "bc5cdr": {
+    "en": "The BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles developed for the BioCreative V challenge, containing over 4,400 chemical mentions, 5,800 disease mentions, and 3,100 chemical-disease interactions.",
+    "zh": "BC5CDR语料库是为BioCreative V挑战赛开发的手动标注资源，包含1,500篇PubMed文章，涵盖4,400多个化学物质提及、5,800多个疾病提及以及3,100个化学-疾病相互作用。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "tweet_ner_7": {
+    "en": "TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-2021, annotated with seven entity types to facilitate the study of short-term temporal shifts in social media language.",
+    "zh": "TweetNER7 是一个大规模命名实体识别数据集，包含 2019 至 2021 年的超过 11,000 条推文，标注了七种实体类型，旨在促进社交媒体语言短期时间变化的研究。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "bc2gm": {
+    "en": "The BC2GM (BioCreative II Gene Mention) dataset is a widely used corpus for gene mention recognition, consisting of 20,000 sentences from MEDLINE abstracts where gene and protein names have been manually annotated.",
+    "zh": "BC2GM（BioCreative II 基因提及）数据集是基因提及识别领域广泛使用的语料库，包含来自MEDLINE摘要的20,000个句子，其中基因和蛋白质名称已进行人工标注。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "conllpp": {
+    "en": "The CoNLL++ dataset is a corrected and cleaner version of the test set from the widely-used CoNLL2003 NER benchmark.",
+    "zh": "CoNLL++ 数据集是广泛使用的 CoNLL2003 NER 基准测试集的修正和更干净版本。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "fin_ner": {
+    "en": "The FinNER dataset is a corpus of financial agreements from public U.S. Security and Exchange Commission (SEC) filings, annotated with Person, Organization, Location, and Miscellaneous entities to support information extraction for credit risk assessment.",
+    "zh": "FinNER 数据集是一个来自美国证券交易委员会（SEC）公开文件的金融协议语料库，标注了人物、组织、地点和杂项实体，用于支持信贷风险评估的信息抽取。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "jnlpba": {
+    "en": "The JNLPBA dataset is a widely-used resource for bio-entity recognition, consisting of 2,404 MEDLINE abstracts from the GENIA corpus annotated for five key molecular biology entity types.",
+    "zh": "JNLPBA 数据集是生物实体识别的常用资源，包含来自 GENIA 语料库的 2,404 篇 MEDLINE 摘要，标注了五种关键的分子生物学实体类型。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "anat_em": {
+    "en": "The AnatEM corpus is an extensive resource for anatomical entity recognition, created by extending and combining previous corpora to include over 13,000 annotations across 1212 biomedical documents.",
+    "zh": "AnatEM语料库是一个用于解剖学实体识别的大型资源，通过扩展和整合先前的语料库，包含1212篇生物医学文献中的13000多个注释。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "tweebank_ner": {
+    "en": "Tweebank-NER is an English Twitter corpus created by annotating the syntactically-parsed Tweebank V2 with four types of named entities: Person, Organization, Location, and Miscellaneous.",
+    "zh": "Tweebank-NER 是一个英文推特语料库，在 Tweebank V2 句法解析结果的基础上标注了四类命名实体：人物、组织、地点和杂项。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "jnlpba_rare": {
+    "en": "The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created to evaluate zero-shot performance on its least frequent entity types, RNA and cell line.",
+    "zh": "JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估在最少出现的实体类型（RNA 和细胞系）上的零样本性能。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "ncbi": {
+    "en": "The NCBI disease corpus is a manually annotated resource of PubMed abstracts designed for disease name recognition and normalization.",
+    "zh": "NCBI疾病语料库是一个经过人工标注的PubMed摘要资源，用于疾病名称识别与标准化。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "bc4chemd": {
+    "en": "The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abstracts with 84,355 chemical entity mentions manually annotated by experts for chemical named entity recognition.",
+    "zh": "BC4CHEMD（BioCreative IV CHEMDNER）数据集包含10,000篇PubMed摘要，由专家手动标注了84,355个化学实体提及，用于化学命名实体识别。",
+    "updated_at": "2025-12-23T11:40:33Z"
+  },
+  "torgo": {
+    "en": "The TORGO database of dysarthric articulation consists of aligned acoustics and measured 3D articulatory features from speakers with either cerebral palsy (CP) or amyotrophic lateral sclerosis (ALS).",
+    "zh": "TORGO发音障碍数据库包含来自脑瘫（CP）或肌萎缩侧索硬化症（ALS）患者的语音声学信号与测量的3D发音特征对齐的数据。",
+    "updated_at": "2025-12-23T19:25:15Z"
+  },
+  "refcoco": {
+    "en": "The RefCOCO dataset is a collection of images, object bounding boxes, and free-form natural-language referring expressions intended for training and evaluating models on the task of Referring Expression Comprehension (REC). It was created by collecting expressions on Amazon Mechanical Turk that uniquely describe a target object inside a MSCOCO image, and then asking other Turkers to click on the corresponding object.",
+    "zh": "RefCOCO 数据集包含图像、目标边界框和自由形式的自然语言指代表达，用于训练和评估指代表达理解（REC）模型。该数据集通过在 Amazon Mechanical Turk 上收集对 MSCOCO 图像中目标对象的唯一描述生成，并由其他标注者点击对应目标以验证表达准确性。",
+    "updated_at": "2025-12-24T15:36:20Z"
+  },
+  "terminal_bench_v2": {
+    "en": "Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks—ranging from compiling and debugging to system administration—within isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier models to prove they can act, not just answer. Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)",
+    "zh": "Terminal-Bench v2 是一个命令行基准测试套件，在隔离容器中评估 AI 代理执行 89 个真实多步骤终端任务的能力，涵盖编译调试、系统管理等任务；每个任务均经过严格验证并自动评分（0 或 1），推动前沿模型证明其行动能力而不仅是回答问题。要求 `Python>=3.12`，评测前需运行 `pip install harbor==0.1.28`。[使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)",
+    "updated_at": "2025-12-26T13:38:37Z"
   }
 }
