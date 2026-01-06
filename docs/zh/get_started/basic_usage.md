@@ -253,6 +253,31 @@ evalscope eval \
  --limit 10
 ```
 
+### 从已有/中断的评测结果继续评测
+
+如果之前的评测任务中断，或者您想基于已有的评测结果继续进行评测，可以使用 `--use-cache` 参数指定之前的输出目录。这将跳过已完成的样本，只评测剩余样本。此外，还可以通过 `--rerun-review` 参数强制对所有样本重新执行评分步骤。
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --use-cache outputs/20230101_123456 \
+ --rerun-review
+```
+
+### 跳过评测出错的样本
+
+在某些情况下，模型可能会因为输入过长、超时、模型服务崩溃等原因导致推理失败，或评测过程中出现了未知错误。这时程序会抛出异常并中断评测流程。您可以通过 `--ignore-errors` 参数跳过这些出错样本，继续评测剩余样本。在评测报告中，这些样本会被忽略，也就是说最终评测的样本数量会减少。
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --ignore-errors
+```
+
 ## 从 v0.1.x 迁移
 
 如果您之前使用的是 v0.1.x 版本，升级到 v1.0+ 后请注意以下主要变化：
