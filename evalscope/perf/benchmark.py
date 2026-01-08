@@ -85,8 +85,8 @@ async def send_request(
 ):
     async with semaphore:
         benchmark_data = await client.post(request)
-        benchmark_data.update_gpu_usage()
-        await benchmark_data_queue.put(benchmark_data)
+    benchmark_data.update_gpu_usage()
+    await benchmark_data_queue.put(benchmark_data)
 
 
 @exception_handler
@@ -98,7 +98,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
     commit_every = args.db_commit_interval
     processed_since_commit = 0
 
-    with sqlite3.connect(result_db_path) as con:
+    with sqlite3.connect(result_db_path, check_same_thread=False) as con:
         cursor = con.cursor()
         create_result_table(cursor)
 
@@ -114,12 +114,12 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                 insert_benchmark_data(cursor, benchmark_data)
                 processed_since_commit += 1
                 if processed_since_commit >= commit_every:
-                    con.commit()
+                    await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
                 message = metrics.create_message()
 
-                maybe_log_to_visualizer(args, message)
+                await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
                 if int(metrics.n_total_queries) % args.log_every_n_query == 0:
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
@@ -128,7 +128,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                 benchmark_data_queue.task_done()
                 pbar.update(1)
 
-        con.commit()
+        await asyncio.to_thread(con.commit)
 
     return metrics, result_db_path
 
