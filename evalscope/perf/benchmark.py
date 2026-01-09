@@ -117,7 +117,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                     await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
-                message = metrics.create_message()
+                message = metrics.create_message(api_type=args.api)
 
                 await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 

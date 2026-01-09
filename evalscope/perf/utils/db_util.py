@@ -144,6 +144,7 @@ class PercentileMetrics:
     INPUT_TOKENS = 'Input tokens'
     OUTPUT_TOKENS = 'Output tokens'
     OUTPUT_THROUGHPUT = 'Output (tok/s)'
+    INPUT_THROUGHPUT = 'Input (tok/s)'
     TOTAL_THROUGHPUT = 'Total (tok/s)'
     PERCENTILES = 'Percentiles'
 
@@ -169,13 +170,16 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
     return results
 
 
-def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
+def get_percentile_results(result_db_path: str, api_type: str = None) -> Dict[str, List[float]]:
     """
     Compute and return quantiles for various metrics from the database results.
 
     :param result_db_path: Path to the SQLite database file.
+    :param api_type: The API type (e.g., 'openai', 'openai_embedding', 'openai_rerank').
     :return: Dictionary of percentiles for various metrics.
     """
+    from evalscope.perf.utils.benchmark_util import is_embedding_or_rerank_api
+
     query_sql = f'''SELECT {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES}, {DatabaseColumns.SUCCESS},
                     {DatabaseColumns.COMPLETED_TIME}, {DatabaseColumns.LATENCY}, {DatabaseColumns.FIRST_CHUNK_LATENCY},
                     {DatabaseColumns.PROMPT_TOKENS},
@@ -193,31 +197,44 @@ def get_percentile_results(result_db_path: str) -> Dict[str, List[float]]:
     # Create column index mapping
     col_indices = {col: idx for idx, col in enumerate(columns)}
 
-    # Prepare data for each metric
-    inter_token_latencies_all = []
-    for row in rows:
-        try:
-            itl = json.loads(row[col_indices[DatabaseColumns.INTER_TOKEN_LATENCIES]]) or []
-            inter_token_latencies_all.extend(itl)
-        except (json.JSONDecodeError, TypeError) as e:
-            logger.error(f'Error parsing inter token latencies: {e}')
+    is_embedding_rerank = is_embedding_or_rerank_api(api_type)
 
-    metrics = {
-        PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
-        PercentileMetrics.ITL:
-        inter_token_latencies_all,
-        PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
-        PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
-        PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
-        PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
-        PercentileMetrics.OUTPUT_THROUGHPUT:
-        [(row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
-         if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
-        PercentileMetrics.TOTAL_THROUGHPUT:
-        [((row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
-          / row[col_indices[DatabaseColumns.LATENCY]])
-         if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
-    }
+    if is_embedding_rerank:
+        # For embedding/rerank models, show relevant metrics only
+        metrics = {
+            PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
+            PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
+            PercentileMetrics.INPUT_THROUGHPUT:
+            [(row[col_indices[DatabaseColumns.PROMPT_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
+             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+        }
+    else:
+        # For LLM models, show all metrics
+        # Prepare data for each metric
+        inter_token_latencies_all = []
+        for row in rows:
+            try:
+                itl = json.loads(row[col_indices[DatabaseColumns.INTER_TOKEN_LATENCIES]]) or []
+                inter_token_latencies_all.extend(itl)
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f'Error parsing inter token latencies: {e}')
+
+        metrics = {
+            PercentileMetrics.TTFT: [row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] for row in rows],
+            PercentileMetrics.ITL:
+            inter_token_latencies_all,
+            PercentileMetrics.TPOT: [row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] for row in rows],
+            PercentileMetrics.LATENCY: [row[col_indices[DatabaseColumns.LATENCY]] for row in rows],
+            PercentileMetrics.INPUT_TOKENS: [row[col_indices[DatabaseColumns.PROMPT_TOKENS]] for row in rows],
+            PercentileMetrics.OUTPUT_TOKENS: [row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] for row in rows],
+            PercentileMetrics.OUTPUT_THROUGHPUT:
+            [(row[col_indices[DatabaseColumns.COMPLETION_TOKENS]] / row[col_indices[DatabaseColumns.LATENCY]])
+             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows],
+            PercentileMetrics.TOTAL_THROUGHPUT:
+            [((row[col_indices[DatabaseColumns.PROMPT_TOKENS]] + row[col_indices[DatabaseColumns.COMPLETION_TOKENS]])
+              / row[col_indices[DatabaseColumns.LATENCY]])
+             if row[col_indices[DatabaseColumns.LATENCY]] > 0 else float('nan') for row in rows]
+        }
 
     # Calculate percentiles for each metric
     results = {PercentileMetrics.PERCENTILES: [f'{p}%' for p in percentiles]}
@@ -232,7 +249,7 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
     result_path = os.path.dirname(result_db_path)
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
-    metrics_result = metrics.create_message()
+    metrics_result = metrics.create_message(api_type=args.api)
     write_json_file(metrics_result, os.path.join(result_path, 'benchmark_summary.json'))
 
     # Print summary in a table
@@ -240,7 +257,7 @@ def summary_result(args: Arguments, metrics: BenchmarkMetrics, result_db_path: s
     logger.info('\nBenchmarking summary:\n' + table)
 
     # Get percentile results
-    percentile_result = get_percentile_results(result_db_path)
+    percentile_result = get_percentile_results(result_db_path, api_type=args.api)
     if percentile_result:
         write_json_file(transpose_results(percentile_result), os.path.join(result_path, 'benchmark_percentile.json'))
         # Print percentile results in a table
