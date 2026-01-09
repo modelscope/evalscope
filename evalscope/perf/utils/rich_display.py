@@ -9,7 +9,7 @@ from rich.text import Text
 
 from evalscope.perf.arguments import Arguments
 from evalscope.utils.logger import get_logger
-from .benchmark_util import Metrics
+from .benchmark_util import Metrics, is_embedding_or_rerank_api
 from .db_util import PercentileMetrics
 
 logger = get_logger()
@@ -23,11 +23,13 @@ def _print_to_both(console: Console, file_console: Console, content, **kwargs):
     file_console.print(content, **file_kwargs)
 
 
-def analyze_results(all_results):
+def analyze_results(all_results, api_type: str = None):
     """Analyze all test results and generate a summary report"""
     summary = []
     total_tokens = 0
     total_time = 0
+
+    is_embedding_rerank = is_embedding_or_rerank_api(api_type)
 
     # Handle both old list format and new dict format
     if isinstance(all_results, dict):
@@ -48,36 +50,60 @@ def analyze_results(all_results):
             rps = total_metrics.get(Metrics.REQUEST_THROUGHPUT, 0)
             avg_latency = total_metrics.get(Metrics.AVERAGE_LATENCY, 0)
             p99_latency = percentile_metrics.get(PercentileMetrics.LATENCY)[percentiles.index('99%')]
-            avg_tps = total_metrics.get(Metrics.OUTPUT_TOKEN_THROUGHPUT, 0)
-            avg_ttft = total_metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0)
-            p99_ttft = percentile_metrics.get(PercentileMetrics.TTFT)[percentiles.index('99%')]
             success_rate = (
                 total_metrics.get(Metrics.SUCCEED_REQUESTS, 0) / total_metrics.get(Metrics.TOTAL_REQUESTS, 1)
             ) * 100
-            avg_tpot = total_metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0)
-            p99_tpot = percentile_metrics.get(PercentileMetrics.TPOT)[percentiles.index('99%')]
 
             # Ensure all values are valid numbers
-            if any(x is None for x in [concurrency, rps, avg_latency, p99_latency, avg_tps, avg_ttft]):
+            if any(x is None for x in [concurrency, rps, avg_latency, p99_latency]):
                 logger.warning(f'Warning: Test results for concurrency {concurrency} contain invalid data, skipped')
                 continue
 
-            summary.append([
-                str(int(concurrency)),
-                str(int(rate)) if rate != -1 else 'INF',
-                f'{rps:.2f}' if rps is not None else 'N/A',
-                f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
-                f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
-                f'{avg_ttft:.3f}' if avg_ttft is not None else 'N/A',
-                f'{p99_ttft:.3f}' if p99_ttft is not None else 'N/A',
-                f'{avg_tpot:.3f}' if avg_tpot is not None else 'N/A',
-                f'{p99_tpot:.3f}' if p99_tpot is not None else 'N/A',
-                f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
-                f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
-            ])
+            if is_embedding_rerank:
+                # For embedding/rerank models, show relevant metrics only
+                avg_input_tps = total_metrics.get(Metrics.INPUT_TOKEN_THROUGHPUT, 0)
+                p99_input_tps = percentile_metrics.get(PercentileMetrics.INPUT_THROUGHPUT, [0] * len(percentiles))[percentiles.index('99%')]
+                avg_input_tokens = total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, 0)
 
-            total_tokens += total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
-                                              0) * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
+                summary.append([
+                    str(int(concurrency)),
+                    str(int(rate)) if rate != -1 else 'INF',
+                    f'{rps:.2f}' if rps is not None else 'N/A',
+                    f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
+                    f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
+                    f'{avg_input_tps:.2f}' if avg_input_tps is not None else 'N/A',
+                    f'{p99_input_tps:.2f}' if p99_input_tps is not None else 'N/A',
+                    f'{avg_input_tokens:.1f}' if avg_input_tokens is not None else 'N/A',
+                    f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
+                ])
+
+                total_tokens += total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST,
+                                                  0) * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
+            else:
+                # For LLM models, show all metrics
+                avg_tps = total_metrics.get(Metrics.OUTPUT_TOKEN_THROUGHPUT, 0)
+                avg_ttft = total_metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0)
+                p99_ttft = percentile_metrics.get(PercentileMetrics.TTFT)[percentiles.index('99%')]
+                avg_tpot = total_metrics.get(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, 0)
+                p99_tpot = percentile_metrics.get(PercentileMetrics.TPOT)[percentiles.index('99%')]
+
+                summary.append([
+                    str(int(concurrency)),
+                    str(int(rate)) if rate != -1 else 'INF',
+                    f'{rps:.2f}' if rps is not None else 'N/A',
+                    f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
+                    f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
+                    f'{avg_ttft:.3f}' if avg_ttft is not None else 'N/A',
+                    f'{p99_ttft:.3f}' if p99_ttft is not None else 'N/A',
+                    f'{avg_tpot:.3f}' if avg_tpot is not None else 'N/A',
+                    f'{p99_tpot:.3f}' if p99_tpot is not None else 'N/A',
+                    f'{avg_tps:.2f}' if avg_tps is not None else 'N/A',
+                    f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
+                ])
+
+                total_tokens += total_metrics.get(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
+                                                  0) * total_metrics.get(Metrics.SUCCEED_REQUESTS, 0)
+
             total_time += total_metrics.get(Metrics.TIME_TAKEN_FOR_TESTS, 0)
         except Exception as e:
             logger.warning(
@@ -87,17 +113,22 @@ def analyze_results(all_results):
 
     if not summary:
         logger.warning('Error: No valid test result data')
-        return [], 0, 0
+        return [], 0, 0, is_embedding_rerank
 
     # Sort summary by concurrency and rate
     summary.sort(key=lambda x: (int(x[0]), int(x[1]) if x[1] != 'INF' else float('inf')))
 
-    return summary, total_tokens, total_time
+    return summary, total_tokens, total_time, is_embedding_rerank
 
 
 def print_summary(all_results, args: Arguments):
     """Print test results summary and save to file."""
-    summary, total_tokens, total_time = analyze_results(all_results)
+    result = analyze_results(all_results, api_type=args.api)
+    if len(result) == 4:
+        summary, total_tokens, total_time, is_embedding_rerank = result
+    else:
+        summary, total_tokens, total_time = result
+        is_embedding_rerank = is_embedding_or_rerank_api(args.api)
 
     if not summary:
         logger.warning('No available test result data to display')
@@ -110,7 +141,11 @@ def print_summary(all_results, args: Arguments):
         file_console = Console(file=f, width=100, force_terminal=False)
 
         # Create title panel
-        title = Text('Performance Test Summary Report', style='bold')
+        if is_embedding_rerank:
+            title_text = 'Embedding/Rerank Performance Test Summary'
+        else:
+            title_text = 'Performance Test Summary Report'
+        title = Text(title_text, style='bold')
         _print_to_both(console, file_console, Panel(title, width=80))
 
         # Print basic information
@@ -120,9 +155,16 @@ def print_summary(all_results, args: Arguments):
 
         basic_info.add_row('Model', args.model_id)
         basic_info.add_row('Test Dataset', args.dataset)
-        basic_info.add_row('Total Generated', f'{total_tokens:,} tokens')
+        basic_info.add_row('API Type', args.api)
+        if is_embedding_rerank:
+            basic_info.add_row('Total Input Tokens', f'{total_tokens:,.0f} tokens')
+        else:
+            basic_info.add_row('Total Generated', f'{total_tokens:,} tokens')
         basic_info.add_row('Total Test Time', f'{total_time:.2f} seconds')
-        basic_info.add_row('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec')
+        if is_embedding_rerank:
+            basic_info.add_row('Avg Input Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A')
+        else:
+            basic_info.add_row('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A')
         basic_info.add_row('Output Path', args.outputs_dir)
 
         _print_to_both(console, file_console, '\nBasic Information:')
@@ -138,18 +180,30 @@ def print_summary(all_results, args: Arguments):
             expand=False,
         )
 
-        # Add columns
-        table.add_column('Conc.', justify='right', style='cyan')
-        table.add_column('Rate', justify='right')
-        table.add_column('RPS', justify='right')
-        table.add_column('Avg Lat.(s)', justify='right')
-        table.add_column('P99 Lat.(s)', justify='right')
-        table.add_column('Avg TTFT(s)', justify='right')
-        table.add_column('P99 TTFT(s)', justify='right')
-        table.add_column('Avg TPOT(s)', justify='right')
-        table.add_column('P99 TPOT(s)', justify='right')
-        table.add_column('Gen. toks/s', justify='right')
-        table.add_column('Success Rate', justify='right', style='green')
+        if is_embedding_rerank:
+            # Columns for embedding/rerank models
+            table.add_column('Conc.', justify='right', style='cyan')
+            table.add_column('Rate', justify='right')
+            table.add_column('RPS', justify='right')
+            table.add_column('Avg Lat.(s)', justify='right')
+            table.add_column('P99 Lat.(s)', justify='right')
+            table.add_column('Avg Inp.TPS', justify='right')
+            table.add_column('P99 Inp.TPS', justify='right')
+            table.add_column('Avg Inp.Tok', justify='right')
+            table.add_column('Success Rate', justify='right', style='green')
+        else:
+            # Columns for LLM models
+            table.add_column('Conc.', justify='right', style='cyan')
+            table.add_column('Rate', justify='right')
+            table.add_column('RPS', justify='right')
+            table.add_column('Avg Lat.(s)', justify='right')
+            table.add_column('P99 Lat.(s)', justify='right')
+            table.add_column('Avg TTFT(s)', justify='right')
+            table.add_column('P99 TTFT(s)', justify='right')
+            table.add_column('Avg TPOT(s)', justify='right')
+            table.add_column('P99 TPOT(s)', justify='right')
+            table.add_column('Gen. toks/s', justify='right')
+            table.add_column('Success Rate', justify='right', style='green')
 
         # Add data rows
         for row in summary:
@@ -196,7 +250,8 @@ def print_summary(all_results, args: Arguments):
             else:
                 recommendations.append(f'Optimal concurrency range is around {summary[best_rps_idx][0]}')
 
-            success_rate = float(summary[-1][10][:-1])
+            # Success rate is the last column in the row
+            success_rate = float(summary[-1][-1][:-1])
             if success_rate < 95:
                 recommendations.append(
                     'Success rate is low at high concurrency, check system resources or reduce concurrency'
