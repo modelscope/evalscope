@@ -157,3 +157,11 @@ class TestCodeBenchmark(TestBenchmark):
             },
         }
         self._run_dataset_test('terminal_bench_v2', dataset_args, limit=5, use_sandbox=False, rerun_review=True, model='qwen3-coder-plus', eval_batch_size=2)
+
+    def test_humaneval_plus(self):
+        """Test Humaneval+ dataset."""
+        self._run_dataset_test('humaneval_plus', limit=10)
+
+    def test_mbpp_plus(self):
+        """Test MBPP+ dataset."""
+        self._run_dataset_test('mbpp_plus', limit=10)

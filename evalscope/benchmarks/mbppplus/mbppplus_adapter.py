@@ -16,13 +16,17 @@ PROMPT = """You are an expert Python programmer, and here is your task: {questio
 
 {tests}"""  # noqa: E501
 
+DESCRIPTION = """MBPP Plus is a fortified version of the Mostly Basic Python Problems (MBPP) benchmark, created to improve the reliability of evaluating basic programming synthesis. It addresses quality issues in the original dataset—such as incorrect reference code or ambiguous problem statements—and significantly increases the test coverage for each problem. By combining sanitized data with a vast array of rigorous, automated test cases, MBPP Plus ensures that models are assessed on their ability to produce robust, functionally correct solutions rather than code that simply passes a few trivial checks.
+**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+"""  # noqa: E501
+
 
 @register_benchmark(
     BenchmarkMeta(
-        name='mbppplus',
-        pretty_name='MBPPplus',
+        name='mbpp_plus',
+        pretty_name='MBPP-Plus',
         tags=[Tags.CODING],
-        description='This dataset includes multiple features related to programming tasks',
+        description=DESCRIPTION,
         dataset_id='evalscope/mbppplus',
         subset_list=['default'],
         metric_list=['acc'],

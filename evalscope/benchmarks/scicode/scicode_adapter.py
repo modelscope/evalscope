@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
-import os
+
 from pathlib import Path
 from typing import Any, Dict, List, cast
 
