@@ -1,4 +1,4 @@
-# Don't Follow Rankings Blindly: Build Your Custom Scenario Evaluation with EvalScope
+# Benchmark Smarter: Tailor Your Model Evaluation Suite with EvalScope
 
 Everyone is very familiar with this scenario: whenever a new model is released, there are always gorgeous radar charts or bar graphs showcasing its powerful performance.
 
