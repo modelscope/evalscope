@@ -4,11 +4,13 @@ This plugin provides datasets suitable for rerank model performance testing.
 """
 
 import json
+import numpy as np
 import random
 from typing import Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.logger import get_logger
 
@@ -36,38 +38,6 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
     If no dataset_path is provided, generates random query-document pairs.
     """
 
-    # Sample queries and documents for random generation
-    SAMPLE_QUERIES = [
-        'What is machine learning?',
-        'How does natural language processing work?',
-        'What are embeddings used for?',
-        'Explain deep learning architectures.',
-        'What is semantic search?',
-        'How do transformers work?',
-        'What is the difference between BERT and GPT?',
-        'How to implement vector search?',
-        'What is retrieval augmented generation?',
-        'Explain attention mechanism in transformers.',
-    ]
-
-    SAMPLE_DOCUMENTS = [
-        'Machine learning is a subset of artificial intelligence that enables systems to learn from data.',
-        'Natural language processing (NLP) is a field of AI focused on the interaction between computers and humans through language.',
-        'Embeddings are dense vector representations that capture semantic meaning of text.',
-        'Deep learning uses neural networks with multiple layers to learn hierarchical representations.',
-        'Semantic search goes beyond keyword matching to understand the intent and context of queries.',
-        'Transformers are neural network architectures that use self-attention mechanisms.',
-        'BERT is a bidirectional encoder while GPT is an autoregressive decoder model.',
-        'Vector search enables similarity-based retrieval using embedding representations.',
-        'RAG combines retrieval systems with language models to generate grounded responses.',
-        'Attention mechanisms allow models to focus on relevant parts of the input sequence.',
-        'Convolutional neural networks are primarily used for image processing tasks.',
-        'Recurrent neural networks process sequential data by maintaining hidden states.',
-        'The softmax function converts logits into probability distributions.',
-        'Gradient descent optimizes model parameters by minimizing the loss function.',
-        'Transfer learning allows models to leverage knowledge from pre-training.',
-    ]
-
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
         self.pairs = []
@@ -75,8 +45,28 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
 
         # Number of documents per query (from extra_args or default 10)
         self.num_documents = 10
+        self.document_length_ratio = 5
         if query_parameters.extra_args:
             self.num_documents = query_parameters.extra_args.get('num_documents', 10)
+            self.document_length_ratio = query_parameters.extra_args.get('document_length_ratio', 5)
+
+        if not self.pairs:
+            if not self.tokenizer:
+                raise ValueError(
+                    'Tokenizer is required for random rerank generation when no dataset path is provided. Please provide --tokenizer-path.'  # noqa: E501
+                )
+
+            # Use numpy's default_rng for sampling
+            self._rng = np.random.default_rng(None)
+
+            # Filter out special tokens from vocabulary
+            vocab_size = self.tokenizer.vocab_size
+            prohibited_tokens = set(self.tokenizer.all_special_ids)
+            all_tokens = np.arange(vocab_size)
+            self.allowed_tokens = np.array(list(set(all_tokens) - prohibited_tokens))
+            logger.info(
+                f'Using {len(self.allowed_tokens)} allowed tokens out of {vocab_size} total tokens for random generation.'  # noqa: E501
+            )
 
     def _load_pairs(self):
         """Load query-document pairs from dataset file."""
@@ -123,12 +113,36 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
         if not self.pairs:
             logger.info('No dataset provided, generating random query-document pairs for rerank testing.')
 
+    def _generate_token_sequence(self, length: int) -> str:
+        """Generate a random string with specific token length."""
+        tokens = self.allowed_tokens[self._rng.integers(0, len(self.allowed_tokens), size=length)].tolist()
+        prompt, _, _ = gen_prompt_decode_to_target_len(
+            tokenizer=self.tokenizer,
+            token_sequence=tokens,
+            target_token_len=length,
+            add_special_tokens=False,
+            rng=self._rng,
+        )
+        return prompt
+
     def _generate_random_pair(self) -> Dict:
         """Generate a random query-document pair."""
-        query = random.choice(self.SAMPLE_QUERIES)
-        # Select random documents, ensuring some variety
-        num_docs = min(self.num_documents, len(self.SAMPLE_DOCUMENTS))
-        documents = random.sample(self.SAMPLE_DOCUMENTS, num_docs)
+        # Calculate lengths
+        min_len = self.query_parameters.min_prompt_length
+        max_len = self.query_parameters.max_prompt_length
+        if min_len > max_len:
+            min_len, max_len = max_len, min_len
+        min_len = max(1, min_len)
+        max_len = max(1, max_len)
+
+        query_len = self._rng.integers(min_len, max_len + 1)
+        doc_len = int(query_len * self.document_length_ratio)
+        if doc_len < 1:
+            doc_len = 1
+
+        query = self._generate_token_sequence(query_len)
+        documents = [self._generate_token_sequence(doc_len) for _ in range(self.num_documents)]
+
         return {'query': query, 'documents': documents}
 
     def build_messages(self) -> Iterator[Dict]:
@@ -142,8 +156,5 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
                 yield pair
         else:
             # Generate random pairs
-            count = 0
-            max_count = 100000  # Large but finite limit
-            while count < max_count:
+            for _ in range(self.query_parameters.number):
                 yield self._generate_random_pair()
-                count += 1

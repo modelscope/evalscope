@@ -1,11 +1,13 @@
 """OpenAI Embedding API plugin for evalscope perf."""
 
 import json
+import sys
 import time
+import traceback
 from typing import Any, Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
+from evalscope.perf.plugin.api.base import ApiPluginBase
 from evalscope.perf.plugin.registry import register_api
 from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.utils.logger import get_logger
@@ -14,7 +16,7 @@ logger = get_logger()
 
 
 @register_api(['openai_embedding', 'embedding'])
-class OpenaiEmbeddingPlugin(DefaultApiPlugin):
+class OpenaiEmbeddingPlugin(ApiPluginBase):
     """OpenAI Embedding API plugin.
 
     This plugin builds requests compatible with OpenAI's embedding API format:
@@ -155,9 +157,6 @@ class OpenaiEmbeddingPlugin(DefaultApiPlugin):
         Returns:
             BenchmarkData: The benchmark data including response and timing info.
         """
-        import aiohttp
-        import sys
-        import traceback
 
         headers = {'Content-Type': 'application/json', **headers}
         data = json.dumps(body, ensure_ascii=False)

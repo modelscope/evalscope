@@ -4,11 +4,12 @@ This plugin provides datasets suitable for embedding model performance testing.
 """
 
 import json
-import random
+import numpy as np
 from typing import Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
+from evalscope.perf.plugin.datasets.utils import gen_prompt_decode_to_target_len
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.logger import get_logger
 
@@ -28,33 +29,28 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
     If no dataset_path is provided, generates random texts.
     """
 
-    # Sample texts for random generation
-    SAMPLE_TEXTS = [
-        'The quick brown fox jumps over the lazy dog.',
-        'Machine learning is a subset of artificial intelligence.',
-        'Natural language processing enables computers to understand human language.',
-        'Deep learning models can learn complex patterns from data.',
-        'Embeddings are dense vector representations of text.',
-        'Semantic search uses embeddings to find similar documents.',
-        'Transformers have revolutionized natural language processing.',
-        'BERT and GPT are popular language models.',
-        'Vector databases store and retrieve embeddings efficiently.',
-        'Cosine similarity measures the angle between two vectors.',
-        'Neural networks are inspired by the human brain structure.',
-        'Attention mechanisms allow models to focus on relevant parts.',
-        'Pre-training on large corpora improves model performance.',
-        'Fine-tuning adapts models to specific downstream tasks.',
-        'Tokenization splits text into smaller units for processing.',
-    ]
-
-    # Reasonable defaults for embedding models (most have 512 token limit)
-    DEFAULT_MIN_LENGTH = 10
-    DEFAULT_MAX_LENGTH = 256
-
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
         self.texts = []
         self._load_texts()
+
+        if not self.texts:
+            if not self.tokenizer:
+                raise ValueError(
+                    'Tokenizer is required for random embedding generation when no dataset path is provided. Please provide --tokenizer-path.'  # noqa: E501
+                )
+
+            # Use numpy's default_rng for sampling
+            self._rng = np.random.default_rng(None)
+
+            # Filter out special tokens from vocabulary
+            vocab_size = self.tokenizer.vocab_size
+            prohibited_tokens = set(self.tokenizer.all_special_ids)
+            all_tokens = np.arange(vocab_size)
+            self.allowed_tokens = np.array(list(set(all_tokens) - prohibited_tokens))
+            logger.info(
+                f'Using {len(self.allowed_tokens)} allowed tokens out of {vocab_size} total tokens for random generation.'  # noqa: E501
+            )
 
     def _load_texts(self):
         """Load texts from dataset file or use random generation."""
@@ -93,26 +89,33 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
             logger.info('No dataset provided, generating random texts for embedding testing.')
 
     def _generate_random_text(self) -> str:
-        """Generate a random text of reasonable length for embedding."""
-        # Use reasonable defaults, ignore the potentially huge max_prompt_length
-        min_len = max(self.DEFAULT_MIN_LENGTH, self.query_parameters.min_prompt_length)
-        max_len = min(self.DEFAULT_MAX_LENGTH, self.query_parameters.max_prompt_length)
+        """Generate a random text of reasonable length for embedding using tokenizer."""
+        min_len = self.query_parameters.min_prompt_length
+        max_len = self.query_parameters.max_prompt_length
 
         # Ensure min <= max
         if min_len > max_len:
             min_len, max_len = max_len, min_len
 
-        # Start with a random sentence
-        text = random.choice(self.SAMPLE_TEXTS)
+        # Ensure positive length
+        min_len = max(1, min_len)
+        max_len = max(1, max_len)
 
-        # Extend if needed
-        target_length = random.randint(min_len, max_len)
-        attempts = 0
-        while len(text) < target_length and attempts < 20:
-            text += ' ' + random.choice(self.SAMPLE_TEXTS)
-            attempts += 1
+        target_length = self._rng.integers(min_len, max_len + 1)
 
-        return text[:max_len] if len(text) > max_len else text
+        # Generate random tokens
+        tokens = self.allowed_tokens[self._rng.integers(0, len(self.allowed_tokens), size=target_length)].tolist()
+
+        # Decode and re-encode to ensure length match
+        prompt, _, _ = gen_prompt_decode_to_target_len(
+            tokenizer=self.tokenizer,
+            token_sequence=tokens,
+            target_token_len=target_length,
+            add_special_tokens=False,
+            rng=self._rng,
+        )
+
+        return prompt
 
     def build_messages(self) -> Iterator[Union[str, List[str]]]:
         """Build embedding input texts.
@@ -128,12 +131,9 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
                     yield text
         else:
             # Generate random texts - yield immediately without pre-generating
-            count = 0
-            max_count = 100000  # Large but finite limit
-            while count < max_count:
+            for _ in range(self.query_parameters.number):
                 text = self._generate_random_text()
                 yield text
-                count += 1
 
 
 @register_dataset('random_embedding_batch')
@@ -171,9 +171,6 @@ class RandomEmbeddingBatchDatasetPlugin(RandomEmbeddingDatasetPlugin):
                 yield batch
         else:
             # Generate random batches
-            count = 0
-            max_count = 10000  # Number of batches
-            while count < max_count:
+            for _ in range(self.query_parameters.number):
                 batch = [self._generate_random_text() for _ in range(self.batch_size)]
                 yield batch
-                count += 1
