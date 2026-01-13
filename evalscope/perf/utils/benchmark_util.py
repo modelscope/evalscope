@@ -62,6 +62,7 @@ class Metrics:
     FAILED_REQUESTS = 'Failed requests'
     OUTPUT_TOKEN_THROUGHPUT = 'Output token throughput (tok/s)'
     TOTAL_TOKEN_THROUGHPUT = 'Total token throughput (tok/s)'
+    INPUT_TOKEN_THROUGHPUT = 'Input token throughput (tok/s)'
     REQUEST_THROUGHPUT = 'Request throughput (req/s)'
     AVERAGE_LATENCY = 'Average latency (s)'
     AVERAGE_TIME_TO_FIRST_TOKEN = 'Average time to first token (s)'
@@ -69,6 +70,14 @@ class Metrics:
     AVERAGE_INTER_TOKEN_LATENCY = 'Average inter-token latency (s)'
     AVERAGE_INPUT_TOKENS_PER_REQUEST = 'Average input tokens per request'
     AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Average output tokens per request'
+
+
+def is_embedding_or_rerank_api(api_name: str) -> bool:
+    """Check if the API is for embedding or rerank models."""
+    if api_name is None:
+        return False
+    api_lower = api_name.lower()
+    return 'embedding' in api_lower or 'rerank' in api_lower or 'embed' in api_lower
 
 
 @dataclass
@@ -156,22 +165,47 @@ class BenchmarkMetrics:
             logger.exception(e)
             return
 
-    def create_message(self, default_ndigits=4):
-        message = {
-            Metrics.TIME_TAKEN_FOR_TESTS: round(self.total_time, default_ndigits),
-            Metrics.NUMBER_OF_CONCURRENCY: self.concurrency,
-            Metrics.REQUEST_RATE: self.rate,
-            Metrics.TOTAL_REQUESTS: int(self.n_total_queries),
-            Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
-            Metrics.FAILED_REQUESTS: self.n_failed_queries,
-            Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_per_seconds, default_ndigits),
-            Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_per_seconds, default_ndigits),
-            Metrics.REQUEST_THROUGHPUT: round(self.qps, default_ndigits),
-            Metrics.AVERAGE_LATENCY: round(self.avg_latency, default_ndigits),
-            Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency, default_ndigits),
-            Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_token, default_ndigits),
-            Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency, default_ndigits),
-            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
-            Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, default_ndigits),
-        }
+    def create_message(self, default_ndigits=4, api_type: str = None):
+        """Create metrics message.
+
+        Args:
+            default_ndigits: Number of decimal places for rounding.
+            api_type: The API type (e.g., 'openai', 'openai_embedding', 'openai_rerank').
+                     Used to filter irrelevant metrics for embedding/rerank models.
+        """
+        is_embedding_rerank = is_embedding_or_rerank_api(api_type)
+
+        if is_embedding_rerank:
+            # For embedding/rerank models, show relevant metrics only
+            message = {
+                Metrics.TIME_TAKEN_FOR_TESTS: round(self.total_time, default_ndigits),
+                Metrics.NUMBER_OF_CONCURRENCY: self.concurrency,
+                Metrics.REQUEST_RATE: self.rate,
+                Metrics.TOTAL_REQUESTS: int(self.n_total_queries),
+                Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
+                Metrics.FAILED_REQUESTS: self.n_failed_queries,
+                Metrics.REQUEST_THROUGHPUT: round(self.qps, default_ndigits),
+                Metrics.INPUT_TOKEN_THROUGHPUT: round(self.avg_input_token_per_seconds, default_ndigits),
+                Metrics.AVERAGE_LATENCY: round(self.avg_latency, default_ndigits),
+                Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
+            }
+        else:
+            # For LLM models, show all metrics
+            message = {
+                Metrics.TIME_TAKEN_FOR_TESTS: round(self.total_time, default_ndigits),
+                Metrics.NUMBER_OF_CONCURRENCY: self.concurrency,
+                Metrics.REQUEST_RATE: self.rate,
+                Metrics.TOTAL_REQUESTS: int(self.n_total_queries),
+                Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
+                Metrics.FAILED_REQUESTS: self.n_failed_queries,
+                Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_per_seconds, default_ndigits),
+                Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_per_seconds, default_ndigits),
+                Metrics.REQUEST_THROUGHPUT: round(self.qps, default_ndigits),
+                Metrics.AVERAGE_LATENCY: round(self.avg_latency, default_ndigits),
+                Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency, default_ndigits),
+                Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_token, default_ndigits),
+                Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency, default_ndigits),
+                Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
+                Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, default_ndigits),
+            }
         return message

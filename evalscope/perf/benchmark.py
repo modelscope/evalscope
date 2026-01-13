@@ -10,7 +10,7 @@ from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from .arguments import Arguments
 from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
-from .utils.benchmark_util import BenchmarkMetrics
+from .utils.benchmark_util import BenchmarkMetrics, is_embedding_or_rerank_api
 from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
 from .utils.handler import exception_handler
 from .utils.log_utils import maybe_log_to_visualizer
@@ -117,7 +117,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                     await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
-                message = metrics.create_message()
+                message = metrics.create_message(api_type=args.api)
 
                 await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
@@ -134,8 +134,14 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
 
 
 @exception_handler
-async def connect_test(args: Arguments, api_plugin) -> bool:
-    if (not args.no_test_connection) and (not await test_connection(args, api_plugin)):
+async def connect_test(args: Arguments, api_plugin):
+    if is_embedding_or_rerank_api(args.api):
+        return
+
+    if not args.no_test_connection:
+        return
+
+    if not await test_connection(args, api_plugin):
         raise TimeoutError('Test connection failed')
 
 
