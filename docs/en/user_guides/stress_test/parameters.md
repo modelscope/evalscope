@@ -9,7 +9,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--model` | `str` | Name or path of the test model | - |
 | `--url` | `str` | API address, supporting `/chat/completion` and `/completion` endpoints | - |
 | `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
-| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible API (requires `--url`)<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
+| `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible API (requires `--url`)<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
 | `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |
@@ -90,6 +90,8 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models | ✗ |
 | `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#using-the-random-dataset) | ✗ |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#using-the-random-multimodal-dataset) | ✗ |
+| `embedding` | Used for Embedding model evaluation<br>Supports loading via `dataset-path` (JSON/TXT) or random generation<br>**`tokenizer-path` is required for random generation** | ✓ (Optional) |
+| `rerank` | Used for Rerank model evaluation<br>Supports loading via `dataset-path` (JSON/JSONL) or random generation<br>**`tokenizer-path` is required for random generation** | ✓ (Optional) |
 | `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 
 ## Model Settings

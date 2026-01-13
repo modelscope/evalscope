@@ -9,7 +9,7 @@
 | `--model` | `str` | 测试模型名称，或模型路径 | - |
 | `--url` | `str` | API地址，支持`/chat/completion`和`/completion`端点 | - |
 | `--name` | `str` | wandb/swanlab数据库结果名称和结果数据库名称 | `{model_name}_{current_time}` |
-| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容API（需提供`--url`）<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
+| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容API（需提供`--url`）<br>• `openai_embedding`: OpenAI兼容Embedding API<br>• `openai_rerank`: OpenAI/Cohere兼容Rerank API<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
 | `--port` | `int` | 本地推理服务端口<br>仅对`local`和`local_vllm`有效 | `8877` |
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
@@ -91,6 +91,8 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型 | ✗ |
 | `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#使用random数据集) | ✗ |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#使用random图文数据集) | ✗ |
+| `embedding` | 用于Embedding模型评测<br>支持`dataset-path`加载(JSON/TXT)或随机生成<br>**随机生成时必需指定`tokenizer-path`** | ✓ (可选) |
+| `rerank` | 用于Rerank模型评测<br>支持`dataset-path`加载(JSON/JSONL)或随机生成<br>**随机生成时必需指定`tokenizer-path`** | ✓ (可选) |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
 
 ## 模型设置
