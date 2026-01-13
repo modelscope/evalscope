@@ -62,7 +62,8 @@ def analyze_results(all_results, api_type: str = None):
             if is_embedding_rerank:
                 # For embedding/rerank models, show relevant metrics only
                 avg_input_tps = total_metrics.get(Metrics.INPUT_TOKEN_THROUGHPUT, 0)
-                p99_input_tps = percentile_metrics.get(PercentileMetrics.INPUT_THROUGHPUT, [0] * len(percentiles))[percentiles.index('99%')]
+                p99_input_tps = percentile_metrics.get(PercentileMetrics.INPUT_THROUGHPUT,
+                                                       [0] * len(percentiles))[percentiles.index('99%')]
                 avg_input_tokens = total_metrics.get(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, 0)
 
                 summary.append([
@@ -162,9 +163,13 @@ def print_summary(all_results, args: Arguments):
             basic_info.add_row('Total Generated', f'{total_tokens:,} tokens')
         basic_info.add_row('Total Test Time', f'{total_time:.2f} seconds')
         if is_embedding_rerank:
-            basic_info.add_row('Avg Input Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A')
+            basic_info.add_row(
+                'Avg Input Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A'
+            )
         else:
-            basic_info.add_row('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A')
+            basic_info.add_row(
+                'Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A'
+            )
         basic_info.add_row('Output Path', args.outputs_dir)
 
         _print_to_both(console, file_console, '\nBasic Information:')

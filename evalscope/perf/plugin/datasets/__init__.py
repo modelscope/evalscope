@@ -1,6 +1,6 @@
 from .base import DatasetPluginBase
 from .custom import CustomDatasetPlugin
-from .embedding_dataset import RandomEmbeddingDatasetPlugin, RandomEmbeddingBatchDatasetPlugin
+from .embedding_dataset import RandomEmbeddingBatchDatasetPlugin, RandomEmbeddingDatasetPlugin
 from .flickr8k import FlickrDatasetPlugin
 from .kontext_bench import KontextDatasetPlugin
 from .line_by_line import LineByLineDatasetPlugin

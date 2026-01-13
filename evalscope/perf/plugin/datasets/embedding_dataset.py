@@ -74,7 +74,8 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
                                 self.texts.append(item)
                             elif isinstance(item, dict):
                                 # Support various field names
-                                text = item.get('text') or item.get('input') or item.get('sentence') or item.get('content', '')
+                                text = item.get('text') or item.get('input') or item.get('sentence'
+                                                                                         ) or item.get('content', '')
                                 if text:
                                     self.texts.append(text)
                     logger.info(f'Loaded {len(self.texts)} texts from JSON file: {dataset_path}')

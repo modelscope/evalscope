@@ -141,9 +141,7 @@ class OpenaiEmbeddingPlugin(DefaultApiPlugin):
             logger.error(f'Failed to parse embedding response: {e}. Response: {responses}')
             return 0, 0
 
-    async def process_request(
-        self, client_session, url: str, headers: Dict, body: Dict
-    ) -> BenchmarkData:
+    async def process_request(self, client_session, url: str, headers: Dict, body: Dict) -> BenchmarkData:
         """Process the embedding HTTP request.
 
         Embedding requests are always non-streaming, so we use a simplified handler.
@@ -218,4 +216,3 @@ class OpenaiEmbeddingPlugin(DefaultApiPlugin):
             logger.error(output.error)
 
         return output
-

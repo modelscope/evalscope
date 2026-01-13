@@ -185,8 +185,7 @@ class BenchmarkMetrics:
                 Metrics.SUCCEED_REQUESTS: self.n_succeed_queries,
                 Metrics.FAILED_REQUESTS: self.n_failed_queries,
                 Metrics.REQUEST_THROUGHPUT: round(self.qps, default_ndigits),
-                Metrics.INPUT_TOKEN_THROUGHPUT: round(self.avg_input_token_per_seconds, default_ndigits)
-                    if self.avg_input_token_per_seconds > 0 else 0.0,
+                Metrics.INPUT_TOKEN_THROUGHPUT: round(self.avg_input_token_per_seconds, default_ndigits),
                 Metrics.AVERAGE_LATENCY: round(self.avg_latency, default_ndigits),
                 Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, default_ndigits),
             }

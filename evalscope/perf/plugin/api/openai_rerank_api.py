@@ -161,9 +161,7 @@ class OpenaiRerankPlugin(DefaultApiPlugin):
             logger.error(f'Failed to parse rerank response: {e}. Response: {responses}')
             return 0, 0
 
-    async def process_request(
-        self, client_session, url: str, headers: Dict, body: Dict
-    ) -> BenchmarkData:
+    async def process_request(self, client_session, url: str, headers: Dict, body: Dict) -> BenchmarkData:
         """Process the rerank HTTP request.
 
         Rerank requests are always non-streaming.
@@ -237,4 +235,3 @@ class OpenaiRerankPlugin(DefaultApiPlugin):
             logger.error(output.error)
 
         return output
-
