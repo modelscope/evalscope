@@ -50,6 +50,7 @@
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
+| `humaneval_plus` | [HumanEvalPlus](#humanevalplus) | `Coding` |
 | `ifbench` | [IFBench](#ifbench) | `InstructionFollowing` |
 | `ifeval` | [IFEval](#ifeval) | `InstructionFollowing` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
@@ -61,6 +62,7 @@
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `mbpp` | [MBPP](#mbpp) | `Coding` |
+| `mbpp_plus` | [MBPP-Plus](#mbpp-plus) | `Coding` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
@@ -1762,6 +1764,45 @@ Read the following function signature and docstring, and fully implement the fun
 
 ---
 
+### HumanEvalPlus
+
+[返回目录](#llm评测集)
+- **数据集名称**: `humaneval_plus`
+- **数据集ID**: [evalscope/humanevalplus](https://modelscope.cn/datasets/evalscope/humanevalplus/summary)
+- **数据集介绍**:
+  > HumanEval Plus 是 OpenAI 原始 HumanEval 数据集的严格扩展版本，旨在解决代码生成基准中较高的误报率问题。原始 HumanEval 每个问题仅包含少量测试用例，而 HumanEval+ 通过基于大语言模型和变异生成的方法，自动补充了数万个输入用例。这一大规模扩展的测试套件能够发现以往未检测到的边界情况错误和功能缺陷，从而为评估 AI 生成代码的正确性提供了更严格、更准确的标准。  
+  > **默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean_and_pass_at_k`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
+- **数据集子集**: `default`
+
+- **评测超时时间（秒）**: 300
+- **沙箱配置**: 
+```json
+{
+    "image": "python3.11-numpy",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
+{question}
+````
+
+</details>
+
+---
+
 ### IFBench
 
 [返回目录](#llm评测集)
@@ -2124,6 +2165,46 @@ Answer the following multiple choice question. The last line of your response sh
 - **默认提示方式**: 3-shot
 - **评测数据集划分**: `test`
 - **数据集子集**: `full`
+
+- **评测超时时间（秒）**: 20
+- **沙箱配置**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
+
+{tests}
+````
+
+</details>
+
+---
+
+### MBPP-Plus
+
+[返回目录](#llm评测集)
+- **数据集名称**: `mbpp_plus`
+- **数据集ID**: [evalscope/mbppplus](https://modelscope.cn/datasets/evalscope/mbppplus/summary)
+- **数据集介绍**:
+  > MBPP Plus 是 Mostly Basic Python Problems (MBPP) 基准的强化版本，旨在提升基础编程综合能力评估的可靠性。它解决了原始数据集中存在的问题，如参考代码错误或题目描述模糊，并显著增强了每个问题的测试覆盖率。通过结合清洗后的数据与大量严格的自动化测试用例，MBPP Plus 确保模型的评估基于其生成健壮且功能正确解法的能力，而非仅通过少数简单测试的代码。  
+  > **默认情况下代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**
+- **任务类别**: `Coding`
+- **评估指标**: `acc`
+- **聚合方法**: `mean_and_pass_at_k`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **评测数据集划分**: `test`
+- **数据集子集**: `default`
 
 - **评测超时时间（秒）**: 20
 - **沙箱配置**: 

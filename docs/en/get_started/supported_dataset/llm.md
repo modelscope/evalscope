@@ -50,6 +50,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
+| `humaneval_plus` | [HumanEvalPlus](#humanevalplus) | `Coding` |
 | `ifbench` | [IFBench](#ifbench) | `InstructionFollowing` |
 | `ifeval` | [IFEval](#ifeval) | `InstructionFollowing` |
 | `iquiz` | [IQuiz](#iquiz) | `Chinese`, `Knowledge`, `MCQ` |
@@ -61,6 +62,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `math_500` | [MATH-500](#math-500) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](#mathqa) | `MCQ`, `Math`, `Reasoning` |
 | `mbpp` | [MBPP](#mbpp) | `Coding` |
+| `mbpp_plus` | [MBPP-Plus](#mbpp-plus) | `Coding` |
 | `med_mcqa` | [Med-MCQA](#med-mcqa) | `Knowledge`, `MCQ` |
 | `mgsm` | [MGSM](#mgsm) | `Math`, `MultiLingual`, `Reasoning` |
 | `minerva_math` | [Minerva-Math](#minerva-math) | `Math`, `Reasoning` |
@@ -1762,6 +1764,45 @@ Read the following function signature and docstring, and fully implement the fun
 
 ---
 
+### HumanEvalPlus
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `humaneval_plus`
+- **Dataset ID**: [evalscope/humanevalplus](https://modelscope.cn/datasets/evalscope/humanevalplus/summary)
+- **Description**:
+  > HumanEval Plus is a rigorous extension of OpenAI's original HumanEval dataset, designed to address the high false-positive rates found in code generation benchmarks. While the original HumanEval uses a limited number of test cases per problem, HumanEval+ augments these with tens of thousands of automatically generated inputs (using LLM-based and mutation-based strategies). This massively expanded test suite exposes edge-case bugs and functional errors that previously went undetected, making it a much stricter and more accurate standard for evaluating the correctness of AI-generated code.
+  > **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**'
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
+- **Subsets**: `default`
+
+- **Review Timeout (seconds)**: 300
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "python3.11-numpy",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.
+{question}
+````
+
+</details>
+
+---
+
 ### IFBench
 
 [Back to Top](#llm-benchmarks)
@@ -2124,6 +2165,46 @@ Answer the following multiple choice question. The last line of your response sh
 - **Default Shots**: 3-shot
 - **Evaluation Split**: `test`
 - **Subsets**: `full`
+
+- **Review Timeout (seconds)**: 20
+- **Sandbox Configuration**: 
+```json
+{
+    "image": "python:3.11-slim",
+    "tools_config": {
+        "shell_executor": {},
+        "python_executor": {}
+    }
+}
+```
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
+
+{tests}
+````
+
+</details>
+
+---
+
+### MBPP-Plus
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `mbpp_plus`
+- **Dataset ID**: [evalscope/mbppplus](https://modelscope.cn/datasets/evalscope/mbppplus/summary)
+- **Description**:
+  > MBPP Plus is a fortified version of the Mostly Basic Python Problems (MBPP) benchmark, created to improve the reliability of evaluating basic programming synthesis. It addresses quality issues in the original dataset—such as incorrect reference code or ambiguous problem statements—and significantly increases the test coverage for each problem. By combining sanitized data with a vast array of rigorous, automated test cases, MBPP Plus ensures that models are assessed on their ability to produce robust, functionally correct solutions rather than code that simply passes a few trivial checks.
+  > **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**
+- **Task Categories**: `Coding`
+- **Evaluation Metrics**: `acc`
+- **Aggregation Methods**: `mean_and_pass_at_k`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Evaluation Split**: `test`
+- **Subsets**: `default`
 
 - **Review Timeout (seconds)**: 20
 - **Sandbox Configuration**: 
