@@ -68,6 +68,8 @@ Whether you want to evaluate the general capabilities of models, conduct multi-m
 >
 > Version 1.0 introduces a major overhaul of the evaluation framework, establishing a new, more modular and extensible API layer under `evalscope/api`. Key improvements include standardized data models for benchmarks, samples, and results; a registry-based design for components such as benchmarks and metrics; and a rewritten core evaluator that orchestrates the new architecture. Existing benchmark adapters have been migrated to this API, resulting in cleaner, more consistent, and easier-to-maintain implementations.
 
+
+- 🔥 **[2026.01.13]** Added support for Embedding and Rerank model service stress testing. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/examples.html#embedding).
 - 🔥 **[2025.12.26]** Added support for Terminal-Bench-2.0, which evaluates AI Agent performance on 89 real-world multi-step terminal tasks. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html).
 - 🔥 **[2025.12.18]** Added support for SLA auto-tuning model API services, automatically testing the maximum concurrency of model services under specific latency, TTFT, and throughput conditions. Refer to the [usage documentation](https://evalscope.readthedocs.io/en/latest/user_guides/stress_test/sla_auto_tune.html).
 - 🔥 **[2025.12.16]** Added support for audio evaluation benchmarks such as Fleurs, LibriSpeech; added support for multilingual code evaluation benchmarks such as MultiplE, MBPP.
