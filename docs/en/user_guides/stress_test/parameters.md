@@ -90,8 +90,12 @@ For details on using the SLA auto-tuning feature, see the [Auto-tuning Guide](./
 | `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models | ✗ |
 | `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#using-the-random-dataset) | ✗ |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#using-the-random-multimodal-dataset) | ✗ |
-| `embedding` | Used for Embedding model evaluation<br>Supports loading via `dataset-path` (JSON/TXT) or random generation<br>**`tokenizer-path` is required for random generation** | ✓ (Optional) |
-| `rerank` | Used for Rerank model evaluation<br>Supports loading via `dataset-path` (JSON/JSONL) or random generation<br>**`tokenizer-path` is required for random generation** | ✓ (Optional) |
+| `embedding` | Load text data from file to evaluate Embedding model<br>Supports Line-by-line (TXT) or JSONL format (with `text` field) | ✓ (Required) |
+| `random_embedding` | Randomly generate queries based on `max-prompt-length` and `min-prompt-length` to evaluate Embedding model<br>**Must specify `tokenizer-path`** | ✗ |
+| `embedding_batch` | Batch send text data to evaluate Embedding model<br>Load data from file<br>Supports `--extra-args '{"batch_size": 8}'` to set batch size | ✓ (Required) |
+| `random_embedding_batch` | Batch send randomly generated query data based on `max-prompt-length` and `min-prompt-length` to evaluate Embedding model<br>**Must specify `tokenizer-path`**<br>Supports `--extra-args '{"batch_size": 8}'` to set batch size | ✗ |
+| `rerank` | Load Query-Document pairs from file to evaluate Rerank model<br>Supports JSONL format (with `query` and `documents` fields) | ✓ (Required) |
+| `random_rerank` | Randomly generate query data based on `max-prompt-length` and `min-prompt-length` to evaluate Rerank model<br>**Must specify `tokenizer-path`**<br>Supports `--extra-args '{"num_documents": 10, "document_length_ratio": 5}'` to set number of documents and length ratio relative to query | ✗ |
 | `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 
 ## Model Settings

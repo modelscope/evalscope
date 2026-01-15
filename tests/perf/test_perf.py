@@ -316,7 +316,7 @@ class TestPerf(unittest.TestCase):
 
         run_perf_benchmark(task_cfg)
 
-    def test_perf_embedding(self):
+    def test_perf_embedding_random(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
@@ -332,7 +332,54 @@ class TestPerf(unittest.TestCase):
         )
         result = run_perf_benchmark(task_cfg)
 
-    def test_perf_rerank(self):
+    def test_perf_embedding(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='text-embedding-v4',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai_embedding',
+            dataset='embedding',
+            tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
+            dataset_path='custom_eval/text/retrieval/queries.jsonl'
+        )
+        result = run_perf_benchmark(task_cfg)
+
+    def test_perf_embedding_random_batch(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='text-embedding-v4',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai_embedding',
+            dataset='random_embedding_batch',
+            min_prompt_length=256,
+            max_prompt_length=256,
+            tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
+            extra_args={'batch_size': 8}
+        )
+        result = run_perf_benchmark(task_cfg)
+
+    def test_perf_embedding_batch(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='text-embedding-v4',
+            url='https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai_embedding',
+            dataset='embedding_batch',
+            tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
+            dataset_path='custom_eval/text/retrieval/queries.jsonl'
+        )
+        result = run_perf_benchmark(task_cfg)
+
+    def test_perf_rerank_random(self):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
@@ -349,6 +396,21 @@ class TestPerf(unittest.TestCase):
                 'num_documents': 5,
                 'document_length_ratio': 3,
             }
+        )
+        result = run_perf_benchmark(task_cfg)
+
+    def test_perf_rerank(self):
+        from evalscope.perf.arguments import Arguments
+        task_cfg = Arguments(
+            parallel=[1, 2],
+            number=[2, 4],
+            model='qwen3-rerank',
+            url='https://dashscope.aliyuncs.com/compatible-api/v1/reranks',
+            api_key=env.get('DASHSCOPE_API_KEY'),
+            api='openai_rerank',
+            dataset='rerank',
+            tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
+            dataset_path='custom_eval/text/rerank/example.jsonl'
         )
         result = run_perf_benchmark(task_cfg)
 

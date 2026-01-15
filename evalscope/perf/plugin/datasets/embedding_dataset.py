@@ -16,77 +16,27 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-@register_dataset(['random_embedding', 'embedding', 'embed'])
+@register_dataset(['random_embedding'])
 class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
-    """Dataset plugin for embedding model testing.
-
-    Supports multiple input formats:
-    1. Line-by-line text file: each line is a text to embed
-    2. JSON file with list of strings
-    3. JSON file with list of objects containing 'text' or 'input' field
-    4. Random text generation for stress testing (default)
-
-    If no dataset_path is provided, generates random texts.
-    """
+    """Dataset plugin for random embedding generation."""
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
-        self.texts = []
-        self._load_texts()
 
-        if not self.texts:
-            if not self.tokenizer:
-                raise ValueError(
-                    'Tokenizer is required for random embedding generation when no dataset path is provided. Please provide --tokenizer-path.'  # noqa: E501
-                )
+        if not self.tokenizer:
+            raise ValueError('Tokenizer is required for random embedding generation. Please provide --tokenizer-path.')
 
-            # Use numpy's default_rng for sampling
-            self._rng = np.random.default_rng(None)
+        # Use numpy's default_rng for sampling
+        self._rng = np.random.default_rng(None)
 
-            # Filter out special tokens from vocabulary
-            vocab_size = self.tokenizer.vocab_size
-            prohibited_tokens = set(self.tokenizer.all_special_ids)
-            all_tokens = np.arange(vocab_size)
-            self.allowed_tokens = np.array(list(set(all_tokens) - prohibited_tokens))
-            logger.info(
-                f'Using {len(self.allowed_tokens)} allowed tokens out of {vocab_size} total tokens for random generation.'  # noqa: E501
-            )
-
-    def _load_texts(self):
-        """Load texts from dataset file or use random generation."""
-        dataset_path = self.query_parameters.dataset_path
-
-        if dataset_path:
-            try:
-                with open(dataset_path, 'r', encoding='utf-8') as f:
-                    content = f.read().strip()
-
-                # Try to parse as JSON first
-                try:
-                    data = json.loads(content)
-                    if isinstance(data, list):
-                        for item in data:
-                            if isinstance(item, str):
-                                self.texts.append(item)
-                            elif isinstance(item, dict):
-                                # Support various field names
-                                text = item.get('text') or item.get('input') or item.get('sentence'
-                                                                                         ) or item.get('content', '')
-                                if text:
-                                    self.texts.append(text)
-                    logger.info(f'Loaded {len(self.texts)} texts from JSON file: {dataset_path}')
-                except json.JSONDecodeError:
-                    # Treat as line-by-line text file
-                    self.texts = [line.strip() for line in content.split('\n') if line.strip()]
-                    logger.info(f'Loaded {len(self.texts)} texts from line-by-line file: {dataset_path}')
-
-            except Exception as e:
-                logger.warning(f'Failed to load dataset from {dataset_path}: {e}. Using random texts.')
-                self.texts = []
-
-        if not self.texts:
-            # Generate random texts for testing
-            logger.info('No dataset provided, generating random texts for embedding testing.')
+        # Filter out special tokens from vocabulary
+        vocab_size = self.tokenizer.vocab_size
+        prohibited_tokens = set(self.tokenizer.all_special_ids)
+        all_tokens = np.arange(vocab_size)
+        self.allowed_tokens = np.array(list(set(all_tokens) - prohibited_tokens))
+        logger.info(
+            f'Using {len(self.allowed_tokens)} allowed tokens out of {vocab_size} total tokens for random generation.'
+        )
 
     def _generate_random_text(self) -> str:
         """Generate a random text of reasonable length for embedding using tokenizer."""
@@ -117,31 +67,76 @@ class RandomEmbeddingDatasetPlugin(DatasetPluginBase):
 
         return prompt
 
-    def build_messages(self) -> Iterator[Union[str, List[str]]]:
-        """Build embedding input texts.
+    def build_messages(self) -> Iterator[str]:
+        """Build random embedding input texts."""
+        for _ in range(self.query_parameters.number):
+            text = self._generate_random_text()
+            yield text
 
-        Yields:
-            Iterator[str]: Text strings for embedding.
-        """
-        if self.texts:
-            # Use loaded texts
-            for text in self.texts:
-                is_valid, _ = self.check_prompt_length(text)
-                if is_valid:
-                    yield text
+
+@register_dataset(['embedding', 'embed'])
+class EmbeddingDatasetPlugin(DatasetPluginBase):
+    """Dataset plugin for embedding model testing from file.
+
+    Supports multiple input formats:
+    1. Line-by-line text file: each line is a text to embed
+    2. JSON file with list of strings
+    3. JSON file with list of objects containing 'text' or 'input' field
+    """
+
+    def __init__(self, query_parameters: Arguments):
+        super().__init__(query_parameters)
+        self.texts = []
+        self._load_texts()
+
+        if not self.texts:
+            raise ValueError(f'No texts loaded from dataset path: {query_parameters.dataset_path}')
+
+    def _load_texts(self):
+        """Load texts from dataset file."""
+        dataset_path = self.query_parameters.dataset_path
+
+        if not dataset_path:
+            logger.warning('No dataset path provided for EmbeddingDatasetPlugin.')
+            return
+
+        if dataset_path.endswith('.txt'):
+            with open(dataset_path, 'r', encoding='utf-8') as f:
+                self.texts = [line.strip() for line in f if line.strip()]
+            logger.info(f'Loaded {len(self.texts)} texts from TXT file: {dataset_path}')
+
+        elif dataset_path.endswith('.jsonl'):
+            with open(dataset_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        item = json.loads(line)
+                        if isinstance(item, dict):
+                            text = item.get('text') or item.get('input') or item.get('sentence'
+                                                                                     ) or item.get('content', '')
+                            if text:
+                                self.texts.append(text)
+                        elif isinstance(item, str):
+                            self.texts.append(item)
+                    except json.JSONDecodeError:
+                        continue
+            logger.info(f'Loaded {len(self.texts)} texts from JSONL file: {dataset_path}')
+
         else:
-            # Generate random texts - yield immediately without pre-generating
-            for _ in range(self.query_parameters.number):
-                text = self._generate_random_text()
+            raise ValueError(f'Unsupported dataset file format: {dataset_path}, need .txt or .jsonl')
+
+    def build_messages(self) -> Iterator[str]:
+        """Build embedding input texts from loaded file."""
+        for text in self.texts:
+            is_valid, _ = self.check_prompt_length(text)
+            if is_valid:
                 yield text
 
 
-@register_dataset('random_embedding_batch')
+@register_dataset(['random_embedding_batch'])
 class RandomEmbeddingBatchDatasetPlugin(RandomEmbeddingDatasetPlugin):
-    """Dataset plugin for batch embedding testing.
-
-    Similar to RandomEmbeddingDatasetPlugin but yields batches of texts.
-    """
+    """Dataset plugin for random batch embedding testing."""
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -151,26 +146,33 @@ class RandomEmbeddingBatchDatasetPlugin(RandomEmbeddingDatasetPlugin):
             self.batch_size = query_parameters.extra_args.get('batch_size', 8)
 
     def build_messages(self) -> Iterator[List[str]]:
-        """Build batches of embedding input texts.
+        """Build batches of random embedding input texts."""
+        for _ in range(self.query_parameters.number):
+            batch = [self._generate_random_text() for _ in range(self.batch_size)]
+            yield batch
 
-        Yields:
-            Iterator[List[str]]: Batches of text strings for embedding.
-        """
+
+@register_dataset(['embedding_batch'])
+class EmbeddingBatchDatasetPlugin(EmbeddingDatasetPlugin):
+    """Dataset plugin for batch embedding testing from file."""
+
+    def __init__(self, query_parameters: Arguments):
+        super().__init__(query_parameters)
+        # Default batch size from extra_args or 8
+        self.batch_size = 8
+        if query_parameters.extra_args:
+            self.batch_size = query_parameters.extra_args.get('batch_size', 8)
+
+    def build_messages(self) -> Iterator[List[str]]:
+        """Build batches of embedding input texts from loaded file."""
         batch = []
-
-        if self.texts:
-            for text in self.texts:
-                is_valid, _ = self.check_prompt_length(text)
-                if is_valid:
-                    batch.append(text)
-                    if len(batch) >= self.batch_size:
-                        yield batch
-                        batch = []
-            # Yield remaining texts
-            if batch:
-                yield batch
-        else:
-            # Generate random batches
-            for _ in range(self.query_parameters.number):
-                batch = [self._generate_random_text() for _ in range(self.batch_size)]
-                yield batch
+        for text in self.texts:
+            is_valid, _ = self.check_prompt_length(text)
+            if is_valid:
+                batch.append(text)
+                if len(batch) >= self.batch_size:
+                    yield batch
+                    batch = []
+        # Yield remaining texts
+        if batch:
+            yield batch
