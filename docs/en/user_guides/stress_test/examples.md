@@ -188,7 +188,7 @@ evalscope perf \
 
 ## Embedding Model Stress Testing
 
-Use `openai_embedding` API mode and `random_embedding` dataset for stress testing. When using the random dataset, you need to specify `tokenizer-path` to generate text of specified length.
+Use `openai_embedding` API mode and `random_embedding` dataset for stress testing. When using the random dataset, you need to specify `tokenizer-path` to generate query of specified length.
 
 ```bash
 evalscope perf \
@@ -206,7 +206,7 @@ evalscope perf \
 
 ## Rerank Model Stress Testing
 
-Use `openai_rerank` API mode and `random_rerank` dataset for stress testing.
+Use `openai_rerank` API mode and `random_rerank` dataset for stress testing. When using the random dataset, you need to specify `tokenizer-path` to generate query of specified length.
 
 You can specify data generation parameters through `extra-args`:
 - `num_documents`: Number of documents per query

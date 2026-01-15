@@ -190,7 +190,7 @@ evalscope perf \
 
 ## Embedding模型压测
 
-使用`openai_embedding` API模式和`random_embedding`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度的文本。
+使用`openai_embedding` API模式和`random_embedding`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
 
 ```bash
 evalscope perf \
@@ -208,7 +208,7 @@ evalscope perf \
 
 ## Rerank模型压测
 
-使用`openai_rerank` API模式和`random_rerank`数据集进行压测。
+使用`openai_rerank` API模式和`random_rerank`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
 
 可以通过`extra-args`指定生成数据的参数：
 - `num_documents`: 每条query对应的文档数量
