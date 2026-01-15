@@ -5,6 +5,7 @@ This plugin provides datasets suitable for embedding model performance testing.
 
 import json
 import numpy as np
+import os
 from typing import Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments
@@ -100,10 +101,27 @@ class EmbeddingDatasetPlugin(DatasetPluginBase):
             logger.warning('No dataset path provided for EmbeddingDatasetPlugin.')
             return
 
+        if not os.path.exists(dataset_path):
+            logger.error(f'Dataset file not found: {dataset_path}')
+            return
+
         if dataset_path.endswith('.txt'):
             with open(dataset_path, 'r', encoding='utf-8') as f:
                 self.texts = [line.strip() for line in f if line.strip()]
             logger.info(f'Loaded {len(self.texts)} texts from TXT file: {dataset_path}')
+
+        elif dataset_path.endswith('.json'):
+            with open(dataset_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                for item in data:
+                    if isinstance(item, str):
+                        self.texts.append(item)
+                    elif isinstance(item, dict):
+                        text = item.get('text') or item.get('input') or item.get('sentence') or item.get('content', '')
+                        if text:
+                            self.texts.append(text)
+            logger.info(f'Loaded {len(self.texts)} texts from JSON file: {dataset_path}')
 
         elif dataset_path.endswith('.jsonl'):
             with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -124,7 +142,7 @@ class EmbeddingDatasetPlugin(DatasetPluginBase):
             logger.info(f'Loaded {len(self.texts)} texts from JSONL file: {dataset_path}')
 
         else:
-            raise ValueError(f'Unsupported dataset file format: {dataset_path}, need .txt or .jsonl')
+            raise ValueError(f'Unsupported dataset file format: {dataset_path}, need .txt, .json, or .jsonl')
 
     def build_messages(self) -> Iterator[str]:
         """Build embedding input texts from loaded file."""
