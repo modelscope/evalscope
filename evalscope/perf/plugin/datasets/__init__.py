@@ -13,5 +13,5 @@ from .longalpaca import LongAlpacaDatasetPlugin
 from .openqa import OpenqaDatasetPlugin
 from .random_dataset import RandomDatasetPlugin
 from .random_vl_dataset import RandomVLDatasetPlugin
-from .rerank_dataset import RandomRerankDatasetPlugin
+from .rerank_dataset import RandomRerankDatasetPlugin, RerankDatasetPlugin
 from .speed_benchmark import SpeedBenchmarkDatasetPlugin, SpeedBenchmarkLongDatasetPlugin
