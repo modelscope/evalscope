@@ -72,7 +72,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--use-cache', type=str, help='Path to reuse the cached results.')
     parser.add_argument('--rerun-review', action='store_true', default=False, help='Rerun the review process when use_cache.')
     parser.add_argument('--work-dir', type=str, help='The root cache dir.')
-    parser.add_argument('--no-timestamp', action='store_false', help='Do not add timestamp to work_dir to avoid overwriting previous results.')  # noqa: E501
+    parser.add_argument('--no-timestamp', action='store_true', default=False, help='Do not add timestamp to work_dir to avoid overwriting previous results.')  # noqa: E501
 
     # Debug and runtime mode arguments
     parser.add_argument('--ignore-errors', action='store_true', default=False, help='Ignore errors during evaluation.')
