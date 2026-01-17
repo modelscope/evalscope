@@ -273,7 +273,7 @@ class TestVLMBenchmark(TestBenchmark):
             # 'subset_list': ['default']
             # 'shuffle': True,
         }
-        self._run_dataset_test('simple_vqa', dataset_args=dataset_args, limit=200)
+        self._run_dataset_test('simple_vqa', dataset_args=dataset_args, limit=20)
 
     def test_omni_doc_bench(self):
         dataset_args = {

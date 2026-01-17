@@ -120,9 +120,10 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
         image_base64 = record['image']
 
         # Process image format
-        processed_image_base64 = convert_image_base64_format(image_base64)
-
-        content_list.append(ContentImage(image=f'data:image/jpeg;base64,{processed_image_base64}'))
+        processed_image_base64, image_format_str = convert_image_base64_format(image_base64)
+        content_list.append(
+            ContentImage(image=f'data:image/{image_format_str.lower()};base64,{processed_image_base64}')
+        )
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'],

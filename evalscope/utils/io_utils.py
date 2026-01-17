@@ -365,49 +365,35 @@ def base64_to_PIL(base64_str):
     return img
 
 
-def convert_image_base64_format(image_base64: str) -> str:
-    """Process image base64 string, convert to jpeg if needed."""
+def convert_image_base64_format(image_base64: str) -> Tuple[str, str]:
+    """Process image base64 string, convert to jpeg if needed, and return its format.
+    Returns a tuple of (processed_base64_string, format_string).
+    """
     # Decode the base64 image
     image_data = base64.b64decode(image_base64)
+    detected_format = 'JPEG'  # Default format if detection or conversion fails
 
     # Check image format using magic numbers
     if image_data.startswith(b'\x89PNG'):
-        image_format = 'PNG'
+        detected_format = 'PNG'
     elif image_data.startswith(b'\xff\xd8\xff'):
-        image_format = 'JPEG'
+        detected_format = 'JPEG'
     elif image_data[4:8] in [b'ftyp', b'avif']:
-        image_format = 'AVIF'
+        detected_format = 'AVIF'
     else:
-        # Default to JPEG if format cannot be determined
-        image_format = 'JPEG'
-
-    # If image is already JPEG or PNG, return as is
-    if image_format in ['JPEG', 'PNG']:
-        return image_base64
-
-    # If image is AVIF, convert to JPEG
-    if image_format == 'AVIF':
+        # Attempt to open with PIL to determine format
         try:
-            # Convert base64 to PIL Image
-            pil_img = Image.open(io.BytesIO(image_data))
+            pil_img_test = Image.open(io.BytesIO(image_data))
+            if pil_img_test.format:
+                detected_format = pil_img_test.format
+        except Exception:
+            pass  # Keep default 'JPEG' if PIL can't identify
 
-            # Convert to RGB if necessary
-            if pil_img.mode != 'RGB':
-                pil_img = pil_img.convert('RGB')
+    # If image is already JPEG or PNG, return as is with its format
+    if detected_format in ['JPEG', 'PNG']:
+        return image_base64, detected_format
 
-            # Save as JPEG
-            output_buffer = io.BytesIO()
-            pil_img.save(output_buffer, format='JPEG', quality=95)
-            output_buffer.seek(0)
-
-            # Convert back to base64
-            converted_image_data = output_buffer.read()
-            return base64.b64encode(converted_image_data).decode('utf-8')
-        except Exception as e:
-            logger.warning(f'Failed to convert AVIF image: {e}')
-            return image_base64  # Return original if conversion fails
-
-    # For other formats, attempt to open and save as JPEG
+    # For AVIF and other formats, attempt to convert to JPEG
     try:
         pil_img = Image.open(io.BytesIO(image_data))
         if pil_img.mode != 'RGB':
@@ -418,10 +404,11 @@ def convert_image_base64_format(image_base64: str) -> str:
         output_buffer.seek(0)
 
         converted_image_data = output_buffer.read()
-        return base64.b64encode(converted_image_data).decode('utf-8')
+        return base64.b64encode(converted_image_data).decode('utf-8'), 'JPEG'
     except Exception as e:
-        logger.warning(f'Failed to process image: {e}')
-        return image_base64  # Return original if processing fails
+        logger.warning(f'Failed to process or convert image (detected as {detected_format}): {e}')
+        # If conversion fails, return original base64 and the detected format (or default JPEG)
+        return image_base64, detected_format
 
 
 def safe_filename(s: str, max_length: int = 255) -> str:
