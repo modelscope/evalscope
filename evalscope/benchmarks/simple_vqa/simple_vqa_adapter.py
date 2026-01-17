@@ -9,6 +9,7 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.io_utils import convert_image_base64_format
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -117,7 +118,11 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         content_list: list[Content] = [ContentText(text=self.prompt_template.format(question=record['question']))]
         image_base64 = record['image']
-        content_list.append(ContentImage(image=f'data:image/jpeg;base64,{image_base64}'))
+
+        # Process image format
+        processed_image_base64 = convert_image_base64_format(image_base64)
+
+        content_list.append(ContentImage(image=f'data:image/jpeg;base64,{processed_image_base64}'))
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'],
