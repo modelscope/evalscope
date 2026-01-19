@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pycqa/flake8.git
-    rev: 7.1.1
+    rev: 7.3.0
     hooks:
       - id: flake8
         exclude: |
@@ -15,7 +15,7 @@ repos:
                 evalscope/metrics/t2v_metrics
             )
   - repo: https://github.com/PyCQA/isort.git
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
   - repo: https://github.com/google/yapf
@@ -33,7 +33,7 @@ repos:
                 evalscope/backend/rag_eval/cmteb/tasks
             )
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: thirdparty/|docs/|examples

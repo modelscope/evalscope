@@ -49,6 +49,7 @@
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `Medical`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
+| `hmmt25` | [HMMT25](#hmmt25) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](#humanevalplus) | `Coding` |
 | `ifbench` | [IFBench](#ifbench) | `InstructionFollowing` |
@@ -1720,6 +1721,36 @@ Answer the following multiple choice question. The entire content of your respon
 
 ````text
 {question}
+````
+
+</details>
+
+---
+
+### HMMT25
+
+[返回目录](#llm评测集)
+- **数据集名称**: `hmmt25`
+- **数据集ID**: [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary)
+- **数据集介绍**:
+  > HMMT 2025年2月赛（MathArena）是一项具有挑战性的评测基准，源自全球最具声望且难度最高的高中数学竞赛之一——哈佛-麻省理工数学锦标赛2025年2月赛事。该基准涵盖代数、组合、几何和数论四个主要领域的高级数学推理。
+- **任务类别**: `Math`, `Reasoning`
+- **评估指标**: `{'acc': {'numeric': True}}`
+- **聚合方法**: `mean`
+- **是否需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **评测数据集划分**: `train`
+- **数据集子集**: `default`
+
+- **提示模板**:
+<details><summary>View</summary>
+
+````text
+Problem:
+{question}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
+
 ````
 
 </details>
