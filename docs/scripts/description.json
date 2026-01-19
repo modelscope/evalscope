@@ -788,5 +788,10 @@
     "en": "HumanEval Plus is a rigorous extension of OpenAI's original HumanEval dataset, designed to address the high false-positive rates found in code generation benchmarks. While the original HumanEval uses a limited number of test cases per problem, HumanEval+ augments these with tens of thousands of automatically generated inputs (using LLM-based and mutation-based strategies). This massively expanded test suite exposes edge-case bugs and functional errors that previously went undetected, making it a much stricter and more accurate standard for evaluating the correctness of AI-generated code.\n**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**'",
     "zh": "HumanEval Plus 是 OpenAI 原始 HumanEval 数据集的严格扩展版本，旨在解决代码生成基准中较高的误报率问题。原始 HumanEval 每个问题仅包含少量测试用例，而 HumanEval+ 通过基于大语言模型和变异生成的方法，自动补充了数万个输入用例。这一大规模扩展的测试套件能够发现以往未检测到的边界情况错误和功能缺陷，从而为评估 AI 生成代码的正确性提供了更严格、更准确的标准。  \n**默认情况下，代码在本地环境中执行。我们建议使用沙箱执行以安全地运行和评估生成的代码，请参阅[文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)了解详细信息。**",
     "updated_at": "2026-01-13T20:00:48Z"
+  },
+  "hmmt25": {
+    "en": "HMMT February 2025 (MathArena) is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2025 competition, one of the most prestigious and difficult high school math contests globally.The benchmark focuses on advanced mathematical reasoning across four primary domains: Algebra, Combinatorics, Geometry, and Number Theory.",
+    "zh": "HMMT 2025年2月赛（MathArena）是一项具有挑战性的评测基准，源自全球最具声望且难度最高的高中数学竞赛之一——哈佛-麻省理工数学锦标赛2025年2月赛事。该基准涵盖代数、组合、几何和数论四个主要领域的高级数学推理。",
+    "updated_at": "2026-01-19T20:12:32Z"
   }
 }

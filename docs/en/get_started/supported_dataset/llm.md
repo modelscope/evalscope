@@ -49,6 +49,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name to jump
 | `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `Medical`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
+| `hmmt25` | [HMMT25](#hmmt25) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](#humanevalplus) | `Coding` |
 | `ifbench` | [IFBench](#ifbench) | `InstructionFollowing` |
@@ -1720,6 +1721,36 @@ Answer the following multiple choice question. The entire content of your respon
 
 ````text
 {question}
+````
+
+</details>
+
+---
+
+### HMMT25
+
+[Back to Top](#llm-benchmarks)
+- **Dataset Name**: `hmmt25`
+- **Dataset ID**: [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary)
+- **Description**:
+  > HMMT February 2025 (MathArena) is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2025 competition, one of the most prestigious and difficult high school math contests globally.The benchmark focuses on advanced mathematical reasoning across four primary domains: Algebra, Combinatorics, Geometry, and Number Theory.
+- **Task Categories**: `Math`, `Reasoning`
+- **Evaluation Metrics**: `{'acc': {'numeric': True}}`
+- **Aggregation Methods**: `mean`
+- **Requires LLM Judge**: No
+- **Default Shots**: 0-shot
+- **Evaluation Split**: `train`
+- **Subsets**: `default`
+
+- **Prompt Template**:
+<details><summary>View</summary>
+
+````text
+Problem:
+{question}
+
+Please reason step by step, and put your final answer within \boxed{{}}.
+
 ````
 
 </details>
