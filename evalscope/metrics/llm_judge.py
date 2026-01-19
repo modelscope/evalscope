@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.constants import JudgeScoreType
+from evalscope.constants import JudgeScoreType, EvalType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -53,6 +53,7 @@ class LLMJudge:
         api_key: Optional[str] = None,
         api_url: Optional[str] = None,
         model_id: Optional[str] = None,
+        eval_type: Optional[str] = None,
         system_prompt: Optional[str] = None,
         prompt_template: Optional[str] = None,
         generation_config: Optional[Dict[str, Any]] = None,
@@ -68,6 +69,7 @@ class LLMJudge:
             api_key (str, optional): API key for OpenAI or compatible service
             api_base (str, optional): API base URL
             model_id (str, optional): Model ID for LLM
+            eval_type (str, optional): Evaluation LLM type for the judge
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
@@ -80,6 +82,7 @@ class LLMJudge:
         self.api_key = api_key or os.environ.get('MODELSCOPE_SDK_TOKEN', 'EMPTY')
         self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
         self.model_id = model_id or os.environ.get('MODELSCOPE_JUDGE_LLM', DEFAULT_JUDGE_MODEL)
+        self.eval_type = eval_type or EvalType.SERVICE
         self.system_prompt = system_prompt or os.environ.get('JUDGE_SYSTEM_PROMPT', None)
         self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 1024}
 
@@ -105,7 +108,7 @@ class LLMJudge:
 
         self.model = get_model(
             model=self.model_id,
-            eval_type='openai_api',
+            eval_type=self.eval_type,
             base_url=self.api_url,
             api_key=self.api_key,
             config=GenerateConfig(**self.generation_config),
