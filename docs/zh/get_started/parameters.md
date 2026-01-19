@@ -81,6 +81,7 @@
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `dataset_id` | `str` | 数据集modelscope id/本地路径 |
+| `local_path` | `str` | 本地数据集路径，已废弃，请使用`dataset_id` |
 | `review_timeout` | `float` | 评测样本超时时间（秒），代码类任务建议设置 |
 | `prompt_template` | `str` | Prompt模板，示例：`Question: {query}\nAnswer:` |
 | `system_prompt` | `str` | 系统prompt |

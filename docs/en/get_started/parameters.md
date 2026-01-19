@@ -81,6 +81,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `dataset_id` | `str` | ModelScope dataset ID or local path |
+| `local_path` | `str` | Local dataset path, deprecated, please use `dataset_id` |
 | `review_timeout` | `float` | Timeout for evaluation samples (seconds), recommended for code tasks |
 | `prompt_template` | `str` | Prompt template, example: `Question: {query}\nAnswer:` |
 | `system_prompt` | `str` | System prompt |
