@@ -188,6 +188,47 @@ evalscope perf \
   --debug
 ```
 
+## Embedding模型压测
+
+使用`openai_embedding` API模式和`random_embedding`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
+
+```bash
+evalscope perf \
+ --parallel 2 \
+ --number 10 \
+ --model 'text-embedding-v4' \
+ --url 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings' \
+ --api-key ${DASHSCOPE_API_KEY} \
+ --api openai_embedding \
+ --dataset random_embedding \
+ --min-prompt-length 256 \
+ --max-prompt-length 256 \
+ --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B'
+```
+
+## Rerank模型压测
+
+使用`openai_rerank` API模式和`random_rerank`数据集进行压测。使用随机数据集时需指定`tokenizer-path`用于生成指定长度范围的query文本。
+
+可以通过`extra-args`指定生成数据的参数：
+- `num_documents`: 每条query对应的文档数量
+- `document_length_ratio`: 文档长度相对于query长度的倍数
+
+```bash
+evalscope perf \
+ --parallel 2 \
+ --number 10 \
+ --model 'qwen3-rerank' \
+ --url 'https://dashscope.aliyuncs.com/compatible-api/v1/reranks' \
+ --api-key ${DASHSCOPE_API_KEY} \
+ --api openai_rerank \
+ --dataset random_rerank \
+ --min-prompt-length 256 \
+ --max-prompt-length 256 \
+ --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B' \
+ --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
+```
+
 ## 可视化测试结果
 
 ### 使用WandB

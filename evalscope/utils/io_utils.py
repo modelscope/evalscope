@@ -365,6 +365,52 @@ def base64_to_PIL(base64_str):
     return img
 
 
+def convert_image_base64_format(image_base64: str) -> Tuple[str, str]:
+    """Process image base64 string, convert to jpeg if needed, and return its format.
+    Returns a tuple of (processed_base64_string, format_string).
+    """
+    # Decode the base64 image
+    image_data = base64.b64decode(image_base64)
+    detected_format = 'JPEG'  # Default format if detection or conversion fails
+
+    # Check image format using magic numbers
+    if image_data.startswith(b'\x89PNG'):
+        detected_format = 'PNG'
+    elif image_data.startswith(b'\xff\xd8\xff'):
+        detected_format = 'JPEG'
+    elif image_data[4:8] in [b'ftyp', b'avif']:
+        detected_format = 'AVIF'
+    else:
+        # Attempt to open with PIL to determine format
+        try:
+            pil_img_test = Image.open(io.BytesIO(image_data))
+            if pil_img_test.format:
+                detected_format = pil_img_test.format
+        except Exception:
+            pass  # Keep default 'JPEG' if PIL can't identify
+
+    # If image is already JPEG or PNG, return as is with its format
+    if detected_format in ['JPEG', 'PNG']:
+        return image_base64, detected_format
+
+    # For AVIF and other formats, attempt to convert to JPEG
+    try:
+        pil_img = Image.open(io.BytesIO(image_data))
+        if pil_img.mode != 'RGB':
+            pil_img = pil_img.convert('RGB')
+
+        output_buffer = io.BytesIO()
+        pil_img.save(output_buffer, format='JPEG', quality=95)
+        output_buffer.seek(0)
+
+        converted_image_data = output_buffer.read()
+        return base64.b64encode(converted_image_data).decode('utf-8'), 'JPEG'
+    except Exception as e:
+        logger.warning(f'Failed to process or convert image (detected as {detected_format}): {e}')
+        # If conversion fails, return original base64 and the detected format (or default JPEG)
+        return image_base64, detected_format
+
+
 def safe_filename(s: str, max_length: int = 255) -> str:
     """
     Convert a string into a safe filename by removing or replacing unsafe characters.

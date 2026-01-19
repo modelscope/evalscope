@@ -186,6 +186,47 @@ evalscope perf \
   --debug
 ```
 
+## Embedding Model Stress Testing
+
+Use `openai_embedding` API mode and `random_embedding` dataset for stress testing. When using the random dataset, you need to specify `tokenizer-path` to generate query of specified length.
+
+```bash
+evalscope perf \
+ --parallel 2 \
+ --number 10 \
+ --model 'text-embedding-v4' \
+ --url 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings' \
+ --api-key ${DASHSCOPE_API_KEY} \
+ --api openai_embedding \
+ --dataset random_embedding \
+ --min-prompt-length 256 \
+ --max-prompt-length 256 \
+ --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B'
+```
+
+## Rerank Model Stress Testing
+
+Use `openai_rerank` API mode and `random_rerank` dataset for stress testing. When using the random dataset, you need to specify `tokenizer-path` to generate query of specified length.
+
+You can specify data generation parameters through `extra-args`:
+- `num_documents`: Number of documents per query
+- `document_length_ratio`: Document length multiplier relative to query length
+
+```bash
+evalscope perf \
+ --parallel 2 \
+ --number 10 \
+ --model 'qwen3-rerank' \
+ --url 'https://dashscope.aliyuncs.com/compatible-api/v1/reranks' \
+ --api-key ${DASHSCOPE_API_KEY} \
+ --api openai_rerank \
+ --dataset random_rerank \
+ --min-prompt-length 256 \
+ --max-prompt-length 256 \
+ --tokenizer-path 'Qwen/Qwen3-Embedding-0.6B' \
+ --extra-args '{"num_documents": 5, "document_length_ratio": 3}'
+```
+
 ## Visualizing Test Results
 
 ### Using WandB

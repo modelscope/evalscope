@@ -10,7 +10,7 @@ from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from .arguments import Arguments
 from .http_client import AioHttpClient, test_connection
 from .plugin import ApiRegistry, DatasetRegistry
-from .utils.benchmark_util import BenchmarkMetrics
+from .utils.benchmark_util import BenchmarkMetrics, is_embedding_or_rerank_api
 from .utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data, load_prompt, summary_result
 from .utils.handler import exception_handler
 from .utils.log_utils import maybe_log_to_visualizer
@@ -85,8 +85,8 @@ async def send_request(
 ):
     async with semaphore:
         benchmark_data = await client.post(request)
-        benchmark_data.update_gpu_usage()
-        await benchmark_data_queue.put(benchmark_data)
+    benchmark_data.update_gpu_usage()
+    await benchmark_data_queue.put(benchmark_data)
 
 
 @exception_handler
@@ -98,7 +98,7 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
     commit_every = args.db_commit_interval
     processed_since_commit = 0
 
-    with sqlite3.connect(result_db_path) as con:
+    with sqlite3.connect(result_db_path, check_same_thread=False) as con:
         cursor = con.cursor()
         create_result_table(cursor)
 
@@ -114,12 +114,12 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                 insert_benchmark_data(cursor, benchmark_data)
                 processed_since_commit += 1
                 if processed_since_commit >= commit_every:
-                    con.commit()
+                    await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
-                message = metrics.create_message()
+                message = metrics.create_message(api_type=args.api)
 
-                maybe_log_to_visualizer(args, message)
+                await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
                 if int(metrics.n_total_queries) % args.log_every_n_query == 0:
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
@@ -128,14 +128,20 @@ async def statistic_benchmark_metric(benchmark_data_queue: asyncio.Queue, args: 
                 benchmark_data_queue.task_done()
                 pbar.update(1)
 
-        con.commit()
+        await asyncio.to_thread(con.commit)
 
     return metrics, result_db_path
 
 
 @exception_handler
-async def connect_test(args: Arguments, api_plugin) -> bool:
-    if (not args.no_test_connection) and (not await test_connection(args, api_plugin)):
+async def connect_test(args: Arguments, api_plugin):
+    if is_embedding_or_rerank_api(args.api):
+        return
+
+    if not args.no_test_connection:
+        return
+
+    if not await test_connection(args, api_plugin):
         raise TimeoutError('Test connection failed')
 
 

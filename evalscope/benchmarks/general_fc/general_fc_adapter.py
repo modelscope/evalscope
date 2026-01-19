@@ -89,6 +89,7 @@ class GeneralFCAdapter(AgentAdapter):
         should_call_tool = task_state.metadata.get('should_call_tool', False)
         if model_output.error:
             score.value = {
+                'passed': 0,
                 'finish_reason_tool_call': 0,
                 'successful_tool_call': 0,
                 'should_call_tool': int(should_call_tool),
@@ -103,9 +104,18 @@ class GeneralFCAdapter(AgentAdapter):
             tools = task_state.metadata['tools']
 
             is_call_tool = finish_reason == 'tool_calls'
+            # When model calls tool, use the tool calls from model output
+            if is_call_tool:
+                score.prediction = task_state.messages_markdown
+                score.extracted_prediction = task_state.messages_markdown
             is_valid_tool_call, error_reason = self.validate_tool_call(tool_calls, tools)
             is_call_successful = is_call_tool and is_valid_tool_call
+            if should_call_tool:
+                passed = is_call_successful
+            else:
+                passed = not is_call_tool
             score.value = {
+                'passed': passed,
                 'finish_reason_tool_call': int(is_call_tool),
                 'successful_tool_call': int(is_call_successful),
                 'should_call_tool': int(should_call_tool),
@@ -201,10 +211,10 @@ class GeneralFCAdapter(AgentAdapter):
         tool_call_f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
 
         metrics = {
+            'tool_call_f1': tool_call_f1,
             'count_finish_reason_tool_call': finish_reason_tool_call_count,
             'count_successful_tool_call': successful_tool_call_count,
             'schema_accuracy': schema_accuracy,
-            'tool_call_f1': tool_call_f1,
         }
 
         agg_scores: List[AggScore] = []

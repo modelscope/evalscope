@@ -9,7 +9,7 @@
 | `--model` | `str` | 测试模型名称，或模型路径 | - |
 | `--url` | `str` | API地址，支持`/chat/completion`和`/completion`端点 | - |
 | `--name` | `str` | wandb/swanlab数据库结果名称和结果数据库名称 | `{model_name}_{current_time}` |
-| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容API（需提供`--url`）<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
+| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容API（需提供`--url`）<br>• `openai_embedding`: OpenAI兼容Embedding API<br>• `openai_rerank`: OpenAI/Cohere兼容Rerank API<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
 | `--port` | `int` | 本地推理服务端口<br>仅对`local`和`local_vllm`有效 | `8877` |
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
@@ -91,6 +91,12 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型 | ✗ |
 | `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#使用random数据集) | ✗ |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#使用random图文数据集) | ✗ |
+| `embedding` | 从文件加载文本数据评测Embedding模型<br>支持Line-by-line(TXT)或JSONL格式（含`text`字段） | ✓ (必需) |
+| `random_embedding` | 根据`max-prompt-length`和`min-prompt-length`随机生成query评测Embedding模型<br>**必需指定`tokenizer-path`** | ✗ |
+| `embedding_batch` | 批量发送文本数据评测Embedding模型<br>从文件加载数据<br>支持`--extra-args '{"batch_size": 8}'`设置批次大小 | ✓ (必需) |
+| `random_embedding_batch` | 批量发送根据`max-prompt-length`和`min-prompt-length`随机生成query数据评测Embedding模型<br>**必需指定`tokenizer-path`**<br>支持`--extra-args '{"batch_size": 8}'`设置批次大小 | ✗ |
+| `rerank` | 从文件加载Query-Document对评测Rerank模型<br>支持JSONL格式 (含`query`和`documents`字段) | ✓ (必需) |
+| `random_rerank` | 根据`max-prompt-length`和`min-prompt-length`随机生成query数据评测Rerank模型<br>**必需指定`tokenizer-path`**<br>支持`--extra-args '{"num_documents": 10, "document_length_ratio": 5}'`设置文档数量和相对query的长度倍数 | ✗ |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
 
 ## 模型设置

@@ -27,7 +27,7 @@ class GenerateConfig(BaseModel):
     """Model generation options."""
     model_config = {'extra': 'allow'}
 
-    timeout: Optional[int] = Field(default=None)
+    timeout: Optional[float] = Field(default=None)
     """Request timeout (in seconds)."""
 
     retries: Optional[int] = Field(default=5)

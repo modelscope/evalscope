@@ -252,6 +252,31 @@ evalscope eval \
  --limit 10
 ```
 
+### Continue Evaluation from Existing/Interrupted Results
+
+If a previous evaluation task was interrupted, or you want to continue evaluating based on existing results, you can use the `--use-cache` parameter to specify the previous output directory. This will skip completed samples and only evaluate the remaining ones. Additionally, you can use the `--rerun-review` parameter to force re-execution of the scoring step for all samples.
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --use-cache outputs/20230101_123456 \
+ --rerun-review
+```
+
+### Skip Samples with Evaluation Errors
+
+In some cases, the model may fail to infer due to overly long inputs, timeouts, model service crashes, or other reasons, or unknown errors may occur during the evaluation process. In such cases, the program will throw an exception and interrupt the evaluation flow. You can use the `--ignore-errors` parameter to skip these error samples and continue evaluating the remaining ones. In the evaluation report, these samples will be ignored, meaning the final number of evaluated samples will be reduced.
+
+```shell
+evalscope eval \
+ --model Qwen/Qwen2.5-0.5B-Instruct \
+ --datasets gsm8k \
+ --limit 10 \
+ --ignore-errors
+```
+
 ## Migration from v0.1.x
 
 If you previously used v0.1.x version, please note the following major changes after upgrading to v1.0+:

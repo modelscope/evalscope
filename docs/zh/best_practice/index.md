@@ -13,6 +13,8 @@
 :::{toctree}
 :maxdepth: 1
 
+general_fc.md
+index_collection.md
 qwen3_omni.md
 qwen3_vl.md
 qwen3_next.md

@@ -246,6 +246,8 @@ class TaskConfig(BaseArgument):
         return {}
 
     def _handle_generation_config_deprecations(self):
+        assert isinstance(self.generation_config, GenerateConfig)
+
         if self.timeout is not None:
             deprecated_warning(
                 logger,
