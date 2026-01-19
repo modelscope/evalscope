@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.constants import JudgeScoreType, EvalType
+from evalscope.constants import EvalType, JudgeScoreType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
