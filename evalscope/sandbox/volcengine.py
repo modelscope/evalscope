@@ -167,10 +167,8 @@ class SandboxFusionClient:
 
         # 3) Call SandboxFusion
         try:
-            print("language:", language)
             if dataset_language_map:
                 language = dataset_language_map.get(language, language)
-            print("language after mapping:", language)
             resp = self.run_code(code=code, language=language, timeout=timeout)
         except requests.Timeout as e:
             return ExecutionResult(
@@ -325,11 +323,14 @@ class SandboxFusionSandboxManager:
         # Language map from config (optional)
         dataset_language_map: Dict[str, str] = {}
         if isinstance(sandbox_manager_config.get('dataset_language_map'), dict):
-            dataset_language_map.update({str(k): str(v) for k, v in sandbox_manager_config['dataset_language_map'].items()})
+            dataset_language_map.update({
+                str(k): str(v)
+                for k, v in sandbox_manager_config['dataset_language_map'].items()
+            })
 
-        print("tool_language_map:", tool_language_map)
-        print("dataset_language_map:", dataset_language_map)
-        self._sandbox = SandboxFusionSandbox(self.client, tool_language_map=tool_language_map, dataset_language_map=dataset_language_map)
+        self._sandbox = SandboxFusionSandbox(
+            self.client, tool_language_map=tool_language_map, dataset_language_map=dataset_language_map
+        )
 
     def create_sandbox(self, sandbox_config: Optional[Dict[str, Any]] = None) -> SandboxFusionSandbox:
         # SandboxFusion is stateless; return a shared sandbox instance.
