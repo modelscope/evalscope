@@ -1,4 +1,4 @@
-# A Guide to Agent Tool Calling Evaluation
+# Evaluating in the Wild: How Agentic Is Your AI Model Really?
 
 In the evolution of large language models from simple "conversationalists" to "autonomous agents," **Function Calling / Tool Use** capability is the core of the core.
 
