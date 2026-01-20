@@ -679,6 +679,15 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('general_fc', dataset_args, limit=10, model='qwen-plus', stream=True)
 
+    def test_general_fc_load(self):
+        """Test General Function Calling dataset loading."""
+        dataset_args = {
+            # 'local_path': 'custom_eval/text/general_fc',
+            # 'subset_list': ['example']
+            'force_redownload': True,
+        }
+        self._run_dataset_load_test('general_fc', dataset_args, debug=False, judge_worker_num=5)
+
     def test_general_fc_local(self):
         """Test General Function Calling dataset with local path."""
         dataset_args = {
