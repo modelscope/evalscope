@@ -114,6 +114,7 @@ class DefaultEvaluator(Evaluator):
                 f'No valid scores generated for {self.benchmark_name} '
                 '(all samples filtered or empty subsets). Skipping report generation.'
             )
+            report = {}
         else:
             # Generate the report based on aggregated scores
             logger.info('Generating report...')
