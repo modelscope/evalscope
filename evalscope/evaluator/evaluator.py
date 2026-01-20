@@ -109,9 +109,15 @@ class DefaultEvaluator(Evaluator):
             subset_score = self.evaluate_subset(subset, dataset)
             agg_score_dict[subset] = subset_score
 
-        # Generate the report based on aggregated scores
-        logger.info('Generating report...')
-        report = self.get_report(agg_score_dict)
+        if not agg_score_dict:
+            logger.warning(
+                f'No valid scores generated for {self.benchmark_name} '
+                '(all samples filtered or empty subsets). Skipping report generation.'
+            )
+        else:
+            # Generate the report based on aggregated scores
+            logger.info('Generating report...')
+            report = self.get_report(agg_score_dict)
 
         # Finalize the evaluation process
         self.finalize()
