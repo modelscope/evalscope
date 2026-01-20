@@ -22,6 +22,9 @@ class SandboxMixin:
         self._manager: Optional['SandboxManager'] = None
         """Sandbox manager instance."""
 
+        self._external_manager: Optional[Any] = None
+        """External sandbox manager instance."""
+
         self._pool_size: int = self._task_config.judge_worker_num if self._task_config else 1
         """Sandbox pool size."""
 
@@ -57,12 +60,15 @@ class SandboxMixin:
         if not self.use_sandbox:
             return False
 
-        if self._initialized and self._manager and self._manager._pool_initialized:
+        if self._initialized and self._is_sandbox_ready():
             return True
 
         # Initialize manager and sandbox using the class-level runner
-        self.init_sandbox_manager()
-        self.init_sandbox()
+        if self._is_external_sandbox():
+            self.init_external_sandbox_manager()
+        else:
+            self.init_sandbox_manager()
+            self.init_sandbox()
 
         self._initialized = True
         return True
@@ -111,6 +117,9 @@ class SandboxMixin:
         if not self.use_sandbox:
             return None
 
+        if self._is_external_sandbox():
+            return None
+
         from ms_enclave.sandbox.manager import SandboxManagerFactory
 
         manager_config = self._task_config.sandbox_manager_config or {}
@@ -126,6 +135,9 @@ class SandboxMixin:
 
     async def init_sandbox_async(self):
         """Initialize the sandbox instance asynchronously."""
+        if self._is_external_sandbox():
+            return
+
         if self._manager is not None and self._manager._pool_initialized:
             return
 
@@ -134,10 +146,10 @@ class SandboxMixin:
 
         from ms_enclave.sandbox.model import DockerSandboxConfig, SandboxType
 
-        sandbox_config = DockerSandboxConfig.model_validate(self._benchmark_meta.sandbox_config)
-        sandbox_type = self._task_config.sandbox_type or SandboxType.DOCKER
+        sandbox_type = self._normalize_sandbox_type(self._task_config.sandbox_type or SandboxType.DOCKER, SandboxType)
+        sandbox_config = self._resolve_sandbox_config(sandbox_type, DockerSandboxConfig)
 
-        if self.should_build_image(sandbox_config.image):
+        if self._is_docker_sandbox(sandbox_type) and self.should_build_image(sandbox_config.image):
             logger.info(f'Building sandbox image: {sandbox_config.image}')
             build_context_path, dockerfile = self.get_build_context()
             self.build_docker_image(sandbox_config.image, path=build_context_path, dockerfile=dockerfile)
@@ -149,6 +161,141 @@ class SandboxMixin:
 
         logger.info(f'Sandbox pool initialized with {len(sandbox_pool)} sandboxes.')
         return
+
+    def _normalize_sandbox_type(self, sandbox_type: Union[str, Any], sandbox_type_enum: Any) -> Union[str, Any]:
+        if isinstance(sandbox_type, str):
+            try:
+                return sandbox_type_enum(sandbox_type)
+            except Exception:
+                return sandbox_type
+        return sandbox_type
+
+    def _resolve_sandbox_config(self, sandbox_type: Union[str, Any], default_config_cls: Any):
+        from ms_enclave.sandbox import model as sandbox_model
+
+        sandbox_type_name = (sandbox_type.value if hasattr(sandbox_type, 'value') else str(sandbox_type)).lower()
+
+        config_cls = default_config_cls
+        if sandbox_type_name in {'volcengine', 'volcano', 'volc'}:
+            config_cls = getattr(sandbox_model, 'VolcengineSandboxConfig', default_config_cls)
+
+        return config_cls.model_validate(self._benchmark_meta.sandbox_config)
+
+    def _is_docker_sandbox(self, sandbox_type: Union[str, Any]) -> bool:
+        sandbox_type_name = (sandbox_type.value if hasattr(sandbox_type, 'value') else str(sandbox_type)).lower()
+        return sandbox_type_name == 'docker'
+
+    def _is_external_sandbox(self) -> bool:
+        sandbox_type = self._task_config.sandbox_type if self._task_config else None
+        if not sandbox_type:
+            return False
+        return str(sandbox_type).lower() in {'volcengine', 'volcano', 'volc'}
+
+    def _is_sandbox_ready(self) -> bool:
+        if self._is_external_sandbox():
+            return self._external_manager is not None
+        return self._manager is not None and self._manager._pool_initialized
+
+    def _resolve_external_manager(self) -> Any:
+        manager_config = self._task_config.sandbox_manager_config if self._task_config else {}
+        if not manager_config:
+            raise RuntimeError(
+                'Volcengine sandbox requires an external manager. '
+                'Please provide `sandbox_manager_config` with `manager` or `manager_class`.'
+            )
+
+        if 'manager' in manager_config:
+            return manager_config['manager']
+
+        manager_class = manager_config.get('manager_class')
+        if not manager_class:
+            if self._is_external_sandbox():
+                from evalscope.sandbox.volcengine import SandboxFusionSandboxManager
+
+                return SandboxFusionSandboxManager(
+                    sandbox_manager_config=manager_config,
+                    sandbox_config=self._benchmark_meta.sandbox_config,
+                )
+            raise RuntimeError('Volcengine sandbox requires `manager` or `manager_class` in sandbox_manager_config.')
+
+        manager_kwargs = manager_config.get('manager_kwargs', {})
+        if isinstance(manager_class, str):
+            module_path, class_name = self._split_class_path(manager_class)
+            module = __import__(module_path, fromlist=[class_name])
+            manager_class = getattr(module, class_name)
+        return manager_class(**manager_kwargs)
+
+    def _split_class_path(self, manager_class: str) -> tuple[str, str]:
+        if ':' in manager_class:
+            module_path, class_name = manager_class.split(':', 1)
+        else:
+            module_path, _, class_name = manager_class.rpartition('.')
+        if not module_path or not class_name:
+            raise ValueError(
+                'manager_class must be in the form "package.module:ClassName" or "package.module.ClassName".'
+            )
+        return module_path, class_name
+
+    def init_external_sandbox_manager(self) -> Any:
+        if self._external_manager is not None:
+            return self._external_manager
+        self._external_manager = self._resolve_external_manager()
+        logger.info('External sandbox manager initialized.')
+        return self._external_manager
+
+    def _resolve_external_executor(self) -> Any:
+        if self._external_manager is None:
+            raise RuntimeError('External sandbox manager is not initialized.')
+        manager = self._external_manager
+        if hasattr(manager, 'get_sandbox'):
+            sandbox = manager.get_sandbox()
+            if hasattr(sandbox, 'execute'):
+                return lambda tool_name, tool_input, timeout=None: sandbox.execute(  # noqa: E731
+                    tool_name, tool_input, timeout=timeout
+                )
+        if hasattr(manager, 'create_sandbox'):
+            sandbox = manager.create_sandbox()
+            if hasattr(sandbox, 'execute'):
+                return lambda tool_name, tool_input, timeout=None: sandbox.execute(  # noqa: E731
+                    tool_name, tool_input, timeout=timeout
+                )
+        for attr_name in ('execute', 'execute_tool', 'execute_code', 'run'):
+            if hasattr(manager, attr_name):
+                executor = getattr(manager, attr_name)
+                return lambda tool_name, tool_input, timeout=None: executor(  # noqa: E731
+                    tool_name, tool_input, timeout=timeout
+                )
+        if callable(manager):
+            return manager
+        raise RuntimeError(
+            'External sandbox manager must be callable or implement an `execute`, `execute_code`, or `run` method.'
+        )
+
+    def _build_external_tool(self, code: Union[str, List[str]], timeout: int,
+                             language: str) -> tuple[str, Dict[str, Any]]:
+        if language.lower() == 'python':
+            return 'python_executor', {'code': code, 'timeout': timeout}
+        if language.lower() in {'shell', 'bash', 'sh'}:
+            return 'shell_executor', {'command': code, 'timeout': timeout}
+        return 'multi_code_executor', {'code': code, 'language': language, 'run_timeout': timeout}
+
+    def _normalize_external_result(self, result: Any) -> Dict[str, Any]:
+        if isinstance(result, dict):
+            return result
+        if hasattr(result, 'model_dump'):
+            return result.model_dump(exclude_none=True)
+
+        status = getattr(result, 'status', None)
+        status_value = status.value if hasattr(status, 'value') else str(status) if status is not None else 'error'
+        payload: Dict[str, Any] = {'status': status_value}
+
+        for key in ('output', 'metadata', 'tool_name'):
+            value = getattr(result, key, None)
+            if value is not None:
+                payload[key] = value
+        if len(payload) == 1:
+            payload['output'] = str(result)
+        return payload
 
     def init_sandbox(self) -> Optional[str]:
         """Initialize the sandbox instance."""
@@ -163,6 +310,14 @@ class SandboxMixin:
         if not self.ensure_sandbox_ready():
             logger.warning('Sandbox is not initialized.')
             return {'error': 'Sandbox is not initialized.'}
+
+        if self._is_external_sandbox():
+            executor = self._resolve_external_executor()
+            tool_name, tool_input = self._build_external_tool(code, timeout, language)
+            result = executor(tool_name, tool_input, timeout=timeout)
+            if hasattr(result, '__await__'):
+                result = AsyncioLoopRunner.run(result, timeout=timeout + 10)
+            return self._normalize_external_result(result)
 
         import asyncio
         import concurrent.futures as cf
@@ -202,6 +357,14 @@ class SandboxMixin:
 
     def sandbox_finalize(self, *args, **kwargs):
         """Finalize the sandbox manager."""
+        if self._external_manager:
+            if hasattr(self._external_manager, 'close'):
+                try:
+                    self._external_manager.close()
+                except Exception as e:
+                    logger.warning(f'Error finalizing external sandbox manager: {e}')
+            logger.info('External sandbox manager finalized.')
+            return
         if self._manager:
             try:
                 # Stop the manager but keep the shared loop alive
