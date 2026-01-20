@@ -279,10 +279,17 @@ class TaskConfig(BaseArgument):
     def __init_default_sandbox_config(self):
         if not self.use_sandbox:
             return
-        check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
+
+        if not self._is_external_sandbox_type():
+            check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
 
         if not self.sandbox_type:
             self.sandbox_type = 'docker'
+
+    def _is_external_sandbox_type(self) -> bool:
+        if not self.sandbox_type:
+            return False
+        return str(self.sandbox_type).lower() in {'volcengine', 'volcano', 'volc'}
 
     def __init_eval_config(self):
         if not self.eval_config:

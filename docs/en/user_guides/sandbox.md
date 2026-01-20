@@ -135,3 +135,46 @@ During model evaluation, EvalScope will communicate with the remote sandbox serv
 [INFO:ms_enclave] HTTP sandbox manager started, connected to http://<remote_host>:1234
 ...
 ```
+
+## 3. Additional Supported Sandbox
+
+### Using VolcEngine Sandbox Environment
+
+EvalScope also supports using the [VolcEngine Sandbox Environment](https://bytedance.github.io/SandboxFusion/docs/docs/get-started/). Users can choose to use the sandbox images provided by VolcEngine for code evaluation.
+
+1. **Install Docker**: Please ensure that Docker is installed on your machine. You can download and install Docker from the [Docker official website](https://www.docker.com/get-started).
+2. **Start VolcEngine Sandbox Server**:
+Use the following command to start the VolcEngine sandbox server:
+
+```bash
+docker run -it -p 8080:8080 vemlp-cn-beijing.cr.volces.com/preset-images/code-sandbox:server-20250609
+```
+
+3. **Configure Evaluation Parameters**:
+When using the VolcEngine sandbox environment, simply set the `sandbox_type` parameter to `volcengine`, and ensure that the VolcEngine sandbox server has been installed and is running on the remote machine.
+
+```python
+    ...
+    use_sandbox=True, # Enable sandbox
+    sandbox_type='volcengine', # Specify using VolcEngine sandbox
+    sandbox_manager_config={
+        'base_url': 'http://<remote_host>:8080',  # Remote VolcEngine sandbox manager URL
+        "dataset_language_map": {  # Optional, specify programming languages for datasets
+                "r": "R",
+                "d_ut": "D_ut",
+                "ts": "typescript"
+            }
+    },
+    ...
+```
+
+Console output will be as follows:
+```text
+2026-01-20 08:07:22 [debug    ] running command python /tmp/tmpyhpyii_k/tmpf_q4hcoq.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpv1hp4llu/tmpowprm7uz.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpeytkvisz/tmpxkproid8.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpyhpyii_k/tmpf_q4hcoq.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpqcbuep0x/tmplxz4z9cw.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmp3msgd871/tmplldfzrp9.py [sandbox.runners.base]
+...
+```

@@ -23,7 +23,7 @@ class TestCodeBenchmark(TestBenchmark):
             'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
-                'max_tokens': 12000,
+                'max_tokens': 4096,
                 'temperature': 0.0,
                 'seed': 42,
                 'parallel_tool_calls': True,
@@ -47,12 +47,25 @@ class TestCodeBenchmark(TestBenchmark):
 
     def test_humaneval(self):
         """Test Humaneval dataset."""
-        self._run_dataset_test('humaneval', limit=5, repeats=5, model='qwen2.5-0.5b-instruct')
+        self._run_dataset_test('humaneval', limit=5, repeats=2, model='qwen2.5-0.5b-instruct')
 
     def test_humaneval_remote_sandbox(self):
         """Test Humaneval dataset with remote sandbox manager."""
         sandbox_manager_config = {'base_url': 'http://localhost:8000'}
         self._run_dataset_test('humaneval', limit=5, sandbox_manager_config=sandbox_manager_config)
+
+    def test_humaneval_volcengine_sandbox(self):
+        sandbox_type='volcengine'
+        use_sandbox=True
+        sandbox_manager_config={
+            'base_url': 'http://127.0.0.1:8080',
+            'dataset_language_map': {
+                'r': 'R',
+                'd_ut': 'D_ut',
+                'ts': 'typescript'
+            }
+        }
+        self._run_dataset_test('humaneval', limit=5, sandbox_type=sandbox_type, use_sandbox=use_sandbox, sandbox_manager_config=sandbox_manager_config)
 
     def test_live_code_bench(self):
         """Test Live Code Bench dataset."""

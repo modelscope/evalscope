@@ -135,3 +135,46 @@ run_task(task_config)
 [INFO:ms_enclave] HTTP sandbox manager started, connected to http://<remote_host>:1234
 ...
 ```
+
+## 3. 额外支持的沙箱环境
+
+### 使用VolcEngine沙箱环境
+
+EvalScope 还支持使用[VolcEngine 沙箱环境](https://bytedance.github.io/SandboxFusion/docs/docs/get-started/) ，用户可以选择使用VolcEngine提供的沙箱镜像来进行代码评测。
+
+1. **安装Docker**：请确保您的机器上已安装Docker。您可以从[Docker官网](https://www.docker.com/get-started)下载并安装Docker。
+2. **启动VolcEngine沙箱服务器**：
+启动VolcEngine沙箱服务器的命令如下：
+
+```bash
+docker run -it -p 8080:8080 vemlp-cn-beijing.cr.volces.com/preset-images/code-sandbox:server-20250609
+```
+
+3. **配置评测参数**：
+使用VolcEngine沙箱环境时，只需将`sandbox_type`参数设置为`volcengine`，并确保远端机器上已安装并运行了VolcEngine沙箱服务器。
+
+```python
+    ...
+    use_sandbox=True, # 启用沙箱
+    sandbox_type='volcengine', # 指定使用VolcEngine沙箱
+    sandbox_manager_config={
+        'base_url': 'http://<remote_host>:8080',  # 远端VolcEngine沙箱管理器URL
+        "dataset_language_map": {  # 可选，指定数据集对应的编程语言
+                "r": "R",
+                "d_ut": "D_ut",
+                "ts": "typescript"
+            }
+    },
+    ...
+```
+
+控制台输出如下：
+```text
+2026-01-20 08:07:22 [debug    ] running command python /tmp/tmpyhpyii_k/tmpf_q4hcoq.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpv1hp4llu/tmpowprm7uz.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpeytkvisz/tmpxkproid8.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpyhpyii_k/tmpf_q4hcoq.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmpqcbuep0x/tmplxz4z9cw.py [sandbox.runners.base]
+2026-01-20 08:07:23 [debug    ] stop running command python /tmp/tmp3msgd871/tmplldfzrp9.py [sandbox.runners.base]
+...
+```
