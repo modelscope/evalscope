@@ -94,7 +94,8 @@ class SandboxFusionClient:
         *,
         tool_name: str,
         tool_input: Union[str, Dict[str, Any]],
-        language_override: Optional[str] = None,
+        tool_language_override: Optional[str] = None,
+        dataset_language_map: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
     ) -> ExecutionResult:
         """
@@ -104,6 +105,9 @@ class SandboxFusionClient:
           - python_executor -> python
           - shell_executor  -> bash
           - multi_code_executor -> expects {"code": "...", "language": "..."} or JSON string
+
+        dataset_language_override is the language override from the dataset configuration.
+        e.g. {"r": "R", "d": "D_ut"} for volcengine sandbox
         """
         # 1) Normalize input to dict if possible
         input_dict: Optional[Dict[str, Any]] = None
@@ -133,7 +137,7 @@ class SandboxFusionClient:
             'shell_executor': 'bash',
         }
 
-        language: Optional[str] = language_override or default_tool_lang_map.get(tool_name_norm)
+        language: Optional[str] = tool_language_override or default_tool_lang_map.get(tool_name_norm)
 
         code: Optional[str] = None
 
@@ -163,6 +167,10 @@ class SandboxFusionClient:
 
         # 3) Call SandboxFusion
         try:
+            print("language:", language)
+            if dataset_language_map:
+                language = dataset_language_map.get(language, language)
+            print("language after mapping:", language)
             resp = self.run_code(code=code, language=language, timeout=timeout)
         except requests.Timeout as e:
             return ExecutionResult(
@@ -226,9 +234,11 @@ class SandboxFusionSandbox:
         client: SandboxFusionClient,
         *,
         tool_language_map: Optional[Dict[str, str]] = None,
+        dataset_language_map: Optional[Dict[str, str]] = None,
     ) -> None:
         self.client = client
         self.tool_language_map = tool_language_map or {}
+        self.dataset_language_map = dataset_language_map or {}
 
     def execute(
         self,
@@ -238,10 +248,13 @@ class SandboxFusionSandbox:
         timeout: Optional[float] = None,
     ) -> ExecutionResult:
         lang_override = self.tool_language_map.get(tool_name)
+        if lang_override is None:
+            lang_override = self.tool_language_map.get(tool_name)
         return self.client.execute_tool(
             tool_name=tool_name,
             tool_input=tool_input,
-            language_override=lang_override,
+            tool_language_override=lang_override,
+            dataset_language_map=self.dataset_language_map,
             timeout=timeout,
         )
 
@@ -305,8 +318,18 @@ class SandboxFusionSandboxManager:
             for tool_name, cfg in sandbox_config['tools_config'].items():
                 if isinstance(cfg, dict) and 'language' in cfg:
                     tool_language_map[str(tool_name)] = str(cfg['language'])
+        # 3) The highest level is manual configuration
+        if isinstance(sandbox_manager_config.get('tool_language_map'), dict):
+            tool_language_map.update({str(k): str(v) for k, v in sandbox_manager_config['tool_language_map'].items()})
 
-        self._sandbox = SandboxFusionSandbox(self.client, tool_language_map=tool_language_map)
+        # Language map from config (optional)
+        dataset_language_map: Dict[str, str] = {}
+        if isinstance(sandbox_manager_config.get('dataset_language_map'), dict):
+            dataset_language_map.update({str(k): str(v) for k, v in sandbox_manager_config['dataset_language_map'].items()})
+
+        print("tool_language_map:", tool_language_map)
+        print("dataset_language_map:", dataset_language_map)
+        self._sandbox = SandboxFusionSandbox(self.client, tool_language_map=tool_language_map, dataset_language_map=dataset_language_map)
 
     def create_sandbox(self, sandbox_config: Optional[Dict[str, Any]] = None) -> SandboxFusionSandbox:
         # SandboxFusion is stateless; return a shared sandbox instance.
