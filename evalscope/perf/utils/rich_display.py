@@ -68,7 +68,7 @@ def _analyze_results_embedding(all_results):
 
             summary.append([
                 str(int(concurrency)),
-                str(int(rate)) if rate != -1 else 'INF',
+                f'{rate:.2f}' if rate != -1 else 'INF',
                 f'{rps:.2f}' if rps is not None else 'N/A',
                 f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
                 f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
@@ -87,7 +87,7 @@ def _analyze_results_embedding(all_results):
             continue
 
     if summary:
-        summary.sort(key=lambda x: (int(x[0]), int(x[1]) if x[1] != 'INF' else float('inf')))
+        summary.sort(key=lambda x: (float(x[0]), float(x[1]) if x[1] != 'INF' else float('inf')))
 
     return summary, total_tokens, total_time
 
@@ -129,7 +129,7 @@ def _analyze_results_llm(all_results):
 
             summary.append([
                 str(int(concurrency)),
-                str(int(rate)) if rate != -1 else 'INF',
+                f'{rate:.2f}' if rate != -1 else 'INF',
                 f'{rps:.2f}' if rps is not None else 'N/A',
                 f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
                 f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
@@ -150,7 +150,7 @@ def _analyze_results_llm(all_results):
             continue
 
     if summary:
-        summary.sort(key=lambda x: (int(x[0]), int(x[1]) if x[1] != 'INF' else float('inf')))
+        summary.sort(key=lambda x: (float(x[0]), float(x[1]) if x[1] != 'INF' else float('inf')))
 
     return summary, total_tokens, total_time
 
