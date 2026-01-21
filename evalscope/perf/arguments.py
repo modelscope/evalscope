@@ -60,7 +60,7 @@ class Arguments(BaseArgument):
     parallel: Union[int, List[int]] = 1
     """Number of parallel requests."""
 
-    rate: int = -1
+    rate: float = -1
     """Rate limit for requests (default: -1, no limit)."""
 
     sleep_interval: int = 5
@@ -304,7 +304,7 @@ def add_argument(parser: argparse.ArgumentParser):
     # Performance and parallelism
     parser.add_argument('-n', '--number', type=int, default=1000, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
-    parser.add_argument('--rate', type=int, default=-1, help='Number of requests per second. default None')
+    parser.add_argument('--rate', type=float, default=-1, help='Number of requests per second. default None')
     parser.add_argument(
         '--sleep-interval', type=int, default=5, help='Sleep interval between performance runs, in seconds. Default 5')  # noqa: E501
 
