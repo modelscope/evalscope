@@ -83,7 +83,7 @@ def is_embedding_or_rerank_api(api_name: str) -> bool:
 @dataclass
 class BenchmarkMetrics:
     concurrency: int = 0
-    rate: int = 0
+    rate: float = 0.0
     n_succeed_queries: int = 0
     n_failed_queries: int = 0
     total_first_chunk_latency: float = 0.0
