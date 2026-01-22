@@ -6,7 +6,7 @@ This plugin provides datasets suitable for embedding model performance testing.
 import json
 import numpy as np
 import os
-from typing import Dict, Iterator, List, Union
+from typing import Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

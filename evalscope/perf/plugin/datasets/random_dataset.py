@@ -18,6 +18,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'  # noqa: E501
         super().__init__(query_parameters)
 
+        assert self.tokenizer is not None, 'Tokenizer should be initialized for random data generation.'  # noqa: E501
         self.prefix_length = self.query_parameters.prefix_length
         self.number = self.query_parameters.number or 1
         # Use numpy's default_rng for deterministic sampling
