@@ -383,7 +383,7 @@ class TestPerf(unittest.TestCase):
         from evalscope.perf.arguments import Arguments
         task_cfg = Arguments(
             parallel=[1, 2],
-            number=[2, 4],
+            number=[1000, 1000],
             model='qwen3-rerank',
             url='https://dashscope.aliyuncs.com/compatible-api/v1/reranks',
             api_key=env.get('DASHSCOPE_API_KEY'),

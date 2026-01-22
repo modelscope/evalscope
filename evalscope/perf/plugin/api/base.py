@@ -1,6 +1,6 @@
 import aiohttp
 from abc import abstractmethod
-from typing import Any, AsyncGenerator, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData
@@ -13,7 +13,7 @@ class ApiPluginBase:
         self.model_path = param.tokenizer_path
 
     @abstractmethod
-    def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
+    def build_request(self, messages: Union[List[Dict], str], param: Optional[Arguments] = None) -> Dict:
         """Build a api request body.
 
         Args:

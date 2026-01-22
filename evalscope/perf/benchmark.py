@@ -2,7 +2,7 @@ import asyncio
 import json
 import numpy as np
 import sqlite3
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Tuple
+from typing import TYPE_CHECKING, AsyncGenerator, Dict, Tuple
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.logger import get_logger
@@ -26,31 +26,34 @@ data_process_completed_event = asyncio.Event()
 @exception_handler
 async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGenerator[dict, None]:
 
-    async def generate_requests_from_prompt():
+    async def _generate_from_prompt():
+        """Generate requests by repeating a single prompt."""
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         request = api_plugin.build_request(messages)
         for _ in range(args.number):
             yield request
 
-    async def generate_requests_from_dataset():
-        message_generator_class = DatasetRegistry.get_class(args.dataset)
-        message_generator = message_generator_class(args)
-
+    async def _generate_from_dataset():
+        """Generate requests by cycling through a dataset."""
+        message_generator = DatasetRegistry.get_class(args.dataset)(args)
         dataset_messages = []
-        try:
-            for messages in message_generator.build_messages():
+
+        # Load dataset messages into memory (limited by args.number)
+        # We catch StopIteration implicitly via the loop
+        with tqdm(message_generator.build_messages(), desc='Generating datasets', total=args.number, initial=1) as pbar:
+            for messages in pbar:
                 dataset_messages.append(messages)
                 if len(dataset_messages) >= args.number:
                     break
-        except StopIteration:
-            pass
 
         if not dataset_messages:
-            raise Exception('Dataset is empty!')
+            raise ValueError('Dataset is empty!')
 
+        # Yield requests cyclically until total count is reached
         count = 0
         dataset_index = 0
+        num_messages = len(dataset_messages)
 
         while count < args.number:
             messages = dataset_messages[dataset_index]
@@ -58,16 +61,17 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
             if request is not None:
                 yield request
                 count += 1
+            dataset_index = (dataset_index + 1) % num_messages
 
-            dataset_index = (dataset_index + 1) % len(dataset_messages)
-
+    # Dispatch based on arguments
     if args.prompt:
-        generator = generate_requests_from_prompt()
+        generator = _generate_from_prompt()
     elif args.dataset:
-        generator = generate_requests_from_dataset()
+        generator = _generate_from_dataset()
     else:
         raise ValueError('Either prompt or dataset is required!')
 
+    # Yield requests with rate limiting
     async for request in generator:
         yield request
         if args.rate != -1:

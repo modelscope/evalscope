@@ -156,7 +156,7 @@ class RandomRerankDatasetPlugin(DatasetPluginBase):
         min_len = max(1, min_len)
         max_len = max(1, max_len)
 
-        query_len = self._rng.integers(min_len, max_len + 1)
+        query_len = int(self._rng.integers(min_len, max_len + 1))
         doc_len = int(query_len * self.document_length_ratio)
         if doc_len < 1:
             doc_len = 1
