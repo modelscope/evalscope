@@ -17,7 +17,7 @@ def extract_code_generation(model_output: str, model_type: str = 'chat'):
 
     if len(indexlines) < 2:
         return ''
-    return '\n'.join(outputlines[indexlines[0] + 1:indexlines[1]])
+    return '\n'.join(outputlines[indexlines[-2] + 1:indexlines[-1]])
 
 
 def extract_code_execution(model_output: str, cot: bool = False):
