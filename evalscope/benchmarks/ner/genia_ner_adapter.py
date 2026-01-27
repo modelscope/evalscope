@@ -3,10 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'GeniaNER consisting of 2,000 MEDLINE abstracts has been released with more than '
-    '400,000 words and almost 100,000 annotations for biological terms.'
-)
+DESCRIPTION = """
+## Overview
+
+GeniaNER is a large-scale biomedical NER dataset consisting of 2,000 MEDLINE abstracts with over 400,000 words and almost 100,000 annotations for biological terms. It is one of the most comprehensive resources for biomedical entity recognition.
+
+## Task Description
+
+- **Task Type**: Biomedical Named Entity Recognition (NER)
+- **Input**: MEDLINE abstracts from GENIA corpus
+- **Output**: Identified biological entity spans
+- **Domain**: Molecular biology, bioinformatics
+
+## Key Features
+
+- 2,000 MEDLINE abstracts
+- Over 400,000 words
+- Nearly 100,000 biological term annotations
+- Five molecular biology entity types
+- Comprehensive coverage of biomolecular entities
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: CELL_LINE, CELL_TYPE, DNA, PROTEIN, RNA
+"""
 
 
 @register_benchmark(

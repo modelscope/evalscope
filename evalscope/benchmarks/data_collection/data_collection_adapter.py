@@ -22,10 +22,33 @@ logger = get_logger()
         name=DataCollection.NAME,
         pretty_name='Data-Collection',
         dataset_id='',  # dataset_id need to be set
-        description='Custom Data collection, mixing multiple evaluation datasets for '
-        'a unified evaluation, aiming to use less data to achieve a more comprehensive '
-        'assessment of the model\'s capabilities. '
-        '[Usage Reference](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html)',
+        description="""
+## Overview
+
+Data-Collection is a flexible framework for mixing multiple evaluation datasets into a unified evaluation suite. It enables comprehensive model assessment using carefully selected samples from various benchmarks.
+
+## Task Description
+
+- **Task Type**: Multi-Dataset Unified Evaluation
+- **Input**: Mixed samples from multiple benchmark datasets
+- **Output**: Aggregated scores across tasks, datasets, and categories
+- **Flexibility**: Supports custom dataset collections
+
+## Key Features
+
+- Mix multiple benchmarks into one evaluation
+- Hierarchical reporting (subset, dataset, task, tag, category levels)
+- Sample-level weighting support
+- Automatic adapter initialization for each dataset
+- Comprehensive aggregation (micro, macro, weighted averages)
+
+## Evaluation Notes
+
+- Dataset must be pre-compiled as a collection
+- Supports various task types (MCQ, QA, coding, etc.)
+- Generates multi-level reports for detailed analysis
+- See [Collection Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/collection/index.html) for usage
+""",
         tags=[Tags.CUSTOM],
         metric_list=['acc'],
         eval_split='test',

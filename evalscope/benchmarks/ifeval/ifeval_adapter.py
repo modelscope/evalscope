@@ -16,8 +16,37 @@ logger = get_logger()
     BenchmarkMeta(
         name='ifeval',
         pretty_name='IFEval',
-        description=
-        'IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.',  # noqa: E501
+        description="""
+## Overview
+
+IFEval (Instruction-Following Eval) is a benchmark for evaluating how well language models follow explicit, verifiable instructions. It contains prompts with specific formatting, content, or structural requirements that can be objectively verified.
+
+## Task Description
+
+- **Task Type**: Instruction Following Evaluation
+- **Input**: Prompts with explicit, verifiable constraints
+- **Output**: Response that follows all specified instructions
+- **Constraint Types**: Format, length, keywords, structure, etc.
+
+## Key Features
+
+- ~500 prompts with 25 types of verifiable instructions
+- Instructions are objectively checkable (not subjective)
+- Examples: "write exactly 3 paragraphs", "include the word X", "use bullet points"
+- Tests instruction comprehension and compliance
+- No ambiguity in evaluation criteria
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Four metrics available:
+  - `prompt_level_strict`: All instructions in prompt must be followed
+  - `prompt_level_loose`: Some tolerance for minor deviations
+  - `inst_level_strict`: Per-instruction accuracy (strict)
+  - `inst_level_loose`: Per-instruction accuracy (loose)
+- `prompt_level_strict` is the primary metric
+- Automatic verification of instruction compliance
+""",
         tags=[Tags.INSTRUCTION_FOLLOWING],
         dataset_id='opencompass/ifeval',
         subset_list=['default'],

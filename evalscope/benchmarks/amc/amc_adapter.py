@@ -14,8 +14,34 @@ logger = get_logger()
         name='amc',
         pretty_name='AMC',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        'AMC (American Mathematics Competitions) is a series of mathematics competitions for high school students.',
+        description="""
+## Overview
+
+AMC (American Mathematics Competitions) is a benchmark based on problems from the AMC 10/12 competitions from 2022-2024. These multiple-choice problems test mathematical problem-solving skills at the high school level and serve as qualifiers for the AIME competition.
+
+## Task Description
+
+- **Task Type**: Competition Mathematics (Multiple Choice)
+- **Input**: AMC-level mathematical problem
+- **Output**: Correct answer with step-by-step reasoning
+- **Years Covered**: 2022, 2023, 2024
+
+## Key Features
+
+- Problems from AMC 10 and AMC 12 competitions (2022-2024)
+- Multiple-choice format with 5 answer options
+- Topics: algebra, geometry, number theory, combinatorics
+- Difficulty ranges from accessible to challenging
+- Official competition problems with verified solutions
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Three subsets available: `amc22`, `amc23`, `amc24`
+- Problems include original URLs for reference
+- Solutions available in metadata for verification
+""",
         dataset_id='evalscope/amc_22-24',
         subset_list=['amc22', 'amc23', 'amc24'],
         metric_list=[{

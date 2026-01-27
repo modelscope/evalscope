@@ -144,10 +144,35 @@ LANGUAGE_BY_CODE = {
         pretty_name='WMT2024++',
         dataset_id='extraordinarylab/wmt24pp',
         tags=[Tags.MULTI_LINGUAL, Tags.MT],
-        description=(
-            'WMT2024 news translation benchmark supporting multiple language pairs. '
-            'Each subset represents a specific translation direction'
-        ),
+        description="""
+## Overview
+
+WMT2024++ is a comprehensive machine translation benchmark based on the WMT 2024 news translation task. It supports 54 language pairs with English as the source language, enabling evaluation of translation quality across diverse target languages.
+
+## Task Description
+
+- **Task Type**: Machine Translation
+- **Input**: Source text in English with translation prompt
+- **Output**: Translated text in the target language
+- **Language Pairs**: 54 pairs (English to 54 target languages)
+
+## Key Features
+
+- Extensive multilingual coverage (54 target languages)
+- News domain text for real-world applicability
+- Multiple evaluation metrics (BLEU, BERTScore, COMET)
+- Standardized prompt template for consistent evaluation
+- Supports batch scoring for efficiency
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: **BLEU**, **BERTScore** (XLM-RoBERTa), **COMET** (wmt22-comet-da)
+- Evaluates on **test** split
+- Language-specific normalization applied
+- COMET metric requires `unbabel-comet` package
+- Subsets represent individual language pairs (e.g., `en-zh_cn`, `en-de_de`)
+""",
         subset_list=LANGUAGE_PAIRS,
         eval_split='test',
         metric_list=[{

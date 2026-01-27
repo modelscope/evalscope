@@ -19,8 +19,34 @@ logger = get_logger()
         name='aime24',
         pretty_name='AIME-2024',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        'The AIME 2024 benchmark is based on problems from the American Invitational Mathematics Examination, a prestigious high school mathematics competition. This benchmark tests a model\'s ability to solve challenging mathematics problems by generating step-by-step solutions and providing the correct final answer.',  # noqa: E501
+        description="""
+## Overview
+
+AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark based on problems from the prestigious AIME competition. These problems represent some of the most challenging high school mathematics problems, requiring creative problem-solving and advanced mathematical reasoning.
+
+## Task Description
+
+- **Task Type**: Competition Mathematics Problem Solving
+- **Input**: AIME-level mathematical problem
+- **Output**: Integer answer (0-999) with step-by-step reasoning
+- **Difficulty**: Advanced high school / early undergraduate level
+
+## Key Features
+
+- Problems from the 2024 AIME I and AIME II competitions
+- Answers are always integers between 0 and 999
+- Requires creative mathematical reasoning and problem-solving
+- Topics: algebra, geometry, number theory, combinatorics, probability
+- Represents top-tier high school mathematics competition difficulty
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Only integer answers are accepted (matching AIME format)
+- Problems are significantly harder than GSM8K or standard MATH benchmark
+- Reference solutions available in metadata for analysis
+""",
         dataset_id='HuggingFaceH4/aime_2024',
         subset_list=['default'],
         metric_list=[{

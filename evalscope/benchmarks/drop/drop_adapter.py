@@ -38,8 +38,34 @@ Answer:  43
         name='drop',
         pretty_name='DROP',
         tags=[Tags.REASONING],
-        description=
-        'The DROP (Discrete Reasoning Over Paragraphs) benchmark is designed to evaluate the reading comprehension and reasoning capabilities of AI models. It includes a variety of tasks that require models to read passages and answer questions based on the content.',  # noqa: E501
+        description="""
+## Overview
+
+DROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension benchmark that requires models to perform discrete reasoning operations over text passages. Unlike simple extractive QA, DROP questions require numerical reasoning, counting, and comparison operations.
+
+## Task Description
+
+- **Task Type**: Reading Comprehension with Discrete Reasoning
+- **Input**: Passage and question requiring reasoning
+- **Output**: Numerical answer, span, or date
+- **Reasoning Types**: Addition, subtraction, counting, comparison, sorting
+
+## Key Features
+
+- 96,567 questions requiring discrete reasoning over text
+- Questions based on NFL game summaries, Wikipedia articles, etc.
+- Requires multi-step reasoning and arithmetic operations
+- Multiple valid answer formats (numbers, spans, dates)
+- Tests compositional reasoning abilities
+
+## Evaluation Notes
+
+- Default configuration uses **3-shot** examples
+- Metrics include Exact Match (EM) and token-level F1 score
+- Answers should follow the format: "Answer: [ANSWER]"
+- F1 score is the primary metric for comparison
+- Validates answers against multiple reference answers
+""",
         dataset_id='AI-ModelScope/DROP',
         metric_list=['em', 'f1'],
         few_shot_num=3,

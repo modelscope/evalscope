@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The BC2GM (BioCreative II Gene Mention) dataset is a widely used corpus '
-    'for gene mention recognition, consisting of 20,000 sentences from MEDLINE '
-    'abstracts where gene and protein names have been manually annotated.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The BC2GM (BioCreative II Gene Mention) dataset is a widely used corpus for gene mention recognition, consisting of 20,000 sentences from MEDLINE abstracts where gene and protein names have been manually annotated by domain experts.
+
+## Task Description
+
+- **Task Type**: Biomedical Named Entity Recognition (NER)
+- **Input**: Biomedical text from MEDLINE abstracts
+- **Output**: Identified gene and protein name spans
+- **Domain**: Molecular biology, genetics
+
+## Key Features
+
+- 20,000 sentences from MEDLINE abstracts
+- Expert-annotated gene and protein mentions
+- Benchmark from BioCreative II challenge
+- Widely used for biomedical NER evaluation
+- High-quality manual annotations
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: GENE (gene and protein names)
+"""  # noqa: E501
 
 
 @register_benchmark(

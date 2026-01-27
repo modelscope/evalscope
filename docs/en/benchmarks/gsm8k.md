@@ -2,10 +2,6 @@
 
 GSM8K (Grade School Math 8K) is a dataset of 8.5K high-quality, linguistically diverse grade school math word problems created by human problem writers.
 
-**Task Type**: Mathematical Reasoning
-**Difficulty**: Grade School Level
-**Answer Format**: Numerical answer enclosed in \boxed{{}}
-
 The dataset is designed to support the task of question answering on basic mathematical problems that require multi-step reasoning. Each problem consists of a natural language question and a numerical answer. The problems test basic arithmetic operations and require 2-8 steps to solve.
 
 **Key Features**:
@@ -25,6 +21,7 @@ The dataset is designed to support the task of question answering on basic mathe
 | **Metrics** | `acc` |
 | **Default Shots** | 4-shot |
 | **Evaluation Split** | `test` |
+| **Train Split** | `train` |
 
 ## Data Statistics
 
@@ -34,17 +31,18 @@ The dataset is designed to support the task of question answering on basic mathe
 | Prompt Length (Mean) | 1966.87 chars |
 | Prompt Length (Min/Max) | 1800 / 2575 chars |
 
-## Subsets
-
-- `main` (1,319 samples)
-
 ## Sample Example
 
 **Subset**: `main`
 
 ```json
 {
-  "input": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+  "input": [
+    {
+      "id": "3d025da2",
+      "content": "Here are some examples of how to solve similar problems:\n\nNatalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?\n\nReasoning:\nNatalia sold 48/ ... [TRUNCATED] ... ds every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nPlease reason step by step, and put your final answer within \\boxed{}."
+    }
+  ],
   "target": "18",
   "id": 0,
   "group_id": 0,
@@ -54,6 +52,8 @@ The dataset is designed to support the task of question answering on basic mathe
 }
 ```
 
+*Note: Some content was truncated for display.*
+
 ## Prompt Template
 
 **Prompt Template:**
@@ -61,6 +61,20 @@ The dataset is designed to support the task of question answering on basic mathe
 {question}
 Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+<details>
+<summary>Few-shot Template</summary>
+
+```text
+Here are some examples of how to solve similar problems:
+
+{fewshot}
+
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+</details>
 
 ## Usage
 

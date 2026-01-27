@@ -30,8 +30,34 @@ Here are some examples of how to solve similar problems:
         pretty_name='MGSM',
         dataset_id='evalscope/mgsm',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],
-        description=
-        'Multilingual Grade School Math Benchmark (MGSM) is a benchmark of grade-school math problems, proposed in the paper Language models are multilingual chain-of-thought reasoners.',  # noqa: E501
+        description="""
+## Overview
+
+MGSM (Multilingual Grade School Math) is a benchmark designed to evaluate multilingual mathematical reasoning capabilities of language models. It extends GSM8K to 11 typologically diverse languages, testing whether models can perform chain-of-thought reasoning across different languages.
+
+## Task Description
+
+- **Task Type**: Multilingual Mathematical Word Problem Solving
+- **Input**: Grade school math word problem in one of 11 languages
+- **Output**: Step-by-step reasoning with numerical answer
+- **Languages**: English, Spanish, French, German, Russian, Chinese, Japanese, Thai, Swahili, Bengali, Telugu
+
+## Key Features
+
+- 250 problems per language (translated from GSM8K)
+- 11 typologically diverse languages covering different language families
+- Tests multilingual chain-of-thought reasoning capabilities
+- Same problem content across languages for cross-lingual comparison
+- Designed to evaluate language-agnostic mathematical reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **4-shot** examples
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Use `subset_list` to evaluate specific languages (e.g., `['en', 'zh', 'ja']`)
+- Cross-lingual performance comparison supported
+- Few-shot examples are drawn from the train split in the same language
+""",
         subset_list=['en', 'es', 'fr', 'de', 'ru', 'zh', 'ja', 'th', 'sw', 'bn', 'te'],
         few_shot_num=4,
         train_split='train',

@@ -3,12 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The MIT-Restaurant dataset is a collection of restaurant review text specifically '
-    'curated for training and testing Natural Language Processing (NLP) models, '
-    'particularly for Named Entity Recognition (NER). It contains sentences from real '
-    'reviews, along with corresponding labels in the BIO format.'
-)
+DESCRIPTION = """
+## Overview
+
+The MIT-Restaurant dataset is a collection of restaurant review text specifically curated for training and testing NLP models for Named Entity Recognition. It contains sentences from real reviews with annotations in BIO format.
+
+## Task Description
+
+- **Task Type**: Restaurant Domain Named Entity Recognition (NER)
+- **Input**: Restaurant review text and queries
+- **Output**: Identified restaurant-related entity spans
+- **Domain**: Food service, restaurant reviews, dialogue systems
+
+## Key Features
+
+- Real restaurant review sentences
+- BIO format annotations
+- Eight restaurant-specific entity types
+- Useful for food service domain NLP
+- Adapted for conversational AI applications
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: AMENITY, CUISINE, DISH, HOURS, LOCATION, PRICE, RATING, RESTAURANT_NAME
+"""
 
 
 @register_benchmark(

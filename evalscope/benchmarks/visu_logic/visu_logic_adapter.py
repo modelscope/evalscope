@@ -29,8 +29,36 @@ SUBSET_LIST = [
         pretty_name='VisuLogic',
         dataset_id='evalscope/VisuLogic',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'VisuLogic is a benchmark aimed at evaluating the visual reasoning capabilities of Multi-modal Large Language Models (MLLMs), independent of textual reasoning processes. It features carefully constructed visual reasoning tasks spanning multiple categories, divided into six types based on required reasoning skills (e.g., Quantitative Reasoning, which involves understanding and deducing changes in the quantity of elements in images). Unlike existing benchmarks, VisuLogic is a challenging visual reasoning benchmark that is inherently difficult to articulate using language, providing a more rigorous evaluation of the visual reasoning capabilities of MLLMs.',
+        description="""
+## Overview
+
+VisuLogic is a benchmark for evaluating visual reasoning capabilities of Multimodal Large Language Models (MLLMs), independent of textual reasoning. It features carefully constructed visual reasoning tasks that are inherently difficult to articulate using language alone.
+
+## Task Description
+
+- **Task Type**: Visual Reasoning (Multiple-Choice)
+- **Input**: Image + visual reasoning question with 4 choices
+- **Output**: Answer letter (A/B/C/D)
+- **Domains**: Pure visual reasoning without text-based shortcuts
+
+## Key Features
+
+- Six reasoning skill categories:
+  - **Quantitative Reasoning**: Understanding quantity changes in images
+  - **Positional Reasoning**: Understanding spatial positions
+  - **Spatial Reasoning**: Understanding 3D spatial relationships
+  - **Attribute Reasoning**: Understanding visual attributes
+  - **Stylistic Reasoning**: Understanding visual styles
+  - **Other**: Miscellaneous visual reasoning tasks
+- Tests genuine visual understanding beyond language shortcuts
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting with "ANSWER: [LETTER]" format
+- Results grouped by reasoning skill category
+""",
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

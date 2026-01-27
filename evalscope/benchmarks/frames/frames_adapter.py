@@ -27,8 +27,34 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
         name='frames',
         pretty_name='FRAMES',
         tags=[Tags.REASONING, Tags.LONG_CONTEXT],
-        description=
-        'FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems across factuality, retrieval accuracy, and reasoning.',  # noqa: E501
+        description="""
+## Overview
+
+FRAMES is a comprehensive evaluation dataset designed to test the capabilities of Retrieval-Augmented Generation (RAG) systems. It evaluates factuality, retrieval accuracy, and reasoning abilities in long-context scenarios.
+
+## Task Description
+
+- **Task Type**: RAG Evaluation / Long-Context QA
+- **Input**: Wikipedia context documents + question
+- **Output**: Factual answer in specified format
+- **Domains**: Factuality, retrieval, multi-hop reasoning
+
+## Key Features
+
+- Tests core RAG capabilities: factuality, retrieval, reasoning
+- Provides Wikipedia-sourced context documents
+- Questions require synthesizing information from multiple sources
+- Evaluates both retrieval quality and answer generation
+- Supports both exact match and LLM judge evaluation
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** with both exact match and LLM judge
+- Response format: "Therefore, the answer is (answer here)"
+- Uses normalized answer comparison for exact matching
+- LLM judge provides flexible semantic matching
+""",  # noqa: E501
         dataset_id='iic/frames',
         metric_list=['acc'],
         eval_split='test',

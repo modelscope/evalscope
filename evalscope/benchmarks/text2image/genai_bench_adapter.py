@@ -16,7 +16,34 @@ logger = get_logger()
         name='genai_bench',
         pretty_name='GenAI-Bench',
         dataset_id='AI-ModelScope/T2V-Eval-Prompts',
-        description='GenAI-Bench Text-to-Image Benchmark. Includes 1600 prompts for text-to-image task.',
+        description="""
+## Overview
+
+GenAI-Bench is a comprehensive text-to-image benchmark featuring 1600 prompts designed to evaluate image generation models across diverse categories and complexity levels.
+
+## Task Description
+
+- **Task Type**: Text-to-Image Generation Evaluation
+- **Input**: Text prompts with varying complexity (basic and advanced)
+- **Output**: Generated images evaluated using VQAScore
+- **Size**: 1600 prompts
+
+## Key Features
+
+- Large-scale prompt collection for thorough evaluation
+- Categorized prompts (basic vs advanced)
+- Uses VQAScore for semantic alignment assessment
+- Rich metadata including category tags
+- Supports both generation and pre-existing image evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **VQAScore** for semantic alignment
+- Evaluates images from the **test** split
+- Prompts categorized as 'basic' or 'advanced' based on complexity
+- Part of the T2V-Eval-Prompts dataset collection
+""",
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['GenAI-Bench-1600'],
         metric_list=['VQAScore'],

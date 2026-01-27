@@ -19,8 +19,33 @@ PROMPT_TEMPLATE = '请回答问题\n{question}'
     BenchmarkMeta(
         name='general_qa',
         pretty_name='General-QA',
-        description='A general question answering dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa).',  # noqa: E501
+        description="""
+## Overview
+
+General-QA is a customizable question answering benchmark for evaluating language models on open-ended text generation tasks. It supports flexible data formats and configurable evaluation metrics.
+
+## Task Description
+
+- **Task Type**: Open-Ended Question Answering
+- **Input**: Question (with optional system prompt and conversation history)
+- **Output**: Free-form text answer
+- **Flexibility**: Supports custom datasets via local files
+
+## Key Features
+
+- Flexible input format (query/answer or messages format)
+- Optional system prompt support
+- BLEU and Rouge evaluation metrics
+- Custom dataset support via local file loading
+- Extensible for various QA use cases
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)
+- Evaluates on **test** split
+- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for dataset format
+""",  # noqa: E501
         tags=[Tags.QA, Tags.CUSTOM],
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],

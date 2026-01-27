@@ -17,11 +17,34 @@ logger = get_logger()
         name='swe_bench_verified',
         pretty_name='SWE-bench_Verified',
         tags=[Tags.CODING],
-        description='SWE-bench Verified is a subset of 500 samples from the SWE-bench test set, '
-        'which have been human-validated for quality. SWE-bench is a dataset that tests systems\' '
-        'ability to solve GitHub issues automatically. '
-        'Need to run `pip install swebench==4.1.0` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)',
+        description="""
+## Overview
+
+SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, designed to test systems' ability to automatically resolve real-world GitHub issues. Each sample represents a genuine bug fix or feature implementation from popular Python repositories.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing
+- **Input**: GitHub issue description with repository context
+- **Output**: Code patch (diff format) that resolves the issue
+- **Repositories**: 12 popular Python projects (Django, Flask, Requests, etc.)
+
+## Key Features
+
+- 500 human-validated Issue-Pull Request pairs
+- Real-world bugs from production Python repositories
+- Evaluation via unit test verification
+- Docker-based isolated execution environments
+- Tests both bug understanding and code modification skills
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically for each repository
+- Timeout of 1800 seconds (30 min) per instance
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
+- Supports both local image building and remote image pulling
+""",
         dataset_id='princeton-nlp/SWE-bench_Verified',
         metric_list=['acc'],
         eval_split='test',
@@ -163,12 +186,33 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         name='swe_bench_verified_mini',
         pretty_name='SWE-bench_Verified_mini',
         tags=[Tags.CODING],
-        description='SWEBench-verified-mini is a subset of SWEBench-verified '
-        'that uses 50 instead of 500 datapoints, requires 5GB instead of 130GB '
-        'of storage and has approximately the same distribution of performance, '
-        'test pass rates and difficulty as the original dataset. '
-        'Need to run `pip install swebench==4.1.0` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)',
+        description="""
+## Overview
+
+SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50 carefully selected samples that maintain the same distribution of performance, test pass rates, and difficulty as the full dataset while requiring only 5GB of storage instead of 130GB.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing
+- **Input**: GitHub issue description with repository context
+- **Output**: Code patch (diff format) that resolves the issue
+- **Size**: 50 samples (vs 500 in full Verified set)
+
+## Key Features
+
+- Representative 50-sample subset of SWE-bench Verified
+- Same difficulty distribution as full dataset
+- Dramatically reduced storage requirements (5GB vs 130GB)
+- Ideal for quick evaluation and development iteration
+- Maintains statistical validity for benchmarking
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
+- Good for rapid prototyping and initial model assessment
+""",
         dataset_id='evalscope/swe-bench-verified-mini',
         metric_list=['acc'],
         eval_split='test',
@@ -207,12 +251,33 @@ class SWEBenchVerifiedMiniAdapter(SWEBenchVerifiedAdapter):
         name='swe_bench_lite',
         pretty_name='SWE-bench_Lite',
         tags=[Tags.CODING],
-        description='SWE-bench Lite is subset of SWE-bench, a dataset that tests systems\' '
-        'ability to solve GitHub issues automatically. The dataset collects 300 test '
-        'Issue-Pull Request pairs from 11 popular Python. Evaluation is performed by '
-        'unit test verification using post-PR behavior as the reference solution. '
-        'Need to run `pip install swebench==4.1.0` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html)',
+        description="""
+## Overview
+
+SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Request pairs from 11 popular Python repositories. It provides a more accessible entry point for evaluating automated software engineering capabilities.
+
+## Task Description
+
+- **Task Type**: Automated Software Engineering / Bug Fixing
+- **Input**: GitHub issue description with repository context
+- **Output**: Code patch (diff format) that resolves the issue
+- **Size**: 300 carefully selected test instances
+
+## Key Features
+
+- 300 test Issue-Pull Request pairs
+- 11 popular Python repositories covered
+- Real-world bugs with verified solutions
+- Evaluation via unit test verification
+- More manageable than full SWE-bench while still challenging
+
+## Evaluation Notes
+
+- Requires `pip install swebench==4.1.0` before evaluation
+- Docker images are built/pulled automatically for each repository
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
+- Popular benchmark variant for initial model comparison
+""",
         dataset_id='princeton-nlp/SWE-bench_Lite',
         metric_list=['acc'],
         eval_split='test',

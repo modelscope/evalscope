@@ -10,11 +10,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
-DESCRIPTION = (
-    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
-    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
-    'or rhetorically subversive.'
-)
+DESCRIPTION = """
+## Overview
+
+Drivelology Binary Classification evaluates models' ability to identify "drivelology" - a unique linguistic phenomenon characterized as "nonsense with depth." These are utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, or rhetorically subversive.
+
+## Task Description
+
+- **Task Type**: Binary Text Classification (Yes/No)
+- **Input**: Text sample to classify
+- **Output**: "Yes" if drivelology, "No" otherwise
+- **Domain**: Linguistic analysis, humor detection, pragmatics
+
+## Key Features
+
+- Tests understanding of layered linguistic meanings
+- Distinguishes nonsense-with-depth from pure nonsense and normal text
+- Requires contextual understanding and emotional insight
+- Covers humor, irony, sarcasm detection
+- Multiple difficulty levels available
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: Accuracy, Precision, Recall, F1-Score
+- Subsets: binary-english-easy, binary-english-hard, binary-chinese-easy, binary-chinese-hard
+"""
 
 PROMPT_TEMPLATE = """
 #Instruction#:

@@ -23,22 +23,33 @@ Here are some examples of how to solve similar problems:
 """.lstrip() + PROMPT_TEMPLATE
 
 # GSM8K Description with standard format
-GSM8K_DESCRIPTION = """GSM8K (Grade School Math 8K) is a dataset of 8.5K high-quality, linguistically diverse \
-grade school math word problems created by human problem writers.
+GSM8K_DESCRIPTION = """
+## Overview
 
-**Task Type**: Mathematical Reasoning
-**Difficulty**: Grade School Level
-**Answer Format**: Numerical answer enclosed in \\boxed{{}}
+GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.
 
-The dataset is designed to support the task of question answering on basic mathematical problems \
-that require multi-step reasoning. Each problem consists of a natural language question and a \
-numerical answer. The problems test basic arithmetic operations and require 2-8 steps to solve.
+## Task Description
 
-**Key Features**:
-- High-quality human-written problems
-- Linguistically diverse question formulations
-- Multi-step reasoning required
-- Clear numerical answers"""
+- **Task Type**: Mathematical Word Problem Solving
+- **Input**: Natural language math word problem
+- **Output**: Numerical answer derived through step-by-step reasoning
+- **Difficulty**: Grade school level (2-8 reasoning steps required)
+
+## Key Features
+
+- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)
+- Solutions involve 2 to 8 sequential reasoning steps
+- High linguistic diversity in problem formulations
+- Human-written problems ensuring natural language quality
+- Clear numerical answers for objective evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- The metric extracts numerical values for accuracy comparison
+- Supports both zero-shot and few-shot evaluation modes
+"""
 
 
 @register_benchmark(
@@ -48,9 +59,7 @@ numerical answer. The problems test basic arithmetic operations and require 2-8 
         dataset_id='AI-ModelScope/gsm8k',
         tags=[Tags.MATH, Tags.REASONING],
         description=GSM8K_DESCRIPTION,
-        # Documentation & Reference Fields
         paper_url='https://arxiv.org/abs/2110.14168',
-        # Dataset configuration
         subset_list=['main'],
         few_shot_num=4,
         train_split='train',

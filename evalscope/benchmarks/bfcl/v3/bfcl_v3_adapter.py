@@ -48,13 +48,35 @@ BFCL_V3_TO_V4_SUBJECT_MAPPING = {
         name='bfcl_v3',
         pretty_name='BFCL-v3',
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
-        description='Berkeley Function Calling Leaderboard (BFCL), the **first comprehensive '
-        'and executable function call evaluation** '
-        'dedicated to assessing Large Language Models\' (LLMs) ability to invoke '
-        'functions. Unlike previous evaluations, '
-        'BFCL accounts for various forms of function calls, diverse scenarios, and executability. '
-        'Need to run `pip install bfcl-eval==2025.10.27.1` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html)',
+        description="""
+## Overview
+
+BFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and executable function call evaluation benchmark for assessing LLMs' ability to invoke functions. It evaluates various forms of function calls, diverse scenarios, and executability.
+
+## Task Description
+
+- **Task Type**: Function Calling / Tool Use Evaluation
+- **Input**: User query with available function definitions
+- **Output**: Correct function call with parameters
+- **Categories**: AST_NON_LIVE, AST_LIVE, RELEVANCE, MULTI_TURN
+
+## Key Features
+
+- Comprehensive function call evaluation
+- Tests simple, multiple, and parallel function calls
+- Multi-language support (Python, Java, JavaScript)
+- Relevance detection (irrelevance handling)
+- Multi-turn conversation function calling
+- Live API endpoints for execution testing
+
+## Evaluation Notes
+
+- Requires `pip install bfcl-eval==2025.10.27.1` before evaluation
+- Set `is_fc_model=True` for models with native function calling support
+- `underscore_to_dot` parameter controls function name formatting
+- See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v3.html) for detailed setup
+- Results broken down by category (AST, Relevance, Multi-turn)
+""",
         dataset_id='AI-ModelScope/bfcl_v3',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],

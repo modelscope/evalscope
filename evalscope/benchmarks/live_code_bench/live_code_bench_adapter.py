@@ -19,9 +19,34 @@ logger = get_logger()
         name='live_code_bench',
         pretty_name='Live-Code-Bench',
         tags=[Tags.CODING],
-        description=
-        'Live Code Bench is a benchmark for evaluating code generation models on real-world coding tasks. It includes a variety of programming problems with test cases to assess the model\'s ability to generate correct and efficient code solutions. '
-        '**By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',
+        description="""
+## Overview
+
+LiveCodeBench is a contamination-free benchmark for evaluating code generation models on real-world competitive programming problems. It continuously collects new problems from coding platforms to ensure models haven't seen the test data during training.
+
+## Task Description
+
+- **Task Type**: Competitive Programming / Code Generation
+- **Input**: Programming problem description with input/output format
+- **Output**: Complete solution code
+- **Source**: Problems from LeetCode, Codeforces, and AtCoder
+
+## Key Features
+
+- Continuously updated with new problems post model training cutoff
+- Problems from major competitive programming platforms
+- Multiple test cases per problem for thorough evaluation
+- Date-based filtering to control for data contamination
+- Supports both local and sandbox code execution
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
+- Use `start_date` and `end_date` parameters to filter problems by date
+- Default timeout is 6 seconds per test case
+- Supports `pass@k` metric calculation
+""",
         dataset_id='AI-ModelScope/code_generation_lite',
         subset_list=['release_latest'],
         metric_list=['acc'],

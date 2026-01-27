@@ -9,7 +9,7 @@ and usage instructions.
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
 
@@ -24,7 +24,7 @@ README_TEMPLATE = '''# {pretty_name}
 
 {description}
 
-## Overview
+## Properties
 
 | Property | Value |
 |----------|-------|
@@ -35,14 +35,10 @@ README_TEMPLATE = '''# {pretty_name}
 | **Metrics** | {metrics} |
 | **Default Shots** | {few_shot_num}-shot |
 | **Evaluation Split** | `{eval_split}` |
-
+{extra_overview_rows}
 ## Data Statistics
 
 {statistics_section}
-
-## Subsets
-
-{subsets_section}
 
 ## Sample Example
 
@@ -51,7 +47,7 @@ README_TEMPLATE = '''# {pretty_name}
 ## Prompt Template
 
 {prompt_template_section}
-
+{extra_params_section}{sandbox_config_section}
 ## Usage
 
 ```python
@@ -87,10 +83,12 @@ def _format_link(url: Optional[str], display_text: str = 'Link') -> str:
     return 'N/A'
 
 
-def _format_tags(tags: List[str]) -> str:
+def _format_tags(tags: Union[str, List[str]]) -> str:
     """Format tags as inline code."""
     if not tags:
         return 'N/A'
+    if isinstance(tags, str):
+        return f'`{tags}`'
     return ', '.join(f'`{t}`' for t in sorted(tags))
 
 
@@ -117,28 +115,11 @@ def _format_statistics_section(stats: Optional['DataStatistics']) -> str:
     return stats.to_markdown_table()
 
 
-def _format_subsets_section(subset_list: List[str], stats: Optional['DataStatistics'] = None) -> str:
-    """Format the subsets section."""
-    if not subset_list:
-        return '*No subsets defined.*'
-
-    lines = []
-    if len(subset_list) == 1 and subset_list[0] in ('default', 'main'):
-        lines.append(f'- `{subset_list[0]}` (default)')
-    else:
-        lines.append('| Subset | Sample Count |')
-        lines.append('|--------|--------------|')
-        for subset in subset_list:
-            # Try to get sample count from statistics
-            count = 'N/A'
-            if stats and stats.subset_stats:
-                for s in stats.subset_stats:
-                    if s.name == subset:
-                        count = f'{s.sample_count:,}'
-                        break
-            lines.append(f'| `{subset}` | {count} |')
-
-    return '\n'.join(lines)
+def _format_sample_count(count: Union[int, str]) -> str:
+    """Format sample count with thousand separators."""
+    if isinstance(count, int):
+        return f'{count:,}'
+    return str(count)
 
 
 def _format_sample_example_section(example: Optional['SampleExample']) -> str:
@@ -183,6 +164,169 @@ def _format_prompt_template_section(
         sections.append('</details>')
 
     return '\n'.join(sections)
+
+
+def _format_extra_overview_rows(
+    train_split: Optional[str] = None,
+    aggregation: Optional[str] = None,
+) -> str:
+    """Format additional overview table rows."""
+    rows = []
+    if train_split:
+        rows.append(f'| **Train Split** | `{train_split}` |')
+    if aggregation and aggregation != 'mean':
+        rows.append(f'| **Aggregation** | `{aggregation}` |')
+    if rows:
+        return '\n'.join(rows) + '\n\n'
+    return '\n'
+
+
+def _format_extra_params_section(extra_params: Optional[Dict] = None) -> str:
+    """Format the extra parameters section."""
+    if not extra_params:
+        return ''
+
+    lines = ['', '## Extra Parameters', '']
+    lines.append('| Parameter | Type | Default | Description |')
+    lines.append('|-----------|------|---------|-------------|')
+
+    for param_name, param_spec in extra_params.items():
+        if isinstance(param_spec, dict) and 'description' in param_spec:
+            param_type = param_spec.get('type', 'any')
+            param_value = param_spec.get('value', 'N/A')
+            param_desc = param_spec.get('description', '')
+            choices = param_spec.get('choices')
+            if choices:
+                param_desc += f' Choices: {choices}'
+            lines.append(f'| `{param_name}` | `{param_type}` | `{param_value}` | {param_desc} |')
+        else:
+            lines.append(f'| `{param_name}` | - | `{param_spec}` | - |')
+
+    return '\n'.join(lines) + '\n'
+
+
+def _format_sandbox_config_section(sandbox_config: Optional[Dict] = None) -> str:
+    """Format the sandbox configuration section."""
+    import json
+
+    if not sandbox_config:
+        return ''
+
+    lines = ['', '## Sandbox Configuration', '']
+    lines.append('This benchmark requires a sandbox environment for code execution.')
+    lines.append('')
+    lines.append('```json')
+    lines.append(json.dumps(sandbox_config, indent=2, ensure_ascii=False))
+    lines.append('```')
+
+    return '\n'.join(lines) + '\n'
+
+
+def _format_statistics_section_from_dict(statistics: Optional[Dict]) -> str:
+    """Format the statistics section from a dictionary."""
+    if not statistics:
+        return '*Statistics not available.*'
+
+    lines = []
+    total_samples = statistics.get('total_samples', 'N/A')
+    prompt_length = statistics.get('prompt_length', {})
+
+    lines.append('| Metric | Value |')
+    lines.append('|--------|-------|')
+    lines.append(f'| Total Samples | {_format_sample_count(total_samples)} |')
+
+    if prompt_length:
+        lines.append(f'| Prompt Length (Mean) | {prompt_length.get("mean", "N/A")} chars |')
+        lines.append(
+            f'| Prompt Length (Min/Max) | {prompt_length.get("min", "N/A")} / {prompt_length.get("max", "N/A")} chars |'
+        )
+
+    # Subset statistics
+    subset_stats = statistics.get('subset_stats', [])
+    if subset_stats and len(subset_stats) > 1:
+        lines.extend(['', '**Per-Subset Statistics:**', ''])
+        lines.append('| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |')
+        lines.append('|--------|---------|-------------|------------|------------|')
+        for s in subset_stats:
+            sample_count = s.get('sample_count', 'N/A')
+            lines.append(
+                f'| `{s.get("name", "N/A")}` | {_format_sample_count(sample_count)} | '
+                f'{s.get("prompt_length_mean", "N/A")} | {s.get("prompt_length_min", "N/A")} | '
+                f'{s.get("prompt_length_max", "N/A")} |'
+            )
+
+    return '\n'.join(lines)
+
+
+def _format_sample_example_section_from_dict(sample_example: Optional[Dict]) -> str:
+    """Format the sample example section from a dictionary."""
+    import json as json_module
+
+    if not sample_example or not sample_example.get('data'):
+        return '*Sample example not available.*'
+
+    lines = []
+    subset = sample_example.get('subset')
+    if subset:
+        lines.append(f'**Subset**: `{subset}`')
+        lines.append('')
+    lines.append('```json')
+    lines.append(json_module.dumps(sample_example.get('data', {}), ensure_ascii=False, indent=2))
+    lines.append('```')
+    if sample_example.get('truncated'):
+        lines.append('')
+        lines.append('*Note: Some content was truncated for display.*')
+
+    return '\n'.join(lines)
+
+
+def generate_readme_from_dict(
+    name: str,
+    meta: Dict[str, Any],
+    statistics: Optional[Dict[str, Any]] = None,
+    sample_example: Optional[Dict[str, Any]] = None,
+    lang: str = 'en',
+) -> str:
+    """
+    Generate complete README content for a benchmark from dictionary data.
+
+    This is the primary function for generating README from persisted JSON data.
+
+    Args:
+        name: Benchmark name
+        meta: Benchmark metadata dictionary
+        statistics: Data statistics dictionary
+        sample_example: Sample example dictionary
+        lang: Language code ('en' or 'zh') - reserved for future i18n support
+
+    Returns:
+        Formatted README markdown string
+    """
+    return README_TEMPLATE.format(
+        pretty_name=meta.get('pretty_name') or name,
+        description=meta.get('description') or '*No description available.*',
+        name=name,
+        dataset_id_link=_format_dataset_link(meta.get('dataset_id', '')),
+        paper_link=_format_link(meta.get('paper_url'), 'Paper'),
+        tags=_format_tags(meta.get('tags', [])),
+        metrics=_format_metrics(meta.get('metrics', [])),
+        few_shot_num=meta.get('few_shot_num', 0),
+        eval_split=meta.get('eval_split') or 'N/A',
+        extra_overview_rows=_format_extra_overview_rows(
+            meta.get('train_split'),
+            meta.get('aggregation'),
+        ),
+        statistics_section=_format_statistics_section_from_dict(statistics),
+        sample_example_section=_format_sample_example_section_from_dict(sample_example),
+        prompt_template_section=_format_prompt_template_section(
+            meta.get('prompt_template'),
+            meta.get('system_prompt'),
+            meta.get('few_shot_prompt_template'),
+        ),
+        extra_params_section=_format_extra_params_section(meta.get('extra_params')),
+        sandbox_config_section=_format_sandbox_config_section(meta.get('sandbox_config')),
+        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    )
 
 
 def generate_benchmark_readme(
@@ -239,14 +383,16 @@ def generate_benchmark_readme(
         metrics=_format_metrics(meta.metric_list),
         few_shot_num=meta.few_shot_num,
         eval_split=meta.eval_split or 'N/A',
+        extra_overview_rows=_format_extra_overview_rows(meta.train_split, meta.aggregation),
         statistics_section=_format_statistics_section(stats),
-        subsets_section=_format_subsets_section(meta.subset_list, stats),
         sample_example_section=_format_sample_example_section(example),
         prompt_template_section=_format_prompt_template_section(
             meta.prompt_template,
             meta.system_prompt,
             meta.few_shot_prompt_template,
         ),
+        extra_params_section=_format_extra_params_section(meta.extra_params),
+        sandbox_config_section=_format_sandbox_config_section(meta.sandbox_config),
         generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     )
 
@@ -337,3 +483,14 @@ def generate_all_benchmark_readmes(
             results[name] = f'ERROR: {e}'
 
     return results
+
+
+# Export utility functions for reuse
+__all__ = [
+    'generate_readme_from_dict',
+    'generate_benchmark_readme',
+    'save_benchmark_readme',
+    'generate_all_benchmark_readmes',
+    '_format_tags',
+    '_format_sample_count',
+]

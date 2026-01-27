@@ -67,8 +67,34 @@ OPEN_TYPE = 'open'
         name='mmmu',
         pretty_name='MMMU',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'MMMU (A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI) benchmark designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning. MMMU includes 11.5K meticulously collected multimodal questions from college exams, quizzes, and textbooks, covering six core disciplines: Art & Design, Business, Science, Health & Medicine, Humanities & Social Science, and Tech & Engineering. These questions span 30 subjects and 183 subfields, comprising 30 highly heterogeneous image types, such as charts, diagrams, maps, tables, music sheets, and chemical structures.',  # noqa: E501
+        description="""
+## Overview
+
+MMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benchmark designed to evaluate multimodal models on expert-level tasks requiring college-level subject knowledge and deliberate reasoning. It covers 30 subjects across 6 core disciplines.
+
+## Task Description
+
+- **Task Type**: Multimodal Question Answering (Multiple-Choice and Open-Ended)
+- **Input**: Questions with diverse images (charts, diagrams, maps, tables, etc.)
+- **Output**: Answer letter (MC) or free-form text (Open)
+- **Disciplines**: Art & Design, Business, Science, Health & Medicine, Humanities, Tech & Engineering
+
+## Key Features
+
+- 11.5K meticulously collected multimodal questions
+- From college exams, quizzes, and textbooks
+- 30 subjects and 183 subfields covered
+- 30 heterogeneous image types (charts, diagrams, music sheets, chemical structures, etc.)
+- Tests both perception and expert-level reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Supports both multiple-choice and open-ended question types
+- Multiple images per question supported (up to 7)
+- For open questions: "ANSWER: [ANSWER]" format expected
+- Evaluates on validation split (test set requires submission)
+""",
         dataset_id='AI-ModelScope/MMMU',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

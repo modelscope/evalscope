@@ -14,11 +14,34 @@ logger = get_logger()
         name='minerva_math',
         pretty_name='Minerva-Math',
         tags=[Tags.MATH, Tags.REASONING],
-        description='Minerva-math is a benchmark designed to evaluate the mathematical and quantitative '
-        'reasoning capabilities of LLMs. It consists of **272 problems** '
-        'sourced primarily from **MIT OpenCourseWare** '
-        'courses, covering advanced STEM subjects such as solid-state chemistry, astronomy, differential '
-        'equations, and special relativity at the **university and graduate level**.',
+        description="""
+## Overview
+
+Minerva-Math is a benchmark designed to evaluate advanced mathematical and quantitative reasoning capabilities of language models. It consists of 272 challenging problems sourced primarily from MIT OpenCourseWare courses, covering university and graduate-level STEM subjects.
+
+## Task Description
+
+- **Task Type**: Advanced STEM Problem Solving
+- **Input**: University/graduate-level mathematical or scientific problem
+- **Output**: Step-by-step solution with final answer
+- **Difficulty**: University to graduate level
+
+## Key Features
+
+- 272 challenging problems from MIT OpenCourseWare
+- Covers advanced subjects: solid-state chemistry, astronomy, differential equations, special relativity
+- University and graduate-level difficulty
+- Tests deep mathematical and scientific reasoning
+- Problems require multi-step quantitative reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Uses LLM-as-judge for complex answer evaluation
+- Problems may require domain-specific knowledge (physics, chemistry, etc.)
+- Designed to test the upper limits of model reasoning capabilities
+""",
         dataset_id='knoveleng/Minerva-Math',
         subset_list=['default'],
         metric_list=[{

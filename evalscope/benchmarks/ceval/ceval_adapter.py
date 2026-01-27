@@ -85,8 +85,34 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
         name='ceval',
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
-        description=
-        'C-Eval is a benchmark designed to evaluate the performance of AI models on Chinese exams across various subjects, including STEM, social sciences, and humanities. It consists of multiple-choice questions that test knowledge and reasoning abilities in these areas.',  # noqa: E501
+        description="""
+## Overview
+
+C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the knowledge and reasoning abilities of language models in Chinese. It covers 52 subjects ranging from STEM to humanities and social sciences, with questions from middle school to professional examination levels.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering (Chinese)
+- **Input**: Chinese question with four answer choices (A, B, C, D)
+- **Output**: Single correct answer letter
+- **Subjects**: 52 subjects organized into 4 categories (STEM, Social Science, Humanities, Other)
+
+## Key Features
+
+- 13,948 multiple-choice questions across 52 subjects
+- Questions sourced from Chinese middle school, high school, college, and professional exams
+- Covers diverse domains including mathematics, physics, law, medicine, and more
+- Includes explanations for validation split questions
+- Standard benchmark for Chinese language model evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** examples from the dev split
+- Questions and prompts are in Chinese
+- Answers should follow the format: "答案：[LETTER]"
+- Results can be aggregated by subject or category
+- Use `subset_list` parameter to evaluate specific subjects
+""",
         dataset_id='evalscope/ceval',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],

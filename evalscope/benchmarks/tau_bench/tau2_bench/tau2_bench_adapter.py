@@ -22,11 +22,35 @@ logger = get_logger()
         name='tau2_bench',
         pretty_name='τ²-bench',
         tags=[Tags.FUNCTION_CALLING, Tags.REASONING, Tags.AGENT],
-        description='τ²-bench (Tau Squared Bench) is an extension and enhancement of the original '
-        'τ-bench (Tau Bench), which is a benchmark designed to evaluate conversational AI agents '
-        'that interact with users through domain-specific API tools and guidelines. '
-        'Please install it with `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0` '
-        'before evaluating and set a user model. [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)',  # noqa: E501
+        description="""
+## Overview
+
+τ²-bench (Tau Squared Bench) is an extension and enhancement of the original τ-bench. It evaluates conversational AI agents in domain-specific scenarios with expanded capabilities including telecom domain support.
+
+## Task Description
+
+- **Task Type**: Advanced Conversational Agent Evaluation
+- **Input**: User scenarios with complex goals and multi-step requirements
+- **Output**: Agent actions via API tool calls following policy guidelines
+- **Domains**: Airline, Retail, Telecom
+
+## Key Features
+
+- Extended domain coverage (adds telecom to airline and retail)
+- Enhanced task complexity and evaluation criteria
+- LLM-simulated user interactions
+- Multi-turn dialogue with tool calling
+- Policy compliance verification
+
+## Evaluation Notes
+
+- **Installation Required**: `pip install git+https://github.com/sierra-research/tau2-bench@v0.2.0`
+- **User Model Configuration**: Requires setting up a user simulation model
+- Primary metric: **Accuracy** based on task completion reward
+- Supports **airline**, **retail**, and **telecom** domains
+- Uses **pass@k** aggregation for robustness evaluation
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau2_bench.html)
+""",  # noqa: E501
         dataset_id='evalscope/tau2-bench-data',
         subset_list=['airline', 'retail', 'telecom'],
         aggregation='mean_and_pass_hat_k',

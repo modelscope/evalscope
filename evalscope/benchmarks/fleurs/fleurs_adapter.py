@@ -126,8 +126,34 @@ FLEURS_LANG_TO_ID = OrderedDict([
         pretty_name='FLEURS',
         dataset_id='lmms-lab/fleurs',
         tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
-        description=
-        'FLEURS is a massively multilingual benchmark with 102 languages for evaluating ASR, spoken language understanding, and speech translation',  # noqa: E501
+        description="""
+## Overview
+
+FLEURS (Few-shot Learning Evaluation of Universal Representations of Speech) is a massively multilingual benchmark covering 102 languages for evaluating automatic speech recognition (ASR), spoken language understanding, and speech translation.
+
+## Task Description
+
+- **Task Type**: Automatic Speech Recognition (ASR)
+- **Input**: Audio recordings with speech in various languages
+- **Output**: Transcribed text in the corresponding language
+- **Languages**: 102 languages including Mandarin Chinese, Cantonese, English, and many more
+
+## Key Features
+
+- Massive multilingual coverage (102 languages)
+- Derived from FLoRes-101 machine translation benchmark
+- Includes diverse language families and scripts
+- High-quality human recordings and transcriptions
+- Metadata includes gender, language group, and speaker information
+
+## Evaluation Notes
+
+- Default configuration uses **test** split
+- Primary metric: **Word Error Rate (WER)**
+- Default subsets: `cmn_hans_cn` (Mandarin), `en_us` (English), `yue_hant_hk` (Cantonese)
+- Language-specific text normalization applied during evaluation
+- Prompt: "Please recognize the speech and only output the recognized content"
+""",  # noqa: E501
         subset_list=['cmn_hans_cn', 'en_us', 'yue_hant_hk'],
         eval_split='test',
         metric_list=['wer'],

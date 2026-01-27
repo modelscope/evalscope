@@ -24,13 +24,33 @@ Please reason step by step, and put your final answer within \boxed{{}}.
         name='hmmt25',
         pretty_name='HMMT25',
         dataset_id='evalscope/hmmt_feb_2025',
-        description=(
-            'HMMT February 2025 (MathArena) is a challenging evaluation benchmark '
-            'derived from the Harvard-MIT Mathematics Tournament (HMMT) February '
-            '2025 competition, one of the most prestigious and difficult high school math contests globally.'
-            'The benchmark focuses on advanced mathematical reasoning across four '
-            'primary domains: Algebra, Combinatorics, Geometry, and Number Theory.'
-        ),
+        description="""
+## Overview
+
+HMMT February 2025 (MathArena) is a challenging evaluation benchmark derived from the Harvard-MIT Mathematics Tournament (HMMT) February 2025 competition, one of the most prestigious and difficult high school math contests globally.
+
+## Task Description
+
+- **Task Type**: Competition Mathematics Problem Solving
+- **Input**: HMMT-level mathematical problem
+- **Output**: Answer with step-by-step reasoning
+- **Difficulty**: Advanced high school competition level
+
+## Key Features
+
+- Problems from HMMT February 2025 competition
+- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory
+- Highly challenging competition-level problems
+- Tests advanced mathematical reasoning
+- Represents elite high school mathematics difficulty
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Numeric accuracy metric
+- Problems span multiple mathematical domains
+""",
         tags=[Tags.MATH, Tags.REASONING],
         subset_list=['default'],
         few_shot_num=0,

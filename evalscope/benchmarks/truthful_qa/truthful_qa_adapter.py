@@ -32,8 +32,34 @@ TRUTHFUL_QA_PROMPT = (
         name='truthful_qa',
         pretty_name='TruthfulQA',
         tags=[Tags.KNOWLEDGE],
-        description=
-        'TruthfulQA is a benchmark designed to evaluate the ability of AI models to answer questions truthfully and accurately. It includes multiple-choice tasks, focusing on the model\'s understanding of factual information.',  # noqa: E501
+        description="""
+## Overview
+
+TruthfulQA is a benchmark designed to measure whether language models generate truthful answers to questions. It focuses on questions where humans might give false answers due to misconceptions, superstitions, or false beliefs.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Truthfulness Evaluation
+- **Input**: Question probing potential misconceptions
+- **Output**: True/false answer selection
+- **Formats**: MC1 (single correct) and MC2 (multiple correct)
+
+## Key Features
+
+- 817 questions spanning 38 categories (health, law, finance, politics, etc.)
+- Questions target common human misconceptions and false beliefs
+- Adversarially selected to expose model tendencies to repeat falsehoods
+- Tests ability to avoid generating plausible-sounding but incorrect answers
+- Includes both best answer (MC1) and all true answers (MC2) formats
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation with MC1 format
+- Set `multiple_correct=True` to use MC2 (multiple correct answers) format
+- Answer choices are shuffled during evaluation
+- Uses multi_choice_acc metric for scoring
+- Important benchmark for safety and alignment research
+""",
         dataset_id='evalscope/truthful_qa',
         metric_list=['multi_choice_acc'],
         subset_list=['multiple_choice'],

@@ -25,8 +25,34 @@ SUBSET_LIST = ['chart', 'web', 'map']
         pretty_name='SEED-Bench-2-Plus',
         dataset_id='evalscope/SEED-Bench-2-Plus',
         tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'SEED-Bench-2-Plus is a large-scale benchmark to evaluate Multimodal Large Language Models (MLLMs). It consists of 2.3K multiple-choice questions with precise human annotations, spanning three broad categories: Charts, Maps, and Webs, each of which covers a wide spectrum of text-rich scenarios in the real world.',
+        description="""
+## Overview
+
+SEED-Bench-2-Plus is a large-scale benchmark designed to evaluate Multimodal Large Language Models (MLLMs) on text-rich visual understanding tasks. It contains 2.3K multiple-choice questions with precise human annotations across real-world scenarios.
+
+## Task Description
+
+- **Task Type**: Text-Rich Visual Question Answering
+- **Input**: Image containing text-rich content + multiple-choice question
+- **Output**: Correct answer choice letter (A/B/C/D)
+- **Domains**: Charts, maps, web interfaces
+
+## Key Features
+
+- Focuses on text-rich visual scenarios common in real applications
+- Three broad categories: **Charts**, **Maps**, and **Webs**
+- Human-annotated questions with high quality
+- Tests understanding of complex visual layouts with text
+- Multiple difficulty levels within each category
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Available subsets: `chart`, `web`, `map`
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting for reasoning
+- Rich metadata including data source, type, and difficulty level
+""",
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

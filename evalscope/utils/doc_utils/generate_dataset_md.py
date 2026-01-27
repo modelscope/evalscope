@@ -27,6 +27,7 @@ from . import (
     load_benchmark_data,
     save_benchmark_data,
 )
+from .readme_generator import _format_sample_count, _format_tags, generate_readme_from_dict
 
 # Set BUILD_DOC to avoid heavy dependencies during doc generation
 os.environ.setdefault('BUILD_DOC', '1')
@@ -68,185 +69,16 @@ def get_index_locale(category: str, lang: str) -> Dict[str, str]:
 
 
 # =============================================================================
-# README Generation
+# Index Table Generation
 # =============================================================================
-
-
-def generate_readme_content(
-    name: str,
-    meta: Dict[str, Any],
-    statistics: Dict[str, Any],
-    sample_example: Dict[str, Any],
-    lang: str = 'en',
-) -> str:
-    """
-    Generate complete README content for a benchmark.
-
-    Args:
-        name: Benchmark name
-        meta: Benchmark metadata
-        statistics: Data statistics
-        sample_example: Sample example data
-        lang: Language code ('en' or 'zh')
-
-    Returns:
-        Formatted README markdown string
-    """
-    pretty_name = meta.get('pretty_name') or name
-    dataset_id = meta.get('dataset_id', '')
-    description = meta.get('description', '')
-    paper_url = meta.get('paper_url', '')
-    tags = meta.get('tags', [])
-    metrics = meta.get('metrics', [])
-    few_shot_num = meta.get('few_shot_num', 0)
-    eval_split = meta.get('eval_split', '')
-    subset_list = meta.get('subset_list', [])
-    prompt_template = meta.get('prompt_template', '')
-    system_prompt = meta.get('system_prompt', '')
-
-    # Format dataset ID link
-    if dataset_id.startswith(('http://', 'https://')):
-        dataset_id_md = f'[{os.path.basename(dataset_id)}]({dataset_id})'
-    elif '/' in dataset_id:
-        dataset_id_md = f'[{dataset_id}](https://modelscope.cn/datasets/{dataset_id}/summary)'
-    else:
-        dataset_id_md = f'`{dataset_id}`' if dataset_id else 'N/A'
-
-    # Paper link
-    paper_link = f'[Paper]({paper_url})' if paper_url else 'N/A'
-
-    # Format tags and metrics
-    tags_str = ', '.join(f'`{t}`' for t in tags) if tags else 'N/A'
-    metrics_str = ', '.join(
-        f'`{m}`' if isinstance(m, str) else f'`{list(m.keys())[0]}`' for m in metrics
-    ) if metrics else 'N/A'
-
-    # Build README content
-    lines = [
-        f'# {pretty_name}',
-        '',
-        description if description else '*No description available.*',
-        '',
-        '## Overview',
-        '',
-        '| Property | Value |',
-        '|----------|-------|',
-        f'| **Benchmark Name** | `{name}` |',
-        f'| **Dataset ID** | {dataset_id_md} |',
-        f'| **Paper** | {paper_link} |',
-        f'| **Tags** | {tags_str} |',
-        f'| **Metrics** | {metrics_str} |',
-        f'| **Default Shots** | {few_shot_num}-shot |',
-    ]
-
-    if eval_split:
-        lines.append(f'| **Evaluation Split** | `{eval_split}` |')
-
-    # Data statistics section
-    lines.extend(['', '## Data Statistics', ''])
-    if statistics:
-        total_samples = statistics.get('total_samples', 'N/A')
-        prompt_length = statistics.get('prompt_length', {})
-        lines.append('| Metric | Value |')
-        lines.append('|--------|-------|')
-        if isinstance(total_samples, int):
-            lines.append(f'| Total Samples | {total_samples:,} |')
-        else:
-            lines.append(f'| Total Samples | {total_samples} |')
-        if prompt_length:
-            lines.append(f'| Prompt Length (Mean) | {prompt_length.get("mean", "N/A")} chars |')
-            lines.append(
-                f'| Prompt Length (Min/Max) | {prompt_length.get("min", "N/A")} / {prompt_length.get("max", "N/A")} chars |'  # noqa: E501
-            )
-
-        # Subset statistics
-        subset_stats = statistics.get('subset_stats', [])
-        if subset_stats and len(subset_stats) > 1:
-            lines.extend(['', '**Per-Subset Statistics:**', ''])
-            lines.append('| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |')
-            lines.append('|--------|---------|-------------|------------|------------|')
-            for s in subset_stats:
-                sample_count = s.get('sample_count', 'N/A')
-                count_str = f'{sample_count:,}' if isinstance(sample_count, int) else str(sample_count)
-                lines.append(
-                    f'| `{s.get("name", "N/A")}` | {count_str} | '
-                    f'{s.get("prompt_length_mean", "N/A")} | {s.get("prompt_length_min", "N/A")} | '
-                    f'{s.get("prompt_length_max", "N/A")} |'
-                )
-    else:
-        lines.append('*Statistics not available.*')
-
-    # Subsets section
-    lines.extend(['', '## Subsets', ''])
-    if subset_list:
-        subset_stats = statistics.get('subset_stats', []) if statistics else []
-        subset_counts = {s.get('name'): s.get('sample_count', 'N/A') for s in subset_stats}
-
-        if len(subset_list) == 1:
-            count = subset_counts.get(subset_list[0], 'N/A')
-            count_str = f'{count:,}' if isinstance(count, int) else str(count)
-            lines.append(f'- `{subset_list[0]}` ({count_str} samples)')
-        else:
-            lines.append('| Subset | Sample Count |')
-            lines.append('|--------|--------------|')
-            for subset in subset_list:
-                count = subset_counts.get(subset, 'N/A')
-                count_str = f'{count:,}' if isinstance(count, int) else str(count)
-                lines.append(f'| `{subset}` | {count_str} |')
-    else:
-        lines.append('*No subsets defined.*')
-
-    # Sample example section
-    lines.extend(['', '## Sample Example', ''])
-    if sample_example and sample_example.get('data'):
-        subset = sample_example.get('subset')
-        if subset:
-            lines.append(f'**Subset**: `{subset}`')
-            lines.append('')
-        lines.append('```json')
-        lines.append(json.dumps(sample_example.get('data', {}), ensure_ascii=False, indent=2))
-        lines.append('```')
-        if sample_example.get('truncated'):
-            lines.append('')
-            lines.append('*Note: Some content was truncated for display.*')
-    else:
-        lines.append('*Sample example not available.*')
-
-    # Prompt template section
-    lines.extend(['', '## Prompt Template', ''])
-    if system_prompt:
-        lines.append('**System Prompt:**')
-        lines.append('```text')
-        lines.append(system_prompt)
-        lines.append('```')
-        lines.append('')
-    if prompt_template:
-        lines.append('**Prompt Template:**')
-        lines.append('```text')
-        lines.append(prompt_template)
-        lines.append('```')
-    else:
-        lines.append('*No prompt template defined.*')
-
-    # Usage section
-    lines.extend([
-        '', '## Usage', '', '```python', 'from evalscope import run_task', '', 'results = run_task(',
-        f"    model='your-model',", f"    datasets=['{name}'],", ')', '```'
-    ])
-
-    return '\n'.join(lines)
 
 
 def wrap_keywords(keywords: Union[str, List[str]]) -> str:
-    """Convert keywords list to markdown formatted string."""
-    if isinstance(keywords, str):
-        return f'`{keywords}`'
-    return ', '.join(sorted([f'`{keyword}`' for keyword in keywords]))
+    """Convert keywords list to markdown formatted string.
 
-
-# =============================================================================
-# Index Table Generation
-# =============================================================================
+    This is an alias for _format_tags for backward compatibility.
+    """
+    return _format_tags(keywords)
 
 
 def generate_index_table(
@@ -286,7 +118,7 @@ def generate_index_table(
         tags = wrap_keywords(meta.get('tags', []))
 
         total_samples = stats.get('total_samples', 'N/A')
-        samples_str = f'{total_samples:,}' if isinstance(total_samples, int) else str(total_samples)
+        samples_str = _format_sample_count(total_samples)
 
         # Link to individual README file
         readme_link = f'../../benchmarks/{name}.md'
@@ -346,10 +178,15 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'metrics': list(getattr(meta, 'metric_list', [])) if getattr(meta, 'metric_list', None) else [],
         'few_shot_num': getattr(meta, 'few_shot_num', 0),
         'eval_split': getattr(meta, 'eval_split', ''),
+        'train_split': getattr(meta, 'train_split', '') or '',
         'subset_list': list(getattr(meta, 'subset_list', [])) if getattr(meta, 'subset_list', None) else [],
         'description': getattr(meta, 'description', '') or '',
         'prompt_template': getattr(meta, 'prompt_template', '') or '',
         'system_prompt': getattr(meta, 'system_prompt', '') or '',
+        'few_shot_prompt_template': getattr(meta, 'few_shot_prompt_template', '') or '',
+        'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
+        'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
+        'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
     }
 
 
@@ -441,7 +278,7 @@ def update_benchmark_data(
                 print(f'  - Statistics already exist (use --force to recompute)')
 
             # Generate English README
-            readme_en = generate_readme_content(
+            readme_en = generate_readme_from_dict(
                 name,
                 entry['meta'],
                 entry.get('statistics', {}),
@@ -567,7 +404,6 @@ def generate_docs(data: Optional[Dict[str, Any]] = None):
 
 # Export main functions
 __all__ = [
-    'generate_readme_content',
     'generate_index_table',
     'generate_docs',
     'update_benchmark_data',

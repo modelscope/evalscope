@@ -50,10 +50,34 @@ Evaluate the models based on the quality and relevance of their outputs, and sel
         name='alpaca_eval',
         pretty_name='AlpacaEval2.0',
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.ARENA],
-        description='Alpaca Eval 2.0 is an enhanced framework for evaluating instruction-following language models, '
-        'featuring an improved auto-annotator, updated baselines, and continuous preference calculation to '
-        'provide more accurate and cost-effective model assessments. '
-        'Currently not support `length-controlled winrate`; the official Judge model is `gpt-4-1106-preview`, while the baseline model is `gpt-4-turbo`.',  # noqa: E501
+        description="""
+## Overview
+
+AlpacaEval 2.0 is an evaluation framework for instruction-following language models that uses an LLM judge to compare model outputs against a strong baseline. It provides win-rate metrics reflecting human preferences.
+
+## Task Description
+
+- **Task Type**: Instruction-Following Evaluation (Pairwise Comparison)
+- **Input**: User instruction/question
+- **Output**: Model response compared against GPT-4 Turbo baseline
+- **Metric**: Win rate against baseline model
+
+## Key Features
+
+- Auto-annotator for scalable evaluation
+- Compares against GPT-4 Turbo baseline outputs
+- High correlation with human preferences
+- Cost-effective evaluation method
+- Tests general instruction-following capabilities
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM judge (default: gpt-4-1106-preview)
+- Baseline model: gpt-4-turbo outputs
+- Reports win rate metric
+- Note: Length-controlled win rate not currently supported
+""",
         dataset_id='AI-ModelScope/alpaca_eval',
         subset_list=['alpaca_eval_gpt4_baseline'],
         metric_list=['winrate'],

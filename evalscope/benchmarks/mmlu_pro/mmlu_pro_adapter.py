@@ -37,8 +37,34 @@ SUBSET_LIST = [
         name='mmlu_pro',
         pretty_name='MMLU-Pro',
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
-        description=
-        'MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options.',  # noqa: E501
+        description="""
+## Overview
+
+MMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning requirements. It features 10 answer choices instead of 4 and includes more challenging questions requiring deeper reasoning across 14 diverse domains.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering (10 options)
+- **Input**: Question with up to 10 answer choices
+- **Output**: Single correct answer letter (A-J)
+- **Domains**: 14 subjects including science, law, engineering, psychology
+
+## Key Features
+
+- 10 answer choices per question (vs 4 in original MMLU)
+- More challenging questions requiring reasoning
+- Includes Chain-of-Thought (CoT) explanations
+- 14 diverse subjects covered
+- Reduced impact of random guessing (10% vs 25%)
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** examples
+- Answers should follow "ANSWER: [LETTER]" format
+- Uses subject-specific few-shot examples
+- Step-by-step reasoning encouraged
+- Evaluates on test split with validation for few-shot
+""",
         dataset_id='TIGER-Lab/MMLU-Pro',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

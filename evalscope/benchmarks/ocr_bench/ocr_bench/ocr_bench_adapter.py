@@ -25,8 +25,35 @@ SUBSET_LIST = [
         name='ocr_bench',
         pretty_name='OCRBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
-        description=
-        'OCRBench is a comprehensive evaluation benchmark designed to assess the OCR capabilities of Large Multimodal Models. It comprises five components: Text Recognition, SceneText-Centric VQA, Document-Oriented VQA, Key Information Extraction, and Handwritten Mathematical Expression Recognition. The benchmark includes 1000 question-answer pairs, and all the answers undergo manual verification and correction to ensure a more precise evaluation.',  # noqa: E501
+        description="""
+## Overview
+
+OCRBench is a comprehensive evaluation benchmark designed to assess the OCR (Optical Character Recognition) capabilities of Large Multimodal Models. It covers five key OCR-related tasks with 1,000 manually verified question-answer pairs.
+
+## Task Description
+
+- **Task Type**: OCR and Document Understanding
+- **Input**: Image with OCR-related question
+- **Output**: Text recognition or extraction result
+- **Components**: Text Recognition, VQA, Document VQA, Key Info Extraction, Math Expression Recognition
+
+## Key Features
+
+- 1,000 question-answer pairs across 10 categories
+- Manually verified and corrected answers
+- Categories include: Regular/Irregular/Artistic/Handwriting Text Recognition
+- Scene Text-centric VQA and Document-oriented VQA
+- Key Information Extraction
+- Handwritten Mathematical Expression Recognition (HME100k)
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Simple accuracy metric (inclusion-based matching)
+- Results broken down by question type/category
+- Different matching rules for HME100k (space-insensitive)
+- Comprehensive test of OCR capabilities in multimodal models
+""",
         dataset_id='evalscope/OCRBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

@@ -4,4 +4,4 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 
 | Benchmark Name | Pretty Name | Task Categories | Samples |
 |------------|----------|----------|----------|
-| `gsm8k` | [GSM8K](../../benchmarks/gsm8k.md) | `Math`, `Reasoning` | 1,319 |
+| `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` | N/A |

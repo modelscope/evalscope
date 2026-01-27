@@ -18,8 +18,35 @@ logger = get_logger()
         name='pope',
         pretty_name='POPE',
         tags=[Tags.MULTI_MODAL, Tags.HALLUCINATION, Tags.YES_NO],
-        description=
-        'POPE (Polling-based Object Probing Evaluation) is a benchmark designed to evaluate object hallucination in large vision-language models (LVLMs). It tests models by having them answer simple yes/no questions about the presence of specific objects in an image. This method helps measure how accurately a model\'s responses align with the visual content, with a focus on identifying instances where models claim objects exist that are not actually present. The benchmark employs various sampling strategies, including random, popular, and adversarial sampling, to create a robust set of questions for assessment.',  # noqa: E501
+        description="""
+## Overview
+
+POPE (Polling-based Object Probing Evaluation) is a benchmark specifically designed to evaluate object hallucination in Large Vision-Language Models (LVLMs). It tests models' ability to accurately identify objects present in images through yes/no questions.
+
+## Task Description
+
+- **Task Type**: Object Hallucination Detection (Yes/No Q&A)
+- **Input**: Image with question "Is there a [object] in the image?"
+- **Output**: YES or NO answer
+- **Focus**: Measuring accuracy vs. hallucination rate
+
+## Key Features
+
+- Three sampling strategies: random, popular, adversarial
+- Tests for false positive object claims (hallucination)
+- Based on MSCOCO images
+- Simple yes/no question format for objective evaluation
+- Measures alignment between model responses and visual content
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Five metrics: accuracy, precision, recall, F1 score, yes_ratio
+- F1 score is the primary aggregation metric
+- Three subsets: `popular`, `adversarial`, `random`
+- "Popular" and "adversarial" subsets are more challenging
+- yes_ratio indicates model's tendency to answer "yes"
+""",
         dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
         aggregation='f1',

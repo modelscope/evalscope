@@ -27,8 +27,34 @@ SUBSET_LIST = ['level 1', 'level 2', 'level 3', 'level 4', 'level 5']
         pretty_name='MathVision',
         dataset_id='evalscope/MathVision',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'The MATH-Vision (MATH-V) dataset, a meticulously curated collection of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions.',
+        description="""
+## Overview
+
+MATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.
+
+## Task Description
+
+- **Task Type**: Visual Mathematical Reasoning
+- **Input**: Math problem with visual context (diagram, figure, graph)
+- **Output**: Numerical answer or answer choice
+- **Domains**: Competition mathematics with visual elements
+
+## Key Features
+
+- Problems sourced from real mathematical competitions
+- 3,040 high-quality problems with visual contexts
+- Five difficulty levels (1-5) for granular analysis
+- Supports both multiple-choice and free-form answers
+- Includes detailed solutions for reference
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Subsets by difficulty: `level 1` through `level 5`
+- Primary metric: **Accuracy** with numeric comparison
+- Free-form answers use \\boxed{} format (without units)
+- Multiple-choice uses CoT prompting with letter answers
+""",
         subset_list=SUBSET_LIST,
         metric_list=[{
             'acc': {

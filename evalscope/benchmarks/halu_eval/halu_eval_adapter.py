@@ -15,9 +15,39 @@ from evalscope.benchmarks.halu_eval.halu_eval_instructions import (
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
-DESCRIPTION = (
-    'HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination.'
-)
+DESCRIPTION = """
+## Overview
+
+HaluEval is a large collection of generated and human-annotated hallucinated samples for evaluating the performance of LLMs in recognizing hallucination. It provides a comprehensive benchmark for assessing model reliability and factual accuracy.
+
+## Task Description
+
+- **Task Type**: Hallucination Detection
+- **Input**: Context/knowledge + response to judge
+- **Output**: YES (hallucination) or NO (factual)
+- **Domains**: Dialogue, QA, Summarization
+
+## Key Features
+
+- Three evaluation categories:
+  - `dialogue_samples`: Hallucination in conversational responses
+  - `qa_samples`: Hallucination in question answering
+  - `summarization_samples`: Hallucination in document summaries
+- Both generated and human-annotated samples
+- Tests model's ability to detect factual inconsistencies
+- Requires reasoning about knowledge-response alignment
+
+## Evaluation Notes
+
+- Default evaluation uses **zero-shot** (no few-shot examples)
+- Multiple metrics computed:
+  - **Accuracy**: Overall correct judgments
+  - **Precision**: True positives among positive predictions
+  - **Recall**: True positives among actual positives
+  - **F1 Score**: Harmonic mean of precision and recall
+  - **Yes Ratio**: Proportion of YES predictions
+- Binary YES/NO judgment format
+"""
 
 logger = get_logger()
 

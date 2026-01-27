@@ -3,12 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'BroadTwitterCorpus is a dataset of tweets collected over stratified times, places '
-    'and social uses. The goal is to represent a broad range of activities, giving a '
-    'dataset more representative of the language used in this hardest of social media '
-    'formats to process.'
-)
+DESCRIPTION = """
+## Overview
+
+BroadTwitterCorpus is a dataset of tweets collected over stratified times, places, and social uses. The goal is to represent a broad range of activities, giving a dataset more representative of the language used in this hardest of social media formats to process.
+
+## Task Description
+
+- **Task Type**: Social Media Named Entity Recognition (NER)
+- **Input**: Diverse Twitter text (tweets)
+- **Output**: Identified entity spans with types
+- **Domain**: Social media, diverse contexts
+
+## Key Features
+
+- Stratified sampling across times, places, and uses
+- Representative of diverse Twitter language
+- Addresses challenges in social media NER
+- Three standard NER entity types (PER, ORG, LOC)
+- Useful for robust social media NLP evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PER, ORG, LOC
+"""
 
 
 @register_benchmark(

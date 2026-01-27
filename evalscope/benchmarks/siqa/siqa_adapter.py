@@ -4,11 +4,33 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = (
-    'Social Interaction QA (SIQA) is a question-answering benchmark for testing social commonsense intelligence. '
-    'Contrary to many prior benchmarks that focus on physical or taxonomic knowledge, Social IQa focuses on '
-    "reasoning about people's actions and their social implications."
-)
+DESCRIPTION = """
+## Overview
+
+SIQA (Social Interaction QA) is a benchmark for evaluating social commonsense intelligence - understanding people's actions and their social implications. Unlike benchmarks focusing on physical knowledge, SIQA tests reasoning about human behavior.
+
+## Task Description
+
+- **Task Type**: Social Commonsense Reasoning
+- **Input**: Context about a social situation with question and 3 answer choices
+- **Output**: Most socially appropriate answer (A, B, or C)
+- **Focus**: Human behavior, motivations, and social implications
+
+## Key Features
+
+- Tests social intelligence and emotional understanding
+- Questions about people's actions and their consequences
+- Covers motivations, reactions, and social norms
+- 33K+ crowdsourced QA pairs
+- Requires reasoning about human psychology
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses simple multiple-choice prompting
+- Evaluates on validation split
+- Simple accuracy metric
+"""
 
 
 @register_benchmark(

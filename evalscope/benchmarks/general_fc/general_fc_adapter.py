@@ -20,8 +20,34 @@ logger = get_logger()
     BenchmarkMeta(
         name='general_fc',
         pretty_name='General-FunctionCalling',
-        description='A general function calling dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc).',  # noqa: E501
+        description="""
+## Overview
+
+General-FunctionCalling is a customizable benchmark for evaluating function calling (tool use) capabilities of language models. It tests both the decision to call tools and the accuracy of generated function calls.
+
+## Task Description
+
+- **Task Type**: Function Calling / Tool Use Evaluation
+- **Input**: Messages with available tool definitions
+- **Output**: Function calls with valid arguments
+- **Flexibility**: Supports custom datasets via local files
+
+## Key Features
+
+- Evaluates function calling decision accuracy
+- Schema validation for function arguments
+- Comprehensive metrics (F1, precision, recall)
+- Custom dataset support via local file loading
+- JSON schema-based argument validation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: **tool_call_f1**, **schema_accuracy**, count metrics
+- Aggregation: **F1** score
+- Validates function calls against JSON schema
+- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#fc) for dataset format
+""",  # noqa: E501
         tags=[Tags.FUNCTION_CALLING, Tags.CUSTOM, Tags.AGENT],
         dataset_id='evalscope/GeneralFunctionCall-Test',
         metric_list=[

@@ -4,7 +4,33 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
-DESCRIPTION = 'MedMCQA is a large-scale MCQA dataset designed to address real-world medical entrance exam questions.'  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+MedMCQA is a large-scale multiple-choice question answering dataset designed to address real-world medical entrance exam questions. It contains over 194K questions covering diverse medical topics from Indian medical entrance examinations (AIIMS, NEET-PG).
+
+## Task Description
+
+- **Task Type**: Medical Knowledge Multiple-Choice QA
+- **Input**: Medical question with 4 answer choices
+- **Output**: Correct answer letter
+- **Domain**: Clinical medicine, basic sciences, healthcare
+
+## Key Features
+
+- Over 194,000 medical exam questions
+- Real questions from AIIMS and NEET-PG exams
+- 21 medical subjects covered (anatomy, pharmacology, pathology, etc.)
+- Expert-verified correct answers with explanations
+- Tests medical knowledge comprehension and clinical reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Evaluates on validation split
+- Simple accuracy metric
+- Train split available for few-shot learning
+"""  # noqa: E501
 
 
 @register_benchmark(

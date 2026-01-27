@@ -33,8 +33,34 @@ Here are some examples of how to solve similar problems:
         name='competition_math',
         pretty_name='Competition-MATH',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        'The MATH (Mathematics) benchmark is designed to evaluate the mathematical reasoning abilities of AI models through a variety of problem types, including arithmetic, algebra, geometry, and more.',
+        description="""
+## Overview
+
+Competition-MATH is a comprehensive benchmark of 12,500 challenging competition mathematics problems collected from AMC, AIME, and other prestigious math competitions. It is designed to evaluate the advanced mathematical reasoning capabilities of language models.
+
+## Task Description
+
+- **Task Type**: Competition Mathematics Problem Solving
+- **Input**: Mathematical problem from competitions
+- **Output**: Step-by-step solution with final answer in \\boxed{}
+- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)
+
+## Key Features
+
+- 12,500 problems from mathematics competitions
+- Five difficulty levels for comprehensive evaluation
+- Topics: Algebra, Counting & Probability, Geometry, Intermediate Algebra, Number Theory, Prealgebra, Precalculus
+- Each problem includes human-written solutions
+- Designed for evaluating advanced mathematical reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **4-shot** examples with Chain-of-Thought prompting
+- Answers are extracted from `\\boxed{}` format
+- Numeric equivalence checking for answer comparison
+- Results can be analyzed by level and problem type
+- Uses math_parser for robust answer extraction
+""",
         dataset_id='evalscope/competition_math',
         subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
         metric_list=[{

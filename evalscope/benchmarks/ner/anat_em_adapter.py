@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The AnatEM corpus is an extensive resource for anatomical entity recognition, '
-    'created by extending and combining previous corpora to include over 13,000 '
-    'annotations across 1212 biomedical documents.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+The AnatEM corpus is an extensive resource for anatomical entity recognition, created by extending and combining previous corpora. It includes over 13,000 annotations across 1,212 biomedical documents, focusing on identifying anatomical structures from subcellular components to organ systems.
+
+## Task Description
+
+- **Task Type**: Biomedical Named Entity Recognition (NER)
+- **Input**: Biomedical text from PubMed abstracts
+- **Output**: Identified anatomical entity spans with types
+- **Domain**: Anatomy, biomedical literature
+
+## Key Features
+
+- Over 13,000 anatomical entity annotations
+- 1,212 biomedical documents from PubMed
+- Comprehensive anatomical coverage (cells to organs)
+- Manual expert annotation
+- Useful for biomedical text mining
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: ANATOMY (subcellular structures, cells, tissues, organs)
+"""  # noqa: E501
 
 
 @register_benchmark(

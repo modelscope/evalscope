@@ -92,8 +92,33 @@ SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应�
         name='chinese_simpleqa',
         pretty_name='Chinese-SimpleQA',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.CHINESE],
-        description=
-        "Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It includes a variety of topics and is structured to test the model's ability to understand and generate correct answers in Chinese.",  # noqa: E501
+        description="""
+## Overview
+
+Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate the performance of language models on simple factual questions. It tests the model's ability to understand and generate correct answers in Chinese across various knowledge domains.
+
+## Task Description
+
+- **Task Type**: Chinese Factual Question Answering
+- **Input**: Simple factual question in Chinese
+- **Output**: Factual answer in Chinese
+- **Language**: Chinese
+
+## Key Features
+
+- Diverse topics covering various knowledge domains
+- Simple factual questions testing world knowledge
+- Chinese language evaluation
+- LLM-as-judge evaluation for answer correctness
+- Multiple category subsets available
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses LLM-as-judge for evaluation
+- Metrics: is_correct, is_incorrect, is_not_attempted
+- Evaluates factual accuracy without requiring exact match
+""",  # noqa: E501
         subset_list=SUBSET_LIST,
         dataset_id='AI-ModelScope/Chinese-SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],

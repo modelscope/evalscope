@@ -4,4 +4,4 @@
 
 | 数据集名称 | 标准名称 | 任务类别 | 样本数 |
 |------------|----------|----------|----------|
-| `gsm8k` | [GSM8K](../../benchmarks/gsm8k.md) | `Math`, `Reasoning` | 1,319 |
+| `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` | N/A |

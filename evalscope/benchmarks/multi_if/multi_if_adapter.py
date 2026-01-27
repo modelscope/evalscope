@@ -33,8 +33,35 @@ SUBSET_LIST = [
     BenchmarkMeta(
         name='multi_if',
         pretty_name='Multi-IF',
-        description=
-        'Multi-IF is a benchmark designed to evaluate the performance of LLM models\' capabilities in multi-turn instruction following within a multilingual environment.',  # noqa: E501
+        description="""
+## Overview
+
+Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn instruction following within a multilingual environment. It tests the ability to follow complex instructions across multiple conversation turns in different languages.
+
+## Task Description
+
+- **Task Type**: Multi-Turn Multilingual Instruction Following
+- **Input**: Multi-turn conversation with instructions
+- **Output**: Responses following given instructions
+- **Domains**: Instruction following, multilingual understanding
+
+## Key Features
+
+- 11 supported languages: Chinese, English, German, Italian, Vietnamese, Spanish, Hindi, Portuguese, French, Thai, Russian
+- Multi-turn conversation evaluation (up to 3 turns)
+- Tests instruction following in multilingual contexts
+- Both strict and loose evaluation metrics
+- Prompt-level and instruction-level scoring
+
+## Evaluation Notes
+
+- Default evaluation uses the **train** split
+- Configurable max_turns (1-3, default: 3)
+- Four metrics tracked:
+  - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy
+  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy
+- Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)
+""",  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.MULTI_LINGUAL, Tags.MULTI_TURN],
         dataset_id='facebook/Multi-IF',
         subset_list=SUBSET_LIST,

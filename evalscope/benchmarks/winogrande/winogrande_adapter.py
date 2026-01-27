@@ -10,8 +10,34 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
         name='winogrande',
         pretty_name='Winogrande',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
-        description=
-        'Winogrande is a benchmark for evaluating AI models on commonsense reasoning tasks, specifically designed to test the ability to resolve ambiguous pronouns in sentences.',  # noqa: E501
+        description="""
+## Overview
+
+Winogrande is a large-scale benchmark for commonsense reasoning, specifically designed to test pronoun resolution in the Winograd Schema Challenge format. It contains 44K problems that require understanding of physical and social commonsense.
+
+## Task Description
+
+- **Task Type**: Pronoun Resolution / Commonsense Reasoning
+- **Input**: Sentence with ambiguous pronoun and two options
+- **Output**: Correct option (A or B) that resolves the pronoun
+- **Format**: Binary choice between two noun phrases
+
+## Key Features
+
+- 44K Winograd-style pronoun resolution problems
+- Adversarially filtered to reduce dataset biases
+- Tests physical commonsense (object properties, actions)
+- Tests social commonsense (intentions, emotions)
+- Requires understanding context to resolve ambiguity
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Binary choice format (option1 vs option2)
+- Answers are converted to A/B letter format
+- Simple accuracy metric for evaluation
+- Commonly used for commonsense reasoning assessment
+""",
         dataset_id='AI-ModelScope/winogrande_val',
         metric_list=['acc'],
         few_shot_num=0,

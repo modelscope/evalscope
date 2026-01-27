@@ -16,8 +16,33 @@ logger = get_logger()
     BenchmarkMeta(
         name='general_mcq',
         pretty_name='General-MCQ',
-        description='A general multiple-choice question answering dataset for custom evaluation. '
-        'For detailed instructions on how to use this benchmark, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq).',
+        description="""
+## Overview
+
+General-MCQ is a customizable multiple-choice question answering benchmark for evaluating language models. It supports flexible data formats and variable number of answer choices.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering
+- **Input**: Question with 2-10 answer choices (A through J)
+- **Output**: Selected answer choice
+- **Flexibility**: Supports custom datasets via local files
+
+## Key Features
+
+- Flexible number of choices (A through J)
+- Custom dataset support via local file loading
+- Chinese single-answer prompt template
+- Configurable few-shot examples
+- Accuracy-based evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Primary metric: **Accuracy**
+- Train split: **dev**, Eval split: **val**
+- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#mcq) for dataset format
+""",
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
         dataset_id='general_mcq',
         subset_list=['default'],

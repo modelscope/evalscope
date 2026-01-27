@@ -11,7 +11,33 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-DESCRIPTION = ('PubMedQA reasons over biomedical research texts to answer the multiple-choice questions.')
+DESCRIPTION = """
+## Overview
+
+PubMedQA is a biomedical question answering dataset designed to evaluate models' ability to reason over biomedical research texts. It contains questions derived from PubMed abstracts with yes/no/maybe answers.
+
+## Task Description
+
+- **Task Type**: Biomedical Question Answering (Yes/No/Maybe)
+- **Input**: PubMed abstract with a research question
+- **Output**: Answer (YES, NO, or MAYBE)
+- **Domain**: Biomedical research, scientific literature
+
+## Key Features
+
+- Questions from real PubMed research abstracts
+- Three-way classification (YES/NO/MAYBE)
+- Tests scientific reasoning and comprehension
+- Expert-annotated with reasoning explanations
+- Useful for biomedical AI evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: Accuracy, Precision, Recall, F1-Score, Yes Ratio, Maybe Ratio
+- Aggregation method: F1-score (macro average)
+- Answers should be YES, NO, or MAYBE without explanation
+"""
 
 
 @register_benchmark(

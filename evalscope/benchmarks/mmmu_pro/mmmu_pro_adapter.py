@@ -60,8 +60,36 @@ DATASET_FORMATS = ['standard (4 options)', 'standard (10 options)', 'vision']
         name='mmmu_pro',
         pretty_name='MMMU-PRO',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        'MMMU-Pro is an enhanced multimodal benchmark designed to rigorously assess the true understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark by introducing several key improvements that make it more challenging and realistic, ensuring that models are evaluated on their genuine ability to integrate and comprehend both visual and textual information.',  # noqa: E501
+        description="""
+## Overview
+
+MMMU-PRO is an enhanced multimodal benchmark designed to rigorously assess the genuine understanding capabilities of advanced AI models across multiple modalities. It builds upon the original MMMU benchmark with key improvements that make evaluation more challenging and realistic.
+
+## Task Description
+
+- **Task Type**: Multimodal Academic Question Answering
+- **Input**: Images (up to 7) + multiple-choice question
+- **Output**: Correct answer choice letter
+- **Domains**: 30 academic subjects across STEM, humanities, and social sciences
+
+## Key Features
+
+- Enhanced version of MMMU with more rigorous evaluation
+- Covers 30 subjects: Accounting, Biology, Chemistry, Computer Science, Economics, Physics, etc.
+- Multiple dataset formats available:
+  - `standard (4 options)`: Traditional 4-choice format
+  - `standard (10 options)`: Extended 10-choice format for harder evaluation
+  - `vision`: Questions embedded in images
+- Tests genuine multimodal understanding, not just text shortcuts
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Dataset format can be configured via `dataset_format` parameter
+- Uses Chain-of-Thought (CoT) prompting for reasoning
+- Rich metadata includes topic difficulty and subject information
+""",  # noqa: E501
         dataset_id='AI-ModelScope/MMMU_Pro',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

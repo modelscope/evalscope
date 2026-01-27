@@ -77,9 +77,36 @@ SUBSET_LIST = list(SUBJECT_MAPPING.keys())
         name='mmlu_redux',
         pretty_name='MMLU-Redux',
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
-        description=
-        'MMLU-Redux is a benchmark for evaluating language models on multiple-choice questions across various subjects. It includes questions from different domains, where the model must select the correct answer from given options. '  # noqa: E501
-        'The bad answers are corrected.',  # noqa: E501
+        description="""
+## Overview
+
+MMLU-Redux is an improved version of the MMLU benchmark with corrected answers. It addresses known errors in the original MMLU dataset by fixing incorrect ground truth labels, missing correct options, and ambiguous questions.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Knowledge Assessment
+- **Input**: Question with four answer choices
+- **Output**: Correct answer letter (A/B/C/D)
+- **Domains**: 57 subjects across STEM, Humanities, Social Sciences, and Other
+
+## Key Features
+
+- Corrects errors in original MMLU benchmark
+- Error types fixed include:
+  - `no_correct_answer`: Questions with missing correct options
+  - `wrong_groundtruth`: Questions with incorrect ground truth
+  - `multiple_correct_answers`: Questions with ambiguous answers
+- Same 57-subject coverage as original MMLU
+- Maintains compatibility with MMLU evaluation frameworks
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** (with inclusion flag for multi-answer questions)
+- Uses Chain-of-Thought (CoT) prompting
+- Zero-shot evaluation only (few-shot not supported)
+- Results aggregated by subject and category (STEM, Humanities, Social Science, Other)
+""",  # noqa: E501
         dataset_id='AI-ModelScope/mmlu-redux-2.0',
         subset_list=SUBSET_LIST,
         metric_list=[{

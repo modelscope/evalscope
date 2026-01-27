@@ -13,8 +13,34 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
         name='musr',
         pretty_name='MuSR',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
-        description=
-        'MuSR is a benchmark for evaluating AI models on multiple-choice questions related to murder mysteries, object placements, and team allocation.',  # noqa: E501
+        description="""
+## Overview
+
+MuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning abilities through narrative-based problems. It includes murder mysteries, object placements, and team allocation scenarios requiring multi-step inference.
+
+## Task Description
+
+- **Task Type**: Complex Reasoning (Multiple-Choice)
+- **Input**: Narrative scenario with question and answer choices
+- **Output**: Correct answer letter (A-F)
+- **Domains**: Murder mysteries, object tracking, team allocation
+
+## Key Features
+
+- Narrative-based reasoning problems
+- Requires multi-step logical inference
+- Three distinct reasoning domains
+- Tests constraint satisfaction and deduction
+- Longer context requiring careful reasoning
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses Chain-of-Thought (CoT) prompting
+- Three subsets: `murder_mysteries`, `object_placements`, `team_allocation`
+- Simple accuracy metric
+- Challenging benchmark requiring careful reading
+""",
         dataset_id='AI-ModelScope/MuSR',
         metric_list=['acc'],
         subset_list=['murder_mysteries', 'object_placements', 'team_allocation'],

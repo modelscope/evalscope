@@ -10,9 +10,33 @@ from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
         pretty_name='CoNLL2003',
         dataset_id='extraordinarylab/conll2003',
         tags=[Tags.KNOWLEDGE, Tags.NER],
-        description='The ConLL-2003 dataset is for the Named Entity Recognition (NER) task. It was introduced as part '
-        'of the ConLL-2003 Shared Task conference and contains texts annotated with entities such as '
-        'people, organizations, places, and various names.',
+        description="""
+## Overview
+
+CoNLL-2003 is a classic Named Entity Recognition (NER) benchmark introduced at the Conference on Computational Natural Language Learning 2003. It contains news articles annotated with four entity types.
+
+## Task Description
+
+- **Task Type**: Named Entity Recognition (NER)
+- **Input**: Text with entities to identify
+- **Output**: Entity spans with type labels
+- **Entity Types**: Person (PER), Organization (ORG), Location (LOC), Miscellaneous (MISC)
+
+## Key Features
+
+- Standard NER benchmark with well-defined entity types
+- News domain text with high annotation quality
+- Four entity categories with clear definitions
+- Supports few-shot evaluation
+- Comprehensive metrics (precision, recall, F1, accuracy)
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: **Precision**, **Recall**, **F1 Score**, **Accuracy**
+- Train split: **train**, Eval split: **test**
+- Entity types mapped to human-readable names
+""",
         few_shot_num=5,
         train_split='train',
         eval_split='test',

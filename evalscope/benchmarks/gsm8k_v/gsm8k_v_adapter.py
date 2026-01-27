@@ -29,8 +29,34 @@ Please think step by step. After your reasoning, put your final answer within \\
         pretty_name='GSM8K-V',
         dataset_id='evalscope/GSM8K-V',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_MODAL],
-        description=
-        'GSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically maps each GSM8K math word problem into its visual counterpart to enable a clean, within-item comparison across modalities.',  # noqa: E501
+        description="""
+## Overview
+
+GSM8K-V is a purely visual multi-image mathematical reasoning benchmark that systematically transforms each GSM8K math word problem into its visual counterpart. It enables clean within-item comparison across modalities for multimodal math evaluation.
+
+## Task Description
+
+- **Task Type**: Visual Mathematical Word Problem Solving
+- **Input**: Multiple images representing a math problem + question
+- **Output**: Numerical answer in \\boxed{} format
+- **Domains**: Visual math reasoning, scene understanding, arithmetic
+
+## Key Features
+
+- Visual transformation of GSM8K text problems
+- Multi-image input format for complete problem representation
+- Enables text-vs-visual modality comparisons
+- Categorized by problem type and subcategory
+- Preserves original problem difficulty levels
+
+## Evaluation Notes
+
+- Default evaluation uses the **train** split
+- Primary metric: **Accuracy** with numeric comparison
+- Answers should be in \\boxed{} format with number only
+- Step-by-step reasoning encouraged before final answer
+- Metadata includes original text question for comparison
+""",  # noqa: E501
         subset_list=['default'],
         eval_split='train',
         metric_list=[{

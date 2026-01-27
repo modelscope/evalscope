@@ -27,8 +27,33 @@ Answer the following multiple choice question. The last line of your response sh
         pretty_name='V*Bench',
         dataset_id='lmms-lab/vstar-bench',
         tags=[Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.GROUNDING],
-        description=
-        'V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on the ability to actively locate and identify specific visual information in high-resolution images, which is crucial for tasks requiring fine-grained visual understanding. This benchmark helps assess how well models can perform targeted visual queries, often guided by natural language instructions, to find and reason about specific elements in complex visual scenes .',
+        description="""
+## Overview
+
+V*Bench is a benchmark designed for evaluating visual search capabilities within multimodal reasoning systems. It focuses on actively locating and identifying specific visual information in high-resolution images, crucial for fine-grained visual understanding.
+
+## Task Description
+
+- **Task Type**: Visual Search and Reasoning (Multiple-Choice)
+- **Input**: High-resolution image + targeted visual query
+- **Output**: Answer letter (A/B/C/D)
+- **Domains**: Visual search, fine-grained recognition, visual grounding
+
+## Key Features
+
+- Tests targeted visual query capabilities
+- Focuses on high-resolution image understanding
+- Requires finding and reasoning about specific visual elements
+- Questions guided by natural language instructions
+- Evaluates fine-grained visual understanding in complex scenes
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting with "ANSWER: [LETTER]" format
+- Metadata includes category and question ID for analysis
+""",
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,

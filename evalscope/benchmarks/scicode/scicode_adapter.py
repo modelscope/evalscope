@@ -29,14 +29,36 @@ logger = get_logger()
         name='scicode',
         pretty_name='SciCode',
         tags=[Tags.CODING],
-        description='SciCode is a challenging benchmark designed to evaluate the capabilities of '
-        'language models (LMs) in generating code for solving realistic scientific '
-        'research problems. It has a diverse coverage of 16 subdomains from 5 domains: '
-        'Physics, Math, Material Science, Biology, and Chemistry. Unlike previous benchmarks '
-        'that consist of exam-like question-answer pairs, SciCode is converted from real research '
-        'problems. SciCode problems naturally factorize into multiple subproblems, each involving '
-        'knowledge recall, reasoning, and code synthesis. '
-        '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
+        description="""
+## Overview
+
+SciCode is a challenging benchmark designed to evaluate language model capabilities in generating code for solving realistic scientific research problems. It covers 16 subdomains from 5 major domains: Physics, Math, Material Science, Biology, and Chemistry.
+
+## Task Description
+
+- **Task Type**: Scientific Code Generation
+- **Input**: Multi-step scientific problem with subproblems
+- **Output**: Python code solving each subproblem
+- **Domains**: Physics, Math, Material Science, Biology, Chemistry
+
+## Key Features
+
+- Problems converted from real research scenarios
+- 16 subdomains across 5 scientific domains
+- Multi-step problems with knowledge recall, reasoning, and synthesis
+- Optional scientific background information available
+- Requires sandbox environment for safe code execution
+
+## Evaluation Notes
+
+- **Sandbox environment required** for code execution
+- Refer to [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html)
+- Two metrics tracked:
+  - `main_problem_pass_rate`: Complete problem solved
+  - `subproblem_pass_rate`: Individual subproblem success rate
+- Configure `provide_background` to include scientific context
+- Uses custom Docker image: `scicode-benchmark:latest`
+""",  # noqa: E501
         dataset_id='evalscope/SciCode',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
         eval_split='test',

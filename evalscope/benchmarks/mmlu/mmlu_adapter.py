@@ -75,8 +75,32 @@ SUBJECT_MAPPING = {
         name='mmlu',
         pretty_name='MMLU',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        "The MMLU (Massive Multitask Language Understanding) benchmark is a comprehensive evaluation suite designed to assess the performance of language models across a wide range of subjects and tasks. It includes multiple-choice questions from various domains, such as history, science, mathematics, and more, providing a robust measure of a model's understanding and reasoning capabilities.",  # noqa: E501
+        description="""
+## Overview
+
+MMLU (Massive Multitask Language Understanding) is a comprehensive evaluation benchmark designed to measure knowledge acquired during pretraining. It covers 57 subjects across STEM, humanities, social sciences, and other domains, ranging from elementary to professional difficulty levels.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering
+- **Input**: Question with four answer choices (A, B, C, D)
+- **Output**: Single correct answer letter
+- **Subjects**: 57 subjects organized into 4 categories (STEM, Humanities, Social Sciences, Other)
+
+## Key Features
+
+- Covers diverse knowledge domains from elementary to advanced professional levels
+- Tests both factual knowledge and reasoning abilities
+- Includes subjects like abstract algebra, anatomy, astronomy, business ethics, and more
+- Standard benchmark for measuring LLM knowledge breadth
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** examples from the dev split
+- Supports Chain-of-Thought (CoT) prompting for improved reasoning
+- Results can be aggregated by subject or category (STEM, Humanities, Social Sciences, Other)
+- Use `subset_list` parameter to evaluate specific subjects
+""",
         dataset_id='cais/mmlu',
         metric_list=['acc'],
         subset_list=list(SUBJECT_MAPPING.keys()),

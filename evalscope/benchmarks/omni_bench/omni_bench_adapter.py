@@ -26,8 +26,33 @@ Answer the following multiple choice question based on the image and audio conte
         name='omni_bench',
         pretty_name='OmniBench',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        'OmniBench, a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs\' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.',  # noqa: E501
+        description="""
+## Overview
+
+OmniBench is a pioneering universal multimodal benchmark designed to rigorously evaluate MLLMs' capability to recognize, interpret, and reason across visual, acoustic, and textual inputs simultaneously.
+
+## Task Description
+
+- **Task Type**: Universal Multimodal Understanding (Image + Audio + Text)
+- **Input**: Image, audio, and text question with choices
+- **Output**: Correct answer choice
+- **Modalities**: Visual, acoustic, and textual
+
+## Key Features
+
+- Tri-modal evaluation (image, audio, text)
+- Tests cross-modal reasoning abilities
+- Multiple-choice format
+- Configurable modality usage
+- Chain-of-thought prompting
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Simple accuracy metric
+- Extra params: use_image (bool), use_audio (bool)
+- Supports textual alternatives for image/audio
+""",  # noqa: E501
         dataset_id='m-a-p/OmniBench',
         metric_list=['acc'],
         eval_split='train',

@@ -1,71 +1,43 @@
 {
-  "gsm8k": {
+  "humaneval": {
     "meta": {
-      "pretty_name": "GSM8K",
-      "dataset_id": "AI-ModelScope/gsm8k",
-      "paper_url": "https://arxiv.org/abs/2110.14168",
+      "pretty_name": "HumanEval",
+      "dataset_id": "opencompass/humaneval",
+      "paper_url": null,
       "tags": [
-        "Math",
-        "Reasoning"
+        "Coding"
       ],
       "metrics": [
-        {
-          "acc": {
-            "numeric": true
-          }
-        }
+        "acc"
       ],
-      "few_shot_num": 4,
+      "few_shot_num": 0,
       "eval_split": "test",
+      "train_split": "",
       "subset_list": [
-        "main"
+        "openai_humaneval"
       ],
-      "description": "GSM8K (Grade School Math 8K) is a dataset of 8.5K high-quality, linguistically diverse grade school math word problems created by human problem writers.\n\n**Task Type**: Mathematical Reasoning\n**Difficulty**: Grade School Level\n**Answer Format**: Numerical answer enclosed in \\boxed{{}}\n\nThe dataset is designed to support the task of question answering on basic mathematical problems that require multi-step reasoning. Each problem consists of a natural language question and a numerical answer. The problems test basic arithmetic operations and require 2-8 steps to solve.\n\n**Key Features**:\n- High-quality human-written problems\n- Linguistically diverse question formulations\n- Multi-step reasoning required\n- Clear numerical answers",
-      "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
-      "system_prompt": ""
-    },
-    "statistics": {
-      "total_samples": 1319,
-      "subset_stats": [
-        {
-          "name": "main",
-          "sample_count": 1319,
-          "prompt_length_mean": 1966.87,
-          "prompt_length_min": 1800,
-          "prompt_length_max": 2575,
-          "prompt_length_std": 97.61,
-          "target_length_mean": 2.29
+      "description": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+      "prompt_template": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}",
+      "system_prompt": "",
+      "few_shot_prompt_template": "",
+      "aggregation": "mean_and_pass_at_k",
+      "extra_params": {},
+      "sandbox_config": {
+        "image": "python:3.11-slim",
+        "tools_config": {
+          "shell_executor": {},
+          "python_executor": {}
         }
-      ],
-      "prompt_length": {
-        "mean": 1966.87,
-        "min": 1800,
-        "max": 2575,
-        "std": 97.61
-      },
-      "target_length_mean": 2.29,
-      "computed_at": "2026-01-27T17:17:04.769106"
+      }
     },
-    "sample_example": {
-      "data": {
-        "input": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
-        "target": "18",
-        "id": 0,
-        "group_id": 0,
-        "metadata": {
-          "reasoning": "Janet sells 16 - 3 - 4 = <<16-3-4=9>>9 duck eggs a day.\nShe makes 9 * 2 = $<<9*2=18>>18 every day at the farmer’s market."
-        }
-      },
-      "subset": "main",
-      "truncated": false
-    },
+    "statistics": {},
+    "sample_example": {},
     "readme": {
-      "en": "# GSM8K\n\nGSM8K (Grade School Math 8K) is a dataset of 8.5K high-quality, linguistically diverse grade school math word problems created by human problem writers.\n\n**Task Type**: Mathematical Reasoning\n**Difficulty**: Grade School Level\n**Answer Format**: Numerical answer enclosed in \\boxed{{}}\n\nThe dataset is designed to support the task of question answering on basic mathematical problems that require multi-step reasoning. Each problem consists of a natural language question and a numerical answer. The problems test basic arithmetic operations and require 2-8 steps to solve.\n\n**Key Features**:\n- High-quality human-written problems\n- Linguistically diverse question formulations\n- Multi-step reasoning required\n- Clear numerical answers\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gsm8k` |\n| **Dataset ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2110.14168) |\n| **Tags** | `Math`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 4-shot |\n| **Evaluation Split** | `test` |\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,319 |\n| Prompt Length (Mean) | 1966.87 chars |\n| Prompt Length (Min/Max) | 1800 / 2575 chars |\n\n## Subsets\n\n- `main` (1,319 samples)\n\n## Sample Example\n\n**Subset**: `main`\n\n```json\n{\n  \"input\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\",\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": \"Janet sells 16 - 3 - 4 = <<16-3-4=9>>9 duck eggs a day.\\nShe makes 9 * 2 = $<<9*2=18>>18 every day at the farmer’s market.\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n```python\nfrom evalscope import run_task\n\nresults = run_task(\n    model='your-model',\n    datasets=['gsm8k'],\n)\n```",
-      "zh": "# GSM8K\n\nGSM8K（Grade School Math 8K）是一个由人工编写的问题集，包含 8.5K 个高质量、语言表达多样化的中小学数学应用题。\n\n**任务类型**：数学推理  \n**难度级别**：中小学水平  \n**答案格式**：数值答案，用 \\boxed{{}} 包裹\n\n该数据集旨在支持对需要多步推理的基础数学问题进行问答。每个问题包含一个自然语言提问和一个数值答案。这些问题考察基本的算术运算能力，通常需要 2 到 8 个步骤才能解答。\n\n**主要特点**：\n- 高质量的人工编写题目\n- 语言表达形式多样\n- 需要多步推理\n- 答案明确且为数值型\n\n## 概述\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `gsm8k` |\n| **数据集ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2110.14168) |\n| **标签** | `Math`, `Reasoning` |\n| **评估指标** | `acc` |\n| **默认示例数量（Shots）** | 4-shot |\n| **评估划分** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,319 |\n| 提示词长度（平均） | 1966.87 字符 |\n| 提示词长度（最小/最大） | 1800 / 2575 字符 |\n\n## 子集\n\n- `main`（1,319 个样本）\n\n## 样例示例\n\n**子集**: `main`\n\n```json\n{\n  \"input\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\",\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"reasoning\": \"Janet sells 16 - 3 - 4 = <<16-3-4=9>>9 duck eggs a day.\\nShe makes 9 * 2 = $<<9*2=18>>18 every day at the farmer’s market.\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n请逐步推理，并将最终答案放在 \\boxed{{}} 中。\n```\n\n## 使用方法\n\n```python\nfrom evalscope import run_task\n\nresults = run_task(\n    model='your-model',\n    datasets=['gsm8k'],\n)\n```",
-      "content_hash": "2540ba5a7d026e46c8967368628cc480",
-      "needs_translation": false
+      "en": "# HumanEval\n\nHumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `humaneval` |\n| **Dataset ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n```python\nfrom evalscope import run_task\n\nresults = run_task(\n    model='your-model',\n    datasets=['humaneval'],\n)\n```\n\n---\n*Auto-generated by EvalScope on 2026-01-27 19:02:25*\n",
+      "zh": "",
+      "content_hash": "a13f9d867687a326330383dabcc62f96",
+      "needs_translation": true
     },
-    "updated_at": "2026-01-27T17:17:04.778137",
-    "translation_updated_at": "2026-01-27T17:18:43Z"
+    "updated_at": "2026-01-27T19:02:25.556945"
   }
 }

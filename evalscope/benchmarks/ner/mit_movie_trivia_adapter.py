@@ -3,12 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'The MIT-Movie-Trivia dataset, originally created for slot filling, is modified by '
-    'ignoring some slot types (e.g. genre, rating) and merging others (e.g. director '
-    'and actor in person, and song and movie title in title) in order to keep '
-    'consistent named entity types across all datasets.'
-)
+DESCRIPTION = """
+## Overview
+
+The MIT-Movie-Trivia dataset, originally created for slot filling in movie domain dialogues, has been modified for NER by merging and filtering slot types. It tests recognition of movie-related entities in conversational queries.
+
+## Task Description
+
+- **Task Type**: Movie Domain Named Entity Recognition (NER)
+- **Input**: Movie-related conversational queries
+- **Output**: Identified movie entity spans
+- **Domain**: Entertainment, movie trivia, dialogue systems
+
+## Key Features
+
+- Movie domain conversational queries
+- Rich entity type coverage for movies
+- Adapted from slot filling task
+- Twelve entity types covering movie attributes
+- Useful for entertainment domain NLP
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: ACTOR, AWARD, CHARACTER_NAME, DIRECTOR, GENRE, OPINION, ORIGIN, PLOT, QUOTE, RELATIONSHIP, SOUNDTRACK, YEAR
+"""
 
 
 @register_benchmark(

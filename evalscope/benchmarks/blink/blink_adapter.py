@@ -31,8 +31,33 @@ SUBSET_LIST = [
         name='blink',
         pretty_name='BLINK',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        'BLINK is a benchmark designed to evaluate the core visual perception abilities of multimodal large language models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions, accompanied by single or multiple images and visual prompts.',  # noqa: E501
+        description="""
+## Overview
+
+BLINK is a benchmark designed to evaluate the core visual perception abilities of Multimodal Large Language Models (MLLMs). It transforms 14 classic computer vision tasks into 3,807 multiple-choice questions with single or multiple images and visual prompts.
+
+## Task Description
+
+- **Task Type**: Visual Perception Multiple-Choice QA
+- **Input**: One or more images + multiple-choice question
+- **Output**: Single answer letter
+- **Domains**: Visual perception, correspondence, reasoning, detection
+
+## Key Features
+
+- Covers 14 diverse visual perception tasks
+- Supports single and multi-image inputs (up to 4 images)
+- Tests fundamental visual understanding capabilities
+- Categories include: Art Style, Counting, Forensic Detection, IQ Test, Jigsaw, Multi-view Reasoning, Object Localization, and more
+- Questions derived from classic computer vision benchmarks
+
+## Evaluation Notes
+
+- Default evaluation uses the **val** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses "ANSWER: [LETTER]" format for responses
+- Results can be analyzed across 14 different perception categories
+""",  # noqa: E501
         dataset_id='evalscope/BLINK',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

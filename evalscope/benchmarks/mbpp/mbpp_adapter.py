@@ -13,8 +13,31 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 FEWSHOT_PROMPT = """You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4)\nassert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)\n[BEGIN]\ndef similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)\n[DONE]
-You are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:\n\nassert is_not_prime(2) == False\nassert is_not_prime(10) == True\nassert is_not_prime(35) == True\n[BEGIN]\nimport math\r\ndef is_not_prime(n):\r\n    result = False\r\n    for i in range(2,int(math.sqrt(n)) + 1):\r\n        if n % i == 0:\r\n            result = True\r\n    return result\n[DONE]
-You are an expert Python programmer, and here is your task: Write a function to find the largest integers from a given list of numbers using heap queue algorithm. Your code should pass these tests:\n\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65] \nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75]\nassert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]\n[BEGIN]\nimport heapq as hq\r\ndef heap_queue_largest(nums,n):\r\n  largest_nums = hq.nlargest(n, nums)\r\n  return largest_nums\n[DONE]
+You are an expert Python programmer, and here is your task: Write a python function to identify non-prime numbers. Your code should pass these tests:
+
+assert is_not_prime(2) == False
+assert is_not_prime(10) == True
+assert is_not_prime(35) == True
+[BEGIN]
+import math\r
+def is_not_prime(n):\r
+    result = False\r
+    for i in range(2,int(math.sqrt(n)) + 1):\r
+        if n % i == 0:\r
+            result = True\r
+    return result
+[DONE]
+You are an expert Python programmer, and here is your task: Write a function to find the largest integers from a given list of numbers using heap queue algorithm. Your code should pass these tests:
+
+assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65]
+assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75]
+assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]
+[BEGIN]
+import heapq as hq\r
+def heap_queue_largest(nums,n):\r
+  largest_nums = hq.nlargest(n, nums)\r
+  return largest_nums
+[DONE]
 You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
 
 {tests}
@@ -31,11 +54,34 @@ PROMPT = """You are an expert Python programmer, and here is your task: {questio
         name='mbpp',
         pretty_name='MBPP',
         tags=[Tags.CODING],
-        description='MBPP (Mostly Basic Python Problems Dataset): The benchmark consists of around 1,000 '
-        'crowd-sourced Python programming problems, designed to be solvable by entry level programmers, '
-        'covering programming fundamentals, standard library functionality, and so on. Each problem '
-        'consists of a task description, code solution and 3 automated test cases.'
-        '**Sandbox environment is needed for execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**',  # noqa: E501
+        description="""
+## Overview
+
+MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1,000 crowd-sourced Python programming problems designed for entry-level programmers. It evaluates a model's ability to understand problem descriptions and generate correct Python code.
+
+## Task Description
+
+- **Task Type**: Code Generation (Python)
+- **Input**: Natural language task description with test cases
+- **Output**: Python function implementation
+- **Difficulty**: Entry-level programming problems
+
+## Key Features
+
+- ~1,000 crowd-sourced programming problems
+- Covers programming fundamentals and standard library usage
+- Each problem includes task description, solution, and 3 test cases
+- Problems are designed to be solvable by entry-level programmers
+- Automatic evaluation through test case execution
+
+## Evaluation Notes
+
+- Default configuration uses **3-shot** examples
+- **Security Warning**: Sandbox environment is required for safe code execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
+- Supports `pass@k` metric calculation
+- Default timeout is 20 seconds per problem
+- Code is extracted from `[BEGIN]...[DONE]` blocks if present
+""",
         dataset_id='google-research-datasets/mbpp',
         subset_list=['full'],
         metric_list=['acc'],

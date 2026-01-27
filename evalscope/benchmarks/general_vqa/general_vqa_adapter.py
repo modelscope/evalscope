@@ -19,9 +19,33 @@ logger = get_logger()
     BenchmarkMeta(
         name='general_vqa',
         pretty_name='General-VQA',
-        description='A general visual question answering dataset for custom multimodal evaluation. '
-        'Supports OpenAI-compatible message format with images (local paths or base64). '
-        'For detailed instructions, please refer to the [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html).',  # noqa: E501
+        description="""
+## Overview
+
+General-VQA is a customizable visual question answering benchmark for evaluating multimodal models. It supports OpenAI-compatible message format with flexible image input (local paths, URLs, or base64).
+
+## Task Description
+
+- **Task Type**: Visual Question Answering
+- **Input**: Images + questions in OpenAI chat format
+- **Output**: Free-form text answer
+- **Flexibility**: Supports custom datasets via TSV/JSONL files
+
+## Key Features
+
+- OpenAI-compatible message format
+- Supports multiple image input methods (path, URL, base64)
+- Flexible evaluation with BLEU and Rouge metrics
+- Custom dataset support via local file loading
+- Extensible for various VQA use cases
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)
+- Evaluates on **test** split
+- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html) for dataset format
+""",  # noqa: E501
         tags=[Tags.QA, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vqa',
         metric_list=['BLEU', 'Rouge'],

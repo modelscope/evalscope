@@ -27,8 +27,35 @@ OPEN_TYPE = 'free_form'
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
-        description=
-        'MathVista is a consolidated Mathematical reasoning benchmark within Visual contexts. It consists of three newly created datasets, IQTest, FunctionQA, and PaperQA, which address the missing visual domains and are tailored to evaluate logical reasoning on puzzle test figures, algebraic reasoning over functional plots, and scientific reasoning with academic paper figures, respectively. It also incorporates 9 MathQA datasets and 19 VQA datasets from the literature, which significantly enrich the diversity and complexity of visual perception and mathematical reasoning challenges within our benchmark. In total, MathVista includes 6,141 examples collected from 31 different datasets.',
+        description="""
+## Overview
+
+MathVista is a comprehensive benchmark for mathematical reasoning in visual contexts. It combines newly created datasets with existing benchmarks to evaluate models on diverse visual mathematical reasoning tasks across multiple domains.
+
+## Task Description
+
+- **Task Type**: Visual Mathematical Reasoning
+- **Input**: Image with mathematical question (multiple-choice or free-form)
+- **Output**: Numerical answer or answer choice
+- **Domains**: Geometry, algebra, statistics, scientific reasoning
+
+## Key Features
+
+- 6,141 examples from 31 different datasets
+- Includes IQTest, FunctionQA, and PaperQA (newly created)
+- 9 MathQA and 19 VQA datasets from literature
+- Tests logical reasoning on puzzle figures
+- Tests algebraic reasoning over functional plots
+- Tests scientific reasoning with academic paper figures
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation on testmini split
+- Supports both multiple-choice and free-form questions
+- Answers should be in `\\boxed{}` format without units
+- Uses numeric equivalence checking for answer comparison
+- Chain-of-Thought (CoT) prompting for multiple-choice questions
+""",
         metric_list=[{
             'acc': {
                 'numeric': True

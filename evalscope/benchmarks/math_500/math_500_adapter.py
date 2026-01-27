@@ -16,8 +16,34 @@ logger = get_logger()
         name='math_500',
         pretty_name='MATH-500',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",  # noqa: E501
+        description="""
+## Overview
+
+MATH-500 is a curated subset of 500 problems from the MATH benchmark, designed to evaluate the mathematical reasoning capabilities of language models. It covers five difficulty levels across various mathematical topics including algebra, geometry, number theory, and calculus.
+
+## Task Description
+
+- **Task Type**: Mathematical Problem Solving
+- **Input**: Mathematical problem statement
+- **Output**: Step-by-step solution with final numerical answer
+- **Difficulty Levels**: Level 1 (easiest) to Level 5 (hardest)
+
+## Key Features
+
+- 500 carefully selected problems from the full MATH dataset
+- Five difficulty levels for fine-grained evaluation
+- Problems cover algebra, geometry, number theory, probability, and more
+- Each problem includes a reference solution
+- Designed for efficient yet comprehensive math evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Answers should be formatted within `\\boxed{}` for proper extraction
+- Numeric equivalence checking for answer comparison
+- Results can be broken down by difficulty level
+- Commonly used for math reasoning benchmarking due to manageable size
+""",
         dataset_id='AI-ModelScope/MATH-500',
         subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
         metric_list=[{

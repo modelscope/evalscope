@@ -13,11 +13,33 @@ from evalscope.utils.multi_choices import parse_answers, prompt
 
 logger = get_logger()
 
-DESCRIPTION = (
-    'Drivelology, a unique linguistic phenomenon characterised as "nonsense with depth" - '
-    'utterances that are syntactically coherent yet pragmatically paradoxical, emotionally loaded, '
-    'or rhetorically subversive.'
-)
+DESCRIPTION = """
+## Overview
+
+Drivelology Multi-label Classification evaluates models' ability to categorize "drivelology" text into rhetorical technique categories: inversion, wordplay, switchbait, paradox, and misdirection. Each text may belong to multiple categories.
+
+## Task Description
+
+- **Task Type**: Multi-label Text Classification
+- **Input**: Drivelology text sample
+- **Output**: One or more technique categories
+- **Domain**: Linguistic analysis, rhetorical technique detection
+
+## Key Features
+
+- Five rhetorical technique categories
+- Multi-label classification (multiple categories per sample)
+- Tests understanding of linguistic creativity mechanisms
+- Requires recognition of humor and irony techniques
+- Detailed category definitions provided
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Metrics: F1 (weighted, micro, macro), Exact Match
+- Aggregation method: F1 weighted
+- Categories: inversion, wordplay, switchbait, paradox, misdirection
+"""
 
 MULTIPLE_ANSWER_TEMPLATE = r"""
 #Instruction#:

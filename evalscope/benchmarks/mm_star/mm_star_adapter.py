@@ -32,8 +32,33 @@ SUBSET_LIST = [
         name='mm_star',
         pretty_name='MMStar',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
-        description=
-        'MMStar: an elite vision-indispensible multi-modal benchmark, aiming to ensure each curated sample exhibits visual dependency, minimal data leakage, and requires advanced multi-modal capabilities.',  # noqa: E501
+        description="""
+## Overview
+
+MMStar is an elite vision-indispensable multimodal benchmark designed to ensure genuine visual dependency in evaluation. Each sample is carefully curated to require actual visual understanding, minimizing data leakage and testing advanced multimodal capabilities.
+
+## Task Description
+
+- **Task Type**: Vision-Dependent Multiple-Choice QA
+- **Input**: Image + multiple-choice question requiring visual understanding
+- **Output**: Single answer letter (A/B/C/D)
+- **Domains**: Perception, reasoning, math, science & technology
+
+## Key Features
+
+- Ensures visual dependency - questions cannot be answered without images
+- Minimal data leakage from training corpora
+- Tests advanced multimodal reasoning capabilities
+- Six categories: coarse perception, fine-grained perception, instance reasoning, logical reasoning, math, science & technology
+- High-quality curated samples with verified visual necessity
+
+## Evaluation Notes
+
+- Default evaluation uses the **val** split
+- Primary metric: **Accuracy** on multiple-choice questions
+- Uses Chain-of-Thought (CoT) prompting with "ANSWER: [LETTER]" format
+- Results reported per category and overall
+""",  # noqa: E501
         dataset_id='evalscope/MMStar',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],

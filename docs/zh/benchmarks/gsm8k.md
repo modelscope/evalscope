@@ -1,18 +1,14 @@
 # GSM8K
 
-GSM8K（Grade School Math 8K）是一个由人工编写的问题集，包含 8.5K 个高质量、语言表达多样化的中小学数学应用题。
+GSM8K（Grade School Math 8K）是一个包含 8.5K 道高质量、语言多样化的中小学数学应用题的数据集，由人工编写而成。
 
-**任务类型**：数学推理  
-**难度级别**：中小学水平  
-**答案格式**：数值答案，用 \boxed{{}} 包裹
-
-该数据集旨在支持对需要多步推理的基础数学问题进行问答。每个问题包含一个自然语言提问和一个数值答案。这些问题考察基本的算术运算能力，通常需要 2 到 8 个步骤才能解答。
+该数据集旨在支持对需要多步推理的基础数学问题进行问答任务。每个问题包含一个自然语言提问和一个数值答案。这些问题考察基本的算术运算，通常需要 2-8 个步骤才能解答。
 
 **主要特点**：
 - 高质量的人工编写题目
 - 语言表达形式多样
 - 需要多步推理
-- 答案明确且为数值型
+- 答案为明确的数值
 
 ## 概述
 
@@ -23,8 +19,9 @@ GSM8K（Grade School Math 8K）是一个由人工编写的问题集，包含 8.5
 | **论文** | [Paper](https://arxiv.org/abs/2110.14168) |
 | **标签** | `Math`, `Reasoning` |
 | **评估指标** | `acc` |
-| **默认示例数量（Shots）** | 4-shot |
-| **评估划分** | `test` |
+| **默认示例数量** | 4-shot |
+| **评估集** | `test` |
+| **训练集** | `train` |
 
 ## 数据统计
 
@@ -34,17 +31,18 @@ GSM8K（Grade School Math 8K）是一个由人工编写的问题集，包含 8.5
 | 提示词长度（平均） | 1966.87 字符 |
 | 提示词长度（最小/最大） | 1800 / 2575 字符 |
 
-## 子集
-
-- `main`（1,319 个样本）
-
 ## 样例示例
 
 **子集**: `main`
 
 ```json
 {
-  "input": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+  "input": [
+    {
+      "id": "3d025da2",
+      "content": "Here are some examples of how to solve similar problems:\n\nNatalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?\n\nReasoning:\nNatalia sold 48/ ... [TRUNCATED] ... ds every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nPlease reason step by step, and put your final answer within \\boxed{}."
+    }
+  ],
   "target": "18",
   "id": 0,
   "group_id": 0,
@@ -54,13 +52,29 @@ GSM8K（Grade School Math 8K）是一个由人工编写的问题集，包含 8.5
 }
 ```
 
+*注：部分内容因展示需要已被截断。*
+
 ## 提示模板
 
 **提示模板：**
 ```text
 {question}
-请逐步推理，并将最终答案放在 \boxed{{}} 中。
+Please reason step by step, and put your final answer within \boxed{{}}.
 ```
+
+<details>
+<summary>少样本（Few-shot）模板</summary>
+
+```text
+Here are some examples of how to solve similar problems:
+
+{fewshot}
+
+{question}
+Please reason step by step, and put your final answer within \boxed{{}}.
+```
+
+</details>
 
 ## 使用方法
 

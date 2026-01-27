@@ -34,8 +34,38 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
         name='process_bench',
         pretty_name='ProcessBench',
         tags=[Tags.MATH, Tags.REASONING],
-        description=
-        'ProcessBench is a benchmark for evaluating AI models on mathematical reasoning tasks. It includes various subsets such as GSM8K, Math, OlympiadBench, and OmniMath, each with its own set of problems that require step-by-step reasoning to arrive at the correct answer.',  # noqa: E501
+        description="""
+## Overview
+
+ProcessBench is a benchmark for evaluating AI models on mathematical reasoning process verification. It tests the ability to identify errors in step-by-step mathematical solutions across various difficulty levels from GSM8K to OmniMath.
+
+## Task Description
+
+- **Task Type**: Mathematical Reasoning Error Detection
+- **Input**: Math problem + step-by-step solution (tagged paragraphs)
+- **Output**: Index of first error paragraph (or -1 if correct)
+- **Domains**: Math reasoning verification, error detection
+
+## Key Features
+
+- Four difficulty subsets:
+  - `gsm8k`: Grade school math problems
+  - `math`: Competition math problems
+  - `olympiadbench`: Olympiad-level problems
+  - `omnimath`: Advanced mathematical reasoning
+- Tests process supervision and verification abilities
+- Requires analyzing step-by-step reasoning for errors
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Multiple metrics tracked:
+  - `error_acc`: Accuracy on detecting error locations
+  - `correct_acc`: Accuracy on identifying correct solutions
+  - `simple_f1_score`: F1 score balancing both
+- Answers should be in \\boxed{} format (paragraph index or -1)
+- Aggregation method: **F1** score
+""",  # noqa: E501
         dataset_id='Qwen/ProcessBench',
         subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
         metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],

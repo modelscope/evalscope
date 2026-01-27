@@ -124,12 +124,14 @@ class DataStatistics:
 
 # Default max lengths for truncation
 DEFAULT_MAX_LENGTH = 500
-DEFAULT_MAX_ITEM_LENGTH = 200
 
 
 def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
     """
     Recursively truncate values that are too long.
+
+    Truncates from the middle of the string, keeping the beginning and end
+    for better readability and context preservation.
 
     Args:
         value: The value to truncate.
@@ -142,7 +144,9 @@ def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
         return None
     elif isinstance(value, str):
         if len(value) > max_length:
-            return value[:max_length] + '... [TRUNCATED]'
+            # Keep beginning and end, truncate middle
+            keep_each = (max_length - 15) // 2  # 15 chars for "... [TRUNCATED] "
+            return value[:keep_each] + ' ... [TRUNCATED] ... ' + value[-keep_each:]
         return value
     elif isinstance(value, dict):
         return {k: truncate_value(v, max_length) for k, v in value.items()}
@@ -154,7 +158,8 @@ def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
         # For other types, convert to string and truncate
         str_val = str(value)
         if len(str_val) > max_length:
-            return str_val[:max_length] + '... [TRUNCATED]'
+            keep_each = (max_length - 15) // 2
+            return str_val[:keep_each] + ' ... [TRUNCATED] ... ' + str_val[-keep_each:]
         return str_val
 
 

@@ -36,14 +36,34 @@ logger = get_logger()
         name='bfcl_v4',
         pretty_name='BFCL-v4',
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
-        description='With function-calling being the building blocks of Agents, '
-        'the Berkeley Function-Calling Leaderboard (BFCL) V4 presents a holistic agentic '
-        'evaluation for LLMs. BFCL V4 Agentic includes web search, memory, and format sensitivity. '
-        'Together, the ability to web search, read and write from memory, and the ability to invoke '
-        'functions in different languages present the building blocks for the exciting and extremely '
-        'challenging avenues that power agentic LLMs today from deep-research, to agents for coding and law. '
-        'Need to run `pip install bfcl-eval==2025.10.27.1` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)',
+        description="""
+## Overview
+
+BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark for evaluating agentic function-calling capabilities of LLMs. It tests web search, memory operations, and format sensitivity as building blocks for agentic applications.
+
+## Task Description
+
+- **Task Type**: Agentic Function Calling Evaluation
+- **Input**: Scenarios requiring function calls for web search, memory, etc.
+- **Output**: Correct function calls with proper arguments
+- **Capabilities**: Web search, memory read/write, format handling
+
+## Key Features
+
+- Holistic agentic evaluation framework
+- Tests building blocks for LLM agents (search, memory, formatting)
+- Multiple scoring categories for detailed analysis
+- Supports both FC models and non-FC models
+- Optional web search with SerpAPI integration
+
+## Evaluation Notes
+
+- **Installation Required**: `pip install bfcl-eval==2025.10.27.1`
+- Primary metric: **Accuracy** per category
+- Configure `is_fc_model` based on model capabilities
+- Optional: Set `SERPAPI_API_KEY` for web search tasks
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)
+""",
         dataset_id='https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard',
         subset_list=ALL_SCORING_CATEGORIES,
         metric_list=['acc'],

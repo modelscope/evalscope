@@ -21,12 +21,34 @@ logger = get_logger()
         name='terminal_bench_v2',
         pretty_name='Terminal-Bench-2.0',
         tags=[Tags.CODING],
-        description='Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, '
-        'multi-step terminal tasks—ranging from compiling and debugging to system administration—within '
-        'isolated containers; each task is rigorously validated and auto-scored 0/1, pushing frontier '
-        'models to prove they can act, not just answer. '
-        'Require `Python>=3.12` and need to run `pip install harbor==0.1.28` before evaluating. '
-        '[Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)',
+        description="""
+## Overview
+
+Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 89 real-world, multi-step terminal tasks. Tasks range from compiling and debugging to system administration, running within isolated containers with rigorous validation.
+
+## Task Description
+
+- **Task Type**: Command-Line Agent Evaluation
+- **Input**: Terminal task specification
+- **Output**: Task completion via agent actions
+- **Domains**: System administration, compilation, debugging, file operations
+
+## Key Features
+
+- 89 real-world terminal tasks
+- Multi-step task completion requirements
+- Isolated container execution environment
+- Binary scoring (0/1) with auto-validation
+- Multiple agent types supported (terminus-2, claude-code, codex, etc.)
+
+## Evaluation Notes
+
+- Requires **Python>=3.12** and `pip install harbor==0.1.28`
+- Environment options: docker, daytona, e2b, modal
+- Configurable agent types and timeout settings
+- Maximum turns configurable (default: 200)
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
+""",
         dataset_id='https://github.com/laude-institute/terminal-bench-2.git',
         metric_list=['acc'],
         eval_split='test',

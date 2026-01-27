@@ -3,11 +3,32 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
-DESCRIPTION = (
-    'Tweebank-NER is an English Twitter corpus created by annotating the '
-    'syntactically-parsed Tweebank V2 with four types of named entities: '
-    'Person, Organization, Location, and Miscellaneous.'
-)  # noqa: E501
+DESCRIPTION = """
+## Overview
+
+Tweebank-NER is an English Twitter corpus created by annotating the syntactically-parsed Tweebank V2 with four types of named entities: Person, Organization, Location, and Miscellaneous. It addresses NER challenges in informal social media text.
+
+## Task Description
+
+- **Task Type**: Social Media Named Entity Recognition (NER)
+- **Input**: Twitter text (tweets)
+- **Output**: Identified entity spans with types
+- **Domain**: Social media, informal text
+
+## Key Features
+
+- Based on Tweebank V2 syntactic annotations
+- Four standard NER entity types
+- Addresses informal language challenges
+- Handles Twitter-specific text features (hashtags, mentions)
+- Useful for social media NLP applications
+
+## Evaluation Notes
+
+- Default configuration uses **5-shot** evaluation
+- Metrics: Precision, Recall, F1-Score, Accuracy
+- Entity types: PER, ORG, LOC, MISC
+"""  # noqa: E501
 
 
 @register_benchmark(

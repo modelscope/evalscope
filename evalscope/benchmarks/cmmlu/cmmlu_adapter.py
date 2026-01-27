@@ -87,8 +87,34 @@ SUBJECT_MAPPING = {
         name='cmmlu',
         pretty_name='C-MMLU',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
-        description=
-        'C-MMLU is a benchmark designed to evaluate the performance of AI models on Chinese language tasks, including reading comprehension, text classification, and more.',
+        description="""
+## Overview
+
+C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chinese evaluation benchmark covering 67 subjects across STEM, humanities, social sciences, and China-specific topics. It evaluates models' knowledge and reasoning in Chinese contexts.
+
+## Task Description
+
+- **Task Type**: Multiple-Choice Question Answering (Chinese)
+- **Input**: Chinese question with four answer choices (A, B, C, D)
+- **Output**: Single correct answer letter
+- **Subjects**: 67 subjects organized into categories including China-specific topics
+
+## Key Features
+
+- 67 subjects covering diverse Chinese knowledge domains
+- Includes China-specific topics (Chinese history, literature, civil service exam, etc.)
+- Questions from elementary to professional levels
+- Tests both general knowledge and China-specific cultural knowledge
+- Standard benchmark for Chinese language model evaluation
+
+## Evaluation Notes
+
+- Default configuration uses **0-shot** evaluation
+- Uses Chinese Chain-of-Thought (CoT) prompting template
+- Results can be aggregated by subject or category
+- Categories: STEM, Humanities, Social Science, China-specific, Other
+- Evaluates on test split
+""",
         dataset_id='evalscope/cmmlu',
         metric_list=['acc'],
         subset_list=list(SUBJECT_MAPPING.keys()),

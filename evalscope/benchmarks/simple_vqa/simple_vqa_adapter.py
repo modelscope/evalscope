@@ -102,8 +102,34 @@ Just return the letters "A", "B", or "C", with no text around it.
         pretty_name='SimpleVQA',
         dataset_id='m-a-p/SimpleVQA',
         tags=[Tags.REASONING, Tags.MULTI_MODAL, Tags.QA],
-        description=
-        'SimpleVQA, the first comprehensive multi-modal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. SimpleVQA is characterized by six key features: it covers multiple tasks and multiple scenarios, ensures high quality and challenging queries, maintains static and timeless reference answers, and is straightforward to evaluate.',
+        description="""
+## Overview
+
+SimpleVQA is the first comprehensive multimodal benchmark to evaluate the factuality ability of MLLMs to answer natural language short questions. It features high-quality, challenging queries with static and timeless reference answers.
+
+## Task Description
+
+- **Task Type**: Factual Visual Question Answering
+- **Input**: Image + factual question
+- **Output**: Short factual answer
+- **Domains**: Factuality, visual reasoning, knowledge recall
+
+## Key Features
+
+- Covers multiple tasks and scenarios
+- High-quality, challenging questions
+- Static and timeless reference answers (no temporal dependencies)
+- Straightforward evaluation methodology
+- Tests genuine factual knowledge beyond pattern matching
+
+## Evaluation Notes
+
+- Default evaluation uses the **test** split
+- Primary metric: **Accuracy** with LLM judge
+- Three-grade evaluation: CORRECT, INCORRECT, NOT_ATTEMPTED
+- LLM judge uses detailed grading rubric for semantic matching
+- Rich metadata includes language, source, and atomic facts
+""",
         metric_list=['acc'],
         eval_split='test',
         prompt_template='Answer the question:\n\n{question}',
