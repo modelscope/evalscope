@@ -9,3 +9,4 @@ from .adapters import (
 )
 from .benchmark import DataAdapter
 from .meta import BenchmarkMeta
+from .statistics import DataStatistics, SampleExample, SubsetStatistics

@@ -7,6 +7,7 @@ from evalscope.constants import OutputType
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
+    from evalscope.api.benchmark.statistics import DataStatistics, SampleExample
 
 
 @dataclass
@@ -60,6 +61,17 @@ class BenchmarkMeta:
 
     description: Optional[str] = None
     """ Description of the benchmark."""
+
+    # === Documentation & Reference Fields ===
+    paper_url: Optional[str] = None
+    """ URL to the original paper for this benchmark."""
+
+    # === Data Statistics & Examples (computed lazily or predefined) ===
+    data_statistics: Optional['DataStatistics'] = None
+    """ Statistics about the dataset (sample counts, prompt lengths, etc.)."""
+
+    sample_example: Optional['SampleExample'] = None
+    """ A representative sample example for documentation."""
 
     tags: List[str] = field(default_factory=list)
     """ Tags associated with the benchmark."""
