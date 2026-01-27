@@ -237,6 +237,7 @@ class BenchmarkInfoCMD(CLICommand):
         - Generated README content
         """
         from concurrent.futures import ThreadPoolExecutor, as_completed
+        from tqdm import tqdm
 
         from evalscope.utils.doc_utils.generate_dataset_md import update_benchmark_data
 
@@ -259,7 +260,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {executor.submit(update_single, name): name for name in benchmark_names}
-            for future in as_completed(futures):
+            for future in tqdm(as_completed(futures), total=len(futures), desc='Updating benchmarks'):
                 name, error = future.result()
                 if error:
                     failed_benchmarks.append(name)
