@@ -396,13 +396,64 @@ class DataStatistics:
 # Default max lengths for truncation
 DEFAULT_MAX_LENGTH = 500
 
+# Base64 data URI pattern
+BASE64_DATA_URI_PATTERN = r'^data:([^;,]+)(?:;[^,]*)?,'
+
+
+def _format_base64_placeholder(data_uri: str) -> str:
+    """
+    Convert a base64 data URI to a readable placeholder.
+
+    Args:
+        data_uri: A base64 data URI string.
+
+    Returns:
+        A placeholder string like '[BASE64_IMAGE: jpeg, ~50KB]'
+    """
+    import re
+
+    match = re.match(BASE64_DATA_URI_PATTERN, data_uri)
+    if not match:
+        return '[BASE64_DATA]'
+
+    mime_type = match.group(1)
+    # Extract type and subtype (e.g., 'image/jpeg' -> 'IMAGE', 'jpeg')
+    parts = mime_type.split('/')
+    if len(parts) == 2:
+        media_type = parts[0].upper()
+        subtype = parts[1].lower()
+    else:
+        media_type = 'DATA'
+        subtype = mime_type.lower()
+
+    # Estimate size from base64 length (base64 is ~4/3 of original)
+    base64_start = data_uri.find(',') + 1
+    if base64_start > 0:
+        base64_len = len(data_uri) - base64_start
+        estimated_bytes = int(base64_len * 3 / 4)
+        if estimated_bytes >= 1024 * 1024:
+            size_str = f'~{estimated_bytes / (1024 * 1024):.1f}MB'
+        elif estimated_bytes >= 1024:
+            size_str = f'~{estimated_bytes / 1024:.1f}KB'
+        else:
+            size_str = f'~{estimated_bytes}B'
+    else:
+        size_str = 'unknown size'
+
+    return f'[BASE64_{media_type}: {subtype}, {size_str}]'
+
+
+def _is_base64_data_uri(value: str) -> bool:
+    """Check if a string is a base64 data URI."""
+    return value.startswith('data:') and ';base64,' in value[:100]
+
 
 def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
     """
     Recursively truncate values that are too long.
 
-    Truncates from the middle of the string, keeping the beginning and end
-    for better readability and context preservation.
+    For base64 data URIs, replaces with a readable placeholder.
+    For other strings, truncates from the middle, keeping beginning and end.
 
     Args:
         value: The value to truncate.
@@ -414,8 +465,11 @@ def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
     if value is None:
         return None
     elif isinstance(value, str):
+        # Special handling for base64 data URIs
+        if _is_base64_data_uri(value):
+            return _format_base64_placeholder(value)
+        # Regular truncation for long strings
         if len(value) > max_length:
-            # Keep beginning and end, truncate middle
             keep_each = (max_length - 15) // 2  # 15 chars for "... [TRUNCATED] "
             return value[:keep_each] + ' ... [TRUNCATED] ... ' + value[-keep_each:]
         return value
