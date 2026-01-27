@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from evalscope.utils.function_utils import thread_safe
+
 # Path to the unified benchmark data file
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / 'docs'
 BENCHMARK_DATA_JSON_PATH = str(DOCS_DIR / 'asset' / 'source' / 'benchmark_data.json')
@@ -77,6 +79,7 @@ def load_benchmark_data(path: str = BENCHMARK_DATA_JSON_PATH) -> Dict[str, Any]:
             return {}
 
 
+@thread_safe
 def save_benchmark_data(data: Dict[str, Any], path: str = BENCHMARK_DATA_JSON_PATH):
     """Save unified benchmark data to JSON file."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)

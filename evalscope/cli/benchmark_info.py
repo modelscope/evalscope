@@ -236,40 +236,20 @@ class BenchmarkInfoCMD(CLICommand):
         - Sample example
         - Generated README content
         """
-        import threading
         from concurrent.futures import ThreadPoolExecutor, as_completed
         from tqdm import tqdm
 
-        from evalscope.utils.doc_utils import (
-            BENCHMARK_DATA_JSON_PATH,
-            get_benchmark_entry,
-            load_benchmark_data,
-            save_benchmark_data,
-        )
-        from evalscope.utils.doc_utils.generate_dataset_md import compute_benchmark_entry
+        from evalscope.utils.doc_utils.generate_dataset_md import update_benchmark_data
 
-        # Lock for thread-safe file I/O
-        file_lock = threading.Lock()
-
-        # Load data once to get existing entries for each benchmark
-        data = load_benchmark_data()
-        existing_entries = {name: get_benchmark_entry(name, data) for name in benchmark_names}
-
-        def compute_and_save(name: str) -> tuple:
-            """Compute a single benchmark entry and save immediately with lock."""
+        def update_single(name: str) -> tuple:
+            """Update a single benchmark and return (name, error or None)."""
             try:
-                entry = compute_benchmark_entry(
+                update_benchmark_data(
                     benchmark_name=name,
-                    existing_entry=existing_entries[name],
                     force=self.args.force,
                     compute_stats=self.args.compute_stats,
                     max_samples=self.args.max_samples,
                 )
-                # Write to file with lock
-                with file_lock:
-                    current_data = load_benchmark_data()
-                    current_data[name] = entry
-                    save_benchmark_data(current_data)
                 return (name, None)
             except Exception as e:
                 logger.error(f'Error updating {name}: {e}')
@@ -279,13 +259,11 @@ class BenchmarkInfoCMD(CLICommand):
         workers = self.args.workers
 
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = {executor.submit(compute_and_save, name): name for name in benchmark_names}
+            futures = {executor.submit(update_single, name): name for name in benchmark_names}
             for future in tqdm(as_completed(futures), total=len(futures), desc='Updating benchmarks'):
                 name, error = future.result()
                 if error:
                     failed_benchmarks.append(name)
-
-        print(f'Saved benchmark data to {BENCHMARK_DATA_JSON_PATH}')
 
         if failed_benchmarks:
             logger.error(f'Failed to update benchmarks: {failed_benchmarks}')
