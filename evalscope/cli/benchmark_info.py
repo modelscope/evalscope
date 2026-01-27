@@ -148,8 +148,8 @@ class BenchmarkInfoCMD(CLICommand):
         parser.add_argument(
             '--workers',
             type=int,
-            default=4,
-            help='Number of parallel workers for translation (default: 4)',
+            default=8,
+            help='Number of parallel workers for update/translation (default: 8)',
         )
 
         parser.set_defaults(func=BenchmarkInfoCMD)
@@ -236,10 +236,12 @@ class BenchmarkInfoCMD(CLICommand):
         - Sample example
         - Generated README content
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         from evalscope.utils.doc_utils.generate_dataset_md import update_benchmark_data
 
-        failed_benchmarks = []
-        for name in benchmark_names:
+        def update_single(name: str) -> tuple:
+            """Update a single benchmark and return (name, error or None)."""
             try:
                 update_benchmark_data(
                     benchmark_name=name,
@@ -247,9 +249,21 @@ class BenchmarkInfoCMD(CLICommand):
                     compute_stats=self.args.compute_stats,
                     max_samples=self.args.max_samples,
                 )
+                return (name, None)
             except Exception as e:
                 logger.error(f'Error updating {name}: {e}')
-                failed_benchmarks.append(name)
+                return (name, str(e))
+
+        failed_benchmarks = []
+        workers = self.args.workers
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(update_single, name): name for name in benchmark_names}
+            for future in as_completed(futures):
+                name, error = future.result()
+                if error:
+                    failed_benchmarks.append(name)
+
         if failed_benchmarks:
             logger.error(f'Failed to update benchmarks: {failed_benchmarks}')
 
