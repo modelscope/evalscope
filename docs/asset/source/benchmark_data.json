@@ -16,7 +16,7 @@
       "subset_list": [
         "openai_humaneval"
       ],
-      "description": "HumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**",
+      "description": "\n## Overview\n\nHumanEval is a benchmark for evaluating the code generation capabilities of language models. It consists of 164 hand-written Python programming problems with function signatures, docstrings, and comprehensive test cases.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing the expected behavior\n- **Output**: Complete Python function implementation\n- **Languages**: Python only\n\n## Key Features\n\n- 164 hand-crafted programming problems\n- Each problem includes a function signature, docstring, and test cases\n- Problems range from simple string manipulation to complex algorithms\n- Canonical solutions provided for reference\n- Automatic correctness verification through test execution\n\n## Evaluation Notes\n\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation for measuring generation quality\n- Default timeout is 4 seconds per problem\n- Code is extracted from markdown code blocks if present\n",
       "prompt_template": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}",
       "system_prompt": "",
       "few_shot_prompt_template": "",
@@ -30,14 +30,387 @@
         }
       }
     },
-    "statistics": {},
-    "sample_example": {},
+    "statistics": {
+      "total_samples": 164,
+      "subset_stats": [
+        {
+          "name": "openai_humaneval",
+          "sample_count": 164,
+          "prompt_length_mean": 609.6,
+          "prompt_length_min": 274,
+          "prompt_length_max": 1519,
+          "prompt_length_std": 230.3,
+          "target_length_mean": 180.87
+        }
+      ],
+      "prompt_length": {
+        "mean": 609.6,
+        "min": 274,
+        "max": 1519,
+        "std": 230.3
+      },
+      "target_length_mean": 180.87,
+      "computed_at": "2026-01-27T20:14:16.270264"
+    },
+    "sample_example": {
+      "data": {
+        "input": [
+          {
+            "id": "1f29665f",
+            "content": "Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\nfrom typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n"
+          }
+        ],
+        "target": "    for idx, elem in enumerate(numbers):\n        for idx2, elem2 in enumerate(numbers):\n            if idx != idx2:\n                distance = abs(elem - elem2)\n                if distance < threshold:\n                    return True\n\n    return False\n",
+        "id": 0,
+        "group_id": 0,
+        "metadata": {
+          "task_id": "HumanEval/0",
+          "entry_point": "has_close_elements",
+          "prompt": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n",
+          "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\n    assert candidate([1.0 ... [TRUNCATED] ...  candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\n\n"
+        }
+      },
+      "subset": "openai_humaneval",
+      "truncated": true
+    },
     "readme": {
-      "en": "# HumanEval\n\nHumanEval is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications. It consists of programming tasks with a defined input-output behavior. **By default the code is executed in local environment. We recommend using sandbox execution to safely run and evaluate the generated code, please refer to the [documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for more details.**\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `humaneval` |\n| **Dataset ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n```python\nfrom evalscope import run_task\n\nresults = run_task(\n    model='your-model',\n    datasets=['humaneval'],\n)\n```\n\n---\n*Auto-generated by EvalScope on 2026-01-27 19:02:25*\n",
+      "en": "# HumanEval\n\n\n## Overview\n\nHumanEval is a benchmark for evaluating the code generation capabilities of language models. It consists of 164 hand-written Python programming problems with function signatures, docstrings, and comprehensive test cases.\n\n## Task Description\n\n- **Task Type**: Code Generation (Python)\n- **Input**: Function signature with docstring describing the expected behavior\n- **Output**: Complete Python function implementation\n- **Languages**: Python only\n\n## Key Features\n\n- 164 hand-crafted programming problems\n- Each problem includes a function signature, docstring, and test cases\n- Problems range from simple string manipulation to complex algorithms\n- Canonical solutions provided for reference\n- Automatic correctness verification through test execution\n\n## Evaluation Notes\n\n- **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.\n- Supports `pass@k` metric calculation for measuring generation quality\n- Default timeout is 4 seconds per problem\n- Code is extracted from markdown code blocks if present\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `humaneval` |\n| **Dataset ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Aggregation** | `mean_and_pass_at_k` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 164 |\n| Prompt Length (Mean) | 609.6 chars |\n| Prompt Length (Min/Max) | 274 / 1519 chars |\n\n## Sample Example\n\n**Subset**: `openai_humaneval`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1f29665f\",\n      \"content\": \"Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\\nfrom typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: f ... [TRUNCATED] ... Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\"\n    }\n  ],\n  \"target\": \"    for idx, elem in enumerate(numbers):\\n        for idx2, elem2 in enumerate(numbers):\\n            if idx != idx2:\\n                distance = abs(elem - elem2)\\n                if distance < threshold:\\n                    return True\\n\\n    return False\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task_id\": \"HumanEval/0\",\n    \"entry_point\": \"has_close_elements\",\n    \"prompt\": \"from typing import List\\n\\n\\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\\n    \\\"\\\"\\\" Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    \\\"\\\"\\\"\\n\",\n    \"test\": \"\\n\\nMETADATA = {\\n    'author': 'jt',\\n    'dataset': 'test'\\n}\\n\\n\\ndef check(candidate):\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\\n    assert candidate([1.0 ... [TRUNCATED] ...  candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\\n\\n\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nRead the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.11-slim\",\n  \"tools_config\": {\n    \"shell_executor\": {},\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets humaneval \\\n    --use-sandbox \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['humaneval'],\n    use_sandbox=True,\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n---\n*Auto-generated by EvalScope on 2026-01-27 20:23:56*\n",
       "zh": "",
-      "content_hash": "a13f9d867687a326330383dabcc62f96",
+      "content_hash": "80cc8487970ff2541119598c43e14fe6",
       "needs_translation": true
     },
-    "updated_at": "2026-01-27T19:02:25.556945"
+    "updated_at": "2026-01-27T20:23:56.202851"
+  },
+  "math_vision": {
+    "meta": {
+      "pretty_name": "MathVision",
+      "dataset_id": "evalscope/MathVision",
+      "paper_url": null,
+      "tags": [
+        "Math",
+        "Reasoning",
+        "MCQ",
+        "MultiModal"
+      ],
+      "metrics": [
+        {
+          "acc": {
+            "numeric": true
+          }
+        }
+      ],
+      "few_shot_num": 0,
+      "eval_split": "test",
+      "train_split": "",
+      "subset_list": [
+        "level 1",
+        "level 2",
+        "level 3",
+        "level 4",
+        "level 5"
+      ],
+      "description": "\n## Overview\n\nMATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with visual context (diagram, figure, graph)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Competition mathematics with visual elements\n\n## Key Features\n\n- Problems sourced from real mathematical competitions\n- 3,040 high-quality problems with visual contexts\n- Five difficulty levels (1-5) for granular analysis\n- Supports both multiple-choice and free-form answers\n- Includes detailed solutions for reference\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Subsets by difficulty: `level 1` through `level 5`\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format (without units)\n- Multiple-choice uses CoT prompting with letter answers\n",
+      "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.",
+      "system_prompt": "",
+      "few_shot_prompt_template": "",
+      "aggregation": "mean",
+      "extra_params": {},
+      "sandbox_config": {}
+    },
+    "statistics": {
+      "total_samples": 3040,
+      "subset_stats": [
+        {
+          "name": "level 1",
+          "sample_count": 237,
+          "prompt_length_mean": 357.8,
+          "prompt_length_min": 133,
+          "prompt_length_max": 854,
+          "prompt_length_std": 139.81,
+          "target_length_mean": 2.01,
+          "multimodal": {
+            "has_images": true,
+            "has_audio": false,
+            "has_video": false,
+            "image": {
+              "count_total": 237,
+              "count_per_sample": {
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "resolutions": [
+                "1008x291",
+                "1009x669",
+                "1012x145",
+                "102x112",
+                "1046x355",
+                "1064x430",
+                "1108x188",
+                "1133x700",
+                "1140x1131",
+                "1165x289"
+              ],
+              "resolution_range": {
+                "min": "102x112",
+                "max": "2520x5278"
+              },
+              "formats": [
+                "jpeg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "level 2",
+          "sample_count": 738,
+          "prompt_length_mean": 397.17,
+          "prompt_length_min": 127,
+          "prompt_length_max": 885,
+          "prompt_length_std": 143.24,
+          "target_length_mean": 1.5,
+          "multimodal": {
+            "has_images": true,
+            "has_audio": false,
+            "has_video": false,
+            "image": {
+              "count_total": 738,
+              "count_per_sample": {
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "resolutions": [
+                "1006x278",
+                "1010x310",
+                "1010x337",
+                "1016x566",
+                "1024x370",
+                "1027x672",
+                "1040x559",
+                "1043x670",
+                "1044x917",
+                "1052x612"
+              ],
+              "resolution_range": {
+                "min": "96x95",
+                "max": "2520x8526"
+              },
+              "formats": [
+                "jpeg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "level 3",
+          "sample_count": 551,
+          "prompt_length_mean": 433.46,
+          "prompt_length_min": 93,
+          "prompt_length_max": 1402,
+          "prompt_length_std": 149.07,
+          "target_length_mean": 1.51,
+          "multimodal": {
+            "has_images": true,
+            "has_audio": false,
+            "has_video": false,
+            "image": {
+              "count_total": 551,
+              "count_per_sample": {
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "resolutions": [
+                "1020x287",
+                "1048x305",
+                "1051x585",
+                "1064x250",
+                "1070x364",
+                "1088x222",
+                "1094x639",
+                "1104x993",
+                "113x151",
+                "1141x813"
+              ],
+              "resolution_range": {
+                "min": "125x121",
+                "max": "2520x2520"
+              },
+              "formats": [
+                "jpeg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "level 4",
+          "sample_count": 830,
+          "prompt_length_mean": 434.51,
+          "prompt_length_min": 134,
+          "prompt_length_max": 946,
+          "prompt_length_std": 137.92,
+          "target_length_mean": 1.65,
+          "multimodal": {
+            "has_images": true,
+            "has_audio": false,
+            "has_video": false,
+            "image": {
+              "count_total": 830,
+              "count_per_sample": {
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "resolutions": [
+                "1010x637",
+                "1010x710",
+                "1017x237",
+                "1024x204",
+                "1024x350",
+                "1024x430",
+                "1044x384",
+                "1054x1045",
+                "1057x724",
+                "1064x204"
+              ],
+              "resolution_range": {
+                "min": "113x112",
+                "max": "2520x3273"
+              },
+              "formats": [
+                "jpeg"
+              ]
+            }
+          }
+        },
+        {
+          "name": "level 5",
+          "sample_count": 684,
+          "prompt_length_mean": 455.12,
+          "prompt_length_min": 129,
+          "prompt_length_max": 1581,
+          "prompt_length_std": 162.25,
+          "target_length_mean": 2.27,
+          "multimodal": {
+            "has_images": true,
+            "has_audio": false,
+            "has_video": false,
+            "image": {
+              "count_total": 684,
+              "count_per_sample": {
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "resolutions": [
+                "1008x210",
+                "1010x404",
+                "1010x744",
+                "1020x222",
+                "1045x430",
+                "104x107",
+                "1064x444",
+                "1064x510",
+                "1076x748",
+                "1094x432"
+              ],
+              "resolution_range": {
+                "min": "54x40",
+                "max": "2520x2761"
+              },
+              "formats": [
+                "jpeg"
+              ]
+            }
+          }
+        }
+      ],
+      "prompt_length": {
+        "mean": 423.91,
+        "min": 93,
+        "max": 1581,
+        "std": 149.67
+      },
+      "target_length_mean": 1.76,
+      "computed_at": "2026-01-27T20:47:53.146742",
+      "multimodal": {
+        "has_images": true,
+        "has_audio": false,
+        "has_video": false,
+        "image": {
+          "count_total": 3040,
+          "count_per_sample": {
+            "min": 1,
+            "max": 1,
+            "mean": 1
+          },
+          "resolutions": [
+            "1006x278",
+            "1008x210",
+            "1008x291",
+            "1009x669",
+            "1010x310",
+            "1010x337",
+            "1010x404",
+            "1010x637",
+            "1010x710",
+            "1010x744"
+          ],
+          "resolution_range": {
+            "min": "54x40",
+            "max": "2520x8526"
+          },
+          "formats": [
+            "jpeg"
+          ]
+        }
+      }
+    },
+    "sample_example": {
+      "data": {
+        "input": [
+          {
+            "id": "d8057364",
+            "content": [
+              {
+                "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\nWhich kite has the longest string?\n<image1>\n\nA) A\nB) B\nC) C\nD) D\nE) E"
+              },
+              {
+                "image": "data:image/jpg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAHA ... [TRUNCATED] ... AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q=="
+              }
+            ]
+          }
+        ],
+        "choices": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "target": "C",
+        "id": 0,
+        "group_id": 0,
+        "subset_key": "level 1",
+        "metadata": {
+          "id": "3",
+          "image": "images/3.jpg",
+          "solution": null,
+          "level": 1,
+          "question_type": "multi_choice",
+          "subject": "metric geometry - length"
+        }
+      },
+      "subset": "level 1",
+      "truncated": true
+    },
+    "readme": {
+      "en": "# MathVision\n\n\n## Overview\n\nMATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mathematical problems with visual contexts sourced from real math competitions. It evaluates mathematical reasoning abilities in multimodal settings.\n\n## Task Description\n\n- **Task Type**: Visual Mathematical Reasoning\n- **Input**: Math problem with visual context (diagram, figure, graph)\n- **Output**: Numerical answer or answer choice\n- **Domains**: Competition mathematics with visual elements\n\n## Key Features\n\n- Problems sourced from real mathematical competitions\n- 3,040 high-quality problems with visual contexts\n- Five difficulty levels (1-5) for granular analysis\n- Supports both multiple-choice and free-form answers\n- Includes detailed solutions for reference\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Subsets by difficulty: `level 1` through `level 5`\n- Primary metric: **Accuracy** with numeric comparison\n- Free-form answers use \\boxed{} format (without units)\n- Multiple-choice uses CoT prompting with letter answers\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `math_vision` |\n| **Dataset ID** | [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,040 |\n| Prompt Length (Mean) | 423.91 chars |\n| Prompt Length (Min/Max) | 93 / 1581 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `level 1` | 237 | 357.8 | 133 | 854 |\n| `level 2` | 738 | 397.17 | 127 | 885 |\n| `level 3` | 551 | 433.46 | 93 | 1402 |\n| `level 4` | 830 | 434.51 | 134 | 946 |\n| `level 5` | 684 | 455.12 | 129 | 1581 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 3,040 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 54x40 - 2520x8526 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d8057364\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\\n\\nWhich kite has the longest string?\\n<image1>\\n\\nA) A\\nB) B\\nC) C\\nD) D\\nE) E\"\n        },\n        {\n          \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAHA ... [TRUNCATED] ... AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q==\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\",\n    \"E\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"level 1\",\n  \"metadata\": {\n    \"id\": \"3\",\n    \"image\": \"images/3.jpg\",\n    \"solution\": null,\n    \"level\": 1,\n    \"question_type\": \"multi_choice\",\n    \"subject\": \"metric geometry - length\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}} without units.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets math_vision \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['math_vision'],\n    dataset_args={\n        'math_vision': {\n            # subset_list: ['level 1', 'level 2', 'level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n---\n*Auto-generated by EvalScope on 2026-01-27 20:55:08*\n",
+      "zh": "",
+      "content_hash": "64b28d308c6db78e707efbe67e19207f",
+      "needs_translation": true
+    },
+    "updated_at": "2026-01-27T20:55:08.088008"
   }
 }

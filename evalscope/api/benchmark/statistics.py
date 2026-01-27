@@ -1,9 +1,263 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set
 
 from evalscope.api.dataset import Sample
+
+
+@dataclass
+class ImageStatistics:
+    """Statistics for image modality in the dataset."""
+
+    count_total: int = 0
+    """Total number of images across all samples."""
+
+    count_per_sample_min: int = 0
+    """Minimum number of images per sample."""
+
+    count_per_sample_max: int = 0
+    """Maximum number of images per sample."""
+
+    count_per_sample_mean: float = 0.0
+    """Average number of images per sample."""
+
+    resolutions: List[str] = field(default_factory=list)
+    """List of unique resolutions found (e.g., '1920x1080')."""
+
+    resolution_min: Optional[str] = None
+    """Minimum resolution (by total pixels)."""
+
+    resolution_max: Optional[str] = None
+    """Maximum resolution (by total pixels)."""
+
+    formats: List[str] = field(default_factory=list)
+    """List of unique image formats found (e.g., 'jpeg', 'png')."""
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            'count_total': self.count_total,
+            'count_per_sample': {
+                'min': self.count_per_sample_min,
+                'max': self.count_per_sample_max,
+                'mean': round(self.count_per_sample_mean, 2) if self.count_per_sample_mean else 0,
+            },
+            'resolutions': self.resolutions[:10] if len(self.resolutions) > 10 else self.resolutions,
+            'resolution_range': {
+                'min': self.resolution_min,
+                'max': self.resolution_max,
+            } if self.resolution_min or self.resolution_max else None,
+            'formats': self.formats,
+        }
+
+
+@dataclass
+class AudioStatistics:
+    """Statistics for audio modality in the dataset."""
+
+    count_total: int = 0
+    """Total number of audio files across all samples."""
+
+    count_per_sample_min: int = 0
+    """Minimum number of audio files per sample."""
+
+    count_per_sample_max: int = 0
+    """Maximum number of audio files per sample."""
+
+    count_per_sample_mean: float = 0.0
+    """Average number of audio files per sample."""
+
+    duration_min: Optional[float] = None
+    """Minimum audio duration in seconds."""
+
+    duration_max: Optional[float] = None
+    """Maximum audio duration in seconds."""
+
+    duration_mean: Optional[float] = None
+    """Average audio duration in seconds."""
+
+    sample_rates: List[int] = field(default_factory=list)
+    """List of unique sample rates found (e.g., 44100, 48000)."""
+
+    formats: List[str] = field(default_factory=list)
+    """List of unique audio formats found (e.g., 'mp3', 'wav')."""
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            'count_total': self.count_total,
+            'count_per_sample': {
+                'min': self.count_per_sample_min,
+                'max': self.count_per_sample_max,
+                'mean': round(self.count_per_sample_mean, 2) if self.count_per_sample_mean else 0,
+            },
+            'duration': {
+                'min': round(self.duration_min, 2) if self.duration_min else None,
+                'max': round(self.duration_max, 2) if self.duration_max else None,
+                'mean': round(self.duration_mean, 2) if self.duration_mean else None,
+            } if self.duration_min is not None else None,
+            'sample_rates': self.sample_rates,
+            'formats': self.formats,
+        }
+
+
+@dataclass
+class VideoStatistics:
+    """Statistics for video modality in the dataset."""
+
+    count_total: int = 0
+    """Total number of videos across all samples."""
+
+    count_per_sample_min: int = 0
+    """Minimum number of videos per sample."""
+
+    count_per_sample_max: int = 0
+    """Maximum number of videos per sample."""
+
+    count_per_sample_mean: float = 0.0
+    """Average number of videos per sample."""
+
+    duration_min: Optional[float] = None
+    """Minimum video duration in seconds."""
+
+    duration_max: Optional[float] = None
+    """Maximum video duration in seconds."""
+
+    duration_mean: Optional[float] = None
+    """Average video duration in seconds."""
+
+    resolutions: List[str] = field(default_factory=list)
+    """List of unique resolutions found (e.g., '1920x1080')."""
+
+    formats: List[str] = field(default_factory=list)
+    """List of unique video formats found (e.g., 'mp4', 'mov')."""
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            'count_total': self.count_total,
+            'count_per_sample': {
+                'min': self.count_per_sample_min,
+                'max': self.count_per_sample_max,
+                'mean': round(self.count_per_sample_mean, 2) if self.count_per_sample_mean else 0,
+            },
+            'duration': {
+                'min': round(self.duration_min, 2) if self.duration_min else None,
+                'max': round(self.duration_max, 2) if self.duration_max else None,
+                'mean': round(self.duration_mean, 2) if self.duration_mean else None,
+            } if self.duration_min is not None else None,
+            'resolutions': self.resolutions[:10] if len(self.resolutions) > 10 else self.resolutions,
+            'formats': self.formats,
+        }
+
+
+@dataclass
+class MultimodalStatistics:
+    """Combined statistics for all modalities in the dataset."""
+
+    has_images: bool = False
+    """Whether the dataset contains images."""
+
+    has_audio: bool = False
+    """Whether the dataset contains audio."""
+
+    has_video: bool = False
+    """Whether the dataset contains video."""
+
+    image_stats: Optional[ImageStatistics] = None
+    """Image modality statistics."""
+
+    audio_stats: Optional[AudioStatistics] = None
+    """Audio modality statistics."""
+
+    video_stats: Optional[VideoStatistics] = None
+    """Video modality statistics."""
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        result: Dict[str, Any] = {
+            'has_images': self.has_images,
+            'has_audio': self.has_audio,
+            'has_video': self.has_video,
+        }
+        if self.image_stats:
+            result['image'] = self.image_stats.to_dict()
+        if self.audio_stats:
+            result['audio'] = self.audio_stats.to_dict()
+        if self.video_stats:
+            result['video'] = self.video_stats.to_dict()
+        return result
+
+    def to_markdown_table(self) -> str:
+        """Generate a markdown table representation of multimodal statistics."""
+        lines = []
+
+        if self.has_images and self.image_stats:
+            lines.append('**Image Statistics:**')
+            lines.append('')
+            lines.append('| Metric | Value |')
+            lines.append('|--------|-------|')
+            lines.append(f'| Total Images | {self.image_stats.count_total:,} |')
+            lines.append(
+                f'| Images per Sample | min: {self.image_stats.count_per_sample_min}, '
+                f'max: {self.image_stats.count_per_sample_max}, '
+                f'mean: {self.image_stats.count_per_sample_mean:.2f} |'
+            )
+            if self.image_stats.resolution_min or self.image_stats.resolution_max:
+                lines.append(
+                    f'| Resolution Range | {self.image_stats.resolution_min or "N/A"} - '
+                    f'{self.image_stats.resolution_max or "N/A"} |'
+                )
+            if self.image_stats.formats:
+                lines.append(f'| Formats | {", ".join(self.image_stats.formats)} |')
+            lines.append('')
+
+        if self.has_audio and self.audio_stats:
+            lines.append('**Audio Statistics:**')
+            lines.append('')
+            lines.append('| Metric | Value |')
+            lines.append('|--------|-------|')
+            lines.append(f'| Total Audio Files | {self.audio_stats.count_total:,} |')
+            lines.append(
+                f'| Audio per Sample | min: {self.audio_stats.count_per_sample_min}, '
+                f'max: {self.audio_stats.count_per_sample_max}, '
+                f'mean: {self.audio_stats.count_per_sample_mean:.2f} |'
+            )
+            if self.audio_stats.duration_mean is not None:
+                lines.append(
+                    f'| Duration (sec) | min: {self.audio_stats.duration_min:.2f}, '
+                    f'max: {self.audio_stats.duration_max:.2f}, '
+                    f'mean: {self.audio_stats.duration_mean:.2f} |'
+                )
+            if self.audio_stats.sample_rates:
+                lines.append(f'| Sample Rates | {", ".join(map(str, self.audio_stats.sample_rates))} Hz |')
+            if self.audio_stats.formats:
+                lines.append(f'| Formats | {", ".join(self.audio_stats.formats)} |')
+            lines.append('')
+
+        if self.has_video and self.video_stats:
+            lines.append('**Video Statistics:**')
+            lines.append('')
+            lines.append('| Metric | Value |')
+            lines.append('|--------|-------|')
+            lines.append(f'| Total Videos | {self.video_stats.count_total:,} |')
+            lines.append(
+                f'| Videos per Sample | min: {self.video_stats.count_per_sample_min}, '
+                f'max: {self.video_stats.count_per_sample_max}, '
+                f'mean: {self.video_stats.count_per_sample_mean:.2f} |'
+            )
+            if self.video_stats.duration_mean is not None:
+                lines.append(
+                    f'| Duration (sec) | min: {self.video_stats.duration_min:.2f}, '
+                    f'max: {self.video_stats.duration_max:.2f}, '
+                    f'mean: {self.video_stats.duration_mean:.2f} |'
+                )
+            if self.video_stats.formats:
+                lines.append(f'| Formats | {", ".join(self.video_stats.formats)} |')
+            lines.append('')
+
+        return '\n'.join(lines)
 
 
 @dataclass
@@ -31,9 +285,12 @@ class SubsetStatistics:
     target_length_mean: Optional[float] = None
     """Mean target/answer length in characters (if applicable)."""
 
+    multimodal: Optional[MultimodalStatistics] = None
+    """Multimodal statistics for this subset."""
+
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
-        return {
+        result = {
             'name': self.name,
             'sample_count': self.sample_count,
             'prompt_length_mean': round(self.prompt_length_mean, 2) if self.prompt_length_mean else 0,
@@ -42,6 +299,9 @@ class SubsetStatistics:
             'prompt_length_std': round(self.prompt_length_std, 2) if self.prompt_length_std else None,
             'target_length_mean': round(self.target_length_mean, 2) if self.target_length_mean else None,
         }
+        if self.multimodal:
+            result['multimodal'] = self.multimodal.to_dict()
+        return result
 
 
 @dataclass
@@ -74,12 +334,15 @@ class DataStatistics:
     target_length_mean: Optional[float] = None
     """Mean target/answer length (if applicable)."""
 
+    multimodal: Optional[MultimodalStatistics] = None
+    """Aggregated multimodal statistics across all subsets."""
+
     computed_at: Optional[str] = None
     """ISO timestamp when statistics were computed."""
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
-        return {
+        result = {
             'total_samples': self.total_samples,
             'subset_stats': [s.to_dict() for s in self.subset_stats],
             'prompt_length': {
@@ -91,6 +354,9 @@ class DataStatistics:
             'target_length_mean': round(self.target_length_mean, 2) if self.target_length_mean else None,
             'computed_at': self.computed_at,
         }
+        if self.multimodal:
+            result['multimodal'] = self.multimodal.to_dict()
+        return result
 
     def to_markdown_table(self, include_overall: bool = True) -> str:
         """Generate a markdown table representation of the statistics."""
@@ -118,6 +384,11 @@ class DataStatistics:
                     f'| `{s.name}` | {s.sample_count:,} | {s.prompt_length_mean:.1f} | '
                     f'{s.prompt_length_min} | {s.prompt_length_max} |'
                 )
+
+        # Add multimodal statistics if present
+        if self.multimodal and (self.multimodal.has_images or self.multimodal.has_audio or self.multimodal.has_video):
+            lines.append('')
+            lines.append(self.multimodal.to_markdown_table())
 
         return '\n'.join(lines)
 

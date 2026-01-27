@@ -39,9 +39,11 @@ Usage:
 
 import json
 from argparse import ArgumentParser, Namespace
-from pathlib import Path
 
 from evalscope.cli.base import CLICommand
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class BenchmarkInfoCMD(CLICommand):
@@ -155,9 +157,6 @@ class BenchmarkInfoCMD(CLICommand):
     def execute(self):
         """Execute the benchmark-info command."""
         from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
-        from evalscope.utils.logger import get_logger
-
-        logger = get_logger()
 
         # Handle --list flag
         if self.args.list:
@@ -239,13 +238,20 @@ class BenchmarkInfoCMD(CLICommand):
         """
         from evalscope.utils.doc_utils.generate_dataset_md import update_benchmark_data
 
+        failed_benchmarks = []
         for name in benchmark_names:
-            update_benchmark_data(
-                benchmark_name=name,
-                force=self.args.force,
-                compute_stats=self.args.compute_stats,
-                max_samples=self.args.max_samples,
-            )
+            try:
+                update_benchmark_data(
+                    benchmark_name=name,
+                    force=self.args.force,
+                    compute_stats=self.args.compute_stats,
+                    max_samples=self.args.max_samples,
+                )
+            except Exception as e:
+                logger.error(f'Error updating {name}: {e}')
+                failed_benchmarks.append(name)
+        if failed_benchmarks:
+            logger.error(f'Failed to update benchmarks: {failed_benchmarks}')
 
     def _translate_benchmarks(self):
         """Translate README content to Chinese."""
