@@ -46,7 +46,8 @@
         }
       }
     },
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "agent"
   },
   "statistics": {
     "total_samples": 269,
@@ -153,6 +154,6 @@
     "content_hash": "b0e12e1bc6389a93362f019a1704dfe8",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T15:54:01.426475",
+  "updated_at": "2026-01-28T17:31:32.487535",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

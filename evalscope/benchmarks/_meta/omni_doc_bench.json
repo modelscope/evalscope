@@ -64,7 +64,8 @@
         ]
       }
     },
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "vlm"
   },
   "statistics": {
     "total_samples": 981,
@@ -634,6 +635,6 @@
     "content_hash": "b0d718079fc89cb0a8120591cf980bbc",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T15:36:11.098560",
+  "updated_at": "2026-01-28T17:31:32.657409",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

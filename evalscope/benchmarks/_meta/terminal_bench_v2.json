@@ -58,7 +58,8 @@
         "value": 200
       }
     },
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 0,
@@ -79,6 +80,6 @@
     "content_hash": "8a33cf930a53fd4344e1b6199fa9c05b",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T16:09:02.544503",
+  "updated_at": "2026-01-28T17:31:32.499002",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

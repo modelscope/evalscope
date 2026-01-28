@@ -42,7 +42,8 @@
         "value": "qwen2.5-7b"
       }
     },
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 0,
@@ -63,6 +64,6 @@
     "content_hash": "58f142fab71edc1255e157c3a015578c",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T16:09:02.297019",
+  "updated_at": "2026-01-28T17:31:32.233958",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

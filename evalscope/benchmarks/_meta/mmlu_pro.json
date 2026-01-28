@@ -35,7 +35,8 @@
     "few_shot_prompt_template": "The following are multiple choice questions (with answers) about {subject}. Think step by step and then finish your answer with 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the correct letter choice.\n\n{examples}\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\nQuestion:\n{question}\nOptions:\n{choices}\n",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 12032,
@@ -213,6 +214,6 @@
     "content_hash": "44c14dd1cc4a0ab32c64ed9822a2c889",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.963012",
+  "updated_at": "2026-01-28T17:31:32.309146",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

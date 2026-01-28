@@ -43,7 +43,8 @@
         "shell_executor": {},
         "python_executor": {}
       }
-    }
+    },
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 1055,
@@ -92,6 +93,6 @@
     "content_hash": "9235a61b4501a737cc53533ca9a21b91",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.912967",
+  "updated_at": "2026-01-28T17:31:32.265877",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

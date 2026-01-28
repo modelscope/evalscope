@@ -26,7 +26,8 @@
     "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n",
     "aggregation": "f1",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 3333,
@@ -78,6 +79,6 @@
     "content_hash": "2688bd67568b43bc44052ee69d92e691",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.831075",
+  "updated_at": "2026-01-28T17:31:32.204932",
   "translation_updated_at": "2026-01-28T15:56:15Z"
 }

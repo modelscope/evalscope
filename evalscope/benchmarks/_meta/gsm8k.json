@@ -26,7 +26,8 @@
     "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 1319,
@@ -74,6 +75,6 @@
     "content_hash": "0bec17b778c58b45a31517042993da7e",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.880490",
+  "updated_at": "2026-01-28T17:31:32.243854",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

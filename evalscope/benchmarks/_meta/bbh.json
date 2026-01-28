@@ -47,7 +47,8 @@
     "few_shot_prompt_template": "{fewshot}\n\nQ: {question}\nA: Let's think step by step. Put your final answer in the format of \"So the answer is [ANSWER]\" (without quotes and markdown) where [ANSWER] is the answer to the problem.\n",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 6511,
@@ -330,6 +331,6 @@
     "content_hash": "c12b41bf2f07782921fdce72ad48cb9b",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.814474",
+  "updated_at": "2026-01-28T17:31:32.191108",
   "translation_updated_at": "2026-01-28T15:56:15Z"
 }

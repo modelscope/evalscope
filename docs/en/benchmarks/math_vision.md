@@ -78,7 +78,7 @@ MATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mat
 {
   "input": [
     {
-      "id": "7d93b7fd",
+      "id": "606d1e5a",
       "content": [
         {
           "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E. Think step by step before answering.\n\nWhich kite has the longest string?\n<image1>\n\nA) A\nB) B\nC) C\nD) D\nE) E"

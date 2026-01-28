@@ -3,6 +3,7 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -78,21 +79,17 @@ class DocMathAdapter(DefaultDataAdapter):
             Sample: Sample object with input, target, and metadata.
         """
         ground_truth = record['ground_truth']
-
+        context = '\n'.join(record['paragraphs'])
+        question = record['question']
+        message = self.prompt_template.format(context=context, question=question)
         return Sample(
-            input=record['question'],
+            input=[ChatMessageUser(content=message)],
             target=str(ground_truth),
             metadata={
                 'question_id': record.get('question_id', ''),
-                'paragraphs': record['paragraphs'],
                 'answer_type': type(ground_truth).__name__
             }
         )
-
-    def format_prompt_template(self, sample):
-        context = '\n'.join(sample.metadata['paragraphs'])
-        question = sample.input
-        return self.prompt_template.format(context=context, question=question)
 
     def extract_answer(self, prediction: str, task_state: TaskState):
         """

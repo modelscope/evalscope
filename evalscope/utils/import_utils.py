@@ -7,10 +7,13 @@ from itertools import chain
 from types import ModuleType
 from typing import Any, Optional, Union
 
-from evalscope.constants import IS_BUILD_DOC
 from .logger import get_logger
 
 logger = get_logger()  # pylint: disable=invalid-name
+
+
+def is_build_doc():
+    return os.getenv('BUILD_DOC', '0') == '1'
 
 
 def check_import(
@@ -77,7 +80,7 @@ def check_import(
         if raise_warning:
             logger.warning(error_msg)
 
-        if not IS_BUILD_DOC and raise_error:
+        if not is_build_doc() and raise_error:
             raise ImportError(error_msg)
         return False
 

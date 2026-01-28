@@ -34,7 +34,8 @@
     "few_shot_prompt_template": "",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "vlm"
   },
   "statistics": {
     "total_samples": 1800,
@@ -428,6 +429,6 @@
     "content_hash": "061c7fe07fdd81b47451f200214e6479",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.830370",
+  "updated_at": "2026-01-28T17:31:32.203937",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

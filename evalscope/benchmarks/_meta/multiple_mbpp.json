@@ -47,7 +47,8 @@
       },
       "memory_limit": "2g",
       "cpu_limit": "2.0"
-    }
+    },
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 6987,
@@ -254,6 +255,6 @@
     "content_hash": "19f269dd74a3120cc69b3466542b35ad",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:35.031838",
+  "updated_at": "2026-01-28T17:31:32.323072",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

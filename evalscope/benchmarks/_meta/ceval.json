@@ -74,7 +74,8 @@
     "few_shot_prompt_template": "以下是一些示例问题：\n\n{fewshot}\n\n",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 1346,
@@ -589,6 +590,6 @@
     "content_hash": "ba3a022d5cf53c633532b501aec54fe3",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:34.817678",
+  "updated_at": "2026-01-28T17:31:32.194461",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

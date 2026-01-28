@@ -54,10 +54,6 @@ def get_index_locale(category: str, lang: str) -> Dict[str, str]:
             'zh': '任务类别',
             'en': 'Task Categories'
         },
-        'samples': {
-            'zh': '样本数',
-            'en': 'Samples'
-        },
     }
     return {k: v[lang] for k, v in locale.items()}
 
@@ -98,25 +94,37 @@ def generate_index_table(
         '',
         text['intro'],
         '',
-        f'| {text["name"]} | {text["pretty_name"]} | {text["tags"]} | {text["samples"]} |',
-        '|------------|----------|----------|----------|',
+        f'| {text["name"]} | {text["pretty_name"]} | {text["tags"]} |',
+        '|------------|----------|----------|',
     ]
 
     for benchmark in benchmarks:
         name = benchmark['name']
         entry = benchmark['entry']
         meta = entry.get('meta', {})
-        stats = entry.get('statistics', {})
 
         pretty_name = meta.get('pretty_name', name)
         tags = wrap_keywords(meta.get('tags', []))
 
-        total_samples = stats.get('total_samples', 'N/A')
-        samples_str = _format_sample_count(total_samples)
-
         # Link to individual README file
         readme_link = f'../../benchmarks/{name}.md'
-        lines.append(f'| `{name}` | [{pretty_name}]({readme_link}) | {tags} | {samples_str} |')
+        lines.append(f'| `{name}` | [{pretty_name}]({readme_link}) | {tags} |')
+
+    # Add hidden toctree to include all benchmark documents in the directory tree
+    lines.extend([
+        '',
+        ':::{toctree}',
+        ':hidden:',
+        ':maxdepth: 1',
+        '',
+    ])
+
+    # Add all benchmark files to toctree
+    for benchmark in benchmarks:
+        name = benchmark['name']
+        lines.append(f'../../benchmarks/{name}.md')
+
+    lines.append(':::')
 
     return '\n'.join(lines)
 
@@ -126,11 +134,31 @@ def generate_index_table(
 # =============================================================================
 
 
+def get_adapter_category(adapter) -> str:
+    """Determine the category of an adapter based on its type.
+
+    Args:
+        adapter: DataAdapter instance
+
+    Returns:
+        Category string: 'aigc', 'vlm', 'agent', or 'llm'
+    """
+    from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
+
+    if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
+        return 'aigc'
+    elif isinstance(adapter, VisionLanguageAdapter):
+        return 'vlm'
+    elif isinstance(adapter, AgentAdapter):
+        return 'agent'
+    else:
+        return 'llm'
+
+
 def get_adapters():
     """Get all registered DataAdapters grouped by category."""
     from tqdm import tqdm
 
-    from evalscope.api.benchmark import AgentAdapter, ImageEditAdapter, Text2ImageAdapter, VisionLanguageAdapter
     from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 
     print('Loading registered benchmarks...')
@@ -139,14 +167,8 @@ def get_adapters():
     for benchmark in tqdm(BENCHMARK_REGISTRY.values(), desc='Loading Benchmarks'):
         try:
             adapter = get_benchmark(benchmark.name)
-            if isinstance(adapter, (Text2ImageAdapter, ImageEditAdapter)):
-                adapters['aigc'].append(adapter)
-            elif isinstance(adapter, VisionLanguageAdapter):
-                adapters['vlm'].append(adapter)
-            elif isinstance(adapter, AgentAdapter):
-                adapters['agent'].append(adapter)
-            else:
-                adapters['llm'].append(adapter)
+            category = get_adapter_category(adapter)
+            adapters[category].append(adapter)
         except Exception as e:
             print(f'Warning: Failed to load {benchmark.name}: {e}')
 
@@ -173,6 +195,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
+        'category': get_adapter_category(adapter),
     }
 
 
@@ -411,17 +434,10 @@ def generate_docs(data: Optional[Dict[str, Any]] = None):
 
     for name, entry in data.items():
         meta = entry.get('meta', {})
-        tags = meta.get('tags', [])
 
-        # Determine category based on tags
-        if any(t in ['text2image', 'image_generation', 'image_edit'] for t in tags):
-            category = 'aigc'
-        elif any(t in ['vlm', 'vision', 'multimodal'] for t in tags):
-            category = 'vlm'
-        elif any(t in ['agent', 'tool_use'] for t in tags):
-            category = 'agent'
-        else:
-            category = 'llm'
+        # Determine category based on adapter type stored in metadata
+        # Fall back to 'llm' if category is not found
+        category = meta.get('category', 'llm')
 
         categories[category].append({'name': name, 'entry': entry})
 

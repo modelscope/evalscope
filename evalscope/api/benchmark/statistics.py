@@ -395,6 +395,7 @@ class DataStatistics:
 
 # Default max lengths for truncation
 DEFAULT_MAX_LENGTH = 500
+DEFAULT_MAX_LIST_ITEMS = 10  # Maximum number of items to show in a list before truncating
 
 # Base64 data URI pattern
 BASE64_DATA_URI_PATTERN = r'^data:([^;,]+)(?:;[^,]*)?,'
@@ -448,16 +449,20 @@ def _is_base64_data_uri(value: str) -> bool:
     return value.startswith('data:') and ';base64,' in value[:100]
 
 
-def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
+def truncate_value(
+    value: Any, max_length: int = DEFAULT_MAX_LENGTH, max_list_items: int = DEFAULT_MAX_LIST_ITEMS
+) -> Any:
     """
     Recursively truncate values that are too long.
 
     For base64 data URIs, replaces with a readable placeholder.
     For other strings, truncates from the middle, keeping beginning and end.
+    For long lists, limits the number of items shown.
 
     Args:
         value: The value to truncate.
         max_length: Maximum length for string values.
+        max_list_items: Maximum number of items to show in a list.
 
     Returns:
         Truncated value with same type structure.
@@ -471,12 +476,17 @@ def truncate_value(value: Any, max_length: int = DEFAULT_MAX_LENGTH) -> Any:
         # Regular truncation for long strings
         if len(value) > max_length:
             keep_each = (max_length - 15) // 2  # 15 chars for "... [TRUNCATED] "
-            return value[:keep_each] + ' ... [TRUNCATED] ... ' + value[-keep_each:]
+            return value[:keep_each] + f' ... [TRUNCATED {len(value) - keep_each * 2} chars] ... ' + value[-keep_each:]
         return value
     elif isinstance(value, dict):
-        return {k: truncate_value(v, max_length) for k, v in value.items()}
+        return {k: truncate_value(v, max_length, max_list_items) for k, v in value.items()}
     elif isinstance(value, list):
-        return [truncate_value(item, max_length) for item in value]
+        # Truncate long lists to show only first few items
+        if len(value) > max_list_items:
+            truncated_list = [truncate_value(item, max_length, max_list_items) for item in value[:max_list_items]]
+            truncated_list.append(f'... [TRUNCATED {len(value) - max_list_items} more items] ...')
+            return truncated_list
+        return [truncate_value(item, max_length, max_list_items) for item in value]
     elif isinstance(value, (int, float, bool)):
         return value
     else:
@@ -513,17 +523,19 @@ class SampleExample:
         sample: Sample,
         subset: Optional[str] = None,
         max_length: int = DEFAULT_MAX_LENGTH,
+        max_list_items: int = DEFAULT_MAX_LIST_ITEMS,
     ) -> 'SampleExample':
         """
         Create a SampleExample from a Sample object with auto-truncation.
 
         Uses sample.model_dump() to convert the sample to a dictionary,
-        then recursively truncates any values that exceed max_length.
+        then recursively truncates any values that exceed max_length or max_list_items.
 
         Args:
             sample: The Sample object to convert.
             subset: Optional subset name override.
             max_length: Maximum length for string values before truncation.
+            max_list_items: Maximum number of items to show in a list.
 
         Returns:
             SampleExample with truncated content if necessary.
@@ -532,7 +544,7 @@ class SampleExample:
         raw_data = sample.model_dump(exclude_unset=True, exclude_none=True)
 
         # Check if truncation is needed
-        truncated_data = truncate_value(raw_data, max_length)
+        truncated_data = truncate_value(raw_data, max_length, max_list_items)
         truncated_str = str(truncated_data)
         was_truncated = '[TRUNCATED]' in truncated_str
 

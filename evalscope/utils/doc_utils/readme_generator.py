@@ -8,14 +8,9 @@ and usage instructions.
 """
 
 import os
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.utils.logger import get_logger
-
-if TYPE_CHECKING:
-    from evalscope.api.benchmark import DataAdapter
-    from evalscope.api.benchmark.statistics import DataStatistics, SampleExample
 
 logger = get_logger()
 

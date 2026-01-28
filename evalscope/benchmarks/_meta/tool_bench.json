@@ -27,7 +27,8 @@
     "few_shot_prompt_template": "",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "agent"
   },
   "statistics": {
     "total_samples": 2369,
@@ -139,6 +140,6 @@
     "content_hash": "2ac7e7595851e4daefd4ccfe2c5e6679",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:35.647922",
+  "updated_at": "2026-01-28T17:31:32.570067",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

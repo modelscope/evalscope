@@ -23,7 +23,8 @@
     "few_shot_prompt_template": "",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 4934,
@@ -86,6 +87,6 @@
     "content_hash": "9e7e752391a3434c8a5f8ce192a2093b",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:35.346430",
+  "updated_at": "2026-01-28T17:31:32.435575",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

@@ -25,7 +25,8 @@
     "few_shot_prompt_template": "Here are some examples of named entity recognition:\n\n{fewshot}\n\nYou are a named entity recognition system that identifies the following entity types:\n{entities}\n\nProcess the provided text and mark all named entities with XML-style tags.\n\nFor example:\n<person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.\n\nAvailable entity tags: {entity_list}\n\nINSTRUCTIONS:\n1. Wrap your entire response in <response>...</response> tags.\n2. Inside these tags, include the original text with entity tags inserted.\n3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).\n4. Tag ALL entities you can identify using the exact tag names provided.\n5. Do not include explanations, just the tagged text.\n6. If entity spans overlap, choose the most specific entity type.\n7. Ensure every opening tag has a matching closing tag.\n\nText to process:\n{text}\n",
     "aggregation": "mean",
     "extra_params": {},
-    "sandbox_config": {}
+    "sandbox_config": {},
+    "category": "llm"
   },
   "statistics": {
     "total_samples": 940,
@@ -112,6 +113,6 @@
     "content_hash": "b2d3cb679b3b626c32bcb49301f96e1a",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T14:29:35.239905",
+  "updated_at": "2026-01-28T17:31:32.372008",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }
